@@ -26,7 +26,7 @@ async def _webcrypto_pbkdf2(password, salt, iterations, dklen):
         password_js,
         Object.fromEntries([("name", "PBKDF2")]),
         False,
-        ["deriveBits"],
+        to_js(["deriveBits"]),
     )
     derived = await crypto.subtle.deriveBits(
         Object.fromEntries([
