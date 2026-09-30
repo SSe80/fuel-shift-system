@@ -48,8 +48,8 @@ def pbkdf2_sha256(password, salt, iterations, dklen=32):
 
 def hash_pin(pin, salt=None):
     salt = salt or secrets.token_bytes(16)
-    digest = pbkdf2_sha256(pin, salt, 120000)
-    return "pbkdf2_sha256$120000$%s$%s" % (
+    digest = pbkdf2_sha256(pin, salt, 100000)
+    return "pbkdf2_sha256$100000$%s$%s" % (
         base64.urlsafe_b64encode(salt).decode().rstrip("="),
         base64.urlsafe_b64encode(digest).decode().rstrip("="),
     )
