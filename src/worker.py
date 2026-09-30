@@ -296,8 +296,6 @@ def start_shift(shift_id):
     if min(opening,mm,liters)<0:return jsonify({"error":"Opening readings cannot be negative"}),400
     status,rows=sb("shifts",params={"id":"eq."+shift_id,"employee_id":"eq."+eid,"status":"eq.assigned","select":"id,nozzle_id"})
     if status!=200 or not rows:return jsonify({"error":"Assigned shift not found"}),404
-    nozzle_id=rows[0]["nozzle_id"]
-    ts,tr=sb("tanks",params={"id":"eq."+str(next((n["tank_id"] for n in (sb("nozzles",params={"id":"eq."+str(nozzle_id),"select":"tank_id"})[1] or [])),None)),"select":"id,current_liters"})
     # Opening readings are a shift snapshot; tank inventory is not silently overwritten here.
     patch={"status":"active","start_time":datetime.now(timezone.utc).isoformat(),"opening_reading":opening,"opening_mm":mm,"opening_liters":liters}
     status,result=sb("shifts",method="PATCH",params={"id":"eq."+shift_id},body=patch,prefer="return=representation")
@@ -413,8 +411,12 @@ def daily_report():
     report_date=request.args.get("date") or date.today().isoformat()
     try: date.fromisoformat(report_date)
     except ValueError:return jsonify({"error":"Invalid date"}),400
-    sales_status,sales_rows=sb("sales",params={"sale_time":"gte."+report_date+"T00:00:00Z","sale_time":"lt." + report_date+"T23:59:59.999999Z","select":"product,quantity_liters,unit_price,amount,payment_method,sale_time,employee_id","order":"sale_time.asc","limit":"1000"})
-    purchases_status,purchase_rows=sb("purchases",params={"purchase_date":"gte."+report_date+"T00:00:00Z","purchase_date":"lt."+report_date+"T23:59:59.999999Z","select":"product,quantity_liters,supplier,tank_id,purchase_date","order":"purchase_date.asc","limit":"1000"})
+    sales_status,sales_rows=sb("sales",params={"sale_time":"gte."+report_date+"T00:00:00Z","select":"product,quantity_liters,unit_price,amount,payment_method,sale_time,employee_id","order":"sale_time.asc","limit":"1000"})
+    if sales_status==200:
+        sales_rows=[x for x in sales_rows if str(x.get("sale_time",""))[:10]==report_date]
+    purchases_status,purchase_rows=sb("purchases",params={"purchase_date":"gte."+report_date+"T00:00:00Z","select":"product,quantity_liters,supplier,tank_id,purchase_date","order":"purchase_date.asc","limit":"1000"})
+    if purchases_status==200:
+        purchase_rows=[x for x in purchase_rows if str(x.get("purchase_date",""))[:10]==report_date]
     if sales_status!=200:return jsonify({"error":sales_rows}),sales_status
     if purchases_status!=200:return jsonify({"error":purchase_rows}),purchases_status
     total_l=sum(float(x.get("quantity_liters") or 0) for x in sales_rows)
