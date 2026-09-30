@@ -252,6 +252,79 @@ def shifts():
     return jsonify(rows), status
 
 
+@app.post("/api/shifts")
+def create_shift():
+    auth = require_admin()
+    if auth:
+        return auth
+    data = request.get_json(silent=True) or {}
+    employee_id = str(data.get("employee_id", "")).strip()
+    nozzle_id = str(data.get("nozzle_id", "")).strip()
+    if not employee_id or not nozzle_id:
+        return jsonify({"error": "Employee and nozzle are required"}), 400
+    emp_status, emp_rows = sb("employees", params={"id": "eq." + employee_id, "active": "eq.true", "select": "id"})
+    if emp_status != 200 or not emp_rows:
+        return jsonify({"error": "Active employee not found"}), 404
+    nozzle_status, nozzle_rows = sb("nozzles", params={"id": "eq." + nozzle_id, "active": "eq.true", "select": "id"})
+    if nozzle_status != 200 or not nozzle_rows:
+        return jsonify({"error": "Active nozzle not found"}), 404
+    active_status, active_rows = sb("shifts", params={
+        "employee_id": "eq." + employee_id,
+        "status": "in.(assigned,active)",
+        "select": "id",
+        "limit": "1"
+    })
+    if active_status != 200:
+        return jsonify({"error": active_rows}), active_status
+    if active_rows:
+        return jsonify({"error": "Employee already has an assigned or active shift"}), 409
+    body = {
+        "employee_id": employee_id,
+        "nozzle_id": nozzle_id,
+        "status": "assigned",
+        "assigned_by": session.get("employee_id")
+    }
+    status, result = sb("shifts", method="POST", body=body, prefer="return=representation")
+    if status >= 400:
+        return jsonify({"error": result}), status
+    return jsonify(result), 201
+
+
+@app.post("/api/shifts/<shift_id>/start")
+def start_shift(shift_id):
+    eid = session.get("employee_id")
+    if not eid:
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.get_json(silent=True) or {}
+    try:
+        opening_reading = float(data.get("opening_reading", 0))
+        opening_mm = float(data.get("opening_mm", 0))
+        opening_liters = float(data.get("opening_liters", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid opening readings"}), 400
+    if opening_reading < 0 or opening_mm < 0 or opening_liters < 0:
+        return jsonify({"error": "Opening readings cannot be negative"}), 400
+    status, rows = sb("shifts", params={
+        "id": "eq." + shift_id,
+        "employee_id": "eq." + eid,
+        "status": "eq.assigned",
+        "select": "id"
+    })
+    if status != 200 or not rows:
+        return jsonify({"error": "Assigned shift not found"}), 404
+    patch = {
+        "status": "active",
+        "start_time": "now()",
+        "opening_reading": opening_reading,
+        "opening_mm": opening_mm,
+        "opening_liters": opening_liters
+    }
+    status, result = sb("shifts", method="PATCH", params={"id": "eq." + shift_id}, body=patch, prefer="return=representation")
+    if status >= 400:
+        return jsonify({"error": result}), status
+    return jsonify(result), 200
+
+
 @app.post("/api/sales")
 def create_sale():
     eid = session.get("employee_id")
