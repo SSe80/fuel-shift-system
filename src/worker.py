@@ -126,6 +126,48 @@ def shifts():
     return jsonify(rows), status
 
 
+@app.post("/api/sales")
+def create_sale():
+    eid = session.get("employee_id")
+    if not eid:
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.get_json(silent=True) or {}
+    product = str(data.get("product", "")).strip()
+    try:
+        quantity = float(data.get("quantity_liters", 0))
+        unit_price = float(data.get("unit_price", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid quantity or price"}), 400
+    if not product or quantity <= 0 or unit_price < 0:
+        return jsonify({"error": "Product, positive quantity and valid price are required"}), 400
+
+    shift_status, shifts_rows = sb("shifts", params={
+        "employee_id": "eq." + eid,
+        "status": "eq.active",
+        "select": "id,nozzle_id",
+        "order": "created_at.desc",
+        "limit": "1",
+    })
+    if shift_status != 200 or not shifts_rows:
+        return jsonify({"error": "No active shift assigned to this employee"}), 409
+
+    shift = shifts_rows[0]
+    body = {
+        "shift_id": shift["id"],
+        "employee_id": eid,
+        "nozzle_id": shift.get("nozzle_id"),
+        "product": product,
+        "quantity_liters": quantity,
+        "unit_price": unit_price,
+        "amount": quantity * unit_price,
+        "payment_method": str(data.get("payment_method", "cash")),
+    }
+    status, result = sb("sales", method="POST", body=body, prefer="return=representation")
+    if status >= 400:
+        return jsonify({"error": result}), status
+    return jsonify(result), 201
+
+
 @app.get("/api/sales")
 def sales():
     if not session.get("employee_id"):
