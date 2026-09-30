@@ -35,10 +35,11 @@ async function employeeDashboard() {
     const me = await api('/api/me');
     if (me.employee.role !== 'employee') return location.href = 'admin-dashboard.html';
     document.getElementById('name').textContent = me.employee.name;
-    const shifts = await api('/api/shifts');
+    const [shifts, nozzles] = await Promise.all([api('/api/shifts'), api('/api/nozzles')]);
+    const nozzleNames = Object.fromEntries(nozzles.map(n => [n.id, n.nozzle_code + ' — ' + n.product]));
     document.getElementById('shift').innerHTML = shifts.length
       ? shifts.map(s => s.status === 'assigned'
-        ? `<div class="card"><div class="top"><h3>Shift ${s.id.slice(0,8)}</h3><span class="badge">${s.status}</span></div><p>Nozzle: ${s.nozzle_id || 'Not assigned'}</p><form class="form" onsubmit="startShift(event, '${s.id}')"><input id="opening-${s.id}" type="number" min="0" step="0.01" placeholder="Opening meter reading" required><input id="opening-mm-${s.id}" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" value="0"><input id="opening-liters-${s.id}" type="number" min="0" step="0.01" placeholder="Opening tank liters" value="0"><button class="primary">Start Shift</button></form></div>`
+        ? `<div class="card"><div class="top"><h3>Shift ${s.id.slice(0,8)}</h3><span class="badge">${s.status}</span></div><p>Nozzle: ${nozzleNames[s.nozzle_id] || s.nozzle_id || 'Not assigned'}</p><form class="form" onsubmit="startShift(event, '${s.id}')"><input id="opening-${s.id}" type="number" min="0" step="0.01" placeholder="Opening meter reading" required><input id="opening-mm-${s.id}" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" value="0"><input id="opening-liters-${s.id}" type="number" min="0" step="0.01" placeholder="Opening tank liters" value="0"><button class="primary">Start Shift</button></form></div>`
         : `<div class="card"><div class="top"><h3>Shift ${s.id.slice(0,8)}</h3><span class="badge">${s.status}</span></div><p>Nozzle: ${s.nozzle_id || 'Not assigned'}</p><p>Opening meter: <b>${(s.opening_reading ?? 0).toLocaleString()}</b></p><a class="btn primary" href="sales.html">Record Sale</a> <a class="btn" href="handover.html">Handover</a></div>`).join('')
       : '<div class="card"><p>No shifts assigned yet.</p></div>';
   } catch (_) {
