@@ -136,6 +136,94 @@ def bootstrap_admin():
     except Exception as exc:
         return jsonify({"error": {"type": type(exc).__name__, "message": str(exc)}}), 500
 
+def require_admin():
+    if not session.get("employee_id"):
+        return jsonify({"error": "Unauthorized"}), 401
+    if session.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+    return None
+
+
+@app.get("/api/employees")
+def employees():
+    auth = require_admin()
+    if auth:
+        return auth
+    status, rows = sb("employees", params={
+        "select": "id,name,phone,role,active,created_at",
+        "order": "name.asc"
+    })
+    return jsonify(rows), status
+
+
+@app.post("/api/employees")
+def create_employee():
+    auth = require_admin()
+    if auth:
+        return auth
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "")).strip()
+    phone = str(data.get("phone", "")).strip()
+    pin = str(data.get("pin", ""))
+    role = str(data.get("role", "employee")).strip()
+    if role not in ("employee", "admin"):
+        return jsonify({"error": "Invalid role"}), 400
+    if not name or not phone or len(pin) < 4:
+        return jsonify({"error": "Name, phone and PIN of at least 4 digits are required"}), 400
+    body = {"name": name, "phone": phone, "role": role, "pin_hash": hash_pin(pin), "active": True}
+    status, result = sb("employees", method="POST", body=body, prefer="return=representation")
+    if status >= 400:
+        return jsonify({"error": result}), status
+    return jsonify(result), 201
+
+
+@app.post("/api/tanks")
+def create_tank():
+    auth = require_admin()
+    if auth:
+        return auth
+    data = request.get_json(silent=True) or {}
+    code = str(data.get("tank_code", "")).strip()
+    product = str(data.get("product", "")).strip()
+    try:
+        capacity = float(data.get("capacity_liters", 0))
+        current = float(data.get("current_liters", 0))
+        current_mm = float(data.get("current_mm", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid tank values"}), 400
+    if not code or not product or capacity <= 0 or current < 0 or current > capacity:
+        return jsonify({"error": "Tank code, product and valid capacity/current liters are required"}), 400
+    body = {
+        "tank_code": code,
+        "product": product,
+        "capacity_liters": capacity,
+        "current_mm": current_mm,
+        "current_liters": current,
+    }
+    status, result = sb("tanks", method="POST", body=body, prefer="return=representation")
+    if status >= 400:
+        return jsonify({"error": result}), status
+    return jsonify(result), 201
+
+
+@app.post("/api/nozzles")
+def create_nozzle():
+    auth = require_admin()
+    if auth:
+        return auth
+    data = request.get_json(silent=True) or {}
+    code = str(data.get("nozzle_code", "")).strip()
+    product = str(data.get("product", "")).strip()
+    tank_id = str(data.get("tank_id", "")).strip()
+    if not code or not product or not tank_id:
+        return jsonify({"error": "Nozzle code, product and tank are required"}), 400
+    body = {"nozzle_code": code, "product": product, "tank_id": tank_id, "active": True}
+    status, result = sb("nozzles", method="POST", body=body, prefer="return=representation")
+    if status >= 400:
+        return jsonify({"error": result}), status
+    return jsonify(result), 201
+
+
 @app.get("/api/tanks")
 def tanks():
     if not session.get("employee_id"):
