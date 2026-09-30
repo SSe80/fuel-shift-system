@@ -85,6 +85,11 @@ def bootstrap_admin():
     token = request.headers.get("X-Bootstrap-Token", "")
     if not token or token != getattr(e, "BOOTSTRAP_TOKEN", ""):
         return jsonify({"error": "Forbidden"}), 403
+    existing_status, existing_rows = sb("employees", params={"select": "id", "limit": "1"})
+    if existing_status != 200:
+        return jsonify({"error": "Unable to verify initial setup state"}), 503
+    if existing_rows:
+        return jsonify({"error": "Initial admin has already been created"}), 409
     data = request.get_json(silent=True) or {}
     name = str(data.get("name", "")).strip()
     phone = str(data.get("phone", "")).strip()
