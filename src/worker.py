@@ -352,6 +352,30 @@ def create_sale():
         return jsonify({"error": "No active shift assigned to this employee"}), 409
 
     shift = shifts_rows[0]
+    nozzle_status, nozzle_rows = sb("nozzles", params={
+        "id": "eq." + str(shift.get("nozzle_id")),
+        "active": "eq.true",
+        "select": "id,nozzle_code,product,tank_id"
+    })
+    if nozzle_status != 200 or not nozzle_rows:
+        return jsonify({"error": "The assigned nozzle is no longer available"}), 409
+
+    nozzle = nozzle_rows[0]
+    if product.lower() != str(nozzle.get("product", "")).lower():
+        return jsonify({"error": "Selected product does not match the assigned nozzle"}), 400
+
+    tank_status, tank_rows = sb("tanks", params={
+        "id": "eq." + str(nozzle["tank_id"]),
+        "select": "id,tank_code,product,current_liters,capacity_liters"
+    })
+    if tank_status != 200 or not tank_rows:
+        return jsonify({"error": "Fuel tank for this nozzle was not found"}), 409
+
+    tank = tank_rows[0]
+    current_liters = float(tank.get("current_liters") or 0)
+    if quantity > current_liters:
+        return jsonify({"error": "Not enough fuel in the tank"}), 409
+
     body = {
         "shift_id": shift["id"],
         "employee_id": eid,
@@ -365,7 +389,33 @@ def create_sale():
     status, result = sb("sales", method="POST", body=body, prefer="return=representation")
     if status >= 400:
         return jsonify({"error": result}), status
-    return jsonify(result), 201
+
+    new_liters = current_liters - quantity
+    tank_update_status, tank_update = sb(
+        "tanks",
+        method="PATCH",
+        params={"id": "eq." + str(tank["id"])},
+        body={"current_liters": new_liters},
+        prefer="return=representation",
+    )
+    if tank_update_status >= 400:
+        return jsonify({"error": "Sale was recorded but inventory update failed. Contact an admin immediately.", "details": tank_update}), 500
+
+    sale_row = result[0] if isinstance(result, list) and result else result
+    sale_id = sale_row.get("id") if isinstance(sale_row, dict) else None
+    movement_body = {
+        "tank_id": tank["id"],
+        "movement_type": "sale",
+        "quantity_liters": -quantity,
+        "reference_id": sale_id,
+        "notes": "Fuel sale",
+        "created_by": eid,
+    }
+    movement_status, movement_result = sb("tank_movements", method="POST", body=movement_body, prefer="return=representation")
+    if movement_status >= 400:
+        return jsonify({"error": "Sale and tank balance were updated, but the movement log failed. Contact an admin immediately.", "details": movement_result}), 500
+
+    return jsonify(sale_row), 201
 
 
 @app.get("/api/sales")
