@@ -306,9 +306,9 @@ def create_shift():
     ss,sr=sb("shifts",params={"employee_id":"eq."+employee_id,"status":"in.(assigned,active)","select":"id","limit":"1"})
     if ss!=200:return jsonify({"error":sr}),ss
     if sr:return jsonify({"error":"Employee already has an assigned or active shift"}),409
-    ss,sr=sb("shifts",params={"nozzle_id":"eq."+nozzle_id,"status":"eq.active","select":"id","limit":"1"})
+    ss,sr=sb("shifts",params={"nozzle_id":"eq."+nozzle_id,"status":"in.(assigned,active)","select":"id,status","limit":"1"})
     if ss!=200:return jsonify({"error":sr}),ss
-    if sr:return jsonify({"error":"Nozzle already has an active shift"}),409
+    if sr:return jsonify({"error":"Nozzle already has an assigned or active shift"}),409
     status,result=sb("shifts",method="POST",body={"employee_id":employee_id,"nozzle_id":nozzle_id,"status":"assigned","assigned_by":session["employee_id"]},prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
