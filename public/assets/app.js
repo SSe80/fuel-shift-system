@@ -223,6 +223,32 @@ async function createNozzle(event) {
   } catch (err) { toast(err.message); }
 }
 
+async function loadSaleContext() {
+  try {
+    const [shifts, nozzles] = await Promise.all([api('/api/shifts'), api('/api/nozzles')]);
+    const active = shifts.find(s => s.status === 'active');
+    const box = document.getElementById('sale-context');
+    const product = document.getElementById('product');
+    const button = document.getElementById('sale-button');
+    if (!active) {
+      box.textContent = 'No active shift. Start a shift before recording a sale.';
+      return;
+    }
+    const nozzle = nozzles.find(n => n.id === active.nozzle_id);
+    if (!nozzle) {
+      box.textContent = 'The assigned nozzle could not be found.';
+      return;
+    }
+    box.textContent = 'Active nozzle: ' + nozzle.nozzle_code + ' — ' + nozzle.product;
+    product.innerHTML = '<option value="' + nozzle.product + '">' + nozzle.product + '</option>';
+    product.disabled = false;
+    button.disabled = false;
+  } catch (err) {
+    const box = document.getElementById('sale-context');
+    if (box) box.textContent = err.message;
+  }
+}
+
 async function addSale() {
   const liters = Number(document.getElementById('liters').value || 0);
   const product = document.getElementById('product').value;
@@ -235,7 +261,7 @@ async function addSale() {
         product,
         quantity_liters: liters,
         unit_price: price,
-        payment_method: 'cash'
+        payment_method: document.getElementById('payment').value
       })
     });
     toast('Sale recorded in Supabase');
