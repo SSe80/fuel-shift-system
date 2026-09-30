@@ -104,10 +104,11 @@ async function adminSettings() {
 }
 
 async function loadSettingsData() {
-  const [employees, tanks, nozzles] = await Promise.all([
+  const [employees, tanks, nozzles, shifts] = await Promise.all([
     api('/api/employees'),
     api('/api/tanks'),
-    api('/api/nozzles')
+    api('/api/nozzles'),
+    api('/api/shifts')
   ]);
   document.getElementById('employees').innerHTML = employees.length
     ? employees.map(e => `<div class="card"><b>${e.name}</b><br><span class="muted">${e.phone} • ${e.role} • ${e.active ? 'Active' : 'Inactive'}</span></div>`).join('')
@@ -118,10 +119,41 @@ async function loadSettingsData() {
   const tankSelect = document.getElementById('nozzle-tank');
   tankSelect.innerHTML = '<option value="">Select tank</option>' +
     tanks.map(t => `<option value="${t.id}">${t.tank_code} — ${t.product}</option>`).join('');
+  const employeeSelect = document.getElementById('shift-employee');
+  const nozzleSelect = document.getElementById('shift-nozzle');
+  if (employeeSelect) employeeSelect.innerHTML = '<option value="">Select employee</option>' +
+    employees.filter(e => e.active && e.role === 'employee').map(e => `<option value="${e.id}">${e.name} — ${e.phone}</option>`).join('');
+  if (nozzleSelect) nozzleSelect.innerHTML = '<option value="">Select nozzle</option>' +
+    nozzles.map(n => `<option value="${n.id}">${n.nozzle_code} — ${n.product}</option>`).join('');
+  const shiftsBox = document.getElementById('shifts');
+  if (shiftsBox) {
+    const employeeNames = Object.fromEntries(employees.map(e => [e.id, e.name]));
+    shiftsBox.innerHTML = shifts.length
+      ? shifts.slice(0, 10).map(s => `<div class="card"><b>${employeeNames[s.employee_id] || s.employee_id}</b><br><span class="muted">Nozzle: ${s.nozzle_id || '—'} • Status: ${s.status}</span></div>`).join('')
+      : '<p class="muted">No shifts yet.</p>';
+  }
+
   document.getElementById('nozzles').innerHTML = nozzles.length
     ? nozzles.map(n => `<div class="card"><b>${n.nozzle_code}</b> — ${n.product}<br><span class="muted">Tank ID: ${n.tank_id}</span></div>`).join('')
     : '<p class="muted">No nozzles configured.</p>';
 }
+
+async function createShift(event) {
+  event.preventDefault();
+  try {
+    await api('/api/shifts', {
+      method: 'POST',
+      body: JSON.stringify({
+        employee_id: document.getElementById('shift-employee').value,
+        nozzle_id: document.getElementById('shift-nozzle').value
+      })
+    });
+    event.target.reset();
+    toast('Shift assigned');
+    await loadSettingsData();
+  } catch (err) { toast(err.message); }
+}
+
 
 async function createEmployee(event) {
   event.preventDefault();
