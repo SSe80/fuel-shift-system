@@ -21,8 +21,8 @@
   <p>Create the first administrator for the Fuel Shift System.</p>
   <small>Your Bootstrap Token is sent only to your Worker and is not stored by this page.</small>
   <form id="form">
-    <div class="field"><label>Name</label><input id="name" value="Admin" required></div>
-    <div class="field"><label>Phone</label><input id="phone" value="0902727273" required></div>
+    <div class="field"><label>Name</label><input id="name" value="" required></div>
+    <div class="field"><label>Phone</label><input id="phone" value="" required></div>
     <div class="field"><label>PIN</label><input id="pin" type="password" inputmode="numeric" minlength="4" autocomplete="new-password" required></div>
     <div class="field"><label>Bootstrap Token</label><input id="token" type="password" autocomplete="off" required></div>
     <button type="submit">Create Admin</button>
@@ -44,7 +44,7 @@ form.addEventListener('submit',async e=>{
       throw new Error(`HTTP ${r.status}\n${out.error ? JSON.stringify(out.error,null,2) : JSON.stringify(out,null,2)}`);
     }
     msg.className='msg ok'; msg.textContent='Admin created successfully. You can now return to the main login page.';
-    msg.style.display='block'; form.reset(); document.getElementById('name').value='Admin'; document.getElementById('phone').value='0902727273';
+    msg.style.display='block'; form.reset(); 
   }catch(err){msg.className='msg err';msg.textContent=err.message;msg.style.display='block'}
 });
 </script>
