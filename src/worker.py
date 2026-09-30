@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request, session
 from workers import wsgi
 import os, base64, hashlib, hmac, secrets
+from pyodide.ffi import run_sync, to_js
+from js import crypto, Uint8Array, Object
 from supabase_rest import request as sb_request
 
 app = Flask(__name__)
@@ -16,20 +18,32 @@ def sb(path, method="GET", params=None, body=None, prefer=None):
     return sb_request(e.SUPABASE_URL, e.SUPABASE_SECRET_KEY, method, path, params, body, prefer)
 
 
+async def _webcrypto_pbkdf2(password, salt, iterations, dklen):
+    password_js = to_js(password)
+    salt_js = to_js(salt)
+    key = await crypto.subtle.importKey(
+        "raw",
+        password_js,
+        Object.fromEntries([("name", "PBKDF2")]),
+        False,
+        ["deriveBits"],
+    )
+    derived = await crypto.subtle.deriveBits(
+        Object.fromEntries([
+            ("name", "PBKDF2"),
+            ("salt", salt_js),
+            ("iterations", iterations),
+            ("hash", "SHA-256"),
+        ]),
+        key,
+        dklen * 8,
+    )
+    return bytes(Uint8Array.new(derived).to_py())
+
+
 def pbkdf2_sha256(password, salt, iterations, dklen=32):
     password = password.encode() if isinstance(password, str) else password
-    output = bytearray()
-    block_number = 1
-    while len(output) < dklen:
-        u = hmac.new(password, salt + block_number.to_bytes(4, "big"), hashlib.sha256).digest()
-        block = bytearray(u)
-        for _ in range(1, iterations):
-            u = hmac.new(password, u, hashlib.sha256).digest()
-            for i in range(len(block)):
-                block[i] ^= u[i]
-        output.extend(block)
-        block_number += 1
-    return bytes(output[:dklen])
+    return run_sync(_webcrypto_pbkdf2(password, salt, iterations, dklen))
 
 
 def hash_pin(pin, salt=None):
