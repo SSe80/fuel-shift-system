@@ -337,6 +337,8 @@ def create_sale():
     if payment not in {"cash","card","mobile","other"}:return jsonify({"error":"Invalid payment method"}),400
     ss,sr=sb("shifts",params={"employee_id":"eq."+eid,"status":"eq.active","select":"id,nozzle_id","order":"created_at.desc","limit":"1"})
     if ss!=200 or not sr:return jsonify({"error":"No active shift assigned to this employee"}),409
+    pending_status,pending_rows=sb("handovers",params={"shift_id":"eq."+sr[0]["id"],"status":"eq.pending","select":"id","limit":"1"})
+    if pending_status==200 and pending_rows:return jsonify({"error":"This shift has a pending handover and cannot record new sales"}),409
     status,result=rpc("record_fuel_sale",{"p_shift_id":sr[0]["id"],"p_employee_id":eid,"p_nozzle_id":sr[0]["nozzle_id"],"p_product":product,"p_quantity_liters":qty,"p_unit_price":price,"p_payment_method":payment})
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
