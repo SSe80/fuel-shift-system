@@ -81,27 +81,30 @@ def me():
 
 @app.post("/api/bootstrap-admin")
 def bootstrap_admin():
-    e = env()
-    token = request.headers.get("X-Bootstrap-Token", "")
-    if not token or token != getattr(e, "BOOTSTRAP_TOKEN", ""):
-        return jsonify({"error": "Forbidden"}), 403
-    existing_status, existing_rows = sb("employees", params={"select": "id", "limit": "1"})
-    if existing_status != 200:
-        return jsonify({"error": "Unable to verify initial setup state"}), 503
-    if existing_rows:
-        return jsonify({"error": "Initial admin has already been created"}), 409
-    data = request.get_json(silent=True) or {}
-    name = str(data.get("name", "")).strip()
-    phone = str(data.get("phone", "")).strip()
-    pin = str(data.get("pin", ""))
-    if not name or not phone or not pin or len(pin) < 4:
-        return jsonify({"error": "name, phone and a PIN of at least 4 digits are required"}), 400
-    body = {"name": name, "phone": phone, "role": "admin", "pin_hash": hash_pin(pin), "active": True}
-    status, result = sb("employees", method="POST", body=body, prefer="return=representation")
-    if status >= 400:
-        return jsonify({"error": result}), status
-    return jsonify(result), 201
-
+    try:
+        e = env()
+        token = request.headers.get("X-Bootstrap-Token", "")
+        expected_token = getattr(e, "BOOTSTRAP_TOKEN", "")
+        if not token or token != expected_token:
+            return jsonify({"error": "Forbidden"}), 403
+        existing_status, existing_rows = sb("employees", params={"select": "id", "limit": "1"})
+        if existing_status != 200:
+            return jsonify({"error": {"status": existing_status, "response": existing_rows}}), 503
+        if existing_rows:
+            return jsonify({"error": "Initial admin has already been created"}), 409
+        data = request.get_json(silent=True) or {}
+        name = str(data.get("name", "")).strip()
+        phone = str(data.get("phone", "")).strip()
+        pin = str(data.get("pin", ""))
+        if not name or not phone or not pin or len(pin) < 4:
+            return jsonify({"error": "name, phone and a PIN of at least 4 digits are required"}), 400
+        body = {"name": name, "phone": phone, "role": "admin", "pin_hash": hash_pin(pin), "active": True}
+        status, result = sb("employees", method="POST", body=body, prefer="return=representation")
+        if status >= 400:
+            return jsonify({"error": {"status": status, "response": result}}), status
+        return jsonify(result), 201
+    except Exception as exc:
+        return jsonify({"error": {"type": type(exc).__name__, "message": str(exc)}}), 500
 
 @app.get("/api/tanks")
 def tanks():
