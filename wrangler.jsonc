@@ -4,6 +4,9 @@
   "main": "src/worker.py",
   "compatibility_date": "2026-09-12",
   "compatibility_flags": ["python_workers"],
+  "vars": {
+    "SUPABASE_URL": "https://sdhnqtnlogmuealsgkhr.supabase.co"
+  },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
