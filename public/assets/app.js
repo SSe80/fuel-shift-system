@@ -48,13 +48,47 @@ async function adminDashboard() {
   try {
     const me = await api('/api/me');
     if (me.employee.role !== 'admin') return location.href = 'employee-dashboard.html';
-    const [tanks, sales] = await Promise.all([api('/api/tanks'), api('/api/sales')]);
-    document.getElementById('tanks').innerHTML = tanks.map(t =>
-      `<div class="stat"><b>${Number(t.current_liters || 0).toLocaleString()}</b><span>${t.tank_code} • ${t.product} L</span><small>Capacity ${Number(t.capacity_liters || 0).toLocaleString()} L</small></div>`
-    ).join('');
-    document.getElementById('sales').textContent = sales.length;
-  } catch (_) {
-    location.href = 'admin-login.html';
+
+    const [tanks, sales, shifts] = await Promise.all([
+      api('/api/tanks'),
+      api('/api/sales'),
+      api('/api/shifts')
+    ]);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const salesToday = sales.filter(s => String(s.sale_time || s.created_at || '').slice(0, 10) === today);
+    const activeShifts = shifts.filter(s => s.status === 'active');
+    const lowTanks = tanks.filter(t => {
+      const capacity = Number(t.capacity_liters || 0);
+      const current = Number(t.current_liters || 0);
+      return capacity > 0 && current / capacity <= 0.10;
+    });
+
+    document.getElementById('sales').textContent = salesToday.length;
+    document.getElementById('active-shifts').textContent = activeShifts.length;
+    document.getElementById('tank-count').textContent = tanks.length;
+    document.getElementById('alerts').textContent = lowTanks.length;
+
+    document.getElementById('tanks').innerHTML = tanks.length
+      ? tanks.map(t => {
+          const current = Number(t.current_liters || 0);
+          const capacity = Number(t.capacity_liters || 0);
+          const percent = capacity > 0 ? Math.max(0, Math.min(100, current / capacity * 100)) : 0;
+          const warning = capacity > 0 && percent <= 10 ? ' • LOW' : '';
+          return `<div class="stat"><b>${current.toLocaleString()} L</b><span>${t.tank_code} • ${t.product}${warning}</span><small>${percent.toFixed(1)}% full • Capacity ${capacity.toLocaleString()} L</small></div>`;
+        }).join('')
+      : '<div class="card"><p>No tanks configured yet.</p></div>';
+
+    const status = document.getElementById('dashboard-status');
+    if (status) {
+      status.textContent = lowTanks.length
+        ? lowTanks.length + ' tank(s) are at or below 10% capacity.'
+        : 'Live data from Supabase.';
+    }
+  } catch (err) {
+    const status = document.getElementById('dashboard-status');
+    if (status) status.textContent = err.message || 'Unable to load dashboard data.';
+    if (err.message === 'Unauthorized') location.href = 'admin-login.html';
   }
 }
 
