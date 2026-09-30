@@ -37,12 +37,31 @@ async function employeeDashboard() {
     document.getElementById('name').textContent = me.employee.name;
     const shifts = await api('/api/shifts');
     document.getElementById('shift').innerHTML = shifts.length
-      ? shifts.map(s => `<div class="card"><div class="top"><h3>Shift ${s.id.slice(0,8)}</h3><span class="badge">${s.status}</span></div><p>Nozzle: ${s.nozzle_id || 'Not assigned'}</p><p>Opening meter: <b>${(s.opening_reading ?? 0).toLocaleString()}</b></p><a class="btn primary" href="handover.html">Start Handover</a></div>`).join('')
+      ? shifts.map(s => s.status === 'assigned'
+        ? `<div class="card"><div class="top"><h3>Shift ${s.id.slice(0,8)}</h3><span class="badge">${s.status}</span></div><p>Nozzle: ${s.nozzle_id || 'Not assigned'}</p><form class="form" onsubmit="startShift(event, '${s.id}')"><input id="opening-${s.id}" type="number" min="0" step="0.01" placeholder="Opening meter reading" required><input id="opening-mm-${s.id}" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" value="0"><input id="opening-liters-${s.id}" type="number" min="0" step="0.01" placeholder="Opening tank liters" value="0"><button class="primary">Start Shift</button></form></div>`
+        : `<div class="card"><div class="top"><h3>Shift ${s.id.slice(0,8)}</h3><span class="badge">${s.status}</span></div><p>Nozzle: ${s.nozzle_id || 'Not assigned'}</p><p>Opening meter: <b>${(s.opening_reading ?? 0).toLocaleString()}</b></p><a class="btn primary" href="sales.html">Record Sale</a> <a class="btn" href="handover.html">Handover</a></div>`).join('')
       : '<div class="card"><p>No shifts assigned yet.</p></div>';
   } catch (_) {
     location.href = 'employee-login.html';
   }
 }
+
+async function startShift(event, shiftId) {
+  event.preventDefault();
+  try {
+    await api('/api/shifts/' + shiftId + '/start', {
+      method: 'POST',
+      body: JSON.stringify({
+        opening_reading: Number(document.getElementById('opening-' + shiftId).value),
+        opening_mm: Number(document.getElementById('opening-mm-' + shiftId).value || 0),
+        opening_liters: Number(document.getElementById('opening-liters-' + shiftId).value || 0)
+      })
+    });
+    toast('Shift started');
+    await employeeDashboard();
+  } catch (err) { toast(err.message); }
+}
+
 
 async function adminDashboard() {
   try {
