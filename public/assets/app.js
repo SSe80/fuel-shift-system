@@ -93,6 +93,83 @@ async function adminDashboard() {
   }
 }
 
+async function adminSettings() {
+  try {
+    const me = await api('/api/me');
+    if (me.employee.role !== 'admin') return location.href = 'employee-dashboard.html';
+    await loadSettingsData();
+  } catch (_) {
+    location.href = 'admin-login.html';
+  }
+}
+
+async function loadSettingsData() {
+  const [employees, tanks, nozzles] = await Promise.all([
+    api('/api/employees'),
+    api('/api/tanks'),
+    api('/api/nozzles')
+  ]);
+  document.getElementById('employees').innerHTML = employees.length
+    ? employees.map(e => `<div class="card"><b>${e.name}</b><br><span class="muted">${e.phone} • ${e.role} • ${e.active ? 'Active' : 'Inactive'}</span></div>`).join('')
+    : '<p class="muted">No employees configured.</p>';
+  document.getElementById('tanks').innerHTML = tanks.length
+    ? tanks.map(t => `<div class="card"><b>${t.tank_code}</b> — ${t.product}<br><span class="muted">${Number(t.current_liters || 0).toLocaleString()} / ${Number(t.capacity_liters || 0).toLocaleString()} L</span></div>`).join('')
+    : '<p class="muted">No tanks configured.</p>';
+  const tankSelect = document.getElementById('nozzle-tank');
+  tankSelect.innerHTML = '<option value="">Select tank</option>' +
+    tanks.map(t => `<option value="${t.id}">${t.tank_code} — ${t.product}</option>`).join('');
+  document.getElementById('nozzles').innerHTML = nozzles.length
+    ? nozzles.map(n => `<div class="card"><b>${n.nozzle_code}</b> — ${n.product}<br><span class="muted">Tank ID: ${n.tank_id}</span></div>`).join('')
+    : '<p class="muted">No nozzles configured.</p>';
+}
+
+async function createEmployee(event) {
+  event.preventDefault();
+  try {
+    await api('/api/employees', {method:'POST', body:JSON.stringify({
+      name: document.getElementById('employee-name').value.trim(),
+      phone: document.getElementById('employee-phone').value.trim(),
+      pin: document.getElementById('employee-pin').value,
+      role: document.getElementById('employee-role').value
+    })});
+    event.target.reset();
+    toast('Employee created');
+    await loadSettingsData();
+  } catch (err) { toast(err.message); }
+}
+
+async function createTank(event) {
+  event.preventDefault();
+  try {
+    await api('/api/tanks', {method:'POST', body:JSON.stringify({
+      tank_code: document.getElementById('tank-code').value.trim(),
+      product: document.getElementById('tank-product').value.trim(),
+      capacity_liters: Number(document.getElementById('tank-capacity').value),
+      current_liters: Number(document.getElementById('tank-current').value),
+      current_mm: Number(document.getElementById('tank-mm').value || 0)
+    })});
+    event.target.reset();
+    document.getElementById('tank-current').value='0';
+    document.getElementById('tank-mm').value='0';
+    toast('Tank created');
+    await loadSettingsData();
+  } catch (err) { toast(err.message); }
+}
+
+async function createNozzle(event) {
+  event.preventDefault();
+  try {
+    await api('/api/nozzles', {method:'POST', body:JSON.stringify({
+      nozzle_code: document.getElementById('nozzle-code').value.trim(),
+      product: document.getElementById('nozzle-product').value.trim(),
+      tank_id: document.getElementById('nozzle-tank').value
+    })});
+    event.target.reset();
+    toast('Nozzle created');
+    await loadSettingsData();
+  } catch (err) { toast(err.message); }
+}
+
 async function addSale() {
   const liters = Number(document.getElementById('liters').value || 0);
   const product = document.getElementById('product').value;
