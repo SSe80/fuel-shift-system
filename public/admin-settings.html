@@ -1,1 +1,48 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Settings</title><link rel="stylesheet" href="assets/style.css"></head><body><main class="wrap"><div class="top"><h2>Admin Settings</h2><a href="admin-dashboard.html">Back</a></div><div class="card"><h3>Employees</h3><table class="table"><tr><th>Name</th><th>Phone</th><th>Role</th></tr><tr><td>Abebe Kebede</td><td>0911111111</td><td>Employee</td></tr><tr><td>Station Admin</td><td>0900000000</td><td>Admin</td></tr></table></div><div class="card"><h3>Demo controls</h3><button class="danger" onclick="resetDemo()">Reset Demo Data</button></div></main><script src="assets/app.js"></script></body></html>
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Settings</title><link rel="stylesheet" href="assets/style.css"></head>
+<body onload="adminSettings()">
+<main class="wrap">
+  <div class="top"><div><h2>Admin Settings</h2><p class="muted">Station configuration</p></div><a href="admin-dashboard.html">Back</a></div>
+
+  <div class="card">
+    <h3>Employees</h3>
+    <form class="form" onsubmit="createEmployee(event)">
+      <input id="employee-name" placeholder="Employee name" required>
+      <input id="employee-phone" placeholder="Phone number" required>
+      <input id="employee-pin" type="password" inputmode="numeric" placeholder="PIN (4+ digits)" minlength="4" required>
+      <select id="employee-role"><option value="employee">Employee</option><option value="admin">Admin</option></select>
+      <button class="primary">Add employee</button>
+    </form>
+    <div id="employees"></div>
+  </div>
+
+  <div class="card">
+    <h3>Fuel Tanks</h3>
+    <form class="form" onsubmit="createTank(event)">
+      <input id="tank-code" placeholder="Tank code (e.g. T1)" required>
+      <input id="tank-product" placeholder="Product (e.g. Petrol)" required>
+      <input id="tank-capacity" type="number" min="1" step="0.01" placeholder="Capacity (liters)" required>
+      <input id="tank-current" type="number" min="0" step="0.01" placeholder="Current fuel (liters)" value="0" required>
+      <input id="tank-mm" type="number" min="0" step="0.01" placeholder="Current dip (mm)" value="0">
+      <button class="primary">Add tank</button>
+    </form>
+    <div id="tanks"></div>
+  </div>
+
+  <div class="card">
+    <h3>Fuel Nozzles</h3>
+    <form class="form" onsubmit="createNozzle(event)">
+      <input id="nozzle-code" placeholder="Nozzle code (e.g. N1)" required>
+      <input id="nozzle-product" placeholder="Product (e.g. Petrol)" required>
+      <select id="nozzle-tank" required><option value="">Select tank</option></select>
+      <button class="primary">Add nozzle</button>
+    </form>
+    <div id="nozzles"></div>
+  </div>
+
+  <div id="settings-status" class="muted"></div>
+</main>
+<script src="assets/app.js"></script>
+</body>
+</html>
