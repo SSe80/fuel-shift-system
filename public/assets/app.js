@@ -147,8 +147,9 @@ async function loadSettingsData() {
   const shiftsBox = document.getElementById('shifts');
   if (shiftsBox) {
     const employeeNames = Object.fromEntries(employees.map(e => [e.id, e.name]));
+    const nozzleNames = Object.fromEntries(nozzles.map(n => [n.id, n.nozzle_code + ' — ' + n.product]));
     shiftsBox.innerHTML = shifts.length
-      ? shifts.slice(0, 10).map(s => `<div class="card"><b>${employeeNames[s.employee_id] || s.employee_id}</b><br><span class="muted">Nozzle: ${s.nozzle_id || '—'} • Status: ${s.status}</span></div>`).join('')
+      ? shifts.slice(0, 10).map(s => `<div class="card"><b>${employeeNames[s.employee_id] || s.employee_id}</b><br><span class="muted">Nozzle: ${nozzleNames[s.nozzle_id] || s.nozzle_id || '—'} • Status: ${s.status}</span></div>`).join('')
       : '<p class="muted">No shifts yet.</p>';
   }
 
