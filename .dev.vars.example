@@ -1,0 +1,4 @@
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_SECRET_KEY=YOUR_SUPABASE_SECRET_KEY
+SESSION_SECRET=generate-a-long-random-secret
+BOOTSTRAP_TOKEN=generate-another-long-random-secret
