@@ -146,7 +146,8 @@ def employees():
     auth = require_login()
     if auth: return auth
     select = "id,name,phone,role,active,created_at" if session.get("role") == "admin" else "id,name,phone,role"
-    params = {"select": select, "order": "name.asc", "active": "eq.true"}
+    params = {"select": select, "order": "name.asc"}
+    if session.get("role") != "admin": params["active"] = "eq.true"
     status, rows = sb("employees", params=params)
     return jsonify(rows), status
 
@@ -177,6 +178,8 @@ def update_employee(employee_id):
     if "role" in data:
         role = str(data["role"]).strip()
         if role not in ("employee","admin"): return jsonify({"error":"Invalid role"}), 400
+        if employee_id == session.get("employee_id") and role != "admin":
+            return jsonify({"error":"You cannot remove your own admin role"}), 400
         body["role"] = role
     if data.get("pin"):
         pin = str(data["pin"])
@@ -227,7 +230,9 @@ def update_tank(tank_id):
 def nozzles():
     auth=require_login()
     if auth:return auth
-    status,rows=sb("nozzles",params={"active":"eq.true","select":"id,nozzle_code,product,tank_id,active","order":"nozzle_code.asc"})
+    params={"select":"id,nozzle_code,product,tank_id,active","order":"nozzle_code.asc"}
+    if session.get("role") != "admin": params["active"]="eq.true"
+    status,rows=sb("nozzles",params=params)
     return jsonify(rows),status
 
 @app.post("/api/nozzles")
@@ -251,8 +256,19 @@ def update_nozzle(nozzle_id):
     data=request.get_json(silent=True) or {}
     body={}
     if "active" in data: body["active"]=bool(data["active"])
-    if "tank_id" in data: body["tank_id"]=str(data["tank_id"])
-    if "product" in data: body["product"]=str(data["product"]).strip()
+    if "tank_id" in data:
+        tank_id=str(data["tank_id"]).strip()
+        ts,tr=sb("tanks",params={"id":"eq."+tank_id,"select":"id,product"})
+        if ts!=200 or not tr:return jsonify({"error":"Tank not found"}),404
+        body["tank_id"]=tank_id
+        if "product" not in data: body["product"]=tr[0]["product"]
+    if "product" in data:
+        body["product"]=str(data["product"]).strip()
+    if "tank_id" in body and "product" in body:
+        ts,tr=sb("tanks",params={"id":"eq."+body["tank_id"],"select":"id,product"})
+        if ts!=200 or not tr:return jsonify({"error":"Tank not found"}),404
+        if body["product"].lower()!=str(tr[0]["product"]).lower():
+            return jsonify({"error":"Nozzle product must match tank product"}),400
     if not body:return jsonify({"error":"No changes supplied"}),400
     status,result=sb("nozzles",method="PATCH",params={"id":"eq."+nozzle_id},body=body,prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
