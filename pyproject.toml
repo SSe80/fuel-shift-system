@@ -1,0 +1,14 @@
+[project]
+name = "fuel-shift-system"
+version = "2.0.0"
+description = "Fuel shift system using Cloudflare Workers and Supabase"
+requires-python = ">=3.13"
+dependencies = [
+  "flask",
+]
+
+[dependency-groups]
+dev = [
+  "workers-py",
+  "workers-runtime-sdk",
+]
