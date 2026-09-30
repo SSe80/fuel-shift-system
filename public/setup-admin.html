@@ -37,8 +37,12 @@ form.addEventListener('submit',async e=>{
   const token=document.getElementById('token').value;
   try{
     const r=await fetch('/api/bootstrap-admin',{method:'POST',headers:{'Content-Type':'application/json','X-Bootstrap-Token':token},body:JSON.stringify(data)});
-    const out=await r.json().catch(()=>({}));
-    if(!r.ok) throw new Error(out.error ? JSON.stringify(out.error) : 'Request failed');
+    const raw=await r.text();
+    let out={};
+    try{ out=raw ? JSON.parse(raw) : {}; }catch{ out={raw}; }
+    if(!r.ok) {
+      throw new Error(`HTTP ${r.status}\n${out.error ? JSON.stringify(out.error,null,2) : JSON.stringify(out,null,2)}`);
+    }
     msg.className='msg ok'; msg.textContent='Admin created successfully. You can now return to the main login page.';
     msg.style.display='block'; form.reset(); document.getElementById('name').value='Admin'; document.getElementById('phone').value='0902727273';
   }catch(err){msg.className='msg err';msg.textContent=err.message;msg.style.display='block'}
