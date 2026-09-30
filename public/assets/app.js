@@ -55,7 +55,8 @@ async function adminDashboard() {
       api('/api/shifts')
     ]);
 
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
     const salesToday = sales.filter(s => String(s.sale_time || s.created_at || '').slice(0, 10) === today);
     const activeShifts = shifts.filter(s => s.status === 'active');
     const lowTanks = tanks.filter(t => {
