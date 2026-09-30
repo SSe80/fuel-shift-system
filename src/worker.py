@@ -16,9 +16,25 @@ def sb(path, method="GET", params=None, body=None, prefer=None):
     return sb_request(e.SUPABASE_URL, e.SUPABASE_SECRET_KEY, method, path, params, body, prefer)
 
 
+def pbkdf2_sha256(password, salt, iterations, dklen=32):
+    password = password.encode() if isinstance(password, str) else password
+    output = bytearray()
+    block_number = 1
+    while len(output) < dklen:
+        u = hmac.new(password, salt + block_number.to_bytes(4, "big"), hashlib.sha256).digest()
+        block = bytearray(u)
+        for _ in range(1, iterations):
+            u = hmac.new(password, u, hashlib.sha256).digest()
+            for i in range(len(block)):
+                block[i] ^= u[i]
+        output.extend(block)
+        block_number += 1
+    return bytes(output[:dklen])
+
+
 def hash_pin(pin, salt=None):
     salt = salt or secrets.token_bytes(16)
-    digest = hashlib.pbkdf2_hmac("sha256", pin.encode(), salt, 120000)
+    digest = pbkdf2_sha256(pin, salt, 120000)
     return "pbkdf2_sha256$120000$%s$%s" % (
         base64.urlsafe_b64encode(salt).decode().rstrip("="),
         base64.urlsafe_b64encode(digest).decode().rstrip("="),
@@ -32,7 +48,7 @@ def verify_pin(pin, stored):
             return False
         salt = base64.urlsafe_b64decode(salt_s + "==")
         expected = base64.urlsafe_b64decode(digest_s + "==")
-        actual = hashlib.pbkdf2_hmac("sha256", pin.encode(), salt, int(rounds))
+        actual = pbkdf2_sha256(pin, salt, int(rounds), len(expected))
         return hmac.compare_digest(actual, expected)
     except Exception:
         return False
