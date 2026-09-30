@@ -333,6 +333,7 @@ def create_sale():
         return jsonify({"error": "Unauthorized"}), 401
     data = request.get_json(silent=True) or {}
     product = str(data.get("product", "")).strip()
+    payment_method = str(data.get("payment_method", "cash")).strip().lower()
     try:
         quantity = float(data.get("quantity_liters", 0))
         unit_price = float(data.get("unit_price", 0))
@@ -340,6 +341,8 @@ def create_sale():
         return jsonify({"error": "Invalid quantity or price"}), 400
     if not product or quantity <= 0 or unit_price < 0:
         return jsonify({"error": "Product, positive quantity and valid price are required"}), 400
+    if payment_method not in {"cash", "card", "mobile", "other"}:
+        return jsonify({"error": "Invalid payment method"}), 400
 
     shift_status, shifts_rows = sb("shifts", params={
         "employee_id": "eq." + eid,
@@ -352,70 +355,23 @@ def create_sale():
         return jsonify({"error": "No active shift assigned to this employee"}), 409
 
     shift = shifts_rows[0]
-    nozzle_status, nozzle_rows = sb("nozzles", params={
-        "id": "eq." + str(shift.get("nozzle_id")),
-        "active": "eq.true",
-        "select": "id,nozzle_code,product,tank_id"
-    })
-    if nozzle_status != 200 or not nozzle_rows:
-        return jsonify({"error": "The assigned nozzle is no longer available"}), 409
-
-    nozzle = nozzle_rows[0]
-    if product.lower() != str(nozzle.get("product", "")).lower():
-        return jsonify({"error": "Selected product does not match the assigned nozzle"}), 400
-
-    tank_status, tank_rows = sb("tanks", params={
-        "id": "eq." + str(nozzle["tank_id"]),
-        "select": "id,tank_code,product,current_liters,capacity_liters"
-    })
-    if tank_status != 200 or not tank_rows:
-        return jsonify({"error": "Fuel tank for this nozzle was not found"}), 409
-
-    tank = tank_rows[0]
-    current_liters = float(tank.get("current_liters") or 0)
-    if quantity > current_liters:
-        return jsonify({"error": "Not enough fuel in the tank"}), 409
-
-    body = {
-        "shift_id": shift["id"],
-        "employee_id": eid,
-        "nozzle_id": shift.get("nozzle_id"),
-        "product": product,
-        "quantity_liters": quantity,
-        "unit_price": unit_price,
-        "amount": quantity * unit_price,
-        "payment_method": str(data.get("payment_method", "cash")),
-    }
-    status, result = sb("sales", method="POST", body=body, prefer="return=representation")
+    status, result = sb(
+        "rpc/record_fuel_sale",
+        method="POST",
+        body={
+            "p_shift_id": shift["id"],
+            "p_employee_id": eid,
+            "p_nozzle_id": shift["nozzle_id"],
+            "p_product": product,
+            "p_quantity_liters": quantity,
+            "p_unit_price": unit_price,
+            "p_payment_method": payment_method,
+        },
+    )
     if status >= 400:
         return jsonify({"error": result}), status
 
-    new_liters = current_liters - quantity
-    tank_update_status, tank_update = sb(
-        "tanks",
-        method="PATCH",
-        params={"id": "eq." + str(tank["id"])},
-        body={"current_liters": new_liters},
-        prefer="return=representation",
-    )
-    if tank_update_status >= 400:
-        return jsonify({"error": "Sale was recorded but inventory update failed. Contact an admin immediately.", "details": tank_update}), 500
-
-    sale_row = result[0] if isinstance(result, list) and result else result
-    sale_id = sale_row.get("id") if isinstance(sale_row, dict) else None
-    movement_body = {
-        "tank_id": tank["id"],
-        "movement_type": "sale",
-        "quantity_liters": -quantity,
-        "reference_id": sale_id,
-        "notes": "Fuel sale",
-        "created_by": eid,
-    }
-    movement_status, movement_result = sb("tank_movements", method="POST", body=movement_body, prefer="return=representation")
-    if movement_status >= 400:
-        return jsonify({"error": "Sale and tank balance were updated, but the movement log failed. Contact an admin immediately.", "details": movement_result}), 500
-
-    return jsonify(sale_row), 201
+    return jsonify(result), 201
 
 
 @app.get("/api/sales")
