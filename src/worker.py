@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, session
 from workers import wsgi
 import os, base64, hashlib, hmac, secrets
+from datetime import datetime, timezone
 from pyodide.ffi import run_sync, to_js
 from js import crypto, Uint8Array, Object
 from supabase_rest import request as sb_request
@@ -314,7 +315,7 @@ def start_shift(shift_id):
         return jsonify({"error": "Assigned shift not found"}), 404
     patch = {
         "status": "active",
-        "start_time": "now()",
+        "start_time": datetime.now(timezone.utc).isoformat(),
         "opening_reading": opening_reading,
         "opening_mm": opening_mm,
         "opening_liters": opening_liters
