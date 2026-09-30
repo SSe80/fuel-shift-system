@@ -143,9 +143,11 @@ def bootstrap_admin():
 
 @app.get("/api/employees")
 def employees():
-    auth = require_admin()
+    auth = require_login()
     if auth: return auth
-    status, rows = sb("employees", params={"select":"id,name,phone,role,active,created_at","order":"name.asc"})
+    select = "id,name,phone,role,active,created_at" if session.get("role") == "admin" else "id,name,phone,role"
+    params = {"select": select, "order": "name.asc", "active": "eq.true"}
+    status, rows = sb("employees", params=params)
     return jsonify(rows), status
 
 @app.post("/api/employees")
