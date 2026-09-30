@@ -40,7 +40,7 @@ async function employeeDashboard(){
     document.getElementById('shift').innerHTML=mine.length?mine.map(s=>s.status==='assigned'
       ?`<div class="card"><div class="top"><h3>Shift ${h(s.id.slice(0,8))}</h3><span class="badge">${h(s.status)}</span></div><p>Nozzle: <b>${h(nn[s.nozzle_id]||s.nozzle_id)}</b></p><form class="form" onsubmit="startShift(event,'${s.id}')"><input id="opening-${s.id}" type="number" min="0" step="0.01" placeholder="Opening meter reading" required><input id="opening-mm-${s.id}" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" required><input id="opening-liters-${s.id}" type="number" min="0" step="0.01" placeholder="Opening tank liters" required><button class="primary">Start Shift</button></form></div>`
       :s.status==='active'
-      ?`<div class="card"><div class="top"><h3>Active Shift</h3><span class="badge">${h(s.status)}</span></div><p>Nozzle: <b>${h(nn[s.nozzle_id]||s.nozzle_id)}</b></p><p>Opening meter: <b>${liters(s.opening_reading)}</b></p><div class="row"><a class="btn primary" href="sales.html">Record Sale</a><a class="btn" href="handover.html">Handover</a></div><button onclick="closeShiftForm('${s.id}')">Close Shift</button></div>`
+      ?`<div class="card"><div class="top"><h3>Active Shift</h3><span class="badge">${h(s.status)}</span></div><p>Nozzle: <b>${h(nn[s.nozzle_id]||s.nozzle_id)}</b></p><p>Opening meter: <b>${liters(s.opening_reading)}</b></p><div class="row"><a class="btn primary" href="sales.html">Record Sale</a><a class="btn" href="handover.html">Handover</a></div><form class="form" onsubmit="closeShift(event,'${s.id}')"><input id="close-reading-${s.id}" type="number" min="0" step="0.01" placeholder="Closing meter reading" required><input id="close-mm-${s.id}" type="number" min="0" step="0.01" placeholder="Closing dip (mm)" required><input id="close-liters-${s.id}" type="number" min="0" step="0.01" placeholder="Closing tank liters" required><button class="primary">Close Shift</button></form></div>`
       :`<div class="card"><div class="top"><h3>Shift ${h(s.id.slice(0,8))}</h3><span class="badge">${h(s.status)}</span></div><p>Nozzle: ${h(nn[s.nozzle_id]||s.nozzle_id)}</p><p>Opening: ${liters(s.opening_reading)} • Closing: ${liters(s.closing_reading)}</p></div>`).join(''):'<div class="card"><p>No shifts assigned.</p></div>';
   }catch(e){if(e.message==='Unauthorized')location.href='employee-login.html';}
 }
@@ -49,12 +49,17 @@ async function startShift(event,id){
   try{await api('/api/shifts/'+id+'/start',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('opening-'+id).value),opening_mm:Number(document.getElementById('opening-mm-'+id).value),opening_liters:Number(document.getElementById('opening-liters-'+id).value)})});toast('Shift started');await employeeDashboard();}
   catch(e){toast(e.message);}
 }
-async function closeShiftForm(id){
-  const reading=prompt('Closing meter reading'); if(reading===null)return;
-  const mm=prompt('Closing tank dip (mm)'); if(mm===null)return;
-  const fuel=prompt('Closing tank liters'); if(fuel===null)return;
-  try{await api('/api/shifts/'+id+'/close',{method:'POST',body:JSON.stringify({closing_reading:Number(reading),closing_mm:Number(mm),closing_liters:Number(fuel)})});toast('Shift closed');await employeeDashboard();}
-  catch(e){toast(e.message);}
+async function closeShift(event,id){
+  event.preventDefault();
+  try{
+    await api('/api/shifts/'+id+'/close',{method:'POST',body:JSON.stringify({
+      closing_reading:Number(document.getElementById('close-reading-'+id).value),
+      closing_mm:Number(document.getElementById('close-mm-'+id).value),
+      closing_liters:Number(document.getElementById('close-liters-'+id).value)
+    })});
+    toast('Shift closed');
+    await employeeDashboard();
+  }catch(e){toast(e.message);}
 }
 
 async function adminDashboard(){
@@ -115,7 +120,15 @@ async function loadSaleContext(){
 async function addSale(){
   const litersSold=Number(document.getElementById('liters').value),price=Number(document.getElementById('price').value);
   if(!(litersSold>0)||price<0)return toast('Enter valid quantity and price');
-  try{const r=await api('/api/sales',{method:'POST',body:JSON.stringify({product:document.getElementById('product').value,quantity_liters:litersSold,unit_price:price,payment_method:document.getElementById('payment').value})});toast('Sale recorded: '+liters(r.sale?.quantity_liters||litersSold)+' L');setTimeout(()=>location.href='employee-dashboard.html',800);}catch(e){toast(e.message);}
+  try{const r=await api('/api/sales',{method:'POST',body:JSON.stringify({product:document.getElementById('product').value,quantity_liters:litersSold,unit_price:price,payment_method:document.getElementById('payment').value})});toast('Sale recorded: '+liters(r.sale?.quantity_liters||litersSold)+' L');document.getElementById('liters').value='';await loadSalesHistory();}catch(e){toast(e.message);}
+}
+async function loadSalesHistory(){
+  const box=document.getElementById('sales-history');
+  if(!box)return;
+  try{
+    const rows=await api('/api/sales');
+    box.innerHTML=rows.length?rows.slice(0,20).map(s=>`<div class="card"><b>${h(s.product)}</b> — ${liters(s.quantity_liters)} L × ${money(s.unit_price)}<br><span class="muted">${money(s.amount)} • ${h(s.payment_method)} • ${new Date(s.sale_time).toLocaleString()}</span></div>`).join(''):'No sales recorded yet.';
+  }catch(e){box.textContent=e.message;}
 }
 
 async function loadHandover(){
@@ -143,6 +156,9 @@ async function loadPurchases(){
   try{
     const [tanks,purchases]=await Promise.all([api('/api/tanks'),api('/api/purchases')]);
     document.getElementById('purchase-tank').innerHTML='<option value="">Select tank</option>'+tanks.map(t=>`<option value="${t.id}">${h(t.tank_code)} — ${h(t.product)}</option>`).join('');
+    const products=[...new Map(tanks.map(t=>[String(t.product).toLowerCase(),t.product])).values()];
+    document.getElementById('purchase-product').innerHTML='<option value="">Select product</option>'+products.map(p=>`<option value="${h(p)}">${h(p)}</option>`).join('');
+    document.getElementById('purchase-tank').onchange=()=>{const t=tanks.find(x=>x.id===document.getElementById('purchase-tank').value);if(t)document.getElementById('purchase-product').value=t.product;};
     document.getElementById('purchase-list').innerHTML=purchases.length?purchases.map(p=>`<div class="card"><b>${h(p.product)}</b> — ${liters(p.quantity_liters)} L<br><span class="muted">${h(p.supplier||'No supplier')} • ${new Date(p.purchase_date).toLocaleString()}</span></div>`).join(''):'<div class="card"><p>No purchases yet.</p></div>';
   }catch(e){document.getElementById('purchase-status').textContent=e.message;}
 }
