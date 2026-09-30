@@ -41,6 +41,16 @@
     <div id="nozzles"></div>
   </div>
 
+  <div class="card">
+    <h3>Shift Assignment</h3>
+    <form class="form" onsubmit="createShift(event)">
+      <select id="shift-employee" required><option value="">Select employee</option></select>
+      <select id="shift-nozzle" required><option value="">Select nozzle</option></select>
+      <button class="primary">Assign Shift</button>
+    </form>
+    <div id="shifts"></div>
+  </div>
+
   <div id="settings-status" class="muted"></div>
 </main>
 <script src="assets/app.js"></script>
