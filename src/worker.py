@@ -168,9 +168,9 @@ def create_employee():
     if auth: return auth
     data = request.get_json(silent=True) or {}
     name, phone, pin = str(data.get("name","")).strip(), str(data.get("phone","")).strip(), str(data.get("pin",""))
-    role = str(data.get("role","employee")).strip()
+    role = str(data.get("role","attendant")).strip()
     digits = "".join(ch for ch in phone if ch.isdigit())
-    if role not in ("employee","admin") or not name or len(digits) < 6 or len(pin) < 4 or not pin.isdigit():
+    if role not in ("attendant","admin") or not name or len(digits) < 6 or len(pin) < 4 or not pin.isdigit():
         return jsonify({"error":"Valid name, phone with at least 6 digits, role and numeric PIN are required"}), 400
     operator_id = digits[-6:]
     status, result = sb("employees", method="POST", body={
@@ -542,10 +542,10 @@ def create_shift():
     if auth:return auth
     data=request.get_json(silent=True) or {}
     employee_id,nozzle_id=str(data.get("employee_id","")).strip(),str(data.get("nozzle_id","")).strip()
-    if not employee_id or not nozzle_id:return jsonify({"error":"Employee and nozzle are required"}),400
+    if not employee_id or not nozzle_id:return jsonify({"error":"Attendant and nozzle are required"}),400
     es,er=sb("employees",params={"id":"eq."+employee_id,"active":"eq.true","select":"id"})
     ns,nr=sb("nozzles",params={"id":"eq."+nozzle_id,"active":"eq.true","select":"id"})
-    if es!=200 or not er:return jsonify({"error":"Active employee not found"}),404
+    if es!=200 or not er:return jsonify({"error":"Active attendant not found"}),404
     if ns!=200 or not nr:return jsonify({"error":"Active nozzle not found"}),404
     ss,sr=sb("shifts",params={"employee_id":"eq."+employee_id,"status":"in.(assigned,active)","select":"id","limit":"1"})
     if ss!=200:return jsonify({"error":sr}),ss
@@ -661,7 +661,7 @@ def create_handover():
     except (TypeError,ValueError):return jsonify({"error":"Invalid closing readings"}),400
     to_id=str(data.get("to_employee_id","")).strip()
     shift_id=str(data.get("shift_id","")).strip()
-    if not shift_id or not to_id:return jsonify({"error":"Shift and receiving employee are required"}),400
+    if not shift_id or not to_id:return jsonify({"error":"Shift and receiving attendant are required"}),400
     status,result=rpc("submit_shift_handover",{"p_shift_id":shift_id,"p_from_employee_id":eid,"p_to_employee_id":to_id,"p_closing_reading":reading,"p_closing_mm":mm,"p_closing_liters":liters})
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
