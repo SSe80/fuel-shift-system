@@ -184,10 +184,16 @@
                 <p id="dispenser-activate-error" class="muted" style="display:none"></p>
         <div class="row">
           <button type="button" onclick="closeDispenserActivation()">Cancel</button>
-          <button type="button" class="primary" onclick="confirmDispenserActivation()">Assign Shift / Activate Dispenser</button>
+          <button type="button" class="primary" onclick="confirmDispenserActivation()">Assign Shift</button>
         </div>
       </div>
     </div>
+    <div class="card">
+      <h3>Pending Handovers</h3>
+      <p class="muted">Shift assignments waiting for the selected attendant to confirm the readings with their PIN. The dispenser remains inactive until confirmation.</p>
+      <div id="pending-handovers"></div>
+    </div>
+
     <div id="dispensers"></div>
   </div>
 
