@@ -206,9 +206,15 @@ async function toggleEmployee(id,active){try{await api('/api/employees/'+id,{met
 function openTankEdit(id){
   const t=(window.tankRecords||[]).find(x=>x.id===id);
   if(!t)return;
-  const match=String(t.tank_code||'').match(/•(\\d+)$/);
+  const match=String(t.tank_code||'').match(/•(\d+)$/);
+  const currentOrder=match?Number(match[1]):1;
+  const productKey=String(t.product||'').toLowerCase();
+  const sameProduct=(window.tankRecords||[]).filter(x=>String(x.product||'').toLowerCase()===productKey);
+  const orders=sameProduct.map(x=>String(x.tank_code||'').match(/•(\d+)$/)).filter(Boolean).map(m=>Number(m[1])).sort((a,b)=>a-b);
+  const orderSelect=document.getElementById('edit-tank-order');
+  orderSelect.innerHTML=orders.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
+  orderSelect.value=String(currentOrder);
   document.getElementById('edit-tank-id').value=t.id;
-  document.getElementById('edit-tank-order').value=match?match[1]:'';
   document.getElementById('edit-tank-capacity').value=t.capacity_liters||'';
   const modal=document.getElementById('tank-edit-modal');
   modal.classList.add('open');
