@@ -570,7 +570,10 @@ function openDispenserActivation(id){
   const tankLabel=document.getElementById('dispenser-activation-tank-label');
   if(tankLabel)tankLabel.firstChild.textContent=''+(tank?.tank_code||'Tank')+' opening reading (liters)';
   const tankLitersInput=document.getElementById('dispenser-activation-tank-liters');
-  if(tankLitersInput)tankLitersInput.value='';
+  if(tankLitersInput){
+    const activationReading=Number(tank.opening_stock_liters);
+    tankLitersInput.value=Number.isFinite(activationReading)&&activationReading>=0?String(activationReading):'';
+  }
   const employeeSelect=document.getElementById('dispenser-activation-employee');
   if(employeeSelect)employeeSelect.innerHTML='<option value="">Select attendant</option>'+((window.employeeRecords||[]).filter(e=>e.active&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join(''));
   const list=document.getElementById('dispenser-nozzle-activation-list');
