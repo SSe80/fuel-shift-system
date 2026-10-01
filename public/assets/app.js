@@ -389,7 +389,7 @@ async function confirmDispenserActivation(){
     return;
   }
   if(!selected.length){
-    error.textContent='Activate at least one nozzle and enter its activation number before activating the dispenser.';
+    error.textContent='Activate at least one nozzle and enter its opening meter reading before activating the dispenser.';
     error.style.display='block';
     return;
   }
