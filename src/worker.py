@@ -269,13 +269,41 @@ def create_tank():
     auth = require_admin()
     if auth: return auth
     data = request.get_json(silent=True) or {}
+    product = str(data.get("product","")).strip()
     try:
-        capacity,current,mm = float(data.get("capacity_liters",0)),float(data.get("current_liters",0)),float(data.get("current_mm",0))
-    except (TypeError,ValueError): return jsonify({"error":"Invalid tank values"}),400
-    code,product = str(data.get("tank_code","")).strip(),str(data.get("product","")).strip()
-    if not code or not product or capacity <= 0 or current < 0 or current > capacity or mm < 0:
-        return jsonify({"error":"Valid tank code, product, capacity and current liters are required"}),400
-    status,result=sb("tanks",method="POST",body={"tank_code":code,"product":product,"capacity_liters":capacity,"current_liters":current,"current_mm":mm},prefer="return=representation")
+        capacity = float(data.get("capacity_liters",0))
+    except (TypeError,ValueError):
+        return jsonify({"error":"Invalid tank size"}),400
+    if not product or capacity <= 0:
+        return jsonify({"error":"Product and valid tank size are required"}),400
+
+    ps, products = sb("products", params={"select":"name,code_name,active","name":"eq."+product,"limit":"1"})
+    if ps != 200 or not products:
+        return jsonify({"error":"Product not found"}),404
+    p = products[0]
+    if not p.get("active"):
+        return jsonify({"error":"Product is inactive"}),400
+    code_name = str(p["code_name"]).strip()
+
+    ts, tanks = sb("tanks", params={"select":"tank_code","product":"eq."+product})
+    if ts != 200:
+        return jsonify({"error":tanks}),ts
+    max_order = 0
+    import re
+    pattern = re.compile(r"^"+re.escape(code_name)+r"•(\d+)$", re.IGNORECASE)
+    for tank in tanks:
+        match = pattern.match(str(tank.get("tank_code","")))
+        if match:
+            max_order = max(max_order, int(match.group(1)))
+    tank_code = f"{code_name}•{max_order + 1}"
+
+    status,result=sb("tanks",method="POST",body={
+        "tank_code":tank_code,
+        "product":product,
+        "capacity_liters":capacity,
+        "current_liters":0,
+        "current_mm":0
+    },prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
@@ -284,9 +312,47 @@ def update_tank(tank_id):
     auth=require_admin()
     if auth:return auth
     data=request.get_json(silent=True) or {}
-    if "current_liters" not in data:return jsonify({"error":"current_liters is required"}),400
-    try: liters=float(data["current_liters"]); mm=float(data.get("current_mm",0)); 
-    except (TypeError,ValueError): return jsonify({"error":"Invalid inventory values"}),400
+
+    if "tank_order" in data or "capacity_liters" in data:
+        ts, rows = sb("tanks", params={"id":"eq."+tank_id,"select":"id,tank_code,product,capacity_liters,current_liters"})
+        if ts != 200 or not rows:
+            return jsonify({"error":"Tank not found"}),404
+        tank = rows[0]
+        body = {}
+        if "capacity_liters" in data:
+            try: capacity = float(data["capacity_liters"])
+            except (TypeError,ValueError): return jsonify({"error":"Invalid tank size"}),400
+            if capacity <= 0:
+                return jsonify({"error":"Tank size must be greater than zero"}),400
+            if float(tank.get("current_liters") or 0) > capacity:
+                return jsonify({"error":"Tank size cannot be below current inventory"}),400
+            body["capacity_liters"] = capacity
+
+        if "tank_order" in data:
+            try: order = int(data["tank_order"])
+            except (TypeError,ValueError): return jsonify({"error":"Invalid tank order"}),400
+            if order < 1:
+                return jsonify({"error":"Tank order must be 1 or greater"}),400
+            ps, products = sb("products", params={"select":"name,code_name","name":"eq."+str(tank["product"]),"limit":"1"})
+            if ps != 200 or not products:
+                return jsonify({"error":"Product for this tank was not found"}),404
+            code_name = str(products[0]["code_name"]).strip()
+            body["tank_code"] = f"{code_name}•{order}"
+
+        if body:
+            status,result=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body=body,prefer="return=representation")
+            if status>=400:
+                if status == 409 or (isinstance(result,dict) and result.get("code")=="23505"):
+                    return jsonify({"error":"That tank order is already in use for this product"}),409
+                return jsonify({"error":result}),status
+            return jsonify(result),200
+
+    if "current_liters" not in data:
+        return jsonify({"error":"No changes supplied"}),400
+    try:
+        liters=float(data["current_liters"]); mm=float(data.get("current_mm",0))
+    except (TypeError,ValueError):
+        return jsonify({"error":"Invalid inventory values"}),400
     status,result=rpc("adjust_tank_inventory",{"p_tank_id":tank_id,"p_new_liters":liters,"p_new_mm":mm,"p_created_by":session["employee_id"],"p_notes":data.get("notes","Admin inventory adjustment")})
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),200
