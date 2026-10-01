@@ -210,6 +210,53 @@ def update_employee(employee_id):
     if status >= 400: return jsonify({"error":result}), status
     return jsonify(result), 200
 
+@app.get("/api/products")
+def products():
+    auth=require_login()
+    if auth: return auth
+    status, rows = sb("products", params={"select":"id,name,code_name,color,active,created_at,updated_at","order":"name.asc"})
+    return jsonify(rows), status
+
+@app.post("/api/products")
+def create_product():
+    auth=require_admin()
+    if auth: return auth
+    data=request.get_json(silent=True) or {}
+    name=str(data.get("name","")).strip()
+    code_name=str(data.get("code_name","")).strip()
+    color=str(data.get("color","")).strip()
+    if not name or not code_name or not color:
+        return jsonify({"error":"Product name, code name and color are required"}),400
+    if len(code_name)>50 or len(name)>100 or len(color)>30:
+        return jsonify({"error":"Product name, code name or color is too long"}),400
+    status,result=sb("products",method="POST",body={"name":name,"code_name":code_name,"color":color,"active":True},prefer="return=representation")
+    if status>=400:return jsonify({"error":result}),status
+    return jsonify(result),201
+
+@app.patch("/api/products/<product_id>")
+def update_product(product_id):
+    auth=require_admin()
+    if auth: return auth
+    data=request.get_json(silent=True) or {}
+    body={}
+    if "name" in data:
+        name=str(data["name"]).strip()
+        if not name:return jsonify({"error":"Product name cannot be empty"}),400
+        body["name"]=name
+    if "code_name" in data:
+        code=str(data["code_name"]).strip()
+        if not code:return jsonify({"error":"Code name cannot be empty"}),400
+        body["code_name"]=code
+    if "color" in data:
+        color=str(data["color"]).strip()
+        if not color:return jsonify({"error":"Color cannot be empty"}),400
+        body["color"]=color
+    if "active" in data: body["active"]=bool(data["active"])
+    if not body:return jsonify({"error":"No changes supplied"}),400
+    status,result=sb("products",method="PATCH",params={"id":"eq."+product_id},body=body,prefer="return=representation")
+    if status>=400:return jsonify({"error":result}),status
+    return jsonify(result),200
+
 @app.get("/api/tanks")
 def tanks():
     auth = require_login()
