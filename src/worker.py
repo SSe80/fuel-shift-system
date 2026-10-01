@@ -706,9 +706,9 @@ def create_shift():
                 return jsonify({"error":"Nozzle opening reading cannot be negative"}),400
 
     es,er=sb("employees",params={"id":"eq."+employee_id,"active":"eq.true","select":"id,role"})
-    ns,nr=sb("nozzles",params={"id":"eq."+nozzle_id,"active":"eq.true","select":"id"})
+    ns,nr=sb("nozzles",params={"id":"eq."+nozzle_id,"select":"id,active"})
     if es!=200 or not er or er[0].get("role")!="attendant":return jsonify({"error":"Active attendant not found"}),404
-    if ns!=200 or not nr:return jsonify({"error":"Active dispenser not found"}),404
+    if ns!=200 or not nr:return jsonify({"error":"Dispenser not found"}),404
     ss,sr=sb("shifts",params={"employee_id":"eq."+employee_id,"status":"in.(assigned,active)","select":"id","limit":"1"})
     if ss!=200:return jsonify({"error":sr}),ss
     if sr:return jsonify({"error":"User already has an assigned or active shift"}),409
@@ -738,9 +738,9 @@ def confirm_shift_assignment(shift_id):
     if es!=200 or not er:return jsonify({"error":"Attendant account not found"}),404
     emp=er[0]
     if emp.get("role")!="attendant" or not verify_pin(pin,emp.get("pin_hash","")):return jsonify({"error":"Invalid PIN"}),401
-    status,rows=sb("shifts",params={"id":"eq."+shift_id,"employee_id":"eq."+eid,"status":"eq.assigned","select":"id,opening_reading,opening_mm,opening_liters"})
+    status,rows=sb("shifts",params={"id":"eq."+shift_id,"employee_id":"eq."+eid,"status":"eq.assigned","select":"id,opening_reading,opening_mm,opening_liters,activation_nozzles"})
     if status!=200 or not rows:return jsonify({"error":"Pending shift assignment not found"}),404
-    if rows[0].get("opening_reading") is None:return jsonify({"error":"Assignment has no opening meter reading"}),409
+    if rows[0].get("activation_nozzles") is None:return jsonify({"error":"Assignment has no nozzle activation readings"}),409
     # The attendant's PIN confirms the pending assignment. Activation of the
     # dispenser, tank opening balance and shift status happen atomically in Supabase.
     status,result=rpc("confirm_shift_activation",{
