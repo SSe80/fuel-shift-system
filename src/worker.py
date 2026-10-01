@@ -459,6 +459,21 @@ def update_nozzle(nozzle_id):
     auth=require_admin()
     if auth:return auth
     data=request.get_json(silent=True) or {}
+    if data.get("active") is True and "activated_nozzles" in data:
+        try:
+            employee_id=str(data.get("employee_id","")).strip()
+            opening_tank_liters=float(data.get("opening_tank_liters"))
+            activated_nozzles=data.get("activated_nozzles")
+            status,result=rpc("activate_dispenser",{
+                "p_nozzle_id":nozzle_id,
+                "p_employee_id":employee_id,
+                "p_opening_tank_liters":opening_tank_liters,
+                "p_activated_nozzles":activated_nozzles
+            })
+            if status>=400:return jsonify({"error":result}),status
+            return jsonify(result),200
+        except (TypeError,ValueError):
+            return jsonify({"error":"Invalid tank opening liters"}),400
     status,current=sb("nozzles",params={"id":"eq."+nozzle_id,"select":"id,nozzle_code,nozzle_ids,product,tank_id,nozzle_count,active"})
     if status!=200 or not current:return jsonify({"error":"Dispenser not found"}),404
     cur=current[0]
