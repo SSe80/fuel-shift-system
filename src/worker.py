@@ -681,18 +681,50 @@ def create_shift():
     data=request.get_json(silent=True) or {}
     employee_id,nozzle_id=str(data.get("employee_id","")).strip(),str(data.get("nozzle_id","")).strip()
     if not employee_id or not nozzle_id:return jsonify({"error":"User and nozzle are required"}),400
-    es,er=sb("employees",params={"id":"eq."+employee_id,"active":"eq.true","select":"id"})
+
+    # A dispenser assignment is pending until the attendant confirms it.
+    # Store the readings now, but do not activate the tank/dispenser yet.
+    activation_nozzles=data.get("activation_nozzles")
+    opening_tank_liters=data.get("opening_tank_liters")
+    if activation_nozzles is not None:
+        if not isinstance(activation_nozzles,list) or not activation_nozzles:
+            return jsonify({"error":"At least one nozzle must be activated"}),400
+        try:
+            opening_tank_liters=float(opening_tank_liters)
+        except (TypeError,ValueError):
+            return jsonify({"error":"Invalid tank opening liters"}),400
+        if opening_tank_liters < 0:
+            return jsonify({"error":"Tank opening liters cannot be negative"}),400
+        for item in activation_nozzles:
+            if not isinstance(item,dict) or not str(item.get("nozzle_id","")).strip():
+                return jsonify({"error":"Invalid nozzle activation data"}),400
+            try:
+                reading=float(item.get("opening_reading"))
+            except (TypeError,ValueError):
+                return jsonify({"error":"Invalid nozzle opening reading"}),400
+            if reading < 0:
+                return jsonify({"error":"Nozzle opening reading cannot be negative"}),400
+
+    es,er=sb("employees",params={"id":"eq."+employee_id,"active":"eq.true","select":"id,role"})
     ns,nr=sb("nozzles",params={"id":"eq."+nozzle_id,"active":"eq.true","select":"id"})
-    if es!=200 or not er:return jsonify({"error":"Active user not found"}),404
-    if ns!=200 or not nr:return jsonify({"error":"Active nozzle not found"}),404
+    if es!=200 or not er or er[0].get("role")!="attendant":return jsonify({"error":"Active attendant not found"}),404
+    if ns!=200 or not nr:return jsonify({"error":"Active dispenser not found"}),404
     ss,sr=sb("shifts",params={"employee_id":"eq."+employee_id,"status":"in.(assigned,active)","select":"id","limit":"1"})
     if ss!=200:return jsonify({"error":sr}),ss
     if sr:return jsonify({"error":"User already has an assigned or active shift"}),409
     ss,sr=sb("shifts",params={"nozzle_id":"eq."+nozzle_id,"status":"in.(assigned,active)","select":"id,status","limit":"1"})
     if ss!=200:return jsonify({"error":sr}),ss
     if sr:return jsonify({"error":"Nozzle already has an assigned or active shift"}),409
-    status,result=sb("shifts",method="POST",body={"employee_id":employee_id,"nozzle_id":nozzle_id,"status":"assigned","assigned_by":session["employee_id"]},prefer="return=representation")
-    if status>=400:return jsonify({"error":result}),status
+
+    body={"employee_id":employee_id,"nozzle_id":nozzle_id,"status":"assigned","assigned_by":session["employee_id"]}
+    if activation_nozzles is not None:
+        body["activation_nozzles"]=activation_nozzles
+        body["opening_tank_liters"]=opening_tank_liters
+    status,result=sb("shifts",method="POST",body=body,prefer="return=representation")
+    if status>=400:
+        if status==409 or (isinstance(result,dict) and result.get("code")=="23505"):
+            return jsonify({"error":"User or dispenser already has an assigned or active shift"}),409
+        return jsonify({"error":result}),status
     return jsonify(result),201
 
 @app.post("/api/shifts/<shift_id>/confirm")
@@ -709,8 +741,12 @@ def confirm_shift_assignment(shift_id):
     status,rows=sb("shifts",params={"id":"eq."+shift_id,"employee_id":"eq."+eid,"status":"eq.assigned","select":"id,opening_reading,opening_mm,opening_liters"})
     if status!=200 or not rows:return jsonify({"error":"Pending shift assignment not found"}),404
     if rows[0].get("opening_reading") is None:return jsonify({"error":"Assignment has no opening meter reading"}),409
-    patch={"status":"active","start_time":datetime.now(timezone.utc).isoformat()}
-    status,result=sb("shifts",method="PATCH",params={"id":"eq."+shift_id},body=patch,prefer="return=representation")
+    # The attendant's PIN confirms the pending assignment. Activation of the
+    # dispenser, tank opening balance and shift status happen atomically in Supabase.
+    status,result=rpc("confirm_shift_activation",{
+        "p_shift_id":shift_id,
+        "p_employee_id":eid
+    })
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),200
 
