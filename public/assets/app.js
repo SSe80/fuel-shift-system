@@ -321,8 +321,48 @@ async function saveDispenserEdit(event){
     closeDispenserEdit();toast('Dispenser updated');await loadSettingsData();
   }catch(e){toast(e.message);}
 }
+let pendingDispenserActivationId=null;
+
+function openDispenserActivation(id){
+  const d=(window.dispenserRecords||[]).find(x=>x.id===id);
+  if(!d)return;
+  pendingDispenserActivationId=id;
+  const productByName=Object.fromEntries((window.productRecords||[]).map(p=>[String(p.name).toLowerCase(),p]));
+  const product=productByName[String(d.product||'').toLowerCase()];
+  const message=document.getElementById('dispenser-activate-message');
+  if(message){
+    const tank=(window.tankRecords||[]).find(t=>t.id===d.tank_id);
+    message.innerHTML='<b>'+h(d.nozzle_code||'Dispenser')+'</b> — '+h(product?.code_name||d.product||'')+'<br><span class="muted">Tank: '+h(tank?.tank_code||d.tank_id||'')+' • '+h(d.nozzle_count||1)+' nozzle(s)</span>';
+  }
+  const modal=document.getElementById('dispenser-activate-modal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+}
+
+function closeDispenserActivation(){
+  pendingDispenserActivationId=null;
+  const modal=document.getElementById('dispenser-activate-modal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden','true');
+}
+
+async function confirmDispenserActivation(){
+  const id=pendingDispenserActivationId;
+  if(!id)return;
+  try{
+    await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:true})});
+    closeDispenserActivation();
+    toast('Dispenser activated');
+    await loadSettingsData();
+  }catch(e){toast(e.message);}
+}
+
 async function toggleNozzle(id,active){
-  try{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});toast(active?'Dispenser deactivated':'Dispenser activated');await loadSettingsData();}
+  if(!active){
+    openDispenserActivation(id);
+    return;
+  }
+  try{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:false})});toast('Dispenser deactivated');await loadSettingsData();}
   catch(e){toast(e.message);}
 }
 async function removeDispenser(id){
