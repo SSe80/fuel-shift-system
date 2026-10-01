@@ -35,6 +35,32 @@
   </div>
 
   <div class="card">
+    <h3>Products</h3>
+    <form class="form" onsubmit="createProduct(event)">
+      <input id="product-name" placeholder="Product name (e.g. Petrol)" required>
+      <input id="product-code" placeholder="Code name (e.g. PMS)" maxlength="50" required>
+      <label>Product color<input id="product-color" type="color" value="#1264d8" required></label>
+      <button class="primary">Add product</button>
+    </form>
+    <div id="products"></div>
+  </div>
+
+  <div id="product-edit-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeProductEdit()"></div>
+    <form id="product-edit-form" class="modal-card form" onsubmit="saveProductEdit(event)">
+      <div class="top"><h3>Edit Product</h3><button type="button" class="modal-close" onclick="closeProductEdit()" aria-label="Close">×</button></div>
+      <input id="edit-product-id" type="hidden">
+      <label>Product name<input id="edit-product-name" required></label>
+      <label>Code name<input id="edit-product-code" maxlength="50" required></label>
+      <label>Product color<input id="edit-product-color" type="color" required></label>
+      <div class="row">
+        <button type="submit" class="primary">Save Changes</button>
+        <button type="button" onclick="closeProductEdit()">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
     <h3>Fuel Tanks</h3>
     <form class="form" onsubmit="createTank(event)">
       <input id="tank-code" placeholder="Tank code (e.g. T1)" required>
