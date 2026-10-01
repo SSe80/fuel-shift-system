@@ -34,9 +34,10 @@ async function userDashboard(){
     const me=await currentUser();
     if(me.role!=='attendant')return location.href='admin-dashboard.html';
     document.getElementById('name').textContent=me.name;
-    const [shifts,nozzles,products,handovers,employees]=await Promise.all([api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/handovers'),api('/api/users')]);
+    const [shifts,nozzles,products,handovers,employees,tanks]=await Promise.all([api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/handovers'),api('/api/users'),api('/api/tanks')]);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
+    const tankNames=Object.fromEntries(tanks.map(t=>[t.id,t.tank_code]));
     const nn=Object.fromEntries(nozzles.map(n=>[n.id,n.nozzle_code+' — '+codeForProduct(n.product)]));
     const names=Object.fromEntries(employees.map(e=>[e.id,e.name]));
     const mine=shifts.filter(s=>s.employee_id===me.id);
@@ -47,7 +48,7 @@ async function userDashboard(){
       let html='';
       pendingAssignments.forEach(s=>{
         const n=nozzles.find(x=>x.id===s.nozzle_id);
-        html+='<div class="card"><div class="top"><div><h3>Pending Shift Assignment</h3><span class="badge">Awaiting Attendant confirmation</span></div></div><p>Dispenser: <b>'+h(n?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(n?.product||''))+'</p><p>Opening meter: <b>'+liters(s.opening_reading)+'</b> • Tank opening: <b>'+liters(n?.opening_tank_liters)+'</b> L</p><p class="muted">Review the activation readings. Enter your PIN to confirm them and start the shift.</p><form class="form" onsubmit="confirmShiftAssignment(event,\'SID\')"><input id="assignment-pin-SID" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required><button class="primary">Confirm Readings & Start Shift</button></form></div>'.replaceAll('SID',s.id);
+        html+='<div class="card"><div class="top"><div><h3>Pending Shift Assignment</h3><span class="badge">Awaiting Attendant confirmation</span></div></div><p>Dispenser: <b>'+h(n?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(n?.product||''))+'</p><p>Tank: <b>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</b></p><p>Opening meter: <b>'+liters(s.opening_reading)+'</b> • Tank opening: <b>'+(n?.opening_tank_liters==null?'Not recorded':liters(n.opening_tank_liters)+' L')+'</b></p><p class="muted">Review the activation readings. Enter your PIN to confirm them and start the shift.</p><form class="form" onsubmit="confirmShiftAssignment(event,\'SID\')"><input id="assignment-pin-SID" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required><button class="primary">Confirm Readings & Start Shift</button></form></div>'.replaceAll('SID',s.id);
       });
       pendingHandovers.forEach(x=>{
         html+='<div class="card"><div class="top"><div><h3>Pending Shift Handover</h3><span class="badge">Awaiting Attendant confirmation</span></div></div><p>From: <b>'+h(names[x.from_employee_id]||x.from_employee_id)+'</b></p><p>Closing meter: <b>'+liters(x.closing_reading)+'</b> • Closing tank: <b>'+liters(x.closing_liters)+'</b> L</p><p class="muted">Enter the takeover readings and your PIN to confirm the handover.</p><form class="form" onsubmit="confirmHandoverFromDashboard(event,\'HID\')"><input id="dashboard-confirm-reading-HID" type="number" min="0" step="0.01" placeholder="Opening meter reading" required><input id="dashboard-confirm-mm-HID" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" required><input id="dashboard-confirm-liters-HID" type="number" min="0" step="0.01" placeholder="Opening tank liters" required><input id="dashboard-handover-pin-HID" type="password" inputmode="numeric" placeholder="Enter your PIN" required><button class="primary">Confirm Handover & Start Shift</button></form></div>'.replaceAll('HID',x.id);
