@@ -127,6 +127,24 @@ window.dispenserRecords=dispensers;
     };
   }
 }
+function openAddModal(id){
+  const m=document.getElementById(id);
+  if(!m)return;
+  m.classList.add('open');
+  m.setAttribute('aria-hidden','false');
+}
+function closeAddModal(id){
+  const m=document.getElementById(id);
+  if(!m)return;
+  m.classList.remove('open');
+  m.setAttribute('aria-hidden','true');
+  const form=m.querySelector('form');
+  if(form)form.reset();
+  if(id==='add-product-modal'){
+    const color=document.getElementById('product-color');
+    if(color)color.value='#1264d8';
+  }
+}
 function openProductEdit(id){
   const p=(window.productRecords||[]).find(x=>x.id===id);
   if(!p)return;
@@ -166,9 +184,9 @@ async function createProduct(event){
       name:document.getElementById('product-name').value.trim(),
       code_name:document.getElementById('product-code').value.trim(),
       color:document.getElementById('product-color').value,
-      active:true
+      active:false
     })});
-    event.target.reset();
+    closeAddModal('add-product-modal');
     document.getElementById('product-color').value='#1264d8';
     toast('Product created');
     await loadSettingsData();
@@ -216,7 +234,7 @@ async function saveUserEdit(event){
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
-async function createUser(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('attendant-name').value.trim(),phone:document.getElementById('attendant-phone').value.trim(),pin:document.getElementById('attendant-pin').value,role:document.getElementById('attendant-role').value,active:false})});e.target.reset();toast('User created');await loadSettingsData();}catch(x){toast(x.message);}}
+async function createUser(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('attendant-name').value.trim(),phone:document.getElementById('attendant-phone').value.trim(),pin:document.getElementById('attendant-pin').value,role:document.getElementById('attendant-role').value,active:true})});e.target.reset();closeAddModal('add-user-modal');toast('User created');await loadSettingsData();}catch(x){toast(x.message);}}
 function toggleUser(id,active){ if(active){ deactivateUser(id); } else { openUserActivation(id); } }
 async function deactivateUser(id){try{await api('/api/users/'+id,{method:'PATCH',body:JSON.stringify({active:false})});toast('User deactivated');await loadSettingsData();}catch(e){toast(e.message);}}
 function openUserActivation(id){
@@ -289,9 +307,10 @@ async function createTank(e){
     await api('/api/tanks',{method:'POST',body:JSON.stringify({
       product:document.getElementById('tank-product').value,
       capacity_liters:Number(document.getElementById('tank-capacity').value),
-      active:true
+      active:false
     })});
     e.target.reset();
+    closeAddModal('add-tank-modal');
     toast('Tank created');
     await loadSettingsData();
   }catch(x){toast(x.message);}
@@ -450,7 +469,7 @@ async function createDispenser(e){
       tank_id:document.getElementById('dispenser-tank').value,
       nozzle_count:Number(document.getElementById('dispenser-nozzle-count').value)
     })});
-    e.target.reset();toast('Dispenser created');await loadSettingsData();
+    e.target.reset();closeAddModal('add-dispenser-modal');toast('Dispenser created');await loadSettingsData();
   }catch(x){toast(x.message);}
 }
 async function createShift(e){e.preventDefault();try{await api('/api/shifts',{method:'POST',body:JSON.stringify({employee_id:document.getElementById('shift-employee').value,nozzle_id:document.getElementById('shift-nozzle').value})});e.target.reset();toast('Shift assigned');await loadSettingsData();}catch(x){toast(x.message);}}
