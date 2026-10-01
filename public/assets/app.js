@@ -145,6 +145,30 @@ function closeAddModal(id){
     if(color)color.value='#1264d8';
   }
 }
+function formatPriceMajorInput(input){
+  if(!input)return;
+  const digits=String(input.value||'').replace(/\D/g,'');
+  input.value=digits?Number(digits).toLocaleString('en-US'):'';
+}
+function priceFromParts(majorId,centsId){
+  const major=String(document.getElementById(majorId)?.value||'').replace(/,/g,'').replace(/\D/g,'');
+  const cents=String(document.getElementById(centsId)?.value||'').replace(/\D/g,'').slice(0,2).padEnd(2,'0');
+  if(!major)return null;
+  return Number(major+'.'+cents);
+}
+function setPriceParts(price,majorId,centsId){
+  const n=Number(price||0);
+  const whole=Math.floor(n);
+  const cents=Math.round((n-whole)*100);
+  const a=document.getElementById(majorId), b=document.getElementById(centsId);
+  if(a)a.value=whole.toLocaleString('en-US');
+  if(b)b.value=String(cents).padStart(2,'0');
+}
+function bindPriceInputs(majorId,centsId){
+  const a=document.getElementById(majorId),b=document.getElementById(centsId);
+  if(a&&!a.dataset.bound){a.dataset.bound='1';a.addEventListener('input',()=>formatPriceMajorInput(a));}
+  if(b&&!b.dataset.bound){b.dataset.bound='1';b.addEventListener('input',()=>{b.value=b.value.replace(/\D/g,'').slice(0,2);});}
+}
 function openProductEdit(id){
   const p=(window.productRecords||[]).find(x=>x.id===id);
   if(!p)return;
@@ -152,6 +176,8 @@ function openProductEdit(id){
   document.getElementById('edit-product-name').value=p.name||'';
   document.getElementById('edit-product-code').value=p.code_name||'';
   document.getElementById('edit-product-color').value=p.color||'#1264d8';
+  bindPriceInputs('edit-product-price-major','edit-product-price-cents');
+  setPriceParts(p.selling_price,'edit-product-price-major','edit-product-price-cents');
   const modal=document.getElementById('product-edit-modal');
   modal.classList.add('open');
   modal.setAttribute('aria-hidden','false');
@@ -170,7 +196,8 @@ async function saveProductEdit(event){
     await api('/api/products/'+id,{method:'PATCH',body:JSON.stringify({
       name:document.getElementById('edit-product-name').value.trim(),
       code_name:document.getElementById('edit-product-code').value.trim(),
-      color:document.getElementById('edit-product-color').value
+      color:document.getElementById('edit-product-color').value,
+      selling_price:priceFromParts('edit-product-price-major','edit-product-price-cents')
     })});
     closeProductEdit();
     toast('Product updated');
@@ -199,6 +226,8 @@ function openProductActivation(id){
   document.getElementById('activation-target-id').value=id;
   document.getElementById('activation-target-type').value='product';
   document.getElementById('activation-target-title').textContent='Activate Product?';
+  const priceBox=document.getElementById('product-activation-price');
+  if(priceBox){priceBox.style.display='block';bindPriceInputs('activation-price-major','activation-price-cents');setPriceParts(p.selling_price,'activation-price-major','activation-price-cents');}
   document.getElementById('activation-target-message').innerHTML='<b>'+h(p.code_name)+'</b> — '+h(p.name)+'<br><span class="muted">This product will become available for tanks, dispensers and sales.</span>';
   openGenericActivationModal();
 }
@@ -242,6 +271,7 @@ function openUserActivation(id){
   document.getElementById('activation-target-id').value=id;
   document.getElementById('activation-target-type').value='user';
   document.getElementById('activation-target-title').textContent='Activate User?';
+  const priceBox=document.getElementById('product-activation-price'); if(priceBox)priceBox.style.display='none';
   document.getElementById('activation-target-message').innerHTML='<b>'+h(e.name)+'</b><br><span class="muted">'+h(e.role)+' • Operator ID: '+h(e.operator_id)+'</span>';
   openGenericActivationModal();
 }
@@ -290,6 +320,7 @@ function openTankActivation(id){
   document.getElementById('activation-target-id').value=id;
   document.getElementById('activation-target-type').value='tank';
   document.getElementById('activation-target-title').textContent='Activate Fuel Tank?';
+  const priceBox=document.getElementById('product-activation-price'); if(priceBox)priceBox.style.display='none';
   document.getElementById('activation-target-message').innerHTML='<b>'+h(t.tank_code)+'</b> — '+h(productByName[String(t.product||'').toLowerCase()]?.code_name||t.product)+'<br><span class="muted">Tank capacity: '+h(liters(t.capacity_liters))+' L</span>';
   openGenericActivationModal();
 }
@@ -367,7 +398,13 @@ async function confirmGenericActivation(){
   if(!id||!type)return;
   try{
     const path=type==='user'?'/api/users/'+id:type==='product'?'/api/products/'+id:'/api/tanks/'+id;
-    await api(path,{method:'PATCH',body:JSON.stringify({active:true})});
+    const body={active:true};
+    if(type==='product'){
+      const price=priceFromParts('activation-price-major','activation-price-cents');
+      if(price===null||price<0){toast('Enter a valid selling price');return;}
+      body.selling_price=price;
+    }
+    await api(path,{method:'PATCH',body:JSON.stringify(body)});
     closeGenericActivation();toast((type==='user'?'User':type==='product'?'Product':'Tank')+' activated');await loadSettingsData();
   }catch(e){toast(e.message);}
 }
