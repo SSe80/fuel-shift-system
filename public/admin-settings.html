@@ -15,18 +15,21 @@
       <button class="primary">Add employee</button>
     </form>
 
-    <form id="employee-edit-form" class="form edit-form" onsubmit="saveEmployeeEdit(event)" style="display:none">
-      <h3>Edit Employee</h3>
-      <input id="edit-employee-id" type="hidden">
-      <label>Name<input id="edit-employee-name" required></label>
-      <label>Phone number<input id="edit-employee-phone" required></label>
-      <label>Role<select id="edit-employee-role"><option value="employee">Employee</option><option value="admin">Admin</option></select></label>
-      <label>New PIN <span class="muted">(leave blank to keep current PIN)</span><input id="edit-employee-pin" type="password" inputmode="numeric" minlength="4" placeholder="New PIN"></label>
-      <div class="row">
-        <button type="submit" class="primary">Save Changes</button>
-        <button type="button" onclick="closeEmployeeEdit()">Cancel</button>
-      </div>
-    </form>
+    <div id="employee-edit-modal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" onclick="closeEmployeeEdit()"></div>
+      <form id="employee-edit-form" class="modal-card form" onsubmit="saveEmployeeEdit(event)">
+        <div class="top"><h3>Edit Employee</h3><button type="button" class="modal-close" onclick="closeEmployeeEdit()" aria-label="Close">×</button></div>
+        <input id="edit-employee-id" type="hidden">
+        <label>Name<input id="edit-employee-name" required></label>
+        <label>Phone number<input id="edit-employee-phone" required></label>
+        <label>Role<select id="edit-employee-role"><option value="employee">Employee</option><option value="admin">Admin</option></select></label>
+        <label>New PIN <span class="muted">(leave blank to keep current PIN)</span><input id="edit-employee-pin" type="password" inputmode="numeric" minlength="4" placeholder="New PIN"></label>
+        <div class="row">
+          <button type="submit" class="primary">Save Changes</button>
+          <button type="button" onclick="closeEmployeeEdit()">Cancel</button>
+        </div>
+      </form>
+    </div>
 
     <div id="employees"></div>
   </div>
