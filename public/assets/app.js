@@ -168,24 +168,59 @@ async function loadSettingsData(){
   const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
   const codeForProduct=product=>productByName[String(product||'').toLowerCase()]?.code_name||product;
   const pendingHandovers=shifts.filter(x=>x.status==='assigned');
+  const pendingByDispenser=Object.fromEntries(pendingHandovers.map(x=>[x.nozzle_id,x]));
+  const names=Object.fromEntries(employees.map(e=>[e.id,e.name]));
+
+  // Pending assignments are rendered in place of their dispenser card.
+  // The separate pending-handover box is kept empty to avoid duplicate cards.
   const pendingBox=document.getElementById('pending-handovers');
-  if(pendingBox){
-    const names=Object.fromEntries(employees.map(e=>[e.id,e.name]));
-    pendingBox.innerHTML=pendingHandovers.length?pendingHandovers.map(x=>{
-      const d=dispensers.find(n=>n.id===x.nozzle_id);
-      const tank=d?tanks.find(t=>t.id===d.tank_id):null;
-      const readings=Array.isArray(x.activation_nozzles)?x.activation_nozzles:[];
-      const readingText=readings.length?readings.map(r=>h(r.nozzle_id)+' = '+liters(r.opening_reading)).join(' • '):'Not recorded';
-      return '<div class="card"><div class="top"><div><h3>Pending Handover</h3><span class="badge">Awaiting attendant confirmation</span></div><button type="button" onclick="cancelAdminPendingShift(\''+x.id+'\')">Cancel Assignment</button></div><p>Dispenser: <b>'+h(d?.nozzle_code||x.nozzle_id)+'</b> • '+h(codeForProduct(d?.product||''))+'</p><p>Tank: <b>'+h(tank?.tank_code||d?.tank_id||'Not connected')+'</b> • Tank opening: <b>'+liters(x.opening_tank_liters)+' L</b></p><p>Assigned attendant: <b>'+h(names[x.employee_id]||x.employee_id)+'</b></p><p>Selected nozzle readings: <b>'+readingText+'</b></p><p class="muted">Dispenser status: <b>Inactive</b> — it will activate only after the attendant confirms these readings.</p></div>';
-    }).join(''):'<div class="card"><p>No pending handovers.</p></div>';
-  }
+  if(pendingBox) pendingBox.innerHTML='';
+
   document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><br><span class="muted">Name: ${h(p.name)} • ${p.active?'Active':'Inactive'} • Price: ${p.selling_price==null?'Not set':Number(p.selling_price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'⚠️ Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
   window.productRecords=products;
   document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openUserEdit('${e.id}')">Edit</button><button type="button" onclick="toggleUser('${e.id}',${e.active})">${e.active?'Deactivate':'⚠️ Activate'}</button></div></div></div>`).join(''):'<p class="muted">No users.</p>';
   window.employeeRecords=employees;
   document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><div class="top"><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.capacity_liters)} L capacity • ${t.active===false?'Inactive':'Active'}</p><span class="muted">Opening stock: <b>${t.opening_stock_liters==null?'Not recorded':liters(t.opening_stock_liters)+' L'}</b> • Current stock: <b>${liters(t.current_liters)} L</b></span></div><div class="row"><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'⚠️ Activate':'Deactivate'}</button><button type="button" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
   window.tankRecords=tanks;
-  document.getElementById('dispensers').innerHTML=dispensers.length?dispensers.map(n=>`<div class="card"><div class="top"><div><b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b><br><span class="muted">Tank: ${h((tanks.find(t=>t.id===n.tank_id)||{}).tank_code||n.tank_id)} • ${h(n.nozzle_count||1)} nozzle(s) • ${n.active?'Active':'Inactive'} • Dispenser tank opening: <b>${n.opening_tank_liters==null?'Not recorded':liters(n.opening_tank_liters)+' L'}</b></span><div class="muted" style="margin-top:6px"><b>Nozzle IDs:</b> ${(n.nozzle_ids||[]).map(id=>`<span style="display:inline-block;margin:2px 4px 2px 0">${h(id)}</span>`).join('')}</div></div><div class="row"><button type="button" onclick="openDispenserEdit('${n.id}')">Edit</button><button type="button" onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'⚠️ Activate'}</button><button type="button" onclick="removeDispenser('${n.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No dispensers.</p>';
+  document.getElementById('dispensers').innerHTML=dispensers.length?dispensers.map(n=>{
+    const tank=tanks.find(t=>t.id===n.tank_id);
+    const pending=pendingByDispenser[n.id];
+    const shift=pending||shifts.find(s=>s.nozzle_id===n.id&&s.status==='active');
+    const attendant=shift?employees.find(e=>e.id===shift.employee_id):null;
+    if(pending){
+      const readings=Array.isArray(pending.activation_nozzles)?pending.activation_nozzles:[];
+      const readingText=readings.length?readings.map(r=>h(r.nozzle_id)+' = '+liters(r.opening_reading)).join(' • '):'Not recorded';
+      return `<div class="card">
+        <div class="top">
+          <div>
+            <b>Pending Shift Assignment</b><br>
+            <span class="badge">Awaiting attendant confirmation</span>
+          </div>
+          <button type="button" onclick="cancelAdminPendingShift('${pending.id}')">Cancel Assignment</button>
+        </div>
+        <p><b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b></p>
+        <p>Tank: <b>${h(tank?.tank_code||n.tank_id||'Not connected')}</b> • Tank opening: <b>${liters(pending.opening_tank_liters)} L</b></p>
+        <p>Assigned attendant: <b>${h(names[pending.employee_id]||pending.employee_id)}</b></p>
+        <p>Selected nozzle readings: <b>${readingText}</b></p>
+        <p class="muted">Dispenser status: <b>Inactive</b> — it will activate only after the attendant confirms these readings.</p>
+      </div>`;
+    }
+    return `<div class="card">
+      <div class="top">
+        <div>
+          <b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b><br>
+          <span class="muted">Tank: ${h(tank?.tank_code||n.tank_id||'Not connected')} • ${h(n.nozzle_count||1)} nozzle(s) • ${n.active?'Active':'Inactive'} • Dispenser tank opening: <b>${n.opening_tank_liters==null?'Not recorded':liters(n.opening_tank_liters)+' L'}</b></span>
+          <div class="muted" style="margin-top:6px"><b>Nozzle IDs:</b> ${(n.nozzle_ids||[]).map(id=>`<span style="display:inline-block;margin:2px 4px 2px 0">${h(id)}</span>`).join('')}</div>
+        </div>
+        <div class="row">
+          <button type="button" onclick="openDispenserEdit('${n.id}')">Edit</button>
+          <button type="button" onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'⚠️ Activate'}</button>
+          <button type="button" onclick="removeDispenser('${n.id}')">Remove</button>
+        </div>
+      </div>
+      ${n.active&&attendant?'<p class="muted">Active shift: <b>'+h(attendant.name||'Attendant')+'</b></p>':''}
+    </div>`;
+  }).join(''):'<p class="muted">No dispensers.</p>';
 window.dispenserRecords=dispensers;
   const tankProductSelect=document.getElementById('tank-product');
   if(tankProductSelect){
