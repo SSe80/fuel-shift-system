@@ -95,6 +95,12 @@
         </div>
         <small class="muted">Enter the whole amount and cents separately.</small>
       </div>
+      <div id="tank-activation-stock" class="form" style="display:none">
+        <label>Opening stock reading (liters)
+          <input id="tank-opening-stock" type="number" min="0" step="0.01" placeholder="Enter opening stock liters" inputmode="decimal">
+        </label>
+        <small class="muted">The tank can only be activated when its product is active.</small>
+      </div>
       <input id="activation-target-id" type="hidden"><input id="activation-target-type" type="hidden">
       <div class="row"><button type="button" onclick="closeGenericActivation()">Cancel</button><button type="button" class="primary" onclick="confirmGenericActivation()">Activate</button></div>
     </div>
