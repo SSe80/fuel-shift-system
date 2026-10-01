@@ -84,21 +84,44 @@
   </div>
 
   <div class="card">
-    <h3>Fuel Nozzles</h3>
-    <form class="form" onsubmit="createNozzle(event)">
-      <input id="nozzle-code" placeholder="Nozzle code (e.g. N1)" required>
-      <select id="nozzle-product" required><option value="">Select product</option></select>
-      <select id="nozzle-tank" required><option value="">Select tank</option></select>
-      <button class="primary">Add nozzle</button>
+    <h3>Fuel Dispenser</h3>
+    <form class="form" onsubmit="createDispenser(event)">
+      <select id="dispenser-product" required><option value="">Select product</option></select>
+      <select id="dispenser-tank" required><option value="">Select tank</option></select>
+      <select id="dispenser-nozzle-count" required>
+        <option value="">How many nozzles?</option>
+        <option value="1">1 nozzle</option>
+        <option value="2">2 nozzles</option>
+        <option value="3">3 nozzles</option>
+        <option value="4">4 nozzles</option>
+      </select>
+      <button class="primary">Add dispenser</button>
     </form>
-    <div id="nozzles"></div>
+    <div id="dispenser-edit-modal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" onclick="closeDispenserEdit()"></div>
+      <form id="dispenser-edit-form" class="modal-card form" onsubmit="saveDispenserEdit(event)">
+        <div class="top"><h3>Edit Fuel Dispenser</h3><button type="button" class="modal-close" onclick="closeDispenserEdit()" aria-label="Close">×</button></div>
+        <input id="edit-dispenser-id" type="hidden">
+        <label>Product<select id="edit-dispenser-product" required></select></label>
+        <label>Tank<select id="edit-dispenser-tank" required></select></label>
+        <label>Dispenser order<select id="edit-dispenser-order" required></select></label>
+        <label>Nozzles<select id="edit-dispenser-nozzle-count" required>
+          <option value="1">1 nozzle</option><option value="2">2 nozzles</option><option value="3">3 nozzles</option><option value="4">4 nozzles</option>
+        </select></label>
+        <div class="row">
+          <button type="submit" class="primary">Save Changes</button>
+          <button type="button" onclick="closeDispenserEdit()">Cancel</button>
+        </div>
+      </form>
+    </div>
+    <div id="dispensers"></div>
   </div>
 
   <div class="card">
     <h3>Shift Assignment</h3>
     <form class="form" onsubmit="createShift(event)">
       <select id="shift-employee" required><option value="">Select employee</option></select>
-      <select id="shift-nozzle" required><option value="">Select nozzle</option></select>
+      <select id="shift-nozzle" required><option value="">Select dispenser</option></select>
       <button class="primary">Assign Shift</button>
     </form>
     <div id="shifts"></div>

@@ -100,7 +100,7 @@ async function adminSettings(){
   }
 }
 async function loadSettingsData(){
-  const [employees,tanks,nozzles,shifts,products]=await Promise.all([api('/api/employees'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/products')]);
+  const [employees,tanks,dispensers,shifts,products]=await Promise.all([api('/api/employees'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/products')]);
   const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
   const codeForProduct=product=>productByName[String(product||'').toLowerCase()]?.code_name||product;
   document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><br><span class="muted">Name: ${h(p.name)} • ${p.active?'Active':'Inactive'}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
@@ -109,15 +109,24 @@ async function loadSettingsData(){
   window.employeeRecords=employees;
   document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><div class="top"><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.capacity_liters)} L capacity • ${t.active===false?'Inactive':'Active'}</p></div><div class="row"><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
   window.tankRecords=tanks;
-  document.getElementById('nozzles').innerHTML=nozzles.length?nozzles.map(n=>`<div class="card"><div class="top"><div><b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b><br><span class="muted">Tank: ${h((tanks.find(t=>t.id===n.tank_id)||{}).tank_code||n.tank_id)}</span></div><button onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'Activate'}</button></div></div>`).join(''):'<p class="muted">No nozzles.</p>';
+  document.getElementById('dispensers').innerHTML=dispensers.length?dispensers.map(n=>`<div class="card"><div class="top"><div><b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b><br><span class="muted">Tank: ${h((tanks.find(t=>t.id===n.tank_id)||{}).tank_code||n.tank_id)} • ${h(n.nozzle_count||1)} nozzle(s) • ${n.active?'Active':'Inactive'}</span></div><div class="row"><button type="button" onclick="openDispenserEdit('${n.id}')">Edit</button><button type="button" onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'Activate'}</button><button type="button" onclick="removeDispenser('${n.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No dispensers.</p>';
+window.dispenserRecords=dispensers;
   const es=document.getElementById('shift-employee'),ns=document.getElementById('shift-nozzle');
   es.innerHTML='<option value="">Select employee</option>'+employees.filter(e=>e.active&&e.role==='employee').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
   document.getElementById('tank-product').innerHTML='<option value="">Select product</option>'+products.filter(p=>p.active).map(p=>`<option value="${h(p.name)}">${h(p.code_name)}</option>`).join('');
-  document.getElementById('nozzle-product').innerHTML='<option value="">Select product</option>'+products.filter(p=>p.active).map(p=>`<option value="${h(p.name)}">${h(p.code_name)}</option>`).join('');
-  document.getElementById('nozzle-tank').innerHTML='<option value="">Select tank</option>'+tanks.map(t=>`<option value="${t.id}">${h(t.tank_code)} — ${h(codeForProduct(t.product))}</option>`).join('');
-  ns.innerHTML='<option value="">Select nozzle</option>'+nozzles.filter(n=>n.active).map(n=>`<option value="${n.id}">${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</option>`).join('');
-  const en=Object.fromEntries(employees.map(e=>[e.id,e.name])),nn=Object.fromEntries(nozzles.map(n=>[n.id,n.nozzle_code]));
+  document.getElementById('dispenser-product').innerHTML='<option value="">Select product</option>'+products.filter(p=>p.active).map(p=>`<option value="${h(p.name)}">${h(p.code_name)}</option>`).join('');
+  document.getElementById('dispenser-tank').innerHTML='<option value="">Select tank</option>'+tanks.filter(t=>t.active!==false).map(t=>`<option value="${t.id}">${h(t.tank_code)} — ${h(codeForProduct(t.product))}</option>`).join('');
+  ns.innerHTML='<option value="">Select dispenser</option>'+dispensers.filter(n=>n.active).map(n=>`<option value="${n.id}">${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</option>`).join('');
+  const en=Object.fromEntries(employees.map(e=>[e.id,e.name])),nn=Object.fromEntries(dispensers.map(n=>[n.id,n.nozzle_code]));
   document.getElementById('shifts').innerHTML=shifts.slice(0,20).map(s=>`<div class="card"><b>${h(en[s.employee_id]||s.employee_id)}</b> • ${h(nn[s.nozzle_id]||s.nozzle_id)}<br><span class="muted">${h(s.status)} • ${s.start_time?new Date(s.start_time).toLocaleString():'not started'}</span></div>`).join('')||'<p class="muted">No shifts.</p>';
+  const dispenserProductSelect=document.getElementById('dispenser-product');
+  const dispenserTankSelect=document.getElementById('dispenser-tank');
+  if(dispenserProductSelect&&dispenserTankSelect){
+    dispenserProductSelect.onchange=()=>{
+      const product=dispenserProductSelect.value;
+      dispenserTankSelect.innerHTML='<option value="">Select tank</option>'+tanks.filter(t=>t.active!==false&&String(t.product||'').toLowerCase()===String(product||'').toLowerCase()).map(t=>'<option value="'+t.id+'">'+h(t.tank_code)+' — '+h(codeForProduct(t.product))+'</option>').join('');
+    };
+  }
 }
 function openProductEdit(id){
   const p=(window.productRecords||[]).find(x=>x.id===id);
@@ -206,11 +215,11 @@ async function toggleEmployee(id,active){try{await api('/api/employees/'+id,{met
 function openTankEdit(id){
   const t=(window.tankRecords||[]).find(x=>x.id===id);
   if(!t)return;
-  const match=String(t.tank_code||'').match(/•(\d+)$/);
+  const match=String(t.tank_code||'').match(/•TANK (\d+)$/);
   const currentOrder=match?Number(match[1]):1;
   const productKey=String(t.product||'').toLowerCase();
   const sameProduct=(window.tankRecords||[]).filter(x=>String(x.product||'').toLowerCase()===productKey);
-  const orders=sameProduct.map(x=>String(x.tank_code||'').match(/•(\d+)$/)).filter(Boolean).map(m=>Number(m[1])).sort((a,b)=>a-b);
+  const orders=sameProduct.map(x=>String(x.tank_code||'').match(/•TANK (\d+)$/)).filter(Boolean).map(m=>Number(m[1])).sort((a,b)=>a-b);
   const orderSelect=document.getElementById('edit-tank-order');
   orderSelect.innerHTML=orders.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
   orderSelect.value=String(currentOrder);
@@ -267,8 +276,71 @@ async function createTank(e){
     await loadSettingsData();
   }catch(x){toast(x.message);}
 }
-async function createNozzle(e){e.preventDefault();try{await api('/api/nozzles',{method:'POST',body:JSON.stringify({nozzle_code:document.getElementById('nozzle-code').value.trim(),product:document.getElementById('nozzle-product').value.trim(),tank_id:document.getElementById('nozzle-tank').value})});e.target.reset();toast('Nozzle created');await loadSettingsData();}catch(x){toast(x.message);}}
-async function toggleNozzle(id,active){try{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});await loadSettingsData();}catch(e){toast(e.message);}}
+function openDispenserEdit(id){
+  const d=(window.dispenserRecords||[]).find(x=>x.id===id);
+  if(!d)return;
+  const products=window.productRecords||[];
+  const tanks=window.tankRecords||[];
+  const productSelect=document.getElementById('edit-dispenser-product');
+  productSelect.innerHTML='<option value="">Select product</option>'+products.filter(p=>p.active).map(p=>'<option value="'+h(p.name)+'">'+h(p.code_name)+'</option>').join('');
+  productSelect.value=d.product||'';
+  const fillTanks=()=>{
+    const product=productSelect.value;
+    document.getElementById('edit-dispenser-tank').innerHTML='<option value="">Select tank</option>'+tanks.filter(t=>t.active!==false&&String(t.product||'').toLowerCase()===String(product||'').toLowerCase()).map(t=>'<option value="'+t.id+'">'+h(t.tank_code)+' — '+h(t.capacity_liters)+' L</option>').join('');
+  };
+  fillTanks();
+  document.getElementById('edit-dispenser-tank').value=d.tank_id||'';
+  productSelect.onchange=()=>{fillTanks();document.getElementById('edit-dispenser-order').innerHTML='';};
+  const productKey=String(d.product||'').toLowerCase();
+  const same=(window.dispenserRecords||[]).filter(x=>String(x.product||'').toLowerCase()===productKey);
+  const orders=same.map(x=>String(x.nozzle_code||'').match(/•DISPENSER (\d+)$/)).filter(Boolean).map(m=>Number(m[1])).sort((a,b)=>a-b);
+  document.getElementById('edit-dispenser-order').innerHTML=orders.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
+  const m=String(d.nozzle_code||'').match(/•DISPENSER (\d+)$/);
+  document.getElementById('edit-dispenser-order').value=m?m[1]:'';
+  document.getElementById('edit-dispenser-nozzle-count').value=String(d.nozzle_count||1);
+  document.getElementById('edit-dispenser-id').value=d.id;
+  const modal=document.getElementById('dispenser-edit-modal');
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+  document.getElementById('edit-dispenser-product').focus();
+}
+function closeDispenserEdit(){
+  const modal=document.getElementById('dispenser-edit-modal');
+  modal.classList.remove('open');modal.setAttribute('aria-hidden','true');
+  document.getElementById('dispenser-edit-form').reset();
+}
+async function saveDispenserEdit(event){
+  event.preventDefault();
+  const id=document.getElementById('edit-dispenser-id').value;
+  try{
+    await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({
+      product:document.getElementById('edit-dispenser-product').value,
+      tank_id:document.getElementById('edit-dispenser-tank').value,
+      tank_order:Number(document.getElementById('edit-dispenser-order').value),
+      nozzle_count:Number(document.getElementById('edit-dispenser-nozzle-count').value)
+    })});
+    closeDispenserEdit();toast('Dispenser updated');await loadSettingsData();
+  }catch(e){toast(e.message);}
+}
+async function toggleNozzle(id,active){
+  try{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});toast(active?'Dispenser deactivated':'Dispenser activated');await loadSettingsData();}
+  catch(e){toast(e.message);}
+}
+async function removeDispenser(id){
+  if(!confirm('Remove this dispenser? This cannot be undone.'))return;
+  try{await api('/api/nozzles/'+id,{method:'DELETE'});toast('Dispenser removed');await loadSettingsData();}
+  catch(e){toast(e.message);}
+}
+async function createDispenser(e){
+  e.preventDefault();
+  try{
+    await api('/api/nozzles',{method:'POST',body:JSON.stringify({
+      product:document.getElementById('dispenser-product').value,
+      tank_id:document.getElementById('dispenser-tank').value,
+      nozzle_count:Number(document.getElementById('dispenser-nozzle-count').value)
+    })});
+    e.target.reset();toast('Dispenser created');await loadSettingsData();
+  }catch(x){toast(x.message);}
+}
 async function createShift(e){e.preventDefault();try{await api('/api/shifts',{method:'POST',body:JSON.stringify({employee_id:document.getElementById('shift-employee').value,nozzle_id:document.getElementById('shift-nozzle').value})});e.target.reset();toast('Shift assigned');await loadSettingsData();}catch(x){toast(x.message);}}
 
 async function loadSaleContext(){

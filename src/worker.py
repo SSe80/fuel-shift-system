@@ -290,12 +290,12 @@ def create_tank():
         return jsonify({"error":tanks}),ts
     max_order = 0
     import re
-    pattern = re.compile(r"^"+re.escape(code_name)+r"•(\d+)$", re.IGNORECASE)
+    pattern = re.compile(r"^"+re.escape(code_name)+r"•TANK (\d+)$", re.IGNORECASE)
     for tank in tanks:
         match = pattern.match(str(tank.get("tank_code","")))
         if match:
             max_order = max(max_order, int(match.group(1)))
-    tank_code = f"{code_name}•{max_order + 1}"
+    tank_code = f"{code_name}•TANK {max_order + 1}"
 
     status,result=sb("tanks",method="POST",body={
         "tank_code":tank_code,
@@ -350,7 +350,7 @@ def update_tank(tank_id):
                 return jsonify({"error":"Product for this tank was not found"}),404
             code_name = str(products[0]["code_name"]).strip()
             import re
-            pattern = re.compile(r"^"+re.escape(code_name)+r"•(\d+)$", re.IGNORECASE)
+            pattern = re.compile(r"^"+re.escape(code_name)+r"•TANK (\d+)$", re.IGNORECASE)
             ts, same_tanks = sb("tanks", params={"select":"id,tank_code","product":"eq."+str(tank["product"])})
             if ts != 200:
                 return jsonify({"error":same_tanks}),ts
@@ -365,9 +365,9 @@ def update_tank(tank_id):
                 target = next((x for x in same_tanks if pattern.match(str(x.get("tank_code",""))).group(1) == str(order) if pattern.match(str(x.get("tank_code","")))), None)
                 if not target:
                     return jsonify({"error":"Selected tank order is not available"}),400
-                current_code = f"{code_name}•{current_order}"
-                target_code = f"{code_name}•{order}"
-                temp_code = f"{code_name}•__swap__{tank_id}"
+                current_code = f"{code_name}•TANK {current_order}"
+                target_code = f"{code_name}•TANK {order}"
+                temp_code = f"{code_name}•TANK __swap__{tank_id}"
                 status,_=sb("tanks",method="PATCH",params={"id":"eq."+target["id"]},body={"tank_code":temp_code},prefer="return=minimal")
                 if status>=400:return jsonify({"error":"Could not prepare tank order swap"}),status
                 status,_=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body={"tank_code":target_code},prefer="return=minimal")
@@ -402,7 +402,7 @@ def update_tank(tank_id):
 def nozzles():
     auth=require_login()
     if auth:return auth
-    params={"select":"id,nozzle_code,product,tank_id,active","order":"nozzle_code.asc"}
+    params={"select":"id,nozzle_code,product,tank_id,nozzle_count,active","order":"nozzle_code.asc"}
     if session.get("role") != "admin": params["active"]="eq.true"
     status,rows=sb("nozzles",params=params)
     return jsonify(rows),status
@@ -412,35 +412,111 @@ def create_nozzle():
     auth=require_admin()
     if auth:return auth
     data=request.get_json(silent=True) or {}
-    code,product,tank_id=str(data.get("nozzle_code","")).strip(),str(data.get("product","")).strip(),str(data.get("tank_id","")).strip()
-    if not code or not product or not tank_id:return jsonify({"error":"Nozzle code, product and tank are required"}),400
-    ts,tr=sb("tanks",params={"id":"eq."+tank_id,"select":"id,product"})
+    product,tank_id=str(data.get("product","")).strip(),str(data.get("tank_id","")).strip()
+    try: nozzle_count=int(data.get("nozzle_count",0))
+    except (TypeError,ValueError): nozzle_count=0
+    if not product or not tank_id or nozzle_count not in (1,2,3,4):
+        return jsonify({"error":"Product, tank and nozzle count (1-4) are required"}),400
+    ps,pr=sb("products",params={"name":"eq."+product,"select":"name,code_name,active","limit":"1"})
+    if ps!=200 or not pr:return jsonify({"error":"Product not found"}),404
+    if not pr[0].get("active"):return jsonify({"error":"Product is inactive"}),400
+    code_name=str(pr[0]["code_name"]).strip()
+    ts,tr=sb("tanks",params={"id":"eq."+tank_id,"select":"id,product,active"})
     if ts!=200 or not tr:return jsonify({"error":"Tank not found"}),404
-    if product.lower()!=str(tr[0]["product"]).lower():return jsonify({"error":"Nozzle product must match tank product"}),400
-    status,result=sb("nozzles",method="POST",body={"nozzle_code":code,"product":product,"tank_id":tank_id,"active":True},prefer="return=representation")
+    if not tr[0].get("active"):return jsonify({"error":"Tank is inactive"}),400
+    if product.lower()!=str(tr[0]["product"]).lower():return jsonify({"error":"Dispenser product must match tank product"}),400
+    ts,rows=sb("nozzles",params={"select":"nozzle_code","product":"eq."+product})
+    if ts!=200:return jsonify({"error":rows}),ts
+    import re
+    pattern=re.compile(r"^"+re.escape(code_name)+r"•DISPENSER (\d+)$",re.IGNORECASE)
+    max_order=0
+    for row in rows:
+        m=pattern.match(str(row.get("nozzle_code","")))
+        if m:max_order=max(max_order,int(m.group(1)))
+    dispenser_code=f"{code_name}•DISPENSER {max_order+1}"
+    status,result=sb("nozzles",method="POST",body={"nozzle_code":dispenser_code,"product":product,"tank_id":tank_id,"nozzle_count":nozzle_count,"active":True},prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
+
+@app.route("/api/nozzles/<nozzle_id>",methods=["DELETE"])
+def delete_nozzle(nozzle_id):
+    auth=require_admin()
+    if auth:return auth
+    ss,sr=sb("shifts",params={"nozzle_id":"eq."+nozzle_id,"status":"in.(assigned,active)","select":"id","limit":"1"})
+    if ss!=200:return jsonify({"error":sr}),ss
+    if sr:return jsonify({"error":"This dispenser has an assigned or active shift"}),409
+    status,result=sb("nozzles",method="DELETE",params={"id":"eq."+nozzle_id},prefer="return=representation")
+    if status>=400:return jsonify({"error":result}),status
+    if not result:return jsonify({"error":"Dispenser not found"}),404
+    return jsonify({"ok":True}),200
 
 @app.patch("/api/nozzles/<nozzle_id>")
 def update_nozzle(nozzle_id):
     auth=require_admin()
     if auth:return auth
     data=request.get_json(silent=True) or {}
+    status,current=sb("nozzles",params={"id":"eq."+nozzle_id,"select":"id,nozzle_code,product,tank_id,nozzle_count,active"})
+    if status!=200 or not current:return jsonify({"error":"Dispenser not found"}),404
+    cur=current[0]
     body={}
     if "active" in data: body["active"]=bool(data["active"])
-    if "tank_id" in data:
-        tank_id=str(data["tank_id"]).strip()
-        ts,tr=sb("tanks",params={"id":"eq."+tank_id,"select":"id,product"})
+    if "nozzle_count" in data:
+        try: count=int(data["nozzle_count"])
+        except (TypeError,ValueError): return jsonify({"error":"Nozzle count must be 1, 2, 3 or 4"}),400
+        if count not in (1,2,3,4): return jsonify({"error":"Nozzle count must be 1, 2, 3 or 4"}),400
+        body["nozzle_count"]=count
+    new_product=str(data.get("product",cur["product"])).strip()
+    new_tank_id=str(data.get("tank_id",cur["tank_id"] or "")).strip()
+    if "product" in data or "tank_id" in data:
+        ps,pr=sb("products",params={"name":"eq."+new_product,"select":"name,code_name,active","limit":"1"})
+        if ps!=200 or not pr:return jsonify({"error":"Product not found"}),404
+        if not pr[0].get("active"):return jsonify({"error":"Product is inactive"}),400
+        ts,tr=sb("tanks",params={"id":"eq."+new_tank_id,"select":"id,product,active"})
         if ts!=200 or not tr:return jsonify({"error":"Tank not found"}),404
-        body["tank_id"]=tank_id
-        if "product" not in data: body["product"]=tr[0]["product"]
-    if "product" in data:
-        body["product"]=str(data["product"]).strip()
-    if "tank_id" in body and "product" in body:
-        ts,tr=sb("tanks",params={"id":"eq."+body["tank_id"],"select":"id,product"})
-        if ts!=200 or not tr:return jsonify({"error":"Tank not found"}),404
-        if body["product"].lower()!=str(tr[0]["product"]).lower():
-            return jsonify({"error":"Nozzle product must match tank product"}),400
+        if not tr[0].get("active"):return jsonify({"error":"Tank is inactive"}),400
+        if new_product.lower()!=str(tr[0]["product"]).lower():return jsonify({"error":"Dispenser product must match tank product"}),400
+        body["product"]=new_product
+        body["tank_id"]=new_tank_id
+    if "tank_order" in data:
+        try: order=int(data["tank_order"])
+        except (TypeError,ValueError): return jsonify({"error":"Invalid dispenser order"}),400
+        if order<1:return jsonify({"error":"Dispenser order must be 1 or greater"}),400
+        code_product=new_product
+        ps,pr=sb("products",params={"name":"eq."+code_product,"select":"name,code_name","limit":"1"})
+        if ps!=200 or not pr:return jsonify({"error":"Product not found"}),404
+        code_name=str(pr[0]["code_name"]).strip()
+        import re
+        pattern=re.compile(r"^"+re.escape(code_name)+r"•DISPENSER (\d+)$",re.IGNORECASE)
+        current_match=pattern.match(str(cur["nozzle_code"]))
+        current_order=int(current_match.group(1)) if current_match else None
+        if current_order is None:return jsonify({"error":"Current dispenser order could not be determined"}),400
+        ts,same=sb("nozzles",params={"select":"id,nozzle_code","product":"eq."+code_product})
+        if ts!=200:return jsonify({"error":same}),ts
+        max_order=max([int(m.group(1)) for x in same if (m:=pattern.match(str(x.get("nozzle_code",""))))] or [0])
+        if order>max_order:return jsonify({"error":"Select one of the existing dispenser orders"}),400
+        if order!=current_order:
+            target=next((x for x in same if x["id"]!=nozzle_id and pattern.match(str(x.get("nozzle_code",""))) and int(pattern.match(str(x["nozzle_code"])).group(1))==order),None)
+            if not target:return jsonify({"error":"Selected dispenser order is not available"}),400
+            current_code=f"{code_name}•DISPENSER {current_order}"
+            target_code=f"{code_name}•DISPENSER {order}"
+            temp_code=f"{code_name}•DISPENSER __swap__{nozzle_id}"
+            status,_=sb("nozzles",method="PATCH",params={"id":"eq."+target["id"]},body={"nozzle_code":temp_code},prefer="return=minimal")
+            if status>=400:return jsonify({"error":"Could not prepare dispenser order swap"}),status
+            status,_=sb("nozzles",method="PATCH",params={"id":"eq."+nozzle_id},body={"nozzle_code":target_code},prefer="return=minimal")
+            if status>=400:return jsonify({"error":"Could not change dispenser order"}),status
+            status,_=sb("nozzles",method="PATCH",params={"id":"eq."+target["id"]},body={"nozzle_code":current_code},prefer="return=minimal")
+            if status>=400:return jsonify({"error":"Could not complete dispenser order swap"}),status
+    elif "product" in data:
+        # Moving to another product gets the next available automatic dispenser number.
+        ps,pr=sb("products",params={"name":"eq."+new_product,"select":"name,code_name","limit":"1"})
+        if ps==200 and pr:
+            code_name=str(pr[0]["code_name"]).strip()
+            ts,rows=sb("nozzles",params={"select":"nozzle_code","product":"eq."+new_product})
+            if ts==200:
+                import re
+                pattern=re.compile(r"^"+re.escape(code_name)+r"•DISPENSER (\d+)$",re.IGNORECASE)
+                max_order=max([int(m.group(1)) for x in rows if (m:=pattern.match(str(x.get("nozzle_code",""))))] or [0])
+                body["nozzle_code"]=f"{code_name}•DISPENSER {max_order+1}"
     if not body:return jsonify({"error":"No changes supplied"}),400
     status,result=sb("nozzles",method="PATCH",params={"id":"eq."+nozzle_id},body=body,prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
