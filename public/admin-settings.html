@@ -174,21 +174,17 @@
           <h3>Activate Dispenser?</h3>
           <button type="button" class="modal-close" onclick="closeDispenserActivation()" aria-label="Close">×</button>
         </div>
-        <p id="dispenser-activate-message">Select the attendant responsible for opening the dispenser, activate at least one nozzle, and enter each selected nozzle's opening meter reading.</p>
+        <p id="dispenser-activate-message">Select the Attendant and enter the opening readings. This creates a pending shift assignment; the selected Attendant must confirm it with their PIN on the Attendant Dashboard.</p>
         <div id="dispenser-nozzle-activation-list" class="form"></div>
         <div class="form">
           <label id="dispenser-activation-tank-label">Tank opening reading (liters)<input id="dispenser-activation-tank-liters" type="number" min="0" step="0.01" placeholder="Enter tank opening liters" inputmode="decimal" required></label>
           <label>Attendant<select id="dispenser-activation-employee" required><option value="">Select attendant</option></select></label>
         </div>
         <div id="dispenser-activation-review" style="margin-top:10px"></div>
-        <label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px">
-          <input id="dispenser-attendant-confirmation" type="checkbox" style="margin-top:4px">
-          <span>I am the selected Attendant and I confirm that the tank and nozzle opening readings displayed above are correct.</span>
-        </label>
-        <p id="dispenser-activate-error" class="muted" style="display:none"></p>
+                <p id="dispenser-activate-error" class="muted" style="display:none"></p>
         <div class="row">
           <button type="button" onclick="closeDispenserActivation()">Cancel</button>
-          <button type="button" class="primary" onclick="confirmDispenserActivation()">Activate Dispenser</button>
+          <button type="button" class="primary" onclick="confirmDispenserActivation()">Assign Shift / Activate Dispenser</button>
         </div>
       </div>
     </div>
