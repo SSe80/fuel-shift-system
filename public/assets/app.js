@@ -89,7 +89,9 @@ async function adminSettings(){
   catch(e){location.href='admin-login.html';}
 }
 async function loadSettingsData(){
-  const [employees,tanks,nozzles,shifts]=await Promise.all([api('/api/employees'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts')]);
+  const [employees,tanks,nozzles,shifts,products]=await Promise.all([api('/api/employees'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/products')]);
+  document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.name)}</b><br><span class="muted">Code: <b>${h(p.code_name)}</b> • ${p.active?'Active':'Inactive'}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
+  window.productRecords=products;
   document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openEmployeeEdit('${e.id}')">Edit</button><button type="button" onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No employees.</p>';
   window.employeeRecords=employees;
   document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><b>${h(t.tank_code)} — ${h(t.product)}</b><p>${liters(t.current_liters)} / ${liters(t.capacity_liters)} L • Dip ${liters(t.current_mm)} mm</p><button onclick="adjustTank('${t.id}','${h(t.tank_code)}',${Number(t.current_liters)},${Number(t.current_mm)})">Adjust inventory</button></div>`).join(''):'<p class="muted">No tanks.</p>';
@@ -100,6 +102,57 @@ async function loadSettingsData(){
   const en=Object.fromEntries(employees.map(e=>[e.id,e.name])),nn=Object.fromEntries(nozzles.map(n=>[n.id,n.nozzle_code]));
   document.getElementById('shifts').innerHTML=shifts.slice(0,20).map(s=>`<div class="card"><b>${h(en[s.employee_id]||s.employee_id)}</b> • ${h(nn[s.nozzle_id]||s.nozzle_id)}<br><span class="muted">${h(s.status)} • ${s.start_time?new Date(s.start_time).toLocaleString():'not started'}</span></div>`).join('')||'<p class="muted">No shifts.</p>';
 }
+function openProductEdit(id){
+  const p=(window.productRecords||[]).find(x=>x.id===id);
+  if(!p)return;
+  document.getElementById('edit-product-id').value=p.id;
+  document.getElementById('edit-product-name').value=p.name||'';
+  document.getElementById('edit-product-code').value=p.code_name||'';
+  document.getElementById('edit-product-color').value=p.color||'#1264d8';
+  const modal=document.getElementById('product-edit-modal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+  document.getElementById('edit-product-name').focus();
+}
+function closeProductEdit(){
+  const modal=document.getElementById('product-edit-modal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden','true');
+  document.getElementById('product-edit-form').reset();
+}
+async function saveProductEdit(event){
+  event.preventDefault();
+  const id=document.getElementById('edit-product-id').value;
+  try{
+    await api('/api/products/'+id,{method:'PATCH',body:JSON.stringify({
+      name:document.getElementById('edit-product-name').value.trim(),
+      code_name:document.getElementById('edit-product-code').value.trim(),
+      color:document.getElementById('edit-product-color').value
+    })});
+    closeProductEdit();
+    toast('Product updated');
+    await loadSettingsData();
+  }catch(e){toast(e.message);}
+}
+async function createProduct(event){
+  event.preventDefault();
+  try{
+    await api('/api/products',{method:'POST',body:JSON.stringify({
+      name:document.getElementById('product-name').value.trim(),
+      code_name:document.getElementById('product-code').value.trim(),
+      color:document.getElementById('product-color').value
+    })});
+    event.target.reset();
+    document.getElementById('product-color').value='#1264d8';
+    toast('Product created');
+    await loadSettingsData();
+  }catch(e){toast(e.message);}
+}
+async function toggleProduct(id,active){
+  try{await api('/api/products/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});await loadSettingsData();}
+  catch(e){toast(e.message);}
+}
+
 function openEmployeeEdit(id){
   const e=(window.employeeRecords||[]).find(x=>x.id===id);
   if(!e)return;
