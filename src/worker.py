@@ -402,7 +402,7 @@ def update_tank(tank_id):
 def nozzles():
     auth=require_login()
     if auth:return auth
-    params={"select":"id,nozzle_code,product,tank_id,nozzle_count,active","order":"nozzle_code.asc"}
+    params={"select":"id,nozzle_code,nozzle_ids,product,tank_id,nozzle_count,active","order":"nozzle_code.asc"}
     if session.get("role") != "admin": params["active"]="eq.true"
     status,rows=sb("nozzles",params=params)
     return jsonify(rows),status
@@ -434,7 +434,8 @@ def create_nozzle():
         m=pattern.match(str(row.get("nozzle_code","")))
         if m:max_order=max(max_order,int(m.group(1)))
     dispenser_code=f"{code_name}•DISPENSER {max_order+1}"
-    status,result=sb("nozzles",method="POST",body={"nozzle_code":dispenser_code,"product":product,"tank_id":tank_id,"nozzle_count":nozzle_count,"active":True},prefer="return=representation")
+    nozzle_ids=[f"{dispenser_code}-N•{i}" for i in range(1, nozzle_count + 1)]
+    status,result=sb("nozzles",method="POST",body={"nozzle_code":dispenser_code,"nozzle_ids":nozzle_ids,"product":product,"tank_id":tank_id,"nozzle_count":nozzle_count,"active":True},prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
@@ -455,7 +456,7 @@ def update_nozzle(nozzle_id):
     auth=require_admin()
     if auth:return auth
     data=request.get_json(silent=True) or {}
-    status,current=sb("nozzles",params={"id":"eq."+nozzle_id,"select":"id,nozzle_code,product,tank_id,nozzle_count,active"})
+    status,current=sb("nozzles",params={"id":"eq."+nozzle_id,"select":"id,nozzle_code,nozzle_ids,product,tank_id,nozzle_count,active"})
     if status!=200 or not current:return jsonify({"error":"Dispenser not found"}),404
     cur=current[0]
     body={}
@@ -517,6 +518,10 @@ def update_nozzle(nozzle_id):
                 pattern=re.compile(r"^"+re.escape(code_name)+r"•DISPENSER (\d+)$",re.IGNORECASE)
                 max_order=max([int(m.group(1)) for x in rows if (m:=pattern.match(str(x.get("nozzle_code",""))))] or [0])
                 body["nozzle_code"]=f"{code_name}•DISPENSER {max_order+1}"
+    final_code=body.get("nozzle_code",cur["nozzle_code"])
+    final_count=body.get("nozzle_count",cur.get("nozzle_count",1))
+    if "nozzle_code" in body or "nozzle_count" in body:
+        body["nozzle_ids"]=[f"{final_code}-N•{i}" for i in range(1, int(final_count)+1)]
     if not body:return jsonify({"error":"No changes supplied"}),400
     status,result=sb("nozzles",method="PATCH",params={"id":"eq."+nozzle_id},body=body,prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
