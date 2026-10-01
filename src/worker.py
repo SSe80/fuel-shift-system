@@ -74,9 +74,24 @@ def require_login():
     return None
 
 def require_admin():
-    if not session.get("employee_id"):
+    eid = session.get("employee_id")
+    if not eid:
         return jsonify({"error": "Unauthorized"}), 401
-    if session.get("role") != "admin":
+
+    # Refresh the role from Supabase on every protected admin request.
+    # This prevents a stale session role from incorrectly blocking an admin
+    # after their account role was changed in Settings.
+    status, rows = sb("employees", params={
+        "id": "eq." + str(eid),
+        "select": "id,role,active",
+        "limit": "1"
+    })
+    if status != 200 or not rows or not rows[0].get("active"):
+        session.clear()
+        return jsonify({"error": "Unauthorized"}), 401
+
+    session["role"] = rows[0].get("role")
+    if session["role"] != "admin":
         return jsonify({"error": "Admin access required"}), 403
     return None
 
