@@ -768,12 +768,10 @@ def confirm_shift_assignment(shift_id):
 def cancel_shift_assignment(shift_id):
     eid=session.get("employee_id")
     if not eid:return jsonify({"error":"Unauthorized"}),401
-    status,current=sb("shifts",params={
-        "id":"eq."+shift_id,
-        "employee_id":"eq."+eid,
-        "status":"eq.assigned",
-        "select":"id"
-    })
+    params={"id":"eq."+shift_id,"status":"eq.assigned","select":"id"}
+    if session.get("role")!="admin":
+        params["employee_id"]="eq."+eid
+    status,current=sb("shifts",params=params)
     if status!=200:return jsonify({"error":current}),status
     if not current:return jsonify({"error":"Pending shift assignment not found"}),404
     status,result=sb("shifts",method="PATCH",params={"id":"eq."+shift_id},body={
