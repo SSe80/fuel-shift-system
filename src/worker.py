@@ -123,7 +123,7 @@ def me():
         session.clear()
         return jsonify({"authenticated": False}), 401
     session["role"] = rows[0]["role"]
-    return jsonify({"authenticated": True, "employee": rows[0]})
+    return jsonify({"authenticated": True, "user": rows[0], "employee": rows[0]})
 
 @app.post("/api/bootstrap-admin")
 def bootstrap_admin():
@@ -152,6 +152,7 @@ def bootstrap_admin():
     except Exception as exc:
         return jsonify({"error": {"type": type(exc).__name__, "message": str(exc)}}), 500
 
+@app.get("/api/users")
 @app.get("/api/employees")
 def employees():
     auth = require_login()
@@ -162,6 +163,7 @@ def employees():
     status, rows = sb("employees", params=params)
     return jsonify(rows), status
 
+@app.post("/api/users")
 @app.post("/api/employees")
 def create_employee():
     auth = require_admin()
@@ -179,6 +181,7 @@ def create_employee():
     if status >= 400: return jsonify({"error":result}), status
     return jsonify(result), 201
 
+@app.patch("/api/users/<employee_id>")
 @app.patch("/api/employees/<employee_id>")
 def update_employee(employee_id):
     auth = require_admin()
@@ -195,7 +198,7 @@ def update_employee(employee_id):
     if "active" in data: body["active"] = bool(data["active"])
     if "role" in data:
         role = str(data["role"]).strip()
-        if role not in ("employee","admin"): return jsonify({"error":"Invalid role"}), 400
+        if role not in ("attendant","admin"): return jsonify({"error":"Invalid role"}), 400
         if employee_id == session.get("employee_id") and role != "admin":
             return jsonify({"error":"You cannot remove your own admin role"}), 400
         body["role"] = role
