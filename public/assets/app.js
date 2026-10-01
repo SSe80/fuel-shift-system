@@ -166,7 +166,7 @@ async function createProduct(event){
       name:document.getElementById('product-name').value.trim(),
       code_name:document.getElementById('product-code').value.trim(),
       color:document.getElementById('product-color').value,
-      active:false
+      active:true
     })});
     event.target.reset();
     document.getElementById('product-color').value='#1264d8';
@@ -289,7 +289,7 @@ async function createTank(e){
     await api('/api/tanks',{method:'POST',body:JSON.stringify({
       product:document.getElementById('tank-product').value,
       capacity_liters:Number(document.getElementById('tank-capacity').value),
-      active:false
+      active:true
     })});
     e.target.reset();
     toast('Tank created');
