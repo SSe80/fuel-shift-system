@@ -261,7 +261,7 @@ def update_product(product_id):
 def tanks():
     auth = require_login()
     if auth: return auth
-    status, rows = sb("tanks", params={"select":"id,tank_code,product,capacity_liters,current_mm,current_liters,updated_at","order":"tank_code.asc"})
+    status, rows = sb("tanks", params={"select":"id,tank_code,product,capacity_liters,current_mm,current_liters,active,updated_at","order":"tank_code.asc"})
     return jsonify(rows), status
 
 @app.post("/api/tanks")
