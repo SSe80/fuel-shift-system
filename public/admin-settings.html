@@ -122,11 +122,11 @@
           <h3>Activate Dispenser?</h3>
           <button type="button" class="modal-close" onclick="closeDispenserActivation()" aria-label="Close">×</button>
         </div>
-        <p id="dispenser-activate-message">Select the user responsible for opening the dispenser, activate at least one nozzle, and enter each selected nozzle's opening reading.</p>
+        <p id="dispenser-activate-message">Select the attendant responsible for opening the dispenser, activate at least one nozzle, and enter each selected nozzle's opening meter reading.</p>
+        <div id="dispenser-nozzle-activation-list" class="form"></div>
         <div class="form">
           <label>Attendant<select id="dispenser-activation-employee" required><option value="">Select attendant</option></select></label>
         </div>
-        <div id="dispenser-nozzle-activation-list" class="form"></div>
         <p id="dispenser-activate-error" class="muted" style="display:none"></p>
         <div class="row">
           <button type="button" onclick="closeDispenserActivation()">Cancel</button>
