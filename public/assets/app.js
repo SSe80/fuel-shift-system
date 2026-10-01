@@ -40,12 +40,13 @@ async function userDashboard(){
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
     const tankNames=Object.fromEntries(tanks.map(t=>[t.id,t.tank_code]));
-    const nn=Object.fromEntries(nozzles.map(n=>[n.id,n.nozzle_code+' — '+codeForProduct(n.product)]));
-    const active=shifts.find(s=>s.status==='active');
+    const active=shifts.filter(s=>s.status==='active');
     const box=document.getElementById('shift');
-    if(active){
-      const n=nozzles.find(x=>x.id===active.nozzle_id);
-      box.innerHTML='<div class="card"><div class="top"><h3>Active Shift</h3><span class="badge">active</span></div><p>Dispenser: <b>'+h(n?.nozzle_code||active.nozzle_id)+'</b> • '+h(codeForProduct(n?.product||''))+'</p><p>Tank: <b>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</b></p><p>Opening meter: <b>'+liters(active.opening_reading)+'</b></p><div class="row"><a class="btn primary" href="sales.html">Record Sale</a><a class="btn" href="handover.html">Handover</a></div><form class="form" onsubmit="closeShift(event,\''+active.id+'\')"><input id="close-reading-'+active.id+'" type="number" min="0" step="0.01" placeholder="Closing meter reading" required><input id="close-mm-'+active.id+'" type="number" min="0" step="0.01" placeholder="Closing dip (mm)" required><input id="close-liters-'+active.id+'" type="number" min="0" step="0.01" placeholder="Closing tank liters" required><button class="primary">Close Shift</button></form></div>';
+    if(active.length){
+      box.innerHTML=active.map(s=>{
+        const n=nozzles.find(x=>x.id===s.nozzle_id);
+        return '<div class="card"><div class="top"><h3>Active Shift</h3><span class="badge">active</span></div><p>Dispenser: <b>'+h(n?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(n?.product||''))+'</p><p>Tank: <b>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</b></p><p>Opening meter: <b>'+liters(s.opening_reading)+'</b></p><div class="row"><a class="btn primary" href="sales.html?shift_id='+encodeURIComponent(s.id)+'">Record Sale</a><a class="btn" href="handover.html?shift_id='+encodeURIComponent(s.id)+'">Handover</a></div><form class="form" onsubmit="closeShift(event,\''+s.id+'\')"><input id="close-reading-'+s.id+'" type="number" min="0" step="0.01" placeholder="Closing meter reading" required><input id="close-mm-'+s.id+'" type="number" min="0" step="0.01" placeholder="Closing dip (mm)" required><input id="close-liters-'+s.id+'" type="number" min="0" step="0.01" placeholder="Closing tank liters" required><button class="primary">Close Shift</button></form></div>';
+      }).join('');
     }else{
       box.innerHTML='';
     }
@@ -678,17 +679,35 @@ async function loadSaleContext(){
     const [shifts,nozzles,products]=await Promise.all([api('/api/shifts'),api('/api/nozzles'),api('/api/products')]);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
-    const active=shifts.find(s=>s.status==='active'), box=document.getElementById('sale-context'),product=document.getElementById('product'),button=document.getElementById('sale-button');
-    if(!active){box.textContent='No active shift. Start a shift first.';return;}
-    const n=nozzles.find(x=>x.id===active.nozzle_id);if(!n){box.textContent='Assigned nozzle not found.';return;}
-    box.innerHTML='Active nozzle: <b>'+h(n.nozzle_code)+' — '+h(codeForProduct(n.product))+'</b>';
-    product.innerHTML='<option value="'+h(n.product)+'">'+h(codeForProduct(n.product))+'</option>';product.disabled=false;button.disabled=false;
+    const active=shifts.filter(s=>s.status==='active'), box=document.getElementById('sale-context'),product=document.getElementById('product'),button=document.getElementById('sale-button');
+    if(!active.length){box.textContent='No active shift. Start a shift first.';return;}
+    const requested=new URLSearchParams(location.search).get('shift_id');
+    const selected=active.find(s=>s.id===requested)||active[0];
+    const shiftOptions=active.map(s=>{
+      const n=nozzles.find(x=>x.id===s.nozzle_id);
+      return '<option value="'+h(s.id)+'" '+(s.id===selected.id?'selected':'')+'>'+h(n?.nozzle_code||s.nozzle_id)+' — '+h(codeForProduct(n?.product||''))+'</option>';
+    }).join('');
+    box.innerHTML='<label>Active dispenser shift<select id="sale-shift" onchange="loadSaleShiftProduct()">'+shiftOptions+'</select></label>';
+    window.saleShiftRecords={shifts,nozzles,products,codeForProduct};
+    loadSaleShiftProduct();
+    button.disabled=false;
   }catch(e){document.getElementById('sale-context').textContent=e.message;}
 }
+function loadSaleShiftProduct(){
+  const shiftId=document.getElementById('sale-shift')?.value;
+  const ctx=window.saleShiftRecords||{};
+  const shift=(ctx.shifts||[]).find(s=>s.id===shiftId);
+  const n=(ctx.nozzles||[]).find(x=>x.id===shift?.nozzle_id);
+  const product=document.getElementById('product');
+  if(!shift||!n||!product)return;
+  product.innerHTML='<option value="'+h(n.product)+'">'+h(ctx.codeForProduct(n.product))+'</option>';
+  product.disabled=false;
+}
 async function addSale(){
-  const litersSold=Number(document.getElementById('liters').value),price=Number(document.getElementById('price').value);
+  const litersSold=Number(document.getElementById('liters').value),price=Number(document.getElementById('price').value),shiftId=document.getElementById('sale-shift')?.value;
+  if(!shiftId)return toast('Select an active shift');
   if(!(litersSold>0)||price<0)return toast('Enter valid quantity and price');
-  try{const r=await api('/api/sales',{method:'POST',body:JSON.stringify({product:document.getElementById('product').value,quantity_liters:litersSold,unit_price:price,payment_method:document.getElementById('payment').value})});toast('Sale recorded: '+liters(r.sale?.quantity_liters||litersSold)+' L');document.getElementById('liters').value='';await loadSalesHistory();}catch(e){toast(e.message);}
+  try{const r=await api('/api/sales',{method:'POST',body:JSON.stringify({shift_id:shiftId,product:document.getElementById('product').value,quantity_liters:litersSold,unit_price:price,payment_method:document.getElementById('payment').value})});toast('Sale recorded: '+liters(r.sale?.quantity_liters||litersSold)+' L');document.getElementById('liters').value='';await loadSalesHistory();}catch(e){toast(e.message);}
 }
 async function loadSalesHistory(){
   const box=document.getElementById('sales-history');
@@ -703,12 +722,17 @@ async function loadSalesHistory(){
 
 async function loadHandover(){
   try{
-    const me=await currentUser(),[shifts,employees]=await Promise.all([api('/api/shifts'),api('/api/users').catch(()=>[])]);
-    const active=shifts.find(s=>s.status==='active');
-    if(!active){document.getElementById('handover-status').textContent='No active shift.';return;}
-    document.getElementById('handover-shift').value=active.id;
-    document.getElementById('handover-status').textContent='Active shift on nozzle '+active.nozzle_id;
-    document.getElementById('to-employee').innerHTML='<option value="">Select receiving attendant</option>'+employees.filter(e=>e.active&&e.id!==me.id&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
+    const me=await currentUser(),[shifts,employees,nozzles]=await Promise.all([api('/api/shifts'),api('/api/users').catch(()=>[]),api('/api/nozzles')]);
+    const active=shifts.filter(s=>s.status==='active');
+    if(!active.length){document.getElementById('handover-status').textContent='No active shift.';return;}
+    const requested=new URLSearchParams(location.search).get('shift_id');
+    const selected=active.find(s=>s.id===requested)||active[0];
+    document.getElementById('handover-shift').innerHTML=active.map(s=>{
+      const n=nozzles.find(x=>x.id===s.nozzle_id);
+      return '<option value="'+h(s.id)+'" '+(s.id===selected.id?'selected':'')+'>'+h(n?.nozzle_code||s.nozzle_id)+'</option>';
+    }).join('');
+    document.getElementById('handover-status').textContent='Select the dispenser shift to hand over.';
+    document.getElementById('to-employee').innerHTML='<option value="">Select receiving attendant</option>'+employees.filter(e=>e.active&&e.id!==me.id&&e.role==='attendant').map(e=>'<option value="'+e.id+'">'+h(e.name)+' — ID '+h(e.operator_id)+'</option>').join('');
   }catch(e){document.getElementById('handover-status').textContent=e.message;}
 }
 async function submitHandover(e){e.preventDefault();try{await api('/api/handovers',{method:'POST',body:JSON.stringify({shift_id:document.getElementById('handover-shift').value,to_employee_id:document.getElementById('to-employee').value,closing_reading:Number(document.getElementById('closing-reading').value),closing_mm:Number(document.getElementById('closing-mm').value),closing_liters:Number(document.getElementById('closing-liters').value)})});toast('Handover submitted');setTimeout(()=>location.href='pending-handovers.html',700);}catch(x){toast(x.message);}}
