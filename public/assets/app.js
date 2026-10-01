@@ -82,7 +82,7 @@ async function adminDashboard(){
     const totalEl=document.getElementById('sales-total');if(totalEl)totalEl.textContent=money(total);
     document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>{
       const pct=Number(t.capacity_liters)>0?Math.max(0,Math.min(100,Number(t.current_liters)/Number(t.capacity_liters)*100)):0;
-      return `<div class="stat"><b>${liters(t.current_liters)} L</b><span>${h(t.tank_code)} • ${h(t.product)}</span><small>${pct.toFixed(1)}% full • Capacity ${liters(t.capacity_liters)} L</small></div>`;
+      return `<div class="stat"><b>${liters(t.current_liters)} L</b><span>${h(t.tank_code)} • ${h(codeForProduct(t.product))}</span><small>${pct.toFixed(1)}% full • Capacity ${liters(t.capacity_liters)} L</small></div>`;
     }).join(''):'<div class="card"><p>No tanks configured.</p></div>';
     document.getElementById('dashboard-status').textContent=low.length?low.length+' tank(s) are at or below 10% capacity.':'Live data from Supabase.';
   }catch(e){const s=document.getElementById('dashboard-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
@@ -210,7 +210,9 @@ async function createShift(e){e.preventDefault();try{await api('/api/shifts',{me
 
 async function loadSaleContext(){
   try{
-    const [shifts,nozzles]=await Promise.all([api('/api/shifts'),api('/api/nozzles')]);
+    const [shifts,nozzles,products]=await Promise.all([api('/api/shifts'),api('/api/nozzles'),api('/api/products')]);
+    const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
+    const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
     const active=shifts.find(s=>s.status==='active'), box=document.getElementById('sale-context'),product=document.getElementById('product'),button=document.getElementById('sale-button');
     if(!active){box.textContent='No active shift. Start a shift first.';return;}
     const n=nozzles.find(x=>x.id===active.nozzle_id);if(!n){box.textContent='Assigned nozzle not found.';return;}
@@ -227,8 +229,10 @@ async function loadSalesHistory(){
   const box=document.getElementById('sales-history');
   if(!box)return;
   try{
-    const rows=await api('/api/sales');
-    box.innerHTML=rows.length?rows.slice(0,20).map(s=>`<div class="card"><b>${h(s.product)}</b> — ${liters(s.quantity_liters)} L × ${money(s.unit_price)}<br><span class="muted">${money(s.amount)} • ${h(s.payment_method)} • ${new Date(s.sale_time).toLocaleString()}</span></div>`).join(''):'No sales recorded yet.';
+    const [rows,products]=await Promise.all([api('/api/sales'),api('/api/products')]);
+    const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
+    const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
+    box.innerHTML=rows.length?rows.slice(0,20).map(s=>`<div class="card"><b>${h(codeForProduct(s.product))}</b> — ${liters(s.quantity_liters)} L × ${money(s.unit_price)}<br><span class="muted">${money(s.amount)} • ${h(s.payment_method)} • ${new Date(s.sale_time).toLocaleString()}</span></div>`).join(''):'No sales recorded yet.';
   }catch(e){box.textContent=e.message;}
 }
 
@@ -255,12 +259,14 @@ async function confirmHandover(e,id){e.preventDefault();try{await api('/api/hand
 
 async function loadPurchases(){
   try{
-    const [tanks,purchases]=await Promise.all([api('/api/tanks'),api('/api/purchases')]);
-    document.getElementById('purchase-tank').innerHTML='<option value="">Select tank</option>'+tanks.map(t=>`<option value="${t.id}">${h(t.tank_code)} — ${h(t.product)}</option>`).join('');
-    const products=[...new Map(tanks.map(t=>[String(t.product).toLowerCase(),t.product])).values()];
-    document.getElementById('purchase-product').innerHTML='<option value="">Select product</option>'+products.map(p=>`<option value="${h(p)}">${h(p)}</option>`).join('');
+    const [tanks,purchases,products]=await Promise.all([api('/api/tanks'),api('/api/purchases'),api('/api/products')]);
+    const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
+    const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
+    document.getElementById('purchase-tank').innerHTML='<option value="">Select tank</option>'+tanks.map(t=>`<option value="${t.id}">${h(t.tank_code)} — ${h(codeForProduct(t.product))}</option>`).join('');
+    const productNames=[...new Map(tanks.map(t=>[String(t.product).toLowerCase(),t.product])).values()];
+    document.getElementById('purchase-product').innerHTML='<option value="">Select product</option>'+productNames.map(p=>`<option value="${h(p)}">${h(codeForProduct(p))}</option>`).join('');
     document.getElementById('purchase-tank').onchange=()=>{const t=tanks.find(x=>x.id===document.getElementById('purchase-tank').value);if(t)document.getElementById('purchase-product').value=t.product;};
-    document.getElementById('purchase-list').innerHTML=purchases.length?purchases.map(p=>`<div class="card"><b>${h(p.product)}</b> — ${liters(p.quantity_liters)} L<br><span class="muted">${h(p.supplier||'No supplier')} • ${new Date(p.purchase_date).toLocaleString()}</span></div>`).join(''):'<div class="card"><p>No purchases yet.</p></div>';
+    document.getElementById('purchase-list').innerHTML=purchases.length?purchases.map(p=>`<div class="card"><b>${h(codeForProduct(p.product))}</b> — ${liters(p.quantity_liters)} L<br><span class="muted">${h(p.supplier||'No supplier')} • ${new Date(p.purchase_date).toLocaleString()}</span></div>`).join(''):'<div class="card"><p>No purchases yet.</p></div>';
   }catch(e){document.getElementById('purchase-status').textContent=e.message;}
 }
 async function createPurchase(e){e.preventDefault();try{await api('/api/purchases',{method:'POST',body:JSON.stringify({product:document.getElementById('purchase-product').value,tank_id:document.getElementById('purchase-tank').value,quantity_liters:Number(document.getElementById('purchase-liters').value),supplier:document.getElementById('purchase-supplier').value.trim(),invoice_number:document.getElementById('purchase-invoice').value.trim()})});e.target.reset();toast('Purchase recorded and tank updated');await loadPurchases();}catch(x){toast(x.message);}}
