@@ -67,7 +67,7 @@ async function closeShift(event,id){
 async function adminDashboard(){
   try{
     const me=await currentUser(); if(me.role!=='admin')return location.href='attendant-dashboard.html';
-    const [tanks,sales,shifts,products]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products')]);
+    const [tanks,sales,shifts,products,dispensers]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles')]);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
     const today=new Date().toISOString().slice(0,10);
@@ -82,9 +82,18 @@ async function adminDashboard(){
     const totalEl=document.getElementById('sales-total');if(totalEl)totalEl.textContent=money(total);
     document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>{
       const pct=Number(t.capacity_liters)>0?Math.max(0,Math.min(100,Number(t.current_liters)/Number(t.capacity_liters)*100)):0;
-      return `<div class="stat"><b>${liters(t.current_liters)} L</b><span>${h(t.tank_code)} • ${h(codeForProduct(t.product))}</span><small>${pct.toFixed(1)}% full • Capacity ${liters(t.capacity_liters)} L</small></div>`;
+      const tankOpening=t.opening_stock_liters;
+      const connected=dispensers.filter(d=>d.tank_id===t.id);
+      const comparisons=connected.map(d=>{
+        const dispenserOpening=d.opening_tank_liters;
+        const hasTank=Number.isFinite(Number(tankOpening));
+        const hasDispenser=Number.isFinite(Number(dispenserOpening));
+        const variance=hasTank&&hasDispenser?Number(dispenserOpening)-Number(tankOpening):null;
+        return '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(127,127,127,.2)"><b>'+h(d.nozzle_code)+'</b> • Dispenser tank opening: '+(hasDispenser?liters(dispenserOpening)+' L':'Not recorded')+(variance===null?'':'<br><span class="muted">Difference vs tank activation: <b>'+liters(variance)+' L</b></span>')+'</div>';
+      }).join('');
+      return '<div class="stat"><b>'+liters(t.current_liters)+' L</b><span>'+h(t.tank_code)+' • '+h(codeForProduct(t.product))+'</span><small>'+pct.toFixed(1)+'% full • Capacity '+liters(t.capacity_liters)+' L</small><small>Tank activation opening: <b>'+(Number.isFinite(Number(tankOpening))?liters(tankOpening)+' L':'Not recorded')+'</b></small>'+(comparisons||'<small>No dispenser opening reading recorded.</small>')+'</div>';
     }).join(''):'<div class="card"><p>No tanks configured.</p></div>';
-    document.getElementById('dashboard-status').textContent=low.length?low.length+' tank(s) are at or below 10% capacity.':'Live data from Supabase.';
+    document.getElementById('dashboard-status').textContent=low.length?low.length+' tank(s) are at or below 10% capacity.':'Opening-stock comparison is based on the tank activation baseline and each dispenser activation reading.';
   }catch(e){const s=document.getElementById('dashboard-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
 
