@@ -258,9 +258,10 @@ def update_product(product_id):
     if "selling_price" in data:
         try: price=float(data["selling_price"])
         except (TypeError,ValueError): return jsonify({"error":"Invalid selling price"}),400
-        if price < 0: return jsonify({"error":"Selling price cannot be negative"}),400
+        if price <= 0: return jsonify({"error":"Selling price must be greater than zero"}),400
         body["selling_price"]=round(price,2)
     if not body:return jsonify({"error":"No changes supplied"}),400
+    body["updated_at"]=datetime.now(timezone.utc).isoformat()
 
     # Read the current product so activation/price changes can be recorded.
     old_status, old_rows = sb("products",params={"id":"eq."+product_id,"select":"id,active,selling_price"})
