@@ -34,8 +34,10 @@ async function employeeDashboard(){
     const me=await currentUser();
     if(me.role!=='employee')return location.href='admin-dashboard.html';
     document.getElementById('name').textContent=me.name;
-    const [shifts,nozzles]=await Promise.all([api('/api/shifts'),api('/api/nozzles')]);
-    const nn=Object.fromEntries(nozzles.map(n=>[n.id,n.nozzle_code+' — '+n.product]));
+    const [shifts,nozzles,products]=await Promise.all([api('/api/shifts'),api('/api/nozzles'),api('/api/products')]);
+    const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
+    const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
+    const nn=Object.fromEntries(nozzles.map(n=>[n.id,n.nozzle_code+' — '+codeForProduct(n.product)]));
     const mine=shifts.filter(s=>s.employee_id===me.id);
     document.getElementById('shift').innerHTML=mine.length?mine.map(s=>s.status==='assigned'
       ?`<div class="card"><div class="top"><h3>Shift ${h(s.id.slice(0,8))}</h3><span class="badge">${h(s.status)}</span></div><p>Nozzle: <b>${h(nn[s.nozzle_id]||s.nozzle_id)}</b></p><form class="form" onsubmit="startShift(event,'${s.id}')"><input id="opening-${s.id}" type="number" min="0" step="0.01" placeholder="Opening meter reading" required><input id="opening-mm-${s.id}" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" required><input id="opening-liters-${s.id}" type="number" min="0" step="0.01" placeholder="Opening tank liters" required><button class="primary">Start Shift</button></form></div>`
@@ -65,7 +67,9 @@ async function closeShift(event,id){
 async function adminDashboard(){
   try{
     const me=await currentUser(); if(me.role!=='admin')return location.href='employee-dashboard.html';
-    const [tanks,sales,shifts]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts')]);
+    const [tanks,sales,shifts,products]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products')]);
+    const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
+    const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
     const today=new Date().toISOString().slice(0,10);
     const todaySales=sales.filter(s=>String(s.sale_time||'').slice(0,10)===today);
     const total=todaySales.reduce((a,s)=>a+Number(s.amount||0),0);
@@ -97,15 +101,20 @@ async function adminSettings(){
 }
 async function loadSettingsData(){
   const [employees,tanks,nozzles,shifts,products]=await Promise.all([api('/api/employees'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/products')]);
-  document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.name)}</b><br><span class="muted">Code: <b>${h(p.code_name)}</b> • ${p.active?'Active':'Inactive'}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
+  const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
+  const codeForProduct=product=>productByName[String(product||'').toLowerCase()]?.code_name||product;
+  document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><br><span class="muted">Name: ${h(p.name)} • ${p.active?'Active':'Inactive'}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
   window.productRecords=products;
   document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openEmployeeEdit('${e.id}')">Edit</button><button type="button" onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No employees.</p>';
   window.employeeRecords=employees;
-  document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><b>${h(t.tank_code)} — ${h(t.product)}</b><p>${liters(t.current_liters)} / ${liters(t.capacity_liters)} L • Dip ${liters(t.current_mm)} mm</p><button onclick="adjustTank('${t.id}','${h(t.tank_code)}',${Number(t.current_liters)},${Number(t.current_mm)})">Adjust inventory</button></div>`).join(''):'<p class="muted">No tanks.</p>';
-  document.getElementById('nozzles').innerHTML=nozzles.length?nozzles.map(n=>`<div class="card"><div class="top"><div><b>${h(n.nozzle_code)} — ${h(n.product)}</b><br><span class="muted">Tank: ${h((tanks.find(t=>t.id===n.tank_id)||{}).tank_code||n.tank_id)}</span></div><button onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'Activate'}</button></div></div>`).join(''):'<p class="muted">No nozzles.</p>';
+  document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.current_liters)} / ${liters(t.capacity_liters)} L • Dip ${liters(t.current_mm)} mm</p><button onclick="adjustTank('${t.id}','${h(t.tank_code)}',${Number(t.current_liters)},${Number(t.current_mm)})">Adjust inventory</button></div>`).join(''):'<p class="muted">No tanks.</p>';
+  document.getElementById('nozzles').innerHTML=nozzles.length?nozzles.map(n=>`<div class="card"><div class="top"><div><b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b><br><span class="muted">Tank: ${h((tanks.find(t=>t.id===n.tank_id)||{}).tank_code||n.tank_id)}</span></div><button onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'Activate'}</button></div></div>`).join(''):'<p class="muted">No nozzles.</p>';
   const es=document.getElementById('shift-employee'),ns=document.getElementById('shift-nozzle');
   es.innerHTML='<option value="">Select employee</option>'+employees.filter(e=>e.active&&e.role==='employee').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
-  ns.innerHTML='<option value="">Select nozzle</option>'+nozzles.filter(n=>n.active).map(n=>`<option value="${n.id}">${h(n.nozzle_code)} — ${h(n.product)}</option>`).join('');
+  document.getElementById('tank-product').innerHTML='<option value="">Select product</option>'+products.filter(p=>p.active).map(p=>`<option value="${h(p.name)}">${h(p.code_name)}</option>`).join('');
+  document.getElementById('nozzle-product').innerHTML='<option value="">Select product</option>'+products.filter(p=>p.active).map(p=>`<option value="${h(p.name)}">${h(p.code_name)}</option>`).join('');
+  document.getElementById('nozzle-tank').innerHTML='<option value="">Select tank</option>'+tanks.map(t=>`<option value="${t.id}">${h(t.tank_code)} — ${h(codeForProduct(t.product))}</option>`).join('');
+  ns.innerHTML='<option value="">Select nozzle</option>'+nozzles.filter(n=>n.active).map(n=>`<option value="${n.id}">${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</option>`).join('');
   const en=Object.fromEntries(employees.map(e=>[e.id,e.name])),nn=Object.fromEntries(nozzles.map(n=>[n.id,n.nozzle_code]));
   document.getElementById('shifts').innerHTML=shifts.slice(0,20).map(s=>`<div class="card"><b>${h(en[s.employee_id]||s.employee_id)}</b> • ${h(nn[s.nozzle_id]||s.nozzle_id)}<br><span class="muted">${h(s.status)} • ${s.start_time?new Date(s.start_time).toLocaleString():'not started'}</span></div>`).join('')||'<p class="muted">No shifts.</p>';
 }
@@ -205,8 +214,8 @@ async function loadSaleContext(){
     const active=shifts.find(s=>s.status==='active'), box=document.getElementById('sale-context'),product=document.getElementById('product'),button=document.getElementById('sale-button');
     if(!active){box.textContent='No active shift. Start a shift first.';return;}
     const n=nozzles.find(x=>x.id===active.nozzle_id);if(!n){box.textContent='Assigned nozzle not found.';return;}
-    box.innerHTML='Active nozzle: <b>'+h(n.nozzle_code)+' — '+h(n.product)+'</b>';
-    product.innerHTML='<option value="'+h(n.product)+'">'+h(n.product)+'</option>';product.disabled=false;button.disabled=false;
+    box.innerHTML='Active nozzle: <b>'+h(n.nozzle_code)+' — '+h(codeForProduct(n.product))+'</b>';
+    product.innerHTML='<option value="'+h(n.product)+'">'+h(codeForProduct(n.product))+'</option>';product.disabled=false;button.disabled=false;
   }catch(e){document.getElementById('sale-context').textContent=e.message;}
 }
 async function addSale(){
@@ -258,9 +267,11 @@ async function createPurchase(e){e.preventDefault();try{await api('/api/purchase
 
 async function loadDailyReport(){
   try{
-    const d=document.getElementById('report-date').value||new Date().toISOString().slice(0,10),r=await api('/api/reports/daily?date='+encodeURIComponent(d));
+    const d=document.getElementById('report-date').value||new Date().toISOString().slice(0,10),[r,products]=await Promise.all([api('/api/reports/daily?date='+encodeURIComponent(d)),api('/api/products')]);
+     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
+     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
     document.getElementById('report-summary').innerHTML=`<div class="statgrid"><div class="stat"><b>${liters(r.summary.sales_liters)} L</b><span>Sales volume</span></div><div class="stat"><b>${money(r.summary.sales_amount)}</b><span>Sales amount</span></div><div class="stat"><b>${liters(r.summary.purchases_liters)} L</b><span>Purchases</span></div></div>`;
-    const rows=Object.entries(r.summary.by_product).map(([p,v])=>`<tr><td>${h(p)}</td><td>${liters(v.liters)}</td><td>${money(v.amount)}</td></tr>`).join('');
+    const rows=Object.entries(r.summary.by_product).map(([p,v])=>`<tr><td>${h(codeForProduct(p))}</td><td>${liters(v.liters)}</td><td>${money(v.amount)}</td></tr>`).join('');
     document.getElementById('report-table').innerHTML=rows||'<tr><td colspan="3">No sales</td></tr>';
   }catch(e){document.getElementById('report-status').textContent=e.message;}
 }
