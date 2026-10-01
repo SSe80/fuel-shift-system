@@ -67,42 +67,51 @@ async function closeShift(event,id){
 async function adminDashboard(){
   try{
     const me=await currentUser(); if(me.role!=='admin')return location.href='attendant-dashboard.html';
-    const [allTanks,sales,allShifts,allProducts,allDispensers,employees]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles'),api('/api/users')]);
-    // Dashboard is driven by the same live Settings records. Only activated records are displayed.
+    const [allTanks,sales,allShifts,allProducts,allDispensers,employees,purchases]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles'),api('/api/users'),api('/api/purchases')]);
     const products=allProducts.filter(p=>p.active===true);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
     const tanks=allTanks.filter(t=>t.active===true && products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase()));
     const dispensers=allDispensers.filter(d=>d.active===true && tanks.some(t=>t.id===d.tank_id) && products.some(p=>String(p.name).toLowerCase()===String(d.product||'').toLowerCase()));
-    const activeEmployeeIds=new Set(employees.filter(e=>e.active===true).map(e=>e.id));
+    const activeEmployees=employees.filter(e=>e.active===true);
+    const activeEmployeeIds=new Set(activeEmployees.map(e=>e.id));
     const shifts=allShifts.filter(s=>activeEmployeeIds.has(s.employee_id) && dispensers.some(d=>d.id===s.nozzle_id));
     const today=new Date().toISOString().slice(0,10);
     const todaySales=sales.filter(s=>String(s.sale_time||'').slice(0,10)===today);
     const total=todaySales.reduce((a,s)=>a+Number(s.amount||0),0);
-    const active=shifts.filter(s=>s.status==='active');
+    const activeShifts=shifts.filter(s=>s.status==='active');
     const low=tanks.filter(t=>Number(t.capacity_liters)>0&&Number(t.current_liters)/Number(t.capacity_liters)<=.1);
-    document.getElementById('sales').textContent=todaySales.length;
-    document.getElementById('active-shifts').textContent=active.length;
-    document.getElementById('tank-count').textContent=tanks.length;
-    document.getElementById('alerts').textContent=low.length;
-    const totalEl=document.getElementById('sales-total');if(totalEl)totalEl.textContent=money(total);
-    document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>{
+    const el=id=>document.getElementById(id);
+    el('sales').textContent=todaySales.length; el('sales-total').textContent=money(total);
+    el('active-shifts').textContent=activeShifts.length; el('tank-count').textContent=tanks.length; el('alerts').textContent=low.length;
+    el('product-count').textContent=products.length; el('dispenser-count').textContent=dispensers.length; el('attendant-count').textContent=activeEmployees.filter(e=>e.role==='attendant').length;
+    el('products').innerHTML=products.length?products.map(p=>'<div class="stat"><b>'+h(p.code_name)+'</b><span>'+h(p.name)+'</span><small>Active • Selling price: '+money(p.selling_price)+'</small></div>').join(''):'<div class="card"><p>No activated products.</p></div>';
+    el('dispensers').innerHTML=dispensers.length?dispensers.map(d=>{
+      const tank=tanks.find(t=>t.id===d.tank_id);
+      const shift=activeShifts.find(s=>s.nozzle_id===d.id);
+      const attendant=shift?activeEmployees.find(e=>e.id===shift.employee_id):null;
+      return '<div class="stat"><b>'+h(d.nozzle_code)+'</b><span>'+h(codeForProduct(d.product))+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small></div>';
+    }).join(''):'<div class="card"><p>No activated dispensers.</p></div>';
+    el('attendants').innerHTML=activeEmployees.filter(e=>e.role==='attendant').length?activeEmployees.filter(e=>e.role==='attendant').map(e=>{
+      const shift=activeShifts.find(s=>s.employee_id===e.id);
+      return '<div class="stat"><b>'+h(e.name)+'</b><span>Attendant • ID '+h(e.operator_id)+'</span><small>'+ (shift?'Active shift on '+h((dispensers.find(d=>d.id===shift.nozzle_id)||{}).nozzle_code||shift.nozzle_id):'Available / no active shift')+'</small></div>';
+    }).join(''):'<div class="card"><p>No activated attendants.</p></div>';
+    el('tanks').innerHTML=tanks.length?tanks.map(t=>{
       const pct=Number(t.capacity_liters)>0?Math.max(0,Math.min(100,Number(t.current_liters)/Number(t.capacity_liters)*100)):0;
       const tankOpening=t.opening_stock_liters;
       const connected=dispensers.filter(d=>d.tank_id===t.id);
       const comparisons=connected.map(d=>{
-        const dispenserOpening=d.opening_tank_liters;
-        const hasTank=Number.isFinite(Number(tankOpening));
-        const hasDispenser=Number.isFinite(Number(dispenserOpening));
+        const dispenserOpening=d.opening_tank_liters,hasTank=Number.isFinite(Number(tankOpening)),hasDispenser=Number.isFinite(Number(dispenserOpening));
         const variance=hasTank&&hasDispenser?Number(dispenserOpening)-Number(tankOpening):null;
-        return '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(127,127,127,.2)"><b>'+h(d.nozzle_code)+'</b> • Dispenser tank opening: '+(hasDispenser?liters(dispenserOpening)+' L':'Not recorded')+(variance===null?'':'<br><span class="muted">Difference vs tank activation: <b>'+liters(variance)+' L</b></span>')+'</div>';
+        return '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(127,127,127,.2)"><b>'+h(d.nozzle_code)+'</b> • Dispenser opening: '+(hasDispenser?liters(dispenserOpening)+' L':'Not recorded')+(variance===null?'':'<br><span class="muted">Difference vs tank activation: <b>'+liters(variance)+' L</b></span>')+'</div>';
       }).join('');
-      return '<div class="stat"><b>'+liters(t.current_liters)+' L</b><span>'+h(t.tank_code)+' • '+h(codeForProduct(t.product))+'</span><small>'+pct.toFixed(1)+'% full • Capacity '+liters(t.capacity_liters)+' L</small><small>Tank activation opening: <b>'+(Number.isFinite(Number(tankOpening))?liters(tankOpening)+' L':'Not recorded')+'</b></small>'+(comparisons||'<small>No dispenser opening reading recorded.</small>')+'</div>';
-    }).join(''):'<div class="card"><p>No tanks configured.</p></div>';
-    document.getElementById('dashboard-status').textContent=low.length?low.length+' tank(s) are at or below 10% capacity.':'Opening-stock comparison is based on the tank activation baseline and each dispenser activation reading.';
+      return '<div class="stat"><b>'+liters(t.current_liters)+' L</b><span>'+h(t.tank_code)+' • '+h(codeForProduct(t.product))+'</span><small>'+pct.toFixed(1)+'% full • Capacity '+liters(t.capacity_liters)+' L</small><small>Tank activation opening: <b>'+(Number.isFinite(Number(tankOpening))?liters(tankOpening)+' L':'Not recorded')+'</b></small>'+(comparisons||'<small>No activated dispenser.</small>')+'</div>';
+    }).join(''):'<div class="card"><p>No activated tanks.</p></div>';
+    const recent=[...todaySales.map(s=>({time:s.sale_time,text:'Sale • '+codeForProduct(s.product)+' • '+liters(s.quantity_liters)+' L • '+money(s.amount)})),...purchases.filter(p=>String(p.purchase_date||'').slice(0,10)===today).map(p=>({time:p.purchase_date,text:'Purchase • '+codeForProduct(p.product)+' • '+liters(p.quantity_liters)+' L'})),...activeShifts.map(s=>({time:s.assigned_at||s.created_at,text:'Shift active • '+(activeEmployees.find(e=>e.id===s.employee_id)?.name||'Attendant')+' • '+((dispensers.find(d=>d.id===s.nozzle_id)||{}).nozzle_code||'Dispenser')}))].sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,12);
+    el('activity').innerHTML=recent.length?recent.map(x=>'<div class="card"><b>'+h(x.text)+'</b><br><span class="muted">'+new Date(x.time).toLocaleString()+'</span></div>').join(''):'<div class="card"><p>No activity recorded today.</p></div>';
+    el('dashboard-status').textContent=low.length?low.length+' tank(s) are at or below 10% capacity.':'Dashboard shows only activated Settings records.';
   }catch(e){const s=document.getElementById('dashboard-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
-
 async function adminSettings(){
   try{
     const me=await currentUser();
