@@ -426,6 +426,14 @@ function openDispenserActivation(id){
   const productByName=Object.fromEntries((window.productRecords||[]).map(p=>[String(p.name).toLowerCase(),p]));
   const product=productByName[String(d.product||'').toLowerCase()];
   const tank=(window.tankRecords||[]).find(t=>t.id===d.tank_id);
+  if(!tank){
+    toast('This dispenser has no connected tank.');
+    return;
+  }
+  if(!tank.active){
+    toast('This dispenser cannot be activated because its connected tank is inactive.');
+    return;
+  }
   const message=document.getElementById('dispenser-activate-message');
   if(message)message.innerHTML='<b>'+h(d.nozzle_code||'Dispenser')+'</b> — '+h(product?.code_name||d.product||'')+'<br><span class="muted">Tank: '+h(tank?.tank_code||d.tank_id||'')+' • '+h(d.nozzle_count||1)+' nozzle(s)</span>';
   const tankLabel=document.getElementById('dispenser-activation-tank-label');
