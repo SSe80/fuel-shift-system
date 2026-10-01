@@ -538,7 +538,7 @@ def nozzles():
             return jsonify(pending), ps
         pending_ids=[str(x.get("nozzle_id")) for x in pending if x.get("nozzle_id")]
         if pending_ids:
-            params["or"]="active.eq.true,id.in.("+",".join(pending_ids)+")"
+            params["or"]="(active.eq.true,id.in.("+",".join(pending_ids)+"))"
         else:
             params["active"]="eq.true"
     status,rows=sb("nozzles",params=params)
