@@ -107,7 +107,8 @@ async function loadSettingsData(){
   window.productRecords=products;
   document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openEmployeeEdit('${e.id}')">Edit</button><button type="button" onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No employees.</p>';
   window.employeeRecords=employees;
-  document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.current_liters)} / ${liters(t.capacity_liters)} L • Dip ${liters(t.current_mm)} mm</p><button onclick="adjustTank('${t.id}','${h(t.tank_code)}',${Number(t.current_liters)},${Number(t.current_mm)})">Adjust inventory</button></div>`).join(''):'<p class="muted">No tanks.</p>';
+  document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><div class="top"><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.capacity_liters)} L capacity</p></div><button type="button" onclick="openTankEdit('${t.id}')">Edit</button></div></div>`).join(''):'<p class="muted">No tanks.</p>';
+  window.tankRecords=tanks;
   document.getElementById('nozzles').innerHTML=nozzles.length?nozzles.map(n=>`<div class="card"><div class="top"><div><b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b><br><span class="muted">Tank: ${h((tanks.find(t=>t.id===n.tank_id)||{}).tank_code||n.tank_id)}</span></div><button onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'Activate'}</button></div></div>`).join(''):'<p class="muted">No nozzles.</p>';
   const es=document.getElementById('shift-employee'),ns=document.getElementById('shift-nozzle');
   es.innerHTML='<option value="">Select employee</option>'+employees.filter(e=>e.active&&e.role==='employee').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
@@ -202,8 +203,49 @@ async function saveEmployeeEdit(event){
 }
 async function createEmployee(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('employee-name').value.trim(),phone:document.getElementById('employee-phone').value.trim(),pin:document.getElementById('employee-pin').value,role:document.getElementById('employee-role').value})});e.target.reset();toast('Employee created');await loadSettingsData();}catch(x){toast(x.message);}}
 async function toggleEmployee(id,active){try{await api('/api/employees/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});await loadSettingsData();}catch(e){toast(e.message);}}
-async function createTank(e){e.preventDefault();try{await api('/api/tanks',{method:'POST',body:JSON.stringify({tank_code:document.getElementById('tank-code').value.trim(),product:document.getElementById('tank-product').value.trim(),capacity_liters:Number(document.getElementById('tank-capacity').value),current_liters:Number(document.getElementById('tank-current').value),current_mm:Number(document.getElementById('tank-mm').value||0)})});e.target.reset();document.getElementById('tank-current').value='0';document.getElementById('tank-mm').value='0';toast('Tank created');await loadSettingsData();}catch(x){toast(x.message);}}
-async function adjustTank(id,code,current,mm){const n=prompt('New liters for '+code,current);if(n===null)return;const m=prompt('New dip in mm',mm);if(m===null)return;const notes=prompt('Reason','Inventory adjustment')||'Inventory adjustment';try{await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({current_liters:Number(n),current_mm:Number(m),notes})});toast('Inventory updated');await loadSettingsData();}catch(e){toast(e.message);}}
+function openTankEdit(id){
+  const t=(window.tankRecords||[]).find(x=>x.id===id);
+  if(!t)return;
+  const match=String(t.tank_code||'').match(/•(\\d+)$/);
+  document.getElementById('edit-tank-id').value=t.id;
+  document.getElementById('edit-tank-order').value=match?match[1]:'';
+  document.getElementById('edit-tank-capacity').value=t.capacity_liters||'';
+  const modal=document.getElementById('tank-edit-modal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+  document.getElementById('edit-tank-order').focus();
+}
+function closeTankEdit(){
+  const modal=document.getElementById('tank-edit-modal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden','true');
+  document.getElementById('tank-edit-form').reset();
+}
+async function saveTankEdit(event){
+  event.preventDefault();
+  const id=document.getElementById('edit-tank-id').value;
+  try{
+    await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({
+      tank_order:Number(document.getElementById('edit-tank-order').value),
+      capacity_liters:Number(document.getElementById('edit-tank-capacity').value)
+    })});
+    closeTankEdit();
+    toast('Tank updated');
+    await loadSettingsData();
+  }catch(e){toast(e.message);}
+}
+async function createTank(e){
+  e.preventDefault();
+  try{
+    await api('/api/tanks',{method:'POST',body:JSON.stringify({
+      product:document.getElementById('tank-product').value,
+      capacity_liters:Number(document.getElementById('tank-capacity').value)
+    })});
+    e.target.reset();
+    toast('Tank created');
+    await loadSettingsData();
+  }catch(x){toast(x.message);}
+}
 async function createNozzle(e){e.preventDefault();try{await api('/api/nozzles',{method:'POST',body:JSON.stringify({nozzle_code:document.getElementById('nozzle-code').value.trim(),product:document.getElementById('nozzle-product').value.trim(),tank_id:document.getElementById('nozzle-tank').value})});e.target.reset();toast('Nozzle created');await loadSettingsData();}catch(x){toast(x.message);}}
 async function toggleNozzle(id,active){try{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});await loadSettingsData();}catch(e){toast(e.message);}}
 async function createShift(e){e.preventDefault();try{await api('/api/shifts',{method:'POST',body:JSON.stringify({employee_id:document.getElementById('shift-employee').value,nozzle_id:document.getElementById('shift-nozzle').value})});e.target.reset();toast('Shift assigned');await loadSettingsData();}catch(x){toast(x.message);}}
