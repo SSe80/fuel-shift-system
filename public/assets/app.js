@@ -34,23 +34,44 @@ async function userDashboard(){
     const me=await currentUser();
     if(me.role!=='attendant')return location.href='admin-dashboard.html';
     document.getElementById('name').textContent=me.name;
-    const [shifts,nozzles,products]=await Promise.all([api('/api/shifts'),api('/api/nozzles'),api('/api/products')]);
+    const [shifts,nozzles,products,handovers,employees]=await Promise.all([api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/handovers'),api('/api/users')]);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
     const nn=Object.fromEntries(nozzles.map(n=>[n.id,n.nozzle_code+' — '+codeForProduct(n.product)]));
+    const names=Object.fromEntries(employees.map(e=>[e.id,e.name]));
     const mine=shifts.filter(s=>s.employee_id===me.id);
-    document.getElementById('shift').innerHTML=mine.length?mine.map(s=>s.status==='assigned'
-      ?`<div class="card"><div class="top"><h3>Shift ${h(s.id.slice(0,8))}</h3><span class="badge">${h(s.status)}</span></div><p>Nozzle: <b>${h(nn[s.nozzle_id]||s.nozzle_id)}</b></p><form class="form" onsubmit="startShift(event,'${s.id}')"><input id="opening-${s.id}" type="number" min="0" step="0.01" placeholder="Opening meter reading" required><input id="opening-mm-${s.id}" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" required><input id="opening-liters-${s.id}" type="number" min="0" step="0.01" placeholder="Opening tank liters" required><button class="primary">Start Shift</button></form></div>`
-      :s.status==='active'
-      ?`<div class="card"><div class="top"><h3>Active Shift</h3><span class="badge">${h(s.status)}</span></div><p>Nozzle: <b>${h(nn[s.nozzle_id]||s.nozzle_id)}</b></p><p>Opening meter: <b>${liters(s.opening_reading)}</b></p><div class="row"><a class="btn primary" href="sales.html">Record Sale</a><a class="btn" href="handover.html">Handover</a></div><form class="form" onsubmit="closeShift(event,'${s.id}')"><input id="close-reading-${s.id}" type="number" min="0" step="0.01" placeholder="Closing meter reading" required><input id="close-mm-${s.id}" type="number" min="0" step="0.01" placeholder="Closing dip (mm)" required><input id="close-liters-${s.id}" type="number" min="0" step="0.01" placeholder="Closing tank liters" required><button class="primary">Close Shift</button></form></div>`
-      :`<div class="card"><div class="top"><h3>Shift ${h(s.id.slice(0,8))}</h3><span class="badge">${h(s.status)}</span></div><p>Nozzle: ${h(nn[s.nozzle_id]||s.nozzle_id)}</p><p>Opening: ${liters(s.opening_reading)} • Closing: ${liters(s.closing_reading)}</p></div>`).join(''):'<div class="card"><p>No shifts assigned.</p></div>';
-  }catch(e){if(e.message==='Unauthorized')location.href='attendant-login.html';}
+    const pendingAssignments=mine.filter(s=>s.status==='assigned');
+    const pendingHandovers=handovers.filter(x=>x.status==='pending'&&x.to_employee_id===me.id);
+    const pendingBox=document.getElementById('pending-confirmations');
+    if(pendingBox){
+      let html='';
+      pendingAssignments.forEach(s=>{
+        const n=nozzles.find(x=>x.id===s.nozzle_id);
+        html+='<div class="card"><div class="top"><div><h3>Pending Shift Assignment</h3><span class="badge">Awaiting Attendant confirmation</span></div></div><p>Dispenser: <b>'+h(n?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(n?.product||''))+'</p><p>Opening meter: <b>'+liters(s.opening_reading)+'</b> • Tank opening: <b>'+liters(n?.opening_tank_liters)+'</b> L</p><p class="muted">Review the activation readings. Enter your PIN to confirm them and start the shift.</p><form class="form" onsubmit="confirmShiftAssignment(event,'SID')"><input id="assignment-pin-SID" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required><button class="primary">Confirm Readings & Start Shift</button></form></div>'.replaceAll('SID','${s.id}');
+      });
+      pendingHandovers.forEach(x=>{
+        html+='<div class="card"><div class="top"><div><h3>Pending Shift Handover</h3><span class="badge">Awaiting Attendant confirmation</span></div></div><p>From: <b>'+h(names[x.from_employee_id]||x.from_employee_id)+'</b></p><p>Closing meter: <b>'+liters(x.closing_reading)+'</b> • Closing tank: <b>'+liters(x.closing_liters)+'</b> L</p><p class="muted">Enter the takeover readings and your PIN to confirm the handover.</p><form class="form" onsubmit="confirmHandoverFromDashboard(event,'HID')"><input id="dashboard-confirm-reading-HID" type="number" min="0" step="0.01" placeholder="Opening meter reading" required><input id="dashboard-confirm-mm-HID" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" required><input id="dashboard-confirm-liters-HID" type="number" min="0" step="0.01" placeholder="Opening tank liters" required><input id="dashboard-handover-pin-HID" type="password" inputmode="numeric" placeholder="Enter your PIN" required><button class="primary">Confirm Handover & Start Shift</button></form></div>'.replaceAll('HID','${x.id}');
+      });
+      pendingBox.innerHTML=html||'<div class="card"><p>No pending shift assignments or handovers.</p></div>';
+    }
+    const completed=mine.filter(s=>s.status!=='assigned');
+    document.getElementById('shift').innerHTML=completed.length?completed.map(s=>s.status==='active'
+      ?'<div class="card"><div class="top"><h3>Active Shift</h3><span class="badge">'+h(s.status)+'</span></div><p>Nozzle: <b>'+h(nn[s.nozzle_id]||s.nozzle_id)+'</b></p><p>Opening meter: <b>'+liters(s.opening_reading)+'</b></p><div class="row"><a class="btn primary" href="sales.html">Record Sale</a><a class="btn" href="handover.html">Handover</a></div><form class="form" onsubmit="closeShift(event,'SID')"><input id="close-reading-SID" type="number" min="0" step="0.01" placeholder="Closing meter reading" required><input id="close-mm-SID" type="number" min="0" step="0.01" placeholder="Closing dip (mm)" required><input id="close-liters-SID" type="number" min="0" step="0.01" placeholder="Closing tank liters" required><button class="primary">Close Shift</button></form></div>'.replaceAll('SID','${s.id}')
+      :'<div class="card"><div class="top"><h3>Shift '+h(s.id.slice(0,8))+'</h3><span class="badge">'+h(s.status)+'</span></div><p>Nozzle: '+h(nn[s.nozzle_id]||s.nozzle_id)+'</p><p>Opening: '+liters(s.opening_reading)+' • Closing: '+liters(s.closing_reading)+'</p></div>').join(''):'<div class="card"><p>No active shift. Check pending confirmations above.</p></div>';
+  }catch(e){if(e.message==='Unauthorized')location.href='attendant-login.html';else{const s=document.getElementById('employee-status');if(s)s.textContent=e.message;}}
 }
-async function startShift(event,id){
+async function confirmShiftAssignment(event,id){
   event.preventDefault();
-  try{await api('/api/shifts/'+id+'/start',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('opening-'+id).value),opening_mm:Number(document.getElementById('opening-mm-'+id).value),opening_liters:Number(document.getElementById('opening-liters-'+id).value)})});toast('Shift started');await userDashboard();}
+  const pin=document.getElementById('assignment-pin-'+id)?.value||'';
+  try{await api('/api/shifts/'+id+'/confirm',{method:'POST',body:JSON.stringify({pin})});toast('Shift confirmed and started');await userDashboard();}
   catch(e){toast(e.message);}
 }
+async function confirmHandoverFromDashboard(event,id){
+  event.preventDefault();
+  try{await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('dashboard-confirm-reading-'+id).value),opening_mm:Number(document.getElementById('dashboard-confirm-mm-'+id).value),opening_liters:Number(document.getElementById('dashboard-confirm-liters-'+id).value),pin:document.getElementById('dashboard-handover-pin-'+id).value})});toast('Handover confirmed and shift started');await userDashboard();}
+  catch(e){toast(e.message);}
+}
+
 async function closeShift(event,id){
   event.preventDefault();
   try{
@@ -605,7 +626,7 @@ async function loadPendingHandovers(){
     document.getElementById('pending-list').innerHTML=pending.length?pending.map(x=>`<div class="card"><h3>Handover ${h(x.id.slice(0,8))}</h3><p>From: <b>${h(names[x.from_employee_id]||x.from_employee_id)}</b><br>To: <b>${h(names[x.to_employee_id]||x.to_employee_id)}</b></p><p>Closing meter: ${liters(x.closing_reading)} • Tank: ${liters(x.closing_liters)} L</p><form class="form" onsubmit="confirmHandover(event,'${x.id}')"><input id="confirm-reading-${x.id}" type="number" min="0" step="0.01" placeholder="Opening meter" required><input id="confirm-mm-${x.id}" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" required><input id="confirm-liters-${x.id}" type="number" min="0" step="0.01" placeholder="Opening tank liters" required><button class="primary">Confirm & Start Shift</button></form></div>`).join(''):'<div class="card"><p>No pending handovers.</p></div>';
   }catch(e){document.getElementById('pending-list').textContent=e.message;}
 }
-async function confirmHandover(e,id){e.preventDefault();try{await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('confirm-reading-'+id).value),opening_mm:Number(document.getElementById('confirm-mm-'+id).value),opening_liters:Number(document.getElementById('confirm-liters-'+id).value)})});toast('Handover confirmed');setTimeout(()=>location.href='attendant-dashboard.html',700);}catch(x){toast(x.message);}}
+async function confirmHandover(e,id){e.preventDefault();try{await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('confirm-reading-'+id).value),opening_mm:Number(document.getElementById('confirm-mm-'+id).value),opening_liters:Number(document.getElementById('confirm-liters-'+id).value),pin:document.getElementById('confirm-pin-'+id).value})});toast('Handover confirmed');setTimeout(()=>location.href='attendant-dashboard.html',700);}catch(x){toast(x.message);}}
 
 async function loadPurchases(){
   try{
