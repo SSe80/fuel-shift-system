@@ -8,10 +8,10 @@
   <div class="card">
     <h3>Employees</h3>
     <form class="form" onsubmit="createEmployee(event)">
-      <input id="employee-name" placeholder="Employee name" required>
-      <input id="employee-phone" placeholder="Phone number" required>
-      <input id="employee-pin" type="password" inputmode="numeric" placeholder="PIN (4+ digits)" minlength="4" required>
-      <select id="employee-role"><option value="employee">Employee</option><option value="admin">Admin</option></select>
+      <input id="attendant-name" placeholder="Employee name" required>
+      <input id="attendant-phone" placeholder="Phone number" required>
+      <input id="attendant-pin" type="password" inputmode="numeric" placeholder="PIN (4+ digits)" minlength="4" required>
+      <select id="attendant-role"><option value="attendant">Attendant</option><option value="admin">Admin</option></select>
       <button class="primary">Add employee</button>
     </form>
 
@@ -20,10 +20,10 @@
       <form id="employee-edit-form" class="modal-card form" onsubmit="saveEmployeeEdit(event)">
         <div class="top"><h3>Edit Employee</h3><button type="button" class="modal-close" onclick="closeEmployeeEdit()" aria-label="Close">×</button></div>
         <input id="edit-employee-id" type="hidden">
-        <label>Name<input id="edit-employee-name" required></label>
-        <label>Phone number<input id="edit-employee-phone" required></label>
-        <label>Role<select id="edit-employee-role"><option value="employee">Employee</option><option value="admin">Admin</option></select></label>
-        <label>New PIN <span class="muted">(leave blank to keep current PIN)</span><input id="edit-employee-pin" type="password" inputmode="numeric" minlength="4" placeholder="New PIN"></label>
+        <label>Name<input id="edit-attendant-name" required></label>
+        <label>Phone number<input id="edit-attendant-phone" required></label>
+        <label>Role<select id="edit-attendant-role"><option value="attendant">Attendant</option><option value="admin">Admin</option></select></label>
+        <label>New PIN <span class="muted">(leave blank to keep current PIN)</span><input id="edit-attendant-pin" type="password" inputmode="numeric" minlength="4" placeholder="New PIN"></label>
         <div class="row">
           <button type="submit" class="primary">Save Changes</button>
           <button type="button" onclick="closeEmployeeEdit()">Cancel</button>
@@ -124,7 +124,7 @@
         </div>
         <p id="dispenser-activate-message">Select the employee responsible for opening the dispenser, activate at least one nozzle, and enter each selected nozzle's opening reading.</p>
         <div class="form">
-          <label>Employee<select id="dispenser-activation-employee" required><option value="">Select employee</option></select></label>
+          <label>Attendant<select id="dispenser-activation-employee" required><option value="">Select attendant</option></select></label>
         </div>
         <div id="dispenser-nozzle-activation-list" class="form"></div>
         <p id="dispenser-activate-error" class="muted" style="display:none"></p>
@@ -140,7 +140,7 @@
   <div class="card">
     <h3>Shift Assignment</h3>
     <form class="form" onsubmit="createShift(event)">
-      <select id="shift-employee" required><option value="">Select employee</option></select>
+      <select id="shift-employee" required><option value="">Select attendant</option></select>
       <select id="shift-nozzle" required><option value="">Select dispenser</option></select>
       <button class="primary">Assign Shift</button>
     </form>
