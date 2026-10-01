@@ -107,7 +107,7 @@ async function loadSettingsData(){
   window.productRecords=products;
   document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openEmployeeEdit('${e.id}')">Edit</button><button type="button" onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No employees.</p>';
   window.employeeRecords=employees;
-  document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><div class="top"><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.capacity_liters)} L capacity</p></div><button type="button" onclick="openTankEdit('${t.id}')">Edit</button></div></div>`).join(''):'<p class="muted">No tanks.</p>';
+  document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><div class="top"><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.capacity_liters)} L capacity • ${t.active===false?'Inactive':'Active'}</p></div><div class="row"><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
   window.tankRecords=tanks;
   document.getElementById('nozzles').innerHTML=nozzles.length?nozzles.map(n=>`<div class="card"><div class="top"><div><b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b><br><span class="muted">Tank: ${h((tanks.find(t=>t.id===n.tank_id)||{}).tank_code||n.tank_id)}</span></div><button onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'Activate'}</button></div></div>`).join(''):'<p class="muted">No nozzles.</p>';
   const es=document.getElementById('shift-employee'),ns=document.getElementById('shift-nozzle');
@@ -231,6 +231,21 @@ async function saveTankEdit(event){
     })});
     closeTankEdit();
     toast('Tank updated');
+    await loadSettingsData();
+  }catch(e){toast(e.message);}
+}
+async function toggleTank(id,active){
+  try{
+    await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});
+    toast(active?'Tank deactivated':'Tank activated');
+    await loadSettingsData();
+  }catch(e){toast(e.message);}
+}
+async function removeTank(id){
+  if(!confirm('Remove this tank? This cannot be undone.'))return;
+  try{
+    await api('/api/tanks/'+id,{method:'DELETE'});
+    toast('Tank removed');
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
