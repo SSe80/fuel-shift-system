@@ -47,7 +47,7 @@ async function userDashboard(){
       const n=nozzles.find(x=>x.id===active.nozzle_id);
       box.innerHTML='<div class="card"><div class="top"><h3>Active Shift</h3><span class="badge">active</span></div><p>Dispenser: <b>'+h(n?.nozzle_code||active.nozzle_id)+'</b> • '+h(codeForProduct(n?.product||''))+'</p><p>Tank: <b>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</b></p><p>Opening meter: <b>'+liters(active.opening_reading)+'</b></p><div class="row"><a class="btn primary" href="sales.html">Record Sale</a><a class="btn" href="handover.html">Handover</a></div><form class="form" onsubmit="closeShift(event,\''+active.id+'\')"><input id="close-reading-'+active.id+'" type="number" min="0" step="0.01" placeholder="Closing meter reading" required><input id="close-mm-'+active.id+'" type="number" min="0" step="0.01" placeholder="Closing dip (mm)" required><input id="close-liters-'+active.id+'" type="number" min="0" step="0.01" placeholder="Closing tank liters" required><button class="primary">Close Shift</button></form></div>';
     }else{
-      box.innerHTML='<div class="card"><p>No active shift.</p><a class="btn" href="shift.html">Open Shift</a></div>';
+      box.innerHTML='';
     }
   }catch(e){
     if(e.message==='Unauthorized')location.href='attendant-login.html';
