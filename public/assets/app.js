@@ -552,9 +552,14 @@ async function confirmDispenserActivation(){
   }
   if(review)review.innerHTML='<div class="card" style="margin:0"><b>Attendant reading confirmation</b><p style="margin:6px 0">Attendant: <b>'+h(attendantName)+'</b></p><p style="margin:6px 0">Tank opening: <b>'+liters(openingTankLiters)+' L</b></p><p style="margin:6px 0">Nozzle opening readings: '+selected.map(x=>'<b>'+h(x.nozzle_id)+'</b> = '+liters(x.activation_number)).join(' • ')+'</p><p class="muted" style="margin:6px 0 0">The selected Attendant must review these readings and confirm they are correct before the shift is activated.</p></div>';
   try{
-    await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:true,employee_id:employeeId,opening_tank_liters:openingTankLiters,activated_nozzles:selected.map(x=>({nozzle_id:x.nozzle_id,opening_reading:x.activation_number}))})});
+    await api('/api/shifts',{method:'POST',body:JSON.stringify({
+      employee_id:employeeId,
+      nozzle_id:id,
+      opening_tank_liters:openingTankLiters,
+      activation_nozzles:selected.map(x=>({nozzle_id:x.nozzle_id,opening_reading:x.activation_number}))
+    })});
     closeDispenserActivation();
-    toast('Dispenser activated and shift assigned');
+    toast('Shift assignment sent for attendant confirmation');
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
