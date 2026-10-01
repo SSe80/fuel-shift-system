@@ -7,13 +7,7 @@
 
   <div class="card">
     <h3>Users</h3>
-    <form class="form" onsubmit="createUser(event)">
-      <input id="attendant-name" placeholder="User name" required>
-      <input id="attendant-phone" placeholder="Phone number" required>
-      <input id="attendant-pin" type="password" inputmode="numeric" placeholder="PIN (4+ digits)" minlength="4" required>
-      <select id="attendant-role"><option value="attendant">Attendant</option><option value="admin">Admin</option></select>
-      <button class="primary">Add user</button>
-    </form>
+    <button type="button" class="primary" onclick="openAddModal('add-user-modal')">Add user</button>
 
     <div id="employee-edit-modal" class="modal" aria-hidden="true">
       <div class="modal-backdrop" onclick="closeUserEdit()"></div>
@@ -36,13 +30,55 @@
 
   <div class="card">
     <h3>Products</h3>
-    <form class="form" onsubmit="createProduct(event)">
+    <button type="button" class="primary" onclick="openAddModal('add-product-modal')">Add product</button>
+    <div id="products"></div>
+  </div>
+
+  <div id="add-user-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeAddModal('add-user-modal')"></div>
+    <form class="modal-card form" onsubmit="createUser(event)">
+      <div class="top"><h3>Add User</h3><button type="button" class="modal-close" onclick="closeAddModal('add-user-modal')" aria-label="Close">×</button></div>
+      <input id="attendant-name" placeholder="User name" required>
+      <input id="attendant-phone" placeholder="Phone number" required>
+      <input id="attendant-pin" type="password" inputmode="numeric" placeholder="PIN (4+ digits)" minlength="4" required>
+      <select id="attendant-role"><option value="attendant">Attendant</option><option value="admin">Admin</option></select>
+      <div class="row"><button type="submit" class="primary">Add user</button><button type="button" onclick="closeAddModal('add-user-modal')">Cancel</button></div>
+    </form>
+  </div>
+
+  <div id="add-product-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeAddModal('add-product-modal')"></div>
+    <form class="modal-card form" onsubmit="createProduct(event)">
+      <div class="top"><h3>Add Product</h3><button type="button" class="modal-close" onclick="closeAddModal('add-product-modal')" aria-label="Close">×</button></div>
       <input id="product-name" placeholder="Product name (e.g. Petrol)" required>
       <input id="product-code" placeholder="Code name (e.g. PMS)" maxlength="50" required>
       <label>Product color<input id="product-color" type="color" value="#1264d8" required></label>
-      <button class="primary">Add product</button>
+      <div class="row"><button type="submit" class="primary">Add product</button><button type="button" onclick="closeAddModal('add-product-modal')">Cancel</button></div>
     </form>
-    <div id="products"></div>
+  </div>
+
+  <div id="add-tank-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeAddModal('add-tank-modal')"></div>
+    <form class="modal-card form" onsubmit="createTank(event)">
+      <div class="top"><h3>Add Fuel Tank</h3><button type="button" class="modal-close" onclick="closeAddModal('add-tank-modal')" aria-label="Close">×</button></div>
+      <select id="tank-product" required><option value="">Select product</option></select>
+      <input id="tank-capacity" type="number" min="1" step="0.01" placeholder="Tank size (liters)" required>
+      <div class="row"><button type="submit" class="primary">Add tank</button><button type="button" onclick="closeAddModal('add-tank-modal')">Cancel</button></div>
+    </form>
+  </div>
+
+  <div id="add-dispenser-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeAddModal('add-dispenser-modal')"></div>
+    <form class="modal-card form" onsubmit="createDispenser(event)">
+      <div class="top"><h3>Add Fuel Dispenser</h3><button type="button" class="modal-close" onclick="closeAddModal('add-dispenser-modal')" aria-label="Close">×</button></div>
+      <select id="dispenser-product" required><option value="">Select product</option></select>
+      <select id="dispenser-tank" required><option value="">Select tank</option></select>
+      <select id="dispenser-nozzle-count" required>
+        <option value="">How many nozzles?</option>
+        <option value="1">1 nozzle</option><option value="2">2 nozzles</option><option value="3">3 nozzles</option><option value="4">4 nozzles</option>
+      </select>
+      <div class="row"><button type="submit" class="primary">Add dispenser</button><button type="button" onclick="closeAddModal('add-dispenser-modal')">Cancel</button></div>
+    </form>
   </div>
 
   <div id="generic-activation-modal" class="modal" aria-hidden="true">
@@ -72,11 +108,7 @@
 
   <div class="card">
     <h3>Fuel Tanks</h3>
-    <form class="form" onsubmit="createTank(event)">
-      <select id="tank-product" required><option value="">Select product</option></select>
-      <input id="tank-capacity" type="number" min="1" step="0.01" placeholder="Tank size (liters)" required>
-      <button class="primary">Add tank</button>
-    </form>
+    <button type="button" class="primary" onclick="openAddModal('add-tank-modal')">Add tank</button>
     <div id="tank-edit-modal" class="modal" aria-hidden="true">
       <div class="modal-backdrop" onclick="closeTankEdit()"></div>
       <form id="tank-edit-form" class="modal-card form" onsubmit="saveTankEdit(event)">
@@ -95,18 +127,7 @@
 
   <div class="card">
     <h3>Fuel Dispenser</h3>
-    <form class="form" onsubmit="createDispenser(event)">
-      <select id="dispenser-product" required><option value="">Select product</option></select>
-      <select id="dispenser-tank" required><option value="">Select tank</option></select>
-      <select id="dispenser-nozzle-count" required>
-        <option value="">How many nozzles?</option>
-        <option value="1">1 nozzle</option>
-        <option value="2">2 nozzles</option>
-        <option value="3">3 nozzles</option>
-        <option value="4">4 nozzles</option>
-      </select>
-      <button class="primary">Add dispenser</button>
-    </form>
+    <button type="button" class="primary" onclick="openAddModal('add-dispenser-modal')">Add dispenser</button>
     <div id="dispenser-edit-modal" class="modal" aria-hidden="true">
       <div class="modal-backdrop" onclick="closeDispenserEdit()"></div>
       <form id="dispenser-edit-form" class="modal-card form" onsubmit="saveDispenserEdit(event)">
