@@ -317,11 +317,14 @@ async function deactivateTank(id){try{await api('/api/tanks/'+id,{method:'PATCH'
 function openTankActivation(id){
   const t=(window.tankRecords||[]).find(x=>x.id===id); if(!t)return;
   const productByName=Object.fromEntries((window.productRecords||[]).map(p=>[String(p.name).toLowerCase(),p]));
+  const product=productByName[String(t.product||'').toLowerCase()];
   document.getElementById('activation-target-id').value=id;
   document.getElementById('activation-target-type').value='tank';
   document.getElementById('activation-target-title').textContent='Activate Fuel Tank?';
   const priceBox=document.getElementById('product-activation-price'); if(priceBox)priceBox.style.display='none';
-  document.getElementById('activation-target-message').innerHTML='<b>'+h(t.tank_code)+'</b> — '+h(productByName[String(t.product||'').toLowerCase()]?.code_name||t.product)+'<br><span class="muted">Tank capacity: '+h(liters(t.capacity_liters))+' L</span>';
+  const stockBox=document.getElementById('tank-activation-stock'); if(stockBox)stockBox.style.display='block';
+  const stockInput=document.getElementById('tank-opening-stock'); if(stockInput)stockInput.value='';
+  document.getElementById('activation-target-message').innerHTML='<b>'+h(t.tank_code)+'</b> — '+h(product?.code_name||t.product)+'<br><span class="muted">Tank capacity: '+h(liters(t.capacity_liters))+' L • Product: '+(product?.active?'Active':'Inactive')+'</span>';
   openGenericActivationModal();
 }
 async function removeTank(id){
@@ -403,6 +406,12 @@ async function confirmGenericActivation(){
       const price=priceFromParts('activation-price-major','activation-price-cents');
       if(price===null||price<=0){toast('Enter a valid selling price greater than zero');return;}
       body.selling_price=price;
+    }
+    if(type==='tank'){
+      const stockInput=document.getElementById('tank-opening-stock');
+      const stock=stockInput?.value.trim()!==''?Number(stockInput.value):NaN;
+      if(!Number.isFinite(stock)||stock<0){toast('Enter a valid opening stock reading in liters');return;}
+      body.opening_stock_liters=stock;
     }
     await api(path,{method:'PATCH',body:JSON.stringify(body)});
     closeGenericActivation();toast((type==='user'?'User':type==='product'?'Product':'Tank')+' activated');await loadSettingsData();
