@@ -307,7 +307,7 @@ def create_tank():
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
-@app.delete("/api/tanks/<tank_id>")
+@app.route("/api/tanks/<tank_id>", methods=["DELETE"])
 def delete_tank(tank_id):
     auth=require_admin()
     if auth:return auth
@@ -322,7 +322,7 @@ def update_tank(tank_id):
     if auth:return auth
     data=request.get_json(silent=True) or {}
 
-    if "tank_order" in data or "capacity_liters" in data:
+    if "tank_order" in data or "capacity_liters" in data or "active" in data:
         ts, rows = sb("tanks", params={"id":"eq."+tank_id,"select":"id,tank_code,product,capacity_liters,current_liters"})
         if ts != 200 or not rows:
             return jsonify({"error":"Tank not found"}),404
