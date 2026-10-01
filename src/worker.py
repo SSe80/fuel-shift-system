@@ -349,7 +349,32 @@ def update_tank(tank_id):
             if ps != 200 or not products:
                 return jsonify({"error":"Product for this tank was not found"}),404
             code_name = str(products[0]["code_name"]).strip()
-            body["tank_code"] = f"{code_name}•{order}"
+            import re
+            pattern = re.compile(r"^"+re.escape(code_name)+r"•(\d+)$", re.IGNORECASE)
+            ts, same_tanks = sb("tanks", params={"select":"id,tank_code","product":"eq."+str(tank["product"])})
+            if ts != 200:
+                return jsonify({"error":same_tanks}),ts
+            current_match = pattern.match(str(tank.get("tank_code","")))
+            current_order = int(current_match.group(1)) if current_match else None
+            if current_order is None:
+                return jsonify({"error":"Current tank order could not be determined"}),400
+            max_order = max([int(m.group(1)) for x in same_tanks if (m := pattern.match(str(x.get("tank_code",""))))] or [0])
+            if order > max_order:
+                return jsonify({"error":"Select one of the existing tank orders"}),400
+            if order != current_order:
+                target = next((x for x in same_tanks if pattern.match(str(x.get("tank_code",""))).group(1) == str(order) if pattern.match(str(x.get("tank_code","")))), None)
+                if not target:
+                    return jsonify({"error":"Selected tank order is not available"}),400
+                current_code = f"{code_name}•{current_order}"
+                target_code = f"{code_name}•{order}"
+                temp_code = f"{code_name}•__swap__{tank_id}"
+                status,_=sb("tanks",method="PATCH",params={"id":"eq."+target["id"]},body={"tank_code":temp_code},prefer="return=minimal")
+                if status>=400:return jsonify({"error":"Could not prepare tank order swap"}),status
+                status,_=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body={"tank_code":target_code},prefer="return=minimal")
+                if status>=400:return jsonify({"error":"Could not change tank order"}),status
+                status,_=sb("tanks",method="PATCH",params={"id":"eq."+target["id"]},body={"tank_code":current_code},prefer="return=minimal")
+                if status>=400:return jsonify({"error":"Could not complete tank order swap"}),status
+                body.pop("tank_code", None)
 
         if body:
             status,result=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body=body,prefer="return=representation")
@@ -357,6 +382,10 @@ def update_tank(tank_id):
                 if status == 409 or (isinstance(result,dict) and result.get("code")=="23505"):
                     return jsonify({"error":"That tank order is already in use for this product"}),409
                 return jsonify({"error":result}),status
+            return jsonify(result),200
+        if "tank_order" in data and not body:
+            status,result=sb("tanks",params={"id":"eq."+tank_id,"select":"id,tank_code,product,capacity_liters,current_liters,active"})
+            if status>=400:return jsonify({"error":result}),status
             return jsonify(result),200
 
     if "current_liters" not in data:
