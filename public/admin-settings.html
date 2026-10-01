@@ -122,15 +122,15 @@
           <h3>Activate Dispenser?</h3>
           <button type="button" class="modal-close" onclick="closeDispenserActivation()" aria-label="Close">×</button>
         </div>
-        <p id="dispenser-activate-message">Are you sure you want to activate this dispenser?</p>
-        <p class="muted">Once activated, this dispenser will be available for shift assignment and fuel sales.</p>
+        <p id="dispenser-activate-message">Select at least one nozzle and enter its activation number.</p>
+        <div id="dispenser-nozzle-activation-list" class="form"></div>
+        <p id="dispenser-activate-error" class="muted" style="display:none"></p>
         <div class="row">
           <button type="button" onclick="closeDispenserActivation()">Cancel</button>
           <button type="button" class="primary" onclick="confirmDispenserActivation()">Activate Dispenser</button>
         </div>
       </div>
     </div>
-
     <div id="dispensers"></div>
   </div>
 
