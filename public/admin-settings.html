@@ -7,7 +7,7 @@
 
   <div class="card">
     <h3>Users</h3>
-    <form class="form" onsubmit="createEmployee(event)">
+    <form class="form" onsubmit="createUser(event)">
       <input id="attendant-name" placeholder="User name" required>
       <input id="attendant-phone" placeholder="Phone number" required>
       <input id="attendant-pin" type="password" inputmode="numeric" placeholder="PIN (4+ digits)" minlength="4" required>
@@ -16,9 +16,9 @@
     </form>
 
     <div id="employee-edit-modal" class="modal" aria-hidden="true">
-      <div class="modal-backdrop" onclick="closeEmployeeEdit()"></div>
-      <form id="employee-edit-form" class="modal-card form" onsubmit="saveEmployeeEdit(event)">
-        <div class="top"><h3>Edit User</h3><button type="button" class="modal-close" onclick="closeEmployeeEdit()" aria-label="Close">×</button></div>
+      <div class="modal-backdrop" onclick="closeUserEdit()"></div>
+      <form id="employee-edit-form" class="modal-card form" onsubmit="saveUserEdit(event)">
+        <div class="top"><h3>Edit User</h3><button type="button" class="modal-close" onclick="closeUserEdit()" aria-label="Close">×</button></div>
         <input id="edit-employee-id" type="hidden">
         <label>Name<input id="edit-attendant-name" required></label>
         <label>Phone number<input id="edit-attendant-phone" required></label>
@@ -26,7 +26,7 @@
         <label>New PIN <span class="muted">(leave blank to keep current PIN)</span><input id="edit-attendant-pin" type="password" inputmode="numeric" minlength="4" placeholder="New PIN"></label>
         <div class="row">
           <button type="submit" class="primary">Save Changes</button>
-          <button type="button" onclick="closeEmployeeEdit()">Cancel</button>
+          <button type="button" onclick="closeUserEdit()">Cancel</button>
         </div>
       </form>
     </div>
