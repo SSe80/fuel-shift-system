@@ -85,8 +85,15 @@ async function adminDashboard(){
 }
 
 async function adminSettings(){
-  try{const me=await currentUser();if(me.role!=='admin')return location.href='employee-dashboard.html';await loadSettingsData();}
-  catch(e){location.href='admin-login.html';}
+  try{
+    const me=await currentUser();
+    if(me.role!=='admin')return location.href='employee-dashboard.html';
+    await loadSettingsData();
+  }catch(e){
+    const box=document.getElementById('settings-status');
+    if(box)box.textContent='Settings error: '+e.message;
+    toast('Settings error: '+e.message);
+  }
 }
 async function loadSettingsData(){
   const [employees,tanks,nozzles,shifts,products]=await Promise.all([api('/api/employees'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/products')]);
