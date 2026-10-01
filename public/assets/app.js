@@ -27,12 +27,12 @@ async function login(role) {
   } catch(e) { toast(e.message); }
 }
 async function logout(){try{await api('/api/logout',{method:'POST',body:'{}'});}catch(_){} localStorage.removeItem('fuelRole');location.href='index.html';}
-async function currentUser(){return (await api('/api/me')).employee;}
+async function currentUser(){return (await api('/api/me')).user;}
 
 async function userDashboard(){
   try{
     const me=await currentUser();
-    if(me.role!=='employee')return location.href='admin-dashboard.html';
+    if(me.role!=='attendant')return location.href='admin-dashboard.html';
     document.getElementById('name').textContent=me.name;
     const [shifts,nozzles,products]=await Promise.all([api('/api/shifts'),api('/api/nozzles'),api('/api/products')]);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
@@ -100,12 +100,12 @@ async function adminSettings(){
   }
 }
 async function loadSettingsData(){
-  const [employees,tanks,dispensers,shifts,products]=await Promise.all([api('/api/employees'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/products')]);
+  const [employees,tanks,dispensers,shifts,products]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/products')]);
   const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
   const codeForProduct=product=>productByName[String(product||'').toLowerCase()]?.code_name||product;
   document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><br><span class="muted">Name: ${h(p.name)} • ${p.active?'Active':'Inactive'}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
   window.productRecords=products;
-  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openEmployeeEdit('${e.id}')">Edit</button><button type="button" onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No users.</p>';
+  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openUserEdit('${e.id}')">Edit</button><button type="button" onclick="toggleUser('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No users.</p>';
   window.employeeRecords=employees;
   document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><div class="top"><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.capacity_liters)} L capacity • ${t.active===false?'Inactive':'Active'}</p></div><div class="row"><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
   window.tankRecords=tanks;
@@ -179,7 +179,7 @@ async function toggleProduct(id,active){
   catch(e){toast(e.message);}
 }
 
-function openEmployeeEdit(id){
+function openUserEdit(id){
   const e=(window.employeeRecords||[]).find(x=>x.id===id);
   if(!e)return;
   document.getElementById('edit-employee-id').value=e.id;
@@ -192,8 +192,8 @@ function openEmployeeEdit(id){
   modal.setAttribute('aria-hidden','false');
   document.getElementById('edit-attendant-name').focus();
 }
-function closeEmployeeEdit(){const modal=document.getElementById('employee-edit-modal');modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.getElementById('employee-edit-form').reset();}
-async function saveEmployeeEdit(event){
+function closeUserEdit(){const modal=document.getElementById('employee-edit-modal');modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.getElementById('employee-edit-form').reset();}
+async function saveUserEdit(event){
   event.preventDefault();
   const id=document.getElementById('edit-employee-id').value;
   const body={
@@ -204,14 +204,14 @@ async function saveEmployeeEdit(event){
   const pin=document.getElementById('edit-attendant-pin').value.trim();
   if(pin)body.pin=pin;
   try{
-    await api('/api/employees/'+id,{method:'PATCH',body:JSON.stringify(body)});
-    closeEmployeeEdit();
-    toast('Employee updated');
+    await api('/api/users/'+id,{method:'PATCH',body:JSON.stringify(body)});
+    closeUserEdit();
+    toast('User updated');
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
-async function createEmployee(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('attendant-name').value.trim(),phone:document.getElementById('attendant-phone').value.trim(),pin:document.getElementById('attendant-pin').value,role:document.getElementById('attendant-role').value})});e.target.reset();toast('Employee created');await loadSettingsData();}catch(x){toast(x.message);}}
-async function toggleEmployee(id,active){try{await api('/api/employees/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});await loadSettingsData();}catch(e){toast(e.message);}}
+async function createUser(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('attendant-name').value.trim(),phone:document.getElementById('attendant-phone').value.trim(),pin:document.getElementById('attendant-pin').value,role:document.getElementById('attendant-role').value})});e.target.reset();toast('User created');await loadSettingsData();}catch(x){toast(x.message);}}
+async function toggleUser(id,active){try{await api('/api/users/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});await loadSettingsData();}catch(e){toast(e.message);}}
 function openTankEdit(id){
   const t=(window.tankRecords||[]).find(x=>x.id===id);
   if(!t)return;
@@ -373,7 +373,7 @@ async function confirmDispenserActivation(){
   });
   const error=document.getElementById('dispenser-activate-error');
   if(!employeeId){
-    error.textContent='Select an employee before activating the dispenser.';
+    error.textContent='Select a user before activating the dispenser.';
     error.style.display='block';
     return;
   }
@@ -443,7 +443,7 @@ async function loadSalesHistory(){
 
 async function loadHandover(){
   try{
-    const me=await currentUser(),[shifts,employees]=await Promise.all([api('/api/shifts'),api('/api/employees').catch(()=>[])]);
+    const me=await currentUser(),[shifts,employees]=await Promise.all([api('/api/shifts'),api('/api/users').catch(()=>[])]);
     const active=shifts.find(s=>s.status==='active');
     if(!active){document.getElementById('handover-status').textContent='No active shift.';return;}
     document.getElementById('handover-shift').value=active.id;
@@ -454,7 +454,7 @@ async function loadHandover(){
 async function submitHandover(e){e.preventDefault();try{await api('/api/handovers',{method:'POST',body:JSON.stringify({shift_id:document.getElementById('handover-shift').value,to_employee_id:document.getElementById('to-employee').value,closing_reading:Number(document.getElementById('closing-reading').value),closing_mm:Number(document.getElementById('closing-mm').value),closing_liters:Number(document.getElementById('closing-liters').value)})});toast('Handover submitted');setTimeout(()=>location.href='pending-handovers.html',700);}catch(x){toast(x.message);}}
 async function loadPendingHandovers(){
   try{
-    const [hs,emps]=await Promise.all([api('/api/handovers'),api('/api/employees').catch(()=>[])]);
+    const [hs,emps]=await Promise.all([api('/api/handovers'),api('/api/users').catch(()=>[])]);
     const names=Object.fromEntries(emps.map(e=>[e.id,e.name]));
     const pending=hs.filter(x=>x.status==='pending');
     document.getElementById('pending-list').innerHTML=pending.length?pending.map(x=>`<div class="card"><h3>Handover ${h(x.id.slice(0,8))}</h3><p>From: <b>${h(names[x.from_employee_id]||x.from_employee_id)}</b><br>To: <b>${h(names[x.to_employee_id]||x.to_employee_id)}</b></p><p>Closing meter: ${liters(x.closing_reading)} • Tank: ${liters(x.closing_liters)} L</p><form class="form" onsubmit="confirmHandover(event,'${x.id}')"><input id="confirm-reading-${x.id}" type="number" min="0" step="0.01" placeholder="Opening meter" required><input id="confirm-mm-${x.id}" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" required><input id="confirm-liters-${x.id}" type="number" min="0" step="0.01" placeholder="Opening tank liters" required><button class="primary">Confirm & Start Shift</button></form></div>`).join(''):'<div class="card"><p>No pending handovers.</p></div>';
