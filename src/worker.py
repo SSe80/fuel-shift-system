@@ -110,6 +110,34 @@ def health():
             "error": type(exc).__name__
         }), 503
 
+@app.get("/api/diagnostics")
+def diagnostics():
+    checks = {}
+    checks["session"] = {
+        "authenticated": bool(session.get("employee_id")),
+        "role": session.get("role")
+    }
+    endpoints = [
+        ("me", "employees", {"id": "eq." + str(session.get("employee_id")),"select":"id,name,role,active"} if session.get("employee_id") else {"select":"id","limit":"1"}),
+        ("products", "products", {"select":"id,name,active","limit":"5"}),
+        ("tanks", "tanks", {"select":"id,tank_code,active","limit":"5"}),
+        ("nozzles", "nozzles", {"select":"id,nozzle_code,active","limit":"5"}),
+        ("shifts", "shifts", {"select":"id,status,employee_id","limit":"5"}),
+        ("sales", "sales", {"select":"id,sale_time","limit":"5"}),
+        ("purchases", "purchases", {"select":"id,purchase_date","limit":"5"}),
+        ("handovers", "handovers", {"select":"id,status","limit":"5"}),
+    ]
+    for name, table, params in endpoints:
+        try:
+            status, rows = sb(table, params=params)
+            checks[name] = {"status": status, "ok": status == 200, "rows": len(rows) if isinstance(rows, list) else None}
+            if status != 200:
+                checks[name]["error"] = rows
+        except Exception as exc:
+            checks[name] = {"status": 0, "ok": False, "error": type(exc).__name__}
+    ok = all(v.get("ok") for v in checks.values() if isinstance(v, dict) and "ok" in v)
+    return jsonify({"ok": ok, "checks": checks})
+
 @app.post("/api/login")
 def login():
     data = request.get_json(silent=True) or {}
