@@ -374,7 +374,27 @@ def update_tank(tank_id):
             body["capacity_liters"] = capacity
 
         if "active" in data:
-            body["active"] = bool(data["active"])
+            requested_active = bool(data["active"])
+            if requested_active:
+                ps, products = sb("products", params={"select":"name,code_name,active", "name":"eq."+str(tank["product"]), "limit":"1"})
+                if ps != 200 or not products:
+                    return jsonify({"error":"Product for this tank was not found"}),404
+                if not products[0].get("active"):
+                    return jsonify({"error":"Tank cannot be activated because its product is inactive"}),400
+                if "opening_stock_liters" not in data:
+                    return jsonify({"error":"Opening stock reading is required when activating a tank"}),400
+                try:
+                    opening_stock = float(data["opening_stock_liters"])
+                except (TypeError,ValueError):
+                    return jsonify({"error":"Invalid opening stock reading"}),400
+                if opening_stock < 0:
+                    return jsonify({"error":"Opening stock reading cannot be negative"}),400
+                if opening_stock > float(tank.get("capacity_liters") or 0):
+                    return jsonify({"error":"Opening stock cannot exceed tank capacity"}),400
+                body["current_liters"] = opening_stock
+                body["active"] = True
+            else:
+                body["active"] = False
 
         if "tank_order" in data:
             try: order = int(data["tank_order"])
