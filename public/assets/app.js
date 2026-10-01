@@ -90,7 +90,8 @@ async function adminSettings(){
 }
 async function loadSettingsData(){
   const [employees,tanks,nozzles,shifts]=await Promise.all([api('/api/employees'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts')]);
-  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button onclick="editEmployee('${e.id}',${JSON.stringify(e.name)},${JSON.stringify(e.phone)},${JSON.stringify(e.role)})">Edit</button><button onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No employees.</p>';
+  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openEmployeeEdit('${e.id}')">Edit</button><button type="button" onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No employees.</p>';
+  window.employeeRecords=employees;
   document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><b>${h(t.tank_code)} — ${h(t.product)}</b><p>${liters(t.current_liters)} / ${liters(t.capacity_liters)} L • Dip ${liters(t.current_mm)} mm</p><button onclick="adjustTank('${t.id}','${h(t.tank_code)}',${Number(t.current_liters)},${Number(t.current_mm)})">Adjust inventory</button></div>`).join(''):'<p class="muted">No tanks.</p>';
   document.getElementById('nozzles').innerHTML=nozzles.length?nozzles.map(n=>`<div class="card"><div class="top"><div><b>${h(n.nozzle_code)} — ${h(n.product)}</b><br><span class="muted">Tank: ${h((tanks.find(t=>t.id===n.tank_id)||{}).tank_code||n.tank_id)}</span></div><button onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'Activate'}</button></div></div>`).join(''):'<p class="muted">No nozzles.</p>';
   const es=document.getElementById('shift-employee'),ns=document.getElementById('shift-nozzle');
@@ -99,30 +100,42 @@ async function loadSettingsData(){
   const en=Object.fromEntries(employees.map(e=>[e.id,e.name])),nn=Object.fromEntries(nozzles.map(n=>[n.id,n.nozzle_code]));
   document.getElementById('shifts').innerHTML=shifts.slice(0,20).map(s=>`<div class="card"><b>${h(en[s.employee_id]||s.employee_id)}</b> • ${h(nn[s.nozzle_id]||s.nozzle_id)}<br><span class="muted">${h(s.status)} • ${s.start_time?new Date(s.start_time).toLocaleString():'not started'}</span></div>`).join('')||'<p class="muted">No shifts.</p>';
 }
-async function createEmployee(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('employee-name').value.trim(),phone:document.getElementById('employee-phone').value.trim(),pin:document.getElementById('employee-pin').value,role:document.getElementById('employee-role').value})});e.target.reset();toast('Employee created');await loadSettingsData();}catch(x){toast(x.message);}}
-async function editEmployee(id,currentName,currentPhone,currentRole){
-  const name=prompt('Employee name',currentName);
-  if(name===null)return;
-  const phone=prompt('Phone number',currentPhone);
-  if(phone===null)return;
-  const role=prompt('Role (employee or admin)',currentRole);
-  if(role===null)return;
-  const pin=prompt('New PIN (leave blank to keep current PIN)','');
-  if(pin===null)return;
-  const body={name:name.trim(),phone:phone.trim(),role:role.trim()};
-  if(pin.trim())body.pin=pin.trim();
+function openEmployeeEdit(id){
+  const e=(window.employeeRecords||[]).find(x=>x.id===id);
+  if(!e)return;
+  document.getElementById('edit-employee-id').value=e.id;
+  document.getElementById('edit-employee-name').value=e.name||'';
+  document.getElementById('edit-employee-phone').value=e.phone||'';
+  document.getElementById('edit-employee-role').value=e.role||'employee';
+  document.getElementById('edit-employee-pin').value='';
+  document.getElementById('employee-edit-form').style.display='grid';
+  document.getElementById('employee-edit-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeEmployeeEdit(){document.getElementById('employee-edit-form').style.display='none';document.getElementById('employee-edit-form').reset();}
+async function saveEmployeeEdit(event){
+  event.preventDefault();
+  const id=document.getElementById('edit-employee-id').value;
+  const body={
+    name:document.getElementById('edit-employee-name').value.trim(),
+    phone:document.getElementById('edit-employee-phone').value.trim(),
+    role:document.getElementById('edit-employee-role').value
+  };
+  const pin=document.getElementById('edit-employee-pin').value.trim();
+  if(pin)body.pin=pin;
   try{
     await api('/api/employees/'+id,{method:'PATCH',body:JSON.stringify(body)});
+    closeEmployeeEdit();
     toast('Employee updated');
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
+async function createEmployee(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('employee-name').value.trim(),phone:document.getElementById('employee-phone').value.trim(),pin:document.getElementById('employee-pin').value,role:document.getElementById('employee-role').value})});e.target.reset();toast('Employee created');await loadSettingsData();}}
 async function toggleEmployee(id,active){try{await api('/api/employees/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});await loadSettingsData();}catch(e){toast(e.message);}}
 async function createTank(e){e.preventDefault();try{await api('/api/tanks',{method:'POST',body:JSON.stringify({tank_code:document.getElementById('tank-code').value.trim(),product:document.getElementById('tank-product').value.trim(),capacity_liters:Number(document.getElementById('tank-capacity').value),current_liters:Number(document.getElementById('tank-current').value),current_mm:Number(document.getElementById('tank-mm').value||0)})});e.target.reset();document.getElementById('tank-current').value='0';document.getElementById('tank-mm').value='0';toast('Tank created');await loadSettingsData();}catch(x){toast(x.message);}}
 async function adjustTank(id,code,current,mm){const n=prompt('New liters for '+code,current);if(n===null)return;const m=prompt('New dip in mm',mm);if(m===null)return;const notes=prompt('Reason','Inventory adjustment')||'Inventory adjustment';try{await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({current_liters:Number(n),current_mm:Number(m),notes})});toast('Inventory updated');await loadSettingsData();}catch(e){toast(e.message);}}
 async function createNozzle(e){e.preventDefault();try{await api('/api/nozzles',{method:'POST',body:JSON.stringify({nozzle_code:document.getElementById('nozzle-code').value.trim(),product:document.getElementById('nozzle-product').value.trim(),tank_id:document.getElementById('nozzle-tank').value})});e.target.reset();toast('Nozzle created');await loadSettingsData();}catch(x){toast(x.message);}}
 async function toggleNozzle(id,active){try{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});await loadSettingsData();}catch(e){toast(e.message);}}
-async function createShift(e){e.preventDefault();try{await api('/api/shifts',{method:'POST',body:JSON.stringify({employee_id:document.getElementById('shift-employee').value,nozzle_id:document.getElementById('shift-nozzle').value})});e.target.reset();toast('Shift assigned');await loadSettingsData();}catch(x){toast(x.message);}}
+async function createShift(e){e.preventDefault();try{await api('/api/shifts',{method:'POST',body:JSON.stringify({employee_id:document.getElementById('shift-employee').value,nozzle_id:document.getElementById('shift-nozzle').value})});e.target.reset();toast('Shift assigned');await loadSettingsData();}}
 
 async function loadSaleContext(){
   try{
