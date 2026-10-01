@@ -23,7 +23,7 @@ async function login(role) {
     const user=await api('/api/login',{method:'POST',body:JSON.stringify({operator_id,pin})});
     if(role==='admin' && user.role!=='admin') throw new Error('This account is not an admin account');
     localStorage.setItem('fuelRole',user.role);
-    location.href=user.role==='admin'?'admin-dashboard.html':'employee-dashboard.html';
+    location.href=user.role==='admin'?'admin-dashboard.html':'attendant-dashboard.html';
   } catch(e) { toast(e.message); }
 }
 async function logout(){try{await api('/api/logout',{method:'POST',body:'{}'});}catch(_){} localStorage.removeItem('fuelRole');location.href='index.html';}
@@ -44,7 +44,7 @@ async function employeeDashboard(){
       :s.status==='active'
       ?`<div class="card"><div class="top"><h3>Active Shift</h3><span class="badge">${h(s.status)}</span></div><p>Nozzle: <b>${h(nn[s.nozzle_id]||s.nozzle_id)}</b></p><p>Opening meter: <b>${liters(s.opening_reading)}</b></p><div class="row"><a class="btn primary" href="sales.html">Record Sale</a><a class="btn" href="handover.html">Handover</a></div><form class="form" onsubmit="closeShift(event,'${s.id}')"><input id="close-reading-${s.id}" type="number" min="0" step="0.01" placeholder="Closing meter reading" required><input id="close-mm-${s.id}" type="number" min="0" step="0.01" placeholder="Closing dip (mm)" required><input id="close-liters-${s.id}" type="number" min="0" step="0.01" placeholder="Closing tank liters" required><button class="primary">Close Shift</button></form></div>`
       :`<div class="card"><div class="top"><h3>Shift ${h(s.id.slice(0,8))}</h3><span class="badge">${h(s.status)}</span></div><p>Nozzle: ${h(nn[s.nozzle_id]||s.nozzle_id)}</p><p>Opening: ${liters(s.opening_reading)} • Closing: ${liters(s.closing_reading)}</p></div>`).join(''):'<div class="card"><p>No shifts assigned.</p></div>';
-  }catch(e){if(e.message==='Unauthorized')location.href='employee-login.html';}
+  }catch(e){if(e.message==='Unauthorized')location.href='attendant-login.html';}
 }
 async function startShift(event,id){
   event.preventDefault();
@@ -66,7 +66,7 @@ async function closeShift(event,id){
 
 async function adminDashboard(){
   try{
-    const me=await currentUser(); if(me.role!=='admin')return location.href='employee-dashboard.html';
+    const me=await currentUser(); if(me.role!=='admin')return location.href='attendant-dashboard.html';
     const [tanks,sales,shifts,products]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products')]);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
@@ -91,7 +91,7 @@ async function adminDashboard(){
 async function adminSettings(){
   try{
     const me=await currentUser();
-    if(me.role!=='admin')return location.href='employee-dashboard.html';
+    if(me.role!=='admin')return location.href='attendant-dashboard.html';
     await loadSettingsData();
   }catch(e){
     const box=document.getElementById('settings-status');
@@ -105,14 +105,14 @@ async function loadSettingsData(){
   const codeForProduct=product=>productByName[String(product||'').toLowerCase()]?.code_name||product;
   document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><br><span class="muted">Name: ${h(p.name)} • ${p.active?'Active':'Inactive'}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
   window.productRecords=products;
-  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openEmployeeEdit('${e.id}')">Edit</button><button type="button" onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No employees.</p>';
+  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openEmployeeEdit('${e.id}')">Edit</button><button type="button" onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No attendants.</p>';
   window.employeeRecords=employees;
   document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><div class="top"><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.capacity_liters)} L capacity • ${t.active===false?'Inactive':'Active'}</p></div><div class="row"><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
   window.tankRecords=tanks;
   document.getElementById('dispensers').innerHTML=dispensers.length?dispensers.map(n=>`<div class="card"><div class="top"><div><b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b><br><span class="muted">Tank: ${h((tanks.find(t=>t.id===n.tank_id)||{}).tank_code||n.tank_id)} • ${h(n.nozzle_count||1)} nozzle(s) • ${n.active?'Active':'Inactive'}</span><div class="muted" style="margin-top:6px"><b>Nozzle IDs:</b> ${(n.nozzle_ids||[]).map(id=>`<span style="display:inline-block;margin:2px 4px 2px 0">${h(id)}</span>`).join('')}</div></div><div class="row"><button type="button" onclick="openDispenserEdit('${n.id}')">Edit</button><button type="button" onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'⚠️ Activate'}</button><button type="button" onclick="removeDispenser('${n.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No dispensers.</p>';
 window.dispenserRecords=dispensers;
   const es=document.getElementById('shift-employee'),ns=document.getElementById('shift-nozzle');
-  es.innerHTML='<option value="">Select employee</option>'+employees.filter(e=>e.active&&e.role==='employee').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
+  es.innerHTML='<option value="">Select attendant</option>'+employees.filter(e=>e.active&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
   document.getElementById('tank-product').innerHTML='<option value="">Select product</option>'+products.filter(p=>p.active).map(p=>`<option value="${h(p.name)}">${h(p.code_name)}</option>`).join('');
   document.getElementById('dispenser-product').innerHTML='<option value="">Select product</option>'+products.filter(p=>p.active).map(p=>`<option value="${h(p.name)}">${h(p.code_name)}</option>`).join('');
   document.getElementById('dispenser-tank').innerHTML='<option value="">Select tank</option>'+tanks.filter(t=>t.active!==false).map(t=>`<option value="${t.id}">${h(t.tank_code)} — ${h(codeForProduct(t.product))}</option>`).join('');
@@ -183,25 +183,25 @@ function openEmployeeEdit(id){
   const e=(window.employeeRecords||[]).find(x=>x.id===id);
   if(!e)return;
   document.getElementById('edit-employee-id').value=e.id;
-  document.getElementById('edit-employee-name').value=e.name||'';
-  document.getElementById('edit-employee-phone').value=e.phone||'';
-  document.getElementById('edit-employee-role').value=e.role||'employee';
-  document.getElementById('edit-employee-pin').value='';
+  document.getElementById('edit-attendant-name').value=e.name||'';
+  document.getElementById('edit-attendant-phone').value=e.phone||'';
+  document.getElementById('edit-attendant-role').value=e.role||'attendant';
+  document.getElementById('edit-attendant-pin').value='';
   const modal=document.getElementById('employee-edit-modal');
   modal.classList.add('open');
   modal.setAttribute('aria-hidden','false');
-  document.getElementById('edit-employee-name').focus();
+  document.getElementById('edit-attendant-name').focus();
 }
 function closeEmployeeEdit(){const modal=document.getElementById('employee-edit-modal');modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.getElementById('employee-edit-form').reset();}
 async function saveEmployeeEdit(event){
   event.preventDefault();
   const id=document.getElementById('edit-employee-id').value;
   const body={
-    name:document.getElementById('edit-employee-name').value.trim(),
-    phone:document.getElementById('edit-employee-phone').value.trim(),
-    role:document.getElementById('edit-employee-role').value
+    name:document.getElementById('edit-attendant-name').value.trim(),
+    phone:document.getElementById('edit-attendant-phone').value.trim(),
+    role:document.getElementById('edit-attendant-role').value
   };
-  const pin=document.getElementById('edit-employee-pin').value.trim();
+  const pin=document.getElementById('edit-attendant-pin').value.trim();
   if(pin)body.pin=pin;
   try{
     await api('/api/employees/'+id,{method:'PATCH',body:JSON.stringify(body)});
@@ -210,7 +210,7 @@ async function saveEmployeeEdit(event){
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
-async function createEmployee(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('employee-name').value.trim(),phone:document.getElementById('employee-phone').value.trim(),pin:document.getElementById('employee-pin').value,role:document.getElementById('employee-role').value})});e.target.reset();toast('Employee created');await loadSettingsData();}catch(x){toast(x.message);}}
+async function createEmployee(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('attendant-name').value.trim(),phone:document.getElementById('attendant-phone').value.trim(),pin:document.getElementById('attendant-pin').value,role:document.getElementById('attendant-role').value})});e.target.reset();toast('Employee created');await loadSettingsData();}catch(x){toast(x.message);}}
 async function toggleEmployee(id,active){try{await api('/api/employees/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});await loadSettingsData();}catch(e){toast(e.message);}}
 function openTankEdit(id){
   const t=(window.tankRecords||[]).find(x=>x.id===id);
@@ -333,7 +333,7 @@ function openDispenserActivation(id){
   const message=document.getElementById('dispenser-activate-message');
   if(message)message.innerHTML='<b>'+h(d.nozzle_code||'Dispenser')+'</b> — '+h(product?.code_name||d.product||'')+'<br><span class="muted">Tank: '+h(tank?.tank_code||d.tank_id||'')+' • '+h(d.nozzle_count||1)+' nozzle(s)</span>';
   const employeeSelect=document.getElementById('dispenser-activation-employee');
-  if(employeeSelect)employeeSelect.innerHTML='<option value="">Select employee</option>'+((window.employeeRecords||[]).filter(e=>e.active&&e.role==='employee').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join(''));
+  if(employeeSelect)employeeSelect.innerHTML='<option value="">Select attendant</option>'+((window.employeeRecords||[]).filter(e=>e.active&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join(''));
   const list=document.getElementById('dispenser-nozzle-activation-list');
   const ids=d.nozzle_ids||[];
   list.innerHTML=ids.length?ids.map((nozzleId,i)=>'<div class="card" style="margin:0 0 8px;padding:10px"><div class="top"><label style="display:flex;align-items:center;gap:8px;margin:0"><span><b>'+h(nozzleId)+'</b></span><button type="button" onclick="showNozzleActivationInput('+i+')" style="padding:4px 8px">Activate</button></label></div><div id="nozzle-activation-input-'+i+'" style="display:none;margin-top:8px"><input id="nozzle-activation-number-'+i+'" type="number" min="0" step="0.01" placeholder="Enter activation number" inputmode="decimal"></div></div>').join(''):'<p class="muted">No nozzles configured.</p>';
@@ -448,7 +448,7 @@ async function loadHandover(){
     if(!active){document.getElementById('handover-status').textContent='No active shift.';return;}
     document.getElementById('handover-shift').value=active.id;
     document.getElementById('handover-status').textContent='Active shift on nozzle '+active.nozzle_id;
-    document.getElementById('to-employee').innerHTML='<option value="">Select receiving employee</option>'+employees.filter(e=>e.active&&e.id!==me.id&&e.role==='employee').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
+    document.getElementById('to-employee').innerHTML='<option value="">Select receiving attendant</option>'+employees.filter(e=>e.active&&e.id!==me.id&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
   }catch(e){document.getElementById('handover-status').textContent=e.message;}
 }
 async function submitHandover(e){e.preventDefault();try{await api('/api/handovers',{method:'POST',body:JSON.stringify({shift_id:document.getElementById('handover-shift').value,to_employee_id:document.getElementById('to-employee').value,closing_reading:Number(document.getElementById('closing-reading').value),closing_mm:Number(document.getElementById('closing-mm').value),closing_liters:Number(document.getElementById('closing-liters').value)})});toast('Handover submitted');setTimeout(()=>location.href='pending-handovers.html',700);}catch(x){toast(x.message);}}
@@ -460,7 +460,7 @@ async function loadPendingHandovers(){
     document.getElementById('pending-list').innerHTML=pending.length?pending.map(x=>`<div class="card"><h3>Handover ${h(x.id.slice(0,8))}</h3><p>From: <b>${h(names[x.from_employee_id]||x.from_employee_id)}</b><br>To: <b>${h(names[x.to_employee_id]||x.to_employee_id)}</b></p><p>Closing meter: ${liters(x.closing_reading)} • Tank: ${liters(x.closing_liters)} L</p><form class="form" onsubmit="confirmHandover(event,'${x.id}')"><input id="confirm-reading-${x.id}" type="number" min="0" step="0.01" placeholder="Opening meter" required><input id="confirm-mm-${x.id}" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" required><input id="confirm-liters-${x.id}" type="number" min="0" step="0.01" placeholder="Opening tank liters" required><button class="primary">Confirm & Start Shift</button></form></div>`).join(''):'<div class="card"><p>No pending handovers.</p></div>';
   }catch(e){document.getElementById('pending-list').textContent=e.message;}
 }
-async function confirmHandover(e,id){e.preventDefault();try{await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('confirm-reading-'+id).value),opening_mm:Number(document.getElementById('confirm-mm-'+id).value),opening_liters:Number(document.getElementById('confirm-liters-'+id).value)})});toast('Handover confirmed');setTimeout(()=>location.href='employee-dashboard.html',700);}catch(x){toast(x.message);}}
+async function confirmHandover(e,id){e.preventDefault();try{await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('confirm-reading-'+id).value),opening_mm:Number(document.getElementById('confirm-mm-'+id).value),opening_liters:Number(document.getElementById('confirm-liters-'+id).value)})});toast('Handover confirmed');setTimeout(()=>location.href='attendant-dashboard.html',700);}catch(x){toast(x.message);}}
 
 async function loadPurchases(){
   try{
