@@ -14,6 +14,20 @@
       <select id="employee-role"><option value="employee">Employee</option><option value="admin">Admin</option></select>
       <button class="primary">Add employee</button>
     </form>
+
+    <form id="employee-edit-form" class="form edit-form" onsubmit="saveEmployeeEdit(event)" style="display:none">
+      <h3>Edit Employee</h3>
+      <input id="edit-employee-id" type="hidden">
+      <label>Name<input id="edit-employee-name" required></label>
+      <label>Phone number<input id="edit-employee-phone" required></label>
+      <label>Role<select id="edit-employee-role"><option value="employee">Employee</option><option value="admin">Admin</option></select></label>
+      <label>New PIN <span class="muted">(leave blank to keep current PIN)</span><input id="edit-employee-pin" type="password" inputmode="numeric" minlength="4" placeholder="New PIN"></label>
+      <div class="row">
+        <button type="submit" class="primary">Save Changes</button>
+        <button type="button" onclick="closeEmployeeEdit()">Cancel</button>
+      </div>
+    </form>
+
     <div id="employees"></div>
   </div>
 
