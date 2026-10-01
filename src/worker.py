@@ -459,7 +459,7 @@ def update_tank(tank_id):
 def nozzles():
     auth=require_login()
     if auth:return auth
-    params={"select":"id,nozzle_code,nozzle_ids,product,tank_id,nozzle_count,active","order":"nozzle_code.asc"}
+    params={"select":"id,nozzle_code,nozzle_ids,product,tank_id,nozzle_count,active,opening_tank_liters,activated_at","order":"nozzle_code.asc"}
     if session.get("role") != "admin": params["active"]="eq.true"
     status,rows=sb("nozzles",params=params)
     return jsonify(rows),status
