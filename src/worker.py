@@ -90,12 +90,12 @@ def health():
 @app.post("/api/login")
 def login():
     data = request.get_json(silent=True) or {}
-    phone, pin = str(data.get("phone", "")).strip(), str(data.get("pin", ""))
-    if not phone or not pin:
-        return jsonify({"error": "Phone and PIN are required"}), 400
+    operator_id, pin = str(data.get("operator_id", "")).strip(), str(data.get("pin", ""))
+    if not operator_id or not pin:
+        return jsonify({"error": "Operator ID and PIN are required"}), 400
     status, rows = sb("employees", params={
-        "phone": "eq." + phone, "active": "eq.true",
-        "select": "id,name,phone,role,pin_hash,active"
+        "operator_id": "eq." + operator_id, "active": "eq.true",
+        "select": "id,name,phone,operator_id,role,pin_hash,active"
     })
     if status != 200 or not rows:
         return jsonify({"error": "Invalid credentials"}), 401
@@ -104,7 +104,7 @@ def login():
         return jsonify({"error": "Invalid credentials"}), 401
     session.clear()
     session["employee_id"], session["role"] = emp["id"], emp["role"]
-    return jsonify({k: emp[k] for k in ("id","name","phone","role")})
+    return jsonify({k: emp[k] for k in ("id","name","phone","operator_id","role")})
 
 @app.post("/api/logout")
 def logout():
@@ -154,7 +154,7 @@ def bootstrap_admin():
 def employees():
     auth = require_login()
     if auth: return auth
-    select = "id,name,phone,role,active,created_at" if session.get("role") == "admin" else "id,name,phone,role"
+    select = "id,name,phone,operator_id,role,active,created_at" if session.get("role") == "admin" else "id,name,phone,operator_id,role"
     params = {"select": select, "order": "name.asc"}
     if session.get("role") != "admin": params["active"] = "eq.true"
     status, rows = sb("employees", params=params)
@@ -167,10 +167,12 @@ def create_employee():
     data = request.get_json(silent=True) or {}
     name, phone, pin = str(data.get("name","")).strip(), str(data.get("phone","")).strip(), str(data.get("pin",""))
     role = str(data.get("role","employee")).strip()
-    if role not in ("employee","admin") or not name or not phone or len(pin) < 4 or not pin.isdigit():
-        return jsonify({"error":"Valid name, phone, role and numeric PIN are required"}), 400
+    digits = "".join(ch for ch in phone if ch.isdigit())
+    if role not in ("employee","admin") or not name or len(digits) < 6 or len(pin) < 4 or not pin.isdigit():
+        return jsonify({"error":"Valid name, phone with at least 6 digits, role and numeric PIN are required"}), 400
+    operator_id = digits[-6:]
     status, result = sb("employees", method="POST", body={
-        "name":name,"phone":phone,"role":role,"pin_hash":hash_pin(pin),"active":True
+        "name":name,"phone":phone,"operator_id":operator_id,"role":role,"pin_hash":hash_pin(pin),"active":True
     }, prefer="return=representation")
     if status >= 400: return jsonify({"error":result}), status
     return jsonify(result), 201
@@ -182,7 +184,12 @@ def update_employee(employee_id):
     data = request.get_json(silent=True) or {}
     body = {}
     if "name" in data: body["name"] = str(data["name"]).strip()
-    if "phone" in data: body["phone"] = str(data["phone"]).strip()
+    if "phone" in data:
+        phone = str(data["phone"]).strip()
+        digits = "".join(ch for ch in phone if ch.isdigit())
+        if len(digits) < 6: return jsonify({"error":"Phone must contain at least 6 digits"}), 400
+        body["phone"] = phone
+        body["operator_id"] = digits[-6:]
     if "active" in data: body["active"] = bool(data["active"])
     if "role" in data:
         role = str(data["role"]).strip()
