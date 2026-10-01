@@ -629,21 +629,28 @@ def create_shift():
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
-@app.post("/api/shifts/<shift_id>/start")
-def start_shift(shift_id):
+@app.post("/api/shifts/<shift_id>/confirm")
+def confirm_shift_assignment(shift_id):
     eid=session.get("employee_id")
     if not eid:return jsonify({"error":"Unauthorized"}),401
     data=request.get_json(silent=True) or {}
-    try: opening,mm,liters=float(data.get("opening_reading",0)),float(data.get("opening_mm",0)),float(data.get("opening_liters",0))
-    except (TypeError,ValueError):return jsonify({"error":"Invalid opening readings"}),400
-    if min(opening,mm,liters)<0:return jsonify({"error":"Opening readings cannot be negative"}),400
-    status,rows=sb("shifts",params={"id":"eq."+shift_id,"employee_id":"eq."+eid,"status":"eq.assigned","select":"id,nozzle_id"})
-    if status!=200 or not rows:return jsonify({"error":"Assigned shift not found"}),404
-    # Opening readings are a shift snapshot; tank inventory is not silently overwritten here.
-    patch={"status":"active","start_time":datetime.now(timezone.utc).isoformat(),"opening_reading":opening,"opening_mm":mm,"opening_liters":liters}
+    pin=str(data.get("pin",""))
+    if not pin or not pin.isdigit():return jsonify({"error":"Enter your numeric PIN"}),400
+    es,er=sb("employees",params={"id":"eq."+eid,"active":"eq.true","select":"id,role,pin_hash"})
+    if es!=200 or not er:return jsonify({"error":"Attendant account not found"}),404
+    emp=er[0]
+    if emp.get("role")!="attendant" or not verify_pin(pin,emp.get("pin_hash","")):return jsonify({"error":"Invalid PIN"}),401
+    status,rows=sb("shifts",params={"id":"eq."+shift_id,"employee_id":"eq."+eid,"status":"eq.assigned","select":"id,opening_reading,opening_mm,opening_liters"})
+    if status!=200 or not rows:return jsonify({"error":"Pending shift assignment not found"}),404
+    if rows[0].get("opening_reading") is None:return jsonify({"error":"Assignment has no opening meter reading"}),409
+    patch={"status":"active","start_time":datetime.now(timezone.utc).isoformat()}
     status,result=sb("shifts",method="PATCH",params={"id":"eq."+shift_id},body=patch,prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),200
+
+@app.post("/api/shifts/<shift_id>/start")
+def start_shift(shift_id):
+    return jsonify({"error":"Use Attendant PIN confirmation to activate this shift"}),410
 
 @app.post("/api/shifts/<shift_id>/close")
 def close_shift(shift_id):
@@ -743,8 +750,15 @@ def confirm_handover(handover_id):
     eid=session.get("employee_id")
     if not eid:return jsonify({"error":"Unauthorized"}),401
     data=request.get_json(silent=True) or {}
+    pin=str(data.get("pin",""))
+    if not pin or not pin.isdigit():return jsonify({"error":"Enter your numeric PIN"}),400
+    es,er=sb("employees",params={"id":"eq."+eid,"active":"eq.true","select":"id,role,pin_hash"})
+    if es!=200 or not er:return jsonify({"error":"Attendant account not found"}),404
+    emp=er[0]
+    if emp.get("role")!="attendant" or not verify_pin(pin,emp.get("pin_hash","")):return jsonify({"error":"Invalid PIN"}),401
     try: reading,mm,liters=float(data.get("opening_reading",0)),float(data.get("opening_mm",0)),float(data.get("opening_liters",0))
     except (TypeError,ValueError):return jsonify({"error":"Invalid opening readings"}),400
+    if min(reading,mm,liters)<0:return jsonify({"error":"Opening readings cannot be negative"}),400
     status,result=rpc("confirm_shift_handover",{"p_handover_id":handover_id,"p_to_employee_id":eid,"p_opening_reading":reading,"p_opening_mm":mm,"p_opening_liters":liters})
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),200
