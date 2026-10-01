@@ -332,6 +332,10 @@ function openDispenserActivation(id){
   const tank=(window.tankRecords||[]).find(t=>t.id===d.tank_id);
   const message=document.getElementById('dispenser-activate-message');
   if(message)message.innerHTML='<b>'+h(d.nozzle_code||'Dispenser')+'</b> — '+h(product?.code_name||d.product||'')+'<br><span class="muted">Tank: '+h(tank?.tank_code||d.tank_id||'')+' • '+h(d.nozzle_count||1)+' nozzle(s)</span>';
+  const tankLabel=document.getElementById('dispenser-activation-tank-label');
+  if(tankLabel) tankLabel.firstChild.textContent=''+(tank?.tank_code||'Tank')+' opening reading (liters)';
+  const tankLitersInput=document.getElementById('dispenser-activation-tank-liters');
+  if(tankLitersInput) tankLitersInput.value='';
   const employeeSelect=document.getElementById('dispenser-activation-employee');
   if(employeeSelect)employeeSelect.innerHTML='<option value="">Select attendant</option>'+((window.employeeRecords||[]).filter(e=>e.active&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join(''));
   const list=document.getElementById('dispenser-nozzle-activation-list');
@@ -365,6 +369,8 @@ async function confirmDispenserActivation(){
   if(!d)return;
   const ids=d.nozzle_ids||[];
   const employeeId=document.getElementById('dispenser-activation-employee')?.value||'';
+  const tankLitersInput=document.getElementById('dispenser-activation-tank-liters');
+  const openingTankLiters=tankLitersInput?.value.trim()!==''?Number(tankLitersInput.value):NaN;
   const selected=[];
   ids.forEach((nozzleId,i)=>{
     const box=document.getElementById('nozzle-activation-input-'+i);
@@ -372,6 +378,11 @@ async function confirmDispenserActivation(){
     if(box&&box.style.display!=='none'&&input&&input.value.trim()!==''&&Number(input.value)>=0)selected.push({nozzle_id:nozzleId,activation_number:Number(input.value)});
   });
   const error=document.getElementById('dispenser-activate-error');
+  if(!Number.isFinite(openingTankLiters)||openingTankLiters<0){
+    error.textContent='Enter the tank opening reading in liters.';
+    error.style.display='block';
+    return;
+  }
   if(!employeeId){
     error.textContent='Select an attendant before activating the dispenser.';
     error.style.display='block';
@@ -383,7 +394,7 @@ async function confirmDispenserActivation(){
     return;
   }
   try{
-    await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:true,employee_id:employeeId,activated_nozzles:selected.map(x=>({nozzle_id:x.nozzle_id,opening_reading:x.activation_number}))})});
+    await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:true,employee_id:employeeId,opening_tank_liters:openingTankLiters,activated_nozzles:selected.map(x=>({nozzle_id:x.nozzle_id,opening_reading:x.activation_number}))})});
     closeDispenserActivation();
     toast('Dispenser activated');
     await loadSettingsData();
