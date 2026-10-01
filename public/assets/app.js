@@ -103,11 +103,11 @@ async function loadSettingsData(){
   const [employees,tanks,dispensers,products]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products')]);
   const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
   const codeForProduct=product=>productByName[String(product||'').toLowerCase()]?.code_name||product;
-  document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><br><span class="muted">Name: ${h(p.name)} • ${p.active?'Active':'Inactive'}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
+  document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><br><span class="muted">Name: ${h(p.name)} • ${p.active?'Active':'Inactive'}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'⚠️ Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
   window.productRecords=products;
-  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openUserEdit('${e.id}')">Edit</button><button type="button" onclick="toggleUser('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No users.</p>';
+  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openUserEdit('${e.id}')">Edit</button><button type="button" onclick="toggleUser('${e.id}',${e.active})">${e.active?'Deactivate':'⚠️ Activate'}</button></div></div></div>`).join(''):'<p class="muted">No users.</p>';
   window.employeeRecords=employees;
-  document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><div class="top"><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.capacity_liters)} L capacity • ${t.active===false?'Inactive':'Active'}</p></div><div class="row"><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
+  document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><div class="top"><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.capacity_liters)} L capacity • ${t.active===false?'Inactive':'Active'}</p></div><div class="row"><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'⚠️ Activate':'Deactivate'}</button><button type="button" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
   window.tankRecords=tanks;
   document.getElementById('dispensers').innerHTML=dispensers.length?dispensers.map(n=>`<div class="card"><div class="top"><div><b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b><br><span class="muted">Tank: ${h((tanks.find(t=>t.id===n.tank_id)||{}).tank_code||n.tank_id)} • ${h(n.nozzle_count||1)} nozzle(s) • ${n.active?'Active':'Inactive'}</span><div class="muted" style="margin-top:6px"><b>Nozzle IDs:</b> ${(n.nozzle_ids||[]).map(id=>`<span style="display:inline-block;margin:2px 4px 2px 0">${h(id)}</span>`).join('')}</div></div><div class="row"><button type="button" onclick="openDispenserEdit('${n.id}')">Edit</button><button type="button" onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'⚠️ Activate'}</button><button type="button" onclick="removeDispenser('${n.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No dispensers.</p>';
 window.dispenserRecords=dispensers;
@@ -158,7 +158,8 @@ async function createProduct(event){
     await api('/api/products',{method:'POST',body:JSON.stringify({
       name:document.getElementById('product-name').value.trim(),
       code_name:document.getElementById('product-code').value.trim(),
-      color:document.getElementById('product-color').value
+      color:document.getElementById('product-color').value,
+      active:false
     })});
     event.target.reset();
     document.getElementById('product-color').value='#1264d8';
@@ -166,9 +167,15 @@ async function createProduct(event){
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
-async function toggleProduct(id,active){
-  try{await api('/api/products/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});await loadSettingsData();}
-  catch(e){toast(e.message);}
+function toggleProduct(id,active){ if(active){ deactivateProduct(id); } else { openProductActivation(id); } }
+async function deactivateProduct(id){try{await api('/api/products/'+id,{method:'PATCH',body:JSON.stringify({active:false})});toast('Product deactivated');await loadSettingsData();}catch(e){toast(e.message);}}
+function openProductActivation(id){
+  const p=(window.productRecords||[]).find(x=>x.id===id); if(!p)return;
+  document.getElementById('activation-target-id').value=id;
+  document.getElementById('activation-target-type').value='product';
+  document.getElementById('activation-target-title').textContent='Activate Product?';
+  document.getElementById('activation-target-message').innerHTML='<b>'+h(p.code_name)+'</b> — '+h(p.name)+'<br><span class="muted">This product will become available for tanks, dispensers and sales.</span>';
+  openGenericActivationModal();
 }
 
 function openUserEdit(id){
@@ -202,8 +209,17 @@ async function saveUserEdit(event){
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
-async function createUser(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('attendant-name').value.trim(),phone:document.getElementById('attendant-phone').value.trim(),pin:document.getElementById('attendant-pin').value,role:document.getElementById('attendant-role').value})});e.target.reset();toast('User created');await loadSettingsData();}catch(x){toast(x.message);}}
-async function toggleUser(id,active){try{await api('/api/users/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});await loadSettingsData();}catch(e){toast(e.message);}}
+async function createUser(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('attendant-name').value.trim(),phone:document.getElementById('attendant-phone').value.trim(),pin:document.getElementById('attendant-pin').value,role:document.getElementById('attendant-role').value,active:false})});e.target.reset();toast('User created');await loadSettingsData();}catch(x){toast(x.message);}}
+function toggleUser(id,active){ if(active){ deactivateUser(id); } else { openUserActivation(id); } }
+async function deactivateUser(id){try{await api('/api/users/'+id,{method:'PATCH',body:JSON.stringify({active:false})});toast('User deactivated');await loadSettingsData();}catch(e){toast(e.message);}}
+function openUserActivation(id){
+  const e=(window.employeeRecords||[]).find(x=>x.id===id); if(!e)return;
+  document.getElementById('activation-target-id').value=id;
+  document.getElementById('activation-target-type').value='user';
+  document.getElementById('activation-target-title').textContent='Activate User?';
+  document.getElementById('activation-target-message').innerHTML='<b>'+h(e.name)+'</b><br><span class="muted">'+h(e.role)+' • Operator ID: '+h(e.operator_id)+'</span>';
+  openGenericActivationModal();
+}
 function openTankEdit(id){
   const t=(window.tankRecords||[]).find(x=>x.id===id);
   if(!t)return;
@@ -241,12 +257,16 @@ async function saveTankEdit(event){
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
-async function toggleTank(id,active){
-  try{
-    await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});
-    toast(active?'Tank deactivated':'Tank activated');
-    await loadSettingsData();
-  }catch(e){toast(e.message);}
+function toggleTank(id,active){ if(active){ deactivateTank(id); } else { openTankActivation(id); } }
+async function deactivateTank(id){try{await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({active:false})});toast('Tank deactivated');await loadSettingsData();}catch(e){toast(e.message);}}
+function openTankActivation(id){
+  const t=(window.tankRecords||[]).find(x=>x.id===id); if(!t)return;
+  const productByName=Object.fromEntries((window.productRecords||[]).map(p=>[String(p.name).toLowerCase(),p]));
+  document.getElementById('activation-target-id').value=id;
+  document.getElementById('activation-target-type').value='tank';
+  document.getElementById('activation-target-title').textContent='Activate Fuel Tank?';
+  document.getElementById('activation-target-message').innerHTML='<b>'+h(t.tank_code)+'</b> — '+h(productByName[String(t.product||'').toLowerCase()]?.code_name||t.product)+'<br><span class="muted">Tank capacity: '+h(liters(t.capacity_liters))+' L</span>';
+  openGenericActivationModal();
 }
 async function removeTank(id){
   if(!confirm('Remove this tank? This cannot be undone.'))return;
@@ -261,7 +281,8 @@ async function createTank(e){
   try{
     await api('/api/tanks',{method:'POST',body:JSON.stringify({
       product:document.getElementById('tank-product').value,
-      capacity_liters:Number(document.getElementById('tank-capacity').value)
+      capacity_liters:Number(document.getElementById('tank-capacity').value),
+      active:false
     })});
     e.target.reset();
     toast('Tank created');
@@ -311,6 +332,17 @@ async function saveDispenserEdit(event){
       nozzle_count:Number(document.getElementById('edit-dispenser-nozzle-count').value)
     })});
     closeDispenserEdit();toast('Dispenser updated');await loadSettingsData();
+  }catch(e){toast(e.message);}
+}
+function openGenericActivationModal(){const m=document.getElementById('generic-activation-modal');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');}
+function closeGenericActivation(){const m=document.getElementById('generic-activation-modal');if(!m)return;m.classList.remove('open');m.setAttribute('aria-hidden','true');}
+async function confirmGenericActivation(){
+  const id=document.getElementById('activation-target-id')?.value||'',type=document.getElementById('activation-target-type')?.value||'';
+  if(!id||!type)return;
+  try{
+    const path=type==='user'?'/api/users/'+id:type==='product'?'/api/products/'+id:'/api/tanks/'+id;
+    await api(path,{method:'PATCH',body:JSON.stringify({active:true})});
+    closeGenericActivation();toast((type==='user'?'User':type==='product'?'Product':'Tank')+' activated');await loadSettingsData();
   }catch(e){toast(e.message);}
 }
 let pendingDispenserActivationId=null;
