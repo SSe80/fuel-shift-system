@@ -329,14 +329,24 @@ function openDispenserActivation(id){
   pendingDispenserActivationId=id;
   const productByName=Object.fromEntries((window.productRecords||[]).map(p=>[String(p.name).toLowerCase(),p]));
   const product=productByName[String(d.product||'').toLowerCase()];
+  const tank=(window.tankRecords||[]).find(t=>t.id===d.tank_id);
   const message=document.getElementById('dispenser-activate-message');
-  if(message){
-    const tank=(window.tankRecords||[]).find(t=>t.id===d.tank_id);
-    message.innerHTML='<b>'+h(d.nozzle_code||'Dispenser')+'</b> — '+h(product?.code_name||d.product||'')+'<br><span class="muted">Tank: '+h(tank?.tank_code||d.tank_id||'')+' • '+h(d.nozzle_count||1)+' nozzle(s)</span>';
-  }
+  if(message)message.innerHTML='<b>'+h(d.nozzle_code||'Dispenser')+'</b> — '+h(product?.code_name||d.product||'')+'<br><span class="muted">Tank: '+h(tank?.tank_code||d.tank_id||'')+' • '+h(d.nozzle_count||1)+' nozzle(s)</span>';
+  const list=document.getElementById('dispenser-nozzle-activation-list');
+  const ids=d.nozzle_ids||[];
+  list.innerHTML=ids.length?ids.map((nozzleId,i)=>'<div class="card" style="margin:0 0 8px;padding:10px"><div class="top"><label style="display:flex;align-items:center;gap:8px;margin:0"><span><b>'+h(nozzleId)+'</b></span><button type="button" onclick="showNozzleActivationInput('+i+')" style="padding:4px 8px">Activate</button></label></div><div id="nozzle-activation-input-'+i+'" style="display:none;margin-top:8px"><input id="nozzle-activation-number-'+i+'" type="number" min="0" step="0.01" placeholder="Enter activation number" inputmode="decimal"></div></div>').join(''):'<p class="muted">No nozzles configured.</p>';
+  document.getElementById('dispenser-activate-error').style.display='none';
   const modal=document.getElementById('dispenser-activate-modal');
   modal.classList.add('open');
   modal.setAttribute('aria-hidden','false');
+}
+
+function showNozzleActivationInput(index){
+  const box=document.getElementById('nozzle-activation-input-'+index);
+  const input=document.getElementById('nozzle-activation-number-'+index);
+  if(!box||!input)return;
+  box.style.display=box.style.display==='none'?'block':'none';
+  if(box.style.display==='block')input.focus();
 }
 
 function closeDispenserActivation(){
@@ -349,8 +359,23 @@ function closeDispenserActivation(){
 async function confirmDispenserActivation(){
   const id=pendingDispenserActivationId;
   if(!id)return;
+  const d=(window.dispenserRecords||[]).find(x=>x.id===id);
+  if(!d)return;
+  const ids=d.nozzle_ids||[];
+  const selected=[];
+  ids.forEach((nozzleId,i)=>{
+    const box=document.getElementById('nozzle-activation-input-'+i);
+    const input=document.getElementById('nozzle-activation-number-'+i);
+    if(box&&box.style.display!=='none'&&input&&input.value.trim()!==''&&Number(input.value)>=0)selected.push({nozzle_id:nozzleId,activation_number:Number(input.value)});
+  });
+  const error=document.getElementById('dispenser-activate-error');
+  if(!selected.length){
+    error.textContent='Activate at least one nozzle and enter its activation number before activating the dispenser.';
+    error.style.display='block';
+    return;
+  }
   try{
-    await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:true})});
+    await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:true,activated_nozzles:selected})});
     closeDispenserActivation();
     toast('Dispenser activated');
     await loadSettingsData();
@@ -358,10 +383,7 @@ async function confirmDispenserActivation(){
 }
 
 async function toggleNozzle(id,active){
-  if(!active){
-    openDispenserActivation(id);
-    return;
-  }
+  if(!active){openDispenserActivation(id);return;}
   try{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:false})});toast('Dispenser deactivated');await loadSettingsData();}
   catch(e){toast(e.message);}
 }
