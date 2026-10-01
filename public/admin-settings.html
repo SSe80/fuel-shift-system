@@ -114,6 +114,23 @@
         </div>
       </form>
     </div>
+
+    <div id="dispenser-activate-modal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" onclick="closeDispenserActivation()"></div>
+      <div class="modal-card">
+        <div class="top">
+          <h3>Activate Dispenser?</h3>
+          <button type="button" class="modal-close" onclick="closeDispenserActivation()" aria-label="Close">×</button>
+        </div>
+        <p id="dispenser-activate-message">Are you sure you want to activate this dispenser?</p>
+        <p class="muted">Once activated, this dispenser will be available for shift assignment and fuel sales.</p>
+        <div class="row">
+          <button type="button" onclick="closeDispenserActivation()">Cancel</button>
+          <button type="button" class="primary" onclick="confirmDispenserActivation()">Activate Dispenser</button>
+        </div>
+      </div>
+    </div>
+
     <div id="dispensers"></div>
   </div>
 
