@@ -296,7 +296,7 @@ def update_product(product_id):
 def tanks():
     auth = require_login()
     if auth: return auth
-    status, rows = sb("tanks", params={"select":"id,tank_code,product,capacity_liters,current_mm,current_liters,active,updated_at","order":"tank_code.asc"})
+    status, rows = sb("tanks", params={"select":"id,tank_code,product,capacity_liters,current_mm,current_liters,opening_stock_liters,active,updated_at","order":"tank_code.asc"})
     return jsonify(rows), status
 
 @app.post("/api/tanks")
@@ -392,6 +392,7 @@ def update_tank(tank_id):
                 if opening_stock > float(tank.get("capacity_liters") or 0):
                     return jsonify({"error":"Opening stock cannot exceed tank capacity"}),400
                 body["current_liters"] = opening_stock
+                body["opening_stock_liters"] = opening_stock
                 body["active"] = True
             else:
                 body["active"] = False
