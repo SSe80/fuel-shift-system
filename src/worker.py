@@ -217,7 +217,7 @@ def update_employee(employee_id):
 def products():
     auth=require_login()
     if auth: return auth
-    status, rows = sb("products", params={"select":"id,name,code_name,color,active,created_at,updated_at","order":"name.asc"})
+    status, rows = sb("products", params={"select":"id,name,code_name,color,active,selling_price,created_at,updated_at","order":"name.asc"})
     return jsonify(rows), status
 
 @app.post("/api/products")
@@ -232,7 +232,7 @@ def create_product():
         return jsonify({"error":"Product name, code name and color are required"}),400
     if len(code_name)>50 or len(name)>100 or len(color)>30:
         return jsonify({"error":"Product name, code name or color is too long"}),400
-    status,result=sb("products",method="POST",body={"name":name,"code_name":code_name,"color":color,"active":True},prefer="return=representation")
+    status,result=sb("products",method="POST",body={"name":name,"code_name":code_name,"color":color,"active":False},prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
@@ -255,9 +255,40 @@ def update_product(product_id):
         if not color:return jsonify({"error":"Color cannot be empty"}),400
         body["color"]=color
     if "active" in data: body["active"]=bool(data["active"])
+    if "selling_price" in data:
+        try: price=float(data["selling_price"])
+        except (TypeError,ValueError): return jsonify({"error":"Invalid selling price"}),400
+        if price < 0: return jsonify({"error":"Selling price cannot be negative"}),400
+        body["selling_price"]=round(price,2)
     if not body:return jsonify({"error":"No changes supplied"}),400
+
+    # Read the current product so activation/price changes can be recorded.
+    old_status, old_rows = sb("products",params={"id":"eq."+product_id,"select":"id,active,selling_price"})
+    if old_status != 200 or not old_rows:
+        return jsonify({"error":"Product not found"}),404
+    old_product=old_rows[0]
+    activating = ("active" in body and body["active"] is True and not old_product.get("active"))
+    price_changed = "selling_price" in body and float(body["selling_price"]) != float(old_product.get("selling_price") or 0)
+
+    if activating and "selling_price" not in body:
+        return jsonify({"error":"Selling price is required when activating a product"}),400
+
     status,result=sb("products",method="PATCH",params={"id":"eq."+product_id},body=body,prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
+
+    new_price=body.get("selling_price")
+    if activating and new_price is not None:
+        hs,hr=sb("product_price_history",method="POST",body={
+            "product_id":product_id,"selling_price":new_price,"action":"activation",
+            "changed_by":session.get("employee_id")
+        },prefer="return=representation")
+        if hs>=400:return jsonify({"error":hr}),hs
+    elif price_changed and new_price is not None:
+        hs,hr=sb("product_price_history",method="POST",body={
+            "product_id":product_id,"selling_price":new_price,"action":"price_update",
+            "changed_by":session.get("employee_id")
+        },prefer="return=representation")
+        if hs>=400:return jsonify({"error":hr}),hs
     return jsonify(result),200
 
 @app.get("/api/tanks")
@@ -439,7 +470,7 @@ def create_nozzle():
         if m:max_order=max(max_order,int(m.group(1)))
     dispenser_code=f"{code_name}•DISPENSER {max_order+1}"
     nozzle_ids=[f"{dispenser_code}-N•{i}" for i in range(1, nozzle_count + 1)]
-    status,result=sb("nozzles",method="POST",body={"nozzle_code":dispenser_code,"nozzle_ids":nozzle_ids,"product":product,"tank_id":tank_id,"nozzle_count":nozzle_count,"active":True},prefer="return=representation")
+    status,result=sb("nozzles",method="POST",body={"nozzle_code":dispenser_code,"nozzle_ids":nozzle_ids,"product":product,"tank_id":tank_id,"nozzle_count":nozzle_count,"active":False},prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
