@@ -117,7 +117,7 @@ def me():
         return jsonify({"authenticated": False}), 401
     status, rows = sb("employees", params={
         "id": "eq." + session["employee_id"],
-        "select": "id,name,phone,role,active"
+        "select": "id,name,phone,operator_id,role,active"
     })
     if status != 200 or not rows or not rows[0].get("active"):
         session.clear()
@@ -138,10 +138,12 @@ def bootstrap_admin():
             return jsonify({"error": "Initial admin has already been created"}), 409
         data = request.get_json(silent=True) or {}
         name, phone, pin = str(data.get("name","")).strip(), str(data.get("phone","")).strip(), str(data.get("pin",""))
-        if not name or not phone or not pin or len(pin) < 4 or not pin.isdigit():
-            return jsonify({"error": "Name, phone and a numeric PIN of at least 4 digits are required"}), 400
+        digits = "".join(ch for ch in phone if ch.isdigit())
+        if not name or len(digits) < 6 or not pin or len(pin) < 4 or not pin.isdigit():
+            return jsonify({"error": "Name, phone with at least 6 digits and a numeric PIN of at least 4 digits are required"}), 400
+        operator_id = digits[-6:]
         status, result = sb("employees", method="POST", body={
-            "name": name, "phone": phone, "role": "admin",
+            "name": name, "phone": phone, "operator_id": operator_id, "role": "admin",
             "pin_hash": hash_pin(pin), "active": True
         }, prefer="return=representation")
         if status >= 400:
