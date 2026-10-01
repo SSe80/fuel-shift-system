@@ -307,6 +307,15 @@ def create_tank():
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
+@app.delete("/api/tanks/<tank_id>")
+def delete_tank(tank_id):
+    auth=require_admin()
+    if auth:return auth
+    status,result=sb("tanks",method="DELETE",params={"id":"eq."+tank_id},prefer="return=representation")
+    if status>=400:return jsonify({"error":result}),status
+    if not result:return jsonify({"error":"Tank not found"}),404
+    return jsonify({"ok":True}),200
+
 @app.patch("/api/tanks/<tank_id>")
 def update_tank(tank_id):
     auth=require_admin()
@@ -327,6 +336,9 @@ def update_tank(tank_id):
             if float(tank.get("current_liters") or 0) > capacity:
                 return jsonify({"error":"Tank size cannot be below current inventory"}),400
             body["capacity_liters"] = capacity
+
+        if "active" in data:
+            body["active"] = bool(data["active"])
 
         if "tank_order" in data:
             try: order = int(data["tank_order"])
