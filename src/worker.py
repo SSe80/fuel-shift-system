@@ -176,7 +176,7 @@ def create_employee():
         return jsonify({"error":"Valid name, phone with at least 6 digits, role and numeric PIN are required"}), 400
     operator_id = digits[-6:]
     status, result = sb("employees", method="POST", body={
-        "name":name,"phone":phone,"operator_id":operator_id,"role":role,"pin_hash":hash_pin(pin),"active":True
+        "name":name,"phone":phone,"operator_id":operator_id,"role":role,"pin_hash":hash_pin(pin),"active":False
     }, prefer="return=representation")
     if status >= 400: return jsonify({"error":result}), status
     return jsonify(result), 201
@@ -232,7 +232,7 @@ def create_product():
         return jsonify({"error":"Product name, code name and color are required"}),400
     if len(code_name)>50 or len(name)>100 or len(color)>30:
         return jsonify({"error":"Product name, code name or color is too long"}),400
-    status,result=sb("products",method="POST",body={"name":name,"code_name":code_name,"color":color,"active":True},prefer="return=representation")
+    status,result=sb("products",method="POST",body={"name":name,"code_name":code_name,"color":color,"active":False},prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
@@ -305,7 +305,8 @@ def create_tank():
         "product":product,
         "capacity_liters":capacity,
         "current_liters":0,
-        "current_mm":0
+        "current_mm":0,
+        "active":False
     },prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
