@@ -157,6 +157,8 @@ async function adminSettings(){
 }
 async function loadSettingsData(){
   const [employees,tanks,dispensers,products,shifts]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts')]);
+  const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
+  const codeForProduct=product=>productByName[String(product||'').toLowerCase()]?.code_name||product;
   const pendingHandovers=shifts.filter(x=>x.status==='assigned');
   const pendingBox=document.getElementById('pending-handovers');
   if(pendingBox){
@@ -169,8 +171,6 @@ async function loadSettingsData(){
       return '<div class="card"><div class="top"><div><h3>Pending Handover</h3><span class="badge">Awaiting attendant confirmation</span></div></div><p>Dispenser: <b>'+h(d?.nozzle_code||x.nozzle_id)+'</b> • '+h(codeForProduct(d?.product||''))+'</p><p>Tank: <b>'+h(tank?.tank_code||d?.tank_id||'Not connected')+'</b> • Tank opening: <b>'+liters(x.opening_tank_liters)+' L</b></p><p>Assigned attendant: <b>'+h(names[x.employee_id]||x.employee_id)+'</b></p><p>Selected nozzle readings: <b>'+readingText+'</b></p><p class="muted">Dispenser status: <b>Inactive</b> — it will activate only after the attendant confirms these readings.</p></div>';
     }).join(''):'<div class="card"><p>No pending handovers.</p></div>';
   }
-  const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
-  const codeForProduct=product=>productByName[String(product||'').toLowerCase()]?.code_name||product;
   document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><br><span class="muted">Name: ${h(p.name)} • ${p.active?'Active':'Inactive'} • Price: ${p.selling_price==null?'Not set':Number(p.selling_price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'⚠️ Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
   window.productRecords=products;
   document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openUserEdit('${e.id}')">Edit</button><button type="button" onclick="toggleUser('${e.id}',${e.active})">${e.active?'Deactivate':'⚠️ Activate'}</button></div></div></div>`).join(''):'<p class="muted">No users.</p>';
