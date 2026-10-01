@@ -18,9 +18,9 @@ const money = value => Number(value || 0).toLocaleString(undefined,{minimumFract
 const liters = value => Number(value || 0).toLocaleString(undefined,{maximumFractionDigits:2});
 
 async function login(role) {
-  const phone=document.getElementById('phone').value.trim(), pin=document.getElementById('pin').value;
+  const operator_id=document.getElementById('operator-id').value.trim(), pin=document.getElementById('pin').value;
   try {
-    const user=await api('/api/login',{method:'POST',body:JSON.stringify({phone,pin})});
+    const user=await api('/api/login',{method:'POST',body:JSON.stringify({operator_id,pin})});
     if(role==='admin' && user.role!=='admin') throw new Error('This account is not an admin account');
     localStorage.setItem('fuelRole',user.role);
     location.href=user.role==='admin'?'admin-dashboard.html':'employee-dashboard.html';
@@ -90,11 +90,11 @@ async function adminSettings(){
 }
 async function loadSettingsData(){
   const [employees,tanks,nozzles,shifts]=await Promise.all([api('/api/employees'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts')]);
-  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">${h(e.phone)} • ${h(e.role)}</span></div><button onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div>`).join(''):'<p class="muted">No employees.</p>';
+  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><button onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div>`).join(''):'<p class="muted">No employees.</p>';
   document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><b>${h(t.tank_code)} — ${h(t.product)}</b><p>${liters(t.current_liters)} / ${liters(t.capacity_liters)} L • Dip ${liters(t.current_mm)} mm</p><button onclick="adjustTank('${t.id}','${h(t.tank_code)}',${Number(t.current_liters)},${Number(t.current_mm)})">Adjust inventory</button></div>`).join(''):'<p class="muted">No tanks.</p>';
   document.getElementById('nozzles').innerHTML=nozzles.length?nozzles.map(n=>`<div class="card"><div class="top"><div><b>${h(n.nozzle_code)} — ${h(n.product)}</b><br><span class="muted">Tank: ${h((tanks.find(t=>t.id===n.tank_id)||{}).tank_code||n.tank_id)}</span></div><button onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'Activate'}</button></div></div>`).join(''):'<p class="muted">No nozzles.</p>';
   const es=document.getElementById('shift-employee'),ns=document.getElementById('shift-nozzle');
-  es.innerHTML='<option value="">Select employee</option>'+employees.filter(e=>e.active&&e.role==='employee').map(e=>`<option value="${e.id}">${h(e.name)} — ${h(e.phone)}</option>`).join('');
+  es.innerHTML='<option value="">Select employee</option>'+employees.filter(e=>e.active&&e.role==='employee').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
   ns.innerHTML='<option value="">Select nozzle</option>'+nozzles.filter(n=>n.active).map(n=>`<option value="${n.id}">${h(n.nozzle_code)} — ${h(n.product)}</option>`).join('');
   const en=Object.fromEntries(employees.map(e=>[e.id,e.name])),nn=Object.fromEntries(nozzles.map(n=>[n.id,n.nozzle_code]));
   document.getElementById('shifts').innerHTML=shifts.slice(0,20).map(s=>`<div class="card"><b>${h(en[s.employee_id]||s.employee_id)}</b> • ${h(nn[s.nozzle_id]||s.nozzle_id)}<br><span class="muted">${h(s.status)} • ${s.start_time?new Date(s.start_time).toLocaleString():'not started'}</span></div>`).join('')||'<p class="muted">No shifts.</p>';
@@ -138,7 +138,7 @@ async function loadHandover(){
     if(!active){document.getElementById('handover-status').textContent='No active shift.';return;}
     document.getElementById('handover-shift').value=active.id;
     document.getElementById('handover-status').textContent='Active shift on nozzle '+active.nozzle_id;
-    document.getElementById('to-employee').innerHTML='<option value="">Select receiving employee</option>'+employees.filter(e=>e.active&&e.id!==me.id&&e.role==='employee').map(e=>`<option value="${e.id}">${h(e.name)} — ${h(e.phone)}</option>`).join('');
+    document.getElementById('to-employee').innerHTML='<option value="">Select receiving employee</option>'+employees.filter(e=>e.active&&e.id!==me.id&&e.role==='employee').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
   }catch(e){document.getElementById('handover-status').textContent=e.message;}
 }
 async function submitHandover(e){e.preventDefault();try{await api('/api/handovers',{method:'POST',body:JSON.stringify({shift_id:document.getElementById('handover-shift').value,to_employee_id:document.getElementById('to-employee').value,closing_reading:Number(document.getElementById('closing-reading').value),closing_mm:Number(document.getElementById('closing-mm').value),closing_liters:Number(document.getElementById('closing-liters').value)})});toast('Handover submitted');setTimeout(()=>location.href='pending-handovers.html',700);}catch(x){toast(x.message);}}
