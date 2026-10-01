@@ -108,10 +108,12 @@ function openEmployeeEdit(id){
   document.getElementById('edit-employee-phone').value=e.phone||'';
   document.getElementById('edit-employee-role').value=e.role||'employee';
   document.getElementById('edit-employee-pin').value='';
-  document.getElementById('employee-edit-form').style.display='grid';
-  document.getElementById('employee-edit-form').scrollIntoView({behavior:'smooth',block:'start'});
+  const modal=document.getElementById('employee-edit-modal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+  document.getElementById('edit-employee-name').focus();
 }
-function closeEmployeeEdit(){document.getElementById('employee-edit-form').style.display='none';document.getElementById('employee-edit-form').reset();}
+function closeEmployeeEdit(){const modal=document.getElementById('employee-edit-modal');modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.getElementById('employee-edit-form').reset();}
 async function saveEmployeeEdit(event){
   event.preventDefault();
   const id=document.getElementById('edit-employee-id').value;
