@@ -29,7 +29,7 @@ async function login(role) {
 async function logout(){try{await api('/api/logout',{method:'POST',body:'{}'});}catch(_){} localStorage.removeItem('fuelRole');location.href='index.html';}
 async function currentUser(){return (await api('/api/me')).employee;}
 
-async function employeeDashboard(){
+async function userDashboard(){
   try{
     const me=await currentUser();
     if(me.role!=='employee')return location.href='admin-dashboard.html';
@@ -48,7 +48,7 @@ async function employeeDashboard(){
 }
 async function startShift(event,id){
   event.preventDefault();
-  try{await api('/api/shifts/'+id+'/start',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('opening-'+id).value),opening_mm:Number(document.getElementById('opening-mm-'+id).value),opening_liters:Number(document.getElementById('opening-liters-'+id).value)})});toast('Shift started');await employeeDashboard();}
+  try{await api('/api/shifts/'+id+'/start',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('opening-'+id).value),opening_mm:Number(document.getElementById('opening-mm-'+id).value),opening_liters:Number(document.getElementById('opening-liters-'+id).value)})});toast('Shift started');await userDashboard();}
   catch(e){toast(e.message);}
 }
 async function closeShift(event,id){
@@ -60,7 +60,7 @@ async function closeShift(event,id){
       closing_liters:Number(document.getElementById('close-liters-'+id).value)
     })});
     toast('Shift closed');
-    await employeeDashboard();
+    await userDashboard();
   }catch(e){toast(e.message);}
 }
 
@@ -105,14 +105,14 @@ async function loadSettingsData(){
   const codeForProduct=product=>productByName[String(product||'').toLowerCase()]?.code_name||product;
   document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><br><span class="muted">Name: ${h(p.name)} • ${p.active?'Active':'Inactive'}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
   window.productRecords=products;
-  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openEmployeeEdit('${e.id}')">Edit</button><button type="button" onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No attendants.</p>';
+  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openEmployeeEdit('${e.id}')">Edit</button><button type="button" onclick="toggleEmployee('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No users.</p>';
   window.employeeRecords=employees;
   document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card"><div class="top"><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.capacity_liters)} L capacity • ${t.active===false?'Inactive':'Active'}</p></div><div class="row"><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
   window.tankRecords=tanks;
   document.getElementById('dispensers').innerHTML=dispensers.length?dispensers.map(n=>`<div class="card"><div class="top"><div><b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b><br><span class="muted">Tank: ${h((tanks.find(t=>t.id===n.tank_id)||{}).tank_code||n.tank_id)} • ${h(n.nozzle_count||1)} nozzle(s) • ${n.active?'Active':'Inactive'}</span><div class="muted" style="margin-top:6px"><b>Nozzle IDs:</b> ${(n.nozzle_ids||[]).map(id=>`<span style="display:inline-block;margin:2px 4px 2px 0">${h(id)}</span>`).join('')}</div></div><div class="row"><button type="button" onclick="openDispenserEdit('${n.id}')">Edit</button><button type="button" onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'⚠️ Activate'}</button><button type="button" onclick="removeDispenser('${n.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No dispensers.</p>';
 window.dispenserRecords=dispensers;
   const es=document.getElementById('shift-employee'),ns=document.getElementById('shift-nozzle');
-  es.innerHTML='<option value="">Select attendant</option>'+employees.filter(e=>e.active&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
+  es.innerHTML='<option value="">Select user</option>'+employees.filter(e=>e.active&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
   document.getElementById('tank-product').innerHTML='<option value="">Select product</option>'+products.filter(p=>p.active).map(p=>`<option value="${h(p.name)}">${h(p.code_name)}</option>`).join('');
   document.getElementById('dispenser-product').innerHTML='<option value="">Select product</option>'+products.filter(p=>p.active).map(p=>`<option value="${h(p.name)}">${h(p.code_name)}</option>`).join('');
   document.getElementById('dispenser-tank').innerHTML='<option value="">Select tank</option>'+tanks.filter(t=>t.active!==false).map(t=>`<option value="${t.id}">${h(t.tank_code)} — ${h(codeForProduct(t.product))}</option>`).join('');
@@ -333,7 +333,7 @@ function openDispenserActivation(id){
   const message=document.getElementById('dispenser-activate-message');
   if(message)message.innerHTML='<b>'+h(d.nozzle_code||'Dispenser')+'</b> — '+h(product?.code_name||d.product||'')+'<br><span class="muted">Tank: '+h(tank?.tank_code||d.tank_id||'')+' • '+h(d.nozzle_count||1)+' nozzle(s)</span>';
   const employeeSelect=document.getElementById('dispenser-activation-employee');
-  if(employeeSelect)employeeSelect.innerHTML='<option value="">Select attendant</option>'+((window.employeeRecords||[]).filter(e=>e.active&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join(''));
+  if(employeeSelect)employeeSelect.innerHTML='<option value="">Select user</option>'+((window.employeeRecords||[]).filter(e=>e.active&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join(''));
   const list=document.getElementById('dispenser-nozzle-activation-list');
   const ids=d.nozzle_ids||[];
   list.innerHTML=ids.length?ids.map((nozzleId,i)=>'<div class="card" style="margin:0 0 8px;padding:10px"><div class="top"><label style="display:flex;align-items:center;gap:8px;margin:0"><span><b>'+h(nozzleId)+'</b></span><button type="button" onclick="showNozzleActivationInput('+i+')" style="padding:4px 8px">Activate</button></label></div><div id="nozzle-activation-input-'+i+'" style="display:none;margin-top:8px"><input id="nozzle-activation-number-'+i+'" type="number" min="0" step="0.01" placeholder="Enter activation number" inputmode="decimal"></div></div>').join(''):'<p class="muted">No nozzles configured.</p>';
