@@ -67,9 +67,15 @@ async function closeShift(event,id){
 async function adminDashboard(){
   try{
     const me=await currentUser(); if(me.role!=='admin')return location.href='attendant-dashboard.html';
-    const [tanks,sales,shifts,products,dispensers]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles')]);
+    const [allTanks,sales,allShifts,allProducts,allDispensers,employees]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles'),api('/api/users')]);
+    // Dashboard is driven by the same live Settings records. Only activated records are displayed.
+    const products=allProducts.filter(p=>p.active===true);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
+    const tanks=allTanks.filter(t=>t.active===true && products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase()));
+    const dispensers=allDispensers.filter(d=>d.active===true && tanks.some(t=>t.id===d.tank_id) && products.some(p=>String(p.name).toLowerCase()===String(d.product||'').toLowerCase()));
+    const activeEmployeeIds=new Set(employees.filter(e=>e.active===true).map(e=>e.id));
+    const shifts=allShifts.filter(s=>activeEmployeeIds.has(s.employee_id) && dispensers.some(d=>d.id===s.nozzle_id));
     const today=new Date().toISOString().slice(0,10);
     const todaySales=sales.filter(s=>String(s.sale_time||'').slice(0,10)===today);
     const total=todaySales.reduce((a,s)=>a+Number(s.amount||0),0);
