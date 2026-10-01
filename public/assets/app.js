@@ -448,10 +448,10 @@ async function loadHandover(){
     if(!active){document.getElementById('handover-status').textContent='No active shift.';return;}
     document.getElementById('handover-shift').value=active.id;
     document.getElementById('handover-status').textContent='Active shift on nozzle '+active.nozzle_id;
-    document.getElementById('to-employee').innerHTML='<option value="">Select receiving attendant</option>'+employees.filter(e=>e.active&&e.id!==me.id&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
+    document.getElementById('to-user').innerHTML='<option value="">Select receiving attendant</option>'+employees.filter(e=>e.active&&e.id!==me.id&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join('');
   }catch(e){document.getElementById('handover-status').textContent=e.message;}
 }
-async function submitHandover(e){e.preventDefault();try{await api('/api/handovers',{method:'POST',body:JSON.stringify({shift_id:document.getElementById('handover-shift').value,to_employee_id:document.getElementById('to-employee').value,closing_reading:Number(document.getElementById('closing-reading').value),closing_mm:Number(document.getElementById('closing-mm').value),closing_liters:Number(document.getElementById('closing-liters').value)})});toast('Handover submitted');setTimeout(()=>location.href='pending-handovers.html',700);}catch(x){toast(x.message);}}
+async function submitHandover(e){e.preventDefault();try{await api('/api/handovers',{method:'POST',body:JSON.stringify({shift_id:document.getElementById('handover-shift').value,to_employee_id:document.getElementById('to-user').value,closing_reading:Number(document.getElementById('closing-reading').value),closing_mm:Number(document.getElementById('closing-mm').value),closing_liters:Number(document.getElementById('closing-liters').value)})});toast('Handover submitted');setTimeout(()=>location.href='pending-handovers.html',700);}catch(x){toast(x.message);}}
 async function loadPendingHandovers(){
   try{
     const [hs,emps]=await Promise.all([api('/api/handovers'),api('/api/users').catch(()=>[])]);
