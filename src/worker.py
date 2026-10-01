@@ -85,7 +85,30 @@ def rpc(name, body):
 
 @app.get("/api/health")
 def health():
-    return jsonify({"ok": True, "service": "fuel-shift", "database": "supabase"})
+    try:
+        status, rows = sb("employees", params={"select":"id", "limit":"1"})
+        if status != 200:
+            return jsonify({
+                "ok": False,
+                "service": "fuel-shift",
+                "database": "supabase",
+                "database_ok": False,
+                "database_status": status
+            }), 503
+        return jsonify({
+            "ok": True,
+            "service": "fuel-shift",
+            "database": "supabase",
+            "database_ok": True
+        })
+    except Exception as exc:
+        return jsonify({
+            "ok": False,
+            "service": "fuel-shift",
+            "database": "supabase",
+            "database_ok": False,
+            "error": type(exc).__name__
+        }), 503
 
 @app.post("/api/login")
 def login():
