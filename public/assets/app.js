@@ -155,6 +155,14 @@ async function adminSettings(){
     toast('Settings error: '+e.message);
   }
 }
+async function cancelAdminPendingShift(id){
+  if(!confirm('Cancel this pending shift assignment? The dispenser will remain inactive.'))return;
+  try{
+    await api('/api/shifts/'+id+'/cancel',{method:'POST',body:'{}'});
+    toast('Pending shift assignment cancelled');
+    await loadSettingsData();
+  }catch(e){toast(e.message);}
+}
 async function loadSettingsData(){
   const [employees,tanks,dispensers,products,shifts]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts')]);
   const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
@@ -168,7 +176,7 @@ async function loadSettingsData(){
       const tank=d?tanks.find(t=>t.id===d.tank_id):null;
       const readings=Array.isArray(x.activation_nozzles)?x.activation_nozzles:[];
       const readingText=readings.length?readings.map(r=>h(r.nozzle_id)+' = '+liters(r.opening_reading)).join(' • '):'Not recorded';
-      return '<div class="card"><div class="top"><div><h3>Pending Handover</h3><span class="badge">Awaiting attendant confirmation</span></div></div><p>Dispenser: <b>'+h(d?.nozzle_code||x.nozzle_id)+'</b> • '+h(codeForProduct(d?.product||''))+'</p><p>Tank: <b>'+h(tank?.tank_code||d?.tank_id||'Not connected')+'</b> • Tank opening: <b>'+liters(x.opening_tank_liters)+' L</b></p><p>Assigned attendant: <b>'+h(names[x.employee_id]||x.employee_id)+'</b></p><p>Selected nozzle readings: <b>'+readingText+'</b></p><p class="muted">Dispenser status: <b>Inactive</b> — it will activate only after the attendant confirms these readings.</p></div>';
+      return '<div class="card"><div class="top"><div><h3>Pending Handover</h3><span class="badge">Awaiting attendant confirmation</span></div><button type="button" onclick="cancelAdminPendingShift(\''+x.id+'\')">Cancel Assignment</button></div><p>Dispenser: <b>'+h(d?.nozzle_code||x.nozzle_id)+'</b> • '+h(codeForProduct(d?.product||''))+'</p><p>Tank: <b>'+h(tank?.tank_code||d?.tank_id||'Not connected')+'</b> • Tank opening: <b>'+liters(x.opening_tank_liters)+' L</b></p><p>Assigned attendant: <b>'+h(names[x.employee_id]||x.employee_id)+'</b></p><p>Selected nozzle readings: <b>'+readingText+'</b></p><p class="muted">Dispenser status: <b>Inactive</b> — it will activate only after the attendant confirms these readings.</p></div>';
     }).join(''):'<div class="card"><p>No pending handovers.</p></div>';
   }
   document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><br><span class="muted">Name: ${h(p.name)} • ${p.active?'Active':'Inactive'} • Price: ${p.selling_price==null?'Not set':Number(p.selling_price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'⚠️ Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
