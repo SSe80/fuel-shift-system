@@ -526,7 +526,21 @@ def nozzles():
     auth=require_login()
     if auth:return auth
     params={"select":"id,nozzle_code,nozzle_ids,product,tank_id,nozzle_count,active,opening_tank_liters,activated_at","order":"nozzle_code.asc"}
-    if session.get("role") != "admin": params["active"]="eq.true"
+    if session.get("role") != "admin":
+        # Attendants need to see their pending assigned dispenser even though
+        # it remains inactive until they confirm the assignment.
+        ps, pending = sb("shifts", params={
+            "employee_id":"eq."+str(session["employee_id"]),
+            "status":"eq.assigned",
+            "select":"nozzle_id"
+        })
+        if ps != 200:
+            return jsonify(pending), ps
+        pending_ids=[str(x.get("nozzle_id")) for x in pending if x.get("nozzle_id")]
+        if pending_ids:
+            params["or"]="active.eq.true,id.in.("+",".join(pending_ids)+")"
+        else:
+            params["active"]="eq.true"
     status,rows=sb("nozzles",params=params)
     return jsonify(rows),status
 
