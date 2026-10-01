@@ -776,11 +776,13 @@ def handovers():
     auth=require_login()
     if auth:return auth
     params={"select":"*","order":"created_at.desc","limit":"100"}
-    if session.get("role")!="admin":
-        eid=session["employee_id"]
-        params["or"]="from_employee_id.eq.%s,to_employee_id.eq.%s"%(eid,eid)
     status,rows=sb("handovers",params=params)
-    return jsonify(rows),status
+    if status != 200:
+        return jsonify(rows),status
+    if session.get("role") != "admin":
+        eid=str(session["employee_id"])
+        rows=[row for row in rows if str(row.get("from_employee_id"))==eid or str(row.get("to_employee_id"))==eid]
+    return jsonify(rows),200
 
 @app.post("/api/handovers")
 def create_handover():
