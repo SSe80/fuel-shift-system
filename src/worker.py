@@ -176,7 +176,7 @@ def create_employee():
         return jsonify({"error":"Valid name, phone with at least 6 digits, role and numeric PIN are required"}), 400
     operator_id = digits[-6:]
     status, result = sb("employees", method="POST", body={
-        "name":name,"phone":phone,"operator_id":operator_id,"role":role,"pin_hash":hash_pin(pin),"active":False
+        "name":name,"phone":phone,"operator_id":operator_id,"role":role,"pin_hash":hash_pin(pin),"active":True
     }, prefer="return=representation")
     if status >= 400: return jsonify({"error":result}), status
     return jsonify(result), 201
