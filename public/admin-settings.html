@@ -180,6 +180,11 @@
           <label id="dispenser-activation-tank-label">Tank opening reading (liters)<input id="dispenser-activation-tank-liters" type="number" min="0" step="0.01" placeholder="Enter tank opening liters" inputmode="decimal" required></label>
           <label>Attendant<select id="dispenser-activation-employee" required><option value="">Select attendant</option></select></label>
         </div>
+        <div id="dispenser-activation-review" style="margin-top:10px"></div>
+        <label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px">
+          <input id="dispenser-attendant-confirmation" type="checkbox" style="margin-top:4px">
+          <span>I am the selected Attendant and I confirm that the tank and nozzle opening readings displayed above are correct.</span>
+        </label>
         <p id="dispenser-activate-error" class="muted" style="display:none"></p>
         <div class="row">
           <button type="button" onclick="closeDispenserActivation()">Cancel</button>
@@ -192,6 +197,6 @@
 
   <div id="settings-status" class="muted"></div>
 </main>
-<script src="assets/app.js?v=20261001-8"></script>
+<script src="assets/app.js?v=20261001-11"></script>
 </body>
 </html>
