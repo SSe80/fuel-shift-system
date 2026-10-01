@@ -699,6 +699,25 @@ def confirm_shift_assignment(shift_id):
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),200
 
+@app.post("/api/shifts/<shift_id>/cancel")
+def cancel_shift_assignment(shift_id):
+    eid=session.get("employee_id")
+    if not eid:return jsonify({"error":"Unauthorized"}),401
+    status,current=sb("shifts",params={
+        "id":"eq."+shift_id,
+        "employee_id":"eq."+eid,
+        "status":"eq.assigned",
+        "select":"id"
+    })
+    if status!=200:return jsonify({"error":current}),status
+    if not current:return jsonify({"error":"Pending shift assignment not found"}),404
+    status,result=sb("shifts",method="PATCH",params={"id":"eq."+shift_id},body={
+        "status":"cancelled",
+        "end_time":datetime.now(timezone.utc).isoformat()
+    },prefer="return=representation")
+    if status>=400:return jsonify({"error":result}),status
+    return jsonify(result),200
+
 @app.post("/api/shifts/<shift_id>/start")
 def start_shift(shift_id):
     return jsonify({"error":"Use Attendant PIN confirmation to activate this shift"}),410
