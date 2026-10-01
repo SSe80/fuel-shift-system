@@ -439,7 +439,7 @@ def create_nozzle():
         if m:max_order=max(max_order,int(m.group(1)))
     dispenser_code=f"{code_name}•DISPENSER {max_order+1}"
     nozzle_ids=[f"{dispenser_code}-N•{i}" for i in range(1, nozzle_count + 1)]
-    status,result=sb("nozzles",method="POST",body={"nozzle_code":dispenser_code,"nozzle_ids":nozzle_ids,"product":product,"tank_id":tank_id,"nozzle_count":nozzle_count,"active":False},prefer="return=representation")
+    status,result=sb("nozzles",method="POST",body={"nozzle_code":dispenser_code,"nozzle_ids":nozzle_ids,"product":product,"tank_id":tank_id,"nozzle_count":nozzle_count,"active":True},prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
