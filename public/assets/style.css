@@ -203,3 +203,50 @@
     margin-right:-14px;
   }
 }
+
+/* Active dispenser: white from the header divider through the bottom */
+.admin-settings-page .dispenser-active-card{
+  background:#fff!important;
+}
+.admin-settings-page .dispenser-active-card .dispenser-card-head{
+  margin:-18px -19px 0;
+  padding:18px 19px 14px;
+  background:#f1fbf4;
+  border-radius:16px 16px 0 0;
+}
+.admin-settings-page .dispenser-active-card .dispenser-main-body{
+  margin-left:-19px;
+  margin-right:-19px;
+  margin-bottom:0;
+  padding:14px 19px 0;
+  border:0;
+  border-radius:0;
+  background:#fff;
+}
+.admin-settings-page .dispenser-active-card .dispenser-card-actions{
+  margin-left:-19px;
+  margin-right:-19px;
+  margin-bottom:-18px;
+  padding:14px 19px 18px;
+  border-top:1px solid #e3e7eb;
+  background:#fff;
+}
+@media(max-width:600px){
+  .admin-settings-page .dispenser-active-card .dispenser-card-head{
+    margin:-14px -14px 0;
+    padding:16px 14px 14px;
+  }
+  .admin-settings-page .dispenser-active-card .dispenser-main-body{
+    margin-left:-14px;
+    margin-right:-14px;
+    padding-left:14px;
+    padding-right:14px;
+  }
+  .admin-settings-page .dispenser-active-card .dispenser-card-actions{
+    margin-left:-14px;
+    margin-right:-14px;
+    margin-bottom:-14px;
+    padding-left:14px;
+    padding-right:14px;
+  }
+}
