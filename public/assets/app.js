@@ -42,7 +42,8 @@ async function confirmSettingsAction(){
   window.pendingSettingsAction=null;
   window.pendingSettingsSuccess=null;
   try{
-    await action();
+    const result=await action();
+    if(result===false)return;
     showSettingsSuccess(success.title,success.details);
   }catch(e){toast(e.message);}
 }
@@ -278,7 +279,7 @@ async function _cancelAdminPendingShift(id){
   try{
     await api('/api/shifts/'+id+'/cancel',{method:'POST',body:'{}'});
     await loadSettingsData();
-  }catch(e){toast(e.message);}
+  }catch(e){throw e;}
 }
 async function loadSettingsData(){
   const [employees,tanks,dispensers,products,shifts]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts')]);
@@ -429,7 +430,7 @@ async function _saveProductEdit(event){
     })});
     closeProductEdit();
     await loadSettingsData();
-  }catch(e){toast(e.message);}
+  }catch(e){throw e;}
 }
 async function _createProduct(event){
   event.preventDefault();
@@ -443,10 +444,10 @@ async function _createProduct(event){
     closeAddModal('add-product-modal');
     document.getElementById('product-color').value='#1264d8';
     await loadSettingsData();
-  }catch(e){toast(e.message);}
+  }catch(e){throw e;}
 }
 function toggleProduct(id,active){ if(active){ deactivateProduct(id); } else { openProductActivation(id); } }
-async function _deactivateProduct(id){try{await api('/api/products/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){toast(e.message);}}
+async function _deactivateProduct(id){try{await api('/api/products/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){throw e;}}
 function openProductActivation(id){
   const p=(window.productRecords||[]).find(x=>x.id===id); if(!p)return;
   document.getElementById('activation-target-id').value=id;
@@ -486,11 +487,11 @@ async function _saveUserEdit(event){
     await api('/api/users/'+id,{method:'PATCH',body:JSON.stringify(body)});
     closeUserEdit();
     await loadSettingsData();
-  }catch(e){toast(e.message);}
+  }catch(e){throw e;}
 }
-async function _createUser(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('attendant-name').value.trim(),phone:document.getElementById('attendant-phone').value.trim(),pin:document.getElementById('attendant-pin').value,role:document.getElementById('attendant-role').value,active:true})});e.target.reset();closeAddModal('add-user-modal');await loadSettingsData();}catch(x){toast(x.message);}}
+async function _createUser(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('attendant-name').value.trim(),phone:document.getElementById('attendant-phone').value.trim(),pin:document.getElementById('attendant-pin').value,role:document.getElementById('attendant-role').value,active:true})});e.target.reset();closeAddModal('add-user-modal');await loadSettingsData();}catch(e){throw e;}}
 function toggleUser(id,active){ if(active){ deactivateUser(id); } else { openUserActivation(id); } }
-async function _deactivateUser(id){try{await api('/api/users/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){toast(e.message);}}
+async function _deactivateUser(id){try{await api('/api/users/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){throw e;}}
 function openUserActivation(id){
   const e=(window.employeeRecords||[]).find(x=>x.id===id); if(!e)return;
   document.getElementById('activation-target-id').value=id;
@@ -534,10 +535,10 @@ async function _saveTankEdit(event){
     })});
     closeTankEdit();
     await loadSettingsData();
-  }catch(e){toast(e.message);}
+  }catch(e){throw e;}
 }
 function toggleTank(id,active){ if(active){ deactivateTank(id); } else { openTankActivation(id); } }
-async function _deactivateTank(id){try{await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){toast(e.message);}}
+async function _deactivateTank(id){try{await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){throw e;}}
 function openTankActivation(id){
   const t=(window.tankRecords||[]).find(x=>x.id===id); if(!t)return;
   const productByName=Object.fromEntries((window.productRecords||[]).map(p=>[String(p.name).toLowerCase(),p]));
@@ -555,7 +556,7 @@ async function _removeTank(id){
   try{
     await api('/api/tanks/'+id,{method:'DELETE'});
     await loadSettingsData();
-  }catch(e){toast(e.message);}
+  }catch(e){throw e;}
 }
 async function _createTank(e){
   e.preventDefault();
@@ -568,7 +569,7 @@ async function _createTank(e){
     e.target.reset();
     closeAddModal('add-tank-modal');
     await loadSettingsData();
-  }catch(x){toast(x.message);}
+  }catch(e){throw e;}
 }
 function openDispenserEdit(id){
   const d=(window.dispenserRecords||[]).find(x=>x.id===id);
@@ -613,25 +614,25 @@ async function _saveDispenserEdit(event){
       nozzle_count:Number(document.getElementById('edit-dispenser-nozzle-count').value)
     })});
     closeDispenserEdit();await loadSettingsData();
-  }catch(e){toast(e.message);}
+  }catch(e){throw e;}
 }
 function openGenericActivationModal(){const m=document.getElementById('generic-activation-modal');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');}
 function closeGenericActivation(){const m=document.getElementById('generic-activation-modal');if(!m)return;m.classList.remove('open');m.setAttribute('aria-hidden','true');}
 async function _confirmGenericActivation(){
   const id=document.getElementById('activation-target-id')?.value||'',type=document.getElementById('activation-target-type')?.value||'';
-  if(!id||!type)return;
+  if(!id||!type)return false;
   try{
     const path=type==='user'?'/api/users/'+id:type==='product'?'/api/products/'+id:'/api/tanks/'+id;
     const body={active:true};
     if(type==='product'){
       const price=priceFromParts('activation-price-major','activation-price-cents');
-      if(price===null||price<=0){toast('Enter a valid selling price greater than zero');return;}
+      if(price===null||price<=0){toast('Enter a valid selling price greater than zero');return false;}
       body.selling_price=price;
     }
     if(type==='tank'){
       const stockInput=document.getElementById('tank-opening-stock');
       const stock=stockInput?.value.trim()!==''?Number(stockInput.value):NaN;
-      if(!Number.isFinite(stock)||stock<0){toast('Enter a valid opening stock reading in liters');return;}
+      if(!Number.isFinite(stock)||stock<0){toast('Enter a valid opening stock reading in liters');return false;}
       body.opening_stock_liters=stock;
     }
     await api(path,{method:'PATCH',body:JSON.stringify(body)});
@@ -710,15 +711,15 @@ async function _confirmDispenserActivation(){
   const confirmation=document.getElementById('dispenser-attendant-confirmation');
   if(!Number.isFinite(openingTankLiters)||openingTankLiters<0){
     error.textContent='Enter the tank opening reading in liters.';
-    error.style.display='block'; return;
+    error.style.display='block'; return false;
   }
   if(!employeeId){
     error.textContent='Select an attendant before continuing.';
-    error.style.display='block'; return;
+    error.style.display='block'; return false;
   }
   if(!selected.length){
     error.textContent='Activate at least one nozzle and enter its opening meter reading before continuing.';
-    error.style.display='block'; return;
+    error.style.display='block'; return false;
   }
   if(review)review.innerHTML='<div class="card" style="margin:0"><b>Attendant reading confirmation</b><p style="margin:6px 0">Attendant: <b>'+h(attendantName)+'</b></p><p style="margin:6px 0">Tank opening: <b>'+liters(openingTankLiters)+' L</b></p><p style="margin:6px 0">Nozzle opening readings: '+selected.map(x=>'<b>'+h(x.nozzle_id)+'</b> = '+liters(x.activation_number)).join(' • ')+'</p><p class="muted" style="margin:6px 0 0">The selected Attendant must review these readings and confirm they are correct before the shift is activated.</p></div>';
   try{
@@ -736,11 +737,11 @@ async function _confirmDispenserActivation(){
 async function _toggleNozzle(id,active){
   if(!active){openDispenserActivation(id);return;}
   try{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}
-  catch(e){toast(e.message);}
+  catch(e){throw e;}
 }
 async function _removeDispenser(id){
   try{await api('/api/nozzles/'+id,{method:'DELETE'});await loadSettingsData();}
-  catch(e){toast(e.message);}
+  catch(e){throw e;}
 }
 async function _createDispenser(e){
   e.preventDefault();
@@ -751,7 +752,7 @@ async function _createDispenser(e){
       nozzle_count:Number(document.getElementById('dispenser-nozzle-count').value)
     })});
     e.target.reset();closeAddModal('add-dispenser-modal');await loadSettingsData();
-  }catch(x){toast(x.message);}
+  }catch(e){throw e;}
 }
 async function createShift(e){e.preventDefault();try{await api('/api/shifts',{method:'POST',body:JSON.stringify({employee_id:document.getElementById('shift-employee').value,nozzle_id:document.getElementById('shift-nozzle').value})});e.target.reset();toast('Shift assigned');await loadSettingsData();}catch(x){toast(x.message);}}
 
