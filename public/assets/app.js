@@ -294,9 +294,9 @@ async function loadSettingsData(){
   const pendingBox=document.getElementById('pending-handovers');
   if(pendingBox) pendingBox.innerHTML='';
 
-  document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card ${p.active?'settings-active-card':''}"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><br><span class="muted">Name: ${h(p.name)} • ${p.active?'Active':'Inactive'} • Price: ${p.selling_price==null?'Not set':Number(p.selling_price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div><div class="row"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'⚠️ Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
+  document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card ${p.active?'settings-active-card':''}"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><br><span class="muted">Name: ${h(p.name)} • ${p.active?'Active':'Inactive'} • Price: ${p.selling_price==null?'Not set':Number(p.selling_price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div><div class="row settings-card-actions"><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeProduct('${p.id}')">Remove</button><button type="button" class="settings-toggle-action" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
   window.productRecords=products;
-  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card ${e.active?'settings-active-card':''}"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row"><button type="button" onclick="openUserEdit('${e.id}')">Edit</button><button type="button" onclick="toggleUser('${e.id}',${e.active})">${e.active?'Deactivate':'⚠️ Activate'}</button></div></div></div>`).join(''):'<p class="muted">No users.</p>';
+  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card ${e.active?'settings-active-card':''}"><div class="top"><div><b>${h(e.name)}</b><br><span class="muted">Operator ID: <b>${h(e.operator_id)}</b> • ${h(e.phone)} • ${h(e.role)}</span></div><div class="row settings-card-actions"><button type="button" onclick="openUserEdit('${e.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeUser('${e.id}')">Remove</button><button type="button" class="settings-toggle-action" onclick="toggleUser('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button></div></div></div>`).join(''):'<p class="muted">No users.</p>';
   window.employeeRecords=employees;
   document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card ${t.active!==false?'settings-active-card':''}"><div class="top"><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><p>${liters(t.capacity_liters)} L capacity • ${t.active===false?'Inactive':'Active'}</p><span class="muted">Opening stock: <b>${t.opening_stock_liters==null?'Not recorded':liters(t.opening_stock_liters)+' L'}</b> • Current stock: <b>${liters(t.current_liters)} L</b></span></div><div class="row"><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'⚠️ Activate':'Deactivate'}</button><button type="button" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
   window.tankRecords=tanks;
@@ -453,6 +453,13 @@ async function _createProduct(event){
     await loadSettingsData();
   }catch(e){throw e;}
 }
+async function _removeProduct(id){try{await api('/api/products/'+id,{method:'DELETE'});await loadSettingsData();}catch(e){throw e;}}
+function removeProduct(id){
+  const p=settingsRecord(window.productRecords,id);
+  const details='<p><b>Product:</b> '+h(p?.code_name||p?.name||id)+'</p>'+settingsStatus('Will be permanently removed');
+  showSettingsConfirmation('Review Product Removal',details,()=>_removeProduct(id),
+    'Product removed successfully','<p>The product was removed successfully.</p>'+details);
+}
 function toggleProduct(id,active){ if(active){ deactivateProduct(id); } else { openProductActivation(id); } }
 async function _deactivateProduct(id){try{await api('/api/products/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){throw e;}}
 function openProductActivation(id){
@@ -497,6 +504,13 @@ async function _saveUserEdit(event){
   }catch(e){throw e;}
 }
 async function _createUser(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('attendant-name').value.trim(),phone:document.getElementById('attendant-phone').value.trim(),pin:document.getElementById('attendant-pin').value,role:document.getElementById('attendant-role').value,active:true})});e.target.reset();closeAddModal('add-user-modal');await loadSettingsData();}catch(e){throw e;}}
+async function _removeUser(id){try{await api('/api/users/'+id,{method:'DELETE'});await loadSettingsData();}catch(e){throw e;}}
+function removeUser(id){
+  const e=settingsRecord(window.employeeRecords,id);
+  const details='<p><b>User:</b> '+h(e?.name||id)+'</p>'+settingsStatus('Will be permanently removed');
+  showSettingsConfirmation('Review User Removal',details,()=>_removeUser(id),
+    'User removed successfully','<p>The user was removed successfully.</p>'+details);
+}
 function toggleUser(id,active){ if(active){ deactivateUser(id); } else { openUserActivation(id); } }
 async function _deactivateUser(id){try{await api('/api/users/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){throw e;}}
 function openUserActivation(id){
