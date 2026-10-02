@@ -340,7 +340,7 @@ async function loadSettingsData(){
       '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle identifiers</span><div class="dispenser-nozzle-list">'+(nozzleIds||'<span class="muted">No nozzle identifiers</span>')+'</div></div>'+
       '</div>'+
       '<div class="dispenser-card-actions">'+
-        '<button type="button" class="primary" onclick="toggleNozzle(\''+n.id+'\','+n.active+')">'+(n.active?'Deactivate':'Activate dispenser')+'</button>'+
+        '<button type="button" class="primary" onclick="toggleNozzle(\''+n.id+'\','+n.active+')">'+(n.active?'DEACTIVATE':'ACTIVATE DISPENSER')+'</button>'+
         '<button type="button" onclick="openDispenserEdit(\''+n.id+'\')">Edit dispenser</button>'+
         '<button type="button" class="dispenser-remove-action" onclick="removeDispenser(\''+n.id+'\')">Remove</button>'+
       '</div>'+
