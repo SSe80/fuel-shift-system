@@ -341,14 +341,14 @@
 .admin-settings-page .dispenser-card-actions button.primary{
   min-height:42px!important;
   padding:9px 14px!important;
-  background:linear-gradient(135deg,#15803d,#166534)!important;
-  border-color:#166534!important;
+  background:linear-gradient(135deg,#1264d8,#0f56bd)!important;
+  border-color:#0f56bd!important;
   color:#fff!important;
-  box-shadow:0 3px 8px rgba(22,101,52,.18)!important;
+  box-shadow:0 3px 8px rgba(18,100,216,.18)!important;
 }
 .admin-settings-page .dispenser-card-actions button.primary:hover{
-  background:linear-gradient(135deg,#166534,#14532d)!important;
-  box-shadow:0 5px 12px rgba(22,101,52,.22)!important;
+  background:linear-gradient(135deg,#0f56bd,#0b469f)!important;
+  box-shadow:0 5px 12px rgba(18,100,216,.22)!important;
 }
 .admin-settings-page .dispenser-card-actions button:not(.primary){
   background:#f8fafc!important;
