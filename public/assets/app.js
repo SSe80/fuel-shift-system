@@ -972,12 +972,15 @@ async function _confirmGenericActivationReview(){
   let successDetails='<p><b>'+h(label)+'</b> is now active.</p>'+details;
   if(type==='product'){
     const price=priceFromParts('activation-price-major','activation-price-cents');
+    if(price===null||price<=0){toast('Enter a valid selling price greater than zero');return;}
     details+='<p style="margin:7px 0"><b>Selling price:</b> '+h(money(price))+'</p>';
     successDetails='<p><b>'+h(item?.code_name||item?.name||id)+'</b> is now active.</p>'+details;
   }
   if(type==='tank'){
-    const stock=document.getElementById('tank-opening-stock')?.value||'';
-    details+='<p style="margin:7px 0"><b>Opening stock:</b> '+h(liters(stock))+' L</p>';
+    const stock=document.getElementById('tank-opening-stock')?.value.trim()||'';
+    const stockNumber=stock===''?NaN:Number(stock);
+    if(!Number.isFinite(stockNumber)||stockNumber<0){toast('Enter a valid opening stock reading in liters');return;}
+    details+='<p style="margin:7px 0"><b>Opening stock:</b> '+h(liters(stockNumber))+' L</p>';
     successDetails='<p><b>'+h(item?.tank_code||id)+'</b> activated successfully.</p>'+details;
   }
   showSettingsConfirmation('Review '+label+' Activation',details,()=>_confirmGenericActivation(),
@@ -987,14 +990,22 @@ function confirmGenericActivation(){return _confirmGenericActivationReview();}
 async function confirmDispenserActivation(){
   const id=pendingDispenserActivationId,d=settingsRecord(window.dispenserRecords,id);
   const employeeSelect=document.getElementById('dispenser-activation-employee');
+  const employeeId=employeeSelect?.value||'';
   const employee=employeeSelect?.selectedOptions?.[0]?.textContent||'Not selected';
-  const tank=document.getElementById('dispenser-activation-tank-liters')?.value||'';
+  const tank=document.getElementById('dispenser-activation-tank-liters')?.value.trim()||'';
+  const tankNumber=tank===''?NaN:Number(tank);
   const ids=d.nozzle_ids||[];
-  const readings=ids.map((nozzleId,i)=>{
+  const selected=ids.map((nozzleId,i)=>{
     const box=document.getElementById('nozzle-activation-input-'+i),input=document.getElementById('nozzle-activation-number-'+i);
-    return box&&box.style.display!=='none'&&input&&input.value.trim()!==''?'<p style="margin:5px 0"><b>'+h(nozzleId)+':</b> '+h(liters(input.value))+'</p>':'';
-  }).join('');
-  const details='<p><b>Dispenser:</b> '+h(d.nozzle_code||id)+'</p><p><b>Attendant:</b> '+h(employee)+'</p><p><b>Opening stock:</b> '+h(liters(tank))+' L</p><p><b>Nozzle opening readings:</b></p>'+readings+settingsStatus('Pending — dispenser remains inactive until attendant confirms');
+    if(!box||box.style.display==='none'||!input||input.value.trim()==='')return null;
+    const value=Number(input.value);
+    return Number.isFinite(value)&&value>=0?{nozzleId,value}:null;
+  }).filter(Boolean);
+  if(!Number.isFinite(tankNumber)||tankNumber<0){toast('Enter the tank opening reading in liters.');return;}
+  if(!employeeId){toast('Select an attendant before continuing.');return;}
+  if(!selected.length){toast('Activate at least one nozzle and enter its opening meter reading before continuing.');return;}
+  const readings=selected.map(x=>'<p style="margin:5px 0"><b>'+h(x.nozzleId)+':</b> '+h(liters(x.value))+'</p>').join('');
+  const details='<p><b>Dispenser:</b> '+h(d.nozzle_code||id)+'</p><p><b>Attendant:</b> '+h(employee)+'</p><p><b>Opening stock:</b> '+h(liters(tankNumber))+' L</p><p><b>Nozzle opening readings:</b></p>'+readings+settingsStatus('Pending — dispenser remains inactive until attendant confirms');
   showSettingsConfirmation('Review Dispenser Shift Assignment',details,()=>_confirmDispenserActivation(),
     'Shift assignment created successfully','<p>The assignment was sent to <b>'+h(employee)+'</b>.</p>'+details);
 }
