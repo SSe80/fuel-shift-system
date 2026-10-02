@@ -692,3 +692,16 @@
 .admin-settings-page .settings-active-card .settings-card-details b{
   color:#1f2937!important;
 }
+
+
+/* Pending dispenser nozzle readings */
+.admin-settings-page .dispenser-pending-card .dispenser-reading-row{
+  padding:9px 0;
+  margin-bottom:3px;
+  letter-spacing:.01em;
+}
+.admin-settings-page .dispenser-pending-card .dispenser-reading-row b{
+  font-size:15px;
+  font-weight:800;
+  letter-spacing:.02em;
+}
