@@ -371,6 +371,28 @@ function closeProductEdit(){
   modal.setAttribute('aria-hidden','true');
   document.getElementById('product-edit-form').reset();
 }
+function showSettingsConfirmation(title,details,action){
+  window.pendingSettingsAction=action;
+  const modal=document.getElementById('settings-confirm-modal');
+  const titleEl=document.getElementById('settings-confirm-title');
+  const detailsEl=document.getElementById('settings-confirm-details');
+  if(!modal||!titleEl||!detailsEl){return action();}
+  titleEl.textContent=title||'Confirm Change';
+  detailsEl.innerHTML=details||'Review this change before confirming.';
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+}
+function closeSettingsConfirmation(){
+  const modal=document.getElementById('settings-confirm-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  window.pendingSettingsAction=null;
+}
+async function confirmSettingsAction(){
+  const action=window.pendingSettingsAction;
+  if(!action)return;
+  closeSettingsConfirmation();
+  try{await action();}catch(e){toast(e.message);}
+}
 async function saveProductEdit(event){
   event.preventDefault();
   const id=document.getElementById('edit-product-id').value;
