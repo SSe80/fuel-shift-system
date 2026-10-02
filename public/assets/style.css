@@ -516,3 +516,17 @@
   .attendant-page .pending-nozzle-number{font-size:23px}
   .attendant-page .pending-nozzle-code{font-size:10px}
 }
+
+/* Pending confirmation card — red theme only */
+.attendant-page .pending-hero{background:linear-gradient(135deg,#fff0f1 0%,#ffe7e9 100%)}
+.attendant-page .pending-hero-icon{border-color:#dc2638;color:#dc2638}
+.attendant-page .pending-card-title{color:#7f1721}
+.attendant-page .pending-card-subtitle{color:#8b5a60}
+.attendant-page .pending-info-icon{background:linear-gradient(135deg,#fff0f1,#ffe3e6);color:#dc2638}
+.attendant-page .pending-info-icon.tank-icon{background:linear-gradient(135deg,#fff0f1,#ffe3e6);color:#c52235}
+.attendant-page .pending-tank-opening{background:linear-gradient(135deg,#fff4f5,#ffeaec)}
+.attendant-page .pending-nozzle-heading{color:#7f1721}
+.attendant-page .pending-nozzle-reading{border-color:#fecdd3;background:linear-gradient(135deg,#fff5f6,#ffedef)}
+.attendant-page .pending-nozzle-pill{background:linear-gradient(135deg,#ffe1e5,#ffd2d8);color:#b42333}
+.attendant-page .pending-nozzle-number{color:#7f1721}
+.attendant-page .pending-nozzle-code{color:#8b6268}
