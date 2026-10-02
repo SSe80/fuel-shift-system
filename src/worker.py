@@ -262,6 +262,20 @@ def create_employee():
     if status >= 400: return jsonify({"error":result}), status
     return jsonify(result), 201
 
+@app.route("/api/users/<employee_id>", methods=["DELETE"])
+def delete_employee(employee_id):
+    auth=require_admin()
+    if auth:return auth
+    if employee_id == session.get("employee_id"):
+        return jsonify({"error":"You cannot remove your own account"}),400
+    ss,sr=sb("shifts",params={"employee_id":"eq."+employee_id,"status":"in.(assigned,active)","select":"id","limit":"1"})
+    if ss!=200:return jsonify({"error":sr}),ss
+    if sr:return jsonify({"error":"This user has an assigned or active shift"}),409
+    status,result=sb("employees",method="DELETE",params={"id":"eq."+employee_id},prefer="return=representation")
+    if status>=400:return jsonify({"error":result}),status
+    if not result:return jsonify({"error":"User not found"}),404
+    return jsonify({"ok":True}),200
+
 @app.patch("/api/users/<employee_id>")
 @app.patch("/api/employees/<employee_id>")
 def update_employee(employee_id):
@@ -316,6 +330,15 @@ def create_product():
     status,result=sb("products",method="POST",body={"name":name,"code_name":code_name,"color":color,"active":False},prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
+
+@app.route("/api/products/<product_id>", methods=["DELETE"])
+def delete_product(product_id):
+    auth=require_admin()
+    if auth:return auth
+    status,result=sb("products",method="DELETE",params={"id":"eq."+product_id},prefer="return=representation")
+    if status>=400:return jsonify({"error":result}),status
+    if not result:return jsonify({"error":"Product not found"}),404
+    return jsonify({"ok":True}),200
 
 @app.patch("/api/products/<product_id>")
 def update_product(product_id):
