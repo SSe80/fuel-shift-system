@@ -140,7 +140,7 @@ async function userDashboard(){
         '<div class="pending-nozzle-section active-reading-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Shift reading</div>'+
           '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Opening meter</span></div><div class="pending-nozzle-number">'+reading(s.opening_reading)+'</div><div class="pending-nozzle-code">'+h(n?.nozzle_code||s.nozzle_id)+'</div></div>'+
         '</div>'+
-        '<div class="row active-shift-actions"><button class="btn active-handover-btn" type="button" onclick="openDashboardHandover(' + s.id + ')">Handover</button>'+
+        '<div class="row active-shift-actions"><button class="btn active-handover-btn" type="button" onclick="openDashboardHandover(\''+s.id+'\')">Handover</button>'+
         '<button class="primary active-close-shift" type="button" onclick="closeShift(event,\''+s.id+'\')">Close Shift</button></div></div>';
     }).join('');
 
