@@ -230,10 +230,10 @@
 /* Reference-matched pending confirmation card */
 .attendant-dashboard-page #shift .pending-confirmation-card,
 .attendant-shift-page #pending-confirmations .pending-confirmation-card{
-  margin:0 0 22px;
-  padding:22px;
+  margin:0 0 18px;
+  padding:18px;
   border:1px solid #e5ebf3;
-  border-radius:22px;
+  border-radius:19px;
   background:#fff;
   box-shadow:0 10px 35px rgba(31,52,79,.08);
 }
@@ -241,35 +241,35 @@
   display:flex;
   align-items:center;
   gap:16px;
-  margin:0 0 22px;
-  padding:22px 24px;
+  margin:0 0 18px;
+  padding:18px 20px;
   border-radius:18px;
   background:linear-gradient(135deg,#edf6ff 0%,#e8f1ff 100%);
 }
 .attendant-page .pending-hero-icon{
-  width:58px;
-  height:58px;
-  flex:0 0 58px;
+  width:50px;
+  height:50px;
+  flex:0 0 50px;
   display:grid;
   place-items:center;
   border:5px solid #1677e8;
   border-radius:50%;
   color:#1677e8;
-  font-size:30px;
+  font-size:26px;
   font-weight:800;
   line-height:1;
 }
 .attendant-page .pending-card-title{
   margin:0 0 7px;
   color:#071633;
-  font-size:27px;
+  font-size:21px;
   line-height:1.08;
   font-weight:850;
   letter-spacing:-.035em;
 }
 .attendant-page .pending-card-subtitle{
   color:#5e7394;
-  font-size:16px;
+  font-size:14px;
   line-height:1.35;
   font-weight:550;
 }
@@ -277,41 +277,41 @@
   display:inline-flex;
   align-items:center;
   gap:10px;
-  margin:0 0 22px;
-  padding:10px 18px;
+  margin:0 0 18px;
+  padding:8px 15px;
   border-radius:17px;
   background:linear-gradient(135deg,#d5ffe0,#c3f8d0);
   color:#08772b;
-  font-size:16px;
+  font-size:14px;
   font-weight:800;
 }
 .attendant-page .pending-status-icon{
-  font-size:25px;
+  font-size:19px;
   line-height:1;
 }
 .attendant-page .pending-shift-info{
   display:grid;
   grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);
-  gap:22px;
-  padding:34px 34px 30px;
+  gap:18px;
+  padding:27px 28px 24px;
   border:2px solid #edf0f5;
-  border-radius:22px;
+  border-radius:19px;
 }
 .attendant-page .pending-info-block{
   display:flex;
   align-items:center;
-  gap:22px;
+  gap:18px;
 }
 .attendant-page .pending-info-icon{
-  width:62px;
-  height:62px;
-  flex:0 0 62px;
+  width:54px;
+  height:54px;
+  flex:0 0 54px;
   display:grid;
   place-items:center;
-  border-radius:20px;
+  border-radius:17px;
   background:linear-gradient(135deg,#eaf4ff,#e4efff);
   color:#1677e8;
-  font-size:36px;
+  font-size:31px;
   font-weight:800;
 }
 .attendant-page .pending-info-icon.tank-icon{
@@ -322,14 +322,14 @@
   display:block;
   margin-bottom:7px;
   color:#657a9a;
-  font-size:17px;
+  font-size:15px;
   line-height:1.2;
   font-weight:550;
 }
 .attendant-page .pending-info-block strong{
   display:block;
   color:#071633;
-  font-size:21px;
+  font-size:18px;
   line-height:1.25;
   font-weight:850;
 }
@@ -341,54 +341,54 @@
   grid-column:1/-1;
   display:flex;
   align-items:center;
-  gap:22px;
+  gap:18px;
   margin-top:2px;
-  padding:22px 28px;
+  padding:18px 22px;
   border-radius:18px;
   background:linear-gradient(135deg,#f2f7ff,#eef5ff);
 }
 .attendant-page .pending-tank-opening strong{
   display:block;
   color:#071633;
-  font-size:39px;
+  font-size:34px;
   line-height:1;
   font-weight:800;
   letter-spacing:-.035em;
   font-variant-numeric:tabular-nums;
 }
 .attendant-page .pending-tank-opening strong small{
-  font-size:24px;
+  font-size:21px;
   font-weight:600;
   letter-spacing:0;
 }
 .attendant-page .pending-nozzle-section{
-  margin-top:38px;
+  margin-top:28px;
 }
 .attendant-page .pending-nozzle-heading{
   display:flex;
   align-items:center;
   gap:17px;
-  margin:0 0 22px;
+  margin:0 0 18px;
   color:#071633;
-  font-size:22px;
+  font-size:19px;
   line-height:1.2;
   font-weight:850;
 }
 .attendant-page .pending-section-icon{
-  width:46px;
-  height:46px;
+  width:40px;
+  height:40px;
   display:grid;
   place-items:center;
-  flex:0 0 46px;
+  flex:0 0 40px;
   border-radius:17px;
   background:#d8ffe4;
   color:#07923a;
-  font-size:27px;
+  font-size:21px;
 }
 .attendant-page .pending-nozzle-reading{
   margin:0 0 18px;
-  padding:22px 26px 20px;
-  border-radius:20px;
+  padding:18px 22px 17px;
+  border-radius:17px;
   background:linear-gradient(135deg,#f1f6fc,#eef4fb);
 }
 .attendant-page .pending-nozzle-top{
@@ -400,12 +400,12 @@
   border-radius:14px;
   background:linear-gradient(135deg,#dcecff,#cfe3ff);
   color:#0d3d85;
-  font-size:17px;
+  font-size:15px;
   font-weight:800;
 }
 .attendant-page .pending-nozzle-number{
   color:#061638;
-  font-size:44px;
+  font-size:38px;
   line-height:1.05;
   font-weight:800;
   letter-spacing:.035em;
@@ -416,18 +416,18 @@
 .attendant-page .pending-nozzle-code{
   margin-top:12px;
   color:#687d9c;
-  font-size:17px;
+  font-size:15px;
   line-height:1.25;
   font-weight:550;
 }
 .attendant-page .pending-confirmation-card .form{
-  margin-top:30px;
+  margin-top:22px;
 }
 @media(max-width:600px){
   .attendant-dashboard-page #shift .pending-confirmation-card,
   .attendant-shift-page #pending-confirmations .pending-confirmation-card{
     padding:16px;
-    border-radius:20px;
+    border-radius:17px;
   }
   .attendant-page .pending-hero{
     gap:14px;
