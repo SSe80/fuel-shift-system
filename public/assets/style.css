@@ -676,3 +676,55 @@
   padding:0;
   background:transparent;
 }
+
+/* Attendant handover modal */
+.attendant-handover-page .handover-modal-card{
+  border:1px solid #f3a0aa;
+  box-shadow:0 18px 55px rgba(194,35,53,.18);
+}
+.attendant-handover-page .handover-modal-card .section-kicker{color:#b42333}
+.attendant-handover-page .handover-modal-card h3{color:#7f1721}
+.attendant-handover-page .handover-modal-card .form input,
+.attendant-handover-page .handover-modal-card .form select{
+  border-color:#f0b8bf;
+}
+.attendant-handover-page .handover-modal-card .form input:focus,
+.attendant-handover-page .handover-modal-card .form select:focus{
+  border-color:#dc2638;
+  box-shadow:0 0 0 3px rgba(220,38,56,.12);
+}
+.attendant-handover-page .handover-modal-card .row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  margin-top:14px;
+}
+.attendant-handover-page .handover-modal-card .row .primary{
+  background:linear-gradient(135deg,#dc2638,#c91f32)!important;
+  border:1px solid #b91c2d!important;
+  color:#fff!important;
+}
+.attendant-handover-page .handover-review-details{
+  display:grid;
+  gap:9px;
+  margin:16px 0 4px;
+}
+.attendant-handover-page .handover-review-item{
+  padding:12px 14px;
+  border:1px solid #fecdd3;
+  border-radius:12px;
+  background:linear-gradient(135deg,#fff5f6,#ffedef);
+}
+.attendant-handover-page .handover-review-item span{
+  display:block;
+  margin-bottom:4px;
+  font-size:12px;
+  color:#8b6268;
+}
+.attendant-handover-page .handover-review-item strong{
+  color:#7f1721;
+  font-size:15px;
+}
+@media(max-width:600px){
+  .attendant-handover-page .handover-modal-card{padding:18px}
+}
