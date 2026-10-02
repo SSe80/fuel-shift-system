@@ -579,7 +579,7 @@
   --att-red-soft:#fff0f1;
   --att-red-pale:#fff7f7;
   --att-red-border:#f3a0aa;
-  background:linear-gradient(180deg,#fff7f7 0%,#fff 48%,#fff5f6 100%);
+  background:#fff;
   color:#3f1720;
 }
 .attendant-page .wrap{color:#3f1720}
