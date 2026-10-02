@@ -959,7 +959,7 @@ function continueHandover(event){
   const employeeSelect=document.getElementById('handover-to-employee');
   const employeeName=employeeSelect?.selectedOptions?.[0]?.textContent||to;
   const reviewNozzles=closingNozzleReadings.map((x,i)=>
-    '<div class="handover-review-row"><span>Nozzle '+(i+1)+' <small>'+h(x.nozzle_id)+'</small></span><strong>'+x.reading.toLocaleString(undefined,{maximumFractionDigits:2})+'</strong></div>'
+    '<div class="handover-review-row"><span>Nozzle '+(i+1)+' <small>'+h(x.nozzle_id)+'</small></span><strong>'+Number(x.reading).toFixed(2).replace(/\\.?0+$/,'')+'</strong></div>'
   ).join('');
   document.getElementById('handover-review-details').innerHTML=
     '<div class="handover-review-summary">'+
