@@ -983,10 +983,52 @@ def confirm_handover(handover_id):
     if es!=200 or not er:return jsonify({"error":"Attendant account not found"}),404
     emp=er[0]
     if emp.get("role")!="attendant" or not verify_pin(pin,emp.get("pin_hash","")):return jsonify({"error":"Invalid PIN"}),401
-    try: reading,mm,liters=float(data.get("opening_reading",0)),float(data.get("opening_mm",0)),float(data.get("opening_liters",0))
-    except (TypeError,ValueError):return jsonify({"error":"Invalid opening readings"}),400
-    if min(reading,mm,liters)<0:return jsonify({"error":"Opening readings cannot be negative"}),400
-    status,result=rpc("confirm_shift_handover",{"p_handover_id":handover_id,"p_to_employee_id":eid,"p_opening_reading":reading,"p_opening_mm":mm,"p_opening_liters":liters})
+
+    # The sender already supplied the final dispenser/tank readings. The
+    # receiving attendant only confirms those readings with their PIN.
+    hs,hr=sb("handovers",params={
+        "id":"eq."+handover_id,
+        "to_employee_id":"eq."+eid,
+        "status":"eq.pending",
+        "select":"id,closing_reading,closing_mm,closing_liters,closing_nozzle_readings",
+        "limit":"1"
+    })
+    if hs!=200 or not hr:return jsonify({"error":"Pending handover not found"}),404
+    handover=hr[0]
+    try:
+        reading=float(handover.get("closing_reading") or 0)
+        mm=float(handover.get("closing_mm") or 0)
+        liters=float(handover.get("closing_liters") or 0)
+    except (TypeError,ValueError):
+        return jsonify({"error":"Invalid handover closing readings"}),409
+    if min(reading,mm,liters)<0:return jsonify({"error":"Handover readings cannot be negative"}),409
+    status,result=rpc("confirm_shift_handover",{
+        "p_handover_id":handover_id,
+        "p_to_employee_id":eid,
+        "p_opening_reading":reading,
+        "p_opening_mm":mm,
+        "p_opening_liters":liters
+    })
+    if status>=400:return jsonify({"error":result}),status
+    return jsonify(result),200
+
+@app.post("/api/handovers/<handover_id>/cancel")
+def cancel_handover(handover_id):
+    eid=session.get("employee_id")
+    if not eid:return jsonify({"error":"Unauthorized"}),401
+    status,current=sb("handovers",params={
+        "id":"eq."+handover_id,
+        "status":"eq.pending",
+        "select":"id,from_employee_id,to_employee_id"
+    })
+    if status!=200:return jsonify({"error":current}),status
+    if not current:return jsonify({"error":"Pending handover not found"}),404
+    handover=current[0]
+    if str(eid) not in {str(handover.get("from_employee_id")),str(handover.get("to_employee_id"))}:
+        return jsonify({"error":"You are not part of this handover"}),403
+    status,result=sb("handovers",method="PATCH",params={"id":"eq."+handover_id,"status":"eq.pending"},body={
+        "status":"cancelled"
+    },prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),200
 
