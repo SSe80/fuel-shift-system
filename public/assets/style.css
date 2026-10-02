@@ -377,3 +377,18 @@
     grid-column:1 / -1;
   }
 }
+
+
+/* Soft red activation control */
+.admin-settings-page .dispenser-card-actions button.primary{
+  background:#fff1f2!important;
+  border-color:#fecdd3!important;
+  color:#c62828!important;
+  box-shadow:none!important;
+}
+.admin-settings-page .dispenser-card-actions button.primary:hover{
+  background:#ffe4e6!important;
+  border-color:#fda4af!important;
+  color:#b91c1c!important;
+  box-shadow:none!important;
+}
