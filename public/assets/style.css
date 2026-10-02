@@ -392,3 +392,58 @@
   color:#b91c1c!important;
   box-shadow:none!important;
 }
+
+
+/* Consistent controls for Users, Products and Fuel Tanks */
+.admin-settings-page .settings-card-actions{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr)!important;
+  gap:10px!important;
+  align-items:center;
+}
+.admin-settings-page .settings-card-actions button{
+  min-height:40px!important;
+  padding:8px 12px!important;
+  border:1px solid #d9e0e7!important;
+  border-radius:10px!important;
+  background:#f8fafc!important;
+  color:#344054!important;
+  font-size:12px!important;
+  font-weight:800!important;
+  letter-spacing:.025em!important;
+  text-transform:uppercase!important;
+  box-shadow:none!important;
+}
+.admin-settings-page .settings-card-actions .settings-toggle-action{
+  background:#fff1f2!important;
+  border-color:#fecdd3!important;
+  color:#c62828!important;
+}
+.admin-settings-page .settings-card-actions .settings-toggle-action:hover{
+  background:#ffe4e6!important;
+  border-color:#fda4af!important;
+  color:#b91c1c!important;
+}
+.admin-settings-page .settings-card-actions .settings-remove-action{
+  background:#fff1f2!important;
+  border-color:#fecdd3!important;
+  color:#c62828!important;
+}
+.admin-settings-page .settings-card-actions .settings-remove-action:hover{
+  background:#ffe4e6!important;
+  border-color:#fda4af!important;
+  color:#b91c1c!important;
+}
+.admin-settings-page .settings-card-actions button:not(.settings-toggle-action):not(.settings-remove-action):hover{
+  background:#eef2f6!important;
+  border-color:#c8d1db!important;
+}
+@media(max-width:700px){
+  .admin-settings-page .settings-card-actions{
+    grid-template-columns:1fr 1fr!important;
+    gap:9px!important;
+  }
+  .admin-settings-page .settings-card-actions .settings-toggle-action{
+    grid-column:1 / -1;
+  }
+}
