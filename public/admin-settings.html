@@ -193,22 +193,25 @@
 
   <div id="settings-confirm-modal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" onclick="closeSettingsConfirmation()"></div>
-    <div class="modal-card">
+    <div class="modal-card" style="max-width:520px">
       <div class="top">
         <h3 id="settings-confirm-title">Confirm Change</h3>
         <button type="button" class="modal-close" onclick="closeSettingsConfirmation()" aria-label="Close">×</button>
       </div>
       <div id="settings-confirm-details"></div>
-      <p class="muted">Review the changes above before applying them.</p>
-      <div class="row">
+      <p id="settings-confirm-note" class="muted">Review the changes above before applying them.</p>
+      <div id="settings-confirm-actions" class="row">
         <button type="button" onclick="closeSettingsConfirmation()">Cancel</button>
         <button type="button" class="primary" onclick="confirmSettingsAction()">Confirm</button>
+      </div>
+      <div id="settings-success-actions" class="row" style="display:none;justify-content:flex-end">
+        <button type="button" class="primary" onclick="closeSettingsConfirmation()">Done</button>
       </div>
     </div>
   </div>
 
   <div id="settings-status" class="muted"></div>
 </main>
-<script src="assets/app.js?v=20261002-08"></script>
+<script src="assets/app.js?v=20261002-09"></script>
 <script src="assets/app-boot.js?v=20261002-03"></script></body>
 </html>
