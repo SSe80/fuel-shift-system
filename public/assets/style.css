@@ -685,3 +685,10 @@
   font-size:15px;
   font-weight:700;
 }
+
+
+/* Keep settings card text black */
+.admin-settings-page .settings-active-card b,
+.admin-settings-page .settings-active-card .settings-card-details b{
+  color:#1f2937!important;
+}
