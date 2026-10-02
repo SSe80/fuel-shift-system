@@ -335,7 +335,6 @@ async function loadSettingsData(){
       '<div class="dispenser-info-grid">'+
         '<div><span>Connected tank</span><b>'+h(tank?.tank_code||n.tank_id||'Not connected')+'</b></div>'+
         '<div><span>Tank opening</span><b>'+(n.opening_tank_liters==null?'Not recorded':liters(n.opening_tank_liters)+' L')+'</b></div>'+
-        '<div><span>Nozzles</span><b>'+h(nozzleLabel)+'</b></div>'+
         '<div><span>Current shift</span><b>'+(attendant?h(attendant.name):'No active shift')+'</b></div>'+
       '</div>'+
       '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle identifiers</span><div class="dispenser-nozzle-list">'+(nozzleIds||'<span class="muted">No nozzle identifiers</span>')+'</div></div>'+
