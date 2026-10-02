@@ -65,6 +65,7 @@ async function api(path, options={}) {
 const h = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = value => Number(value || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const liters = value => Number(value || 0).toLocaleString(undefined,{maximumFractionDigits:2});
+const reading = value => { const n=Number(value); return Number.isFinite(n) ? n.toFixed(2).replace(/\\.?0+$/,'') : '—'; };
 
 async function login(role) {
   const operator_id=document.getElementById('operator-id').value.trim(), pin=document.getElementById('pin').value;
