@@ -140,7 +140,7 @@ async function userDashboard(){
         '<div class="pending-nozzle-section active-reading-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Shift reading</div>'+
           '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Opening meter</span></div><div class="pending-nozzle-number">'+reading(s.opening_reading)+'</div><div class="pending-nozzle-code">'+h(n?.nozzle_code||s.nozzle_id)+'</div></div>'+
         '</div>'+
-        '<div class="row active-shift-actions"><a class="btn active-handover-btn" href="handover.html?shift_id='+encodeURIComponent(s.id)+'">Handover</a>'+
+        '<div class="row active-shift-actions"><button class="btn active-handover-btn" type="button" onclick="openDashboardHandover(' + s.id + ')">Handover</button>'+
         '<button class="primary active-close-shift" type="button" onclick="closeShift(event,\''+s.id+'\')">Close Shift</button></div></div>';
     }).join('');
 
@@ -850,6 +850,24 @@ async function loadSalesHistory(){
   }catch(e){box.textContent=e.message;}
 }
 
+async function openDashboardHandover(shiftId){
+  try{
+    const me=await currentUser();
+    const [shifts,employees]=await Promise.all([api('/api/shifts'),api('/api/users').catch(()=>[])]);
+    const active=shifts.filter(s=>s.status==='active'&&String(s.employee_id)===String(me.id));
+    const selected=active.find(s=>String(s.id)===String(shiftId))||active[0];
+    if(!selected){toast('No active shift available for handover.');return;}
+    window.handoverDraft={shift_id:selected.id,to_employee_id:'',closing_reading:null,closing_liters:null};
+    const receiving=employees.filter(e=>e.active&&e.id!==me.id&&e.role==='attendant');
+    const select=document.getElementById('handover-to-employee');
+    if(!select){toast('Handover form is unavailable.');return;}
+    select.innerHTML='<option value="">Select receiving attendant</option>'+
+      receiving.map(e=>'<option value="'+h(e.id)+'">'+h(e.name)+' — ID '+h(e.operator_id)+'</option>').join('');
+    document.getElementById('handover-closing-reading').value='';
+    document.getElementById('handover-closing-liters').value='';
+    openHandoverInputModal();
+  }catch(e){toast(e.message);}
+}
 async function loadHandover(){
   try{
     const me=await currentUser(),[shifts,employees,nozzles]=await Promise.all([api('/api/shifts'),api('/api/users').catch(()=>[]),api('/api/nozzles')]);
@@ -878,7 +896,7 @@ function closeHandoverModal(id){
 }
 function cancelHandoverForm(){
   closeHandoverModal('handover-input-modal');
-  location.href='attendant-dashboard.html';
+  window.handoverDraft=null;
 }
 function continueHandover(event){
   event.preventDefault();
@@ -916,7 +934,7 @@ async function confirmHandoverSubmission(){
     })});
     closeHandoverModal('handover-review-modal');
     toast('Handover submitted');
-    setTimeout(()=>location.href='attendant-dashboard.html',700);
+    setTimeout(()=>userDashboard(),500);
   }catch(e){toast(e.message);}
 }
 async function loadPendingHandovers(){
