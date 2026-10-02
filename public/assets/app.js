@@ -338,7 +338,7 @@ async function loadSettingsData(){
       '</div>'+
       '<div class="dispenser-card-actions">'+
         '<button type="button" class="primary" onclick="toggleNozzle(\''+n.id+'\','+n.active+')">'+(n.active?'DEACTIVATE':'ACTIVATE DISPENSER')+'</button>'+
-
+        (!n.active?'<button type="button" onclick="openDispenserEdit(\''+n.id+'\')">Edit dispenser</button>':'')+
         '<button type="button" class="dispenser-remove-action" onclick="removeDispenser(\''+n.id+'\')">Remove</button>'+
       '</div>'+
     '</div>';
@@ -687,7 +687,7 @@ function openDispenserActivation(id){
   if(!tank){toast('This dispenser has no connected tank.');return;}
   if(!tank.active){toast('This dispenser cannot be activated because its connected tank is inactive.');return;}
   const message=document.getElementById('dispenser-activate-message');
-  if(message)message.innerHTML='<b>'+h(d.nozzle_code||'Dispenser')+'</b> — '+h(product?.code_name||d.product||'')+'<br><span class="muted">Tank: '+h(tank?.tank_code||d.tank_id||'')+' • '+h(d.nozzle_count||1)+' nozzle(s)</span>';
+  if(message)message.innerHTML='<b>'+h(d.nozzle_code||'Dispenser')+'</b> — '+h(product?.code_name||d.product||'');
   const tankLabel=document.getElementById('dispenser-activation-tank-label');
   if(tankLabel)tankLabel.firstChild.textContent=''+(tank?.tank_code||'Tank')+' opening reading (liters)';
   const tankLitersInput=document.getElementById('dispenser-activation-tank-liters');
