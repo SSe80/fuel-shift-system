@@ -12,6 +12,10 @@ app.config.update(
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_NAME="fuel_shift_session",
+    SESSION_COOKIE_PATH="/",
+    PERMANENT_SESSION_LIFETIME=60 * 60 * 24 * 30,
+    SESSION_REFRESH_EACH_REQUEST=True,
 )
 
 @app.after_request
@@ -86,10 +90,13 @@ def require_admin():
         "select": "id,role,active",
         "limit": "1"
     })
-    if status != 200 or not rows or not rows[0].get("active"):
+    if status != 200:
+        return jsonify({"error": "Unable to verify the current session"}), 503
+    if not rows or not rows[0].get("active"):
         session.clear()
         return jsonify({"error": "Unauthorized"}), 401
 
+    session.permanent = True
     session["role"] = rows[0].get("role")
     if session["role"] != "admin":
         return jsonify({"error": "Admin access required"}), 403
@@ -169,6 +176,7 @@ def login():
     if not verify_pin(pin, emp.get("pin_hash", "")):
         return jsonify({"error": "Invalid credentials"}), 401
     session.clear()
+    session.permanent = True
     session["employee_id"], session["role"] = emp["id"], emp["role"]
     return jsonify({k: emp[k] for k in ("id","name","phone","operator_id","role")})
 
@@ -185,9 +193,12 @@ def me():
         "id": "eq." + session["employee_id"],
         "select": "id,name,phone,operator_id,role,active"
     })
-    if status != 200 or not rows or not rows[0].get("active"):
+    if status != 200:
+        return jsonify({"error": "Unable to verify the current session"}), 503
+    if not rows or not rows[0].get("active"):
         session.clear()
         return jsonify({"authenticated": False}), 401
+    session.permanent = True
     session["role"] = rows[0]["role"]
     return jsonify({"authenticated": True, "user": rows[0], "employee": rows[0]})
 
