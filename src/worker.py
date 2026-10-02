@@ -9,13 +9,17 @@ from supabase_rest import request as sb_request
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "change-me")
 app.config.update(
-    SESSION_COOKIE_SECURE=True,
+    # Cloudflare terminates HTTPS before the Python runtime. Keep the
+    # session cookie compatible with the Workers runtime while the site
+    # itself remains HTTPS.
+    SESSION_COOKIE_SECURE=False,
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_NAME="fuel_shift_session",
     SESSION_COOKIE_PATH="/",
+    SESSION_COOKIE_MAX_AGE=60 * 60 * 24,
     PERMANENT_SESSION_LIFETIME=60 * 60 * 24,
-    SESSION_REFRESH_EACH_REQUEST=True,
+    SESSION_REFRESH_EACH_REQUEST=False,
 )
 
 @app.after_request
