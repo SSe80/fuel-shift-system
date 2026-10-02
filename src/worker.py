@@ -715,6 +715,15 @@ def update_nozzle(nozzle_id):
     if not body:return jsonify({"error":"No changes supplied"}),400
     status,result=sb("nozzles",method="PATCH",params={"id":"eq."+nozzle_id},body=body,prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
+    # Deactivating a dispenser also closes any active shift on that dispenser.
+    if body.get("active") is False and cur.get("active") is True:
+        cs,cr=sb("shifts",params={"nozzle_id":"eq."+nozzle_id,"status":"eq.active","select":"id"})
+        if cs!=200:return jsonify({"error":cr}),cs
+        if cr:
+            now=datetime.now(timezone.utc).isoformat()
+            for shift in cr:
+                ss,sr=sb("shifts",method="PATCH",params={"id":"eq."+shift["id"]},body={"status":"closed","end_time":now},prefer="return=representation")
+                if ss>=400:return jsonify({"error":sr}),ss
     return jsonify(result),200
 
 @app.get("/api/shifts")
