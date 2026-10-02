@@ -140,9 +140,8 @@ async function userDashboard(){
         '<div class="pending-nozzle-section active-reading-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Shift reading</div>'+
           '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Opening meter</span></div><div class="pending-nozzle-number">'+reading(s.opening_reading)+'</div><div class="pending-nozzle-code">'+h(n?.nozzle_code||s.nozzle_id)+'</div></div>'+
         '</div>'+
-        '<div class="row active-shift-actions"><a class="btn primary" href="sales.html?shift_id='+encodeURIComponent(s.id)+'">Record Sale</a>'+
-        '<a class="btn" href="handover.html?shift_id='+encodeURIComponent(s.id)+'">Handover</a></div>'+
-        '<button class="primary active-close-shift" type="button" onclick="closeShift(event,\''+s.id+'\')">Close Shift</button></div>';
+        '<div class="row active-shift-actions"><a class="btn active-handover-btn" href="handover.html?shift_id='+encodeURIComponent(s.id)+'">Handover</a>'+
+        '<button class="primary active-close-shift" type="button" onclick="closeShift(event,\''+s.id+'\')">Close Shift</button></div></div>';
     }).join('');
 
     box.innerHTML=pendingShiftHtml+pendingHandoverHtml+activeHtml;
