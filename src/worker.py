@@ -848,16 +848,40 @@ def close_shift(shift_id):
         })
         if status!=200:return jsonify({"error":current}),status
         if not current:return jsonify({"error":"Active shift not found"}),404
+        status,current=sb("shifts",params={
+            "id":"eq."+shift_id,
+            "employee_id":"eq."+eid,
+            "status":"eq.active",
+            "select":"id,nozzle_id"
+        })
+        if status!=200:return jsonify({"error":current}),status
+        if not current:return jsonify({"error":"Active shift not found"}),404
+        nozzle_id=current[0].get("nozzle_id")
         status,result=sb("shifts",method="PATCH",params={"id":"eq."+shift_id},body={
             "status":"closed",
             "end_time":datetime.now(timezone.utc).isoformat()
         },prefer="return=representation")
         if status>=400:return jsonify({"error":result}),status
+        if nozzle_id:
+            ns,nr=sb("nozzles",method="PATCH",params={"id":"eq."+nozzle_id},body={"active":False},prefer="return=representation")
+            if ns>=400:return jsonify({"error":nr}),ns
         return jsonify(result),200
     try: reading,mm,liters=float(data.get("closing_reading",0)),float(data.get("closing_mm",0)),float(data.get("closing_liters",0))
     except (TypeError,ValueError):return jsonify({"error":"Invalid closing readings"}),400
+    status,current=sb("shifts",params={
+        "id":"eq."+shift_id,
+        "employee_id":"eq."+eid,
+        "status":"eq.active",
+        "select":"id,nozzle_id"
+    })
+    if status!=200:return jsonify({"error":current}),status
+    if not current:return jsonify({"error":"Active shift not found"}),404
+    nozzle_id=current[0].get("nozzle_id")
     status,result=rpc("close_shift",{"p_shift_id":shift_id,"p_employee_id":eid,"p_closing_reading":reading,"p_closing_mm":mm,"p_closing_liters":liters})
     if status>=400:return jsonify({"error":result}),status
+    if nozzle_id:
+        ns,nr=sb("nozzles",method="PATCH",params={"id":"eq."+nozzle_id},body={"active":False},prefer="return=representation")
+        if ns>=400:return jsonify({"error":nr}),ns
     return jsonify(result),200
 
 @app.get("/api/sales")
