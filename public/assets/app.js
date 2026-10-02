@@ -853,19 +853,72 @@ async function loadSalesHistory(){
 async function loadHandover(){
   try{
     const me=await currentUser(),[shifts,employees,nozzles]=await Promise.all([api('/api/shifts'),api('/api/users').catch(()=>[]),api('/api/nozzles')]);
-    const active=shifts.filter(s=>s.status==='active');
-    if(!active.length){document.getElementById('handover-status').textContent='No active shift.';return;}
+    const active=shifts.filter(s=>s.status==='active'&&String(s.employee_id)===String(me.id));
     const requested=new URLSearchParams(location.search).get('shift_id');
     const selected=active.find(s=>s.id===requested)||active[0];
-    document.getElementById('handover-shift').innerHTML=active.map(s=>{
-      const n=nozzles.find(x=>x.id===s.nozzle_id);
-      return '<option value="'+h(s.id)+'" '+(s.id===selected.id?'selected':'')+'>'+h(n?.nozzle_code||s.nozzle_id)+'</option>';
-    }).join('');
-    document.getElementById('handover-status').textContent='Select the dispenser shift to hand over.';
-    document.getElementById('to-employee').innerHTML='<option value="">Select receiving attendant</option>'+employees.filter(e=>e.active&&e.id!==me.id&&e.role==='attendant').map(e=>'<option value="'+e.id+'">'+h(e.name)+' — ID '+h(e.operator_id)+'</option>').join('');
+    if(!selected){
+      document.getElementById('handover-status').textContent='No active shift available for handover.';
+      return;
+    }
+    window.handoverDraft={shift_id:selected.id,to_employee_id:'',closing_reading:null,closing_liters:null};
+    document.getElementById('handover-status').textContent='Review the closing readings and receiving attendant.';
+    const receiving=employees.filter(e=>e.active&&e.id!==me.id&&e.role==='attendant');
+    document.getElementById('handover-to-employee').innerHTML='<option value="">Select receiving attendant</option>'+
+      receiving.map(e=>'<option value="'+h(e.id)+'">'+h(e.name)+' — ID '+h(e.operator_id)+'</option>').join('');
+    openHandoverInputModal();
   }catch(e){document.getElementById('handover-status').textContent=e.message;}
 }
-async function submitHandover(e){e.preventDefault();try{await api('/api/handovers',{method:'POST',body:JSON.stringify({shift_id:document.getElementById('handover-shift').value,to_employee_id:document.getElementById('to-employee').value,closing_reading:Number(document.getElementById('closing-reading').value),closing_mm:Number(document.getElementById('closing-mm').value),closing_liters:Number(document.getElementById('closing-liters').value)})});toast('Handover submitted');setTimeout(()=>location.href='pending-handovers.html',700);}catch(x){toast(x.message);}}
+function openHandoverInputModal(){
+  const modal=document.getElementById('handover-input-modal');
+  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+}
+function closeHandoverModal(id){
+  const modal=document.getElementById(id);
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+function cancelHandoverForm(){
+  closeHandoverModal('handover-input-modal');
+  location.href='attendant-dashboard.html';
+}
+function continueHandover(event){
+  event.preventDefault();
+  const to=document.getElementById('handover-to-employee').value;
+  const reading=Number(document.getElementById('handover-closing-reading').value);
+  const closingLiters=Number(document.getElementById('handover-closing-liters').value);
+  if(!to){toast('Select a receiving attendant');return;}
+  if(!Number.isFinite(reading)||reading<0){toast('Enter a valid closing meter reading');return;}
+  if(!Number.isFinite(closingLiters)||closingLiters<0){toast('Enter valid tank closing liters');return;}
+  window.handoverDraft={...window.handoverDraft,to_employee_id:to,closing_reading:reading,closing_liters:closingLiters};
+  const employeeSelect=document.getElementById('handover-to-employee');
+  const employeeName=employeeSelect?.selectedOptions?.[0]?.textContent||to;
+  document.getElementById('handover-review-details').innerHTML=
+    '<div class="handover-review-item"><span>Receiving attendant</span><strong>'+h(employeeName)+'</strong></div>'+
+    '<div class="handover-review-item"><span>Closing reading meter</span><strong>'+reading.toLocaleString(undefined,{maximumFractionDigits:2})+'</strong></div>'+
+    '<div class="handover-review-item"><span>Tank closing liter</span><strong>'+closingLiters.toLocaleString(undefined,{maximumFractionDigits:2})+' L</strong></div>';
+  closeHandoverModal('handover-input-modal');
+  const review=document.getElementById('handover-review-modal');
+  if(review){review.classList.add('open');review.setAttribute('aria-hidden','false');}
+}
+function cancelHandoverReview(){
+  closeHandoverModal('handover-review-modal');
+  openHandoverInputModal();
+}
+async function confirmHandoverSubmission(){
+  const d=window.handoverDraft;
+  if(!d?.shift_id)return;
+  try{
+    await api('/api/handovers',{method:'POST',body:JSON.stringify({
+      shift_id:d.shift_id,
+      to_employee_id:d.to_employee_id,
+      closing_reading:d.closing_reading,
+      closing_mm:0,
+      closing_liters:d.closing_liters
+    })});
+    closeHandoverModal('handover-review-modal');
+    toast('Handover submitted');
+    setTimeout(()=>location.href='attendant-dashboard.html',700);
+  }catch(e){toast(e.message);}
+}
 async function loadPendingHandovers(){
   try{
     const [hs,emps]=await Promise.all([api('/api/handovers'),api('/api/users').catch(()=>[])]);
