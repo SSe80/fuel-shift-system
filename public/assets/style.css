@@ -465,13 +465,13 @@
 
 
 
-/* Extra-compact pending shift info */
-.attendant-page .pending-shift-info{gap:6px;padding:8px 10px;border-radius:12px}
-.attendant-page .pending-info-block{gap:7px}
-.attendant-page .pending-info-icon{width:26px;height:26px;flex-basis:26px;border-radius:8px;font-size:14px}
-.attendant-page .pending-label{margin-bottom:2px;font-size:10px}
-.attendant-page .pending-info-block strong{font-size:11px}
-.attendant-page .pending-tank-opening{gap:7px;margin-top:0;padding:6px 9px;border-radius:10px}
-.attendant-page .pending-tank-opening strong{font-size:16px}
-.attendant-page .pending-tank-opening strong small{font-size:11px}
-@media(max-width:600px){.attendant-page .pending-shift-info{gap:6px;padding:9px;border-radius:12px}.attendant-page .pending-info-icon{width:25px;height:25px;flex-basis:25px;font-size:13px}.attendant-page .pending-label{font-size:10px}.attendant-page .pending-info-block strong{font-size:11px}.attendant-page .pending-tank-opening{padding:6px 8px}.attendant-page .pending-tank-opening strong{font-size:16px}.attendant-page .pending-tank-opening strong small{font-size:11px}}
+/* Balanced pending shift info */
+.attendant-page .pending-shift-info{gap:9px;padding:12px 15px;border-radius:16px}
+.attendant-page .pending-info-block{gap:11px}
+.attendant-page .pending-info-icon{width:34px;height:34px;flex-basis:34px;border-radius:12px;font-size:18px}
+.attendant-page .pending-label{margin-bottom:4px;font-size:13px}
+.attendant-page .pending-info-block strong{font-size:13px}
+.attendant-page .pending-tank-opening{gap:11px;margin-top:1px;padding:9px 12px;border-radius:14px}
+.attendant-page .pending-tank-opening strong{font-size:21px}
+.attendant-page .pending-tank-opening strong small{font-size:15px}
+@media(max-width:600px){.attendant-page .pending-shift-info{gap:10px;padding:14px;border-radius:16px}.attendant-page .pending-info-icon{width:34px;height:34px;flex-basis:34px;font-size:17px}.attendant-page .pending-label{font-size:13px}.attendant-page .pending-info-block strong{font-size:13px}.attendant-page .pending-tank-opening{padding:9px 12px}.attendant-page .pending-tank-opening strong{font-size:21px}.attendant-page .pending-tank-opening strong small{font-size:15px}}
