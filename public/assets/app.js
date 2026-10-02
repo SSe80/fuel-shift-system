@@ -868,7 +868,9 @@ async function openDashboardHandover(shiftId){
     window.handoverDraft={
       shift_id:selected.id,
       nozzle_id:selected.nozzle_id,
+      nozzle_code:nozzle?.nozzle_code||selected.nozzle_id,
       tank_id:nozzle?.tank_id||'',
+      tank_code:tank?.tank_code||nozzle?.tank_id||'Not connected',
       to_employee_id:'',
       closing_reading:null,
       closing_liters:null
@@ -884,6 +886,10 @@ async function openDashboardHandover(shiftId){
     const tankEl=document.getElementById('handover-tank');
     if(dispenser)dispenser.textContent=nozzle?.nozzle_code||selected.nozzle_id||'—';
     if(tankEl)tankEl.textContent=tank?.tank_code||nozzle?.tank_id||'Not connected';
+    const readingLabel=document.getElementById('handover-closing-reading-label');
+    const litersLabel=document.getElementById('handover-closing-liters-label');
+    if(readingLabel)readingLabel.textContent='Closing meter reading — '+(nozzle?.nozzle_code||selected.nozzle_id);
+    if(litersLabel)litersLabel.textContent='Tank closing liter — '+(tank?.tank_code||nozzle?.tank_id||'Not connected');
 
     const reading=document.getElementById('handover-closing-reading');
     const closingLiters=document.getElementById('handover-closing-liters');
@@ -937,8 +943,8 @@ function continueHandover(event){
   const employeeSelect=document.getElementById('handover-to-employee');
   const employeeName=employeeSelect?.selectedOptions?.[0]?.textContent||to;
   document.getElementById('handover-review-details').innerHTML=
-    '<div class="handover-review-item"><span>Dispenser</span><strong>'+h(window.handoverDraft?.nozzle_id||'—')+'</strong></div>'+
-    '<div class="handover-review-item"><span>Tank</span><strong>'+h(window.handoverDraft?.tank_id||'Not connected')+'</strong></div>'+
+    '<div class="handover-review-item"><span>Dispenser</span><strong>'+h(window.handoverDraft?.nozzle_code||window.handoverDraft?.nozzle_id||'—')+'</strong></div>'+
+    '<div class="handover-review-item"><span>Tank</span><strong>'+h(window.handoverDraft?.tank_code||window.handoverDraft?.tank_id||'Not connected')+'</strong></div>'+
     '<div class="handover-review-item"><span>Receiving attendant</span><strong>'+h(employeeName)+'</strong></div>'+
     '<div class="handover-review-item"><span>Closing reading meter</span><strong>'+reading.toLocaleString(undefined,{maximumFractionDigits:2})+'</strong></div>'+
     '<div class="handover-review-item"><span>Tank closing liter</span><strong>'+closingLiters.toLocaleString(undefined,{maximumFractionDigits:2})+' L</strong></div>';
