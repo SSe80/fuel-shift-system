@@ -134,11 +134,7 @@ async function userDashboard(){
         '<p>Opening meter: <b>'+liters(s.opening_reading)+'</b></p>'+
         '<div class="row"><a class="btn primary" href="sales.html?shift_id='+encodeURIComponent(s.id)+'">Record Sale</a>'+
         '<a class="btn" href="handover.html?shift_id='+encodeURIComponent(s.id)+'">Handover</a></div>'+
-        '<form class="form" onsubmit="closeShift(event,\''+s.id+'\')">'+
-        '<input id="close-reading-'+s.id+'" type="number" min="0" step="0.01" placeholder="Closing meter reading" required>'+
-        '<input id="close-mm-'+s.id+'" type="number" min="0" step="0.01" placeholder="Closing dip (mm)" required>'+
-        '<input id="close-liters-'+s.id+'" type="number" min="0" step="0.01" placeholder="Closing tank liters" required>'+
-        '<button class="primary">Close Shift</button></form></div>';
+        '<button class="primary" type="button" onclick="closeShift(event,\''+s.id+'\')">Close Shift</button></div>';
     }).join('');
 
     box.innerHTML=pendingShiftHtml+pendingHandoverHtml+activeHtml;
@@ -204,13 +200,9 @@ async function confirmHandoverFromDashboard(event,id){
 }
 
 async function closeShift(event,id){
-  event.preventDefault();
+  if(event?.preventDefault)event.preventDefault();
   try{
-    await api('/api/shifts/'+id+'/close',{method:'POST',body:JSON.stringify({
-      closing_reading:Number(document.getElementById('close-reading-'+id).value),
-      closing_mm:Number(document.getElementById('close-mm-'+id).value),
-      closing_liters:Number(document.getElementById('close-liters-'+id).value)
-    })});
+    await api('/api/shifts/'+id+'/close',{method:'POST',body:'{}'});
     toast('Shift closed');
     await userDashboard();
   }catch(e){toast(e.message);}
