@@ -963,10 +963,12 @@ def create_handover():
     data=request.get_json(silent=True) or {}
     try: reading,mm,liters=float(data.get("closing_reading",0)),float(data.get("closing_mm",0)),float(data.get("closing_liters",0))
     except (TypeError,ValueError):return jsonify({"error":"Invalid closing readings"}),400
+    closing_nozzle_readings=data.get("closing_nozzle_readings",[])
+    if not isinstance(closing_nozzle_readings,list) or not closing_nozzle_readings:return jsonify({"error":"Closing reading is required for every dispenser nozzle"}),400
     to_id=str(data.get("to_employee_id","")).strip()
     shift_id=str(data.get("shift_id","")).strip()
     if not shift_id or not to_id:return jsonify({"error":"Shift and receiving user are required"}),400
-    status,result=rpc("submit_shift_handover",{"p_shift_id":shift_id,"p_from_employee_id":eid,"p_to_employee_id":to_id,"p_closing_reading":reading,"p_closing_mm":mm,"p_closing_liters":liters})
+    status,result=rpc("submit_shift_handover",{"p_shift_id":shift_id,"p_from_employee_id":eid,"p_to_employee_id":to_id,"p_closing_reading":reading,"p_closing_mm":mm,"p_closing_liters":liters,"p_closing_nozzle_readings":closing_nozzle_readings})
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
