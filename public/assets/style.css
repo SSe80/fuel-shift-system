@@ -552,21 +552,22 @@
 .attendant-page .active-shift-card .active-shift-info{margin-bottom:0}
 .attendant-page .active-shift-card .active-opening-reading{background:linear-gradient(135deg,#fff4f5,#ffeaec)}
 .attendant-page .active-shift-card .active-reading-section{margin-top:12px}
-.attendant-page .active-shift-card .active-shift-actions{margin-top:14px;display:flex;gap:9px}
-.attendant-page .active-shift-card .active-shift-actions .btn.primary{
+.attendant-page .active-shift-card .active-shift-actions{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.attendant-page .active-shift-card .active-handover-btn{
   background:linear-gradient(135deg,#dc2638,#c91f32)!important;
   border:1px solid #b91c2d!important;color:#fff!important;
   box-shadow:0 4px 12px rgba(194,35,53,.16)!important;
 }
-.attendant-page .active-shift-card .active-shift-actions .btn:not(.primary){
-  background:#fff5f6!important;border:1px solid #fecdd3!important;color:#b42333!important;
+.attendant-page .active-shift-card .active-handover-btn:hover{
+  background:linear-gradient(135deg,#c91f32,#b91c2d)!important;
+  border-color:#a71929!important;
 }
 .attendant-page .active-shift-card .active-close-shift{
-  width:100%;margin-top:9px;background:#fff!important;border:1px solid #f3a0aa!important;color:#b42333!important;box-shadow:none!important;
+  width:100%;margin-top:0;background:#fff!important;border:1px solid #f3a0aa!important;color:#b42333!important;box-shadow:none!important;
 }
 .attendant-page .active-shift-card .active-close-shift:hover{background:#fff0f1!important;border-color:#dc8994!important}
 @media(max-width:600px){
-  .attendant-page .active-shift-card .active-shift-actions{display:grid;grid-template-columns:1fr 1fr}
+  .attendant-page .active-shift-card .active-shift-actions{grid-template-columns:1fr 1fr}
   .attendant-page .active-shift-card .active-shift-actions .btn{width:100%}
 }
 
