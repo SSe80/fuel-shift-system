@@ -305,40 +305,46 @@ async function loadSettingsData(){
     const pending=pendingByDispenser[n.id];
     const shift=pending||shifts.find(s=>s.nozzle_id===n.id&&s.status==='active');
     const attendant=shift?employees.find(e=>e.id===shift.employee_id):null;
+    const productCode=codeForProduct(n.product);
+    const nozzleCount=Number(n.nozzle_count||1);
+    const nozzleLabel=nozzleCount===1?'1 nozzle':nozzleCount+' nozzles';
+    const nozzleIds=(n.nozzle_ids||[]).map(id=>'<span class="dispenser-nozzle-tag">'+h(id)+'</span>').join('');
     if(pending){
       const readings=Array.isArray(pending.activation_nozzles)?pending.activation_nozzles:[];
-      const readingText=readings.length?readings.map(r=>h(r.nozzle_id)+' = '+liters(r.opening_reading)).join(' • '):'Not recorded';
-      return `<div class="card">
-        <div class="top">
-          <div>
-            <b>Pending Shift Assignment</b><br>
-            <span class="badge">Awaiting attendant confirmation</span>
-          </div>
-          <button type="button" onclick="cancelAdminPendingShift('${pending.id}')">Cancel Assignment</button>
-        </div>
-        <p><b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b></p>
-        <p>Tank: <b>${h(tank?.tank_code||n.tank_id||'Not connected')}</b> • Tank opening: <b>${liters(pending.opening_tank_liters)} L</b></p>
-        <p>Assigned attendant: <b>${h(names[pending.employee_id]||pending.employee_id)}</b></p>
-        <p>Selected nozzle readings: <b>${readingText}</b></p>
-        <p class="muted">Dispenser status: <b>Inactive</b> — it will activate only after the attendant confirms these readings.</p>
-      </div>`;
+      const readingText=readings.length
+        ?readings.map(r=>'<div class="dispenser-reading-row"><span>'+h(r.nozzle_id)+'</span><b>'+liters(r.opening_reading)+'</b></div>').join('')
+        :'<span class="muted">No opening readings recorded</span>';
+      return '<div class="card dispenser-settings-card dispenser-pending-card">'+
+        '<div class="dispenser-card-head"><div><span class="section-kicker">SHIFT ASSIGNMENT</span><h3>Pending shift</h3><span class="badge">Awaiting attendant confirmation</span></div>'+
+        '<button type="button" class="dispenser-danger-action" onclick="cancelAdminPendingShift(\''+pending.id+'\')">Cancel assignment</button></div>'+
+        '<div class="dispenser-identity"><div class="dispenser-name">'+h(n.nozzle_code)+'</div><div class="dispenser-product">'+h(productCode)+' <span>•</span> '+h(nozzleLabel)+'</div></div>'+
+        '<div class="dispenser-info-grid">'+
+          '<div><span>Connected tank</span><b>'+h(tank?.tank_code||n.tank_id||'Not connected')+'</b></div>'+
+          '<div><span>Tank opening</span><b>'+liters(pending.opening_tank_liters)+' L</b></div>'+
+          '<div><span>Assigned attendant</span><b>'+h(names[pending.employee_id]||pending.employee_id)+'</b></div>'+
+          '<div><span>Dispenser status</span><b>Inactive</b></div>'+
+        '</div>'+
+        '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle opening readings</span>'+readingText+'</div>'+
+        '<p class="dispenser-note">The dispenser will remain inactive until the assigned attendant confirms the readings with their PIN.</p>'+
+      '</div>';
     }
-    return `<div class="card">
-      <div class="top">
-        <div>
-          <b>${h(n.nozzle_code)} — ${h(codeForProduct(n.product))}</b><br>
-          <span class="muted">Tank: ${h(tank?.tank_code||n.tank_id||'Not connected')} • ${h(n.nozzle_count||1)} nozzle(s) • ${n.active?'Active':'Inactive'} • Dispenser tank opening: <b>${n.opening_tank_liters==null?'Not recorded':liters(n.opening_tank_liters)+' L'}</b></span>
-          <div class="muted" style="margin-top:6px"><b>Nozzle IDs:</b> ${(n.nozzle_ids||[]).map(id=>`<span style="display:inline-block;margin:2px 4px 2px 0">${h(id)}</span>`).join('')}</div>
-        </div>
-        <div class="row">
-          <button type="button" onclick="openDispenserEdit('${n.id}')">Edit</button>
-          <button type="button" onclick="toggleNozzle('${n.id}',${n.active})">${n.active?'Deactivate':'⚠️ Activate'}</button>
-          <button type="button" onclick="removeDispenser('${n.id}')">Remove</button>
-        </div>
-      </div>
-      ${n.active&&attendant?'<p class="muted">Active shift: <b>'+h(attendant.name||'Attendant')+'</b></p>':''}
-    </div>`;
-  }).join(''):'<p class="muted">No dispensers.</p>';
+    return '<div class="card dispenser-settings-card">'+
+      '<div class="dispenser-card-head"><div><span class="section-kicker">FUEL DISPENSER</span><h3>'+h(n.nozzle_code)+'</h3><div class="dispenser-product">'+h(productCode)+' <span>•</span> '+h(nozzleLabel)+'</div></div>'+
+      '<div class="dispenser-status '+(n.active?'is-active':'is-inactive')+'"><span></span>'+(n.active?'Active':'Inactive')+'</div></div>'+
+      '<div class="dispenser-info-grid">'+
+        '<div><span>Connected tank</span><b>'+h(tank?.tank_code||n.tank_id||'Not connected')+'</b></div>'+
+        '<div><span>Tank opening</span><b>'+(n.opening_tank_liters==null?'Not recorded':liters(n.opening_tank_liters)+' L')+'</b></div>'+
+        '<div><span>Nozzles</span><b>'+h(nozzleLabel)+'</b></div>'+
+        '<div><span>Current shift</span><b>'+(attendant?h(attendant.name):'No active shift')+'</b></div>'+
+      '</div>'+
+      '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle identifiers</span><div class="dispenser-nozzle-list">'+(nozzleIds||'<span class="muted">No nozzle identifiers</span>')+'</div></div>'+
+      '<div class="dispenser-card-actions">'+
+        '<button type="button" onclick="openDispenserEdit(\''+n.id+'\')">Edit dispenser</button>'+
+        '<button type="button" class="primary" onclick="toggleNozzle(\''+n.id+'\','+n.active+')">'+(n.active?'Deactivate':'Activate dispenser')+'</button>'+
+        '<button type="button" class="dispenser-remove-action" onclick="removeDispenser(\''+n.id+'\')">Remove</button>'+
+      '</div>'+
+    '</div>';
+  }).join(''):'<p class="muted">No dispensers configured yet.</p>';
 window.dispenserRecords=dispensers;
   const tankProductSelect=document.getElementById('tank-product');
   if(tankProductSelect){
