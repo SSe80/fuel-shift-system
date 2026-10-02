@@ -741,3 +741,19 @@
 .attendant-page .handover-nozzle-input{display:block;margin:0 0 8px;padding:10px 12px;border:1px solid #fecdd3;border-radius:12px;background:#fff5f6}
 .attendant-page .handover-nozzle-input span{display:block;margin-bottom:6px;font-size:12px;font-weight:600;color:#8b6268}
 .attendant-page .handover-nozzle-input input{width:100%;box-sizing:border-box}
+
+/* Clean handover review card */
+.attendant-page .handover-review-details{margin:14px 0 4px}
+.attendant-page .handover-review-summary{border:1px solid #f3c2c8;border-radius:14px;background:#fff;overflow:hidden}
+.attendant-page .handover-review-main{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 14px;border-bottom:1px solid #f3dfe2}
+.attendant-page .handover-review-main span{color:#8b6268;font-size:12px;font-weight:650}
+.attendant-page .handover-review-main strong{color:#7f1721;font-size:14px;text-align:right}
+.attendant-page .handover-review-section{padding:12px 14px;border-bottom:1px solid #f3dfe2;background:#fffafa}
+.attendant-page .handover-review-section-title{margin-bottom:7px;color:#7f1721;font-size:12px;font-weight:800}
+.attendant-page .handover-review-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 0;border-top:1px solid #f6e6e8}
+.attendant-page .handover-review-row:first-of-type{border-top:0}
+.attendant-page .handover-review-row span{color:#8b6268;font-size:12px}
+.attendant-page .handover-review-row span small{margin-left:4px;color:#a98489;font-size:10px}
+.attendant-page .handover-review-row strong{color:#7f1721;font-size:14px;font-variant-numeric:tabular-nums}
+.attendant-page .handover-review-main:last-child{border-bottom:0}
+@media(max-width:600px){.attendant-page .handover-review-main{padding:12px}.attendant-page .handover-review-section{padding:11px 12px}}
