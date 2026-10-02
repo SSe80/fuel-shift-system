@@ -1,21 +1,50 @@
-function showSettingsConfirmation(title,details,action){
+function showSettingsConfirmation(title,details,action,successTitle,successDetails){
   const modal=document.getElementById('settings-confirm-modal');
   if(!modal){return action();}
   window.pendingSettingsAction=action;
-  document.getElementById('settings-confirm-title').textContent=title||'Confirm Change';
-  document.getElementById('settings-confirm-details').innerHTML=details||'Review this change before confirming.';
+  window.pendingSettingsSuccess={
+    title:successTitle||'Action completed successfully',
+    details:successDetails||details||''
+  };
+  const titleEl=document.getElementById('settings-confirm-title');
+  const detailsEl=document.getElementById('settings-confirm-details');
+  const confirmActions=document.getElementById('settings-confirm-actions');
+  const successActions=document.getElementById('settings-success-actions');
+  if(titleEl)titleEl.textContent=title||'Confirm Change';
+  if(detailsEl)detailsEl.innerHTML=details||'Review this change before confirming.';
+  if(confirmActions)confirmActions.style.display='flex';
+  if(successActions)successActions.style.display='none';
   modal.classList.add('open');modal.setAttribute('aria-hidden','false');
 }
 function closeSettingsConfirmation(){
   const modal=document.getElementById('settings-confirm-modal');
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
   window.pendingSettingsAction=null;
+  window.pendingSettingsSuccess=null;
+}
+function showSettingsSuccess(title,details){
+  const modal=document.getElementById('settings-confirm-modal');
+  if(!modal)return;
+  const titleEl=document.getElementById('settings-confirm-title');
+  const detailsEl=document.getElementById('settings-confirm-details');
+  const confirmActions=document.getElementById('settings-confirm-actions');
+  const successActions=document.getElementById('settings-success-actions');
+  if(titleEl)titleEl.textContent='✓ '+(title||'Action completed successfully');
+  if(detailsEl)detailsEl.innerHTML=details||'The change was applied successfully.';
+  if(confirmActions)confirmActions.style.display='none';
+  if(successActions)successActions.style.display='flex';
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
 }
 async function confirmSettingsAction(){
   const action=window.pendingSettingsAction;
+  const success=window.pendingSettingsSuccess||{};
   if(!action)return;
-  closeSettingsConfirmation();
-  try{await action();}catch(e){toast(e.message);}
+  window.pendingSettingsAction=null;
+  window.pendingSettingsSuccess=null;
+  try{
+    await action();
+    showSettingsSuccess(success.title,success.details);
+  }catch(e){toast(e.message);}
 }
 async function api(path, options={}) {
   const response = await fetch(path, {
@@ -246,10 +275,8 @@ async function adminSettings(){
   }
 }
 async function _cancelAdminPendingShift(id){
-  if(!confirm('Cancel this pending shift assignment? The dispenser will remain inactive.'))return;
   try{
     await api('/api/shifts/'+id+'/cancel',{method:'POST',body:'{}'});
-    toast('Pending shift assignment cancelled');
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
@@ -401,7 +428,6 @@ async function _saveProductEdit(event){
       selling_price:priceFromParts('edit-product-price-major','edit-product-price-cents')
     })});
     closeProductEdit();
-    toast('Product updated');
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
@@ -416,12 +442,11 @@ async function _createProduct(event){
     })});
     closeAddModal('add-product-modal');
     document.getElementById('product-color').value='#1264d8';
-    toast('Product created');
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
 function toggleProduct(id,active){ if(active){ deactivateProduct(id); } else { openProductActivation(id); } }
-async function _deactivateProduct(id){try{await api('/api/products/'+id,{method:'PATCH',body:JSON.stringify({active:false})});toast('Product deactivated');await loadSettingsData();}catch(e){toast(e.message);}}
+async function _deactivateProduct(id){try{await api('/api/products/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){toast(e.message);}}
 function openProductActivation(id){
   const p=(window.productRecords||[]).find(x=>x.id===id); if(!p)return;
   document.getElementById('activation-target-id').value=id;
@@ -460,13 +485,12 @@ async function _saveUserEdit(event){
   try{
     await api('/api/users/'+id,{method:'PATCH',body:JSON.stringify(body)});
     closeUserEdit();
-    toast('User updated');
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
-async function _createUser(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('attendant-name').value.trim(),phone:document.getElementById('attendant-phone').value.trim(),pin:document.getElementById('attendant-pin').value,role:document.getElementById('attendant-role').value,active:true})});e.target.reset();closeAddModal('add-user-modal');toast('User created');await loadSettingsData();}catch(x){toast(x.message);}}
+async function _createUser(e){e.preventDefault();try{await api('/api/employees',{method:'POST',body:JSON.stringify({name:document.getElementById('attendant-name').value.trim(),phone:document.getElementById('attendant-phone').value.trim(),pin:document.getElementById('attendant-pin').value,role:document.getElementById('attendant-role').value,active:true})});e.target.reset();closeAddModal('add-user-modal');await loadSettingsData();}catch(x){toast(x.message);}}
 function toggleUser(id,active){ if(active){ deactivateUser(id); } else { openUserActivation(id); } }
-async function _deactivateUser(id){try{await api('/api/users/'+id,{method:'PATCH',body:JSON.stringify({active:false})});toast('User deactivated');await loadSettingsData();}catch(e){toast(e.message);}}
+async function _deactivateUser(id){try{await api('/api/users/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){toast(e.message);}}
 function openUserActivation(id){
   const e=(window.employeeRecords||[]).find(x=>x.id===id); if(!e)return;
   document.getElementById('activation-target-id').value=id;
@@ -509,12 +533,11 @@ async function _saveTankEdit(event){
       capacity_liters:Number(document.getElementById('edit-tank-capacity').value)
     })});
     closeTankEdit();
-    toast('Tank updated');
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
 function toggleTank(id,active){ if(active){ deactivateTank(id); } else { openTankActivation(id); } }
-async function _deactivateTank(id){try{await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({active:false})});toast('Tank deactivated');await loadSettingsData();}catch(e){toast(e.message);}}
+async function _deactivateTank(id){try{await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){toast(e.message);}}
 function openTankActivation(id){
   const t=(window.tankRecords||[]).find(x=>x.id===id); if(!t)return;
   const productByName=Object.fromEntries((window.productRecords||[]).map(p=>[String(p.name).toLowerCase(),p]));
@@ -529,10 +552,8 @@ function openTankActivation(id){
   openGenericActivationModal();
 }
 async function _removeTank(id){
-  if(!confirm('Remove this tank? This cannot be undone.'))return;
   try{
     await api('/api/tanks/'+id,{method:'DELETE'});
-    toast('Tank removed');
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
@@ -546,7 +567,6 @@ async function _createTank(e){
     })});
     e.target.reset();
     closeAddModal('add-tank-modal');
-    toast('Tank created');
     await loadSettingsData();
   }catch(x){toast(x.message);}
 }
@@ -592,7 +612,7 @@ async function _saveDispenserEdit(event){
       tank_order:Number(document.getElementById('edit-dispenser-order').value),
       nozzle_count:Number(document.getElementById('edit-dispenser-nozzle-count').value)
     })});
-    closeDispenserEdit();toast('Dispenser updated');await loadSettingsData();
+    closeDispenserEdit();await loadSettingsData();
   }catch(e){toast(e.message);}
 }
 function openGenericActivationModal(){const m=document.getElementById('generic-activation-modal');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');}
@@ -615,7 +635,7 @@ async function _confirmGenericActivation(){
       body.opening_stock_liters=stock;
     }
     await api(path,{method:'PATCH',body:JSON.stringify(body)});
-    closeGenericActivation();toast((type==='user'?'User':type==='product'?'Product':'Tank')+' activated');await loadSettingsData();
+    closeGenericActivation();await loadSettingsData();
   }catch(e){toast(e.message);}
 }
 let pendingDispenserActivationId=null;
@@ -709,19 +729,17 @@ async function _confirmDispenserActivation(){
       activation_nozzles:selected.map(x=>({nozzle_id:x.nozzle_id,opening_reading:x.activation_number}))
     })});
     closeDispenserActivation();
-    toast('Shift assignment sent for attendant confirmation');
     await loadSettingsData();
   }catch(e){toast(e.message);}
 }
 
 async function _toggleNozzle(id,active){
   if(!active){openDispenserActivation(id);return;}
-  try{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:false})});toast('Dispenser deactivated');await loadSettingsData();}
+  try{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}
   catch(e){toast(e.message);}
 }
 async function _removeDispenser(id){
-  if(!confirm('Remove this dispenser? This cannot be undone.'))return;
-  try{await api('/api/nozzles/'+id,{method:'DELETE'});toast('Dispenser removed');await loadSettingsData();}
+  try{await api('/api/nozzles/'+id,{method:'DELETE'});await loadSettingsData();}
   catch(e){toast(e.message);}
 }
 async function _createDispenser(e){
@@ -732,7 +750,7 @@ async function _createDispenser(e){
       tank_id:document.getElementById('dispenser-tank').value,
       nozzle_count:Number(document.getElementById('dispenser-nozzle-count').value)
     })});
-    e.target.reset();closeAddModal('add-dispenser-modal');toast('Dispenser created');await loadSettingsData();
+    e.target.reset();closeAddModal('add-dispenser-modal');await loadSettingsData();
   }catch(x){toast(x.message);}
 }
 async function createShift(e){e.preventDefault();try{await api('/api/shifts',{method:'POST',body:JSON.stringify({employee_id:document.getElementById('shift-employee').value,nozzle_id:document.getElementById('shift-nozzle').value})});e.target.reset();toast('Shift assigned');await loadSettingsData();}catch(x){toast(x.message);}}
@@ -838,102 +856,173 @@ async function saveDailyReport(){try{await api('/api/reports/daily',{method:'POS
 function toast(msg){const e=document.getElementById('toast');if(e){e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',3000);}else alert(msg);}
 
 // Admin Settings action review wrappers
+const settingsRecord=(records,id)=>((records||[]).find(x=>String(x.id)===String(id))||{});
+const settingsDiff=(label,oldValue,newValue,unit='')=>{
+  const same=String(oldValue??'')===String(newValue??'');
+  return '<p style="margin:7px 0"><b>'+h(label)+':</b> '+h(oldValue??'—')+(same?'':' → <b>'+h(newValue??'—')+'</b>')+(unit?' '+h(unit):'')+'</p>';
+};
+const settingsStatus=(label)=>'<p style="margin:7px 0"><b>Status:</b> '+h(label)+'</p>';
+
 async function saveProductEdit(event){
   event.preventDefault();
   const id=document.getElementById('edit-product-id').value;
-  const body={name:document.getElementById('edit-product-name').value.trim(),code_name:document.getElementById('edit-product-code').value.trim(),color:document.getElementById('edit-product-color').value,selling_price:priceFromParts('edit-product-price-major','edit-product-price-cents')};
-  showSettingsConfirmation('Confirm Product Edit','<p>Review the product changes before saving.</p><p>Name: <b>'+h(body.name)+'</b></p><p>Code: <b>'+h(body.code_name)+'</b></p><p>Selling price: <b>'+money(body.selling_price||0)+'</b></p>',()=>_saveProductEdit(event));
+  const old=settingsRecord(window.productRecords,id);
+  const name=document.getElementById('edit-product-name').value.trim();
+  const code=document.getElementById('edit-product-code').value.trim();
+  const price=priceFromParts('edit-product-price-major','edit-product-price-cents');
+  const details='<p><b>Product:</b> '+h(old.code_name||old.name||id)+'</p>'+
+    settingsDiff('Name',old.name,name)+
+    settingsDiff('Code',old.code_name,code)+
+    settingsDiff('Selling price',money(old.selling_price),money(price));
+  showSettingsConfirmation('Review Product Update',details,()=>_saveProductEdit(event),
+    'Product updated successfully','<p><b>'+h(code||name)+'</b> was updated successfully.</p>'+details);
 }
 async function createProduct(event){
   event.preventDefault();
-  const body={name:document.getElementById('product-name').value.trim(),code_name:document.getElementById('product-code').value.trim(),active:false};
-  showSettingsConfirmation('Confirm Add Product','<p>Name: <b>'+h(body.name)+'</b></p><p>Code: <b>'+h(body.code_name)+'</b></p><p>Status: <b>Inactive</b></p>',()=>_createProduct(event));
+  const name=document.getElementById('product-name').value.trim(),code=document.getElementById('product-code').value.trim();
+  const details='<p><b>Product:</b> '+h(name)+'</p><p><b>Code:</b> '+h(code)+'</p>'+settingsStatus('Inactive — ready for activation');
+  showSettingsConfirmation('Review New Product',details,()=>_createProduct(event),
+    'Product created successfully','<p><b>'+h(code)+'</b> was created successfully.</p>'+details);
 }
 async function deactivateProduct(id){
-  const p=(window.productRecords||[]).find(x=>x.id===id);
-  showSettingsConfirmation('Confirm Product Deactivation','<p>Product: <b>'+h(p?.code_name||p?.name||id)+'</b></p><p>Status: <b>Active → Inactive</b></p>',()=>_deactivateProduct(id));
+  const p=settingsRecord(window.productRecords,id);
+  const details='<p><b>Product:</b> '+h(p.code_name||p.name||id)+'</p>'+settingsDiff('Status','Active','Inactive');
+  showSettingsConfirmation('Review Product Deactivation',details,()=>_deactivateProduct(id),
+    'Product deactivated successfully','<p>The product is now inactive.</p>'+details);
 }
 async function saveUserEdit(event){
   event.preventDefault();
-  const id=document.getElementById('edit-employee-id').value;
+  const id=document.getElementById('edit-employee-id').value,old=settingsRecord(window.employeeRecords,id);
   const name=document.getElementById('edit-attendant-name').value.trim();
   const phone=document.getElementById('edit-attendant-phone').value.trim();
   const role=document.getElementById('edit-attendant-role').value;
-  showSettingsConfirmation('Confirm User Edit','<p>Name: <b>'+h(name)+'</b></p><p>Phone: <b>'+h(phone)+'</b></p><p>Role: <b>'+h(role)+'</b></p>',()=>_saveUserEdit(event));
+  const pinChanged=!!document.getElementById('edit-attendant-pin').value.trim();
+  const details='<p><b>User:</b> '+h(old.name||id)+'</p>'+
+    settingsDiff('Name',old.name,name)+settingsDiff('Phone',old.phone,phone)+settingsDiff('Role',old.role,role)+
+    '<p style="margin:7px 0"><b>PIN:</b> '+(pinChanged?'Will be changed':'No change')+'</p>';
+  showSettingsConfirmation('Review User Update',details,()=>_saveUserEdit(event),
+    'User updated successfully','<p>User changes were saved.</p>'+details);
 }
 async function createUser(event){
   event.preventDefault();
-  const name=document.getElementById('attendant-name').value.trim();
-  const phone=document.getElementById('attendant-phone').value.trim();
-  const role=document.getElementById('attendant-role').value;
-  showSettingsConfirmation('Confirm Add User','<p>Name: <b>'+h(name)+'</b></p><p>Phone: <b>'+h(phone)+'</b></p><p>Role: <b>'+h(role)+'</b></p><p>Status: <b>Active</b></p>',()=>_createUser(event));
+  const name=document.getElementById('attendant-name').value.trim(),phone=document.getElementById('attendant-phone').value.trim(),role=document.getElementById('attendant-role').value;
+  const details='<p><b>Name:</b> '+h(name)+'</p><p><b>Phone:</b> '+h(phone)+'</p><p><b>Role:</b> '+h(role)+'</p>'+settingsStatus('Active');
+  showSettingsConfirmation('Review New User',details,()=>_createUser(event),
+    'User created successfully','<p><b>'+h(name)+'</b> was created successfully.</p>'+details);
 }
 async function deactivateUser(id){
-  const e=(window.employeeRecords||[]).find(x=>x.id===id);
-  showSettingsConfirmation('Confirm User Deactivation','<p>User: <b>'+h(e?.name||id)+'</b></p><p>Status: <b>Active → Inactive</b></p>',()=>_deactivateUser(id));
+  const e=settingsRecord(window.employeeRecords,id);
+  const details='<p><b>User:</b> '+h(e.name||id)+'</p>'+settingsDiff('Status','Active','Inactive');
+  showSettingsConfirmation('Review User Deactivation',details,()=>_deactivateUser(id),
+    'User deactivated successfully','<p>The user is now inactive.</p>'+details);
 }
 async function saveTankEdit(event){
   event.preventDefault();
-  const id=document.getElementById('edit-tank-id').value;
-  const cap=document.getElementById('edit-tank-capacity').value;
-  showSettingsConfirmation('Confirm Tank Edit','<p>Tank changes:</p><p>Capacity: <b>'+h(cap)+' L</b></p>',()=>_saveTankEdit(event));
+  const id=document.getElementById('edit-tank-id').value,old=settingsRecord(window.tankRecords,id);
+  const order=document.getElementById('edit-tank-order').value,cap=document.getElementById('edit-tank-capacity').value;
+  const oldOrder=(String(old.tank_code||'').match(/•TANK (\d+)$/)||[])[1]||'—';
+  const details='<p><b>Tank:</b> '+h(old.tank_code||id)+'</p>'+
+    settingsDiff('Tank order',oldOrder,order)+settingsDiff('Capacity',liters(old.capacity_liters),liters(cap),'L');
+  showSettingsConfirmation('Review Tank Update',details,()=>_saveTankEdit(event),
+    'Tank updated successfully','<p><b>'+h(old.tank_code||id)+'</b> was updated successfully.</p>'+details);
 }
 async function deactivateTank(id){
-  const t=(window.tankRecords||[]).find(x=>x.id===id);
-  showSettingsConfirmation('Confirm Tank Deactivation','<p>Tank: <b>'+h(t?.tank_code||id)+'</b></p><p>Status: <b>Active → Inactive</b></p>',()=>_deactivateTank(id));
+  const t=settingsRecord(window.tankRecords,id);
+  const details='<p><b>Tank:</b> '+h(t.tank_code||id)+'</p>'+settingsDiff('Status','Active','Inactive');
+  showSettingsConfirmation('Review Tank Deactivation',details,()=>_deactivateTank(id),
+    'Tank deactivated successfully','<p>The tank is now inactive.</p>'+details);
 }
 async function removeTank(id){
-  const t=(window.tankRecords||[]).find(x=>x.id===id);
-  showSettingsConfirmation('Confirm Tank Removal','<p>Tank: <b>'+h(t?.tank_code||id)+'</b></p><p>This tank will be <b>permanently removed</b>.</p>',()=>_removeTank(id));
+  const t=settingsRecord(window.tankRecords,id);
+  const details='<p><b>Tank:</b> '+h(t.tank_code||id)+'</p>'+settingsStatus('Will be permanently removed');
+  showSettingsConfirmation('Review Tank Removal',details,()=>_removeTank(id),
+    'Tank removed successfully','<p>The tank was removed successfully.</p>'+details);
 }
 async function createTank(event){
   event.preventDefault();
-  const product=document.getElementById('tank-product').value;
-  const cap=document.getElementById('tank-capacity').value;
-  showSettingsConfirmation('Confirm Add Fuel Tank','<p>Product: <b>'+h(product)+'</b></p><p>Capacity: <b>'+h(cap)+' L</b></p><p>Status: <b>Inactive</b></p>',()=>_createTank(event));
+  const product=document.getElementById('tank-product').value,cap=document.getElementById('tank-capacity').value;
+  const productRecord=(window.productRecords||[]).find(p=>String(p.name)===String(product));
+  const details='<p><b>Product:</b> '+h(productRecord?.code_name||product)+'</p><p><b>Capacity:</b> '+h(liters(cap))+' L</p>'+settingsStatus('Inactive — ready for activation');
+  showSettingsConfirmation('Review New Fuel Tank',details,()=>_createTank(event),
+    'Fuel tank created successfully','<p>The new fuel tank was created successfully.</p>'+details);
 }
 async function saveDispenserEdit(event){
   event.preventDefault();
-  const product=document.getElementById('edit-dispenser-product').value;
-  const tank=document.getElementById('edit-dispenser-tank').value;
-  const count=document.getElementById('edit-dispenser-nozzle-count').value;
-  showSettingsConfirmation('Confirm Dispenser Edit','<p>Product: <b>'+h(product)+'</b></p><p>Tank: <b>'+h(tank)+'</b></p><p>Nozzles: <b>'+h(count)+'</b></p>',()=>_saveDispenserEdit(event));
+  const id=document.getElementById('edit-dispenser-id').value,old=settingsRecord(window.dispenserRecords,id);
+  const product=document.getElementById('edit-dispenser-product').value,tankId=document.getElementById('edit-dispenser-tank').value,count=document.getElementById('edit-dispenser-nozzle-count').value;
+  const tank=(window.tankRecords||[]).find(t=>String(t.id)===String(tankId));
+  const oldTank=(window.tankRecords||[]).find(t=>String(t.id)===String(old.tank_id));
+  const oldOrder=(String(old.nozzle_code||'').match(/•DISPENSER (\d+)$/)||[])[1]||'—';
+  const newOrder=document.getElementById('edit-dispenser-order').value;
+  const details='<p><b>Dispenser:</b> '+h(old.nozzle_code||id)+'</p>'+
+    settingsDiff('Product',old.product,product)+
+    settingsDiff('Tank',oldTank?.tank_code||old.tank_id,tank?.tank_code||tankId)+
+    settingsDiff('Dispenser order',oldOrder,newOrder)+
+    settingsDiff('Nozzles',old.nozzle_count,count);
+  showSettingsConfirmation('Review Dispenser Update',details,()=>_saveDispenserEdit(event),
+    'Dispenser updated successfully','<p><b>'+h(old.nozzle_code||id)+'</b> was updated successfully.</p>'+details);
 }
 async function _confirmGenericActivationReview(){
-  const id=document.getElementById('activation-target-id')?.value||'';
-  const type=document.getElementById('activation-target-type')?.value||'';
-  const label=type==='user'?'User':type==='product'?'Product':'Tank';
+  const id=document.getElementById('activation-target-id')?.value||'',type=document.getElementById('activation-target-type')?.value||'';
+  const label=type==='user'?'User':type==='product'?'Product':'Fuel Tank';
   const records=type==='user'?window.employeeRecords:type==='product'?window.productRecords:window.tankRecords;
-  const item=(records||[]).find(x=>x.id===id);
-  showSettingsConfirmation('Confirm '+label+' Activation','<p>'+label+': <b>'+h(item?.name||item?.code_name||item?.tank_code||id)+'</b></p><p>Status: <b>Inactive → Active</b></p>',()=>_confirmGenericActivation());
+  const item=settingsRecord(records,id);
+  let details='<p><b>'+h(label)+':</b> '+h(item?.name||item?.code_name||item?.tank_code||id)+'</p>'+settingsDiff('Status','Inactive','Active');
+  let successDetails='<p><b>'+h(label)+'</b> is now active.</p>'+details;
+  if(type==='product'){
+    const price=priceFromParts('activation-price-major','activation-price-cents');
+    details+='<p style="margin:7px 0"><b>Selling price:</b> '+h(money(price))+'</p>';
+    successDetails='<p><b>'+h(item?.code_name||item?.name||id)+'</b> is now active.</p>'+details;
+  }
+  if(type==='tank'){
+    const stock=document.getElementById('tank-opening-stock')?.value||'';
+    details+='<p style="margin:7px 0"><b>Opening stock:</b> '+h(liters(stock))+' L</p>';
+    successDetails='<p><b>'+h(item?.tank_code||id)+'</b> activated successfully.</p>'+details;
+  }
+  showSettingsConfirmation('Review '+label+' Activation',details,()=>_confirmGenericActivation(),
+    label+' activated successfully',successDetails);
 }
 function confirmGenericActivation(){return _confirmGenericActivationReview();}
 async function confirmDispenserActivation(){
-  const id=pendingDispenserActivationId;
-  const d=(window.dispenserRecords||[]).find(x=>x.id===id);
-  const employee=document.getElementById('dispenser-activation-employee')?.selectedOptions?.[0]?.textContent||'Not selected';
+  const id=pendingDispenserActivationId,d=settingsRecord(window.dispenserRecords,id);
+  const employeeSelect=document.getElementById('dispenser-activation-employee');
+  const employee=employeeSelect?.selectedOptions?.[0]?.textContent||'Not selected';
   const tank=document.getElementById('dispenser-activation-tank-liters')?.value||'';
-  showSettingsConfirmation('Confirm Dispenser Activation Assignment','<p>Dispenser: <b>'+h(d?.nozzle_code||id)+'</b></p><p>Attendant: <b>'+h(employee)+'</b></p><p>Tank opening: <b>'+h(tank)+' L</b></p><p>The dispenser remains inactive until the attendant confirms.</p>',()=>_confirmDispenserActivation());
+  const ids=d.nozzle_ids||[];
+  const readings=ids.map((nozzleId,i)=>{
+    const box=document.getElementById('nozzle-activation-input-'+i),input=document.getElementById('nozzle-activation-number-'+i);
+    return box&&box.style.display!=='none'&&input&&input.value.trim()!==''?'<p style="margin:5px 0"><b>'+h(nozzleId)+':</b> '+h(liters(input.value))+'</p>':'';
+  }).join('');
+  const details='<p><b>Dispenser:</b> '+h(d.nozzle_code||id)+'</p><p><b>Attendant:</b> '+h(employee)+'</p><p><b>Opening stock:</b> '+h(liters(tank))+' L</p><p><b>Nozzle opening readings:</b></p>'+readings+settingsStatus('Pending — dispenser remains inactive until attendant confirms');
+  showSettingsConfirmation('Review Dispenser Shift Assignment',details,()=>_confirmDispenserActivation(),
+    'Shift assignment created successfully','<p>The assignment was sent to <b>'+h(employee)+'</b>.</p>'+details);
 }
 async function _toggleNozzleConfirmed(id){return _toggleNozzle(id,true);}
 function toggleNozzle(id,active){
   if(!active)return _toggleNozzle(id,active);
-  const d=(window.dispenserRecords||[]).find(x=>x.id===id);
-  showSettingsConfirmation('Confirm Dispenser Deactivation','<p>Dispenser: <b>'+h(d?.nozzle_code||id)+'</b></p><p>Status: <b>Active → Inactive</b></p>',()=>_toggleNozzleConfirmed(id));
+  const d=settingsRecord(window.dispenserRecords,id);
+  const details='<p><b>Dispenser:</b> '+h(d.nozzle_code||id)+'</p>'+settingsDiff('Status','Active','Inactive');
+  showSettingsConfirmation('Review Dispenser Deactivation',details,()=>_toggleNozzleConfirmed(id),
+    'Dispenser deactivated successfully','<p>The dispenser is now inactive.</p>'+details);
 }
 async function removeDispenser(id){
-  const d=(window.dispenserRecords||[]).find(x=>x.id===id);
-  showSettingsConfirmation('Confirm Dispenser Removal','<p>Dispenser: <b>'+h(d?.nozzle_code||id)+'</b></p><p>This dispenser will be <b>permanently removed</b>.</p>',()=>_removeDispenser(id));
+  const d=settingsRecord(window.dispenserRecords,id);
+  const details='<p><b>Dispenser:</b> '+h(d.nozzle_code||id)+'</p>'+settingsStatus('Will be permanently removed');
+  showSettingsConfirmation('Review Dispenser Removal',details,()=>_removeDispenser(id),
+    'Dispenser removed successfully','<p>The dispenser was removed successfully.</p>'+details);
 }
 async function createDispenser(event){
   event.preventDefault();
-  const product=document.getElementById('dispenser-product').value;
-  const tank=document.getElementById('dispenser-tank').value;
-  const count=document.getElementById('dispenser-nozzle-count').value;
-  showSettingsConfirmation('Confirm Add Fuel Dispenser','<p>Product: <b>'+h(product)+'</b></p><p>Tank: <b>'+h(tank)+'</b></p><p>Nozzles: <b>'+h(count)+'</b></p><p>Status: <b>Inactive</b></p>',()=>_createDispenser(event));
+  const product=document.getElementById('dispenser-product').value,tankId=document.getElementById('dispenser-tank').value,count=document.getElementById('dispenser-nozzle-count').value;
+  const tank=(window.tankRecords||[]).find(t=>String(t.id)===String(tankId));
+  const details='<p><b>Product:</b> '+h(product)+'</p><p><b>Tank:</b> '+h(tank?.tank_code||tankId)+'</p><p><b>Nozzles:</b> '+h(count)+'</p>'+settingsStatus('Inactive — ready for activation');
+  showSettingsConfirmation('Review New Fuel Dispenser',details,()=>_createDispenser(event),
+    'Fuel dispenser created successfully','<p>The new dispenser was created successfully.</p>'+details);
 }
 async function cancelAdminPendingShift(id){
-  const shifts=await api('/api/shifts');
-  const shift=shifts.find(x=>x.id===id);
-  showSettingsConfirmation('Confirm Pending Assignment Cancellation','<p>Dispenser: <b>'+h(shift?.nozzle_id||id)+'</b></p><p>Status: <b>Pending → Cancelled</b></p><p>The dispenser remains inactive and unchanged.</p>',()=>_cancelAdminPendingShift(id));
+  const shifts=await api('/api/shifts'),shift=shifts.find(x=>x.id===id);
+  const d=settingsRecord(window.dispenserRecords,shift?.nozzle_id);
+  const details='<p><b>Dispenser:</b> '+h(d?.nozzle_code||shift?.nozzle_id||id)+'</p>'+settingsDiff('Assignment status','Pending','Cancelled')+'<p class="muted">The dispenser configuration and activation state remain unchanged.</p>';
+  showSettingsConfirmation('Review Pending Assignment Cancellation',details,()=>_cancelAdminPendingShift(id),
+    'Pending assignment cancelled successfully','<p>The pending assignment was cancelled. The dispenser remains inactive and unchanged.</p>'+details);
 }
