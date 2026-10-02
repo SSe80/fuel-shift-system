@@ -157,3 +157,34 @@
 .admin-settings-page .dispenser-active-card .dispenser-card-actions{
   border-top-color:#dcefe2;
 }
+
+/* Dispenser active card: green header, white information body */
+.admin-settings-page .dispenser-active-card .dispenser-card-head{
+  padding-bottom:14px;
+  border-bottom:1px solid #cfe6d7;
+}
+.admin-settings-page .dispenser-active-card .dispenser-main-body{
+  margin-top:14px;
+  padding:14px;
+  background:#fff;
+  border:1px solid #e2e8e5;
+  border-radius:14px;
+}
+.admin-settings-page .dispenser-active-card .dispenser-info-grid{
+  margin:0;
+  gap:9px;
+}
+.admin-settings-page .dispenser-active-card .dispenser-info-grid>div{
+  border:1px solid #e3e7eb;
+  background:#fff;
+}
+.admin-settings-page .dispenser-active-card .dispenser-detail-block{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid #e3e7eb;
+}
+.admin-settings-page .dispenser-active-card .dispenser-card-actions{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid #cfe6d7;
+}
