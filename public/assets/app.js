@@ -153,7 +153,8 @@ async function userDashboard(){
       '</div>';
     }).join('');
 
-    const activeForDisplay=active.filter(s=>!pendingOutgoingHandovers.some(x=>String(x.shift_id)===String(s.id)));\n    const activeHtml=activeForDisplay.map(s=>{
+    const activeForDisplay=active.filter(s=>!pendingOutgoingHandovers.some(x=>String(x.shift_id)===String(s.id)));
+    const activeHtml=activeForDisplay.map(s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
       const readings=Array.isArray(s.activation_nozzles)&&s.activation_nozzles.length
         ?s.activation_nozzles
