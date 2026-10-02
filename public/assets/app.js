@@ -522,6 +522,24 @@ function openUserActivation(id){
   document.getElementById('activation-target-message').innerHTML='<b>'+h(e.name)+'</b><br><span class="muted">'+h(e.role)+' • Operator ID: '+h(e.operator_id)+'</span>';
   openGenericActivationModal();
 }
+async function removeProduct(id){
+  const p=settingsRecord(window.productRecords,id);
+  const details='<p><b>Product:</b> '+h(p?.code_name||p?.name||id)+'</p>'+settingsStatus('Will be permanently removed');
+  showSettingsConfirmation('Review Product Removal',details,()=>_removeProduct(id),
+    'Product removed successfully','<p>The product was removed successfully.</p>'+details);
+}
+async function _removeProduct(id){
+  try{await api('/api/products/'+id,{method:'DELETE'});await loadSettingsData();}catch(e){throw e;}
+}
+async function removeUser(id){
+  const e=settingsRecord(window.employeeRecords,id);
+  const details='<p><b>User:</b> '+h(e?.name||id)+'</p>'+settingsStatus('Will be permanently removed');
+  showSettingsConfirmation('Review User Removal',details,()=>_removeUser(id),
+    'User removed successfully','<p>The user was removed successfully.</p>'+details);
+}
+async function _removeUser(id){
+  try{await api('/api/users/'+id,{method:'DELETE'});await loadSettingsData();}catch(e){throw e;}
+}
 function openTankEdit(id){
   const t=(window.tankRecords||[]).find(x=>x.id===id);
   if(!t)return;
