@@ -865,14 +865,19 @@ async function openDashboardHandover(shiftId){
 
     const nozzle=nozzles.find(n=>String(n.id)===String(selected.nozzle_id));
     const tank=tanks.find(t=>String(t.id)===String(nozzle?.tank_id));
+    const nozzleIds=Array.isArray(nozzle?.nozzle_ids)&&nozzle.nozzle_ids.length
+      ?nozzle.nozzle_ids
+      :[nozzle?.nozzle_code||selected.nozzle_id];
     window.handoverDraft={
       shift_id:selected.id,
       nozzle_id:selected.nozzle_id,
       nozzle_code:nozzle?.nozzle_code||selected.nozzle_id,
+      nozzle_ids:nozzleIds,
       tank_id:nozzle?.tank_id||'',
       tank_code:tank?.tank_code||nozzle?.tank_id||'Not connected',
       to_employee_id:'',
       closing_reading:null,
+      closing_nozzle_readings:[],
       closing_liters:null
     };
 
@@ -883,19 +888,20 @@ async function openDashboardHandover(shiftId){
       receiving.map(e=>'<option value="'+h(e.id)+'">'+h(e.name)+' — ID '+h(e.operator_id)+'</option>').join('');
 
     const dispenser=document.getElementById('handover-dispenser');
+    const dispenserTitle=document.getElementById('handover-dispenser-title');
     const tankEl=document.getElementById('handover-tank');
     if(dispenser)dispenser.textContent=nozzle?.nozzle_code||selected.nozzle_id||'—';
+    if(dispenserTitle)dispenserTitle.textContent=nozzle?.nozzle_code||selected.nozzle_id||'Dispenser';
     if(tankEl)tankEl.textContent=tank?.tank_code||nozzle?.tank_id||'Not connected';
-    const readingLabel=document.getElementById('handover-closing-reading-label');
-    const litersLabel=document.getElementById('handover-closing-liters-label');
-    if(readingLabel)readingLabel.textContent='Closing meter reading — '+(nozzle?.nozzle_code||selected.nozzle_id);
-    if(litersLabel)litersLabel.textContent='Tank closing liter — '+(tank?.tank_code||nozzle?.tank_id||'Not connected');
 
-    const reading=document.getElementById('handover-closing-reading');
+    const nozzleInputs=document.getElementById('handover-nozzle-readings');
+    if(nozzleInputs){
+      nozzleInputs.innerHTML=nozzleIds.map((id,i)=>
+        '<label class="handover-nozzle-input"><span>Nozzle '+(i+1)+' — '+h(id)+'</span><input id="handover-nozzle-reading-'+i+'" type="number" min="0" step="0.01" placeholder="Enter closing meter reading" required></label>'
+      ).join('');
+    }
     const closingLiters=document.getElementById('handover-closing-liters');
-    if(reading)reading.value='';
     if(closingLiters)closingLiters.value='';
-    if(reading)reading.setAttribute('data-nozzle-id',selected.nozzle_id);
     if(closingLiters)closingLiters.setAttribute('data-tank-id',nozzle?.tank_id||'');
 
     openHandoverInputModal();
@@ -934,19 +940,24 @@ function cancelHandoverForm(){
 function continueHandover(event){
   event.preventDefault();
   const to=document.getElementById('handover-to-employee').value;
-  const reading=Number(document.getElementById('handover-closing-reading').value);
+  const nozzleIds=window.handoverDraft?.nozzle_ids||[];
+  const closingNozzleReadings=nozzleIds.map((id,i)=>{
+    const value=Number(document.getElementById('handover-nozzle-reading-'+i)?.value);
+    return {nozzle_id:id,reading:value};
+  });
   const closingLiters=Number(document.getElementById('handover-closing-liters').value);
   if(!to){toast('Select a receiving attendant');return;}
-  if(!Number.isFinite(reading)||reading<0){toast('Enter a valid closing meter reading');return;}
+  if(!closingNozzleReadings.length||closingNozzleReadings.some(x=>!Number.isFinite(x.reading)||x.reading<0)){toast('Enter a valid closing reading for every dispenser nozzle');return;}
   if(!Number.isFinite(closingLiters)||closingLiters<0){toast('Enter valid tank closing liters');return;}
-  window.handoverDraft={...window.handoverDraft,to_employee_id:to,closing_reading:reading,closing_liters:closingLiters};
+  const primaryReading=closingNozzleReadings[0].reading;
+  window.handoverDraft={...window.handoverDraft,to_employee_id:to,closing_reading:primaryReading,closing_nozzle_readings:closingNozzleReadings,closing_liters:closingLiters};
   const employeeSelect=document.getElementById('handover-to-employee');
   const employeeName=employeeSelect?.selectedOptions?.[0]?.textContent||to;
   document.getElementById('handover-review-details').innerHTML=
     '<div class="handover-review-item"><span>Dispenser</span><strong>'+h(window.handoverDraft?.nozzle_code||window.handoverDraft?.nozzle_id||'—')+'</strong></div>'+
     '<div class="handover-review-item"><span>Tank</span><strong>'+h(window.handoverDraft?.tank_code||window.handoverDraft?.tank_id||'Not connected')+'</strong></div>'+
     '<div class="handover-review-item"><span>Receiving attendant</span><strong>'+h(employeeName)+'</strong></div>'+
-    '<div class="handover-review-item"><span>Closing reading meter</span><strong>'+reading.toLocaleString(undefined,{maximumFractionDigits:2})+'</strong></div>'+
+    '<div class="handover-review-item"><span>Closing nozzle readings</span><strong>'+closingNozzleReadings.map(x=>h(x.nozzle_id)+': '+x.reading.toLocaleString(undefined,{maximumFractionDigits:2})).join('<br>')+'</strong></div>'+
     '<div class="handover-review-item"><span>Tank closing liter</span><strong>'+closingLiters.toLocaleString(undefined,{maximumFractionDigits:2})+' L</strong></div>';
   closeHandoverModal('handover-input-modal');
   const review=document.getElementById('handover-review-modal');
@@ -965,7 +976,8 @@ async function confirmHandoverSubmission(){
       to_employee_id:d.to_employee_id,
       closing_reading:d.closing_reading,
       closing_mm:0,
-      closing_liters:d.closing_liters
+      closing_liters:d.closing_liters,
+      closing_nozzle_readings:d.closing_nozzle_readings||[]
     })});
     closeHandoverModal('handover-review-modal');
     toast('Handover submitted');
