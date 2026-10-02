@@ -509,3 +509,29 @@
     grid-column:1 / -1;
   }
 }
+
+
+/* Add breathing room between settings card information and controls */
+.admin-settings-page #products .top,
+.admin-settings-page #employees .top,
+.admin-settings-page #tanks .top{
+  align-items:flex-start!important;
+  gap:22px!important;
+}
+.admin-settings-page #products .top > div:first-child,
+.admin-settings-page #employees .top > div:first-child,
+.admin-settings-page #tanks .top > div:first-child{
+  padding-bottom:10px;
+}
+.admin-settings-page #products .top > .row,
+.admin-settings-page #employees .top > .row,
+.admin-settings-page #tanks .top > .row{
+  flex-shrink:0;
+}
+@media(max-width:700px){
+  .admin-settings-page #products .top,
+  .admin-settings-page #employees .top,
+  .admin-settings-page #tanks .top{
+    gap:14px!important;
+  }
+}
