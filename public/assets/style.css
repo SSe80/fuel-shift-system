@@ -653,3 +653,35 @@
   border-color:#d9e0e7!important;
   color:#344054!important;
 }
+
+
+/* Stacked information rows for Users, Products and Tanks */
+.admin-settings-page .settings-card-details{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin-top:7px;
+  color:#667085;
+  font-size:14px;
+  line-height:1.45;
+}
+.admin-settings-page .settings-card-details > div{
+  display:block;
+}
+.admin-settings-page .settings-card-details span{
+  color:#667085;
+  font-weight:500;
+}
+.admin-settings-page .settings-card-details b{
+  color:#344054;
+  font-weight:800;
+}
+.admin-settings-page .settings-active-card .settings-card-details b{
+  color:#176b3a!important;
+}
+.admin-settings-page .settings-card-subtitle{
+  margin-top:4px;
+  color:#667085;
+  font-size:15px;
+  font-weight:700;
+}
