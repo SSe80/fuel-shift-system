@@ -360,13 +360,13 @@
   border-color:#c8d1db!important;
 }
 .admin-settings-page .dispenser-card-actions .dispenser-remove-action{
-  background:#fff7f7!important;
-  border-color:#f3c7c7!important;
-  color:#b42318!important;
+  background:#f8fafc!important;
+  border-color:#d9e0e7!important;
+  color:#344054!important;
 }
 .admin-settings-page .dispenser-card-actions .dispenser-remove-action:hover{
-  background:#fff0f0!important;
-  border-color:#e9aaaa!important;
+  background:#eef2f6!important;
+  border-color:#c8d1db!important;
 }
 @media(max-width:600px){
   .admin-settings-page .dispenser-card-actions{
