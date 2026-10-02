@@ -881,7 +881,7 @@ async function openDashboardHandover(shiftId){
       closing_liters:null
     };
 
-    const receiving=employees.filter(e=>e.active&&e.role==='attendant'&&String(e.id)!==String(me.id));
+    const receiving=employees.filter(e=>e.role==='attendant'&&String(e.id)!==String(me.id));
     const select=document.getElementById('handover-to-employee');
     if(!select){toast('Handover form is unavailable.');return;}
     select.innerHTML='<option value="">Select receiving attendant</option>'+
