@@ -1,13 +1,11 @@
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Settings</title><link rel="stylesheet" href="assets/style.css"></head>
-<body data-app-page="adminSettings">
+<body class="admin-settings-page" data-app-page="adminSettings">
 <main class="wrap">
-  <div class="top"><div><h2>Admin Settings</h2><p class="muted">Station configuration</p></div><a href="admin-dashboard.html">Back</a></div>
+  <header class="settings-header"><div><span class="eyebrow">STATION CONTROL</span><h1>Admin Settings</h1><p class="muted">Manage users, fuel products, tanks, and dispensers.</p></div><a class="settings-back" href="admin-dashboard.html">← Dashboard</a></header>
 
-  <div class="card">
-    <h3>Users</h3>
-    <button type="button" class="primary" onclick="openAddModal('add-user-modal')">Add user</button>
+  <section class="settings-section card"><div class="section-heading"><div><span class="section-kicker">ACCESS</span><h2>Users</h2><p>Manage operator accounts, roles, PINs, and access.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-user-modal')">＋ Add user</button></div>
 
     <div id="employee-edit-modal" class="modal" aria-hidden="true">
       <div class="modal-backdrop" onclick="closeUserEdit()"></div>
@@ -28,9 +26,7 @@
     <div id="employees"></div>
   </section>
 
-  <div class="card">
-    <h3>Products</h3>
-    <button type="button" class="primary" onclick="openAddModal('add-product-modal')">Add product</button>
+  <section class="settings-section card"><div class="section-heading"><div><span class="section-kicker">FUEL CATALOG</span><h2>Products</h2><p>Configure fuel names, codes, colors, and selling prices.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-product-modal')">＋ Add product</button></div>
     <div id="products"></div>
   </section>
 
@@ -127,9 +123,7 @@
     </form>
   </div>
 
-  <div class="card">
-    <h3>Fuel Tanks</h3>
-    <button type="button" class="primary" onclick="openAddModal('add-tank-modal')">Add tank</button>
+  <section class="settings-section card"><div class="section-heading"><div><span class="section-kicker">STORAGE</span><h2>Fuel Tanks</h2><p>Manage tank capacity, stock readings, and activation.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-tank-modal')">＋ Add tank</button></div>
     <div id="tank-edit-modal" class="modal" aria-hidden="true">
       <div class="modal-backdrop" onclick="closeTankEdit()"></div>
       <form id="tank-edit-form" class="modal-card form" onsubmit="saveTankEdit(event)">
@@ -146,9 +140,7 @@
     <div id="tanks"></div>
   </section>
 
-  <div class="card">
-    <h3>Fuel Dispenser</h3>
-    <button type="button" class="primary" onclick="openAddModal('add-dispenser-modal')">Add dispenser</button>
+  <section class="settings-section card"><div class="section-heading"><div><span class="section-kicker">FORECOURT</span><h2>Fuel Dispensers</h2><p>Connect dispensers to tanks and manage nozzle assignments.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-dispenser-modal')">＋ Add dispenser</button></div>
     <div id="dispenser-edit-modal" class="modal" aria-hidden="true">
       <div class="modal-backdrop" onclick="closeDispenserEdit()"></div>
       <form id="dispenser-edit-form" class="modal-card form" onsubmit="saveDispenserEdit(event)">
@@ -210,8 +202,8 @@
     </div>
   </div>
 
-  <div id="settings-status" class="muted"></div>
+  <div id="settings-status" class="settings-status muted"></div>
 </main>
-<script src="assets/app.js?v=20261002-09"></script>
+<script src="assets/app.js?v=20261002-10"></script>
 <script src="assets/app-boot.js?v=20261002-03"></script></body>
 </html>
