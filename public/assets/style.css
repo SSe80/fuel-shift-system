@@ -530,3 +530,19 @@
 .attendant-page .pending-nozzle-pill{background:linear-gradient(135deg,#ffe1e5,#ffd2d8);color:#b42333}
 .attendant-page .pending-nozzle-number{color:#7f1721}
 .attendant-page .pending-nozzle-code{color:#8b6268}
+
+/* Pending card border + red confirmation action */
+.attendant-page .pending-confirmation-card{
+  border:1px solid #f3a0aa !important;
+  box-shadow:0 8px 28px rgba(194,35,53,.10);
+}
+.attendant-page .pending-confirmation-card .form button.primary{
+  background:linear-gradient(135deg,#dc2638,#c91f32) !important;
+  border:1px solid #b91c2d !important;
+  color:#fff !important;
+  box-shadow:0 4px 12px rgba(194,35,53,.18) !important;
+}
+.attendant-page .pending-confirmation-card .form button.primary:hover{
+  background:linear-gradient(135deg,#c91f32,#b91c2d) !important;
+  border-color:#a71929 !important;
+}
