@@ -65,7 +65,7 @@ async function api(path, options={}) {
 const h = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = value => Number(value || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const liters = value => Number(value || 0).toLocaleString(undefined,{maximumFractionDigits:2});
-const reading = value => { const n=Number(value); return Number.isFinite(n) ? n.toFixed(2).replace(/\\.?0+$/,'') : '—'; };
+const reading = value => { const n=Number(value); return Number.isFinite(n) ? n.toFixed(2).replace(/\.?0+$/,'') : '—'; };
 
 async function login(role) {
   const operator_id=document.getElementById('operator-id').value.trim(), pin=document.getElementById('pin').value;
@@ -99,14 +99,14 @@ async function userDashboard(){
     const pendingShiftHtml=pendingShifts.map(s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
       const readings=Array.isArray(s.activation_nozzles)?s.activation_nozzles:[];
-      const activationText=readings.length
-        ?readings.map(x=>h(x.nozzle_id)+' = '+liters(x.opening_reading)).join(' • ')
-        :'Not recorded';
-      return '<div class="card"><div class="top"><div><h3>Pending Shift Confirmation</h3><span class="badge">Awaiting confirmation</span></div></div>'+
-        '<p>Dispenser: <b>'+h(n?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(n?.product||''))+'</p>'+
-        '<p>Tank: <b>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</b></p>'+
-        '<p>Tank opening: <b>'+liters(s.opening_tank_liters)+' L</b></p>'+
-        '<p>Selected nozzle readings: <b>'+activationText+'</b></p>'+
+      const nozzleReadings=readings.length
+        ?readings.map(x=>'<div class="pending-nozzle-reading"><div class="pending-nozzle-name">'+h(x.nozzle_id)+'</div><div class="pending-nozzle-value">'+reading(x.opening_reading)+'</div></div>').join('')
+        :'<div class="muted">No nozzle readings recorded.</div>';
+      return '<div class="card pending-confirmation-card"><div class="pending-card-title">Pending Shift Confirmation</div><span class="badge pending-badge">Awaiting confirmation</span>'+
+        '<div class="pending-dispenser-line">'+h(n?.nozzle_code||s.nozzle_id)+' <span>•</span> '+h(codeForProduct(n?.product||''))+'</div>'+
+        '<div class="pending-info-line">Tank: <b>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</b></div>'+
+        '<div class="pending-info-line">Tank opening: <b>'+liters(s.opening_tank_liters)+' L</b></div>'+
+        '<div class="pending-nozzle-section"><div class="pending-nozzle-heading">Nozzle opening readings</div>'+nozzleReadings+'</div>'+
         '<form class="form" onsubmit="confirmShiftAssignment(event,\''+s.id+'\')">'+
         '<input id="assignment-pin-'+s.id+'" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required>'+
         '<div class="row"><button class="primary">Confirm Readings & Start Shift</button>'+
@@ -163,8 +163,8 @@ async function loadAttendantShiftPage(){
       pendingBox.innerHTML=pending.length?pending.map(s=>{
         const n=nozzles.find(x=>x.id===s.nozzle_id);
         const readings=Array.isArray(s.activation_nozzles)?s.activation_nozzles:[];
-        const activationText=readings.length?readings.map(x=>h(x.nozzle_id)+' = '+liters(x.opening_reading)).join(' • '):'Not recorded';
-        return '<div class="card"><div class="top"><div><h3>Pending Shift Assignment</h3><span class="badge">Awaiting confirmation</span></div></div><p>Dispenser: <b>'+h(n?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(n?.product||''))+'</p><p>Tank: <b>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</b></p><p>Tank opening: <b>'+liters(s.opening_tank_liters)+' L</b></p><p>Selected nozzle readings: <b>'+activationText+'</b></p><form class="form" onsubmit="confirmShiftAssignment(event,\''+s.id+'\')"><input id="assignment-pin-'+s.id+'" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required><div class="row"><button class="primary">Confirm Readings & Start Shift</button><button type="button" onclick="cancelPendingShift(\''+s.id+'\')">Cancel Shift</button></div></form></div>';
+        const nozzleReadings=readings.length?readings.map(x=>'<div class="pending-nozzle-reading"><div class="pending-nozzle-name">'+h(x.nozzle_id)+'</div><div class="pending-nozzle-value">'+reading(x.opening_reading)+'</div></div>').join(''):'<div class="muted">No nozzle readings recorded.</div>';
+        return '<div class="card pending-confirmation-card"><div class="pending-card-title">Pending Shift Confirmation</div><span class="badge pending-badge">Awaiting confirmation</span><div class="pending-dispenser-line">'+h(n?.nozzle_code||s.nozzle_id)+' <span>•</span> '+h(codeForProduct(n?.product||''))+'</div><div class="pending-info-line">Tank: <b>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</b></div><div class="pending-info-line">Tank opening: <b>'+liters(s.opening_tank_liters)+' L</b></div><div class="pending-nozzle-section"><div class="pending-nozzle-heading">Nozzle opening readings</div>'+nozzleReadings+'</div><form class="form" onsubmit="confirmShiftAssignment(event,\''+s.id+'\')"><input id="assignment-pin-'+s.id+'" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required><div class="row"><button class="primary">Confirm Readings & Start Shift</button><button type="button" onclick="cancelPendingShift(\''+s.id+'\')">Cancel Shift</button></div></form></div>';
       }).join(''):'<div class="card"><p>No pending shift confirmations.</p></div>';
     }
     const history=mine.filter(s=>s.status!=='assigned');
