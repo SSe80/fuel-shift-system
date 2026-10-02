@@ -225,3 +225,125 @@
  .attendant-dashboard-page .meter-display strong,.attendant-dashboard-page .reading-panel strong{font-size:26px}
  .attendant-dashboard-page .reading-values{grid-template-columns:1fr}
 }
+
+
+/* Pending shift confirmation cards — match the Admin reading layout */
+.attendant-page .pending-confirmation-card{
+  margin:0 0 14px;
+  padding:24px 20px 20px;
+  border:1px solid #e3e3e3;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 4px 18px #0000000d;
+}
+.attendant-page .pending-card-title{
+  margin:0 0 12px;
+  color:#111;
+  font-size:28px;
+  line-height:1.12;
+  font-weight:850;
+  letter-spacing:-.035em;
+}
+.attendant-page .pending-badge{
+  display:inline-block;
+  margin-bottom:24px;
+  padding:10px 17px;
+  border:0;
+  border-radius:13px;
+  background:#b9f6c2;
+  color:#174d25;
+  font-size:15px;
+  line-height:1.1;
+  font-weight:800;
+  letter-spacing:0;
+  text-transform:none;
+}
+.attendant-page .pending-dispenser-line{
+  margin:0 2px 20px;
+  color:#111;
+  font-size:22px;
+  line-height:1.25;
+  font-weight:850;
+  letter-spacing:-.015em;
+}
+.attendant-page .pending-dispenser-line span{
+  color:#111;
+  padding:0 2px;
+}
+.attendant-page .pending-info-line{
+  margin:0 0 17px;
+  color:#111;
+  font-size:19px;
+  line-height:1.35;
+  font-weight:450;
+}
+.attendant-page .pending-info-line b{
+  color:#111;
+  font-weight:800;
+}
+.attendant-page .pending-nozzle-section{
+  margin-top:27px;
+}
+.attendant-page .pending-nozzle-heading{
+  margin:0 2px 14px;
+  color:#111;
+  font-size:17px;
+  line-height:1.3;
+  font-weight:500;
+}
+.attendant-page .pending-nozzle-reading{
+  margin:0 0 20px;
+}
+.attendant-page .pending-nozzle-name{
+  margin:0 2px 9px;
+  color:#111;
+  font-size:19px;
+  line-height:1.3;
+  font-weight:850;
+  letter-spacing:-.01em;
+  overflow-wrap:anywhere;
+}
+.attendant-page .pending-nozzle-value{
+  width:100%;
+  min-height:78px;
+  display:flex;
+  align-items:center;
+  padding:11px 18px;
+  border-radius:17px;
+  background:#d9d9d9;
+  color:#050505;
+  font-size:36px;
+  line-height:1;
+  font-weight:750;
+  letter-spacing:.075em;
+  font-variant-numeric:tabular-nums;
+  overflow-x:auto;
+  white-space:nowrap;
+}
+.attendant-page .pending-nozzle-section .muted{
+  color:#667085;
+  font-size:13px;
+}
+.attendant-page .pending-confirmation-card .form{
+  margin-top:22px;
+}
+@media(max-width:600px){
+  .attendant-page .pending-confirmation-card{
+    padding:20px 14px 16px;
+    border-radius:16px;
+  }
+  .attendant-page .pending-card-title{font-size:25px}
+  .attendant-page .pending-badge{font-size:14px;padding:9px 14px;margin-bottom:20px}
+  .attendant-page .pending-dispenser-line{font-size:19px;margin-bottom:17px}
+  .attendant-page .pending-info-line{font-size:17px;margin-bottom:15px}
+  .attendant-page .pending-nozzle-section{margin-top:23px}
+  .attendant-page .pending-nozzle-heading{font-size:16px}
+  .attendant-page .pending-nozzle-name{font-size:17px}
+  .attendant-page .pending-nozzle-value{
+    min-height:68px;
+    padding:10px 14px;
+    font-size:30px;
+    letter-spacing:.065em;
+    border-radius:15px;
+  }
+}
