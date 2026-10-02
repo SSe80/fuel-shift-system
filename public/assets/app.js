@@ -312,7 +312,7 @@ async function loadSettingsData(){
     if(pending){
       const readings=Array.isArray(pending.activation_nozzles)?pending.activation_nozzles:[];
       const readingText=readings.length
-        ?readings.map(r=>'<div class="dispenser-reading-row"><span>'+h(r.nozzle_id)+'</span><b>'+liters(r.opening_reading)+'</b></div>').join('')
+        ?readings.map(r=>'<div class="dispenser-reading-row"><span>'+h(r.nozzle_id)+'</span><b>'+Number(r.opening_reading||0).toFixed(0)+'</b></div>').join('')
         :'<span class="muted">No opening readings recorded</span>';
       return '<div class="card dispenser-settings-card dispenser-pending-card">'+
         '<div class="dispenser-card-head"><div><span class="section-kicker">SHIFT ASSIGNMENT</span><h3>Pending shift</h3><span class="badge">Awaiting attendant confirmation</span></div>'+
