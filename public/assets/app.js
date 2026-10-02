@@ -128,13 +128,21 @@ async function userDashboard(){
 
     const activeHtml=active.map(s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
-      return '<div class="card"><div class="top"><h3>Active Shift</h3><span class="badge">active</span></div>'+
-        '<p>Dispenser: <b>'+h(n?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(n?.product||''))+'</p>'+
-        '<p>Tank: <b>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</b></p>'+
-        '<p>Opening meter: <b>'+liters(s.opening_reading)+'</b></p>'+
-        '<div class="row"><a class="btn primary" href="sales.html?shift_id='+encodeURIComponent(s.id)+'">Record Sale</a>'+
+      const productCode=codeForProduct(n?.product||'');
+      return '<div class="card pending-confirmation-card active-shift-card">'+
+        '<div class="pending-hero active-shift-hero"><div class="pending-hero-icon">✓</div><div><div class="pending-card-title">Active Shift</div><div class="pending-card-subtitle">Your shift is active and ready for fuel sales.</div></div></div>'+
+        '<div class="pending-shift-info active-shift-info">'+
+          '<div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n?.nozzle_code||s.nozzle_id)+'</strong></div></div>'+
+          '<div class="pending-info-divider"></div>'+
+          '<div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Product</span><strong>'+h(productCode)+'</strong></div></div>'+
+          '<div class="pending-tank-opening active-opening-reading"><span class="pending-info-icon dispenser-icon">◉</span><div><span class="pending-label">Opening meter</span><strong>'+liters(s.opening_reading)+'</strong></div></div>'+
+        '</div>'+
+        '<div class="pending-nozzle-section active-reading-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Shift reading</div>'+
+          '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Opening meter</span></div><div class="pending-nozzle-number">'+reading(s.opening_reading)+'</div><div class="pending-nozzle-code">'+h(n?.nozzle_code||s.nozzle_id)+'</div></div>'+
+        '</div>'+
+        '<div class="row active-shift-actions"><a class="btn primary" href="sales.html?shift_id='+encodeURIComponent(s.id)+'">Record Sale</a>'+
         '<a class="btn" href="handover.html?shift_id='+encodeURIComponent(s.id)+'">Handover</a></div>'+
-        '<button class="primary" type="button" onclick="closeShift(event,\''+s.id+'\')">Close Shift</button></div>';
+        '<button class="primary active-close-shift" type="button" onclick="closeShift(event,\''+s.id+'\')">Close Shift</button></div>';
     }).join('');
 
     box.innerHTML=pendingShiftHtml+pendingHandoverHtml+activeHtml;
