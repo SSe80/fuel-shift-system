@@ -672,3 +672,9 @@
 .attendant-page .pending-confirmation-card{
   border-color:#f3a0aa!important;
 }
+
+/* Active shift heading — remove the red hero padding/background */
+.attendant-page .active-shift-card .active-shift-hero{
+  padding:0;
+  background:transparent;
+}
