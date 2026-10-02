@@ -959,12 +959,14 @@ function continueHandover(event){
   const employeeSelect=document.getElementById('handover-to-employee');
   const employeeName=employeeSelect?.selectedOptions?.[0]?.textContent||to;
   const reviewNozzles=closingNozzleReadings.map((x,i)=>
-    '<div class="handover-review-item"><span>Nozzle '+(i+1)+' — Closing Reading</span><strong>'+x.reading.toLocaleString(undefined,{maximumFractionDigits:2})+'</strong></div>'
+    '<div class="handover-review-row"><span>Nozzle '+(i+1)+' <small>'+h(x.nozzle_id)+'</small></span><strong>'+x.reading.toLocaleString(undefined,{maximumFractionDigits:2})+'</strong></div>'
   ).join('');
   document.getElementById('handover-review-details').innerHTML=
-    '<div class="handover-review-item"><span>Receiving Attendant</span><strong>'+h(employeeName)+'</strong></div>'+
-    reviewNozzles+
-    '<div class="handover-review-item"><span>Tank Closing Stock</span><strong>'+closingLiters.toLocaleString(undefined,{maximumFractionDigits:2})+' L</strong></div>';
+    '<div class="handover-review-summary">'+
+      '<div class="handover-review-main"><span>Receiving attendant</span><strong>'+h(employeeName)+'</strong></div>'+
+      '<div class="handover-review-section"><div class="handover-review-section-title">Closing meter readings</div>'+reviewNozzles+'</div>'+
+      '<div class="handover-review-main"><span>Tank closing stock</span><strong>'+closingLiters.toLocaleString(undefined,{maximumFractionDigits:2})+' L</strong></div>'+
+    '</div>';
   closeHandoverModal('handover-input-modal');
   const review=document.getElementById('handover-review-modal');
   if(review){review.classList.add('open');review.setAttribute('aria-hidden','false');}
