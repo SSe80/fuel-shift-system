@@ -226,15 +226,7 @@ async function adminSettings(){
     toast('Settings error: '+e.message);
   }
 }
-async function cancelAdminPendingShift(id){
-  if(!confirm('Cancel this pending shift assignment? The dispenser will remain inactive.'))return;
-  try{
-    await api('/api/shifts/'+id+'/cancel',{method:'POST',body:'{}'});
-    toast('Pending shift assignment cancelled');
-    await loadSettingsData();
-  }catch(e){toast(e.message);}
-}
-async function loadSettingsData(){
+async function cancelAdminPendingShift(id){const shifts=await api('/api/shifts');const shift=shifts.find(x=>x.id===id);if(!shift)return;showSettingsConfirmation('Confirm Pending Assignment Cancellation','<p>Dispenser: <b>'+h(shift.nozzle_id)+'</b></p><p>Assignment status: <b>Pending → Cancelled</b></p><p class="muted">The dispenser will remain inactive and its configuration will not be changed.</p>',async()=>{await api('/api/shifts/'+id+'/cancel',{method:'POST',body:'{}'});toast('Pending shift assignment cancelled');await loadSettingsData();});}
   const [employees,tanks,dispensers,products,shifts]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts')]);
   const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
   const codeForProduct=product=>productByName[String(product||'').toLowerCase()]?.code_name||product;
@@ -525,27 +517,13 @@ function closeDispenserEdit(){
 async function saveDispenserEdit(event){event.preventDefault();const id=document.getElementById('edit-dispenser-id').value,d=(window.dispenserRecords||[]).find(x=>x.id===id),body={product:document.getElementById('edit-dispenser-product').value,tank_id:document.getElementById('edit-dispenser-tank').value,tank_order:Number(document.getElementById('edit-dispenser-order').value),nozzle_count:Number(document.getElementById('edit-dispenser-nozzle-count').value)};showSettingsConfirmation('Confirm Dispenser Edit','<p>Dispenser: <b>'+h(d?.nozzle_code||id)+'</b></p><p>Product: <b>'+h(body.product)+'</b></p><p>Tank: <b>'+h(body.tank_id)+'</b></p><p>Order: <b>'+body.tank_order+'</b></p><p>Nozzles: <b>'+body.nozzle_count+'</b></p>',async()=>{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify(body)});closeDispenserEdit();toast('Dispenser updated');await loadSettingsData();});}
 function openGenericActivationModal(){const m=document.getElementById('generic-activation-modal');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');}
 function closeGenericActivation(){const m=document.getElementById('generic-activation-modal');if(!m)return;m.classList.remove('open');m.setAttribute('aria-hidden','true');}
-async function confirmGenericActivation(){
-  const id=document.getElementById('activation-target-id')?.value||'',type=document.getElementById('activation-target-type')?.value||'';
-  if(!id||!type)return;
-  try{
-    const path=type==='user'?'/api/users/'+id:type==='product'?'/api/products/'+id:'/api/tanks/'+id;
-    const body={active:true};
-    if(type==='product'){
-      const price=priceFromParts('activation-price-major','activation-price-cents');
-      if(price===null||price<=0){toast('Enter a valid selling price greater than zero');return;}
-      body.selling_price=price;
-    }
-    if(type==='tank'){
-      const stockInput=document.getElementById('tank-opening-stock');
-      const stock=stockInput?.value.trim()!==''?Number(stockInput.value):NaN;
-      if(!Number.isFinite(stock)||stock<0){toast('Enter a valid opening stock reading in liters');return;}
-      body.opening_stock_liters=stock;
-    }
-    await api(path,{method:'PATCH',body:JSON.stringify(body)});
-    closeGenericActivation();toast((type==='user'?'User':type==='product'?'Product':'Tank')+' activated');await loadSettingsData();
-  }catch(e){toast(e.message);}
-}
+async function confirmGenericActivation(){const id=document.getElementById('activation-target-id')?.value||'',type=document.getElementById('activation-target-type')?.value||'';if(!id||!type)return;
+  const path=type==='user'?'/api/users/'+id:type==='product'?'/api/products/'+id:'/api/tanks/'+id;
+  const body={active:true};let details='';let label='';
+  if(type==='product'){const price=priceFromParts('activation-price-major','activation-price-cents');if(price===null||price<=0){toast('Enter a valid selling price greater than zero');return;}body.selling_price=price;const p=(window.productRecords||[]).find(x=>x.id===id);label=p?.code_name||p?.name||id;details='<p>Product: <b>'+h(label)+'</b></p><p>Status: <b>Inactive → Active</b></p><p>Selling price: <b>'+money(price)+'</b></p>';}
+  if(type==='user'){const u=(window.employeeRecords||[]).find(x=>x.id===id);label=u?.name||id;details='<p>User: <b>'+h(label)+'</b></p><p>Status: <b>Inactive → Active</b></p>';}
+  if(type==='tank'){const stockInput=document.getElementById('tank-opening-stock'),stock=stockInput?.value.trim()!==''?Number(stockInput.value):NaN;if(!Number.isFinite(stock)||stock<0){toast('Enter a valid opening stock reading in liters');return;}body.opening_stock_liters=stock;const t=(window.tankRecords||[]).find(x=>x.id===id);label=t?.tank_code||id;details='<p>Tank: <b>'+h(label)+'</b></p><p>Status: <b>Inactive → Active</b></p><p>Opening stock: <b>'+liters(stock)+' L</b></p>';}
+  showSettingsConfirmation('Confirm '+(type==='user'?'User':type==='product'?'Product':'Tank')+' Activation',details,async()=>{await api(path,{method:'PATCH',body:JSON.stringify(body)});closeGenericActivation();toast(label+' activated');await loadSettingsData();});}
 let pendingDispenserActivationId=null;
 
 function openDispenserActivation(id){
@@ -596,52 +574,11 @@ function closeDispenserActivation(){
   modal.setAttribute('aria-hidden','true');
 }
 
-async function confirmDispenserActivation(){
-  const id=pendingDispenserActivationId;
-  if(!id)return;
-  const d=(window.dispenserRecords||[]).find(x=>x.id===id);
-  if(!d)return;
-  const ids=d.nozzle_ids||[];
-  const employeeSelect=document.getElementById('dispenser-activation-employee');
-  const employeeId=employeeSelect?.value||'';
-  const attendantName=employeeSelect?.selectedOptions?.[0]?.textContent||'Selected attendant';
-  const tankLitersInput=document.getElementById('dispenser-activation-tank-liters');
-  const openingTankLiters=tankLitersInput?.value.trim()!==''?Number(tankLitersInput.value):NaN;
-  const selected=[];
-  ids.forEach((nozzleId,i)=>{
-    const box=document.getElementById('nozzle-activation-input-'+i);
-    const input=document.getElementById('nozzle-activation-number-'+i);
-    if(box&&box.style.display!=='none'&&input&&input.value.trim()!==''&&Number(input.value)>=0)selected.push({nozzle_id:nozzleId,activation_number:Number(input.value)});
-  });
-  const error=document.getElementById('dispenser-activate-error');
-  const review=document.getElementById('dispenser-activation-review');
-  const confirmation=document.getElementById('dispenser-attendant-confirmation');
-  if(!Number.isFinite(openingTankLiters)||openingTankLiters<0){
-    error.textContent='Enter the tank opening reading in liters.';
-    error.style.display='block'; return;
-  }
-  if(!employeeId){
-    error.textContent='Select an attendant before continuing.';
-    error.style.display='block'; return;
-  }
-  if(!selected.length){
-    error.textContent='Activate at least one nozzle and enter its opening meter reading before continuing.';
-    error.style.display='block'; return;
-  }
-  if(review)review.innerHTML='<div class="card" style="margin:0"><b>Attendant reading confirmation</b><p style="margin:6px 0">Attendant: <b>'+h(attendantName)+'</b></p><p style="margin:6px 0">Tank opening: <b>'+liters(openingTankLiters)+' L</b></p><p style="margin:6px 0">Nozzle opening readings: '+selected.map(x=>'<b>'+h(x.nozzle_id)+'</b> = '+liters(x.activation_number)).join(' • ')+'</p><p class="muted" style="margin:6px 0 0">The selected Attendant must review these readings and confirm they are correct before the shift is activated.</p></div>';
-  try{
-    await api('/api/shifts',{method:'POST',body:JSON.stringify({
-      employee_id:employeeId,
-      nozzle_id:id,
-      opening_tank_liters:openingTankLiters,
-      activation_nozzles:selected.map(x=>({nozzle_id:x.nozzle_id,opening_reading:x.activation_number}))
-    })});
-    closeDispenserActivation();
-    toast('Shift assignment sent for attendant confirmation');
-    await loadSettingsData();
-  }catch(e){toast(e.message);}
-}
-
+async function confirmDispenserActivation(){const id=pendingDispenserActivationId;if(!id)return;const d=(window.dispenserRecords||[]).find(x=>x.id===id);if(!d)return;const ids=d.nozzle_ids||[],employeeSelect=document.getElementById('dispenser-activation-employee'),employeeId=employeeSelect?.value||'',attendantName=employeeSelect?.selectedOptions?.[0]?.textContent||'Selected attendant',tankLitersInput=document.getElementById('dispenser-activation-tank-liters'),openingTankLiters=tankLitersInput?.value.trim()!==''?Number(tankLitersInput.value):NaN,selected=[];
+  ids.forEach((nozzleId,i)=>{const box=document.getElementById('nozzle-activation-input-'+i),input=document.getElementById('nozzle-activation-number-'+i);if(box&&box.style.display!=='none'&&input&&input.value.trim()!==''&&Number(input.value)>=0)selected.push({nozzle_id:nozzleId,activation_number:Number(input.value)});});
+  const error=document.getElementById('dispenser-activate-error');if(!Number.isFinite(openingTankLiters)||openingTankLiters<0){error.textContent='Enter the tank opening reading in liters.';error.style.display='block';return;}if(!employeeId){error.textContent='Select an attendant before continuing.';error.style.display='block';return;}if(!selected.length){error.textContent='Activate at least one nozzle and enter its opening meter reading before continuing.';error.style.display='block';return;}
+  const details='<p>Dispenser: <b>'+h(d.nozzle_code||id)+'</b></p><p>Attendant: <b>'+h(attendantName)+'</b></p><p>Tank opening: <b>'+liters(openingTankLiters)+' L</b></p><p>Selected nozzle readings: <b>'+selected.map(x=>h(x.nozzle_id)+' = '+liters(x.activation_number)).join(' • ')+'</b></p><p class="muted">The dispenser will remain <b>Inactive</b> until the attendant confirms the assignment with their PIN.</p>';
+  showSettingsConfirmation('Confirm Dispenser Activation Assignment',details,async()=>{await api('/api/shifts',{method:'POST',body:JSON.stringify({employee_id:employeeId,nozzle_id:id,opening_tank_liters:openingTankLiters,activation_nozzles:selected.map(x=>({nozzle_id:x.nozzle_id,opening_reading:x.activation_number}))})});closeDispenserActivation();toast('Shift assignment sent for attendant confirmation');await loadSettingsData();});}
 async function toggleNozzle(id,active){if(!active){openDispenserActivation(id);return;}const d=(window.dispenserRecords||[]).find(x=>x.id===id);showSettingsConfirmation('Confirm Dispenser Deactivation','<p>Dispenser: <b>'+h(d?.nozzle_code||id)+'</b></p><p>Status: <b>Active → Inactive</b></p>',async()=>{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:false})});toast('Dispenser deactivated');await loadSettingsData();});}
 async function removeDispenser(id){const d=(window.dispenserRecords||[]).find(x=>x.id===id);if(!d)return;showSettingsConfirmation('Confirm Dispenser Removal','<p>Dispenser: <b>'+h(d.nozzle_code||id)+'</b></p><p>This dispenser will be <b>permanently removed</b>.</p>',async()=>{await api('/api/nozzles/'+id,{method:'DELETE'});toast('Dispenser removed');await loadSettingsData();});}
 async function createDispenser(event){event.preventDefault();const body={product:document.getElementById('dispenser-product').value,tank_id:document.getElementById('dispenser-tank').value,nozzle_count:Number(document.getElementById('dispenser-nozzle-count').value)};showSettingsConfirmation('Confirm Add Fuel Dispenser','<p>Product: <b>'+h(body.product)+'</b></p><p>Tank: <b>'+h(body.tank_id)+'</b></p><p>Nozzles: <b>'+body.nozzle_count+'</b></p><p>Initial status: <b>Inactive</b></p>',async()=>{await api('/api/nozzles',{method:'POST',body:JSON.stringify(body)});event.target.reset();closeAddModal('add-dispenser-modal');toast('Dispenser created');await loadSettingsData();});}
