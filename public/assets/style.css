@@ -270,3 +270,22 @@
     max-width:none;
   }
 }
+
+/* Consistent green state for every active Admin Settings card */
+.admin-settings-page .settings-active-card{
+  border-color:#b7e4c7!important;
+  background:linear-gradient(180deg,#f1fbf4 0%,#fbfefc 100%)!important;
+  box-shadow:0 7px 22px rgba(22,101,52,.08)!important;
+}
+.admin-settings-page .settings-active-card b{color:#176b3a!important}
+.admin-settings-page .settings-active-card .muted{color:#4f6f5a!important}
+.admin-settings-page .settings-active-card .row button:not(.primary){
+  background:#e8f7ed!important;
+  color:#176b3a!important;
+  border:1px solid #ccebd7;
+}
+.admin-settings-page .settings-active-card .row button.primary{
+  background:#15803d!important;
+}
+/* Keep the dispenser's existing green header treatment while applying the same active state */
+.admin-settings-page .dispenser-active-card{border-color:#b7e4c7!important}
