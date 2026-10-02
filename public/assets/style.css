@@ -463,3 +463,15 @@
   .attendant-page .pending-nozzle-code{font-size:14px}
 }
 
+
+
+/* Extra-compact pending shift info */
+.attendant-page .pending-shift-info{gap:6px;padding:8px 10px;border-radius:12px}
+.attendant-page .pending-info-block{gap:7px}
+.attendant-page .pending-info-icon{width:26px;height:26px;flex-basis:26px;border-radius:8px;font-size:14px}
+.attendant-page .pending-label{margin-bottom:2px;font-size:10px}
+.attendant-page .pending-info-block strong{font-size:11px}
+.attendant-page .pending-tank-opening{gap:7px;margin-top:0;padding:6px 9px;border-radius:10px}
+.attendant-page .pending-tank-opening strong{font-size:16px}
+.attendant-page .pending-tank-opening strong small{font-size:11px}
+@media(max-width:600px){.attendant-page .pending-shift-info{gap:6px;padding:9px;border-radius:12px}.attendant-page .pending-info-icon{width:25px;height:25px;flex-basis:25px;font-size:13px}.attendant-page .pending-label{font-size:10px}.attendant-page .pending-info-block strong{font-size:11px}.attendant-page .pending-tank-opening{padding:6px 8px}.attendant-page .pending-tank-opening strong{font-size:16px}.attendant-page .pending-tank-opening strong small{font-size:11px}}
