@@ -134,8 +134,8 @@
   box-shadow:0 7px 22px rgba(22,101,52,.08)!important;
 }
 .admin-settings-page .dispenser-settings-card.dispenser-active-card .dispenser-card-head{
-  padding-bottom:13px;
-  border-bottom:1px solid #dcefe2;
+  padding-bottom:4px;
+  border-bottom:0;
 }
 .admin-settings-page .dispenser-active-card .section-kicker{color:#15803d}
 .admin-settings-page .dispenser-active-card .dispenser-product{color:#4f6f5a}
