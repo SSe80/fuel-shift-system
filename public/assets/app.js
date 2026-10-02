@@ -112,21 +112,48 @@ async function userDashboard(){
         '<div class="row"><button class="primary">Confirm Readings & Start Shift</button><button type="button" onclick="cancelPendingShift(\''+s.id+'\')">Cancel Shift</button></div></form></div>';
     }).join('');
 
-    const pendingHandoverHtml=pendingHandovers.map(x=>{
+    const pendingOutgoingHandovers=handovers.filter(x=>x.status==='pending'&&String(x.from_employee_id)===String(me.id));
+    const pendingIncomingHandovers=handovers.filter(x=>x.status==='pending'&&String(x.to_employee_id)===String(me.id));
+
+    const renderHandoverReadings=(x)=>{
+      const rows=Array.isArray(x.closing_nozzle_readings)&&x.closing_nozzle_readings.length
+        ?x.closing_nozzle_readings
+        :[{nozzle_id:'Nozzle 1',reading:x.closing_reading}];
+      return rows.map((r,i)=>
+        '<div class="handover-pending-reading"><span>Nozzle '+(i+1)+' <small>'+h(r.nozzle_id||'')+'</small></span><strong>'+reading(r.reading)+'</strong></div>'
+      ).join('');
+    };
+
+    const pendingOutgoingHtml=pendingOutgoingHandovers.map(x=>{
       const shift=shifts.find(s=>s.id===x.shift_id), n=nozzles.find(item=>item.id===shift?.nozzle_id);
-      return '<div class="card"><div class="top"><h3>Pending Handover</h3><span class="badge">Awaiting confirmation</span></div>'+
-        '<p>From: <b>'+h(employeeNames[x.from_employee_id]||x.from_employee_id)+'</b></p>'+
-        '<p>Dispenser: <b>'+h(n?.nozzle_code||shift?.nozzle_id||'Dispenser')+'</b></p>'+
-        '<p>Closing meter: <b>'+liters(x.closing_reading)+'</b> • Closing tank: <b>'+liters(x.closing_liters)+' L</b></p>'+
-        '<form class="form" onsubmit="confirmHandoverFromDashboard(event,\''+x.id+'\')">'+
-        '<input id="dashboard-confirm-reading-'+x.id+'" type="number" min="0" step="0.01" placeholder="Opening meter reading" required>'+
-        '<input id="dashboard-confirm-mm-'+x.id+'" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" required>'+
-        '<input id="dashboard-confirm-liters-'+x.id+'" type="number" min="0" step="0.01" placeholder="Opening tank liters" required>'+
-        '<input id="dashboard-handover-pin-'+x.id+'" type="password" inputmode="numeric" placeholder="Enter your PIN" required>'+
-        '<button class="primary">Confirm Handover & Start Shift</button></form></div>';
+      return '<div class="card pending-confirmation-card handover-pending-card">'+
+        '<div class="pending-hero"><div class="pending-hero-icon">↔</div><div><div class="pending-card-title">Pending Handover</div><div class="pending-card-subtitle">Waiting for the receiving attendant to confirm the handover.</div></div></div>'+
+        '<div class="handover-pending-summary">'+
+          '<div class="handover-pending-main"><span>Receiving attendant</span><strong>'+h(employeeNames[x.to_employee_id]||x.to_employee_id)+'</strong></div>'+
+          '<div class="handover-pending-section"><div class="handover-pending-title">Closing meter readings</div>'+renderHandoverReadings(x)+'</div>'+
+          '<div class="handover-pending-main"><span>Tank closing stock</span><strong>'+liters(x.closing_liters)+' L</strong></div>'+
+        '</div>'+
+        '<div class="row handover-pending-actions"><button type="button" class="btn" onclick="cancelPendingHandover(\''+x.id+'\')">Cancel Handover</button></div>'+
+      '</div>';
     }).join('');
 
-    const activeHtml=active.map(s=>{
+    const pendingIncomingHtml=pendingIncomingHandovers.map(x=>{
+      const shift=shifts.find(s=>s.id===x.shift_id), n=nozzles.find(item=>item.id===shift?.nozzle_id);
+      return '<div class="card pending-confirmation-card handover-receive-card">'+
+        '<div class="pending-hero"><div class="pending-hero-icon">◷</div><div><div class="pending-card-title">Pending Handover Confirmation</div><div class="pending-card-subtitle">Please review the closing readings and confirm with your PIN.</div></div></div>'+
+        '<div class="handover-pending-summary">'+
+          '<div class="handover-pending-main"><span>From attendant</span><strong>'+h(employeeNames[x.from_employee_id]||x.from_employee_id)+'</strong></div>'+
+          '<div class="handover-pending-section"><div class="handover-pending-title">Closing meter readings</div>'+renderHandoverReadings(x)+'</div>'+
+          '<div class="handover-pending-main"><span>Tank closing stock</span><strong>'+liters(x.closing_liters)+' L</strong></div>'+
+        '</div>'+
+        '<form class="form" onsubmit="confirmHandoverFromDashboard(event,\''+x.id+'\')">'+
+          '<input id="dashboard-handover-pin-'+x.id+'" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required>'+
+          '<div class="row"><button class="primary">Confirm Handover & Start Shift</button><button type="button" onclick="cancelPendingHandover(\''+x.id+'\')">Cancel Handover</button></div>'+
+        '</form>'+
+      '</div>';
+    }).join('');
+
+    const activeForDisplay=active.filter(s=>!pendingOutgoingHandovers.some(x=>String(x.shift_id)===String(s.id)));\n    const activeHtml=activeForDisplay.map(s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
       const readings=Array.isArray(s.activation_nozzles)&&s.activation_nozzles.length
         ?s.activation_nozzles
@@ -149,7 +176,7 @@ async function userDashboard(){
         '<button class="primary active-close-shift" type="button" onclick="closeShift(event,\''+s.id+'\')">Close Shift</button></div></div>';
     }).join('');
 
-    box.innerHTML=pendingShiftHtml+pendingHandoverHtml+activeHtml;
+    box.innerHTML=pendingShiftHtml+pendingOutgoingHtml+pendingIncomingHtml+activeHtml;
     if(!box.innerHTML)box.innerHTML='';
   }catch(e){
     if(e.message==='Unauthorized')location.href='attendant-login.html';
@@ -212,8 +239,20 @@ async function cancelPendingShift(id){
 }
 async function confirmHandoverFromDashboard(event,id){
   event.preventDefault();
-  try{await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('dashboard-confirm-reading-'+id).value),opening_mm:Number(document.getElementById('dashboard-confirm-mm-'+id).value),opening_liters:Number(document.getElementById('dashboard-confirm-liters-'+id).value),pin:document.getElementById('dashboard-handover-pin-'+id).value})});toast('Handover confirmed and shift started');await userDashboard();}
-  catch(e){toast(e.message);}
+  const pin=document.getElementById('dashboard-handover-pin-'+id)?.value||'';
+  try{
+    await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({pin})});
+    toast('Handover confirmed and shift started');
+    await userDashboard();
+  }catch(e){toast(e.message);}
+}
+async function cancelPendingHandover(id){
+  if(!confirm('Cancel this pending handover?'))return;
+  try{
+    await api('/api/handovers/'+id+'/cancel',{method:'POST',body:'{}'});
+    toast('Pending handover cancelled');
+    await userDashboard();
+  }catch(e){toast(e.message);}
 }
 
 async function closeShift(event,id){
