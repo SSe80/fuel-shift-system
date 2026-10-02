@@ -250,3 +250,23 @@
     padding-right:14px;
   }
 }
+
+/* Final active dispenser card refinements */
+.admin-settings-page .dispenser-active-card .dispenser-card-actions{
+  border-top:1px solid #e3e7eb;
+  background:#fff;
+}
+.admin-settings-page .dispenser-active-card .dispenser-detail-block{
+  border-top:1px solid #e3e7eb;
+  border-bottom:0;
+}
+.admin-settings-page .dispenser-active-card .dispenser-info-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  max-width:560px;
+}
+@media(max-width:600px){
+  .admin-settings-page .dispenser-active-card .dispenser-info-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    max-width:none;
+  }
+}
