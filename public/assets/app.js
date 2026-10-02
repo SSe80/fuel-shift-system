@@ -958,12 +958,13 @@ function continueHandover(event){
   window.handoverDraft={...window.handoverDraft,to_employee_id:to,closing_reading:primaryReading,closing_nozzle_readings:closingNozzleReadings,closing_liters:closingLiters};
   const employeeSelect=document.getElementById('handover-to-employee');
   const employeeName=employeeSelect?.selectedOptions?.[0]?.textContent||to;
+  const reviewNozzles=closingNozzleReadings.map((x,i)=>
+    '<div class="handover-review-item"><span>Nozzle '+(i+1)+' — Closing Reading</span><strong>'+x.reading.toLocaleString(undefined,{maximumFractionDigits:2})+'</strong></div>'
+  ).join('');
   document.getElementById('handover-review-details').innerHTML=
-    '<div class="handover-review-item"><span>Dispenser</span><strong>'+h(window.handoverDraft?.nozzle_code||window.handoverDraft?.nozzle_id||'—')+'</strong></div>'+
-    '<div class="handover-review-item"><span>Tank</span><strong>'+h(window.handoverDraft?.tank_code||window.handoverDraft?.tank_id||'Not connected')+'</strong></div>'+
-    '<div class="handover-review-item"><span>Receiving attendant</span><strong>'+h(employeeName)+'</strong></div>'+
-    '<div class="handover-review-item"><span>Closing nozzle readings</span><strong>'+closingNozzleReadings.map(x=>h(x.nozzle_id)+': '+x.reading.toLocaleString(undefined,{maximumFractionDigits:2})).join('<br>')+'</strong></div>'+
-    '<div class="handover-review-item"><span>Tank closing liter</span><strong>'+closingLiters.toLocaleString(undefined,{maximumFractionDigits:2})+' L</strong></div>';
+    '<div class="handover-review-item"><span>Receiving Attendant</span><strong>'+h(employeeName)+'</strong></div>'+
+    reviewNozzles+
+    '<div class="handover-review-item"><span>Tank Closing Stock</span><strong>'+closingLiters.toLocaleString(undefined,{maximumFractionDigits:2})+' L</strong></div>';
   closeHandoverModal('handover-input-modal');
   const review=document.getElementById('handover-review-modal');
   if(review){review.classList.add('open');review.setAttribute('aria-hidden','false');}
