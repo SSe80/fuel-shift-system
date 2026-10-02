@@ -100,17 +100,16 @@ async function userDashboard(){
       const n=nozzles.find(x=>x.id===s.nozzle_id);
       const readings=Array.isArray(s.activation_nozzles)?s.activation_nozzles:[];
       const nozzleReadings=readings.length
-        ?readings.map(x=>'<div class="pending-nozzle-reading"><div class="pending-nozzle-name">'+h(x.nozzle_id)+'</div><div class="pending-nozzle-value">'+reading(x.opening_reading)+'</div></div>').join('')
+        ?readings.map((x,i)=>'<div class="pending-nozzle-card"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(x.opening_reading)+'</div><div class="pending-nozzle-code">'+h(x.nozzle_id)+'</div></div>').join('')
         :'<div class="muted">No nozzle readings recorded.</div>';
-      return '<div class="card pending-confirmation-card"><div class="pending-card-title">Pending Shift Confirmation</div><span class="badge pending-badge">Awaiting confirmation</span>'+
-        '<div class="pending-dispenser-line">'+h(n?.nozzle_code||s.nozzle_id)+' <span>•</span> '+h(codeForProduct(n?.product||''))+'</div>'+
-        '<div class="pending-info-line">Tank: <b>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</b></div>'+
-        '<div class="pending-info-line">Tank opening: <b>'+liters(s.opening_tank_liters)+' L</b></div>'+
-        '<div class="pending-nozzle-section"><div class="pending-nozzle-heading">Nozzle opening readings</div>'+nozzleReadings+'</div>'+
+      return '<div class="card pending-confirmation-card">'+
+        '<div class="pending-hero"><div class="pending-hero-icon">◷</div><div><div class="pending-card-title">Pending Shift Confirmation</div><div class="pending-card-subtitle">Please review the shift details and confirm when ready.</div></div></div>'+
+        '<div class="pending-status"><span class="pending-status-icon">◷</span> Awaiting confirmation</div>'+
+        '<div class="pending-shift-info"><div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n?.nozzle_code||s.nozzle_id)+'</strong></div></div><div class="pending-info-divider"></div><div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank</span><strong>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</strong></div></div><div class="pending-tank-opening"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank opening</span><strong>'+liters(s.opening_tank_liters)+' <small>L</small></strong></div></div></div>'+
+        '<div class="pending-nozzle-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Nozzle opening readings</div>'+nozzleReadings+'</div>'+
         '<form class="form" onsubmit="confirmShiftAssignment(event,\''+s.id+'\')">'+
         '<input id="assignment-pin-'+s.id+'" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required>'+
-        '<div class="row"><button class="primary">Confirm Readings & Start Shift</button>'+
-        '<button type="button" onclick="cancelPendingShift(\''+s.id+'\')">Cancel Shift</button></div></form></div>';
+        '<div class="row"><button class="primary">Confirm Readings & Start Shift</button><button type="button" onclick="cancelPendingShift(\''+s.id+'\')">Cancel Shift</button></div></form></div>';
     }).join('');
 
     const pendingHandoverHtml=pendingHandovers.map(x=>{
@@ -164,7 +163,12 @@ async function loadAttendantShiftPage(){
         const n=nozzles.find(x=>x.id===s.nozzle_id);
         const readings=Array.isArray(s.activation_nozzles)?s.activation_nozzles:[];
         const nozzleReadings=readings.length?readings.map(x=>'<div class="pending-nozzle-reading"><div class="pending-nozzle-name">'+h(x.nozzle_id)+'</div><div class="pending-nozzle-value">'+reading(x.opening_reading)+'</div></div>').join(''):'<div class="muted">No nozzle readings recorded.</div>';
-        return '<div class="card pending-confirmation-card"><div class="pending-card-title">Pending Shift Confirmation</div><span class="badge pending-badge">Awaiting confirmation</span><div class="pending-dispenser-line">'+h(n?.nozzle_code||s.nozzle_id)+' <span>•</span> '+h(codeForProduct(n?.product||''))+'</div><div class="pending-info-line">Tank: <b>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</b></div><div class="pending-info-line">Tank opening: <b>'+liters(s.opening_tank_liters)+' L</b></div><div class="pending-nozzle-section"><div class="pending-nozzle-heading">Nozzle opening readings</div>'+nozzleReadings+'</div><form class="form" onsubmit="confirmShiftAssignment(event,\''+s.id+'\')"><input id="assignment-pin-'+s.id+'" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required><div class="row"><button class="primary">Confirm Readings & Start Shift</button><button type="button" onclick="cancelPendingShift(\''+s.id+'\')">Cancel Shift</button></div></form></div>';
+        return '<div class="card pending-confirmation-card">'+
+          '<div class="pending-hero"><div class="pending-hero-icon">◷</div><div><div class="pending-card-title">Pending Shift Confirmation</div><div class="pending-card-subtitle">Please review the shift details and confirm when ready.</div></div></div>'+
+          '<div class="pending-status"><span class="pending-status-icon">◷</span> Awaiting confirmation</div>'+
+          '<div class="pending-shift-info"><div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n?.nozzle_code||s.nozzle_id)+'</strong></div></div><div class="pending-info-divider"></div><div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank</span><strong>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</strong></div></div><div class="pending-tank-opening"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank opening</span><strong>'+liters(s.opening_tank_liters)+' <small>L</small></strong></div></div></div>'+
+          '<div class="pending-nozzle-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Nozzle opening readings</div>'+nozzleReadings+'</div>'+
+          '<form class="form" onsubmit="confirmShiftAssignment(event,\''+s.id+'\')"><input id="assignment-pin-'+s.id+'" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required><div class="row"><button class="primary">Confirm Readings & Start Shift</button><button type="button" onclick="cancelPendingShift(\''+s.id+'\')">Cancel Shift</button></div></form></div>';
       }).join(''):'<div class="card"><p>No pending shift confirmations.</p></div>';
     }
     const history=mine.filter(s=>s.status!=='assigned');
