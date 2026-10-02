@@ -126,3 +126,34 @@
   .admin-settings-page .dispenser-card-actions button{width:100%}
   .admin-settings-page .dispenser-danger-action{width:100%}
 }
+
+/* Active dispenser visual state */
+.admin-settings-page .dispenser-settings-card.dispenser-active-card{
+  border-color:#b7e4c7!important;
+  background:linear-gradient(180deg,#f1fbf4 0%,#fbfefc 100%)!important;
+  box-shadow:0 7px 22px rgba(22,101,52,.08)!important;
+}
+.admin-settings-page .dispenser-settings-card.dispenser-active-card .dispenser-card-head{
+  padding-bottom:13px;
+  border-bottom:1px solid #dcefe2;
+}
+.admin-settings-page .dispenser-active-card .section-kicker{color:#15803d}
+.admin-settings-page .dispenser-active-card .dispenser-product{color:#4f6f5a}
+.admin-settings-page .dispenser-active-card .dispenser-info-grid>div{
+  border-color:#d9eee0;
+  background:rgba(255,255,255,.72);
+}
+.admin-settings-page .dispenser-active-card .dispenser-detail-block{border-top-color:#dcefe2}
+.admin-settings-page .dispenser-active-card .dispenser-nozzle-tag{
+  background:#e8f7ed;
+  color:#176b3a;
+  border:1px solid #ccebd7;
+}
+.admin-settings-page .dispenser-active-card .dispenser-status.is-active{
+  background:#dcfce7;
+  color:#15803d;
+  border:1px solid #b7e4c7;
+}
+.admin-settings-page .dispenser-active-card .dispenser-card-actions{
+  border-top-color:#dcefe2;
+}
