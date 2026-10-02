@@ -188,3 +188,18 @@
   padding-top:14px;
   border-top:1px solid #cfe6d7;
 }
+
+/* Let the white information area run all the way to the dispenser card edges */
+.admin-settings-page .dispenser-active-card .dispenser-main-body{
+  margin-left:-19px;
+  margin-right:-19px;
+  border-left:0;
+  border-right:0;
+  border-radius:0;
+}
+@media(max-width:600px){
+  .admin-settings-page .dispenser-active-card .dispenser-main-body{
+    margin-left:-14px;
+    margin-right:-14px;
+  }
+}
