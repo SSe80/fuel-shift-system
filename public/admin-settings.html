@@ -191,8 +191,24 @@
     <div id="dispensers"></div>
   </div>
 
+  <div id="settings-confirm-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeSettingsConfirmation()"></div>
+    <div class="modal-card">
+      <div class="top">
+        <h3 id="settings-confirm-title">Confirm Change</h3>
+        <button type="button" class="modal-close" onclick="closeSettingsConfirmation()" aria-label="Close">×</button>
+      </div>
+      <div id="settings-confirm-details"></div>
+      <p class="muted">Review the changes above before applying them.</p>
+      <div class="row">
+        <button type="button" onclick="closeSettingsConfirmation()">Cancel</button>
+        <button type="button" class="primary" onclick="confirmSettingsAction()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <div id="settings-status" class="muted"></div>
 </main>
-<script src="assets/app.js?v=20261002-06"></script>
+<script src="assets/app.js?v=20261002-07"></script>
 <script src="assets/app-boot.js?v=20261002-03"></script></body>
 </html>
