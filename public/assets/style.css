@@ -343,21 +343,21 @@
   align-items:center;
   gap:22px;
   margin-top:2px;
-  padding:24px 28px;
+  padding:22px 28px;
   border-radius:18px;
   background:linear-gradient(135deg,#f2f7ff,#eef5ff);
 }
 .attendant-page .pending-tank-opening strong{
   display:block;
   color:#071633;
-  font-size:45px;
+  font-size:39px;
   line-height:1;
   font-weight:800;
   letter-spacing:-.035em;
   font-variant-numeric:tabular-nums;
 }
 .attendant-page .pending-tank-opening strong small{
-  font-size:27px;
+  font-size:24px;
   font-weight:600;
   letter-spacing:0;
 }
@@ -453,8 +453,8 @@
   .attendant-page .pending-label{font-size:14px}
   .attendant-page .pending-info-block strong{font-size:17px}
   .attendant-page .pending-tank-opening{padding:18px;gap:14px}
-  .attendant-page .pending-tank-opening strong{font-size:34px}
-  .attendant-page .pending-tank-opening strong small{font-size:21px}
+  .attendant-page .pending-tank-opening strong{font-size:31px}
+  .attendant-page .pending-tank-opening strong small{font-size:20px}
   .attendant-page .pending-nozzle-section{margin-top:26px}
   .attendant-page .pending-nozzle-heading{gap:12px;font-size:20px}
   .attendant-page .pending-section-icon{width:44px;height:44px;flex-basis:44px}
