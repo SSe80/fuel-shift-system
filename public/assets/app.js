@@ -297,6 +297,10 @@ async function loadSettingsData(){
     const pending=pendingByDispenser[n.id];
     const shift=pending||shifts.find(s=>s.nozzle_id===n.id&&s.status==='active');
     const attendant=shift?employees.find(e=>e.id===shift.employee_id):null;
+    const activeReadings=shift&&Array.isArray(shift.activation_nozzles)?shift.activation_nozzles:[];
+    const activeReadingText=activeReadings.length
+      ?activeReadings.map(r=>'<div class="dispenser-reading-row"><span>'+h(r.nozzle_id)+'</span><b>'+Number(r.opening_reading||0).toFixed(0)+'</b></div>').join('')
+      :'<span class="muted">No opening readings recorded</span>';
     const productCode=codeForProduct(n.product);
     const nozzleCount=Number(n.nozzle_count||1);
     const nozzleLabel=nozzleCount===1?'1 nozzle':nozzleCount+' nozzles';
@@ -329,6 +333,7 @@ async function loadSettingsData(){
         '<div><span>Tank opening</span><b>'+(n.opening_tank_liters==null?'Not recorded':liters(n.opening_tank_liters)+' L')+'</b></div>'+
         (n.active?'<div><span>Current shift</span><b>'+(attendant?h(attendant.name):'No active shift')+'</b></div>':'')+
       '</div>'+
+      '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle opening readings</span>'+activeReadingText+'</div>'+
       '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle identifiers</span><div class="dispenser-nozzle-list">'+(nozzleIds||'<span class="muted">No nozzle identifiers</span>')+'</div></div>'+
       '</div>'+
       '<div class="dispenser-card-actions">'+
