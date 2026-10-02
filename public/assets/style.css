@@ -475,3 +475,14 @@
 .attendant-page .pending-tank-opening strong{font-size:21px}
 .attendant-page .pending-tank-opening strong small{font-size:15px}
 @media(max-width:600px){.attendant-page .pending-shift-info{gap:10px;padding:14px;border-radius:16px}.attendant-page .pending-info-icon{width:34px;height:34px;flex-basis:34px;font-size:17px}.attendant-page .pending-label{font-size:13px}.attendant-page .pending-info-block strong{font-size:13px}.attendant-page .pending-tank-opening{padding:9px 12px}.attendant-page .pending-tank-opening strong{font-size:21px}.attendant-page .pending-tank-opening strong small{font-size:15px}}
+
+/* Compact nozzle opening readings */
+.attendant-page .pending-nozzle-section{margin-top:12px}
+.attendant-page .pending-nozzle-heading{gap:9px;margin-bottom:8px;font-size:14px}
+.attendant-page .pending-section-icon{width:28px;height:28px;flex-basis:28px;border-radius:11px;font-size:16px}
+.attendant-page .pending-nozzle-reading{margin-bottom:8px;padding:9px 12px;border-radius:12px}
+.attendant-page .pending-nozzle-top{margin-bottom:7px}
+.attendant-page .pending-nozzle-pill{padding:5px 11px;border-radius:9px;font-size:12px}
+.attendant-page .pending-nozzle-number{font-size:25px;letter-spacing:.02em}
+.attendant-page .pending-nozzle-code{margin-top:7px;font-size:12px}
+@media(max-width:600px){.attendant-page .pending-nozzle-section{margin-top:14px}.attendant-page .pending-nozzle-heading{font-size:15px}.attendant-page .pending-section-icon{width:28px;height:28px;flex-basis:28px}.attendant-page .pending-nozzle-reading{padding:10px 12px}.attendant-page .pending-nozzle-number{font-size:24px}.attendant-page .pending-nozzle-code{font-size:11px}}
