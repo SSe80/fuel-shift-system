@@ -100,7 +100,7 @@ async function userDashboard(){
       const n=nozzles.find(x=>x.id===s.nozzle_id);
       const readings=Array.isArray(s.activation_nozzles)?s.activation_nozzles:[];
       const nozzleReadings=readings.length
-        ?readings.map((x,i)=>'<div class="pending-nozzle-card"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(x.opening_reading)+'</div><div class="pending-nozzle-code">'+h(x.nozzle_id)+'</div></div>').join('')
+        ?readings.map((x,i)=>'<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(x.opening_reading)+'</div><div class="pending-nozzle-code">'+h(x.nozzle_id)+'</div></div>').join('')
         :'<div class="muted">No nozzle readings recorded.</div>';
       return '<div class="card pending-confirmation-card">'+
         '<div class="pending-hero"><div class="pending-hero-icon">◷</div><div><div class="pending-card-title">Pending Shift Confirmation</div><div class="pending-card-subtitle">Please review the shift details and confirm when ready.</div></div></div>'+
@@ -162,7 +162,7 @@ async function loadAttendantShiftPage(){
       pendingBox.innerHTML=pending.length?pending.map(s=>{
         const n=nozzles.find(x=>x.id===s.nozzle_id);
         const readings=Array.isArray(s.activation_nozzles)?s.activation_nozzles:[];
-        const nozzleReadings=readings.length?readings.map(x=>'<div class="pending-nozzle-reading"><div class="pending-nozzle-name">'+h(x.nozzle_id)+'</div><div class="pending-nozzle-value">'+reading(x.opening_reading)+'</div></div>').join(''):'<div class="muted">No nozzle readings recorded.</div>';
+        const nozzleReadings=readings.length?readings.map(x=>'<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(readings.indexOf(x)+1)+'</span></div><div class="pending-nozzle-number">'+reading(x.opening_reading)+'</div><div class="pending-nozzle-code">'+h(x.nozzle_id)+'</div></div>').join(''):'<div class="muted">No nozzle readings recorded.</div>';
         return '<div class="card pending-confirmation-card">'+
           '<div class="pending-hero"><div class="pending-hero-icon">◷</div><div><div class="pending-card-title">Pending Shift Confirmation</div><div class="pending-card-subtitle">Please review the shift details and confirm when ready.</div></div></div>'+
           ''+
