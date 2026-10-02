@@ -569,3 +569,106 @@
   .attendant-page .active-shift-card .active-shift-actions{display:grid;grid-template-columns:1fr 1fr}
   .attendant-page .active-shift-card .active-shift-actions .btn{width:100%}
 }
+
+
+/* Attendant panel — full red theme */
+.attendant-page{
+  --att-red:#dc2638;
+  --att-red-dark:#b91c2d;
+  --att-red-deep:#7f1721;
+  --att-red-soft:#fff0f1;
+  --att-red-pale:#fff7f7;
+  --att-red-border:#f3a0aa;
+  background:linear-gradient(180deg,#fff7f7 0%,#fff 48%,#fff5f6 100%);
+  color:#3f1720;
+}
+.attendant-page .wrap{color:#3f1720}
+.attendant-page h1,.attendant-page h2,.attendant-page h3,
+.attendant-page .section-title,.attendant-page .top h3{
+  color:var(--att-red-deep);
+}
+.attendant-page .muted,.attendant-page .hint{color:#8b6268}
+.attendant-page .nav{gap:8px}
+.attendant-page .nav a{
+  background:#fff0f1;
+  color:#a71929;
+  border:1px solid #fecdd3;
+}
+.attendant-page .nav a:hover,
+.attendant-page .nav a.active{
+  background:linear-gradient(135deg,#dc2638,#c91f32);
+  color:#fff;
+  border-color:#b91c2d;
+}
+.attendant-page .card{
+  border:1px solid #f3c2c8;
+  background:#fff;
+  box-shadow:0 7px 24px rgba(194,35,53,.08);
+}
+.attendant-page .btn,
+.attendant-page button{
+  background:#fff0f1;
+  color:#b42333;
+  border:1px solid #fecdd3;
+}
+.attendant-page .btn.primary,
+.attendant-page button.primary{
+  background:linear-gradient(135deg,#dc2638,#c91f32);
+  color:#fff;
+  border-color:#b91c2d;
+  box-shadow:0 4px 12px rgba(194,35,53,.16);
+}
+.attendant-page .btn.primary:hover,
+.attendant-page button.primary:hover{
+  background:linear-gradient(135deg,#c91f32,#b91c2d);
+}
+.attendant-page .btn.danger,
+.attendant-page button.danger{
+  background:#dc2638;
+  color:#fff;
+  border-color:#b91c2d;
+}
+.attendant-page .badge{
+  background:#ffe1e5;
+  color:#b42333;
+  border:1px solid #fecdd3;
+}
+.attendant-page .stat{
+  background:linear-gradient(135deg,#fff5f6,#ffedef);
+  border:1px solid #fecdd3;
+}
+.attendant-page .stat b{color:#7f1721}
+.attendant-page .table th,
+.attendant-page .table td{border-bottom-color:#f7d9dd}
+.attendant-page .form input,
+.attendant-page .form select{
+  border-color:#f0b8bf;
+  background:#fff;
+  color:#3f1720;
+}
+.attendant-page .form input:focus,
+.attendant-page .form select:focus{
+  border-color:#dc2638;
+  box-shadow:0 0 0 3px rgba(220,38,56,.12);
+}
+.attendant-page .form input::placeholder{color:#a98489}
+.attendant-page .section-title{color:#7f1721}
+.attendant-page .alert{
+  background:#fff0f1;
+  color:#8f1d2a;
+  border:1px solid #fecdd3;
+}
+.attendant-page .toast{background:#7f1721;color:#fff}
+.attendant-page .footer{color:#9a6870}
+.attendant-page a{color:#b42333}
+.attendant-page .modal-card{
+  border:1px solid #f3a0aa;
+  box-shadow:0 18px 55px rgba(194,35,53,.18);
+}
+.attendant-page .modal-close{color:#b42333}
+.attendant-page .modal-close:hover{background:#fff0f1}
+
+/* Keep the active/pending cards consistently red */
+.attendant-page .pending-confirmation-card{
+  border-color:#f3a0aa!important;
+}
