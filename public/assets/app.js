@@ -331,6 +331,7 @@ async function loadSettingsData(){
     return '<div class="card dispenser-settings-card '+(n.active?'dispenser-active-card':'')+'">'+
       '<div class="dispenser-card-head"><div><span class="section-kicker">FUEL DISPENSER</span><h3>'+h(n.nozzle_code)+'</h3><div class="dispenser-product">'+h(productCode)+' <span>•</span> '+h(nozzleLabel)+'</div></div>'+
       '<div class="dispenser-status '+(n.active?'is-active':'is-inactive')+'"><span></span>'+(n.active?'Active':'Inactive')+'</div></div>'+
+      '<div class="dispenser-main-body">'+
       '<div class="dispenser-info-grid">'+
         '<div><span>Connected tank</span><b>'+h(tank?.tank_code||n.tank_id||'Not connected')+'</b></div>'+
         '<div><span>Tank opening</span><b>'+(n.opening_tank_liters==null?'Not recorded':liters(n.opening_tank_liters)+' L')+'</b></div>'+
@@ -338,6 +339,7 @@ async function loadSettingsData(){
         '<div><span>Current shift</span><b>'+(attendant?h(attendant.name):'No active shift')+'</b></div>'+
       '</div>'+
       '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle identifiers</span><div class="dispenser-nozzle-list">'+(nozzleIds||'<span class="muted">No nozzle identifiers</span>')+'</div></div>'+
+      '</div>'+
       '<div class="dispenser-card-actions">'+
         '<button type="button" class="primary" onclick="toggleNozzle(\''+n.id+'\','+n.active+')">'+(n.active?'Deactivate':'Activate dispenser')+'</button>'+
         '<button type="button" onclick="openDispenserEdit(\''+n.id+'\')">Edit dispenser</button>'+
