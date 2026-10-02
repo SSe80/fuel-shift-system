@@ -1,2 +1,90 @@
 :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#17202a;background:#f4f7f9}*{box-sizing:border-box}body{margin:0;padding:18px}a{text-decoration:none;color:inherit}.wrap{max-width:720px;margin:auto}.card{background:#fff;border-radius:18px;padding:20px;box-shadow:0 4px 20px #00000012;margin:14px auto}.center{text-align:center;max-width:520px;margin:10vh auto}.logo{font-size:48px}.muted,.hint{color:#667085}.hint{font-size:13px}.grid{display:grid;grid-template-columns:1fr;gap:12px;margin:20px 0}.btn,button{display:inline-block;border:0;border-radius:12px;padding:13px 16px;background:#e9eef3;font-weight:700;cursor:pointer;font-size:15px}.btn.primary,button.primary{background:#1264d8;color:white}.btn.success{background:#198754;color:#fff}.btn.danger{background:#dc3545;color:#fff}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.nav{display:flex;gap:8px;overflow:auto;margin:14px 0}.nav a{white-space:nowrap;padding:9px 12px;background:#eef2f6;border-radius:10px;font-size:13px}.form{display:grid;gap:12px}.form input,.form select{width:100%;padding:12px;border:1px solid #d7dde4;border-radius:10px;font-size:16px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{padding:15px;background:#f6f8fa;border-radius:14px}.stat b{display:block;font-size:24px}.table{width:100%;border-collapse:collapse;font-size:14px}.table th,.table td{padding:10px 6px;border-bottom:1px solid #edf0f2;text-align:left}.badge{display:inline-block;padding:5px 8px;border-radius:99px;background:#dff6e8;color:#16733b;font-size:12px;font-weight:700}.alert{padding:12px;border-radius:12px;background:#fff3cd;margin:10px 0}.section-title{margin-top:26px}.footer{font-size:12px;color:#7a8490;text-align:center;margin:24px}.toast{position:fixed;left:15px;right:15px;bottom:15px;background:#17202a;color:white;padding:13px;border-radius:12px;display:none}@media(min-width:600px){.grid{grid-template-columns:1fr 1fr}.statgrid{grid-template-columns:repeat(4,1fr)}}
 .modal{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:18px}.modal.open{display:flex}.modal-backdrop{position:absolute;inset:0;background:#00000066}.modal-card{position:relative;z-index:1;width:min(100%,520px);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:22px;box-shadow:0 16px 50px #00000033}.modal-card h3{margin:0}.modal-close{padding:4px 10px;background:transparent;font-size:28px;line-height:1}.modal-close:hover{background:#eef2f6}
+/* Admin Settings — polished control-panel UI */
+.admin-settings-page{background:linear-gradient(180deg,#f7f9fc 0%,#eef3f8 100%);color:#182230}
+.admin-settings-page .wrap{max-width:900px;padding:8px 0 42px}
+.admin-settings-page .settings-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:18px 4px 20px}
+.admin-settings-page .eyebrow,.admin-settings-page .section-kicker{display:block;font-size:11px;letter-spacing:.12em;font-weight:800;color:#64748b;margin-bottom:5px}
+.admin-settings-page .settings-header h1{margin:0;font-size:32px;line-height:1.1;letter-spacing:-.03em}
+.admin-settings-page .settings-header .muted{margin:7px 0 0;font-size:14px}
+.admin-settings-page .settings-back{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border:1px solid #d8e0e8;border-radius:12px;background:#fff;color:#334155;font-weight:750;box-shadow:0 2px 8px #17202a0a}
+.admin-settings-page .settings-back:hover{background:#f8fafc;transform:translateY(-1px)}
+.admin-settings-page .settings-section{margin:0 0 18px;padding:22px;border:1px solid #e1e8f0;border-radius:20px;background:#fff;box-shadow:0 7px 26px #17202a0d}
+.admin-settings-page .section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #edf1f5}
+.admin-settings-page .section-heading h2{margin:0;font-size:21px;letter-spacing:-.02em}
+.admin-settings-page .section-heading p{margin:5px 0 0;color:#718096;font-size:13px;line-height:1.45}
+.admin-settings-page .section-kicker{color:#1264d8;margin-bottom:6px}
+.admin-settings-page .add-action{white-space:nowrap;min-height:44px;padding:11px 16px;border-radius:12px}
+.admin-settings-page #employees,.admin-settings-page #products,.admin-settings-page #tanks,.admin-settings-page #dispensers{display:grid;gap:10px}
+.admin-settings-page #employees>.card,.admin-settings-page #products>.card,.admin-settings-page #tanks>.card,.admin-settings-page #dispensers>.card{
+  margin:0;padding:16px 17px;border:1px solid #e5eaf0;border-radius:15px;background:#fbfcfe;box-shadow:none
+}
+.admin-settings-page #employees>.card:hover,.admin-settings-page #products>.card:hover,.admin-settings-page #tanks>.card:hover,.admin-settings-page #dispensers>.card:hover{
+  border-color:#cbd7e5;box-shadow:0 5px 16px #17202a0b
+}
+.admin-settings-page #employees .top,.admin-settings-page #products .top,.admin-settings-page #tanks .top,.admin-settings-page #dispensers .top{align-items:flex-start}
+.admin-settings-page #employees b,.admin-settings-page #products b,.admin-settings-page #tanks b,.admin-settings-page #dispensers b{font-size:15px;color:#17202a}
+.admin-settings-page #employees .muted,.admin-settings-page #products .muted,.admin-settings-page #tanks .muted,.admin-settings-page #dispensers .muted{font-size:12.5px;line-height:1.5}
+.admin-settings-page #employees .row,.admin-settings-page #products .row,.admin-settings-page #tanks .row,.admin-settings-page #dispensers .row{display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end}
+.admin-settings-page #employees button,.admin-settings-page #products button,.admin-settings-page #tanks button,.admin-settings-page #dispensers button{
+  min-height:36px;padding:8px 11px;border-radius:9px;font-size:13px;font-weight:750
+}
+.admin-settings-page #employees button:not(.primary),.admin-settings-page #products button:not(.primary),.admin-settings-page #tanks button:not(.primary),.admin-settings-page #dispensers button:not(.primary){background:#eef2f6;color:#344054}
+.admin-settings-page #employees button[onclick*="toggle"],.admin-settings-page #products button[onclick*="toggle"],.admin-settings-page #tanks button[onclick*="toggle"],.admin-settings-page #dispensers button[onclick*="toggle"]{background:#eaf2ff;color:#1457ad}
+.admin-settings-page #employees button[onclick*="deactivate"],.admin-settings-page #products button[onclick*="deactivate"],.admin-settings-page #tanks button[onclick*="deactivate"],.admin-settings-page #dispensers button[onclick*="toggleNozzle"]{color:#9a3412;background:#fff3e8}
+.admin-settings-page #dispensers .badge{background:#fff4d6;color:#8a5a00;border:1px solid #f4df9a}
+.admin-settings-page label{font-size:13px;font-weight:750;color:#344054}
+.admin-settings-page input,.admin-settings-page select{font-family:inherit}
+.admin-settings-page .form input,.admin-settings-page .form select{
+  min-height:45px;padding:11px 13px;border:1px solid #d6dee8;border-radius:11px;background:#fff;color:#17202a;outline:none;transition:border-color .15s,box-shadow .15s,background .15s
+}
+.admin-settings-page .form input::placeholder{color:#98a2b3}
+.admin-settings-page .form input:focus,.admin-settings-page .form select:focus{
+  border-color:#4b8ee8;box-shadow:0 0 0 3px #1264d81a
+}
+.admin-settings-page .form select,.admin-settings-page select{
+  appearance:auto
+}
+.admin-settings-page button{transition:transform .12s,box-shadow .12s,background .12s,opacity .12s}
+.admin-settings-page button:hover{transform:translateY(-1px)}
+.admin-settings-page button:active{transform:translateY(0)}
+.admin-settings-page button.primary,.admin-settings-page .btn.primary{background:linear-gradient(135deg,#1264d8,#0f56bd);box-shadow:0 5px 12px #1264d826}
+.admin-settings-page .modal{padding:14px}
+.admin-settings-page .modal-backdrop{background:#0f172acc;backdrop-filter:blur(3px)}
+.admin-settings-page .modal-card{
+  width:min(100%,560px);padding:24px;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 24px 70px #0f172a40
+}
+.admin-settings-page .modal-card h3{font-size:20px;letter-spacing:-.02em}
+.admin-settings-page .modal-card .top{padding-bottom:12px;margin-bottom:6px;border-bottom:1px solid #edf1f5}
+.admin-settings-page .modal-close{border-radius:10px;color:#667085}
+.admin-settings-page .modal-close:hover{background:#f1f5f9}
+.admin-settings-page #settings-confirm-details{
+  margin:14px 0;padding:14px 15px;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc;font-size:14px;line-height:1.55
+}
+.admin-settings-page #settings-confirm-details p{margin:6px 0!important}
+.admin-settings-page #settings-confirm-note{font-size:12.5px;margin:10px 0 14px}
+.admin-settings-page #settings-confirm-actions,.admin-settings-page #settings-success-actions{gap:9px}
+.admin-settings-page #settings-confirm-actions button,.admin-settings-page #settings-success-actions button{min-height:43px}
+.admin-settings-page #dispenser-nozzle-activation-list>.card{
+  padding:13px!important;border:1px solid #e2e8f0!important;border-radius:13px!important;background:#f8fafc!important
+}
+.admin-settings-page #dispenser-nozzle-activation-list .card button{background:#e8f1ff;color:#1457ad}
+.admin-settings-page #dispenser-activation-review .card{border:1px solid #cfe0f7!important;background:#f4f8ff!important}
+.admin-settings-page #dispenser-activate-error{padding:10px 12px;border-radius:10px;background:#fff1f2;color:#b42318!important}
+.admin-settings-page .settings-status{margin:8px 4px;text-align:center;font-size:13px}
+@media(max-width:600px){
+  .admin-settings-page{padding:10px}
+  .admin-settings-page .wrap{padding:0 0 28px}
+  .admin-settings-page .settings-header{align-items:flex-start;padding:12px 4px 17px}
+  .admin-settings-page .settings-header h1{font-size:27px}
+  .admin-settings-page .settings-back{padding:9px 11px;font-size:13px}
+  .admin-settings-page .settings-section{padding:16px;margin-bottom:13px;border-radius:17px}
+  .admin-settings-page .section-heading{align-items:stretch;flex-direction:column;gap:12px}
+  .admin-settings-page .add-action{width:100%}
+  .admin-settings-page #employees>.card,.admin-settings-page #products>.card,.admin-settings-page #tanks>.card,.admin-settings-page #dispensers>.card{padding:14px}
+  .admin-settings-page #employees .top,.admin-settings-page #products .top,.admin-settings-page #tanks .top,.admin-settings-page #dispensers .top{flex-direction:column;align-items:stretch}
+  .admin-settings-page #employees .top>.row,.admin-settings-page #products .top>.row,.admin-settings-page #tanks .top>.row,.admin-settings-page #dispensers .top>.row{justify-content:flex-start}
+  .admin-settings-page #employees .row,.admin-settings-page #products .row,.admin-settings-page #tanks .row,.admin-settings-page #dispensers .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .admin-settings-page #employees .row button,.admin-settings-page #products .row button,.admin-settings-page #tanks .row button,.admin-settings-page #dispensers .row button{width:100%}
+  .admin-settings-page .modal-card{padding:19px;border-radius:19px;max-height:92vh}
+}
