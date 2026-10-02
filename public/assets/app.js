@@ -134,8 +134,8 @@ async function userDashboard(){
         '<div class="pending-shift-info active-shift-info">'+
           '<div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n?.nozzle_code||s.nozzle_id)+'</strong></div></div>'+
           '<div class="pending-info-divider"></div>'+
-          '<div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Product</span><strong>'+h(productCode)+'</strong></div></div>'+
-          '<div class="pending-tank-opening active-opening-reading"><span class="pending-info-icon dispenser-icon">◉</span><div><span class="pending-label">Opening meter</span><strong>'+liters(s.opening_reading)+'</strong></div></div>'+
+          '<div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank connected</span><strong>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</strong></div></div>'+
+          '<div class="pending-tank-opening active-opening-reading"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank opening reading</span><strong>'+liters(s.opening_tank_liters)+' <small>L</small></strong></div></div>'+
         '</div>'+
         '<div class="pending-nozzle-section active-reading-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Shift reading</div>'+
           '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Opening meter</span></div><div class="pending-nozzle-number">'+reading(s.opening_reading)+'</div><div class="pending-nozzle-code">'+h(n?.nozzle_code||s.nozzle_id)+'</div></div>'+
