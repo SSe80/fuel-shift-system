@@ -735,3 +735,9 @@
 .attendant-page .handover-context-item span{display:block;font-size:11px;color:#8b6268;margin-bottom:3px}
 .attendant-page .handover-context-item strong{font-size:13px;color:#7f1721}
 @media(max-width:600px){.attendant-page .handover-context{grid-template-columns:1fr}}
+
+.attendant-page .handover-nozzle-section{margin:0 0 14px}
+.attendant-page .handover-field-heading{font-size:13px;font-weight:700;color:#7f1721;margin:0 0 8px}
+.attendant-page .handover-nozzle-input{display:block;margin:0 0 8px;padding:10px 12px;border:1px solid #fecdd3;border-radius:12px;background:#fff5f6}
+.attendant-page .handover-nozzle-input span{display:block;margin-bottom:6px;font-size:12px;font-weight:600;color:#8b6268}
+.attendant-page .handover-nozzle-input input{width:100%;box-sizing:border-box}
