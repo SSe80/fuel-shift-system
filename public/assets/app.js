@@ -328,7 +328,7 @@ async function loadSettingsData(){
         '<p class="dispenser-note">The dispenser will remain inactive until the assigned attendant confirms the readings with their PIN.</p>'+
       '</div>';
     }
-    return '<div class="card dispenser-settings-card">'+
+    return '<div class="card dispenser-settings-card '+(n.active?'dispenser-active-card':'')+'">'+
       '<div class="dispenser-card-head"><div><span class="section-kicker">FUEL DISPENSER</span><h3>'+h(n.nozzle_code)+'</h3><div class="dispenser-product">'+h(productCode)+' <span>•</span> '+h(nozzleLabel)+'</div></div>'+
       '<div class="dispenser-status '+(n.active?'is-active':'is-inactive')+'"><span></span>'+(n.active?'Active':'Inactive')+'</div></div>'+
       '<div class="dispenser-info-grid">'+
@@ -339,8 +339,8 @@ async function loadSettingsData(){
       '</div>'+
       '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle identifiers</span><div class="dispenser-nozzle-list">'+(nozzleIds||'<span class="muted">No nozzle identifiers</span>')+'</div></div>'+
       '<div class="dispenser-card-actions">'+
-        '<button type="button" onclick="openDispenserEdit(\''+n.id+'\')">Edit dispenser</button>'+
         '<button type="button" class="primary" onclick="toggleNozzle(\''+n.id+'\','+n.active+')">'+(n.active?'Deactivate':'Activate dispenser')+'</button>'+
+        '<button type="button" onclick="openDispenserEdit(\''+n.id+'\')">Edit dispenser</button>'+
         '<button type="button" class="dispenser-remove-action" onclick="removeDispenser(\''+n.id+'\')">Remove</button>'+
       '</div>'+
     '</div>';
