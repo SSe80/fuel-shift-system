@@ -836,6 +836,24 @@ def close_shift(shift_id):
     eid=session.get("employee_id")
     if not eid:return jsonify({"error":"Unauthorized"}),401
     data=request.get_json(silent=True) or {}
+    # Attendant-panel close is intentionally immediate for now.
+    # If closing readings are supplied, keep the existing detailed close flow.
+    has_readings=any(str(data.get(k,"")).strip()!="" for k in ("closing_reading","closing_mm","closing_liters"))
+    if not has_readings:
+        status,current=sb("shifts",params={
+            "id":"eq."+shift_id,
+            "employee_id":"eq."+eid,
+            "status":"eq.active",
+            "select":"id"
+        })
+        if status!=200:return jsonify({"error":current}),status
+        if not current:return jsonify({"error":"Active shift not found"}),404
+        status,result=sb("shifts",method="PATCH",params={"id":"eq."+shift_id},body={
+            "status":"closed",
+            "end_time":datetime.now(timezone.utc).isoformat()
+        },prefer="return=representation")
+        if status>=400:return jsonify({"error":result}),status
+        return jsonify(result),200
     try: reading,mm,liters=float(data.get("closing_reading",0)),float(data.get("closing_mm",0)),float(data.get("closing_liters",0))
     except (TypeError,ValueError):return jsonify({"error":"Invalid closing readings"}),400
     status,result=rpc("close_shift",{"p_shift_id":shift_id,"p_employee_id":eid,"p_closing_reading":reading,"p_closing_mm":mm,"p_closing_liters":liters})
