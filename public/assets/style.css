@@ -1138,3 +1138,22 @@
 .admin-settings-page .settings-section .settings-toggle:focus-visible{
   outline:3px solid #1264d833;outline-offset:3px;border-radius:10px;
 }
+
+/* Tighter collapsed Admin Settings cards */
+.admin-settings-page .settings-section:not(.expanded){
+  padding:12px 14px;
+  margin-bottom:12px;
+}
+.admin-settings-page .settings-section:not(.expanded) .settings-toggle{
+  margin-bottom:0;
+  padding-bottom:0;
+  border-bottom:0;
+  gap:10px;
+}
+.admin-settings-page .settings-section:not(.expanded) .settings-toggle p{
+  margin-bottom:0;
+}
+.admin-settings-page .settings-section:not(.expanded) .add-action{
+  min-height:40px;
+  padding:9px 13px;
+}
