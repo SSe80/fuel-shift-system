@@ -256,14 +256,7 @@ def handover_receivers():
         "order":"name.asc"
     })
     if es!=200:return jsonify(emps),es
-    ss,shifts=sb("shifts",params={
-        "select":"employee_id,status",
-        "status":"in.(assigned,active)",
-        "limit":"1000"
-    })
-    if ss!=200:return jsonify(shifts),ss
-    busy={str(x.get("employee_id")) for x in shifts}
-    return jsonify([e for e in emps if str(e.get("id"))!=eid and str(e.get("id")) not in busy]),200
+    return jsonify([e for e in emps if str(e.get("id"))!=eid]),200
 
 @app.post("/api/users")
 @app.post("/api/employees")
