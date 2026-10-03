@@ -782,6 +782,41 @@ async function adminSalesConfirmations(){
     if(e.message==='Unauthorized')location.href='admin-login.html';
   }
 }
+function downloadAdminSaleHistoryDetails(id){
+  const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
+  if(!item)return;
+  const t=item.takeover||{};
+  const sales=Array.isArray(item.sales)?item.sales:[];
+  const rows=[
+    ['Shift Data','Value'],
+    ['Shift ID',t.shift_id||''],
+    ['Dispenser',item.dispenser?.name||''],
+    ['Product',item.dispenser?.product_name||item.dispenser?.product||''],
+    ['From attendant',item.from_employee?.name||''],
+    ['Received by',item.to_employee?.name||''],
+    ['Shift started',t.shift_started_at||''],
+    ['Shift ended',t.shift_ended_at||''],
+    ['Confirmed by admin',t.sales_confirmed_at||''],
+    ['Total sales liters',t.total_sales_liters??''],
+    ['Total sales amount',t.total_sales_amount??''],
+    [],
+    ['Sale #','Sale type','Description','Reason','Amount']
+  ];
+  sales.forEach((s,i)=>rows.push([i+1,s.sale_type_name||'Sale',s.sale_type_description||'',s.reason||'',s.amount??'']));
+  const csv=rows.map(row=>row.map(value=>{const text=String(value??'');return /[",\\n]/.test(text)?'"'+text.replace(/"/g,'""')+'"':text;}).join(',')).join('\\r\\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const stamp=(t.shift_ended_at||t.shift_started_at||new Date().toISOString()).replace(/[^0-9]/g,'').slice(0,14);
+  a.href=url;
+  a.download='shift-'+String(t.shift_id||id).slice(0,8)+'-'+stamp+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast('Shift data downloaded');
+}
+
 function openAdminSaleHistoryDetails(id){
   const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
   if(!item)return;
