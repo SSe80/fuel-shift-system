@@ -139,16 +139,24 @@ async function userDashboard(){
 
     const pendingIncomingHtml=pendingIncomingHandovers.map(x=>{
       const shift=shifts.find(s=>s.id===x.shift_id), n=nozzles.find(item=>item.id===shift?.nozzle_id);
+      const readings=Array.isArray(x.closing_nozzle_readings)&&x.closing_nozzle_readings.length
+        ?x.closing_nozzle_readings
+        :[{nozzle_id:n?.nozzle_code||shift?.nozzle_id,reading:x.closing_reading}];
+      const nozzleReadings=readings.map((r,i)=>
+        '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(r.reading)+'</div><div class="pending-nozzle-code">'+h(r.nozzle_id||n?.nozzle_code||shift?.nozzle_id)+'</div></div>'
+      ).join('');
       return '<div class="card pending-confirmation-card handover-receive-card">'+
-        '<div class="pending-hero"><div class="pending-hero-icon">◷</div><div><div class="pending-card-title">Pending Handover Confirmation</div><div class="pending-card-subtitle">Please review the closing readings and confirm with your PIN.</div></div></div>'+
-        '<div class="handover-pending-summary">'+
-          '<div class="handover-pending-main"><span>From attendant</span><strong>'+h(employeeNames[x.from_employee_id]||x.from_employee_id)+'</strong></div>'+
-          '<div class="handover-pending-section"><div class="handover-pending-title">Closing meter readings</div>'+renderHandoverReadings(x)+'</div>'+
-          '<div class="handover-pending-main"><span>Tank closing stock</span><strong>'+liters(x.closing_liters)+' L</strong></div>'+
+        '<div class="pending-hero"><div class="pending-hero-icon">◷</div><div><div class="pending-card-title">Pending Shift Confirmation</div><div class="pending-card-subtitle">Please review the shift details and confirm when ready.</div></div></div>'+
+        '<div class="pending-shift-info">'+
+          '<div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n?.nozzle_code||shift?.nozzle_id||x.shift_id)+'</strong></div></div>'+
+          '<div class="pending-info-divider"></div>'+
+          '<div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank</span><strong>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</strong></div></div>'+
+          '<div class="pending-tank-opening"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank opening</span><strong>'+liters(x.closing_liters)+' <small>L</small></strong></div></div>'+
         '</div>'+
-        '<form class="form" onsubmit="confirmHandoverFromDashboard(event,\''+x.id+'\')">'+
+        '<div class="pending-nozzle-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Nozzle opening readings</div>'+nozzleReadings+'</div>'+
+        '<form class="form" onsubmit="confirmHandoverFromDashboard(event,\\''+x.id+'\\')">'+
           '<input id="dashboard-handover-pin-'+x.id+'" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required>'+
-          '<div class="row"><button class="primary">Confirm Handover & Start Shift</button><button type="button" onclick="cancelPendingHandover(\''+x.id+'\')">Cancel Handover</button></div>'+
+          '<div class="row"><button class="primary">Confirm Readings & Start Shift</button><button type="button" onclick="cancelPendingHandover(\\''+x.id+'\\')">Cancel Shift</button></div>'+
         '</form>'+
       '</div>';
     }).join('');
