@@ -68,6 +68,7 @@
       <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(2)">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(2)">Continue</button></div>
     </section>
     <section class="purchase-wizard-step" data-purchase-step="3">
+      <div id="purchase-compartment-liters"></div>
       <div class="purchase-field"><label for="purchase-invoice">Invoice number <small>Optional</small></label><input id="purchase-invoice" placeholder="Invoice / delivery number"></div>
       <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(3)">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(3)">Continue</button></div>
     </section>
@@ -86,8 +87,21 @@
   const receivedQuantityInput=document.getElementById('purchase-liters');
   const parseQuantity=value=>Number(String(value??'').replace(/,/g,'').trim()||0);
   const formatQuantity=value=>{const n=parseQuantity(value);return n>0?n.toLocaleString(undefined,{maximumFractionDigits:2}):'';};
+  function renderCompartmentInputs(){
+    const container=document.getElementById('purchase-compartment-liters');
+    const count=Number(document.getElementById('purchase-truck-compartments')?.value||0);
+    if(!container)return;
+    container.innerHTML='';
+    for(let i=1;i<=count;i++){
+      const field=document.createElement('div');
+      field.className='purchase-field';
+      field.innerHTML='<label for="purchase-compartment-'+i+'">Compartment '+i+'</label><div class="purchase-input-unit"><input id="purchase-compartment-'+i+'" class="purchase-compartment-liter" type="text" inputmode="decimal" autocomplete="off" placeholder="0" required><span>Liters</span></div>';
+      container.appendChild(field);
+      bindQuantityFormatting(field.querySelector('input'));
+    }
+  }
   const bindQuantityFormatting=input=>{if(!input)return;input.addEventListener('input',()=>{const raw=input.value.replace(/[^0-9.]/g,'');const parts=raw.split('.');const normalized=parts.shift()+(parts.length?'.'+parts.join(''):''),digits=normalized.split('.'),integer=digits[0]||'',fraction=digits[1]!==undefined?digits[1].slice(0,2):'';input.value=integer?Number(integer).toLocaleString()+ (digits.length>1?'.'+fraction:''):'';});input.addEventListener('blur',()=>{if(input.value)input.value=formatQuantity(input.value);});};
-  bindQuantityFormatting(orderedQuantityInput);bindQuantityFormatting(receivedQuantityInput);
+  bindQuantityFormatting(orderedQuantityInput);bindQuantityFormatting(receivedQuantityInput); document.getElementById('purchase-truck-compartments')?.addEventListener('change',renderCompartmentInputs);
   const status=document.getElementById('purchase-status');
   const list=document.getElementById('purchase-list');
   let purchaseTanks=[];
@@ -108,7 +122,7 @@
     purchaseStep=step;
     document.querySelectorAll('.purchase-wizard-step').forEach(el=>el.classList.toggle('active',Number(el.dataset.purchaseStep)===step));
     const titles=['Order','Delivery','Invoice','Review'];
-    const descriptions=['Select the product and enter the order details.','Enter the truck and driver details.','Enter the invoice or delivery number.','Review the delivery before confirming.'];
+    const descriptions=['Select the product and enter the order details.','Enter the truck and driver details.','Enter liters for each truck compartment.','Review the delivery before confirming.'];
     const title=document.getElementById('purchase-step-title');
     const desc=document.getElementById('purchase-step-description');
     if(title)title.textContent=titles[step-1];
@@ -144,7 +158,10 @@
       if(!driverName||!driverPhone||!plateNumber||!compartments){setStatus('Complete all truck details before continuing.',true);return;}
     }
     if(step===3){
-      const q=parseQuantity(document.getElementById('purchase-liters')?.value);
+      const compartmentCount=Number(document.getElementById('purchase-truck-compartments')?.value||0);
+      const compartmentInputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
+      if(!compartmentCount||compartmentInputs.length!==compartmentCount||compartmentInputs.some(input=>!Number.isFinite(parseQuantity(input.value))||parseQuantity(input.value)<=0)){setStatus('Enter a valid liter quantity for every compartment.',true);return;}
+      const q=compartmentInputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
       const invoice=document.getElementById('purchase-invoice')?.value.trim()||'Not provided';
       const review=document.getElementById('purchase-review');
       if(review)review.innerHTML='<div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(productDisplay)+'</strong></div><div class="purchase-review-row"><span>Order number</span><strong>'+purchaseH(orderNumber)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseH(purchaseLiters(orderedQuantity))+' L</strong></div><div class="purchase-review-row"><span>Received quantity</span><strong>'+purchaseH(purchaseLiters(q))+' L</strong></div><div class="purchase-review-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>';
