@@ -25,12 +25,31 @@
 .purchase-review-row strong{text-align:right}
 @media(max-width:600px){.purchase-wizard-card{max-height:92vh}.purchase-wizard-actions{display:grid;grid-template-columns:1fr 1fr}.purchase-wizard-actions button{width:100%}}
 </style><style>
-.purchase-card-title{font-size:16px;font-weight:700;margin-top:6px;color:#101828}
+.purchase-wizard-card{width:min(520px,calc(100% - 28px));max-height:90vh;border-radius:18px;overflow:hidden}
+.purchase-wizard-card .top{padding-bottom:4px}
+.purchase-wizard-card .top .section-kicker{display:block;margin-bottom:5px}
+.purchase-wizard-card .top h3{margin:0;font-size:21px;line-height:1.25}
+.purchase-card-title{font-size:15px;font-weight:700;margin-top:10px;color:#101828}
+.purchase-step-description{margin:4px 0 0;font-size:13px;line-height:1.5}
+.purchase-step-indicator{margin:18px 0 22px}
+.purchase-wizard-step{padding:0 2px}
+.purchase-wizard-step .purchase-field{margin-bottom:16px}
+.purchase-wizard-step label{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;font-size:13px;font-weight:600;color:#344054}
+.purchase-wizard-step input,.purchase-wizard-step select{width:100%;min-height:46px;border-radius:11px}
+.purchase-input-unit{display:flex;align-items:center}
+.purchase-input-unit input{border-radius:11px 0 0 11px!important}
+.purchase-input-unit span{min-height:46px;display:flex;align-items:center;padding:0 13px;border:1px solid #d0d5dd;border-left:0;border-radius:0 11px 11px 0;background:#f8fafc;color:#667085;font-size:13px;font-weight:600}
+.purchase-wizard-actions{margin-top:24px;padding-top:16px;border-top:1px solid #edf0f4}
+.purchase-wizard-actions button{min-height:43px}
+.purchase-review{margin-top:2px}
+@media(max-width:600px){
+  .purchase-wizard-card{width:calc(100% - 20px);max-height:92vh}
+}
 </style></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseModal()"></div>
 <div class="modal-card purchase-modal-card purchase-wizard-card">
   <div class="top">
-    <div><span class="section-kicker">RECEIVE STOCK</span><h3>Purchase</h3><div id="purchase-step-title" class="purchase-card-title">Order</div><p id="purchase-step-description" class="muted">Enter the order details before receiving the delivery.</p></div>
+    <div><span class="section-kicker">RECEIVE STOCK</span><h3>Purchase</h3><div id="purchase-step-title" class="purchase-card-title">Order</div><p id="purchase-step-description" class="muted purchase-step-description">Enter the order details before receiving the delivery.</p></div>
     <button type="button" class="modal-close" onclick="closePurchaseModal()">×</button>
   </div>
   <div class="purchase-step-indicator"><span class="active">1</span><i></i><span>2</span><i></i><span>3</span><i></i><span>4</span></div>
@@ -38,11 +57,11 @@
     <section class="purchase-wizard-step active" data-purchase-step="1">
       <div class="purchase-field"><label for="purchase-product">Product</label><select id="purchase-product" required><option value="">Select product</option></select></div>
       <div class="purchase-field"><label for="purchase-order-number">Order number</label><input id="purchase-order-number" type="text" placeholder="Order number" autocomplete="off" required></div>
-      <div class="purchase-field purchase-wide"><label for="purchase-ordered-quantity">Ordered quantity</label><div class="purchase-input-unit"><input id="purchase-ordered-quantity" type="number" min="0.1" step="0.1" placeholder="0.0" inputmode="decimal" required><span>Liters</span></div></div>
+      <div class="purchase-field purchase-wide"><label for="purchase-ordered-quantity">Ordered quantity</label><div class="purchase-input-unit"><input id="purchase-ordered-quantity" type="text" inputmode="decimal" autocomplete="off" placeholder="0" required><span>Liters</span></div></div>
       <div class="purchase-wizard-actions"><button type="button" onclick="closePurchaseModal()">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(1)">Continue</button></div>
     </section>
     <section class="purchase-wizard-step" data-purchase-step="2">
-      <div class="purchase-field purchase-wide"><label for="purchase-liters">Quantity received</label><div class="purchase-input-unit"><input id="purchase-liters" type="number" min="0.1" step="0.1" placeholder="0.0" inputmode="decimal" required><span>Liters</span></div></div>
+      <div class="purchase-field purchase-wide"><label for="purchase-liters">Quantity received</label><div class="purchase-input-unit"><input id="purchase-liters" type="text" inputmode="decimal" autocomplete="off" placeholder="0" required><span>Liters</span></div></div>
       <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(2)">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(2)">Continue</button></div>
     </section>
     <section class="purchase-wizard-step" data-purchase-step="3">
@@ -59,6 +78,13 @@
 </div><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">PURCHASE HISTORY</span><h2>Recent purchases</h2><p class="muted">Latest fuel deliveries recorded at the station.</p></div></div><div id="purchase-list" class="purchase-list"></div></section><div id="toast" class="toast"></div></main><script src="assets/app.js?v=20261003-25"></script><script>
 (function(){
   const tankSelect=document.getElementById('purchase-tank');
+  const productSelect=document.getElementById('purchase-product');
+  const orderedQuantityInput=document.getElementById('purchase-ordered-quantity');
+  const receivedQuantityInput=document.getElementById('purchase-liters');
+  const parseQuantity=value=>Number(String(value??'').replace(/,/g,'').trim()||0);
+  const formatQuantity=value=>{const n=parseQuantity(value);return n>0?n.toLocaleString(undefined,{maximumFractionDigits:2}):'';};
+  const bindQuantityFormatting=input=>{if(!input)return;input.addEventListener('input',()=>{const raw=input.value.replace(/[^0-9.]/g,'');const parts=raw.split('.');const normalized=parts.shift()+(parts.length?'.'+parts.join(''):''),digits=normalized.split('.'),integer=digits[0]||'',fraction=digits[1]!==undefined?digits[1].slice(0,2):'';input.value=integer?Number(integer).toLocaleString()+ (digits.length>1?'.'+fraction:''):'';});input.addEventListener('blur',()=>{if(input.value)input.value=formatQuantity(input.value);});};
+  bindQuantityFormatting(orderedQuantityInput);bindQuantityFormatting(receivedQuantityInput);
   const status=document.getElementById('purchase-status');
   const list=document.getElementById('purchase-list');
   let purchaseTanks=[];
@@ -77,8 +103,8 @@
   function renderPurchaseStep(step){
     purchaseStep=step;
     document.querySelectorAll('.purchase-wizard-step').forEach(el=>el.classList.toggle('active',Number(el.dataset.purchaseStep)===step));
-    const titles=['Order','Enter Quantity','Delivery Details','Review Purchase'];
-    const descriptions=['Enter the product, order number, and ordered quantity.','Enter the quantity of fuel received.','Enter the invoice or delivery number.','Check the purchase details before confirming.'];
+    const titles=['Order','Delivery','Invoice','Review'];
+    const descriptions=['Select the product and enter the order details.','Enter the quantity actually received.','Enter the invoice or delivery number.','Review the delivery before confirming.'];
     const title=document.getElementById('purchase-step-title');
     const desc=document.getElementById('purchase-step-description');
     if(title)title.textContent=titles[step-1];
@@ -101,13 +127,13 @@
     if(step===1){
       const product=document.getElementById('purchase-product')?.value||'';
       const orderNumber=document.getElementById('purchase-order-number')?.value.trim()||'';
-      const orderedQuantity=Number(document.getElementById('purchase-ordered-quantity')?.value||0);
+      const orderedQuantity=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
       if(!product){setStatus('Please select a product before continuing.',true);return;}
       if(!orderNumber){setStatus('Enter the order number before continuing.',true);return;}
       if(!Number.isFinite(orderedQuantity)||orderedQuantity<=0){setStatus('Enter a valid ordered quantity before continuing.',true);return;}
     }
     if(step===2){
-      const q=Number(document.getElementById('purchase-liters')?.value||0);
+      const q=parseQuantity(document.getElementById('purchase-liters')?.value);
       if(!Number.isFinite(q)||q<=0){setStatus('Enter a valid quantity before continuing.',true);return;}
     }
     if(step===3){
@@ -115,7 +141,7 @@
       const q=Number(document.getElementById('purchase-liters')?.value||0);
       const invoice=document.getElementById('purchase-invoice')?.value.trim()||'Not provided';
       const review=document.getElementById('purchase-review');
-      if(review)review.innerHTML='<div class="purchase-review-row"><span>Tank</span><strong>'+purchaseH(tank?.tank_code||tank?.name||'—')+'</strong></div><div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(tank?.product||'—')+'</strong></div><div class="purchase-review-row"><span>Quantity</span><strong>'+purchaseH(purchaseLiters(q))+' L</strong></div><div class="purchase-review-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>';
+      if(review)review.innerHTML='<div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div><div class="purchase-review-row"><span>Order number</span><strong>'+purchaseH(orderNumber)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseH(purchaseLiters(orderedQuantity))+' L</strong></div><div class="purchase-review-row"><span>Received quantity</span><strong>'+purchaseH(purchaseLiters(q))+' L</strong></div><div class="purchase-review-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>';
     }
     renderPurchaseStep(step+1);
   };
@@ -148,13 +174,16 @@
     const tank=tankSelect?.value||'';
     const q=Number(document.getElementById('purchase-liters')?.value||0);
     const invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
-    if(!tank||!Number.isFinite(q)||q<=0){setStatus('Purchase details are incomplete.',true);return;}
-    const tankRecord=purchaseTanks.find(t=>String(t.id)===String(tank));
-    if(!tankRecord?.product){setStatus('The selected tank has no product assigned.',true);return;}
+    if(!product||!Number.isFinite(q)||q<=0){setStatus('Purchase details are incomplete.',true);return;}
+    const tankRecord=purchaseTanks.find(t=>String(t.product)===String(product));
+    if(!tankRecord){setStatus('No tank is assigned to the selected product.',true);return;}
     try{
       setStatus('Recording purchase…',false);
-      await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product:tankRecord.product,tank_id:tank,quantity_liters:q,invoice_number:invoice})});
+      await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product:product,tank_id:tankRecord.id,quantity_liters:q,invoice_number:invoice,order_number:document.getElementById('purchase-order-number')?.value.trim()||''})});
       document.getElementById('purchase-liters').value='';
+      document.getElementById('purchase-ordered-quantity').value='';
+      document.getElementById('purchase-order-number').value='';
+      document.getElementById('purchase-product').value='';
       document.getElementById('purchase-invoice').value='';
       purchaseToast('Purchase recorded successfully');
       closePurchaseModal();
