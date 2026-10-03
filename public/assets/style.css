@@ -1336,3 +1336,21 @@
   border:0;
   pointer-events:none;
 }
+
+/* Final minimized-card title alignment */
+.admin-settings-page .settings-item-card:not(.expanded) .top{
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+}
+.admin-settings-page .settings-item-card:not(.expanded) .top > div:first-of-type{
+  align-self:center !important;
+  text-align:left !important;
+  padding-bottom:0 !important;
+  margin:0 !important;
+  min-width:0;
+}
+.admin-settings-page .settings-item-card:not(.expanded) .top > div:first-of-type b{
+  display:block;
+  text-align:left;
+}
