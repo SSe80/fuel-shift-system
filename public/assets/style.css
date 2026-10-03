@@ -2086,3 +2086,9 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 .admin-sales-page #admin-sales-filter-modal.open{display:flex!important}
 .admin-sales-page #admin-sales-filter-modal .modal-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.42)}
 .admin-sales-page #admin-sales-filter-modal .modal-card{position:relative;z-index:1;width:min(calc(100% - 28px),430px);max-height:calc(100vh - 40px);overflow:auto;margin:auto}
+
+
+/* Purchase section — place action below description */
+.purchase-section-head{align-items:flex-start;flex-direction:column;gap:0}
+.purchase-section-head>div{width:100%}
+.purchase-section-head>button{align-self:flex-start;margin-top:16px}
