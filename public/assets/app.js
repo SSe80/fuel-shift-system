@@ -138,7 +138,8 @@ async function userDashboard(){
     }).join('');
 
     const pendingIncomingHtml=pendingIncomingHandovers.map(x=>{
-      const shift=shifts.find(s=>s.id===x.shift_id), n=nozzles.find(item=>item.id===shift?.nozzle_id);
+      const shift=shifts.find(s=>s.id===x.shift_id);
+      const n=nozzles.find(item=>item.id===shift?.nozzle_id)||{};
       const readings=Array.isArray(x.closing_nozzle_readings)&&x.closing_nozzle_readings.length
         ?x.closing_nozzle_readings
         :[{nozzle_id:n?.nozzle_code||shift?.nozzle_id,reading:x.closing_reading}];
@@ -148,9 +149,9 @@ async function userDashboard(){
       return '<div class="card pending-confirmation-card handover-receive-card">'+
         '<div class="pending-hero"><div class="pending-hero-icon">◷</div><div><div class="pending-card-title">Pending Shift Confirmation</div><div class="pending-card-subtitle">Please review the shift details and confirm when ready.</div></div></div>'+
         '<div class="pending-shift-info">'+
-          '<div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n?.nozzle_code||shift?.nozzle_id||x.shift_id)+'</strong></div></div>'+
+          '<div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(x.source_nozzle_code||n?.nozzle_code||shift?.nozzle_id||x.shift_id)+'</strong></div></div>'+
           '<div class="pending-info-divider"></div>'+
-          '<div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank</span><strong>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</strong></div></div>'+
+          '<div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank</span><strong>'+h(x.source_tank_code||tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</strong></div></div>'+
           '<div class="pending-tank-opening"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank opening</span><strong>'+liters(x.closing_liters)+' <small>L</small></strong></div></div>'+
         '</div>'+
         '<div class="pending-nozzle-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Nozzle opening readings</div>'+nozzleReadings+'</div>'+
