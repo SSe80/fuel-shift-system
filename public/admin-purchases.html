@@ -18,9 +18,8 @@
   window.loadPurchases=async function(){
     try{
       setStatus('Loading tanks…',false);
-      const [tanks,purchases]=await Promise.all([purchaseApi('/api/tanks'),purchaseApi('/api/purchases')]);
+      const tanks=await purchaseApi('/api/tanks');
       if(!Array.isArray(tanks))throw new Error('Unable to load tanks');
-      if(!Array.isArray(purchases))throw new Error('Unable to load purchase history');
       purchaseTanks=tanks;
       const activeTanks=tanks.filter(t=>t.active!==false);
       if(tankSelect){
@@ -28,13 +27,20 @@
         tankSelect.innerHTML='<option value="">Select tank</option>'+activeTanks.map(t=>'<option value="'+purchaseH(t.id)+'">'+purchaseH(t.tank_code||t.name||t.id)+' — '+purchaseH(t.product||'Product not assigned')+'</option>').join('');
         if(activeTanks.some(t=>String(t.id)===String(current)))tankSelect.value=current;
       }
-      if(list){
-        list.innerHTML=purchases.length?purchases.map(p=>{
-          const t=tanks.find(x=>String(x.id)===String(p.tank_id));
-          return '<article class="purchase-card"><div class="purchase-card-top"><strong>'+purchaseH(p.product||t?.product||'Purchase')+'</strong><b>'+purchaseH(purchaseLiters(p.quantity_liters))+' L</b></div><div class="purchase-card-meta"><span>Tank: <b>'+purchaseH(t?.tank_code||'—')+'</b></span><span>Attendant: <b>'+purchaseH(p.attendant?.name||'No ongoing shift')+'</b></span><span>Shift: '+purchaseH(p.shift?.id?p.shift.id.slice(0,8):'—')+'</span><span>Invoice: <b>'+purchaseH(p.invoice_number||'Not provided')+'</b></span><span>'+new Date(p.purchase_date).toLocaleString()+'</span></div></article>';
-        }).join(''):'<div class="purchase-empty">No purchases recorded yet.</div>';
-      }
       setStatus('',false);
+      if(list)list.innerHTML='<div class="purchase-empty">Loading purchase history…</div>';
+      try{
+        const purchases=await purchaseApi('/api/purchases');
+        if(!Array.isArray(purchases))throw new Error('Unable to load purchase history');
+        if(list){
+          list.innerHTML=purchases.length?purchases.map(p=>{
+            const t=tanks.find(x=>String(x.id)===String(p.tank_id));
+            return '<article class="purchase-card"><div class="purchase-card-top"><strong>'+purchaseH(p.product||t?.product||'Purchase')+'</strong><b>'+purchaseH(purchaseLiters(p.quantity_liters))+' L</b></div><div class="purchase-card-meta"><span>Tank: <b>'+purchaseH(t?.tank_code||'—')+'</b></span><span>Attendant: <b>'+purchaseH(p.attendant?.name||'No ongoing shift')+'</b></span><span>Shift: '+purchaseH(p.shift?.id?p.shift.id.slice(0,8):'—')+'</span><span>Invoice: <b>'+purchaseH(p.invoice_number||'Not provided')+'</b></span><span>'+new Date(p.purchase_date).toLocaleString()+'</span></div></article>';
+          }).join(''):'<div class="purchase-empty">No purchases recorded yet.</div>';
+        }
+      }catch(historyError){
+        if(list)list.innerHTML='<div class="purchase-empty">Purchase history unavailable right now.</div>';
+      }
     }catch(e){setStatus(e.message||'Failed to load purchases.',true);}
   };
   window.createPurchase=async function(event){
