@@ -4,24 +4,34 @@
   const status=document.getElementById('purchase-status');
   const list=document.getElementById('purchase-list');
   let purchaseTanks=[];
+  const purchaseApi=window.api||async function(path,options={}){
+    const response=await fetch(path,{credentials:'same-origin',...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});
+    const text=await response.text();
+    let data=null; try{data=text?JSON.parse(text):null;}catch(_){data=text;}
+    if(!response.ok){const msg=typeof data==='object'&&data?(data.error||JSON.stringify(data)):(data||'Request failed');throw new Error(String(msg));}
+    return data;
+  };
+  const purchaseH=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const purchaseLiters=value=>Number(value||0).toLocaleString(undefined,{maximumFractionDigits:2});
+  const purchaseToast=message=>{if(typeof window.toast==='function')window.purchaseToast(message);else{const el=document.getElementById('toast');if(el){el.textContent=message;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500);}}};
   const setStatus=(message,isError)=>{if(status){status.textContent=message||'';status.className='purchase-status'+(isError?' error':'');}};
   window.loadPurchases=async function(){
     try{
       setStatus('Loading tanks…',false);
-      const [tanks,purchases]=await Promise.all([api('/api/tanks'),api('/api/purchases')]);
+      const [tanks,purchases]=await Promise.all([purchaseApi('/api/tanks'),purchaseApi('/api/purchases')]);
       if(!Array.isArray(tanks))throw new Error('Unable to load tanks');
       if(!Array.isArray(purchases))throw new Error('Unable to load purchase history');
       purchaseTanks=tanks;
       const activeTanks=tanks.filter(t=>t.active!==false);
       if(tankSelect){
         const current=tankSelect.value;
-        tankSelect.innerHTML='<option value="">Select tank</option>'+activeTanks.map(t=>'<option value="'+h(t.id)+'">'+h(t.tank_code||t.name||t.id)+' — '+h(t.product||'Product not assigned')+'</option>').join('');
+        tankSelect.innerHTML='<option value="">Select tank</option>'+activeTanks.map(t=>'<option value="'+purchaseH(t.id)+'">'+purchaseH(t.tank_code||t.name||t.id)+' — '+purchaseH(t.product||'Product not assigned')+'</option>').join('');
         if(activeTanks.some(t=>String(t.id)===String(current)))tankSelect.value=current;
       }
       if(list){
         list.innerHTML=purchases.length?purchases.map(p=>{
           const t=tanks.find(x=>String(x.id)===String(p.tank_id));
-          return '<article class="purchase-card"><div class="purchase-card-top"><strong>'+h(p.product||t?.product||'Purchase')+'</strong><b>'+h(liters(p.quantity_liters))+' L</b></div><div class="purchase-card-meta"><span>Tank: <b>'+h(t?.tank_code||'—')+'</b></span><span>Attendant: <b>'+h(p.attendant?.name||'No ongoing shift')+'</b></span><span>Shift: '+h(p.shift?.id?p.shift.id.slice(0,8):'—')+'</span><span>Invoice: <b>'+h(p.invoice_number||'Not provided')+'</b></span><span>'+new Date(p.purchase_date).toLocaleString()+'</span></div></article>';
+          return '<article class="purchase-card"><div class="purchase-card-top"><strong>'+purchaseH(p.product||t?.product||'Purchase')+'</strong><b>'+purchaseH(purchaseLiters(p.quantity_liters))+' L</b></div><div class="purchase-card-meta"><span>Tank: <b>'+purchaseH(t?.tank_code||'—')+'</b></span><span>Attendant: <b>'+purchaseH(p.attendant?.name||'No ongoing shift')+'</b></span><span>Shift: '+purchaseH(p.shift?.id?p.shift.id.slice(0,8):'—')+'</span><span>Invoice: <b>'+purchaseH(p.invoice_number||'Not provided')+'</b></span><span>'+new Date(p.purchase_date).toLocaleString()+'</span></div></article>';
         }).join(''):'<div class="purchase-empty">No purchases recorded yet.</div>';
       }
       setStatus('',false);
@@ -33,14 +43,14 @@
     const q=Number(document.getElementById('purchase-liters')?.value||0);
     const invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
     if(!tank||!Number.isFinite(q)||q<=0){setStatus('Select a tank and enter a valid quantity.',true);return;}
-    const tankRecord=purchaseTanks.find(t=>String(t.id)===String(tank)) || (await api('/api/tanks')).find(t=>String(t.id)===String(tank));
+    const tankRecord=purchaseTanks.find(t=>String(t.id)===String(tank)) || (await purchaseApi('/api/tanks')).find(t=>String(t.id)===String(tank));
     if(!tankRecord?.product){setStatus('The selected tank has no product assigned.',true);return;}
     try{
-      await api('/api/purchases',{method:'POST',body:JSON.stringify({product:tankRecord.product,tank_id:tank,quantity_liters:q,invoice_number:invoice})});
+      await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product:tankRecord.product,tank_id:tank,quantity_liters:q,invoice_number:invoice})});
       document.getElementById('purchase-liters').value='';
       document.getElementById('purchase-invoice').value='';
       setStatus('Purchase recorded successfully.',false);
-      toast('Purchase recorded successfully');
+      purchaseToast('Purchase recorded successfully');
       await loadPurchases();
     }catch(e){setStatus(e.message||'Failed to record purchase.',true);}
   };
