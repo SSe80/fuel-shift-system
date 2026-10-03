@@ -2055,3 +2055,12 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 .admin-sales-page .admin-sales-list>.card,.admin-sales-page .admin-sale-confirm-card{margin:0}
 .admin-sales-page .admin-sales-empty{padding:28px 18px!important;border-style:dashed!important;background:#fafbfc!important;box-shadow:none!important}
 @media(max-width:600px){.admin-sales-page{padding:10px!important}.admin-sales-page .purchase-header{align-items:flex-start;padding:12px 4px 17px}.admin-sales-page .purchase-header h1{font-size:27px}.admin-sales-page .purchase-back{padding:9px 11px}.admin-sales-page .admin-sales-summary{grid-template-columns:1fr 1fr}.admin-sales-page .admin-sales-separated-section.purchase-section{padding:16px;border-radius:17px}.admin-sales-page .admin-sales-section-heading{align-items:flex-start}.admin-sales-page .admin-sales-section-heading h2{font-size:19px}.admin-sales-page .admin-sales-history-tools .admin-sales-filters{grid-template-columns:1fr}.admin-sales-page .admin-sales-history-tools button{width:100%}}
+
+
+/* Sales history search — compact icon trigger */
+.admin-sales-page .sales-history-section .admin-sales-section-heading{position:relative;padding-right:46px}
+.admin-sales-page .sales-history-search-icon{position:absolute;right:0;top:0;width:36px;height:36px;display:grid;place-items:center;padding:0;border:1px solid #dbe2e9;border-radius:10px;background:#f8fafc;color:#344054;font-size:21px;font-weight:800;line-height:1;cursor:pointer}
+.admin-sales-page .sales-history-search-icon:hover{background:#eef4ff;color:#1457ad;border-color:#cbdcf5;transform:translateY(-1px)}
+.admin-sales-page .admin-sales-history-tools[hidden]{display:none}
+.admin-sales-page .admin-sales-history-tools{margin-top:0}
+@media(max-width:600px){.admin-sales-page .sales-history-search-icon{width:34px;height:34px;font-size:20px}}
