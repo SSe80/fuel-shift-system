@@ -1381,3 +1381,11 @@
   display:none !important;
   pointer-events:none !important;
 }
+
+
+/* Keep dispenser cards classified by product with a clear group break */
+.admin-settings-page #dispensers .dispenser-group-start{
+  margin-top:26px !important;
+  padding-top:24px !important;
+  border-top:2px solid #e4e9ef !important;
+}
