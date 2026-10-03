@@ -1032,3 +1032,14 @@
   margin:-2px 0 2px;padding:10px 12px;border-radius:10px;background:#f8fafc;
   color:#667085;font-size:12.5px;line-height:1.45;border:1px solid #e5eaf0;
 }
+
+.admin-settings-page #sale-types{display:grid;gap:10px}
+.admin-settings-page #sale-types>.card{margin:0;padding:16px 17px;border:1px solid #e5eaf0;border-radius:15px;background:#fbfcfe;box-shadow:none}
+.admin-settings-page #sale-types>.card:hover{border-color:#cbd7e5;box-shadow:0 5px 16px #17202a0b}
+.admin-settings-page #sale-types .top{align-items:flex-start}
+.admin-settings-page #sale-types b{font-size:15px;color:#17202a}
+.admin-settings-page #sale-types .row{display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end}
+.admin-settings-page #sale-types button{min-height:36px;padding:8px 11px;border-radius:9px;font-size:13px;font-weight:750}
+.admin-settings-page #sale-types button:not(.primary){background:#eef2f6;color:#344054}
+.admin-settings-page #sale-types button[onclick*="toggle"]{background:#eaf2ff;color:#1457ad}
+.admin-settings-page #sale-types button[onclick*="remove"]{color:#9a3412;background:#fff3e8}
