@@ -1054,7 +1054,7 @@ def admin_deactivate_shift(shift_id):
         if ns==200 and nr:
             codes=nr[0].get("nozzle_ids") or []
             if codes:
-                ds,dr=sb("dispenser_nozzles",params={"nozzle_code":"in.("+",".join(str(x) for x in codes)+")"},select="id")
+                ds,dr=sb("dispenser_nozzles",params={"nozzle_code":"in.("+",".join(str(x) for x in codes)+")","select":"id"})
                 if ds==200:
                     for row in dr:
                         sb("dispenser_nozzles",method="PATCH",params={"id":"eq."+str(row["id"])},body={"active":False},prefer="return=minimal")
@@ -1083,8 +1083,10 @@ def start_shift(shift_id):
 
 @app.post("/api/shifts/<shift_id>/close")
 def close_shift(shift_id):
+    # Shift deactivation is admin-only. Attendants must use handover.
+    auth=require_admin()
+    if auth:return auth
     eid=session.get("employee_id")
-    if not eid:return jsonify({"error":"Unauthorized"}),401
     data=request.get_json(silent=True) or {}
     # Attendant-panel close is intentionally immediate for now.
     # If closing readings are supplied, keep the existing detailed close flow.
