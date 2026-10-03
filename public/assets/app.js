@@ -229,7 +229,8 @@ async function loadAttendantShiftPage(){
   try{
     const me=await currentUser();
     if(me.role!=='attendant')return location.href='attendant-login.html';
-    document.getElementById('name').textContent=me.name;
+    const nameEl=document.getElementById('name');
+    if(nameEl)nameEl.textContent=me.name;
     const [shifts,nozzles,products,employees,tanks]=await Promise.all([
       api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/users'),api('/api/tanks')
     ]);
