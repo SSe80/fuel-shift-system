@@ -1623,7 +1623,7 @@ async function loadPurchases(){
               '<div class="purchase-quantity">'+liters(p.quantity_liters)+' L</div>'+
             '</div>'+
             '<div class="purchase-card-meta">'+
-              '<span>Tank: <b>'+h(t?.tank_code||'—')+'</b></span>'+
+              '<span>Tank: <b>'+h(t?.tank_code||'—')+'</b></span>'+\n              '<span>Attendant: <b>'+h(p.attendant?.name||'No ongoing shift')+'</b></span>'+\n              '<span>Shift: '+h(p.shift?.id?p.shift.id.slice(0,8):'—')+'</span>'+
               '<span>Supplier: '+h(p.supplier||'Not provided')+'</span>'+
               '<span>Invoice: '+h(p.invoice_number||'Not provided')+'</span>'+
               '<span>'+new Date(p.purchase_date).toLocaleString()+'</span>'+
