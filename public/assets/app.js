@@ -85,7 +85,7 @@ async function userDashboard(){
     if(me.role!=='attendant')return location.href='attendant-login.html';
     document.getElementById('name').textContent=me.name;
     const [shifts,nozzles,products,tanks,handovers,employees,takeovers]=await Promise.all([
-      api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/tanks'),api('/api/handovers'),api('/api/users'),api('/api/shift-takeovers')
+      api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/tanks'),api('/api/handovers'),api('/api/users'),api('/api/shift-takeovers').catch(()=>[])
     ]);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
