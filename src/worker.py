@@ -1106,6 +1106,40 @@ def shift_takeovers():
     if status!=200:return jsonify(rows),status
     return jsonify(rows),200
 
+@app.get("/api/sales/confirmations")
+def sale_confirmations():
+    auth=require_admin()
+    if auth:return auth
+    status,result=rpc("list_pending_shift_takeover_sales",{})
+    if status>=400:return jsonify(result),status
+    return jsonify(result if isinstance(result,list) else []),200
+
+@app.post("/api/sales/confirmations/<takeover_id>/confirm")
+def confirm_sale_confirmation(takeover_id):
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    checked=data.get("checked_sale_ids",[])
+    if not isinstance(checked,list):return jsonify({"error":"Invalid checked sales"}),400
+    status,result=rpc("confirm_shift_takeover_sales",{
+        "p_takeover_id":takeover_id,
+        "p_admin_id":session["employee_id"],
+        "p_checked_sale_ids":checked
+    })
+    if status>=400:return jsonify(result),status
+    return jsonify(result),200
+
+@app.post("/api/sales/confirmations/<takeover_id>/cancel")
+def cancel_sale_confirmation(takeover_id):
+    auth=require_admin()
+    if auth:return auth
+    status,result=rpc("cancel_shift_takeover_sales",{
+        "p_takeover_id":takeover_id,
+        "p_admin_id":session["employee_id"]
+    })
+    if status>=400:return jsonify(result),status
+    return jsonify(result),200
+
 @app.post("/api/handovers")
 def create_handover():
     eid=session.get("employee_id")
