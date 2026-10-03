@@ -239,7 +239,7 @@ def employees():
     auth = require_login()
     if auth: return auth
     select = "id,name,phone,operator_id,role,active,created_at" if session.get("role") == "admin" else "id,name,phone,operator_id,role"
-    params = {"select": select, "order": "name.asc"}
+    params = {"select": select, "order": "created_at.asc"}
     if session.get("role") != "admin": params["active"] = "eq.true"
     status, rows = sb("employees", params=params)
     return jsonify(rows), status
@@ -371,10 +371,10 @@ def delete_sale_type(sale_type_id):
 def get_settings():
     auth=require_login()
     if auth:return auth
-    status,result=sb("station_settings",params={"id":"eq.true","select":"currency,updated_at","limit":"1"})
+    status,result=sb("station_settings",params={"id":"eq.true","select":"currency,item_orders,updated_at","limit":"1"})
     if status!=200:return jsonify(result),status
     if not result:
-        return jsonify({"currency":"ETB"}),200
+        return jsonify({"currency":"ETB","item_orders":{}}),200
     return jsonify(result[0]),200
 
 @app.patch("/api/settings")
@@ -394,11 +394,88 @@ def update_settings():
         if status>=400:return jsonify(result),status
     return jsonify(result[0] if isinstance(result,list) else result),200
 
+
+def _settings_order_ids(item_orders, key, records):
+    requested=item_orders.get(key,[]) if isinstance(item_orders,dict) else []
+    requested=[str(x) for x in requested if x]
+    valid={str(x.get("id")) for x in records}
+    ordered=[x for x in requested if x in valid]
+    ordered.extend(str(x.get("id")) for x in records if str(x.get("id")) not in ordered)
+    return ordered
+
+@app.post("/api/settings/reorder")
+def reorder_settings():
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    key=str(data.get("key","")).strip()
+    ids=data.get("ids")
+    allowed={"products":"products","saleTypes":"sale_types","employees":"employees","tanks":"tanks","dispensers":"nozzles"}
+    if key not in allowed or not isinstance(ids,list) or not ids:
+        return jsonify({"error":"A valid settings section and ordered item list are required"}),400
+
+    ss,settings=sb("station_settings",params={"id":"eq.true","select":"item_orders","limit":"1"})
+    if ss!=200:return jsonify(settings),ss
+    item_orders=(settings[0].get("item_orders") or {}) if settings else {}
+    if not isinstance(item_orders,dict): item_orders={}
+
+    table=allowed[key]
+    select="id"
+    if key=="tanks":select="id,tank_code,product"
+    elif key=="dispensers":select="id,nozzle_code,product,nozzle_count"
+    rs,records=sb(table,params={"select":select})
+    if rs!=200:return jsonify(records),rs
+    ordered=_settings_order_ids({"x":ids},"x",records)
+    item_orders[key]=ordered
+
+    # Tank/dispenser labels contain their numeric position. Rebuild those
+    # labels from the new order while keeping UUID references unchanged.
+    if key in ("tanks","dispensers"):
+        ps,products=sb("products",params={"select":"name,code_name"})
+        if ps!=200:return jsonify(products),ps
+        code_by_product={str(p.get("name","")).lower():str(p.get("code_name","")).strip() for p in products}
+        by_id={str(r["id"]):r for r in records}
+        groups={}
+        for item_id in ordered:
+            item=by_id[item_id]
+            product=str(item.get("product","")).lower()
+            groups.setdefault(product,[]).append(item_id)
+
+        # First move every affected code to a temporary unique value so the
+        # unique tank_code/nozzle_code constraint cannot collide mid-swap.
+        for item_id in ordered:
+            if key=="tanks":
+                st,_=sb("tanks",method="PATCH",params={"id":"eq."+item_id},body={"tank_code":"__reorder__"+item_id},prefer="return=minimal")
+            else:
+                st,_=sb("nozzles",method="PATCH",params={"id":"eq."+item_id},body={"nozzle_code":"__reorder__"+item_id},prefer="return=minimal")
+            if st>=400:return jsonify({"error":"Could not prepare item order change"}),st
+
+        for product,group in groups.items():
+            code_name=code_by_product.get(product)
+            if not code_name:
+                return jsonify({"error":"Product for one or more items was not found"}),404
+            for position,item_id in enumerate(group,1):
+                if key=="tanks":
+                    final_code=f"{code_name}•TANK {position}"
+                    st,res=sb("tanks",method="PATCH",params={"id":"eq."+item_id},body={"tank_code":final_code},prefer="return=minimal")
+                else:
+                    item=by_id[item_id]
+                    final_code=f"{code_name}•DISPENSER {position}"
+                    count=int(item.get("nozzle_count") or 1)
+                    nozzle_ids=[f"{final_code}-N•{i}" for i in range(1,count+1)]
+                    st,res=sb("nozzles",method="PATCH",params={"id":"eq."+item_id},body={"nozzle_code":final_code,"nozzle_ids":nozzle_ids},prefer="return=minimal")
+                if st>=400:return jsonify({"error":"Could not save item naming order"}),st
+
+    body={"item_orders":item_orders,"updated_at":datetime.now(timezone.utc).isoformat()}
+    us,ur=sb("station_settings",method="PATCH",params={"id":"eq.true"},body=body,prefer="return=representation")
+    if us>=400:return jsonify(ur),us
+    return jsonify({"ok":True,"key":key,"ids":ordered,"item_orders":item_orders}),200
+
 @app.get("/api/products")
 def products():
     auth=require_login()
     if auth: return auth
-    status, rows = sb("products", params={"select":"id,name,code_name,color,active,selling_price,created_at,updated_at","order":"name.asc"})
+    status, rows = sb("products", params={"select":"id,name,code_name,color,active,selling_price,created_at,updated_at","order":"created_at.asc"})
     return jsonify(rows), status
 
 @app.post("/api/products")
