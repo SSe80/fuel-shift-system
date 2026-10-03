@@ -1561,3 +1561,9 @@ async function cancelAdminPendingShift(id){
   showSettingsConfirmation('Review Pending Assignment Cancellation',details,()=>_cancelAdminPendingShift(id),
     'Pending assignment cancelled successfully','<p>The pending assignment was cancelled. The dispenser remains inactive and unchanged.</p>'+details);
 }
+
+function toggleSettingsSection(event,section){
+  if(!section)return;
+  if(event && event.target && event.target.closest('button,a,input,select,textarea'))return;
+  section.classList.toggle('expanded');
+}
