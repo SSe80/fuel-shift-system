@@ -30,13 +30,15 @@
 <div class="modal-backdrop" onclick="closePurchaseModal()"></div>
 <div class="modal-card purchase-modal-card purchase-wizard-card">
   <div class="top">
-    <div><span class="section-kicker">RECEIVE STOCK</span><h3>Purchase</h3><div id="purchase-step-title" class="purchase-card-title">Select Tank</div><p id="purchase-step-description" class="muted">Select the tank receiving the delivery.</p></div>
+    <div><span class="section-kicker">RECEIVE STOCK</span><h3>Purchase</h3><div id="purchase-step-title" class="purchase-card-title">Order</div><p id="purchase-step-description" class="muted">Enter the order details before receiving the delivery.</p></div>
     <button type="button" class="modal-close" onclick="closePurchaseModal()">×</button>
   </div>
   <div class="purchase-step-indicator"><span class="active">1</span><i></i><span>2</span><i></i><span>3</span><i></i><span>4</span></div>
   <form class="purchase-form" onsubmit="return false;">
     <section class="purchase-wizard-step active" data-purchase-step="1">
-      <div class="purchase-field"><label for="purchase-tank">Tank</label><select id="purchase-tank" required><option value="">Select tank</option></select></div>
+      <div class="purchase-field"><label for="purchase-product">Product</label><select id="purchase-product" required><option value="">Select product</option></select></div>
+      <div class="purchase-field"><label for="purchase-order-number">Order number</label><input id="purchase-order-number" type="text" placeholder="Order number" autocomplete="off" required></div>
+      <div class="purchase-field purchase-wide"><label for="purchase-ordered-quantity">Ordered quantity</label><div class="purchase-input-unit"><input id="purchase-ordered-quantity" type="number" min="0.1" step="0.1" placeholder="0.0" inputmode="decimal" required><span>Liters</span></div></div>
       <div class="purchase-wizard-actions"><button type="button" onclick="closePurchaseModal()">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(1)">Continue</button></div>
     </section>
     <section class="purchase-wizard-step" data-purchase-step="2">
@@ -75,8 +77,8 @@
   function renderPurchaseStep(step){
     purchaseStep=step;
     document.querySelectorAll('.purchase-wizard-step').forEach(el=>el.classList.toggle('active',Number(el.dataset.purchaseStep)===step));
-    const titles=['Select Tank','Enter Quantity','Delivery Details','Review Purchase'];
-    const descriptions=['Select the tank receiving the delivery.','Enter the quantity of fuel received.','Enter the invoice or delivery number.','Check the purchase details before confirming.'];
+    const titles=['Order','Enter Quantity','Delivery Details','Review Purchase'];
+    const descriptions=['Enter the product, order number, and ordered quantity.','Enter the quantity of fuel received.','Enter the invoice or delivery number.','Check the purchase details before confirming.'];
     const title=document.getElementById('purchase-step-title');
     const desc=document.getElementById('purchase-step-description');
     if(title)title.textContent=titles[step-1];
@@ -97,9 +99,12 @@
   window.returnPurchaseStep=function(step){renderPurchaseStep(Math.max(1,step-1));};
   window.continuePurchaseStep=function(step){
     if(step===1){
-      if(!tankSelect?.value){setStatus('Please select a tank before continuing.',true);return;}
-      const tank=purchaseTanks.find(t=>String(t.id)===String(tankSelect.value));
-      if(!tank?.product){setStatus('The selected tank has no product assigned.',true);return;}
+      const product=document.getElementById('purchase-product')?.value||'';
+      const orderNumber=document.getElementById('purchase-order-number')?.value.trim()||'';
+      const orderedQuantity=Number(document.getElementById('purchase-ordered-quantity')?.value||0);
+      if(!product){setStatus('Please select a product before continuing.',true);return;}
+      if(!orderNumber){setStatus('Enter the order number before continuing.',true);return;}
+      if(!Number.isFinite(orderedQuantity)||orderedQuantity<=0){setStatus('Enter a valid ordered quantity before continuing.',true);return;}
     }
     if(step===2){
       const q=Number(document.getElementById('purchase-liters')?.value||0);
@@ -121,6 +126,9 @@
       if(!Array.isArray(tanks))throw new Error('Unable to load tanks');
       purchaseTanks=tanks;
       const activeTanks=tanks.filter(t=>t.active!==false);
+      const products=[...new Set(activeTanks.map(t=>t.product).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
+      const productSelect=document.getElementById('purchase-product');
+      if(productSelect){productSelect.innerHTML='<option value="">Select product</option>'+products.map(p=>'<option value="'+purchaseH(p)+'">'+purchaseH(p)+'</option>').join('');}
       if(tankSelect){
         tankSelect.innerHTML='<option value="">Select tank</option>'+activeTanks.map(t=>'<option value="'+purchaseH(t.id)+'">'+purchaseH(t.tank_code||t.name||t.id)+' — '+purchaseH(t.product||'Product not assigned')+' · '+purchaseH(purchaseLiters(t.current_liters))+' L in stock</option>').join('');
       }
