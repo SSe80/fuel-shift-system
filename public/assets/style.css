@@ -1244,3 +1244,54 @@
 }
 .admin-settings-page .settings-item-card:not(.expanded) button:not(.settings-move-handle){display:none !important;}
 .admin-settings-page .settings-item-card.expanded button{display:inline-flex;}
+
+
+/* Refined minimized-card move control */
+.admin-settings-page .settings-item-card:not(.expanded) .top{
+  position:relative;
+  padding-left:24px;
+}
+.admin-settings-page .settings-item-card:not(.expanded) .settings-move-handle{
+  position:absolute;
+  left:0;
+  top:1px;
+  width:20px;
+  height:28px;
+  margin:0;
+  padding:0;
+  display:inline-flex !important;
+  flex:0 0 20px;
+  border:0 !important;
+  outline:0 !important;
+  box-shadow:none !important;
+  background:transparent !important;
+  border-radius:0;
+  appearance:none;
+  -webkit-appearance:none;
+  color:inherit;
+  opacity:.58;
+  cursor:grab;
+  font-size:21px;
+  font-weight:800;
+  line-height:1;
+  letter-spacing:1px;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.admin-settings-page .settings-item-card:not(.expanded) .settings-move-handle:hover,
+.admin-settings-page .settings-item-card:not(.expanded) .settings-move-handle:focus,
+.admin-settings-page .settings-item-card:not(.expanded) .settings-move-handle:focus-visible{
+  border:0 !important;
+  outline:0 !important;
+  box-shadow:none !important;
+  background:transparent !important;
+  opacity:.82;
+}
+.admin-settings-page .settings-item-card:not(.expanded) .settings-move-handle:active{
+  cursor:grabbing;
+  opacity:1;
+}
+.admin-settings-page .settings-item-card.expanded .settings-move-handle{
+  display:none !important;
+}
