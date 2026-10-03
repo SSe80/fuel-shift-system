@@ -1647,13 +1647,111 @@ async function cancelAdminPendingShift(id){
 
 function initSettingsItemDrag(){
 document.querySelectorAll('.settings-move-handle:not([data-drag-bound])').forEach(handle=>{
-handle.dataset.dragBound='1';let state=null,timer=null;
-const cleanup=()=>{if(timer){clearTimeout(timer);timer=null;}document.querySelectorAll('.settings-drag-ghost,.settings-drag-placeholder').forEach(x=>x.remove());document.querySelectorAll('.settings-dragging').forEach(x=>x.classList.remove('settings-dragging'));state=null;};
-handle.addEventListener('pointerdown',e=>{if(e.button!==undefined&&e.button!==0)return;e.preventDefault();const card=handle.closest('.settings-item-card'),container=card?.parentElement;if(!card||!container)return;const rect=card.getBoundingClientRect();state={card,container,key:handle.dataset.settingsKey,original:settingsOrderFromContainer(container),startY:e.clientY,startX:e.clientX,dragging:false,rect};timer=setTimeout(()=>{if(!state)return;state.dragging=true;card.classList.add('settings-dragging');const placeholder=document.createElement('div');placeholder.className='settings-drag-placeholder';placeholder.style.height=rect.height+'px';state.placeholder=placeholder;card.after(placeholder);const ghost=card.cloneNode(true);ghost.classList.add('settings-drag-ghost');ghost.classList.remove('expanded');ghost.style.width=rect.width+'px';ghost.style.left=rect.left+'px';ghost.style.top=rect.top+'px';document.body.appendChild(ghost);state.ghost=ghost;state.offsetY=e.clientY-rect.top;try{handle.setPointerCapture(e.pointerId);}catch(_){}},220);});
-handle.addEventListener('pointermove',e=>{if(!state)return;if(!state.dragging){if(Math.hypot(e.clientX-state.startX,e.clientY-state.startY)>10){if(timer){clearTimeout(timer);timer=null;}cleanup();}return;}e.preventDefault();if(state.ghost)state.ghost.style.transform='translate3d(0,'+(e.clientY-state.rect.top-state.offsetY)+'px,0)';const siblings=Array.from(state.container.querySelectorAll(':scope > .settings-item-card[data-settings-id]')).filter(x=>x!==state.card);const target=siblings.find(x=>e.clientY<x.getBoundingClientRect().top+x.getBoundingClientRect().height/2);if(target)state.container.insertBefore(state.placeholder,target);else state.container.appendChild(state.placeholder);});
-const end=e=>{if(!state)return;if(timer){clearTimeout(timer);timer=null;}if(!state.dragging){cleanup();return;}if(state.ghost)state.ghost.remove();state.card.classList.remove('settings-dragging');state.container.insertBefore(state.card,state.placeholder);state.placeholder.remove();try{handle.releasePointerCapture(e.pointerId);}catch(_){}const s=state;state=null;const current=settingsOrderFromContainer(s.container);if(current.join('|')===s.original.join('|')){loadSettingsData();return;}const label=s.key==='products'?'products':s.key==='saleTypes'?'sale types':s.key==='employees'?'users':s.key==='tanks'?'fuel tanks':'fuel dispensers';showSettingsConfirmation('Save New '+label+' Order','<p>The '+h(label)+' order was changed.</p><p><b>Save these new positions?</b></p>',async()=>{try{await api('/api/settings/reorder',{method:'POST',body:JSON.stringify({key:s.key,ids:current})});await loadSettingsData();}catch(err){await loadSettingsData();throw err;}},'Order saved successfully','<p>The new '+h(label)+' positions have been saved.</p>');};
-handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',()=>{if(state)cleanup();});});}
+handle.dataset.dragBound='1';
+let state=null,timer=null,raf=0,pendingY=0;
 
+const cancelFrame=()=>{if(raf){cancelAnimationFrame(raf);raf=0;}};
+const cleanup=()=>{
+  if(timer){clearTimeout(timer);timer=null;}
+  cancelFrame();
+  document.querySelectorAll('.settings-drag-ghost,.settings-drag-placeholder').forEach(x=>x.remove());
+  document.querySelectorAll('.settings-dragging').forEach(x=>x.classList.remove('settings-dragging'));
+  state=null;
+};
+
+const updateDrag=()=>{
+  raf=0;
+  if(!state||!state.dragging)return;
+  const y=pendingY;
+  if(state.ghost){
+    state.ghost.style.transform='translate3d(0,'+(y-state.rect.top-state.offsetY)+'px,0)';
+  }
+  const siblings=Array.from(state.container.querySelectorAll(':scope > .settings-item-card[data-settings-id]')).filter(x=>x!==state.card);
+  let target=null;
+  for(const x of siblings){
+    const rect=x.getBoundingClientRect();
+    if(y<rect.top+rect.height/2){target=x;break;}
+  }
+  if(target){
+    if(state.placeholder.nextElementSibling!==target)state.container.insertBefore(state.placeholder,target);
+  }else if(state.placeholder.parentElement===state.container&&state.container.lastElementChild!==state.placeholder){
+    state.container.appendChild(state.placeholder);
+  }
+};
+
+const scheduleDragUpdate=()=>{
+  if(!raf)raf=requestAnimationFrame(updateDrag);
+};
+
+handle.addEventListener('pointerdown',e=>{
+  if(e.button!==undefined&&e.button!==0)return;
+  e.preventDefault();
+  const card=handle.closest('.settings-item-card'),container=card?.parentElement;
+  if(!card||!container)return;
+  const rect=card.getBoundingClientRect();
+  state={card,container,key:handle.dataset.settingsKey,original:settingsOrderFromContainer(container),
+    startY:e.clientY,startX:e.clientX,dragging:false,rect};
+  pendingY=e.clientY;
+  try{handle.setPointerCapture(e.pointerId);}catch(_){}
+  timer=setTimeout(()=>{
+    if(!state)return;
+    state.dragging=true;
+    card.classList.add('settings-dragging');
+    const placeholder=document.createElement('div');
+    placeholder.className='settings-drag-placeholder';
+    placeholder.style.height=rect.height+'px';
+    state.placeholder=placeholder;
+    card.after(placeholder);
+
+    const ghost=card.cloneNode(true);
+    ghost.classList.add('settings-drag-ghost');
+    ghost.classList.remove('expanded');
+    ghost.style.width=rect.width+'px';
+    ghost.style.left=rect.left+'px';
+    ghost.style.top=rect.top+'px';
+    ghost.style.transform='translate3d(0,0,0)';
+    document.body.appendChild(ghost);
+    state.ghost=ghost;
+    state.offsetY=e.clientY-rect.top;
+  },180);
+});
+
+handle.addEventListener('pointermove',e=>{
+  if(!state)return;
+  if(!state.dragging){
+    if(Math.hypot(e.clientX-state.startX,e.clientY-state.startY)>8){
+      if(timer){clearTimeout(timer);timer=null;}
+      cleanup();
+    }
+    return;
+  }
+  e.preventDefault();
+  pendingY=e.clientY;
+  scheduleDragUpdate();
+});
+
+const end=e=>{
+  if(!state)return;
+  if(timer){clearTimeout(timer);timer=null;}
+  if(!state.dragging){cleanup();return;}
+  cancelFrame();
+  if(state.ghost)state.ghost.remove();
+  state.card.classList.remove('settings-dragging');
+  state.container.insertBefore(state.card,state.placeholder);
+  state.placeholder.remove();
+  try{handle.releasePointerCapture(e.pointerId);}catch(_){}
+  const s=state;state=null;
+  const current=settingsOrderFromContainer(s.container);
+  if(current.join('|')===s.original.join('|')){loadSettingsData();return;}
+  const label=s.key==='products'?'products':s.key==='saleTypes'?'sale types':s.key==='employees'?'users':s.key==='tanks'?'fuel tanks':'fuel dispensers';
+  showSettingsConfirmation('Save New '+label+' Order','<p>The '+h(label)+' order was changed.</p><p><b>Save these new positions?</b></p>',async()=>{
+    try{await api('/api/settings/reorder',{method:'POST',body:JSON.stringify({key:s.key,ids:current})});await loadSettingsData();}
+    catch(err){await loadSettingsData();throw err;}
+  },'Order saved successfully','<p>The new '+h(label)+' positions have been saved.</p>');
+};
+handle.addEventListener('pointerup',end);
+handle.addEventListener('pointercancel',()=>{if(state)cleanup();});
+});}
 function toggleSettingsSection(event,section){
   if(!section)return;
   if(event && event.target && event.target.closest('button,a,input,select,textarea'))return;
