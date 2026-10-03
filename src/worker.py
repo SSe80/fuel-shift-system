@@ -1295,10 +1295,73 @@ def inventory_summary():
 def tank_movements():
     auth=require_admin()
     if auth:return auth
-    params={"select":"*","order":"created_at.desc","limit":"300"}
-    if request.args.get("tank_id"):params["tank_id"]="eq."+request.args["tank_id"]
+    params={
+        "select":"id,tank_id,movement_type,quantity_liters,reference_id,notes,created_by,created_at",
+        "order":"created_at.asc",
+        "limit":"500"
+    }
+    if request.args.get("tank_id"):
+        params["tank_id"]="eq."+request.args["tank_id"]
+    if request.args.get("movement_type"):
+        params["movement_type"]="eq."+request.args["movement_type"]
+    if request.args.get("from"):
+        params["created_at"]="gte."+request.args["from"]
+    if request.args.get("to"):
+        params["created_at"]=(params.get("created_at","")+"&" if params.get("created_at") else "")+"lte."+request.args["to"]
     status,rows=sb("tank_movements",params=params)
-    return jsonify(rows),status
+    if status!=200:return jsonify(rows),status
+
+    tank_status,tank_rows=sb("tanks",params={
+        "select":"id,tank_code,product,capacity_liters,current_liters,active",
+        "limit":"500"
+    })
+    if tank_status!=200:return jsonify(tank_rows),tank_status
+    product_status,product_rows=sb("products",params={
+        "select":"id,name,code_name,color,active",
+        "limit":"500"
+    })
+    if product_status!=200:return jsonify(product_rows),product_status
+
+    tank_map={str(x.get("id")):x for x in tank_rows}
+    product_map={str(x.get("id")):x for x in product_rows}
+    product_by_name={str(x.get("name","")).strip().lower():x for x in product_rows}
+
+    # Build a chronological running balance. Opening/dip readings are
+    # snapshots/anchors, not additive movements. Purchases add stock,
+    # sales subtract stock, and adjustments apply their signed quantity.
+    balance_by_tank={}
+    result=[]
+    for row in rows:
+        tid=str(row.get("tank_id") or "")
+        tank=tank_map.get(tid,{})
+        product=product_map.get(str(tank.get("product_id") or ""))
+        if not product:
+            product=product_by_name.get(str(tank.get("product") or "").strip().lower(),{})
+        movement=str(row.get("movement_type") or "").lower()
+        qty=float(row.get("quantity_liters") or 0)
+        if movement in ("opening","dip"):
+            balance=qty
+        elif movement=="sale":
+            balance=balance_by_tank.get(tid,0)-abs(qty)
+        else:
+            balance=balance_by_tank.get(tid,0)+qty
+        balance_by_tank[tid]=balance
+        item=dict(row)
+        item.update({
+            "tank_code":tank.get("tank_code"),
+            "tank_product":tank.get("product"),
+            "capacity_liters":tank.get("capacity_liters"),
+            "current_liters":tank.get("current_liters"),
+            "tank_active":tank.get("active"),
+            "product_id":product.get("id") if product else None,
+            "product_name":product.get("name") if product else tank.get("product"),
+            "product_code":product.get("code_name") if product else tank.get("product"),
+            "product_color":product.get("color") if product else None,
+            "balance_after":balance
+        })
+        result.append(item)
+    result.reverse()
+    return jsonify(result),200
 
 @app.get("/api/handovers")
 def handovers():
