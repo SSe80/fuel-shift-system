@@ -720,6 +720,7 @@ async function loadSettingsData(){
     '</div>';
   }).join(''):'<p class="muted">No dispensers configured yet.</p>';
 window.dispenserRecords=dispensers;
+  initSettingsItemDrag();
   const tankProductSelect=document.getElementById('tank-product');
   if(tankProductSelect){
     tankProductSelect.innerHTML='<option value="">Select product</option>'+products.filter(p=>p.active).map(p=>'<option value="'+h(p.name)+'">'+h(p.code_name)+'</option>').join('');
