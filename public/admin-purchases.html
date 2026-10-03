@@ -52,11 +52,11 @@
     <div><span class="section-kicker">RECEIVE STOCK</span><h3>Purchase</h3><div id="purchase-step-title" class="purchase-card-title">Order</div><p id="purchase-step-description" class="muted purchase-step-description">Enter the order details before receiving the delivery.</p></div>
     <button type="button" class="modal-close" onclick="closePurchaseModal()">×</button>
   </div>
-  <div class="purchase-step-indicator"><span class="active">1</span><i></i><span>2</span><i></i><span>3</span><i></i><span>4</span></div>
+  <div class="purchase-step-indicator"><span class="active">1</span><i></i><span>2</span><i></i><span>3</span></div>
   <form class="purchase-form" onsubmit="return false;">
     <section class="purchase-wizard-step active" data-purchase-step="1">
       <div class="purchase-field"><label for="purchase-product">Product</label><select id="purchase-product" required><option value="">Select product</option></select></div>
-      <div class="purchase-field"><label for="purchase-order-number">Order number</label><input id="purchase-order-number" type="text" placeholder="Order number" autocomplete="off" required></div>
+      <div class="purchase-field"><label for="purchase-invoice">Invoice number</label><input id="purchase-invoice" type="text" placeholder="Invoice number" autocomplete="off" required></div>
       <div class="purchase-field purchase-wide"><label for="purchase-ordered-quantity">Ordered quantity</label><div class="purchase-input-unit"><input id="purchase-ordered-quantity" type="text" inputmode="decimal" autocomplete="off" placeholder="0" required><span>Liters</span></div></div>
       <div class="purchase-wizard-actions"><button type="button" onclick="closePurchaseModal()">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(1)">Continue</button></div>
     </section>
@@ -70,11 +70,7 @@
     <section class="purchase-wizard-step" data-purchase-step="3">
       <div id="purchase-compartment-liters"></div>
       <div class="purchase-field"><label for="purchase-invoice">Invoice number <small>Optional</small></label><input id="purchase-invoice" placeholder="Invoice / delivery number"></div>
-      <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(3)">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(3)">Continue</button></div>
-    </section>
-    <section class="purchase-wizard-step" data-purchase-step="4">
-      <div id="purchase-review" class="purchase-review"></div>
-      <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(4)">Return</button><button type="button" class="primary" onclick="createPurchase()">Confirm Purchase</button></div>
+      <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(3)">Return</button><button type="button" class="primary" onclick="createPurchase()">Confirm Purchase</button></div>
     </section>
   </form>
   <div id="purchase-status" class="purchase-status"></div>
@@ -121,8 +117,8 @@
   function renderPurchaseStep(step){
     purchaseStep=step;
     document.querySelectorAll('.purchase-wizard-step').forEach(el=>el.classList.toggle('active',Number(el.dataset.purchaseStep)===step));
-    const titles=['Order','Delivery','Invoice','Review'];
-    const descriptions=['Select the product and enter the order details.','Enter the truck and driver details.','Enter liters for each truck compartment.','Review the delivery before confirming.'];
+    const titles=['Order','Truck','Quantity'];
+    const descriptions=['Select the product and enter the invoice details.','Enter the truck and driver details.','Enter liters for each truck compartment.'];
     const title=document.getElementById('purchase-step-title');
     const desc=document.getElementById('purchase-step-description');
     if(title)title.textContent=titles[step-1];
@@ -144,10 +140,10 @@
   window.continuePurchaseStep=function(step){
     if(step===1){
       const product=document.getElementById('purchase-product')?.value||'';
-      const orderNumber=document.getElementById('purchase-order-number')?.value.trim()||'';
+      const invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
       const orderedQuantity=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
       if(!product){setStatus('Please select a product before continuing.',true);return;}
-      if(!orderNumber){setStatus('Enter the order number before continuing.',true);return;}
+      if(!invoice){setStatus('Enter the invoice number before continuing.',true);return;}
       if(!Number.isFinite(orderedQuantity)||orderedQuantity<=0){setStatus('Enter a valid ordered quantity before continuing.',true);return;}
     }
     if(step===2){
@@ -161,10 +157,6 @@
       const compartmentCount=Number(document.getElementById('purchase-truck-compartments')?.value||0);
       const compartmentInputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
       if(!compartmentCount||compartmentInputs.length!==compartmentCount||compartmentInputs.some(input=>!Number.isFinite(parseQuantity(input.value))||parseQuantity(input.value)<=0)){setStatus('Enter a valid liter quantity for every compartment.',true);return;}
-      const q=compartmentInputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
-      const invoice=document.getElementById('purchase-invoice')?.value.trim()||'Not provided';
-      const review=document.getElementById('purchase-review');
-      if(review)review.innerHTML='<div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(productDisplay)+'</strong></div><div class="purchase-review-row"><span>Order number</span><strong>'+purchaseH(orderNumber)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseH(purchaseLiters(orderedQuantity))+' L</strong></div><div class="purchase-review-row"><span>Received quantity</span><strong>'+purchaseH(purchaseLiters(q))+' L</strong></div><div class="purchase-review-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>';
     }
     renderPurchaseStep(step+1);
   };
@@ -210,7 +202,7 @@
       document.getElementById('purchase-driver-phone').value='';
       document.getElementById('purchase-plate-number').value='';
       document.getElementById('purchase-truck-compartments').value='';
-      document.getElementById('purchase-order-number').value='';
+      document.getElementById('purchase-order-number')?.value='';
       document.getElementById('purchase-product').value='';
       document.getElementById('purchase-invoice').value='';
       purchaseToast('Purchase recorded successfully');
