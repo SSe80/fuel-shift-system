@@ -104,6 +104,7 @@ function continueTakeoverSale(){
   const takeover=window.pendingTakeoverRecord;
   if(!takeover)return;
   const sales=[];
+  let missingReason='';
   document.querySelectorAll('#takeover-sale-type-list .takeover-sale-entry').forEach(row=>{
     const input=row.querySelector('.takeover-sale-amount');
     const amount=Number(input?.value||0);
@@ -112,11 +113,10 @@ function continueTakeoverSale(){
     const typeId=row.getAttribute('data-sale-type');
     const type=(window.takeoverSaleTypes||[]).find(x=>String(x.id)===String(typeId));
     const reason=row.querySelector('.takeover-sale-reason')?.value.trim()||'';
-    if(type?.reason_required&&!reason){
-      throw new Error('Enter a reason for '+type.name);
-    }
+    if(type?.reason_required&&!reason){missingReason=type.name;return;}
     sales.push({sale_type_id:typeId,name:type?.name||'Sale',amount,reason});
   });
+  if(missingReason){toast('Enter a reason for '+missingReason);return;}
   const total=sales.reduce((sum,x)=>sum+x.amount,0);
   const calculated=Number(takeover.total_sales_amount||0);
   if(!sales.length){toast('Enter at least one sale amount');return;}
