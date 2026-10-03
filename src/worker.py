@@ -1222,8 +1222,21 @@ def inventory_summary():
     if ts!=200:return jsonify(tanks),ts
     ps,purchases_rows=sb("purchases",params={"select":"tank_id,product_id,product,quantity_liters,purchase_date","limit":"5000","order":"purchase_date.asc"})
     if ps!=200:return jsonify(purchases_rows),ps
-    ss,sales_rows=sb("sales",params={"select":"product,quantity_liters,sale_time","limit":"5000","order":"sale_time.asc"})
+    ss,sales_rows=sb("sales",params={"select":"nozzle_id,product,quantity_liters,sale_time","limit":"5000","order":"sale_time.asc"})
     if ss!=200:return jsonify(sales_rows),ss
+
+    # Fuel sales belong to a tank through the sale's nozzle. Do not aggregate
+    # by product name alone because one product can be stored in multiple tanks.
+    nozzle_ids=list({str(x.get("nozzle_id")) for x in sales_rows if x.get("nozzle_id")})
+    nozzle_map={}
+    if nozzle_ids:
+        ns,nozzle_rows=sb("nozzles",params={
+            "id":"in.("+",".join(nozzle_ids)+")",
+            "select":"id,tank_id,product"
+        })
+        if ns!=200:return jsonify(nozzle_rows),ns
+        nozzle_map={str(x.get("id")):x for x in nozzle_rows}
+
     result=[]
     for tank in tanks:
         if not tank.get("active"):continue
@@ -1232,7 +1245,7 @@ def inventory_summary():
         purchases=sum(float(x.get("quantity_liters") or 0) for x in purchases_rows
                       if str(x.get("tank_id") or "")==tid)
         sales=sum(float(x.get("quantity_liters") or 0) for x in sales_rows
-                  if str(x.get("product") or "").strip().lower()==product.strip().lower())
+                  if str((nozzle_map.get(str(x.get("nozzle_id"))) or {}).get("tank_id") or "")==tid)
         opening=tank.get("opening_stock_liters")
         current=float(tank.get("current_liters") or 0)
         result.append({
