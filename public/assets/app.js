@@ -686,8 +686,8 @@ async function loadSettingsData(){
       const readingText=readings.length
         ?readings.map(r=>'<div class="dispenser-reading-row"><span>'+h(r.nozzle_id)+'</span><b>'+Number(r.opening_reading||0).toFixed(0)+'</b></div>').join('')
         :'<span class="muted">No opening readings recorded</span>';
-      return '<div class="card settings-item-card dispenser-settings-card dispenser-pending-card" onclick="toggleSettingsItem(event,this)">'+
-        '<div class="dispenser-card-head"><div><span class="section-kicker">SHIFT ASSIGNMENT</span><h3>Pending shift</h3><span class="badge">Awaiting attendant confirmation</span></div></div>'+
+      return '<div class="card settings-item-card dispenser-settings-card dispenser-pending-card" data-settings-key="dispensers" data-settings-id="'+pending.id+'" onclick="toggleSettingsItem(event,this)">'+
+        '<div class="dispenser-card-head"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">↕</button><div><span class="section-kicker">SHIFT ASSIGNMENT</span><h3>Pending shift</h3><span class="badge">Awaiting attendant confirmation</span></div></div>'+
         '<div class="dispenser-identity"><div class="dispenser-name">'+h(n.nozzle_code)+'</div><div class="dispenser-product">'+h(productCode)+' <span>•</span> '+h(nozzleLabel)+'</div></div>'+
         '<div class="dispenser-info-grid">'+
           '<div><span>Connected tank</span><b>'+h(tank?.tank_code||n.tank_id||'Not connected')+'</b></div>'+
@@ -700,8 +700,8 @@ async function loadSettingsData(){
         '<div class="dispenser-card-actions"><button type="button" class="dispenser-danger-action" onclick="cancelAdminPendingShift(\''+pending.id+'\')">Cancel assignment</button></div>'+
       '</div>';
     }
-    return '<div class="card settings-item-card dispenser-settings-card '+(n.active?'dispenser-active-card':'')+'" onclick="toggleSettingsItem(event,this)">'+
-      '<div class="dispenser-card-head"><div><span class="section-kicker">FUEL DISPENSER</span><h3>'+h(n.nozzle_code)+'</h3><div class="dispenser-product">'+h(productCode)+' <span>•</span> '+h(nozzleLabel)+'</div></div>'+
+    return '<div class="card settings-item-card dispenser-settings-card '+(n.active?'dispenser-active-card':'')+'" data-settings-key="dispensers" data-settings-id="'+h(n.id)+'" onclick="toggleSettingsItem(event,this)">'+
+      '<div class="dispenser-card-head"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">↕</button><div><span class="section-kicker">FUEL DISPENSER</span><h3>'+h(n.nozzle_code)+'</h3><div class="dispenser-product">'+h(productCode)+' <span>•</span> '+h(nozzleLabel)+'</div></div>'+
       '<div class="dispenser-status '+(n.active?'is-active':'is-inactive')+'"><span></span>'+(n.active?'Active':'Inactive')+'</div></div>'+
       '<div class="dispenser-main-body">'+
       '<div class="dispenser-info-grid">'+
