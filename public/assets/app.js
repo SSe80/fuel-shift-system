@@ -1038,11 +1038,13 @@ async function openDashboardHandover(shiftId){
       closing_liters:null
     };
 
-    const receiving=employees.filter(e=>e.role==='attendant'&&String(e.id)!==String(me.id));
+    const busyReceiverIds=new Set(shifts.filter(s=>s.status==='assigned'||s.status==='active').map(s=>String(s.employee_id)));
+    const receiving=employees.filter(e=>e.role==='attendant'&&String(e.id)!==String(me.id)&&!busyReceiverIds.has(String(e.id)));
     const select=document.getElementById('handover-to-employee');
     if(!select){toast('Handover form is unavailable.');return;}
     select.innerHTML='<option value="">Select receiving attendant</option>'+
       receiving.map(e=>'<option value="'+h(e.id)+'">'+h(e.name)+' — ID '+h(e.operator_id)+'</option>').join('');
+    if(!receiving.length)select.innerHTML='<option value="">No available receiving attendant</option>';
 
     const dispenser=document.getElementById('handover-dispenser');
     const dispenserTitle=document.getElementById('handover-dispenser-title');
@@ -1076,9 +1078,11 @@ async function loadHandover(){
     }
     window.handoverDraft={shift_id:selected.id,to_employee_id:'',closing_reading:null,closing_liters:null};
     document.getElementById('handover-status').textContent='Review the closing readings and receiving attendant.';
-    const receiving=employees.filter(e=>e.active&&e.id!==me.id&&e.role==='attendant');
+    const busyReceiverIds=new Set(shifts.filter(s=>s.status==='assigned'||s.status==='active').map(s=>String(s.employee_id)));
+    const receiving=employees.filter(e=>e.active&&String(e.id)!==String(me.id)&&e.role==='attendant'&&!busyReceiverIds.has(String(e.id)));
     document.getElementById('handover-to-employee').innerHTML='<option value="">Select receiving attendant</option>'+
       receiving.map(e=>'<option value="'+h(e.id)+'">'+h(e.name)+' — ID '+h(e.operator_id)+'</option>').join('');
+    if(!receiving.length)document.getElementById('handover-to-employee').innerHTML='<option value="">No available receiving attendant</option>';
     openHandoverInputModal();
   }catch(e){document.getElementById('handover-status').textContent=e.message;}
 }
