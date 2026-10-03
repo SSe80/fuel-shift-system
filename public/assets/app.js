@@ -246,8 +246,11 @@ async function userDashboard(){
     window.dashboardTankRecords=tanks;
 
     const takeoverHtml=completedTakeovers.slice(0,5).map(t=>{
+      const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
+      const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
+      const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
       return '<div class="card shift-takeover-card">'+
-        '<div class="takeover-hero"><div class="takeover-hero-icon">↔</div><div><div class="takeover-card-title">Shift Handover</div><div class="takeover-card-subtitle">'+h(t.dispenser_code||'Dispenser')+'</div></div></div>'+
+        '<div class="takeover-hero"><div class="takeover-hero-icon">↔</div><div><div class="takeover-card-title">Shift Handover</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+'</div></div></div>'+
         '<div class="takeover-total-grid">'+
           '<div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div>'+
           '<div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
