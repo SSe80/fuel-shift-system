@@ -1221,77 +1221,101 @@ def create_purchase():
 def inventory_summary():
     auth=require_admin()
     if auth:return auth
-    ts,tanks=sb("tanks",params={"select":"id,tank_code,product,capacity_liters,current_liters,opening_stock_liters,active","order":"tank_code.asc"})
-    if ts!=200:return jsonify(tanks),ts
-    ps,purchases_rows=sb("purchases",params={"select":"tank_id,product_id,product,quantity_liters,purchase_date","limit":"5000","order":"purchase_date.asc"})
-    if ps!=200:return jsonify(purchases_rows),ps
-    ss,sales_rows=sb("sales",params={"select":"shift_id,nozzle_id,product,quantity_liters,sale_time","limit":"5000","order":"sale_time.asc"})
-    if ss!=200:return jsonify(sales_rows),ss
 
-    # Fuel sales belong to a tank through the sale's nozzle. Do not aggregate
-    # by product name alone because one product can be stored in multiple tanks.
-    nozzle_ids=list({str(x.get("nozzle_id")) for x in sales_rows if x.get("nozzle_id")})
-    nozzle_map={}
-    if nozzle_ids:
-        ns,nozzle_rows=sb("nozzles",params={
-            "id":"in.("+",".join(nozzle_ids)+")",
-            "select":"id,tank_id,product"
-        })
-        if ns!=200:return jsonify(nozzle_rows),ns
-        nozzle_map={str(x.get("id")):x for x in nozzle_rows}
-
-    # Completed shift handovers also contain physical nozzle sales that may
-    # not yet exist as rows in public.sales. Count only the unrecorded portion
-    # so normal fuel-sale rows are never double-counted.
-    hs,handovers_rows=sb("shift_takeovers",params={
-        "select":"shift_id,tank_id,tank_sales_liters",
-        "limit":"5000"
+    # Inventory reconciliation is based on the tank-movement ledger.
+    # Opening/dip movements are snapshot anchors, not additive movements.
+    ts,tanks=sb("tanks",params={
+        "select":"id,tank_code,product,capacity_liters,current_liters,opening_stock_liters,active",
+        "order":"tank_code.asc"
     })
-    if hs!=200:return jsonify(handovers_rows),hs
+    if ts!=200:return jsonify(tanks),ts
 
-    recorded_sales_by_shift={}
-    for sale in sales_rows:
-        sid=str(sale.get("shift_id") or "")
-        if not sid:continue
-        nozzle=nozzle_map.get(str(sale.get("nozzle_id"))) or {}
-        if not nozzle.get("tank_id"):continue
-        recorded_sales_by_shift[(sid,str(nozzle.get("tank_id")))] = (
-            recorded_sales_by_shift.get((sid,str(nozzle.get("tank_id"))),0)
-            + float(sale.get("quantity_liters") or 0)
-        )
+    ms,movement_rows=sb("tank_movements",params={
+        "select":"tank_id,movement_type,quantity_liters,created_at",
+        "limit":"10000",
+        "order":"created_at.asc"
+    })
+    if ms!=200:return jsonify(movement_rows),ms
 
     result=[]
+    movements_by_tank={}
+    for movement in movement_rows:
+        tid=str(movement.get("tank_id") or "")
+        if tid:
+            movements_by_tank.setdefault(tid,[]).append(movement)
+
     for tank in tanks:
         if not tank.get("active"):continue
         tid=str(tank.get("id"))
-        product=str(tank.get("product") or "")
-        purchases=sum(float(x.get("quantity_liters") or 0) for x in purchases_rows
-                      if str(x.get("tank_id") or "")==tid)
-        sales=sum(float(x.get("quantity_liters") or 0) for x in sales_rows
-                  if str((nozzle_map.get(str(x.get("nozzle_id"))) or {}).get("tank_id") or "")==tid)
+        movements=movements_by_tank.get(tid,[])
 
-        # Add physical sales captured by completed handovers when those liters
-        # have not already been recorded as individual fuel-sale rows.
-        handover_sales=0
-        for takeover in handovers_rows:
-            if str(takeover.get("tank_id") or "")!=tid:
-                continue
-            sid=str(takeover.get("shift_id") or "")
-            physical=float(takeover.get("tank_sales_liters") or 0)
-            recorded=recorded_sales_by_shift.get((sid,tid),0)
-            handover_sales += max(physical-recorded,0)
+        # Find the latest physical stock anchor. Everything before it belongs
+        # to an older reconciliation period and must not affect current stock.
+        anchor=None
+        for movement in movements:
+            if str(movement.get("movement_type") or "").lower() in ("opening","dip"):
+                anchor=movement
 
-        sales += handover_sales
-        opening=tank.get("opening_stock_liters")
         current=float(tank.get("current_liters") or 0)
+        if anchor is None:
+            result.append({
+                "tank_id":tank.get("id"),
+                "tank_code":tank.get("tank_code"),
+                "product":str(tank.get("product") or ""),
+                "capacity_liters":tank.get("capacity_liters"),
+                "opening_stock_liters":tank.get("opening_stock_liters"),
+                "ledger_anchor_liters":None,
+                "ledger_anchor_at":None,
+                "purchases_liters":0,
+                "sales_liters":0,
+                "adjustments_liters":0,
+                "current_liters":current,
+                "expected_liters":None,
+                "stock_difference_liters":None,
+                "reconciliation_status":"no_anchor"
+            })
+            continue
+
+        anchor_at=anchor.get("created_at")
+        anchor_liters=float(anchor.get("quantity_liters") or 0)
+        purchases=0
+        sales=0
+        adjustments=0
+
+        for movement in movements:
+            if movement is anchor:
+                continue
+            # The ledger is chronological; only movements after the latest
+            # anchor belong to the current stock period.
+            if anchor_at and str(movement.get("created_at") or "") <= str(anchor_at):
+                continue
+            movement_type=str(movement.get("movement_type") or "").lower()
+            qty=float(movement.get("quantity_liters") or 0)
+            if movement_type=="purchase":
+                purchases += qty
+            elif movement_type=="sale":
+                sales += abs(qty)
+            elif movement_type=="adjustment":
+                adjustments += qty
+
+        expected=anchor_liters+purchases+adjustments-sales
         result.append({
-            "tank_id":tank.get("id"),"tank_code":tank.get("tank_code"),
-            "product":product,"capacity_liters":tank.get("capacity_liters"),
-            "opening_stock_liters":opening,"purchases_liters":purchases,
-            "sales_liters":sales,"current_liters":current,
-            "expected_liters":(float(opening or 0)+purchases-sales),
-            "stock_difference_liters":current-(float(opening or 0)+purchases-sales)
+            "tank_id":tank.get("id"),
+            "tank_code":tank.get("tank_code"),
+            "product":str(tank.get("product") or ""),
+            "capacity_liters":tank.get("capacity_liters"),
+            "opening_stock_liters":tank.get("opening_stock_liters"),
+            "ledger_anchor_liters":anchor_liters,
+            "ledger_anchor_at":anchor_at,
+            "purchases_liters":purchases,
+            "sales_liters":sales,
+            "adjustments_liters":adjustments,
+            "current_liters":current,
+            "expected_liters":expected,
+            "stock_difference_liters":current-expected,
+            "reconciliation_status":"reconciled" if abs(current-expected)<0.01 else "difference"
         })
+
     return jsonify(result),200
 
 @app.get("/api/tank-movements")
