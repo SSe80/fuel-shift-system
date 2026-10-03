@@ -165,52 +165,35 @@ async function userDashboard(){
     const completedTakeovers=Array.isArray(takeovers)
       ?takeovers.filter(x=>String(x.from_employee_id)===String(me.id))
       :[];
+    async function recordTakeoverSale(id,button){
+  if(button?.disabled)return;
+  if(!confirm('Record the calculated fuel sale for this completed shift?'))return;
+  if(button)button.disabled=true;
+  try{
+    await api('/api/shift-takeovers/'+id+'/record-sale',{method:'POST',body:JSON.stringify({})});
+    toast('Fuel sale recorded');
+    await userDashboard();
+  }catch(e){
+    if(button)button.disabled=false;
+    toast(e.message);
+  }
+}
+
     const takeoverHtml=completedTakeovers.slice(0,5).map(t=>{
-      const sourceShift=shifts.find(s=>String(s.id)===String(t.shift_id));
-      const sourceNozzle=nozzles.find(n=>String(n.id)===String(sourceShift?.nozzle_id));
-      const receiverName=employeeNames[t.to_employee_id]||t.to_employee_id||'—';
-      const nozzleSales=Array.isArray(t.nozzle_sales_liters)?t.nozzle_sales_liters:[];
-      const nozzleRows=nozzleSales.length
-        ?nozzleSales.map((r,i)=>
-          '<div class="takeover-calc-row">'+
-            '<div><span class="takeover-nozzle-pill">Nozzle '+(i+1)+'</span><strong>'+h(r.nozzle_id||'')+'</strong><small>'+h(r.product||'')+'</small></div>'+
-            '<div class="takeover-calc-values">'+
-              '<span><b>Open</b> '+reading(r.opening_reading)+'</span>'+
-              '<span><b>Close</b> '+reading(r.closing_reading)+'</span>'+
-              '<span><b>Sold</b> '+liters(r.liters_sold)+' L</span>'+
-              '<span><b>Price</b> '+money(r.unit_price)+'</span>'+
-              '<span><b>Amount</b> '+money(r.amount)+'</span>'+
-            '</div>'+
-          '</div>'
-        ).join('')
-        :'<div class="muted">No nozzle calculation data recorded.</div>';
-      const variance=Number(t.tank_variance_liters||0);
-      const variancePct=Number(t.tank_variance_pct||0);
+      const recorded=!!t.sales_recorded_at;
       return '<div class="card shift-takeover-card">'+
-        '<div class="takeover-hero"><div class="takeover-hero-icon">✓</div><div><div class="takeover-card-title">Shift Takeover Completed</div><div class="takeover-card-subtitle">The completed shift calculations have been recorded.</div></div></div>'+
-        '<div class="takeover-summary-grid">'+
-          '<div><span>Receiving attendant</span><strong>'+h(receiverName)+'</strong></div>'+
-          '<div><span>Shift started</span><strong>'+h(t.shift_started_at?new Date(t.shift_started_at).toLocaleString():'—')+'</strong></div>'+
-          '<div><span>Shift ended</span><strong>'+h(t.shift_ended_at?new Date(t.shift_ended_at).toLocaleString():'—')+'</strong></div>'+
-          '<div><span>Dispenser</span><strong>'+h(sourceNozzle?.nozzle_code||'—')+'</strong></div>'+
-        '</div>'+
-        '<div class="takeover-section"><div class="takeover-section-title">Nozzle sales calculations</div>'+nozzleRows+'</div>'+
+        '<div class="takeover-hero"><div class="takeover-hero-icon">▣</div><div><div class="takeover-card-title">Fuel Sales</div><div class="takeover-card-subtitle">Meter sales calculated from the completed shift readings.</div></div></div>'+
         '<div class="takeover-total-grid">'+
-          '<div><span>Total liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div>'+
-          '<div><span>Total sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
+          '<div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div>'+
+          '<div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
         '</div>'+
-        '<div class="takeover-section"><div class="takeover-section-title">Tank reconciliation</div>'+
-          '<div class="takeover-tank-grid">'+
-            '<div><span>Tank opening</span><strong>'+liters(t.tank_opening_liters)+' L</strong></div>'+
-            '<div><span>Tank closing</span><strong>'+liters(t.tank_closing_liters)+' L</strong></div>'+
-            '<div><span>Nozzle sales</span><strong>'+liters(t.tank_sales_liters)+' L</strong></div>'+
-            '<div><span>Difference</span><strong>'+reading(variance)+' L</strong></div>'+
-            '<div><span>Difference %</span><strong>'+variancePct.toFixed(2)+'%</strong></div>'+
-          '</div>'+
+        '<div class="row takeover-sale-action">'+
+          (recorded
+            ?'<button class="btn" type="button" disabled>Sale Recorded</button>'
+            :'<button class="primary" type="button" onclick="recordTakeoverSale(\''+t.id+'\',this)">Record Sale</button>')+
         '</div>'+
       '</div>';
     }).join('');
-
     const activeForDisplay=active.filter(s=>!pendingOutgoingHandovers.some(x=>String(x.shift_id)===String(s.id)));
     const activeHtml=activeForDisplay.map(s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
