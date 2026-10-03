@@ -612,14 +612,14 @@ async function adminSalesConfirmations(){
     const me=await currentUser();
     if(me.role!=='admin')return location.href='admin-login.html';
     await window.stationCurrencyReady;
-    const list=await api('/api/sales/confirmations');
+    const [list,history]=await Promise.all([api('/api/sales/confirmations'),api('/api/sales/history')]);
     const box=document.getElementById('sales-confirmation-list');
     if(!box)return;
     if(!Array.isArray(list)||!list.length){
       box.innerHTML='<div class="card"><p class="muted">No pending sales confirmations.</p></div>';
       return;
     }
-    box.innerHTML=list.map(item=>{
+    box.innerHTML=list.length?list.map(item=>{
       const t=item.takeover||{};
       const sales=Array.isArray(item.sales)?item.sales:[];
       const dispenser=item.dispenser?.name||'Dispenser';
@@ -632,12 +632,56 @@ async function adminSalesConfirmations(){
         '<div class="admin-sale-total"><span>Submitted sales total</span><strong>'+money(sales.reduce((sum,x)=>sum+Number(x.amount||0),0))+'</strong></div>'+
         '<div class="row"><button type="button" onclick="cancelAdminSaleConfirmation(\''+t.id+'\')">Cancel</button><button type="button" class="primary" onclick="confirmAdminSaleConfirmation(\''+t.id+'\')">Confirm</button></div>'+
       '</div>';
-    }).join('');
+    }).join(''):'<div class="card"><p class="muted">No pending sales confirmations.</p></div>';
+
+    const historyBox=document.getElementById('sales-history-list');
+    if(historyBox){
+      const confirmed=Array.isArray(history)?history:[];
+      historyBox.innerHTML=confirmed.length?confirmed.map(item=>{
+        const t=item.takeover||{};
+        const sales=Array.isArray(item.sales)?item.sales:[];
+        const from=item.from_employee?.name||'Attendant';
+        const to=item.to_employee?.name||'Attendant';
+        const dispenser=item.dispenser?.name||'Dispenser';
+        return '<div class="card compact-confirmed-sale-card admin-history-sale-card">'+
+          '<div class="top"><div><span class="section-kicker">SALES CONFIRMED</span><h3>'+h(dispenser)+'</h3><p class="muted">'+h(from)+' → '+h(to)+'</p></div><span class="badge">Confirmed</span></div>'+
+          '<div class="compact-sale-summary"><span>Shift '+h(String(t.shift_id||'').slice(0,8))+'</span><span>'+liters(t.total_sales_liters)+' L</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
+          '<p class="muted">Confirmed '+(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+'</p>'+
+          '<button type="button" class="btn compact-detail-button" onclick="openAdminSaleHistoryDetails(\''+h(t.id)+'\')">Details</button>'+
+        '</div>';
+      }).join(''):'<div class="card"><p class="muted">No confirmed shift sales yet.</p></div>';
+      window.adminConfirmedSaleHistory=confirmed;
+    }
   }catch(e){
     const box=document.getElementById('sales-confirmation-status');
     if(box)box.textContent=e.message;
     if(e.message==='Unauthorized')location.href='admin-login.html';
   }
+}
+function openAdminSaleHistoryDetails(id){
+  const item=(window.adminConfirmedSaleHistory||[]).find(x=>String(x.takeover?.id)===String(id));
+  if(!item)return;
+  const t=item.takeover||{}, sales=Array.isArray(item.sales)?item.sales:[];
+  const content='<div class="takeover-detail-summary">'+
+    '<div><span>Shift ID</span><strong>'+h(t.shift_id||'—')+'</strong></div>'+
+    '<div><span>From attendant</span><strong>'+h(item.from_employee?.name||'—')+'</strong></div>'+
+    '<div><span>Receiving attendant</span><strong>'+h(item.to_employee?.name||'—')+'</strong></div>'+
+    '<div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div>'+
+    '<div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div>'+
+    '<div><span>Dispenser</span><strong>'+h(item.dispenser?.name||'—')+'</strong></div>'+
+    '</div>'+
+    '<div class="takeover-detail-sales"><div class="takeover-detail-heading">Record Sale</div>'+
+    (sales.map(s=>'<p><b>'+h(s.sale_type_name||'Sale')+'</b> — '+money(s.amount)+(s.reason?' • Reason: '+h(s.reason):'')+'</p>').join('')||'<p class="muted">No sale entries.</p>')+
+    '</div><div class="takeover-detail-total"><span>Total</span><strong>'+liters(t.total_sales_liters)+' L</strong><strong>'+money(t.total_sales_amount)+'</strong></div>'+
+    '<p class="muted">Admin confirmed: '+(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+'</p>';
+  const modal=document.getElementById('admin-sale-history-details');
+  const box=document.getElementById('admin-sale-history-details-content');
+  if(box)box.innerHTML=content;
+  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+}
+function closeAdminSaleHistoryDetails(){
+  const modal=document.getElementById('admin-sale-history-details');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
 }
 async function confirmAdminSaleConfirmation(id){
   const card=document.querySelector('.admin-sale-confirm-card[data-takeover-id="'+id+'"]');
