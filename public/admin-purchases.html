@@ -45,7 +45,7 @@
 @media(max-width:600px){
   .purchase-wizard-card{width:calc(100% - 20px);max-height:92vh}
 }
-</style></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
+</style><style>.purchase-pending-card{border:1px solid #dbe4f0;background:#fbfdff}.purchase-pending-actions{margin-top:12px;padding-top:10px;border-top:1px solid #edf0f4}.purchase-pending-actions button{width:100%;min-height:40px;border-radius:10px}</style></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseModal()"></div>
 <div class="modal-card purchase-modal-card purchase-wizard-card">
   <div class="top">
@@ -78,7 +78,7 @@
   </form>
   <div id="purchase-status" class="purchase-status"></div>
 </div>
-</div><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">PURCHASE HISTORY</span><h2>Recent purchases</h2><p class="muted">Latest fuel deliveries recorded at the station.</p></div></div><div id="purchase-list" class="purchase-list"></div></section><div id="toast" class="toast"></div></main><script src="assets/app.js?v=20261003-25"></script><script>
+</div><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">DISCHARGE PURCHASE</span><h2>Discharge Purchase</h2><p class="muted">Confirmed purchases waiting to be discharged into station tanks.</p></div></div><div id="purchase-discharge-list" class="purchase-list"></div></section><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">PURCHASE HISTORY</span><h2>Purchase History</h2><p class="muted">Purchases that have been discharged into station tanks.</p></div></div><div id="purchase-list" class="purchase-list"></div></section><div id="toast" class="toast"></div></main><script src="assets/app.js?v=20261003-25"></script><script>
 (function(){
   const productSelect=document.getElementById('purchase-product');
   const orderedQuantityInput=document.getElementById('purchase-ordered-quantity');
@@ -181,28 +181,40 @@
       '<div class="purchase-review-section"><h4>2. Truck</h4><div class="purchase-review-row"><span>Driver name</span><strong>'+purchaseH(driver)+'</strong></div><div class="purchase-review-row"><span>Driver phone</span><strong>'+purchaseH(phone)+'</strong></div><div class="purchase-review-row"><span>Plate number</span><strong>'+purchaseH(plate)+'</strong></div><div class="purchase-review-row"><span>Compartments</span><strong>'+count+'</strong></div></div>'+
       '<div class="purchase-review-section"><h4>3. Quantity</h4>'+rows+'<div class="purchase-review-row"><span>Delivered quantity</span><strong>'+purchaseLiters(delivered)+' L</strong></div><div class="purchase-review-difference"><span>Difference</span><strong>'+purchaseH(diffText)+'</strong></div></div>';
   }
+  const dischargeList=document.getElementById('purchase-discharge-list');
+  const renderPurchaseCard=(p,tank,dischargeMode)=>{
+    const productName=p.product||tank?.product||'Purchase';
+    const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
+    const compartmentText=compartments.length?compartments.map((v,i)=>'<span>Compartment '+(i+1)+': <b>'+purchaseLiters(v)+' L</b></span>').join(''):'';
+    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><strong>'+purchaseH(productName)+'</strong><b>'+purchaseH(purchaseLiters(p.quantity_liters))+' L</b></div><div class="purchase-card-meta"><span>Invoice: <b>'+purchaseH(p.invoice_number||'Not provided')+'</b></span><span>Ordered: <b>'+purchaseH(purchaseLiters(p.ordered_quantity_liters||0))+' L</b></span><span>Delivered: <b>'+purchaseH(purchaseLiters(p.quantity_liters))+' L</b></span><span>Driver: <b>'+purchaseH(p.driver_name||'—')+'</b></span><span>Phone: <b>'+purchaseH(p.driver_phone||'—')+'</b></span><span>Plate: <b>'+purchaseH(p.plate_number||'—')+'</b></span><span>Compartments: <b>'+purchaseH(p.truck_compartments||'—')+'</b></span><span>Tank: <b>'+purchaseH(tank?.tank_code||'—')+'</b></span>'+compartmentText+'<span>'+new Date(p.purchase_date).toLocaleString()+'</span></div>'+(dischargeMode?'<div class="purchase-pending-actions"><button type="button" class="primary" onclick="dischargePurchase(\''+purchaseH(p.id)+'\')">Discharge</button></div>':'')+'</article>';
+  };
   window.loadPurchases=async function(){
     try{
-      setStatus('Loading tanks…',false);
-      const [tanks,productsData]=await Promise.all([purchaseApi('/api/tanks'),purchaseApi('/api/products')]);
-      if(!Array.isArray(tanks)||!Array.isArray(productsData))throw new Error('Unable to load products and tanks');
-      purchaseTanks=tanks;
-      purchaseProducts=productsData;
+      setStatus('Loading purchases…',false);
+      const [tanks,productsData,pending,history]=await Promise.all([purchaseApi('/api/tanks'),purchaseApi('/api/products'),purchaseApi('/api/purchases?status=pending_discharge'),purchaseApi('/api/purchases?status=discharged')]);
+      if(!Array.isArray(tanks)||!Array.isArray(productsData)||!Array.isArray(pending)||!Array.isArray(history))throw new Error('Unable to load purchase data');
+      purchaseTanks=tanks; purchaseProducts=productsData;
       const activeTanks=tanks.filter(t=>t.active!==false);
       const activeProducts=productsData.filter(p=>p.active!==false).filter(p=>activeTanks.some(t=>String(t.product||'').toLowerCase()===String(p.name||'').toLowerCase()));
       const productSelect=document.getElementById('purchase-product');
-      if(productSelect){productSelect.innerHTML='<option value="">Select product</option>'+activeProducts.sort((a,b)=>String(a.code_name||a.name).localeCompare(String(b.code_name||b.name))).map(p=>'<option value="'+purchaseH(p.name)+'">'+purchaseH(p.code_name||p.name)+'</option>').join('');}
+      if(productSelect)productSelect.innerHTML='<option value="">Select product</option>'+activeProducts.sort((a,b)=>String(a.code_name||a.name).localeCompare(String(b.code_name||b.name))).map(p=>'<option value="'+purchaseH(p.name)+'">'+purchaseH(p.code_name||p.name)+'</option>').join('');
+      if(dischargeList)dischargeList.innerHTML=pending.length?pending.map(p=>{const t=tanks.find(x=>String(x.id)===String(p.tank_id));return renderPurchaseCard(p,t,true);}).join(''):'<div class="purchase-empty">No purchases waiting for discharge.</div>';
+      if(list)list.innerHTML=history.length?history.map(p=>{const t=tanks.find(x=>String(x.id)===String(p.tank_id));return renderPurchaseCard(p,t,false);}).join(''):'<div class="purchase-empty">No discharged purchases yet.</div>';
       setStatus('',false);
-      if(list)list.innerHTML='<div class="purchase-empty">Loading purchase history…</div>';
-      try{
-        const purchases=await purchaseApi('/api/purchases');
-        if(!Array.isArray(purchases))throw new Error('Unable to load purchase history');
-        if(list)list.innerHTML=purchases.length?purchases.map(p=>{
-          const t=tanks.find(x=>String(x.id)===String(p.tank_id));
-          return '<article class="purchase-card"><div class="purchase-card-top"><strong>'+purchaseH(p.product||t?.product||'Purchase')+'</strong><b>'+purchaseH(purchaseLiters(p.quantity_liters))+' L</b></div><div class="purchase-card-meta"><span>Tank: <b>'+purchaseH(t?.tank_code||'—')+'</b></span><span>Attendant: <b>'+purchaseH(p.attendant?.name||'No ongoing shift')+'</b></span><span>Shift: '+purchaseH(p.shift?.id?p.shift.id.slice(0,8):'—')+'</span><span>Invoice: <b>'+purchaseH(p.invoice_number||'Not provided')+'</b></span><span>'+new Date(p.purchase_date).toLocaleString()+'</span></div></article>';
-        }).join(''):'<div class="purchase-empty">No purchases recorded yet.</div>';
-      }catch(_){if(list)list.innerHTML='<div class="purchase-empty">Purchase history unavailable right now.</div>';}
-    }catch(e){setStatus(e.message||'Failed to load purchases.',true);}
+    }catch(e){
+      setStatus(e.message||'Failed to load purchases.',true);
+      if(dischargeList)dischargeList.innerHTML='<div class="purchase-empty">Discharge purchases unavailable right now.</div>';
+      if(list)list.innerHTML='<div class="purchase-empty">Purchase history unavailable right now.</div>';
+    }
+  };
+  window.dischargePurchase=async function(purchaseId){
+    if(!purchaseId)return;
+    try{
+      setStatus('Discharging purchase…',false);
+      await purchaseApi('/api/purchases/'+encodeURIComponent(purchaseId)+'/discharge',{method:'POST',body:'{}'});
+      purchaseToast('Purchase discharged successfully');
+      await loadPurchases();
+    }catch(e){setStatus(e.message||'Failed to discharge purchase.',true);}
   };
   window.createPurchase=async function(){
     const product=productSelect?.value||'';
@@ -218,7 +230,7 @@
     const tankRecord=purchaseTanks.find(t=>String(t.product)===String(product)&&t.active!==false);
     if(!tankRecord){setStatus('No tank is assigned to the selected product.',true);return;}
     try{
-      setStatus('Recording purchase…',false);
+      setStatus('Confirming purchase…',false);
       await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product,tank_id:tankRecord.id,quantity_liters:q,invoice_number:invoice,ordered_quantity_liters:orderedQuantity,driver_name:driverName,driver_phone:driverPhone,plate_number:plateNumber,truck_compartments:compartments,compartment_liters:compartmentInputs.map(input=>parseQuantity(input.value))})});
       document.getElementById('purchase-ordered-quantity').value='';
       document.getElementById('purchase-driver-name').value='';
@@ -228,8 +240,9 @@
       document.getElementById('purchase-product').value='';
       document.getElementById('purchase-invoice').value='';
       const container=document.getElementById('purchase-compartment-liters');if(container)container.innerHTML='';
-      purchaseToast('Purchase recorded successfully');closePurchaseModal();await loadPurchases();
-    }catch(e){setStatus(e.message||'Failed to record purchase.',true);}
+      purchaseToast('Purchase confirmed and moved to Discharge Purchase');
+      closePurchaseModal();await loadPurchases();
+    }catch(e){setStatus(e.message||'Failed to confirm purchase.',true);}
   };
   loadPurchases();
 })();
