@@ -562,7 +562,7 @@ async function adminDashboard(){
   try{
     await window.stationCurrencyReady;
     const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
-    const [allTanks,sales,allShifts,allProducts,allDispensers,employees,purchases]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles'),api('/api/users'),api('/api/purchases')]);
+    const [allTanks,sales,allShifts,allProducts,allDispensers,employees,purchases,inventory]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles'),api('/api/users'),api('/api/purchases'),api('/api/inventory-summary')]);
     const products=allProducts.filter(p=>p.active===true);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
@@ -593,14 +593,17 @@ async function adminDashboard(){
     }).join(''):'<div class="card"><p>No activated attendants.</p></div>';
     el('tanks').innerHTML=tanks.length?tanks.map(t=>{
       const pct=Number(t.capacity_liters)>0?Math.max(0,Math.min(100,Number(t.current_liters)/Number(t.capacity_liters)*100)):0;
-      const tankOpening=t.opening_stock_liters;
+      const inv=inventory.find(x=>String(x.tank_id)===String(t.id))||{};
+      const tankOpening=inv.opening_stock_liters ?? t.opening_stock_liters;
       const connected=dispensers.filter(d=>d.tank_id===t.id);
       const comparisons=connected.map(d=>{
         const dispenserOpening=d.opening_tank_liters,hasTank=Number.isFinite(Number(tankOpening)),hasDispenser=Number.isFinite(Number(dispenserOpening));
         const variance=hasTank&&hasDispenser?Number(dispenserOpening)-Number(tankOpening):null;
         return '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(127,127,127,.2)"><b>'+h(d.nozzle_code)+'</b> • Dispenser opening: '+(hasDispenser?liters(dispenserOpening)+' L':'Not recorded')+(variance===null?'':'<br><span class="muted">Difference vs tank activation: <b>'+liters(variance)+' L</b></span>')+'</div>';
       }).join('');
-      return '<div class="stat"><b>'+liters(t.current_liters)+' L</b><span>'+h(t.tank_code)+' • '+h(codeForProduct(t.product))+'</span><small>'+pct.toFixed(1)+'% full • Capacity '+liters(t.capacity_liters)+' L</small><small>Tank activation opening: <b>'+(Number.isFinite(Number(tankOpening))?liters(tankOpening)+' L':'Not recorded')+'</b></small>'+(comparisons||'<small>No activated dispenser.</small>')+'</div>';
+      const expected=Number.isFinite(Number(inv.expected_liters))?Number(inv.expected_liters):null;
+      const diff=Number.isFinite(Number(inv.stock_difference_liters))?Number(inv.stock_difference_liters):null;
+      return '<div class="stat"><b>'+liters(t.current_liters)+' L</b><span>'+h(t.tank_code)+' • '+h(codeForProduct(t.product))+'</span><small>'+pct.toFixed(1)+'% full • Capacity '+liters(t.capacity_liters)+' L</small><div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(127,127,127,.2)"><small>Opening stock: <b>'+(Number.isFinite(Number(tankOpening))?liters(tankOpening)+' L':'Not recorded')+'</b></small><small>Purchases received: <b>'+liters(inv.purchases_liters)+' L</b></small><small>Fuel sold: <b>'+liters(inv.sales_liters)+' L</b></small><small>Expected stock: <b>'+(expected===null?'—':liters(expected)+' L')+'</b></small><small>Actual stock: <b>'+liters(t.current_liters)+' L</b></small><small>Stock difference: <b>'+(diff===null?'—':liters(diff)+' L')+'</b></small></div>'+(comparisons||'<small>No activated dispenser.</small>')+'</div>';
     }).join(''):'<div class="card"><p>No activated tanks.</p></div>';
     const recent=[...todaySales.map(s=>({time:s.sale_time,text:'Sale • '+codeForProduct(s.product)+' • '+liters(s.quantity_liters)+' L • '+money(s.amount)})),...purchases.filter(p=>String(p.purchase_date||'').slice(0,10)===today).map(p=>({time:p.purchase_date,text:'Purchase • '+codeForProduct(p.product)+' • '+liters(p.quantity_liters)+' L'})),...activeShifts.map(s=>({time:s.assigned_at||s.created_at,text:'Shift active • '+(activeEmployees.find(e=>e.id===s.employee_id)?.name||'Attendant')+' • '+((dispensers.find(d=>d.id===s.nozzle_id)||{}).nozzle_code||'Dispenser')}))].sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,12);
     el('activity').innerHTML=recent.length?recent.map(x=>'<div class="card"><b>'+h(x.text)+'</b><br><span class="muted">'+new Date(x.time).toLocaleString()+'</span></div>').join(''):'<div class="card"><p>No activity recorded today.</p></div>';
