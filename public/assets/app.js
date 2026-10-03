@@ -785,7 +785,7 @@ async function adminSalesConfirmations(){
 function downloadAdminSaleHistoryDetails(id){
   const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));if(!item)return;
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],total=Number(t.total_sales_amount||0),entryTotal=sales.reduce((a,s)=>a+Number(s.amount||0),0);
-  const safe=v=>String(v??'—').normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^\\x20-\\x7E]/g,'?');
+  const safe=v=>String(v??'').normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^\\x20-\\x7E]/g,'?');
   const wrap=(v,n=88)=>{const w=safe(v).split(/\\s+/),o=[];let l='';w.forEach(x=>{if((l?l+' ':'').length+x.length>n){if(l)o.push(l);l=x}else l=l?l+' '+x:x});if(l)o.push(l);return o.length?o:['']};
   const lines=['SALES HISTORY - SHIFT DETAIL','',
     'Dispenser: '+safe(item.dispenser?.name||'Dispenser'),
