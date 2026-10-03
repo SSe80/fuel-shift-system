@@ -151,18 +151,6 @@ function backToTakeoverSaleEntry(){
   closeTakeoverSaleConfirm();
   window.pendingTakeoverSales=null;
 }
-function closeTakeoverSaleConfirm(){
-  const modal=document.getElementById('takeover-sale-confirm-modal');
-  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  window.pendingTakeoverSales=null;
-}
-function backToTakeoverSaleEntry(){
-  closeTakeoverSaleConfirm();
-  if(window.pendingTakeoverSaleId){
-    const modal=document.getElementById('takeover-sale-modal');
-    if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
-  }
-}
 async function confirmTakeoverSale(){
   const id=window.pendingTakeoverSaleId;
   const sales=window.pendingTakeoverSales||[];
