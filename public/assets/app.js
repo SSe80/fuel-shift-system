@@ -712,11 +712,40 @@ function openAdminSaleHistoryDetails(id){
   const modal=document.getElementById('admin-sale-history-details'),box=document.getElementById('admin-sale-history-details-content');if(box)box.innerHTML=content;if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
 }
 function closeAdminSaleHistoryDetails(){const modal=document.getElementById('admin-sale-history-details');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}}
-async function confirmAdminSaleConfirmation(id){
-  const card=document.querySelector('.admin-sale-confirm-card[data-takeover-id="'+id+'"]'),ids=Array.from(card?.querySelectorAll('.admin-sale-check:checked')||[]).map(x=>x.getAttribute('data-sale-id')),total=card?.querySelectorAll('.admin-sale-check').length||0;
-  if(!ids.length||ids.length!==total){toast('Tick every sale before confirming');return;}
-  try{await api('/api/sales/confirmations/'+id+'/confirm',{method:'POST',body:JSON.stringify({checked_sale_ids:ids})});toast('Sales confirmed');await adminSalesConfirmations();}catch(e){toast(e.message);}
+function openAdminSaleReview(id){
+  const card=document.querySelector('.admin-sale-confirm-card[data-takeover-id="'+id+'"]');
+  if(!card)return;
+  const checks=Array.from(card.querySelectorAll('.admin-sale-check'));
+  const checked=checks.filter(x=>x.checked);
+  if(!checked.length||checked.length!==checks.length){toast('Tick every sale before reviewing');return;}
+  const item=(adminSalesData.pending||[]).find(x=>String(x.takeover?.id)===String(id));
+  if(!item)return;
+  const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],submitted=sales.reduce((sum,x)=>sum+Number(x.amount||0),0),calculated=Number(t.total_sales_amount||0),variance=submitted-calculated;
+  const content=document.getElementById('admin-sale-review-content');
+  if(content)content.innerHTML='<div class="admin-sale-review-summary"><div><span>Dispenser</span><strong>'+h(item.dispenser?.name||'Dispenser')+'</strong></div><div><span>Shift</span><strong>'+h(item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||'')))+'</strong></div><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Calculated amount</span><strong>'+money(calculated)+'</strong></div></div><div class="admin-sale-review-list"><div class="takeover-detail-heading">Sales entries <small>'+sales.length+' checked</small></div>'+sales.map(s=>'<div class="admin-sale-review-entry"><div><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+(s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'')+(s.reason?'<small>Reason: '+h(s.reason)+'</small>':'')+'</div><strong>'+money(s.amount)+'</strong></div>').join('')+'</div><div class="admin-sale-review-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="admin-sale-review-check"><div><span>Calculated amount</span><strong>'+money(calculated)+'</strong></div><div><span>Difference</span><strong>'+money(Math.abs(variance))+'</strong></div></div><div class="'+(Math.abs(variance)<0.005?'admin-sale-review-ok':'admin-sale-review-warning')+'">'+(Math.abs(variance)<0.005?'Amounts match the calculated sales amount.':'There is an amount difference. Review the entries before confirming.')+'</div>';
+  window.pendingAdminSaleReviewId=id;
+  const modal=document.getElementById('admin-sale-review-modal');
+  const finalButton=document.getElementById('admin-sale-final-confirm');
+  if(finalButton)finalButton.disabled=false;
+  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
 }
+function closeAdminSaleReview(){
+  const modal=document.getElementById('admin-sale-review-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  window.pendingAdminSaleReviewId=null;
+}
+async function finalizeAdminSaleConfirmation(){
+  const id=window.pendingAdminSaleReviewId;
+  if(!id)return;
+  const card=document.querySelector('.admin-sale-confirm-card[data-takeover-id="'+id+'"]');
+  const ids=Array.from(card?.querySelectorAll('.admin-sale-check:checked')||[]).map(x=>x.getAttribute('data-sale-id'));
+  const total=card?.querySelectorAll('.admin-sale-check').length||0;
+  if(!ids.length||ids.length!==total){closeAdminSaleReview();toast('Tick every sale before confirming');return;}
+  const button=document.getElementById('admin-sale-final-confirm');
+  if(button)button.disabled=true;
+  try{await api('/api/sales/confirmations/'+id+'/confirm',{method:'POST',body:JSON.stringify({checked_sale_ids:ids})});closeAdminSaleReview();toast('Sales confirmed');await adminSalesConfirmations();}catch(e){if(button)button.disabled=false;toast(e.message);}
+}
+async function confirmAdminSaleConfirmation(id){openAdminSaleReview(id);}
 async function cancelAdminSaleConfirmation(id){
   if(!confirm('Cancel this pending sale record? The attendant will be able to record it again.'))return;
   try{await api('/api/sales/confirmations/'+id+'/cancel',{method:'POST',body:'{}'});toast('Sale confirmation cancelled');await adminSalesConfirmations();}catch(e){toast(e.message);}
