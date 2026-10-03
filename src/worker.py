@@ -1063,10 +1063,14 @@ def record_shift_takeover_sale(takeover_id):
     if payment=="digital":payment="mobile"
     if payment not in {"cash","card","mobile","other"}:
         return jsonify({"error":"Select a valid sales type"}),400
+    sale_type_id=data.get("sale_type_id")
+    sale_reason=str(data.get("sale_reason","")).strip() or None
     status,result=rpc("record_shift_takeover_sales",{
         "p_takeover_id":takeover_id,
         "p_employee_id":session["employee_id"],
-        "p_payment_method":payment
+        "p_payment_method":payment,
+        "p_sale_type_id":sale_type_id,
+        "p_sale_reason":sale_reason
     })
     if status>=400:return jsonify(result),status
     return jsonify(result),200
