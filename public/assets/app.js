@@ -1012,7 +1012,7 @@ async function openDashboardHandover(shiftId){
     const me=await currentUser();
     const [shifts,employees,nozzles,tanks]=await Promise.all([
       api('/api/shifts'),
-      api('/api/users').catch(()=>[]),
+      api('/api/handover-receivers').catch(()=>[]),
       api('/api/nozzles'),
       api('/api/tanks')
     ]);
@@ -1038,8 +1038,7 @@ async function openDashboardHandover(shiftId){
       closing_liters:null
     };
 
-    const busyReceiverIds=new Set(shifts.filter(s=>s.status==='assigned'||s.status==='active').map(s=>String(s.employee_id)));
-    const receiving=employees.filter(e=>e.role==='attendant'&&String(e.id)!==String(me.id)&&!busyReceiverIds.has(String(e.id)));
+    const receiving=employees.filter(e=>String(e.id)!==String(me.id));
     const select=document.getElementById('handover-to-employee');
     if(!select){toast('Handover form is unavailable.');return;}
     select.innerHTML='<option value="">Select receiving attendant</option>'+
@@ -1068,7 +1067,7 @@ async function openDashboardHandover(shiftId){
 }
 async function loadHandover(){
   try{
-    const me=await currentUser(),[shifts,employees,nozzles]=await Promise.all([api('/api/shifts'),api('/api/users').catch(()=>[]),api('/api/nozzles')]);
+    const me=await currentUser(),[shifts,employees,nozzles]=await Promise.all([api('/api/shifts'),api('/api/handover-receivers').catch(()=>[]),api('/api/nozzles')]);
     const active=shifts.filter(s=>s.status==='active'&&String(s.employee_id)===String(me.id));
     const requested=new URLSearchParams(location.search).get('shift_id');
     const selected=active.find(s=>s.id===requested)||active[0];
@@ -1078,8 +1077,7 @@ async function loadHandover(){
     }
     window.handoverDraft={shift_id:selected.id,to_employee_id:'',closing_reading:null,closing_liters:null};
     document.getElementById('handover-status').textContent='Review the closing readings and receiving attendant.';
-    const busyReceiverIds=new Set(shifts.filter(s=>s.status==='assigned'||s.status==='active').map(s=>String(s.employee_id)));
-    const receiving=employees.filter(e=>e.active&&String(e.id)!==String(me.id)&&e.role==='attendant'&&!busyReceiverIds.has(String(e.id)));
+    const receiving=employees.filter(e=>String(e.id)!==String(me.id));
     document.getElementById('handover-to-employee').innerHTML='<option value="">Select receiving attendant</option>'+
       receiving.map(e=>'<option value="'+h(e.id)+'">'+h(e.name)+' — ID '+h(e.operator_id)+'</option>').join('');
     if(!receiving.length)document.getElementById('handover-to-employee').innerHTML='<option value="">No available receiving attendant</option>';
