@@ -1295,3 +1295,44 @@
 .admin-settings-page .settings-item-card.expanded .settings-move-handle{
   display:none !important;
 }
+
+
+/* Smooth, touch-friendly Settings card reordering refinement */
+.admin-settings-page .settings-item-card:not(.expanded) .top{
+  align-items:center;
+}
+.admin-settings-page .settings-item-card:not(.expanded) .settings-move-handle{
+  top:50%;
+  left:0;
+  width:30px;
+  height:34px;
+  transform:translateY(-50%);
+  font-size:24px;
+  line-height:1;
+  letter-spacing:3px;
+  opacity:.68;
+}
+.admin-settings-page .settings-item-card:not(.expanded) .settings-move-handle:hover,
+.admin-settings-page .settings-item-card:not(.expanded) .settings-move-handle:focus,
+.admin-settings-page .settings-item-card:not(.expanded) .settings-move-handle:focus-visible{
+  opacity:.9;
+}
+.admin-settings-page .settings-item-card:not(.expanded) .top > div{
+  align-self:center;
+}
+.admin-settings-page .settings-drag-ghost{
+  transition:none !important;
+  will-change:transform;
+  transform:translate3d(0,0,0);
+}
+.admin-settings-page .settings-item-card.settings-dragging{
+  transition:none !important;
+  will-change:transform;
+}
+.admin-settings-page .settings-drag-placeholder{
+  width:100%;
+  margin:0;
+  padding:0;
+  border:0;
+  pointer-events:none;
+}
