@@ -322,6 +322,53 @@ def update_employee(employee_id):
     if status >= 400: return jsonify({"error":result}), status
     return jsonify(result), 200
 
+@app.get("/api/sale-types")
+@app.get("/api/sale-options")
+def sale_types():
+    auth=require_login()
+    if auth:return auth
+    status,rows=sb("sale_types",params={"select":"id,name,description,reason_required,active,created_at,updated_at","order":"created_at.asc"})
+    if status!=200:return jsonify(rows),status
+    if session.get("role")!="admin":
+        rows=[x for x in rows if x.get("active")]
+    return jsonify(rows),200
+
+@app.post("/api/sale-types")
+def create_sale_type():
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    name=str(data.get("name","")).strip()
+    description=str(data.get("description","")).strip()
+    reason_required=bool(data.get("reason_required",False))
+    if not name:return jsonify({"error":"Sale name is required"}),400
+    status,result=sb("sale_types",method="POST",body={"name":name,"description":description,"reason_required":reason_required,"active":True},prefer="return=representation")
+    if status>=400:return jsonify({"error":result}),status
+    return jsonify(result[0] if isinstance(result,list) and result else result),201
+
+@app.patch("/api/sale-types/<sale_type_id>")
+def update_sale_type(sale_type_id):
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    body={}
+    if "name" in data: body["name"]=str(data.get("name","")).strip()
+    if "description" in data: body["description"]=str(data.get("description","")).strip()
+    if "reason_required" in data: body["reason_required"]=bool(data.get("reason_required"))
+    if "active" in data: body["active"]=bool(data.get("active"))
+    if not body:return jsonify({"error":"No changes supplied"}),400
+    status,result=sb("sale_types",method="PATCH",params={"id":"eq."+sale_type_id},body=body,prefer="return=representation")
+    if status>=400:return jsonify({"error":result}),status
+    return jsonify(result[0] if isinstance(result,list) and result else result),200
+
+@app.delete("/api/sale-types/<sale_type_id>")
+def delete_sale_type(sale_type_id):
+    auth=require_admin()
+    if auth:return auth
+    status,result=sb("sale_types",method="DELETE",params={"id":"eq."+sale_type_id})
+    if status>=400:return jsonify({"error":result}),status
+    return jsonify({"ok":True}),200
+
 @app.get("/api/products")
 def products():
     auth=require_login()
