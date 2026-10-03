@@ -1992,3 +1992,35 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
  body[data-app-page="adminDashboard"] .tank-movement-balance{grid-column:2/-1;border-left:0;border-top:1px solid #edf1f5;padding:7px 0 0;text-align:left}
  body[data-app-page="adminDashboard"] .tank-movement-qty{grid-column:3;grid-row:1}
 }
+
+.admin-sales-page .admin-sales-history-tools{
+  margin:0 0 14px;
+  padding:12px;
+  border:1px solid #e2e7ed;
+  border-radius:14px;
+  background:#fbfcfe;
+}
+.admin-sales-page .admin-sales-history-tools .admin-sales-filters{
+  display:grid;
+  grid-template-columns:1fr 170px auto;
+  gap:8px;
+}
+.admin-sales-page .admin-sales-history-tools input,
+.admin-sales-page .admin-sales-history-tools select{
+  min-width:0;
+  min-height:40px;
+  padding:9px 11px;
+  border:1px solid #d6dde6;
+  border-radius:10px;
+  background:#fff;
+  font:inherit;
+}
+.admin-sales-page .admin-sales-history-tools button{
+  min-height:40px;
+  padding:9px 13px;
+  border-radius:10px;
+}
+@media(max-width:560px){
+  .admin-sales-page .admin-sales-history-tools .admin-sales-filters{grid-template-columns:1fr}
+  .admin-sales-page .admin-sales-history-tools button{width:100%}
+}
