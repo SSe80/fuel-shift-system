@@ -340,32 +340,32 @@ def create_sale_type():
     description=str(data.get("description","")).strip()
     reason_required=bool(data.get("reason_required",False))
     if not name:return jsonify({"error":"Sale name is required"}),400
-    status,result=sb("sale_types",method="POST",body={"name":name,"description":description,"reason_required":reason_required,"active":True},prefer="return=representation")
-    if status>=400:return jsonify({"error":result}),status
-    return jsonify(result[0] if isinstance(result,list) and result else result),201
+    status,result=rpc("manage_sale_type",{"p_action":"create","p_name":name,"p_description":description,"p_reason_required":reason_required})
+    if status>=400:return jsonify(result),status
+    return jsonify(result),201
 
 @app.patch("/api/sale-types/<sale_type_id>")
 def update_sale_type(sale_type_id):
     auth=require_admin()
     if auth:return auth
     data=request.get_json(silent=True) or {}
-    body={}
-    if "name" in data: body["name"]=str(data.get("name","")).strip()
-    if "description" in data: body["description"]=str(data.get("description","")).strip()
-    if "reason_required" in data: body["reason_required"]=bool(data.get("reason_required"))
-    if "active" in data: body["active"]=bool(data.get("active"))
-    if not body:return jsonify({"error":"No changes supplied"}),400
-    status,result=sb("sale_types",method="PATCH",params={"id":"eq."+sale_type_id},body=body,prefer="return=representation")
-    if status>=400:return jsonify({"error":result}),status
-    return jsonify(result[0] if isinstance(result,list) and result else result),200
+    status,result=rpc("manage_sale_type",{
+        "p_action":"update","p_id":sale_type_id,
+        "p_name":str(data.get("name","")).strip() if "name" in data else None,
+        "p_description":str(data.get("description","")).strip() if "description" in data else None,
+        "p_reason_required":bool(data.get("reason_required")) if "reason_required" in data else False,
+        "p_active":bool(data.get("active")) if "active" in data else True
+    })
+    if status>=400:return jsonify(result),status
+    return jsonify(result),200
 
 @app.delete("/api/sale-types/<sale_type_id>")
 def delete_sale_type(sale_type_id):
     auth=require_admin()
     if auth:return auth
-    status,result=sb("sale_types",method="DELETE",params={"id":"eq."+sale_type_id})
-    if status>=400:return jsonify({"error":result}),status
-    return jsonify({"ok":True}),200
+    status,result=rpc("manage_sale_type",{"p_action":"delete","p_id":sale_type_id})
+    if status>=400:return jsonify(result),status
+    return jsonify(result),200
 
 @app.get("/api/products")
 def products():
