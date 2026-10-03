@@ -41,7 +41,7 @@
 .purchase-input-unit span{min-height:46px;display:flex;align-items:center;padding:0 13px;border:1px solid #d0d5dd;border-left:0;border-radius:0 11px 11px 0;background:#f8fafc;color:#667085;font-size:13px;font-weight:600}
 .purchase-wizard-actions{margin-top:24px;padding-top:16px;border-top:1px solid #edf0f4}
 .purchase-wizard-actions button{min-height:43px}
-.purchase-review{margin-top:2px}
+.purchase-review{margin-top:2px}.purchase-review-section{border:1px solid #e4e7ec;border-radius:12px;padding:10px 12px;margin-bottom:10px}.purchase-review-section h4{margin:0 0 4px;font-size:15px;color:#2563eb}.purchase-review-section .purchase-review-row{padding:9px 0}.purchase-review-difference{display:flex;justify-content:space-between;gap:12px;margin-top:10px;padding:11px 12px;border-radius:10px;background:#f8fafc;font-size:13px}
 @media(max-width:600px){
   .purchase-wizard-card{width:calc(100% - 20px);max-height:92vh}
 }
@@ -52,7 +52,7 @@
     <div><span class="section-kicker">RECEIVE STOCK</span><h3>Purchase</h3><div id="purchase-step-title" class="purchase-card-title">Order</div><p id="purchase-step-description" class="muted purchase-step-description">Enter the order details before receiving the delivery.</p></div>
     <button type="button" class="modal-close" onclick="closePurchaseModal()">×</button>
   </div>
-  <div class="purchase-step-indicator"><span class="active">1</span><i></i><span>2</span><i></i><span>3</span></div>
+  <div class="purchase-step-indicator"><span class="active">1</span><i></i><span>2</span><i></i><span>3</span><i></i><span>4</span></div>
   <form class="purchase-form" onsubmit="return false;">
     <section class="purchase-wizard-step active" data-purchase-step="1">
       <div class="purchase-field"><label for="purchase-product">Product</label><select id="purchase-product" required><option value="">Select product</option></select></div>
@@ -69,7 +69,11 @@
     </section>
     <section class="purchase-wizard-step" data-purchase-step="3">
       <div id="purchase-compartment-liters"></div>
-      <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(3)">Return</button><button type="button" class="primary" onclick="createPurchase()">Confirm Purchase</button></div>
+      <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(3)">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(3)">Continue</button></div>
+    </section>
+    <section class="purchase-wizard-step" data-purchase-step="4">
+      <div id="purchase-review-content" class="purchase-review"></div>
+      <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(4)">Return</button><button type="button" class="primary" onclick="createPurchase()">Confirm Purchase</button></div>
     </section>
   </form>
   <div id="purchase-status" class="purchase-status"></div>
@@ -114,8 +118,8 @@
   function renderPurchaseStep(step){
     purchaseStep=step;
     document.querySelectorAll('.purchase-wizard-step').forEach(el=>el.classList.toggle('active',Number(el.dataset.purchaseStep)===step));
-    const titles=['Order','Truck','Quantity'];
-    const descriptions=['Select the product and enter the invoice details.','Enter the truck and driver details.','Enter liters for each truck compartment.'];
+    const titles=['Order','Truck','Quantity','Review'];
+    const descriptions=['Select the product and enter the invoice details.','Enter the truck and driver details.','Enter liters for each truck compartment.','Review the order, truck, and delivered quantity before confirmation.'];
     const title=document.getElementById('purchase-step-title');
     const desc=document.getElementById('purchase-step-description');
     if(title)title.textContent=titles[step-1];
@@ -154,9 +158,29 @@
       const compartmentCount=Number(document.getElementById('purchase-truck-compartments')?.value||0);
       const compartmentInputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
       if(!compartmentCount||compartmentInputs.length!==compartmentCount||compartmentInputs.some(input=>!Number.isFinite(parseQuantity(input.value))||parseQuantity(input.value)<=0)){setStatus('Enter a valid liter quantity for every compartment.',true);return;}
+      renderPurchaseReview();
     }
     renderPurchaseStep(step+1);
   };
+  function renderPurchaseReview(){
+    const review=document.getElementById('purchase-review-content');if(!review)return;
+    const product=productSelect?.selectedOptions?.[0]?.textContent||'—';
+    const invoice=document.getElementById('purchase-invoice')?.value.trim()||'—';
+    const ordered=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
+    const driver=document.getElementById('purchase-driver-name')?.value.trim()||'—';
+    const phone=document.getElementById('purchase-driver-phone')?.value.trim()||'—';
+    const plate=document.getElementById('purchase-plate-number')?.value.trim()||'—';
+    const count=Number(document.getElementById('purchase-truck-compartments')?.value||0);
+    const inputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
+    const delivered=inputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
+    const difference=delivered-ordered;
+    const abs=Math.abs(difference);
+    const diffText=difference===0?'Matches ordered quantity':difference>0?'Over delivered by '+purchaseLiters(abs)+' L':'Short delivered by '+purchaseLiters(abs)+' L';
+    const rows=inputs.map((input,i)=>'<div class="purchase-review-row"><span>Compartment '+(i+1)+'</span><strong>'+purchaseLiters(parseQuantity(input.value))+' L</strong></div>').join('');
+    review.innerHTML='<div class="purchase-review-section"><h4>1. Order</h4><div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div><div class="purchase-review-row"><span>Invoice number</span><strong>'+purchaseH(invoice)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div></div>'+
+      '<div class="purchase-review-section"><h4>2. Truck</h4><div class="purchase-review-row"><span>Driver name</span><strong>'+purchaseH(driver)+'</strong></div><div class="purchase-review-row"><span>Driver phone</span><strong>'+purchaseH(phone)+'</strong></div><div class="purchase-review-row"><span>Plate number</span><strong>'+purchaseH(plate)+'</strong></div><div class="purchase-review-row"><span>Compartments</span><strong>'+count+'</strong></div></div>'+
+      '<div class="purchase-review-section"><h4>3. Quantity</h4>'+rows+'<div class="purchase-review-row"><span>Delivered quantity</span><strong>'+purchaseLiters(delivered)+' L</strong></div><div class="purchase-review-difference"><span>Difference</span><strong>'+purchaseH(diffText)+'</strong></div></div>';
+  }
   window.loadPurchases=async function(){
     try{
       setStatus('Loading tanks…',false);
@@ -168,9 +192,6 @@
       const activeProducts=productsData.filter(p=>p.active!==false).filter(p=>activeTanks.some(t=>String(t.product||'').toLowerCase()===String(p.name||'').toLowerCase()));
       const productSelect=document.getElementById('purchase-product');
       if(productSelect){productSelect.innerHTML='<option value="">Select product</option>'+activeProducts.sort((a,b)=>String(a.code_name||a.name).localeCompare(String(b.code_name||b.name))).map(p=>'<option value="'+purchaseH(p.name)+'">'+purchaseH(p.code_name||p.name)+'</option>').join('');}
-      if(tankSelect){
-        tankSelect.innerHTML='<option value="">Select tank</option>'+activeTanks.map(t=>'<option value="'+purchaseH(t.id)+'">'+purchaseH(t.tank_code||t.name||t.id)+' — '+purchaseH(t.product||'Product not assigned')+' · '+purchaseH(purchaseLiters(t.current_liters))+' L in stock</option>').join('');
-      }
       setStatus('',false);
       if(list)list.innerHTML='<div class="purchase-empty">Loading purchase history…</div>';
       try{
