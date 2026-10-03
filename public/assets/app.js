@@ -1567,8 +1567,111 @@ async function loadPendingHandovers(){
 }
 async function confirmHandover(e,id){e.preventDefault();try{await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('confirm-reading-'+id).value),opening_mm:Number(document.getElementById('confirm-mm-'+id).value),opening_liters:Number(document.getElementById('confirm-liters-'+id).value),pin:document.getElementById('confirm-pin-'+id).value})});toast('Handover confirmed');setTimeout(()=>location.href='attendant-dashboard.html',700);}catch(x){toast(x.message);}}
 
-async function loadPurchases(){try{await window.stationCurrencyReady;const [tanks,purchases,products]=await Promise.all([api('/api/tanks'),api('/api/purchases'),api('/api/products')]);const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));const codeForProduct=p=>productByName[String(p||'').toLowerCase()]?.code_name||p;const colorForProduct=p=>productByName[String(p||'').toLowerCase()]?.color||'#98A2B3';const tankById=Object.fromEntries(tanks.map(t=>[String(t.id),t]));const ts=document.getElementById('purchase-tank'),ps=document.getElementById('purchase-product');if(ts)ts.innerHTML='<option value="">Select tank</option>'+tanks.filter(t=>t.active!==false).map(t=>'<option value="'+h(t.id)+'">'+h(t.tank_code)+' — '+h(codeForProduct(t.product))+'</option>').join('');const productNames=[...new Map(tanks.filter(t=>t.active!==false).map(t=>[String(t.product).toLowerCase(),t.product])).values()];if(ps)ps.innerHTML='<option value="">Select product</option>'+productNames.map(p=>'<option value="'+h(p)+'">'+h(codeForProduct(p))+'</option>').join('');if(ts)ts.onchange=()=>{const t=tankById[ts.value];if(t&&ps)ps.value=t.product};const list=document.getElementById('purchase-list');if(list)list.innerHTML=purchases.length?purchases.map(p=>{const t=tankById[String(p.tank_id)];return '<div class="purchase-card"><div class="purchase-card-top"><div class="purchase-product-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+h(colorForProduct(p.product))+';margin-right:6px"></span>'+h(codeForProduct(p.product))+'</div><div class="purchase-quantity">'+liters(p.quantity_liters)+' L</div></div><div class="purchase-card-meta"><span>Tank: <b>'+h(t?.tank_code||'—')+'</b></span><span>Supplier: '+h(p.supplier||'Not provided')+'</span><span>Invoice: '+h(p.invoice_number||'Not provided')+'</span><span>'+new Date(p.purchase_date).toLocaleString()+'</span></div></div>'}).join(''):'<div class="purchase-empty">No purchases recorded yet.</div>'}catch(e){const s=document.getElementById('purchase-status');if(s)s.textContent=e.message}}
-async function createPurchase(e){e.preventDefault();const tank=document.getElementById('purchase-tank')?.value||'',product=document.getElementById('purchase-product')?.value||'',q=Number(document.getElementById('purchase-liters')?.value),supplier=document.getElementById('purchase-supplier')?.value.trim()||'',invoice=document.getElementById('purchase-invoice')?.value.trim()||'';if(!tank||!product||!Number.isFinite(q)||q<=0){toast('Select a tank and product and enter a valid quantity');return}try{await api('/api/purchases',{method:'POST',body:JSON.stringify({product,tank_id:tank,quantity_liters:q,supplier,invoice_number:invoice})});e.target.reset();toast('Purchase recorded and tank updated');await loadPurchases()}catch(x){toast(x.message)}}
+async function loadPurchases(){
+  const statusEl=document.getElementById('purchase-status');
+  try{
+    await window.stationCurrencyReady;
+    const [tanks,purchases,products]=await Promise.all([
+      api('/api/tanks'),
+      api('/api/purchases'),
+      api('/api/products')
+    ]);
+    const activeTanks=(Array.isArray(tanks)?tanks:[]).filter(t=>t.active!==false);
+    const activeProducts=(Array.isArray(products)?products:[]).filter(p=>p.active!==false);
+    const productByName=Object.fromEntries(activeProducts.map(p=>[String(p.name).trim().toLowerCase(),p]));
+    const codeForProduct=p=>productByName[String(p||'').trim().toLowerCase()]?.code_name||p;
+    const colorForProduct=p=>productByName[String(p||'').trim().toLowerCase()]?.color||'#98A2B3';
+    const tankById=Object.fromEntries(activeTanks.map(t=>[String(t.id),t]));
+    const ts=document.getElementById('purchase-tank');
+    const ps=document.getElementById('purchase-product');
+
+    if(ts){
+      ts.innerHTML='<option value="">Select tank</option>'+
+        activeTanks.map(t=>'<option value="'+h(t.id)+'">'+h(t.tank_code)+' — '+h(codeForProduct(t.product))+'</option>').join('');
+    }
+    if(ps){
+      ps.innerHTML='<option value="">Select product</option>'+
+        activeProducts.map(p=>'<option value="'+h(p.name)+'">'+h(p.code_name||p.name)+'</option>').join('');
+    }
+
+    if(ts)ts.onchange=()=>{
+      const tank=tankById[String(ts.value)];
+      if(tank&&ps)ps.value=tank.product||'';
+    };
+    if(ps)ps.onchange=()=>{
+      const product=String(ps.value||'').trim().toLowerCase();
+      const tank=tankById[String(ts?.value||'')];
+      if(tank&&String(tank.product||'').trim().toLowerCase()!==product){
+        if(ts)ts.value='';
+      }
+    };
+
+    if(statusEl)statusEl.textContent='';
+
+    const list=document.getElementById('purchase-list');
+    const rows=Array.isArray(purchases)?purchases:[];
+    if(list){
+      list.innerHTML=rows.length
+        ?rows.map(p=>{
+          const t=tankById[String(p.tank_id)];
+          return '<div class="purchase-card">'+
+            '<div class="purchase-card-top">'+
+              '<div class="purchase-product-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+h(colorForProduct(p.product))+';margin-right:6px"></span>'+h(codeForProduct(p.product))+'</div>'+
+              '<div class="purchase-quantity">'+liters(p.quantity_liters)+' L</div>'+
+            '</div>'+
+            '<div class="purchase-card-meta">'+
+              '<span>Tank: <b>'+h(t?.tank_code||'—')+'</b></span>'+
+              '<span>Supplier: '+h(p.supplier||'Not provided')+'</span>'+
+              '<span>Invoice: '+h(p.invoice_number||'Not provided')+'</span>'+
+              '<span>'+new Date(p.purchase_date).toLocaleString()+'</span>'+
+            '</div>'+
+          '</div>';
+        }).join('')
+        :'<div class="purchase-empty">No purchases recorded yet.</div>';
+    }
+  }catch(e){
+    if(statusEl)statusEl.textContent=e.message||'Unable to load purchase data';
+    const list=document.getElementById('purchase-list');
+    if(list)list.innerHTML='<div class="purchase-empty">Unable to load purchase history.</div>';
+  }
+}
+async function createPurchase(e){
+  e.preventDefault();
+  const tank=document.getElementById('purchase-tank')?.value||'',
+        product=document.getElementById('purchase-product')?.value||'',
+        q=Number(document.getElementById('purchase-liters')?.value),
+        supplier=document.getElementById('purchase-supplier')?.value.trim()||'',
+        invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
+  if(!tank||!product||!Number.isFinite(q)||q<=0){
+    toast('Select a tank and product and enter a valid quantity');
+    return;
+  }
+  const selectedTank=[...document.getElementById('purchase-tank').options]
+    .find(o=>String(o.value)===String(tank));
+  const tankProduct=selectedTank?.textContent?.split('—').slice(1).join('—').trim()||'';
+  const selectedProduct=document.getElementById('purchase-product').selectedOptions[0]?.textContent?.trim()||'';
+  if(tankProduct&&selectedProduct&&tankProduct!==selectedProduct){
+    toast('The selected product does not match the selected tank');
+    return;
+  }
+  try{
+    await api('/api/purchases',{
+      method:'POST',
+      body:JSON.stringify({
+        product,
+        tank_id:tank,
+        quantity_liters:q,
+        supplier,
+        invoice_number:invoice
+      })
+    });
+    e.target.reset();
+    toast('Purchase recorded and tank updated');
+    await loadPurchases();
+  }catch(x){
+    toast(x.message);
+  }
+}
 async function loadDailyReport(){
   try{
     await window.stationCurrencyReady;
