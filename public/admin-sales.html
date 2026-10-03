@@ -20,7 +20,7 @@
       <div><span class="section-kicker">RECORDS</span><h2>Sales History</h2><p class="muted">Previously confirmed shift sales.</p></div>
       <span class="admin-sales-section-count" id="confirmed-sales-count">0 confirmed</span>
     </div>
-    <div class="admin-sales-history-tools purchase-history-tools">
+    <button type="button" class="sales-history-search-icon" onclick="toggleSalesHistorySearch()" aria-label="Search sales history" title="Search">⌕</button><div class="admin-sales-history-tools purchase-history-tools" id="admin-sales-history-tools" hidden>
       <div class="admin-sales-filters">
         <input id="admin-sales-search" type="search" placeholder="Search dispenser, attendant, shift…" oninput="filterAdminSales()">
         <select id="admin-sales-period" onchange="filterAdminSales()" aria-label="Sales period">
