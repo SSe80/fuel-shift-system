@@ -24,11 +24,13 @@
 .purchase-review-row span{color:#667085;font-size:13px}
 .purchase-review-row strong{text-align:right}
 @media(max-width:600px){.purchase-wizard-card{max-height:92vh}.purchase-wizard-actions{display:grid;grid-template-columns:1fr 1fr}.purchase-wizard-actions button{width:100%}}
+</style><style>
+.purchase-card-title{font-size:16px;font-weight:700;margin-top:6px;color:#101828}
 </style></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseModal()"></div>
 <div class="modal-card purchase-modal-card purchase-wizard-card">
   <div class="top">
-    <div><span class="section-kicker">RECEIVE STOCK</span><h3 id="purchase-step-title">Purchase · Step 1 of 4</h3><p id="purchase-step-description" class="muted">Select the tank receiving the delivery.</p></div>
+    <div><span class="section-kicker">RECEIVE STOCK</span><h3>Purchase</h3><div id="purchase-step-title" class="purchase-card-title">Select Tank</div><p id="purchase-step-description" class="muted">Select the tank receiving the delivery.</p></div>
     <button type="button" class="modal-close" onclick="closePurchaseModal()">×</button>
   </div>
   <div class="purchase-step-indicator"><span class="active">1</span><i></i><span>2</span><i></i><span>3</span><i></i><span>4</span></div>
@@ -77,7 +79,7 @@
     const descriptions=['Select the tank receiving the delivery.','Enter the quantity of fuel received.','Enter the invoice or delivery number.','Check the purchase details before confirming.'];
     const title=document.getElementById('purchase-step-title');
     const desc=document.getElementById('purchase-step-description');
-    if(title)title.textContent='Purchase · Step '+step+' of 4 — '+titles[step-1];
+    if(title)title.textContent=titles[step-1];
     if(desc)desc.textContent=descriptions[step-1];
     document.querySelectorAll('.purchase-step-indicator span').forEach((el,i)=>{el.classList.toggle('active',i<step);el.classList.toggle('current',i===step-1);});
     document.querySelectorAll('.purchase-step-indicator i').forEach((el,i)=>el.classList.toggle('active',i<step-1));
