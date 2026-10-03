@@ -327,11 +327,9 @@ def update_employee(employee_id):
 def sale_types():
     auth=require_login()
     if auth:return auth
-    status,rows=sb("sale_types",params={"select":"id,name,description,reason_required,active,created_at,updated_at","order":"created_at.asc"})
-    if status!=200:return jsonify(rows),status
-    if session.get("role")!="admin":
-        rows=[x for x in rows if x.get("active")]
-    return jsonify(rows),200
+    status,result=rpc("list_active_sale_types",{})
+    if status>=400:return jsonify(result),status
+    return jsonify(result if isinstance(result,list) else []),200
 
 @app.post("/api/sale-types")
 def create_sale_type():
@@ -1059,18 +1057,13 @@ def record_shift_takeover_sale(takeover_id):
     auth=require_login()
     if auth:return auth
     data=request.get_json(silent=True) or {}
-    payment=str(data.get("payment_method","")).strip().lower()
-    if payment=="digital":payment="mobile"
-    if payment not in {"cash","card","mobile","other"}:
-        return jsonify({"error":"Select a valid sales type"}),400
-    sale_type_id=data.get("sale_type_id")
-    sale_reason=str(data.get("sale_reason","")).strip() or None
+    sales=data.get("sales",[])
+    if not isinstance(sales,list):
+        return jsonify({"error":"Invalid sales entries"}),400
     status,result=rpc("record_shift_takeover_sales",{
         "p_takeover_id":takeover_id,
         "p_employee_id":session["employee_id"],
-        "p_payment_method":payment,
-        "p_sale_type_id":sale_type_id,
-        "p_sale_reason":sale_reason
+        "p_sales":sales
     })
     if status>=400:return jsonify(result),status
     return jsonify(result),200
