@@ -1067,7 +1067,7 @@ function openDispenserEdit(id){
   };
   fillTanks();
   document.getElementById('edit-dispenser-tank').value=d.tank_id||'';
-  productSelect.onchange=()=>{fillTanks();document.getElementById('edit-dispenser-order').innerHTML='';};
+  productSelect.onchange=()=>{fillTanks();};
   document.getElementById('edit-dispenser-nozzle-count').value=String(d.nozzle_count||1);
   document.getElementById('edit-dispenser-id').value=d.id;
   const modal=document.getElementById('dispenser-edit-modal');
@@ -1522,12 +1522,9 @@ async function deactivateUser(id){
 async function saveTankEdit(event){
   event.preventDefault();
   const id=document.getElementById('edit-tank-id').value,old=settingsRecord(window.tankRecords,id);
-  const order=document.getElementById('edit-tank-order').value,cap=document.getElementById('edit-tank-capacity').value;
-  const oldOrder=(String(old.tank_code||'').match(/•TANK (\d+)$/)||[])[1]||'—';
-  const details='<p><b>Tank:</b> '+h(old.tank_code||id)+'</p>'+
-    settingsDiff('Tank order',oldOrder,order)+settingsDiff('Capacity',liters(old.capacity_liters),liters(cap),'L');
-  showSettingsConfirmation('Review Tank Update',details,()=>_saveTankEdit(event),
-    'Tank updated successfully','<p><b>'+h(old.tank_code||id)+'</b> was updated successfully.</p>'+details);
+  const cap=document.getElementById('edit-tank-capacity').value;
+  const details='<p><b>Tank:</b> '+h(old.tank_code||id)+'</p>'+settingsDiff('Capacity',liters(old.capacity_liters),liters(cap),'L');
+  showSettingsConfirmation('Review Tank Update',details,()=>_saveTankEdit(event),'Tank updated successfully','<p><b>'+h(old.tank_code||id)+'</b> was updated successfully.</p>'+details);
 }
 async function deactivateTank(id){
   const t=settingsRecord(window.tankRecords,id);
@@ -1555,15 +1552,8 @@ async function saveDispenserEdit(event){
   const product=document.getElementById('edit-dispenser-product').value,tankId=document.getElementById('edit-dispenser-tank').value,count=document.getElementById('edit-dispenser-nozzle-count').value;
   const tank=(window.tankRecords||[]).find(t=>String(t.id)===String(tankId));
   const oldTank=(window.tankRecords||[]).find(t=>String(t.id)===String(old.tank_id));
-  const oldOrder=(String(old.nozzle_code||'').match(/•DISPENSER (\d+)$/)||[])[1]||'—';
-  const newOrder=document.getElementById('edit-dispenser-order').value;
-  const details='<p><b>Dispenser:</b> '+h(old.nozzle_code||id)+'</p>'+
-    settingsDiff('Product',old.product,product)+
-    settingsDiff('Tank',oldTank?.tank_code||old.tank_id,tank?.tank_code||tankId)+
-    settingsDiff('Dispenser order',oldOrder,newOrder)+
-    settingsDiff('Nozzles',old.nozzle_count,count);
-  showSettingsConfirmation('Review Dispenser Update',details,()=>_saveDispenserEdit(event),
-    'Dispenser updated successfully','<p><b>'+h(old.nozzle_code||id)+'</b> was updated successfully.</p>'+details);
+  const details='<p><b>Dispenser:</b> '+h(old.nozzle_code||id)+'</p>'+settingsDiff('Product',old.product,product)+settingsDiff('Tank',oldTank?.tank_code||old.tank_id,tank?.tank_code||tankId)+settingsDiff('Nozzles',old.nozzle_count,count);
+  showSettingsConfirmation('Review Dispenser Update',details,()=>_saveDispenserEdit(event),'Dispenser updated successfully','<p><b>'+h(old.nozzle_code||id)+'</b> was updated successfully.</p>'+details);
 }
 async function _confirmGenericActivationReview(){
   const id=document.getElementById('activation-target-id')?.value||'',type=document.getElementById('activation-target-type')?.value||'';
