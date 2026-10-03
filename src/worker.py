@@ -738,8 +738,20 @@ def nozzles():
         if ps != 200:
             return jsonify(pending), ps
         pending_ids=[str(x.get("nozzle_id")) for x in pending if x.get("nozzle_id")]
-        if pending_ids:
-            params["or"]="(active.eq.true,id.in.("+",".join(pending_ids)+"))"
+        # Also expose dispensers referenced by this attendant's shift
+        # history. Historical shifts can belong to dispensers that are now
+        # inactive; hiding those rows makes the history card fall back to the
+        # raw UUID instead of the human-readable dispenser code.
+        hs,history_rows=sb("shifts",params={
+            "employee_id":"eq."+str(session["employee_id"]),
+            "select":"nozzle_id"
+        })
+        if hs != 200:
+            return jsonify(history_rows), hs
+        history_ids=[str(x.get("nozzle_id")) for x in history_rows if x.get("nozzle_id")]
+        all_ids=sorted(set(pending_ids+history_ids))
+        if all_ids:
+            params["or"]="(active.eq.true,id.in.("+",".join(all_ids)+"))"
         else:
             params["active"]="eq.true"
     status,rows=sb("nozzles",params=params)
