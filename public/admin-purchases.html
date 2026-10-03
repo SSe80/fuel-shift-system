@@ -51,8 +51,8 @@
       }
     }catch(e){setStatus(e.message||'Failed to load purchases.',true);}
   };
-  window.openPurchaseModal=function(){const m=document.getElementById('purchase-modal');if(m){m.classList.add('show');m.setAttribute('aria-hidden','false');}};
-  window.closePurchaseModal=function(){const m=document.getElementById('purchase-modal');if(m){m.classList.remove('show');m.setAttribute('aria-hidden','true');}};
+  window.openPurchaseModal=function(){const m=document.getElementById('purchase-modal');if(m){m.classList.add('open');m.setAttribute('aria-hidden','false');}};
+  window.closePurchaseModal=function(){const m=document.getElementById('purchase-modal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}};
   window.createPurchase=async function(event){
     event.preventDefault();
     const tank=tankSelect?.value||'';
