@@ -1110,9 +1110,11 @@ def cancel_shift_takeover_sale(takeover_id):
 def shift_takeovers():
     auth=require_login()
     if auth:return auth
-    params={"select":"*","order":"shift_ended_at.desc","limit":"50"}
     if session.get("role")!="admin":
-        params["from_employee_id"]="eq."+session["employee_id"]
+        status,result=rpc("list_my_shift_takeovers",{"p_employee_id":session["employee_id"]})
+        if status>=400:return jsonify(result),status
+        return jsonify(result if isinstance(result,list) else []),200
+    params={"select":"*","order":"shift_ended_at.desc","limit":"50"}
     status,rows=sb("shift_takeovers",params=params)
     if status!=200:return jsonify(rows),status
     return jsonify(rows),200
