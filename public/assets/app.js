@@ -470,12 +470,26 @@ async function loadAttendantShiftPage(){
       .filter(t=>!t.sales_recorded_at)
       .map(t=>String(t.shift_id)));
     const history=mine.filter(s=>s.status!=='assigned'&&!pendingTakeoverShiftIds.has(String(s.id)));
+    const historyReadingHtml=s=>{
+      const rs=Array.isArray(s.nozzle_readings)?s.nozzle_readings:[];
+      if(rs.length){
+        return '<div class="history-nozzle-readings">'+rs.map((r,i)=>{
+          const label=r.dispenser_code?(r.dispenser_code+' • N'+(r.nozzle_number||i+1)):(r.nozzle_code||('Nozzle '+(i+1)));
+          const op=r.opening_reading!==null&&r.opening_reading!==undefined?liters(r.opening_reading):'Not recorded';
+          const cl=r.closing_reading!==null&&r.closing_reading!==undefined?liters(r.closing_reading):'Not recorded';
+          return '<p><b>'+h(label)+'</b> — Opening: <b>'+op+'</b> • Closing: <b>'+cl+'</b></p>';
+        }).join('')+'</div>';
+      }
+      const hdo=handoverByShift[String(s.id)];
+      const cl=s.closing_reading!==null&&s.closing_reading!==undefined?liters(s.closing_reading):(hdo?.closing_reading!==null&&hdo?.closing_reading!==undefined?liters(hdo.closing_reading):'Not recorded');
+      return '<p>Opening meter: <b>'+liters(s.opening_reading)+'</b> • Closing meter: <b>'+cl+'</b></p>';
+    };
     const confirmedTakeovers=(Array.isArray(takeovers)?takeovers:[]).filter(t=>String(t.from_employee_id)===String(me.id)&&(t.sales_status==='confirmed'||(!t.sales_status&&t.sales_recorded_at)));
     const historyBox=document.getElementById('shift-history');
     if(historyBox){
       const shiftHistoryHtml=history.map(s=>{
         const n=nozzles.find(x=>x.id===s.nozzle_id);
-        return '<div class="card"><div class="top"><h3>Shift '+h(s.id.slice(0,8))+'</h3><span class="badge">'+h(s.status)+'</span></div><p>Dispenser: <b>'+h(n?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(n?.product||''))+'</p><p>Opening meter: <b>'+liters(s.opening_reading)+'</b> • Closing meter: <b>'+(s.closing_reading!==null&&s.closing_reading!==undefined?liters(s.closing_reading):(handoverByShift[String(s.id)]?.closing_reading!==null&&handoverByShift[String(s.id)]?.closing_reading!==undefined?liters(handoverByShift[String(s.id)].closing_reading):'Not recorded'))+'</b></p><p class="muted">'+(s.start_time?'Started: '+new Date(s.start_time).toLocaleString():'Assigned: '+new Date(s.assigned_at||s.created_at).toLocaleString())+(s.end_time?' • Ended: '+new Date(s.end_time).toLocaleString():'')+'</p></div>';
+        return '<div class="card"><div class="top"><h3>Shift '+h(s.id.slice(0,8))+'</h3><span class="badge">'+h(s.status)+'</span></div><p>Dispenser: <b>'+h(n?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(n?.product||''))+'</p>'+historyReadingHtml(s)+'<p class="muted">'+(s.start_time?'Started: '+new Date(s.start_time).toLocaleString():'Assigned: '+new Date(s.assigned_at||s.created_at).toLocaleString())+(s.end_time?' • Ended: '+new Date(s.end_time).toLocaleString():'')+'</p></div>';
       }).join('');
       const takeoverHistoryHtml=confirmedTakeovers.map(t=>{
         const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
@@ -489,7 +503,7 @@ async function loadAttendantShiftPage(){
       }).join(''):'<div class="card"><p>No shift history yet.</p></div>';
       // Render the two history groups in chronological order without duplicating records.
       const records=[];
-      history.forEach(s=>records.push({time:new Date(s.start_time||s.assigned_at||s.created_at),html:shiftHistoryHtml ? '<div class="card"><div class="top"><h3>Shift '+h(s.id.slice(0,8))+'</h3><span class="badge">'+h(s.status)+'</span></div><p>Dispenser: <b>'+h(nozzles.find(x=>x.id===s.nozzle_id)?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(nozzles.find(x=>x.id===s.nozzle_id)?.product||''))+'</p><p>Opening meter: <b>'+liters(s.opening_reading)+'</b> • Closing meter: <b>'+(s.closing_reading!==null&&s.closing_reading!==undefined?liters(s.closing_reading):(handoverByShift[String(s.id)]?.closing_reading!==null&&handoverByShift[String(s.id)]?.closing_reading!==undefined?liters(handoverByShift[String(s.id)].closing_reading):'Not recorded'))+'</b></p><p class="muted">'+(s.start_time?'Started: '+new Date(s.start_time).toLocaleString():'Assigned: '+new Date(s.assigned_at||s.created_at).toLocaleString())+(s.end_time?' • Ended: '+new Date(s.end_time).toLocaleString():'')+'</p></div>': ''}));
+      history.forEach(s=>records.push({time:new Date(s.start_time||s.assigned_at||s.created_at),html:shiftHistoryHtml ? '<div class="card"><div class="top"><h3>Shift '+h(s.id.slice(0,8))+'</h3><span class="badge">'+h(s.status)+'</span></div><p>Dispenser: <b>'+h(nozzles.find(x=>x.id===s.nozzle_id)?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(nozzles.find(x=>x.id===s.nozzle_id)?.product||''))+'</p>'+historyReadingHtml(s)+'<p class="muted">'+(s.start_time?'Started: '+new Date(s.start_time).toLocaleString():'Assigned: '+new Date(s.assigned_at||s.created_at).toLocaleString())+(s.end_time?' • Ended: '+new Date(s.end_time).toLocaleString():'')+'</p></div>': ''}));
       confirmedTakeovers.forEach(t=>records.push({time:new Date(t.shift_ended_at),html:'<div class="card shift-takeover-history-card"><div class="top"><div><span class="section-kicker">SHIFT HANDOVER</span><h3>'+h(nozzles.find(x=>String(x.id)===String(shifts.find(s=>String(s.id)===String(t.shift_id))?.nozzle_id))?.nozzle_code||'Dispenser')+'</h3></div><span class="badge">Sales confirmed</span></div><p>Shift ended: <b>'+new Date(t.shift_ended_at).toLocaleString()+'</b></p><p>Receiving attendant: <b>'+h(employees.find(e=>String(e.id)===String(t.to_employee_id))?.name||t.to_employee_id||'—')+'</b></p><p>Sales: <b>'+liters(t.total_sales_liters)+' L</b> • <b>'+money(t.total_sales_amount)+'</b></p><p class="muted">Sales confirmed: '+(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+'</p></div>'}));
       historyBox.innerHTML=records.sort((a,b)=>b.time-a.time).map(x=>x.html).join('')||'<div class="card"><p>No shift history yet.</p></div>';
     }
