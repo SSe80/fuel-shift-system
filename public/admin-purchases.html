@@ -88,6 +88,7 @@
   const status=document.getElementById('purchase-status');
   const list=document.getElementById('purchase-list');
   let purchaseTanks=[];
+  let purchaseProducts=[];
   let purchaseStep=1;
   const purchaseApi=window.api||async function(path,options={}){
     const response=await fetch(path,{credentials:'same-origin',...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});
@@ -140,20 +141,21 @@
       const q=parseQuantity(document.getElementById('purchase-liters')?.value);
       const invoice=document.getElementById('purchase-invoice')?.value.trim()||'Not provided';
       const review=document.getElementById('purchase-review');
-      if(review)review.innerHTML='<div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div><div class="purchase-review-row"><span>Order number</span><strong>'+purchaseH(orderNumber)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseH(purchaseLiters(orderedQuantity))+' L</strong></div><div class="purchase-review-row"><span>Received quantity</span><strong>'+purchaseH(purchaseLiters(q))+' L</strong></div><div class="purchase-review-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>';
+      if(review)review.innerHTML='<div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(productDisplay)+'</strong></div><div class="purchase-review-row"><span>Order number</span><strong>'+purchaseH(orderNumber)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseH(purchaseLiters(orderedQuantity))+' L</strong></div><div class="purchase-review-row"><span>Received quantity</span><strong>'+purchaseH(purchaseLiters(q))+' L</strong></div><div class="purchase-review-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>';
     }
     renderPurchaseStep(step+1);
   };
   window.loadPurchases=async function(){
     try{
       setStatus('Loading tanks…',false);
-      const tanks=await purchaseApi('/api/tanks');
-      if(!Array.isArray(tanks))throw new Error('Unable to load tanks');
+      const [tanks,productsData]=await Promise.all([purchaseApi('/api/tanks'),purchaseApi('/api/products')]);
+      if(!Array.isArray(tanks)||!Array.isArray(productsData))throw new Error('Unable to load products and tanks');
       purchaseTanks=tanks;
+      purchaseProducts=productsData;
       const activeTanks=tanks.filter(t=>t.active!==false);
-      const products=[...new Set(activeTanks.map(t=>t.product).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
+      const activeProducts=productsData.filter(p=>p.active!==false).filter(p=>activeTanks.some(t=>String(t.product||'').toLowerCase()===String(p.name||'').toLowerCase()));
       const productSelect=document.getElementById('purchase-product');
-      if(productSelect){productSelect.innerHTML='<option value="">Select product</option>'+products.map(p=>'<option value="'+purchaseH(p)+'">'+purchaseH(p)+'</option>').join('');}
+      if(productSelect){productSelect.innerHTML='<option value="">Select product</option>'+activeProducts.sort((a,b)=>String(a.code_name||a.name).localeCompare(String(b.code_name||b.name))).map(p=>'<option value="'+purchaseH(p.name)+'">'+purchaseH(p.code_name||p.name)+'</option>').join('');}
       if(tankSelect){
         tankSelect.innerHTML='<option value="">Select tank</option>'+activeTanks.map(t=>'<option value="'+purchaseH(t.id)+'">'+purchaseH(t.tank_code||t.name||t.id)+' — '+purchaseH(t.product||'Product not assigned')+' · '+purchaseH(purchaseLiters(t.current_liters))+' L in stock</option>').join('');
       }
