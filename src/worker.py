@@ -993,6 +993,18 @@ def handovers():
                 row["source_tank_code"]=tank.get("tank_code")
     return jsonify(rows),200
 
+@app.post("/api/shift-takeovers/<takeover_id>/record-sale")
+def record_shift_takeover_sale(takeover_id):
+    auth=require_login()
+    if auth:return auth
+    status,result=rpc("record_shift_takeover_sales",{
+        "p_takeover_id":takeover_id,
+        "p_employee_id":session["employee_id"],
+        "p_payment_method":"other"
+    })
+    if status>=400:return jsonify(result),status
+    return jsonify(result),200
+
 @app.get("/api/shift-takeovers")
 def shift_takeovers():
     auth=require_login()
