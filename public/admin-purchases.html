@@ -69,7 +69,6 @@
     </section>
     <section class="purchase-wizard-step" data-purchase-step="3">
       <div id="purchase-compartment-liters"></div>
-      <div class="purchase-field"><label for="purchase-invoice">Invoice number <small>Optional</small></label><input id="purchase-invoice" placeholder="Invoice / delivery number"></div>
       <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(3)">Return</button><button type="button" class="primary" onclick="createPurchase()">Confirm Purchase</button></div>
     </section>
   </form>
@@ -77,10 +76,8 @@
 </div>
 </div><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">PURCHASE HISTORY</span><h2>Recent purchases</h2><p class="muted">Latest fuel deliveries recorded at the station.</p></div></div><div id="purchase-list" class="purchase-list"></div></section><div id="toast" class="toast"></div></main><script src="assets/app.js?v=20261003-25"></script><script>
 (function(){
-  const tankSelect=document.getElementById('purchase-tank');
   const productSelect=document.getElementById('purchase-product');
   const orderedQuantityInput=document.getElementById('purchase-ordered-quantity');
-  const receivedQuantityInput=document.getElementById('purchase-liters');
   const parseQuantity=value=>Number(String(value??'').replace(/,/g,'').trim()||0);
   const formatQuantity=value=>{const n=parseQuantity(value);return n>0?n.toLocaleString(undefined,{maximumFractionDigits:2}):'';};
   function renderCompartmentInputs(){
@@ -97,7 +94,7 @@
     }
   }
   const bindQuantityFormatting=input=>{if(!input)return;input.addEventListener('input',()=>{const raw=input.value.replace(/[^0-9.]/g,'');const parts=raw.split('.');const normalized=parts.shift()+(parts.length?'.'+parts.join(''):''),digits=normalized.split('.'),integer=digits[0]||'',fraction=digits[1]!==undefined?digits[1].slice(0,2):'';input.value=integer?Number(integer).toLocaleString()+ (digits.length>1?'.'+fraction:''):'';});input.addEventListener('blur',()=>{if(input.value)input.value=formatQuantity(input.value);});};
-  bindQuantityFormatting(orderedQuantityInput);bindQuantityFormatting(receivedQuantityInput); document.getElementById('purchase-truck-compartments')?.addEventListener('change',renderCompartmentInputs);
+  bindQuantityFormatting(orderedQuantityInput); document.getElementById('purchase-truck-compartments')?.addEventListener('change',renderCompartmentInputs);
   const status=document.getElementById('purchase-status');
   const list=document.getElementById('purchase-list');
   let purchaseTanks=[];
@@ -188,26 +185,29 @@
   };
   window.createPurchase=async function(){
     const product=productSelect?.value||'';
-    const q=parseQuantity(document.getElementById('purchase-liters')?.value);
     const invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
-    if(!product||!Number.isFinite(q)||q<=0){setStatus('Purchase details are incomplete.',true);return;}
+    const compartmentInputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
+    const q=compartmentInputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
+    const orderedQuantity=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
+    const driverName=document.getElementById('purchase-driver-name')?.value.trim()||'';
+    const driverPhone=document.getElementById('purchase-driver-phone')?.value.trim()||'';
+    const plateNumber=document.getElementById('purchase-plate-number')?.value.trim()||'';
+    const compartments=Number(document.getElementById('purchase-truck-compartments')?.value||0);
+    if(!product||!invoice||!Number.isFinite(orderedQuantity)||orderedQuantity<=0||!compartments||compartmentInputs.length!==compartments||!Number.isFinite(q)||q<=0){setStatus('Purchase details are incomplete.',true);return;}
     const tankRecord=purchaseTanks.find(t=>String(t.product)===String(product)&&t.active!==false);
     if(!tankRecord){setStatus('No tank is assigned to the selected product.',true);return;}
     try{
       setStatus('Recording purchase…',false);
-      await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product:product,tank_id:tankRecord.id,quantity_liters:q,invoice_number:invoice,order_number:document.getElementById('purchase-order-number')?.value.trim()||''})});
-      document.getElementById('purchase-liters').value='';
+      await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product,tank_id:tankRecord.id,quantity_liters:q,invoice_number:invoice,ordered_quantity_liters:orderedQuantity,driver_name:driverName,driver_phone:driverPhone,plate_number:plateNumber,truck_compartments:compartments,compartment_liters:compartmentInputs.map(input=>parseQuantity(input.value))})});
       document.getElementById('purchase-ordered-quantity').value='';
       document.getElementById('purchase-driver-name').value='';
       document.getElementById('purchase-driver-phone').value='';
       document.getElementById('purchase-plate-number').value='';
       document.getElementById('purchase-truck-compartments').value='';
-      document.getElementById('purchase-order-number')?.value='';
       document.getElementById('purchase-product').value='';
       document.getElementById('purchase-invoice').value='';
-      purchaseToast('Purchase recorded successfully');
-      closePurchaseModal();
-      await loadPurchases();
+      const container=document.getElementById('purchase-compartment-liters');if(container)container.innerHTML='';
+      purchaseToast('Purchase recorded successfully');closePurchaseModal();await loadPurchases();
     }catch(e){setStatus(e.message||'Failed to record purchase.',true);}
   };
   loadPurchases();
