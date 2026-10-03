@@ -1026,6 +1026,40 @@ def confirm_shift_assignment(shift_id):
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),200
 
+@app.post("/api/shifts/<shift_id>/deactivate")
+def admin_deactivate_shift(shift_id):
+    auth=require_admin()
+    if auth:return auth
+    status,current=sb("shifts",params={
+        "id":"eq."+shift_id,
+        "status":"eq.active",
+        "select":"id,nozzle_id"
+    })
+    if status!=200:return jsonify({"error":current}),status
+    if not current:return jsonify({"error":"Active shift not found"}),404
+    shift=current[0]
+    now=datetime.now(timezone.utc).isoformat()
+    status,result=sb("shifts",method="PATCH",params={"id":"eq."+shift_id,"status":"eq.active"},body={
+        "status":"closed",
+        "end_time":now
+    },prefer="return=representation")
+    if status>=400:return jsonify({"error":result}),status
+    nozzle_id=shift.get("nozzle_id")
+    if nozzle_id:
+        ns,nr=sb("nozzles",method="PATCH",params={"id":"eq."+nozzle_id},body={"active":False},prefer="return=representation")
+        if ns>=400:return jsonify({"error":nr}),ns
+    # Also deactivate normalized physical nozzles belonging to this dispenser.
+    if nozzle_id:
+        ns,nr=sb("nozzles",params={"id":"eq."+nozzle_id,"select":"nozzle_code"},limit=None)
+        if ns==200 and nr:
+            codes=nr[0].get("nozzle_ids") or []
+            if codes:
+                ds,dr=sb("dispenser_nozzles",params={"nozzle_code":"in.("+",".join(str(x) for x in codes)+")"},select="id")
+                if ds==200:
+                    for row in dr:
+                        sb("dispenser_nozzles",method="PATCH",params={"id":"eq."+str(row["id"])},body={"active":False},prefer="return=minimal")
+    return jsonify(result),200
+
 @app.post("/api/shifts/<shift_id>/cancel")
 def cancel_shift_assignment(shift_id):
     eid=session.get("employee_id")
