@@ -1369,3 +1369,8 @@
   margin-right:0 !important;
   vertical-align:middle !important;
 }
+
+/* Only inactive settings cards can be reordered */
+.admin-settings-page .settings-item-card.settings-active-card .settings-move-handle{
+  display:none !important;
+}
