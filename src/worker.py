@@ -1304,10 +1304,6 @@ def tank_movements():
         params["tank_id"]="eq."+request.args["tank_id"]
     if request.args.get("movement_type"):
         params["movement_type"]="eq."+request.args["movement_type"]
-    if request.args.get("from"):
-        params["created_at"]="gte."+request.args["from"]
-    if request.args.get("to"):
-        params["created_at"]=(params.get("created_at","")+"&" if params.get("created_at") else "")+"lte."+request.args["to"]
     status,rows=sb("tank_movements",params=params)
     if status!=200:return jsonify(rows),status
 
