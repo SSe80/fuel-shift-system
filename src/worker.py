@@ -353,8 +353,8 @@ def update_sale_type(sale_type_id):
         "p_action":"update","p_id":sale_type_id,
         "p_name":str(data.get("name","")).strip() if "name" in data else None,
         "p_description":str(data.get("description","")).strip() if "description" in data else None,
-        "p_reason_required":bool(data.get("reason_required")) if "reason_required" in data else False,
-        "p_active":bool(data.get("active")) if "active" in data else True
+        "p_reason_required":bool(data.get("reason_required")) if "reason_required" in data else None,
+        "p_active":bool(data.get("active")) if "active" in data else None
     })
     if status>=400:return jsonify(result),status
     return jsonify(result),200
