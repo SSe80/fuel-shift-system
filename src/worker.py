@@ -1210,7 +1210,7 @@ def create_purchase():
     try: qty=float(data.get("quantity_liters",0))
     except (TypeError,ValueError):return jsonify({"error":"Invalid quantity"}),400
     if not product or not tank_id or qty<=0:return jsonify({"error":"Product, tank and positive quantity are required"}),400
-    status,result=rpc("record_fuel_purchase",{"p_product":product,"p_quantity_liters":qty,"p_tank_id":tank_id,"p_supplier":data.get("supplier",""),"p_invoice_number":data.get("invoice_number",""),"p_created_by":session["employee_id"],"p_shift_id":None})
+    status,result=rpc("record_fuel_purchase",{"p_product":product,"p_quantity_liters":qty,"p_tank_id":tank_id,"p_supplier":"","p_invoice_number":data.get("invoice_number",""),"p_created_by":session["employee_id"],"p_shift_id":None})
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
