@@ -85,22 +85,27 @@ function openTakeoverSaleModal(id){
   window.pendingTakeoverSaleId=id;
   window.pendingTakeoverRecord=takeover;
   window.takeoverSaleTypes=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
-  const modal=document.getElementById('takeover-sale-modal');
-  const summary=document.getElementById('takeover-sale-summary');
-  const list=document.getElementById('takeover-sale-type-list');
-  if(summary)summary.innerHTML='<div><span>Calculated liters</span><strong>'+liters(takeover.total_sales_liters)+' L</strong></div><div><span>Calculated sales amount</span><strong>'+money(takeover.total_sales_amount)+'</strong></div>';
-  if(list)list.innerHTML=window.takeoverSaleTypes.length
-    ?window.takeoverSaleTypes.map(s=>'<div class="takeover-sale-entry" data-sale-type="'+h(s.id)+'"><div class="takeover-sale-entry-head"><div><strong>'+h(s.name)+'</strong>'+(s.description?'<small>'+h(s.description)+'</small>':'')+'</div><input class="takeover-sale-amount" data-sale-id="'+h(s.id)+'" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>'+(s.reason_required?'<label class="takeover-sale-reason-label">Reason<textarea class="takeover-sale-reason" data-reason-id="'+h(s.id)+'" rows="2" placeholder="Enter reason"></textarea></label>':'')+'</div>').join('')
-    :'<p class="muted">No active sale types are configured.</p>';
-  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+  const confirm=document.getElementById('takeover-sale-confirm-modal');
+  const content=document.getElementById('takeover-sale-confirm-content');
+  const types=window.takeoverSaleTypes;
+  if(content){
+    content.innerHTML=
+      '<div class="takeover-sale-summary takeover-confirm-summary"><div><span>Calculated liters</span><strong>'+liters(takeover.total_sales_liters)+' L</strong></div><div><span>Calculated sales amount</span><strong>'+money(takeover.total_sales_amount)+'</strong></div></div>'+
+      '<div class="takeover-sales-entry-section"><div class="takeover-sales-entry-title">Sales</div><div id="takeover-sale-type-list">'+
+      (types.length
+        ?types.map(s=>'<div class="takeover-sale-entry" data-sale-type="'+h(s.id)+'"><div class="takeover-sale-entry-head"><div><strong>'+h(s.name)+'</strong>'+(s.description?'<small>'+h(s.description)+'</small>':'')+'</div><input class="takeover-sale-amount" data-sale-id="'+h(s.id)+'" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" oninput="updateTakeoverSaleConfirmation()"></div>'+(s.reason_required?'<label class="takeover-sale-reason-label">Reason<textarea class="takeover-sale-reason" data-reason-id="'+h(s.id)+'" rows="2" placeholder="Enter reason" oninput="updateTakeoverSaleConfirmation()"></textarea></label>':'')+'</div>').join('')
+        :'<p class="muted">No active sale types are configured.</p>')+
+      '</div></div>'+
+      '<div id="takeover-sale-match-status" class="takeover-sale-match-status"></div>';
+  }
+  updateTakeoverSaleConfirmation();
+  if(confirm){confirm.classList.add('open');confirm.setAttribute('aria-hidden','false');}
 }
 function closeTakeoverSaleModal(){
   const modal=document.getElementById('takeover-sale-modal');
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  window.pendingTakeoverSaleId=null;
-  window.pendingTakeoverRecord=null;
 }
-function continueTakeoverSale(){
+function updateTakeoverSaleConfirmation(){
   const takeover=window.pendingTakeoverRecord;
   if(!takeover)return;
   const sales=[];
@@ -108,30 +113,43 @@ function continueTakeoverSale(){
   document.querySelectorAll('#takeover-sale-type-list .takeover-sale-entry').forEach(row=>{
     const input=row.querySelector('.takeover-sale-amount');
     const amount=Number(input?.value||0);
-    if(!Number.isFinite(amount)||amount<0)return;
-    if(amount<=0)return;
+    if(!Number.isFinite(amount)||amount<=0)return;
     const typeId=row.getAttribute('data-sale-type');
     const type=(window.takeoverSaleTypes||[]).find(x=>String(x.id)===String(typeId));
     const reason=row.querySelector('.takeover-sale-reason')?.value.trim()||'';
-    if(type?.reason_required&&!reason){missingReason=type.name;return;}
+    if(type?.reason_required&&!reason)missingReason=type.name;
     sales.push({sale_type_id:typeId,name:type?.name||'Sale',amount,reason});
   });
-  if(missingReason){toast('Enter a reason for '+missingReason);return;}
   const total=sales.reduce((sum,x)=>sum+x.amount,0);
   const calculated=Number(takeover.total_sales_amount||0);
-  if(!sales.length){toast('Enter at least one sale amount');return;}
-  if(Math.abs(total-calculated)>0.01){
-    toast('Sales entered must total '+money(calculated));return;
+  const difference=Math.abs(total-calculated);
+  const matches=difference<=1 && sales.length>0 && !missingReason;
+  const status=document.getElementById('takeover-sale-match-status');
+  if(status){
+    status.innerHTML='<div class="takeover-confirm-sales">'+
+      sales.map(x=>'<div class="takeover-confirm-sale-row"><span>'+h(x.name)+'</span><strong>'+money(x.amount)+'</strong></div>').join('')+
+      '<div class="takeover-confirm-total"><span>Entered sales total</span><strong>'+money(total)+'</strong></div>'+
+      '<div class="takeover-confirm-check"><span>Calculated amount</span><b>'+money(calculated)+'</b><span>Difference</span><b>'+money(difference)+'</b></div></div>'+
+      (missingReason?'<div class="takeover-sale-mismatch">Reason required for '+h(missingReason)+'.</div>':
+       !sales.length?'<div class="takeover-sale-mismatch">Enter at least one sale amount.</div>':
+       matches?'<div class="takeover-sale-match">Sales total is within the allowed 1.00 difference.</div>':
+       '<div class="takeover-sale-mismatch">Sales total must be within 1.00 of the calculated amount.</div>');
   }
+  const button=document.querySelector('#takeover-sale-confirm-modal button.primary');
+  if(button)button.disabled=!matches;
   window.pendingTakeoverSales=sales;
-  const modal=document.getElementById('takeover-sale-modal');
-  const confirm=document.getElementById('takeover-sale-confirm-modal');
-  const content=document.getElementById('takeover-sale-confirm-content');
-  if(content)content.innerHTML='<div class="takeover-confirm-sales">'+sales.map(x=>'<div class="takeover-confirm-sale-row"><span>'+h(x.name)+'</span><strong>'+money(x.amount)+'</strong></div>').join('')+
-    '<div class="takeover-confirm-total"><span>Total sales</span><strong>'+money(total)+'</strong></div>'+
-    '<div class="takeover-confirm-check">Calculated amount: <b>'+money(calculated)+'</b></div></div>';
+}
+function continueTakeoverSale(){ updateTakeoverSaleConfirmation(); }
+function closeTakeoverSaleConfirm(){
+  const modal=document.getElementById('takeover-sale-confirm-modal');
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  if(confirm){confirm.classList.add('open');confirm.setAttribute('aria-hidden','false');}
+  window.pendingTakeoverSales=null;
+  window.pendingTakeoverSaleId=null;
+  window.pendingTakeoverRecord=null;
+}
+function backToTakeoverSaleEntry(){
+  closeTakeoverSaleConfirm();
+  window.pendingTakeoverSales=null;
 }
 function closeTakeoverSaleConfirm(){
   const modal=document.getElementById('takeover-sale-confirm-modal');
