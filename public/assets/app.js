@@ -783,29 +783,107 @@ async function adminSalesConfirmations(){
   }
 }
 function downloadAdminSaleHistoryDetails(id){
-  const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));if(!item)return;
-  const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],total=Number(t.total_sales_amount||0),entryTotal=sales.reduce((a,s)=>a+Number(s.amount||0),0);
-  const safe=v=>String(v??'').normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^\\x20-\\x7E]/g,'?');
-  const wrap=(v,n=88)=>{const w=safe(v).split(/\\s+/),o=[];let l='';w.forEach(x=>{if((l?l+' ':'').length+x.length>n){if(l)o.push(l);l=x}else l=l?l+' '+x:x});if(l)o.push(l);return o.length?o:['']};
-  const lines=['SALES HISTORY - SHIFT DETAIL','',
-    'Dispenser: '+safe(item.dispenser?.name||'Dispenser'),
-    'Product: '+safe(item.dispenser?.product_name||item.dispenser?.product||'—'),
-    'From attendant: '+safe(item.from_employee?.name||'—'),
-    'Received by: '+safe(item.to_employee?.name||'—'),
-    'Shift ID: '+safe(t.shift_id||'—'),
-    'Shift started: '+safe(t.shift_started_at?new Date(t.shift_started_at).toLocaleString():'—'),
-    'Shift ended: '+safe(t.shift_ended_at?new Date(t.shift_ended_at).toLocaleString():'—'),
-    'Confirmed by admin: '+safe(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—'),
-    'Liters sold: '+safe(liters(t.total_sales_liters))+' L',
-    'Confirmed total: '+safe(money(total)),'','RECORDED SALES','----------------------------------------'];
-  sales.forEach((s,i)=>{lines.push((i+1)+'. '+safe(s.sale_type_name||'Sale')+'  '+safe(money(s.amount)));if(s.sale_type_description)lines.push(...wrap('Description: '+s.sale_type_description));if(s.reason)lines.push(...wrap('Reason: '+s.reason))});
-  lines.push('----------------------------------------','Entries total: '+safe(money(entryTotal)),'','Status: Confirmed by admin');
-  const pl=[];lines.forEach(x=>pl.push(...wrap(x,88)));const pages=[],per=46;for(let i=0;i<pl.length;i+=per)pages.push(pl.slice(i,i+per));
-  const objs=[{id:1,body:'<< /Type /Catalog /Pages 2 0 R >>'}],kids=[],font=3;let no=4;
-  pages.forEach(p=>{const pr=no++,cr=no++;kids.push(pr+' 0 R');const stream='BT\\n/F1 11 Tf\\n50 760 Td\\n'+p.map((x,i)=>(i?'0 -15 Td\\n':'')+'('+safe(x).replace(/\\\\/g,'\\\\\\\\').replace(/\\(/g,'\\\\(').replace(/\\)/g,'\\\\)')+') Tj').join('\\n')+'\\nET';objs.push({id:pr,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents '+cr+' 0 R >>'},{id:cr,body:'<< /Length '+stream.length+' >>\\nstream\\n'+stream+'\\nendstream'})});
-  objs.push({id:2,body:'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+pages.length+' >>'},{id:font,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'});objs.sort((a,b)=>a.id-b.id);
-  let pdf='%PDF-1.4\\n%PDF\\n',off=[0];objs.forEach(o=>{off[o.id]=pdf.length;pdf+=o.id+' 0 obj\\n'+o.body+'\\nendobj\\n'});const x=pdf.length;pdf+='xref\\n0 '+(objs.length+1)+'\\n0000000000 65535 f \\n';for(let i=1;i<=objs.length;i++)pdf+=String(off[i]||0).padStart(10,'0')+' 00000 n \\n';pdf+='trailer\\n<< /Size '+(objs.length+1)+' /Root 1 0 R >>\\nstartxref\\n'+x+'\\n%%EOF';
-  const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'})),a=document.createElement('a'),stamp=(t.shift_ended_at||t.shift_started_at||new Date().toISOString()).replace(/[^0-9]/g,'').slice(0,14);a.href=url;a.download='shift-'+String(t.shift_id||id).slice(0,8)+'-'+stamp+'.pdf';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast('PDF downloaded');
+  const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
+  if(!item)return;
+  const t=item.takeover||{};
+  const sales=Array.isArray(item.sales)?item.sales:[];
+  const total=Number(t.total_sales_amount||0);
+  const entryTotal=sales.reduce((sum,s)=>sum+Number(s.amount||0),0);
+  const clean=value=>String(value==null?'':value).replace(/[^ -~]/g,'?');
+  const wrap=(value,width)=>{
+    const words=clean(value).split(/\s+/);
+    const out=[];
+    let line='';
+    words.forEach(word=>{
+      if(!word)return;
+      const next=line?line+' '+word:word;
+      if(next.length>width){
+        if(line)out.push(line);
+        line=word;
+      }else{
+        line=next;
+      }
+    });
+    if(line)out.push(line);
+    return out.length?out:[''];
+  };
+  const lines=[
+    'SALES HISTORY - SHIFT DETAIL','',
+    'Dispenser: '+clean(item.dispenser?.name||'Dispenser'),
+    'Product: '+clean(item.dispenser?.product_name||item.dispenser?.product||''),
+    'From attendant: '+clean(item.from_employee?.name||''),
+    'Received by: '+clean(item.to_employee?.name||''),
+    'Shift ID: '+clean(t.shift_id||id),
+    'Shift started: '+clean(t.shift_started_at?new Date(t.shift_started_at).toLocaleString():''),
+    'Shift ended: '+clean(t.shift_ended_at?new Date(t.shift_ended_at).toLocaleString():''),
+    'Confirmed by admin: '+clean(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():''),
+    'Liters sold: '+clean(liters(t.total_sales_liters))+' L',
+    'Confirmed total: '+clean(money(total)),'','RECORDED SALES',
+    '----------------------------------------'
+  ];
+  sales.forEach((sale,index)=>{
+    lines.push((index+1)+'. '+clean(sale.sale_type_name||'Sale')+'  '+clean(money(sale.amount)));
+    if(sale.sale_type_description)lines.push(...wrap('Description: '+sale.sale_type_description,88));
+    if(sale.reason)lines.push(...wrap('Reason: '+sale.reason,88));
+  });
+  lines.push(
+    '----------------------------------------',
+    'Entries total: '+clean(money(entryTotal)),
+    '',
+    'Status: Confirmed by admin'
+  );
+
+  const pageLines=[];
+  lines.forEach(line=>pageLines.push(...wrap(line,88)));
+  const pages=[];
+  for(let i=0;i<pageLines.length;i+=46)pages.push(pageLines.slice(i,i+46));
+
+  const objects=[{id:1,body:'<< /Type /Catalog /Pages 2 0 R >>'}];
+  const kids=[];
+  let nextId=4;
+  pages.forEach(pageLinesForPage=>{
+    const pageId=nextId++;
+    const contentId=nextId++;
+    kids.push(pageId+' 0 R');
+    const textCommands=pageLinesForPage.map((line,index)=>{
+      const escaped=clean(line).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+      return (index?'0 -15 Td\\n':'')+'('+escaped+') Tj';
+    }).join('\\n');
+    const stream='BT\\n/F1 11 Tf\\n50 760 Td\\n'+textCommands+'\\nET';
+    objects.push(
+      {id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents '+contentId+' 0 R >>'},
+      {id:contentId,body:'<< /Length '+stream.length+' >>\\nstream\\n'+stream+'\\nendstream'}
+    );
+  });
+  objects.push(
+    {id:2,body:'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+pages.length+' >>'},
+    {id:3,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'}
+  );
+  objects.sort((a,b)=>a.id-b.id);
+
+  let pdf='%PDF-1.4\\n%PDF-1.4\\n';
+  const offsets=[];
+  objects.forEach(object=>{
+    offsets[object.id]=pdf.length;
+    pdf+=object.id+' 0 obj\\n'+object.body+'\\nendobj\\n';
+  });
+  const xrefOffset=pdf.length;
+  pdf+='xref\\n0 '+(objects.length+1)+'\\n0000000000 65535 f \\n';
+  for(let i=1;i<=objects.length;i++){
+    pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \\n';
+  }
+  pdf+='trailer\\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\\nstartxref\\n'+xrefOffset+'\\n%%EOF';
+
+  const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'}));
+  const link=document.createElement('a');
+  const stamp=(t.shift_ended_at||t.shift_started_at||new Date().toISOString()).replace(/[^0-9]/g,'').slice(0,14);
+  link.href=url;
+  link.download='shift-'+String(t.shift_id||id).slice(0,8)+'-'+stamp+'.pdf';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('PDF downloaded');
 }
 function openAdminSaleHistoryDetails(id){
   const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
