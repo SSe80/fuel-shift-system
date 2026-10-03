@@ -790,7 +790,10 @@ async function loadSettingsData(){
     const productCode=codeForProduct(n.product);
     const nozzleCount=Number(n.nozzle_count||1);
     const nozzleLabel=nozzleCount===1?'1 nozzle':nozzleCount+' nozzles';
-    const nozzleIds=(n.nozzle_ids||[]).map(id=>'<span class="dispenser-nozzle-tag">'+h(id)+'</span>').join('');
+    const nozzleRows=(n.nozzle_ids||[]).map((id,idx)=>{
+      const reading=(activeReadings||[]).find(r=>String(r.nozzle_id)===String(id));
+      return '<div class="dispenser-nozzle-row"><span class="dispenser-nozzle-dot" style="background:'+h(colorForProduct(n.product))+'"></span><div class="dispenser-nozzle-main"><b>Nozzle '+(idx+1)+'</b><span>'+h(id)+'</span></div><div class="dispenser-nozzle-reading">'+(reading?'<span>Opening</span><b>'+Number(reading.opening_reading||0).toFixed(0)+'</b>':'<span>Meter</span><b>—</b>')+'</div></div>';
+    }).join('');
     if(pending){
       const readings=Array.isArray(pending.activation_nozzles)?pending.activation_nozzles:[];
       const readingText=readings.length
@@ -820,7 +823,7 @@ async function loadSettingsData(){
         (n.active?'<div><span>Current shift</span><b>'+(attendant?h(attendant.name):'No active shift')+'</b></div>':'')+
       '</div>'+
       '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle opening readings</span>'+activeReadingText+'</div>'+
-      '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle identifiers</span><div class="dispenser-nozzle-list">'+(nozzleIds||'<span class="muted">No nozzle identifiers</span>')+'</div></div>'+
+      '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Physical nozzles</span><div class="dispenser-nozzle-rows">'+(nozzleRows||'<span class="muted">No nozzle identifiers</span>')+'</div></div>'+
       '</div>'+
       '<div class="dispenser-card-actions">'+
         '<button type="button" class="primary" onclick="toggleNozzle(\''+n.id+'\','+n.active+')">'+(n.active?'DEACTIVATE':'ACTIVATE DISPENSER')+'</button>'+
