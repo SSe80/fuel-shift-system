@@ -950,3 +950,73 @@
   .attendant-page .takeover-tank-grid{grid-template-columns:1fr}
   .attendant-page .takeover-calc-values{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* Pending shift handover sale card */
+.attendant-page .shift-takeover-card{
+  border:1px solid #f3a0aa;
+  background:linear-gradient(180deg,#fffafb 0%,#fff 100%);
+  box-shadow:0 8px 28px rgba(194,35,53,.11);
+}
+.attendant-page .takeover-hero{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:-20px -20px 16px;
+  padding:15px 17px;
+  background:linear-gradient(135deg,#fff0f1,#ffe7e9);
+  border-bottom:1px solid #f3c2c8;
+  border-radius:18px 18px 0 0;
+}
+.attendant-page .takeover-hero-icon{
+  width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;
+  border-radius:13px;background:#fff;color:#dc2638;font-size:21px;font-weight:900;
+  border:1px solid #fecdd3;
+}
+.attendant-page .takeover-card-title{font-size:19px;font-weight:850;color:#7f1721}
+.attendant-page .takeover-card-subtitle{margin-top:3px;font-size:13px;color:#8b6268;font-weight:650}
+.attendant-page .takeover-total-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 14px}
+.attendant-page .takeover-total-grid>div{
+  padding:14px;border:1px solid #f0d8dc;border-radius:13px;background:#fff;
+}
+.attendant-page .takeover-total-grid span,.attendant-page .takeover-sale-summary span{
+  display:block;color:#8b6268;font-size:12px;font-weight:700;margin-bottom:5px;
+}
+.attendant-page .takeover-total-grid strong,.attendant-page .takeover-sale-summary strong{
+  display:block;color:#7f1721;font-size:23px;line-height:1.1;font-weight:850;
+  font-variant-numeric:tabular-nums;
+}
+.attendant-page .takeover-sale-action{margin-top:4px}
+.attendant-page .takeover-sale-action button{min-height:42px}
+.attendant-page .takeover-sale-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.attendant-page .takeover-sale-summary>div{padding:14px;border:1px solid #f0d8dc;border-radius:13px;background:#fff7f8}
+.attendant-page .takeover-details-modal{width:min(100%,680px)}
+.attendant-page .takeover-detail-summary{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:14px 0}
+.attendant-page .takeover-detail-summary>div{
+  padding:11px 12px;border:1px solid #f0d8dc;border-radius:11px;background:#fffafa;
+}
+.attendant-page .takeover-detail-summary span{display:block;color:#8b6268;font-size:11px;font-weight:700;margin-bottom:4px}
+.attendant-page .takeover-detail-summary strong{display:block;color:#3f1720;font-size:13px;overflow-wrap:anywhere}
+.attendant-page .takeover-detail-heading{padding:10px 0;border-bottom:1px solid #f1d9dd;color:#7f1721;font-weight:850}
+.attendant-page .takeover-detail-row{
+  display:grid;grid-template-columns:1.4fr repeat(5,minmax(0,1fr));gap:8px;
+  padding:10px 0;border-bottom:1px solid #f3e3e6;font-size:11px;align-items:center;
+}
+.attendant-page .takeover-detail-row>div{min-width:0}
+.attendant-page .takeover-detail-row small{display:block;color:#8b6268;margin-top:3px;overflow-wrap:anywhere}
+.attendant-page .takeover-detail-row span{color:#8b6268}
+.attendant-page .takeover-detail-row span b{display:block;color:#3f1720;margin-top:2px}
+.attendant-page .takeover-detail-total{
+  display:flex;align-items:center;gap:16px;margin-top:12px;padding:13px 14px;
+  border-radius:12px;background:#fff0f1;color:#7f1721;
+}
+.attendant-page .takeover-detail-total span{margin-right:auto;font-weight:800}
+.attendant-page .takeover-detail-total strong{font-size:15px}
+@media(max-width:600px){
+  .attendant-page .takeover-hero{margin:-16px -16px 14px;padding:13px 14px}
+  .attendant-page .takeover-total-grid,.attendant-page .takeover-sale-summary,.attendant-page .takeover-detail-summary{grid-template-columns:1fr}
+  .attendant-page .takeover-detail-row{grid-template-columns:1fr 1fr}
+  .attendant-page .takeover-detail-row>div{grid-column:1/-1}
+  .attendant-page .takeover-detail-total{gap:8px}
+  .attendant-page .takeover-detail-total strong{font-size:13px}
+}
