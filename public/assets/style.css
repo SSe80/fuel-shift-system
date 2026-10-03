@@ -1114,3 +1114,27 @@
   color:#8a949f !important;
   box-shadow:none !important;
 }
+
+/* Compact Admin Settings cards */
+.admin-settings-page .settings-section .settings-toggle{
+  cursor:pointer;
+  position:relative;
+  padding-right:42px;
+  user-select:none;
+}
+.admin-settings-page .settings-section .settings-toggle::after{
+  content:'＋';
+  position:absolute;
+  right:2px;
+  top:50%;
+  transform:translateY(-50%);
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:#eef2f6;color:#52606d;font-size:20px;font-weight:700;
+}
+.admin-settings-page .settings-section.expanded .settings-toggle::after{content:'−'}
+.admin-settings-page .settings-section:not(.expanded) .settings-collapsible{display:none}
+.admin-settings-page .settings-section:not(.expanded) .settings-toggle p{margin-bottom:0}
+.admin-settings-page .settings-section .settings-toggle:focus-visible{
+  outline:3px solid #1264d833;outline-offset:3px;border-radius:10px;
+}
