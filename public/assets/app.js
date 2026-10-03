@@ -83,48 +83,77 @@ function openTakeoverSaleModal(id){
   const takeover=(window.takeoverRecords||[]).find(x=>String(x.id)===String(id));
   if(!takeover)return;
   window.pendingTakeoverSaleId=id;
+  window.pendingTakeoverRecord=takeover;
   window.takeoverSaleTypes=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
   const modal=document.getElementById('takeover-sale-modal');
   const summary=document.getElementById('takeover-sale-summary');
-  const method=document.getElementById('takeover-sale-method');
-  const type=document.getElementById('takeover-sale-type');
-  const reason=document.getElementById('takeover-sale-reason');
-  if(summary)summary.innerHTML='<div><span>Liters sold</span><strong>'+liters(takeover.total_sales_liters)+' L</strong></div><div><span>Sales amount</span><strong>'+money(takeover.total_sales_amount)+'</strong></div>';
-  if(method)method.value='';
-  if(type)type.innerHTML='<option value="">Select sale type</option>'+window.takeoverSaleTypes.map(s=>'<option value="'+h(s.id)+'">'+h(s.name)+'</option>').join('');
-  if(reason)reason.value='';
-  updateTakeoverSaleReason();
+  const list=document.getElementById('takeover-sale-type-list');
+  if(summary)summary.innerHTML='<div><span>Calculated liters</span><strong>'+liters(takeover.total_sales_liters)+' L</strong></div><div><span>Calculated sales amount</span><strong>'+money(takeover.total_sales_amount)+'</strong></div>';
+  if(list)list.innerHTML=window.takeoverSaleTypes.length
+    ?window.takeoverSaleTypes.map(s=>'<div class="takeover-sale-entry" data-sale-type="'+h(s.id)+'"><div class="takeover-sale-entry-head"><div><strong>'+h(s.name)+'</strong>'+(s.description?'<small>'+h(s.description)+'</small>':'')+'</div><input class="takeover-sale-amount" data-sale-id="'+h(s.id)+'" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>'+(s.reason_required?'<label class="takeover-sale-reason-label">Reason<textarea class="takeover-sale-reason" data-reason-id="'+h(s.id)+'" rows="2" placeholder="Enter reason"></textarea></label>':'')+'</div>').join('')
+    :'<p class="muted">No active sale types are configured.</p>';
   if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
-}
-function updateTakeoverSaleReason(){
-  const typeId=document.getElementById('takeover-sale-type')?.value||'';
-  const sale=(window.takeoverSaleTypes||[]).find(x=>String(x.id)===String(typeId));
-  const wrap=document.getElementById('takeover-sale-reason-wrap');
-  const reason=document.getElementById('takeover-sale-reason');
-  const desc=document.getElementById('takeover-sale-description');
-  if(desc)desc.innerHTML=sale?.description?'<span>'+h(sale.description)+'</span>':'';
-  if(wrap){wrap.style.display=sale?.reason_required?'block':'none';}
-  if(reason)reason.required=!!sale?.reason_required;
 }
 function closeTakeoverSaleModal(){
   const modal=document.getElementById('takeover-sale-modal');
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
   window.pendingTakeoverSaleId=null;
+  window.pendingTakeoverRecord=null;
 }
-async function submitTakeoverSale(event){
-  event.preventDefault();
+function continueTakeoverSale(){
+  const takeover=window.pendingTakeoverRecord;
+  if(!takeover)return;
+  const sales=[];
+  document.querySelectorAll('#takeover-sale-type-list .takeover-sale-entry').forEach(row=>{
+    const input=row.querySelector('.takeover-sale-amount');
+    const amount=Number(input?.value||0);
+    if(!Number.isFinite(amount)||amount<0)return;
+    if(amount<=0)return;
+    const typeId=row.getAttribute('data-sale-type');
+    const type=(window.takeoverSaleTypes||[]).find(x=>String(x.id)===String(typeId));
+    const reason=row.querySelector('.takeover-sale-reason')?.value.trim()||'';
+    if(type?.reason_required&&!reason){
+      throw new Error('Enter a reason for '+type.name);
+    }
+    sales.push({sale_type_id:typeId,name:type?.name||'Sale',amount,reason});
+  });
+  const total=sales.reduce((sum,x)=>sum+x.amount,0);
+  const calculated=Number(takeover.total_sales_amount||0);
+  if(!sales.length){toast('Enter at least one sale amount');return;}
+  if(Math.abs(total-calculated)>0.01){
+    toast('Sales entered must total '+money(calculated));return;
+  }
+  window.pendingTakeoverSales=sales;
+  const modal=document.getElementById('takeover-sale-modal');
+  const confirm=document.getElementById('takeover-sale-confirm-modal');
+  const content=document.getElementById('takeover-sale-confirm-content');
+  if(content)content.innerHTML='<div class="takeover-confirm-sales">'+sales.map(x=>'<div class="takeover-confirm-sale-row"><span>'+h(x.name)+'</span><strong>'+money(x.amount)+'</strong></div>').join('')+
+    '<div class="takeover-confirm-total"><span>Total sales</span><strong>'+money(total)+'</strong></div>'+
+    '<div class="takeover-confirm-check">Calculated amount: <b>'+money(calculated)+'</b></div></div>';
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  if(confirm){confirm.classList.add('open');confirm.setAttribute('aria-hidden','false');}
+}
+function closeTakeoverSaleConfirm(){
+  const modal=document.getElementById('takeover-sale-confirm-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  window.pendingTakeoverSales=null;
+}
+function backToTakeoverSaleEntry(){
+  closeTakeoverSaleConfirm();
+  if(window.pendingTakeoverSaleId){
+    const modal=document.getElementById('takeover-sale-modal');
+    if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+  }
+}
+async function confirmTakeoverSale(){
   const id=window.pendingTakeoverSaleId;
-  const method=document.getElementById('takeover-sale-method')?.value||'';
-  const saleTypeId=document.getElementById('takeover-sale-type')?.value||'';
-  const saleReason=document.getElementById('takeover-sale-reason')?.value.trim()||'';
-  const saleType=(window.takeoverSaleTypes||[]).find(x=>String(x.id)===String(saleTypeId));
-  if(!id||!method){toast('Select the payment method');return;}
-  if(!saleTypeId){toast('Select the sale type');return;}
-  if(saleType?.reason_required&&!saleReason){toast('Enter the reason for this sale');return;}
-  const button=event.target.querySelector('button.primary');
+  const sales=window.pendingTakeoverSales||[];
+  const button=document.querySelector('#takeover-sale-confirm-modal button.primary');
+  if(!id||!sales.length)return;
   if(button)button.disabled=true;
   try{
-    await api('/api/shift-takeovers/'+id+'/record-sale',{method:'POST',body:JSON.stringify({payment_method:method,sale_type_id:saleTypeId,sale_reason:saleReason})});
+    await api('/api/shift-takeovers/'+id+'/record-sale',{method:'POST',body:JSON.stringify({sales:sales.map(x=>({sale_type_id:x.sale_type_id,amount:x.amount,reason:x.reason||null}))})});
+    closeTakeoverSaleConfirm();
     closeTakeoverSaleModal();
     toast('Sale recorded');
     await userDashboard();
@@ -133,6 +162,7 @@ async function submitTakeoverSale(event){
     toast(e.message);
   }
 }
+
 function openTakeoverDetails(id){
   const takeover=(window.takeoverRecords||[]).find(x=>String(x.id)===String(id));
   if(!takeover)return;
@@ -278,7 +308,7 @@ async function userDashboard(){
           '<div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
         '</div>'+
         '<div class="row takeover-sale-action">'+
-          '<button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button>'+
+          '<button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Continue</button>'+
           '<button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button>'+
         '</div>'+
       '</div>';
