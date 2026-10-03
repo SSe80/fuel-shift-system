@@ -1646,7 +1646,7 @@ async function cancelAdminPendingShift(id){
 }
 
 function initSettingsItemDrag(){
-document.querySelectorAll('.settings-move-handle:not([data-drag-bound])').forEach(handle=>{
+document.querySelectorAll('.settings-item-card:not(.settings-active-card) .settings-move-handle:not([data-drag-bound])').forEach(handle=>{
 handle.dataset.dragBound='1';
 let state=null,timer=null,raf=0,pendingY=0;
 
