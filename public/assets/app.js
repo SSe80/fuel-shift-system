@@ -994,20 +994,13 @@ async function _removeUser(id){
 function openTankEdit(id){
   const t=(window.tankRecords||[]).find(x=>x.id===id);
   if(!t)return;
-  const match=String(t.tank_code||'').match(/•TANK (\d+)$/);
-  const currentOrder=match?Number(match[1]):1;
   const productKey=String(t.product||'').toLowerCase();
-  const sameProduct=(window.tankRecords||[]).filter(x=>String(x.product||'').toLowerCase()===productKey);
-  const orders=sameProduct.map(x=>String(x.tank_code||'').match(/•TANK (\d+)$/)).filter(Boolean).map(m=>Number(m[1])).sort((a,b)=>a-b);
-  const orderSelect=document.getElementById('edit-tank-order');
-  orderSelect.innerHTML=orders.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
-  orderSelect.value=String(currentOrder);
   document.getElementById('edit-tank-id').value=t.id;
   document.getElementById('edit-tank-capacity').value=t.capacity_liters||'';
   const modal=document.getElementById('tank-edit-modal');
   modal.classList.add('open');
   modal.setAttribute('aria-hidden','false');
-  document.getElementById('edit-tank-order').focus();
+  document.getElementById('edit-tank-capacity').focus();
 }
 function closeTankEdit(){
   const modal=document.getElementById('tank-edit-modal');
@@ -1020,7 +1013,6 @@ async function _saveTankEdit(event){
   const id=document.getElementById('edit-tank-id').value;
   try{
     await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({
-      tank_order:Number(document.getElementById('edit-tank-order').value),
       capacity_liters:Number(document.getElementById('edit-tank-capacity').value)
     })});
     closeTankEdit();
@@ -1076,12 +1068,6 @@ function openDispenserEdit(id){
   fillTanks();
   document.getElementById('edit-dispenser-tank').value=d.tank_id||'';
   productSelect.onchange=()=>{fillTanks();document.getElementById('edit-dispenser-order').innerHTML='';};
-  const productKey=String(d.product||'').toLowerCase();
-  const same=(window.dispenserRecords||[]).filter(x=>String(x.product||'').toLowerCase()===productKey);
-  const orders=same.map(x=>String(x.nozzle_code||'').match(/•DISPENSER (\d+)$/)).filter(Boolean).map(m=>Number(m[1])).sort((a,b)=>a-b);
-  document.getElementById('edit-dispenser-order').innerHTML=orders.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
-  const m=String(d.nozzle_code||'').match(/•DISPENSER (\d+)$/);
-  document.getElementById('edit-dispenser-order').value=m?m[1]:'';
   document.getElementById('edit-dispenser-nozzle-count').value=String(d.nozzle_count||1);
   document.getElementById('edit-dispenser-id').value=d.id;
   const modal=document.getElementById('dispenser-edit-modal');
@@ -1100,7 +1086,6 @@ async function _saveDispenserEdit(event){
     await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({
       product:document.getElementById('edit-dispenser-product').value,
       tank_id:document.getElementById('edit-dispenser-tank').value,
-      tank_order:Number(document.getElementById('edit-dispenser-order').value),
       nozzle_count:Number(document.getElementById('edit-dispenser-nozzle-count').value)
     })});
     closeDispenserEdit();await loadSettingsData();
