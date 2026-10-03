@@ -2229,3 +2229,10 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
     padding:18px;
   }
 }
+
+
+/* Admin Sales — shift detail download action */
+.admin-sales-page .admin-sale-history-detail-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.admin-sales-page .admin-sale-history-detail-actions .secondary{min-height:34px;padding:7px 11px;border:1px solid #d9e1e8;border-radius:9px;background:#f7f9fb;color:#344054;font-size:11px;font-weight:800;cursor:pointer}
+.admin-sales-page .admin-sale-history-detail-actions .secondary:hover{background:#eef2f6}
+@media(max-width:560px){.admin-sales-page .admin-sale-history-detail-actions{gap:6px}.admin-sales-page .admin-sale-history-detail-actions .secondary{font-size:10px;padding:7px 9px}}
