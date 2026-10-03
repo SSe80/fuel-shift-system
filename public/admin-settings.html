@@ -123,7 +123,34 @@
     </form>
   </div>
 
-  <section class="settings-section card"><div class="section-heading"><div><span class="section-kicker">STORAGE</span><h2>Fuel Tanks</h2><p>Manage tank capacity, stock readings, and activation.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-tank-modal')">＋ Add tank</button></div>
+  <section class="settings-section card"><div class="section-heading"><div><span class="section-kicker">SALES</span><h2>Sales</h2><p>Manage sale types that attendants can select when recording a shift handover sale.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-sale-type-modal')">＋ Add sale</button></div>
+  <div id="sale-types"></div>
+</section>
+
+<div id="add-sale-type-modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" onclick="closeAddModal('add-sale-type-modal')"></div>
+  <form class="modal-card form" onsubmit="createSaleType(event)">
+    <div class="top"><h3>Add Sale</h3><button type="button" class="modal-close" onclick="closeAddModal('add-sale-type-modal')" aria-label="Close">×</button></div>
+    <label>Sale name<input id="sale-type-name" placeholder="Sale name" required></label>
+    <label>Description<textarea id="sale-type-description" placeholder="Describe this sale" rows="4"></textarea></label>
+    <label class="settings-checkbox"><input id="sale-type-reason" type="checkbox"> Require a reason when attendants record this sale</label>
+    <div class="row"><button type="submit" class="primary">Add sale</button><button type="button" onclick="closeAddModal('add-sale-type-modal')">Cancel</button></div>
+  </form>
+</div>
+
+<div id="sale-type-edit-modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" onclick="closeSaleTypeEdit()"></div>
+  <form class="modal-card form" onsubmit="saveSaleTypeEdit(event)">
+    <div class="top"><h3>Edit Sale</h3><button type="button" class="modal-close" onclick="closeSaleTypeEdit()" aria-label="Close">×</button></div>
+    <input id="edit-sale-type-id" type="hidden">
+    <label>Sale name<input id="edit-sale-type-name" required></label>
+    <label>Description<textarea id="edit-sale-type-description" rows="4"></textarea></label>
+    <label class="settings-checkbox"><input id="edit-sale-type-reason" type="checkbox"> Require a reason when attendants record this sale</label>
+    <div class="row"><button type="submit" class="primary">Save Changes</button><button type="button" onclick="closeSaleTypeEdit()">Cancel</button></div>
+  </form>
+</div>
+
+<section class="settings-section card"><div class="section-heading"><div><span class="section-kicker">STORAGE</span><h2>Fuel Tanks</h2><p>Manage tank capacity, stock readings, and activation.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-tank-modal')">＋ Add tank</button></div>
     <div id="tank-edit-modal" class="modal" aria-hidden="true">
       <div class="modal-backdrop" onclick="closeTankEdit()"></div>
       <form id="tank-edit-form" class="modal-card form" onsubmit="saveTankEdit(event)">
