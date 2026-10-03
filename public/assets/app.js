@@ -351,9 +351,9 @@ async function userDashboard(){
       '</div>';
     }).join('');
 
-    const takeoverList=Array.isArray(takeovers)?takeovers.filter(x=>String(x.from_employee_id)===String(me.id)):[];
+    const takeoverList=Array.isArray(takeovers)?takeovers:[];
     const pendingTakeovers=takeoverList.filter(x=>x.sales_status==='pending_admin');
-    const readyTakeovers=takeoverList.filter(x=>x.sales_status==='awaiting_attendant'||x.sales_status==='cancelled');
+    const readyTakeovers=takeoverList.filter(x=>!x.sales_status||x.sales_status==='awaiting_attendant'||x.sales_status==='cancelled');
     const completedTakeovers=takeoverList.filter(x=>x.sales_status==='confirmed'||(!x.sales_status&&x.sales_recorded_at));
     window.dashboardSaleTypes=Array.isArray(saleTypes)?saleTypes:[];
     window.takeoverRecords=takeoverList;
