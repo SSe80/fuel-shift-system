@@ -890,15 +890,25 @@ def update_nozzle(nozzle_id):
     if not body:return jsonify({"error":"No changes supplied"}),400
     status,result=sb("nozzles",method="PATCH",params={"id":"eq."+nozzle_id},body=body,prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
-    # Deactivating a dispenser also closes any active shift on that dispenser.
+    # Deactivation is admin-only. Keep legacy and normalized physical-nozzle
+    # states synchronized, and do not silently invalidate a pending assignment.
     if body.get("active") is False and cur.get("active") is True:
-        cs,cr=sb("shifts",params={"nozzle_id":"eq."+nozzle_id,"status":"eq.active","select":"id"})
+        cs,cr=sb("shifts",params={"nozzle_id":"eq."+nozzle_id,"status":"assigned","select":"id","limit":"1"})
         if cs!=200:return jsonify({"error":cr}),cs
-        if cr:
-            now=datetime.now(timezone.utc).isoformat()
-            for shift in cr:
-                ss,sr=sb("shifts",method="PATCH",params={"id":"eq."+shift["id"]},body={"status":"closed","end_time":now},prefer="return=representation")
-                if ss>=400:return jsonify({"error":sr}),ss
+        if cr:return jsonify({"error":"This dispenser has a pending shift assignment. Cancel the assignment before deactivating it."}),409
+        cs,cr=sb("shifts",params={"nozzle_id":"eq."+nozzle_id,"status":"active","select":"id"})
+        if cs!=200:return jsonify({"error":cr}),cs
+        now=datetime.now(timezone.utc).isoformat()
+        for shift in cr:
+            ss,sr=sb("shifts",method="PATCH",params={"id":"eq."+shift["id"]},body={"status":"closed","end_time":now},prefer="return=representation")
+            if ss>=400:return jsonify({"error":sr}),ss
+        codes=cur.get("nozzle_ids") or []
+        if codes:
+            ds,dr=sb("dispenser_nozzles",params={"nozzle_code":"in.("+",".join(str(x) for x in codes)+")","select":"id"})
+            if ds!=200:return jsonify({"error":dr}),ds
+            for row in dr:
+                ps,pr=sb("dispenser_nozzles",method="PATCH",params={"id":"eq."+str(row["id"])},body={"active":False},prefer="return=minimal")
+                if ps>=400:return jsonify({"error":pr}),ps
     return jsonify(result),200
 
 @app.get("/api/shifts")
