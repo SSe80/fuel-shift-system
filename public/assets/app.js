@@ -784,8 +784,31 @@ async function adminSalesConfirmations(){
 }
 function openAdminSaleHistoryDetails(id){
   const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));if(!item)return;
-  const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[];
-  const content='<div class="takeover-detail-summary"><div><span>Shift ID</span><strong>'+h(t.shift_id||'—')+'</strong></div><div><span>From attendant</span><strong>'+h(item.from_employee?.name||'—')+'</strong></div><div><span>Receiving attendant</span><strong>'+h(item.to_employee?.name||'—')+'</strong></div><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Dispenser</span><strong>'+h(item.dispenser?.name||'—')+'</strong></div></div><div class="takeover-detail-sales"><div class="takeover-detail-heading">Record Sale</div>'+(sales.map(s=>'<p><b>'+h(s.sale_type_name||'Sale')+'</b> — '+money(s.amount)+(s.reason?' • Reason: '+h(s.reason):'')+'</p>').join('')||'<p class="muted">No sale entries.</p>')+'</div><div class="takeover-detail-total"><span>Total</span><strong>'+liters(t.total_sales_liters)+' L</strong><strong>'+money(t.total_sales_amount)+'</strong></div><p class="muted">Admin confirmed: '+(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+'</p>';
+  const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],total=Number(t.total_sales_amount||0),entryTotal=sales.reduce((sum,s)=>sum+Number(s.amount||0),0);
+  const started=t.shift_started_at?new Date(t.shift_started_at).toLocaleString():'—',ended=t.shift_ended_at?new Date(t.shift_ended_at).toLocaleString():'—',confirmed=t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—';
+  const content=
+    '<div class="history-detail-overview">'+
+      '<div class="history-detail-main"><span class="section-kicker">CONFIRMED SALES</span><h4>'+h(item.dispenser?.name||'Dispenser')+'</h4><p>'+h(item.from_employee?.name||'—')+' <span>→</span> '+h(item.to_employee?.name||'—')+'</p></div>'+
+      '<div class="history-detail-amount"><span>Total</span><strong>'+money(total)+'</strong><small>'+liters(t.total_sales_liters)+' L</small></div>'+
+    '</div>'+
+    '<div class="history-detail-section">'+
+      '<div class="history-detail-section-head"><div><span class="section-kicker">SHIFT</span><h4>Shift information</h4></div></div>'+
+      '<div class="history-detail-info-grid">'+
+        '<div><span>From</span><strong>'+h(item.from_employee?.name||'—')+'</strong></div>'+
+        '<div><span>Received by</span><strong>'+h(item.to_employee?.name||'—')+'</strong></div>'+
+        '<div><span>Started</span><strong>'+h(started)+'</strong></div>'+
+        '<div><span>Ended</span><strong>'+h(ended)+'</strong></div>'+
+        '<div class="wide"><span>Shift ID</span><strong class="mono">'+h(t.shift_id||'—')+'</strong></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="history-detail-section">'+
+      '<div class="history-detail-section-head"><div><span class="section-kicker">BREAKDOWN</span><h4>Recorded sales</h4></div><span class="history-detail-count">'+sales.length+' '+(sales.length===1?'entry':'entries')+'</span></div>'+
+      '<div class="history-detail-sales">'+
+        (sales.map((s,i)=>'<div class="history-detail-sale"><span class="history-detail-sale-number">'+(i+1)+'</span><div class="history-detail-sale-name"><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+(s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'')+(s.reason?'<small class="reason">'+h(s.reason)+'</small>':'')}</div><strong class="history-detail-sale-value">'+money(s.amount)+'</strong></div>').join('')||'<div class="history-detail-empty">No sale entries were recorded.</div>')+
+      '</div>'+
+      '<div class="history-detail-total-row"><span>Entries total</span><strong>'+money(entryTotal)+'</strong></div>'+
+    '</div>'+
+    '<div class="history-detail-confirmed"><span>✓</span><div><strong>Confirmed by admin</strong><small>'+h(confirmed)+'</small></div></div>';
   const modal=document.getElementById('admin-sale-history-details'),box=document.getElementById('admin-sale-history-details-content');if(box)box.innerHTML=content;if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
 }
 function closeAdminSaleHistoryDetails(){const modal=document.getElementById('admin-sale-history-details');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}}
