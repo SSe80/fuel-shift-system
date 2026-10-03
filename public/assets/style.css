@@ -1083,3 +1083,16 @@
 @media(max-width:420px){
   .attendant-page .takeover-sale-entry-head{grid-template-columns:minmax(0,1fr) 105px}
 }
+
+.attendant-page .takeover-sale-match-status{margin-top:10px}
+.attendant-page .takeover-sale-match-status .takeover-confirm-sales{margin-top:0}
+.attendant-page .takeover-confirm-check{
+  display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px 8px;
+  padding:9px 11px;background:#f8fafc;border-top:1px solid #edf0f3;
+  font-size:11px;color:#697582;
+}
+.attendant-page .takeover-sale-match,.attendant-page .takeover-sale-mismatch{
+  margin-top:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:750;
+}
+.attendant-page .takeover-sale-match{background:#eef8f1;color:#24733c;border:1px solid #cfe9d6}
+.attendant-page .takeover-sale-mismatch{background:#fff1f2;color:#a12838;border:1px solid #f1c5cb}
