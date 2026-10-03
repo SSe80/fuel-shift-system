@@ -682,8 +682,7 @@ async function loadSettingsData(){
         ?readings.map(r=>'<div class="dispenser-reading-row"><span>'+h(r.nozzle_id)+'</span><b>'+Number(r.opening_reading||0).toFixed(0)+'</b></div>').join('')
         :'<span class="muted">No opening readings recorded</span>';
       return '<div class="card settings-item-card dispenser-settings-card dispenser-pending-card" onclick="toggleSettingsItem(event,this)">'+
-        '<div class="dispenser-card-head"><div><span class="section-kicker">SHIFT ASSIGNMENT</span><h3>Pending shift</h3><span class="badge">Awaiting attendant confirmation</span></div>'+
-        '<button type="button" class="dispenser-danger-action" onclick="cancelAdminPendingShift(\''+pending.id+'\')">Cancel assignment</button></div>'+
+        '<div class="dispenser-card-head"><div><span class="section-kicker">SHIFT ASSIGNMENT</span><h3>Pending shift</h3><span class="badge">Awaiting attendant confirmation</span></div></div>'+
         '<div class="dispenser-identity"><div class="dispenser-name">'+h(n.nozzle_code)+'</div><div class="dispenser-product">'+h(productCode)+' <span>•</span> '+h(nozzleLabel)+'</div></div>'+
         '<div class="dispenser-info-grid">'+
           '<div><span>Connected tank</span><b>'+h(tank?.tank_code||n.tank_id||'Not connected')+'</b></div>'+
@@ -693,6 +692,7 @@ async function loadSettingsData(){
         '</div>'+
         '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle opening readings</span>'+readingText+'</div>'+
         '<p class="dispenser-note">The dispenser will remain inactive until the assigned attendant confirms the readings with their PIN.</p>'+
+        '<div class="dispenser-card-actions"><button type="button" class="dispenser-danger-action" onclick="cancelAdminPendingShift(\''+pending.id+'\')">Cancel assignment</button></div>'+
       '</div>';
     }
     return '<div class="card settings-item-card dispenser-settings-card '+(n.active?'dispenser-active-card':'')+'" onclick="toggleSettingsItem(event,this)">'+
