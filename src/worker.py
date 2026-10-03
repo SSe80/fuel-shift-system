@@ -954,6 +954,43 @@ def handovers():
     if session.get("role") != "admin":
         eid=str(session["employee_id"])
         rows=[row for row in rows if str(row.get("from_employee_id"))==eid or str(row.get("to_employee_id"))==eid]
+
+    # Include the source dispenser/tank details on handovers. Attendants only
+    # receive their own shifts from /api/shifts, so the receiving attendant
+    # cannot otherwise resolve the sender's shift_id to its dispenser.
+    shift_ids=[str(row.get("shift_id")) for row in rows if row.get("shift_id")]
+    if shift_ids:
+        ss,shift_rows=sb("shifts",params={
+            "id":"in.("+",".join(shift_ids)+")",
+            "select":"id,nozzle_id"
+        })
+        if ss==200:
+            shift_map={str(row.get("id")):row for row in shift_rows}
+            nozzle_ids=[str(row.get("nozzle_id")) for row in shift_rows if row.get("nozzle_id")]
+            nozzle_map={}
+            tank_map={}
+            if nozzle_ids:
+                ns,nozzle_rows=sb("nozzles",params={
+                    "id":"in.("+",".join(nozzle_ids)+")",
+                    "select":"id,nozzle_code,tank_id"
+                })
+                if ns==200:
+                    nozzle_map={str(row.get("id")):row for row in nozzle_rows}
+                    tank_ids=[str(row.get("tank_id")) for row in nozzle_rows if row.get("tank_id")]
+                    if tank_ids:
+                        ts,tank_rows=sb("tanks",params={
+                            "id":"in.("+",".join(tank_ids)+")",
+                            "select":"id,tank_code"
+                        })
+                        if ts==200:
+                            tank_map={str(row.get("id")):row for row in tank_rows}
+            for row in rows:
+                shift=shift_map.get(str(row.get("shift_id")),{})
+                nozzle=nozzle_map.get(str(shift.get("nozzle_id")),{})
+                tank=tank_map.get(str(nozzle.get("tank_id")),{})
+                row["source_nozzle_code"]=nozzle.get("nozzle_code")
+                row["source_tank_id"]=nozzle.get("tank_id")
+                row["source_tank_code"]=tank.get("tank_code")
     return jsonify(rows),200
 
 @app.post("/api/handovers")
