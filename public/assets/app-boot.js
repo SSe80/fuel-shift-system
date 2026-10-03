@@ -20,7 +20,7 @@
   function loadAppAndRun(name) {
     if (run(name)) return;
     var script = document.createElement('script');
-    script.src = 'assets/app.js?recovery=20261002-01';
+    script.src = 'assets/app.js?recovery=20261003-06';
     script.async = false;
     script.onload = function () {
       if (!run(name)) {
