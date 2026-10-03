@@ -1673,16 +1673,28 @@ const updateDrag=()=>{
   if(state.ghost){
     state.ghost.style.transform='translate3d(0,'+(y-state.rect.top-state.offsetY)+'px,0)';
   }
-  const siblings=Array.from(state.container.querySelectorAll(':scope > .settings-item-card[data-settings-id]')).filter(x=>x!==state.card);
+  const cards=Array.from(state.container.querySelectorAll(':scope > .settings-item-card[data-settings-id]'));
+  const movable=cards.filter(x=>x!==state.card&&!x.classList.contains('settings-active-card'));
+  const beforeActive=state.beforeActive;
+  const afterActive=state.afterActive;
+  const bounded=movable.filter(x=>{
+    if(beforeActive && (x===beforeActive || !isAfter(beforeActive,x)))return false;
+    if(afterActive && (x===afterActive || !isBefore(x,afterActive)))return false;
+    return true;
+  });
   let target=null;
-  for(const x of siblings){
+  for(const x of bounded){
     const rect=x.getBoundingClientRect();
     if(y<rect.top+rect.height/2){target=x;break;}
   }
   if(target){
     if(state.placeholder.nextElementSibling!==target)state.container.insertBefore(state.placeholder,target);
-  }else if(state.placeholder.parentElement===state.container&&state.container.lastElementChild!==state.placeholder){
-    state.container.appendChild(state.placeholder);
+  }else if(state.placeholder.parentElement===state.container){
+    if(afterActive){
+      if(state.placeholder.nextElementSibling!==afterActive)state.container.insertBefore(state.placeholder,afterActive);
+    }else if(state.container.lastElementChild!==state.placeholder){
+      state.container.appendChild(state.placeholder);
+    }
   }
 };
 
@@ -1696,7 +1708,14 @@ handle.addEventListener('pointerdown',e=>{
   const card=handle.closest('.settings-item-card'),container=card?.parentElement;
   if(!card||!container)return;
   const rect=card.getBoundingClientRect();
+  const cardsAtStart=Array.from(container.querySelectorAll(':scope > .settings-item-card[data-settings-id]'));
+  const cardIndex=cardsAtStart.indexOf(card);
+  const beforeActive=[...cardsAtStart].slice(0,cardIndex).reverse().find(x=>x.classList.contains('settings-active-card'))||null;
+  const afterActive=[...cardsAtStart].slice(cardIndex+1).find(x=>x.classList.contains('settings-active-card'))||null;
+  const isAfter=(a,b)=>cardsAtStart.indexOf(a)<cardsAtStart.indexOf(b);
+  const isBefore=(a,b)=>cardsAtStart.indexOf(a)>-1&&cardsAtStart.indexOf(a)<cardsAtStart.indexOf(b);
   state={card,container,key:handle.dataset.settingsKey,original:settingsOrderFromContainer(container),
+    beforeActive,afterActive,isAfter,isBefore,
     startY:e.clientY,startX:e.clientX,dragging:false,rect};
   pendingY=e.clientY;
   try{handle.setPointerCapture(e.pointerId);}catch(_){}
