@@ -2079,3 +2079,10 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 .admin-sales-page .admin-sales-filter-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 .admin-sales-page .admin-sales-filter-modal-actions button{min-height:40px;padding:9px 14px;border-radius:10px}
 @media(max-width:560px){.admin-sales-page .admin-sales-filter-modal-actions{display:grid;grid-template-columns:1fr 1fr}.admin-sales-page .admin-sales-filter-modal-actions button{width:100%}}
+
+
+/* Ensure Sales History filter popup is visible when opened */
+.admin-sales-page #admin-sales-filter-modal{display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center}
+.admin-sales-page #admin-sales-filter-modal.open{display:flex!important}
+.admin-sales-page #admin-sales-filter-modal .modal-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.42)}
+.admin-sales-page #admin-sales-filter-modal .modal-card{position:relative;z-index:1;width:min(calc(100% - 28px),430px);max-height:calc(100vh - 40px);overflow:auto;margin:auto}
