@@ -374,7 +374,7 @@ async function userDashboard(){
     }).join('');
 
     const takeoverList=Array.isArray(takeovers)?takeovers:[];
-    const pendingTakeovers=takeoverList.filter(x=>x.sales_status==='pending_admin');
+    const pendingTakeovers=takeoverList.filter(x=>x.sales_status==='pending_admin'&&String(x.from_employee_id)===String(me.id));
     const readyTakeovers=takeoverList.filter(x=>x.sales_status==='awaiting_attendant'&&String(x.from_employee_id)===String(me.id));
     const completedTakeovers=takeoverList.filter(x=>x.sales_status==='confirmed'||(!x.sales_status&&x.sales_recorded_at));
     window.dashboardSaleTypes=Array.isArray(saleTypes)?saleTypes:[];
@@ -389,7 +389,7 @@ async function userDashboard(){
       const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
       const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
       return '<div class="card shift-takeover-card pending-takeover-sale-card">'+
-        '<div class="takeover-hero"><div class="takeover-hero-icon">◷</div><div><div class="takeover-card-title">Pending Sale Confirmation</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+' • Waiting for admin</div></div></div>'+
+        '<div class="takeover-hero"><div class="takeover-hero-icon">◷</div><div><div class="takeover-card-title">Pending Record Sale Confirmation</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+' • Waiting for admin</div></div></div>'+
         '<div class="takeover-total-grid">'+
           '<div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div>'+
           '<div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
