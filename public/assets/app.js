@@ -552,6 +552,7 @@ async function _cancelAdminPendingShift(id){
 async function loadSettingsData(){
   const [employees,tanks,dispensers,products,shifts,saleTypes,stationSettings]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts'),api('/api/sale-types'),api('/api/settings')]);
   const stationCurrency=String(stationSettings?.currency||'ETB').trim();
+  window.stationCurrency=stationCurrency;
   const currencyInput=document.getElementById('station-currency');
   if(currencyInput)currencyInput.value=stationCurrency;
   const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
@@ -707,15 +708,30 @@ function closeProductEdit(){
   modal.setAttribute('aria-hidden','true');
   document.getElementById('product-edit-form').reset();
 }
-async function saveStationCurrency(){
+function openStationCurrencyModal(){
+  const modal=document.getElementById('station-currency-modal');
+  const input=document.getElementById('station-currency');
+  if(!modal||!input)return;
+  input.value=String(window.stationCurrency||'ETB');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+  input.focus();
+}
+function closeStationCurrencyModal(){
+  const modal=document.getElementById('station-currency-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+async function saveStationCurrency(event){
+  event.preventDefault();
   const input=document.getElementById('station-currency');
   const currency=String(input?.value||'').trim().toUpperCase();
   if(!currency){toast('Enter a currency');return;}
-  const details='<p><b>Currency:</b> '+h(currency)+'</p>'+settingsStatus('Applies to all product prices');
-  showSettingsConfirmation('Review Currency Change',details,async()=>{
+  try{
     await api('/api/settings',{method:'PATCH',body:JSON.stringify({currency})});
+    closeStationCurrencyModal();
     await loadSettingsData();
-  },'Currency updated successfully','<p>The station currency is now <b>'+h(currency)+'</b>.</p>'+details);
+    toast('Currency updated successfully');
+  }catch(e){throw e;}
 }
 
 async function _saveProductEdit(event){
