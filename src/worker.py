@@ -1188,12 +1188,8 @@ def shift_takeovers():
     auth=require_login()
     if auth:return auth
     if session.get("role")!="admin":
-        status,result=rpc("list_shift_takeovers_for_employee",{"p_employee_id":session["employee_id"],"p_include_received":False})
+        status,result=rpc("list_shift_takeovers_for_employee_rows",{"p_employee_id":session["employee_id"],"p_include_received":False})
         if status>=400:return jsonify(result),status
-        if isinstance(result,str):
-            import json
-            try: result=json.loads(result)
-            except Exception: result=[]
         return jsonify(result if isinstance(result,list) else []),200
     params={"select":"*","order":"shift_ended_at.desc","limit":"50"}
     status,rows=sb("shift_takeovers",params=params)
