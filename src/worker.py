@@ -997,10 +997,15 @@ def handovers():
 def record_shift_takeover_sale(takeover_id):
     auth=require_login()
     if auth:return auth
+    data=request.get_json(silent=True) or {}
+    payment=str(data.get("payment_method","")).strip().lower()
+    if payment=="digital":payment="mobile"
+    if payment not in {"cash","card","mobile","other"}:
+        return jsonify({"error":"Select a valid sales type"}),400
     status,result=rpc("record_shift_takeover_sales",{
         "p_takeover_id":takeover_id,
         "p_employee_id":session["employee_id"],
-        "p_payment_method":"other"
+        "p_payment_method":payment
     })
     if status>=400:return jsonify(result),status
     return jsonify(result),200
