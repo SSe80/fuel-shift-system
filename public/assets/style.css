@@ -1206,3 +1206,13 @@
 .admin-settings-page .settings-item-card:not(.expanded) .dispenser-card-actions{
   padding-top:0;
 }
+
+/* Hide sub-card action buttons while minimized */
+.admin-settings-page .settings-item-card:not(.expanded) .settings-card-actions,
+.admin-settings-page .settings-item-card:not(.expanded) .dispenser-card-actions{
+  display:none;
+}
+.admin-settings-page .settings-item-card.expanded .settings-card-actions,
+.admin-settings-page .settings-item-card.expanded .dispenser-card-actions{
+  display:flex;
+}
