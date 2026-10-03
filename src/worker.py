@@ -1171,7 +1171,25 @@ def purchases():
     auth=require_admin()
     if auth:return auth
     status,rows=sb("purchases",params={"select":"*","order":"purchase_date.desc","limit":"200"})
-    return jsonify(rows),status
+    if status != 200:
+        return jsonify(rows),status
+    shift_ids=list({str(r.get("shift_id")) for r in rows if r.get("shift_id")})
+    shifts={}
+    employees={}
+    if shift_ids:
+        ss,sr=sb("shifts",params={"id":"in.("+",".join(shift_ids)+")","select":"id,employee_id,nozzle_id,status,start_time,end_time"})
+        if ss==200:
+            shifts={str(x["id"]):x for x in sr}
+            employee_ids=list({str(x.get("employee_id")) for x in sr if x.get("employee_id")})
+            if employee_ids:
+                es,er=sb("employees",params={"id":"in.("+",".join(employee_ids)+")","select":"id,name"})
+                if es==200:
+                    employees={str(x["id"]):x for x in er}
+    for row in rows:
+        shift=shifts.get(str(row.get("shift_id")))
+        row["shift"]=shift
+        row["attendant"]=employees.get(str(shift.get("employee_id"))) if shift else None
+    return jsonify(rows),200
 
 @app.post("/api/purchases")
 def create_purchase():
@@ -1182,7 +1200,7 @@ def create_purchase():
     try: qty=float(data.get("quantity_liters",0))
     except (TypeError,ValueError):return jsonify({"error":"Invalid quantity"}),400
     if not product or not tank_id or qty<=0:return jsonify({"error":"Product, tank and positive quantity are required"}),400
-    status,result=rpc("record_fuel_purchase",{"p_product":product,"p_quantity_liters":qty,"p_tank_id":tank_id,"p_supplier":data.get("supplier",""),"p_invoice_number":data.get("invoice_number",""),"p_created_by":session["employee_id"]})
+    status,result=rpc("record_fuel_purchase",{"p_product":product,"p_quantity_liters":qty,"p_tank_id":tank_id,"p_supplier":data.get("supplier",""),"p_invoice_number":data.get("invoice_number",""),"p_created_by":session["employee_id"],"p_shift_id":data.get("shift_id") or None})
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
