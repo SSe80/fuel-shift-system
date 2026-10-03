@@ -367,6 +367,33 @@ def delete_sale_type(sale_type_id):
     if status>=400:return jsonify(result),status
     return jsonify(result),200
 
+@app.get("/api/settings")
+def get_settings():
+    auth=require_login()
+    if auth:return auth
+    status,result=sb("station_settings",params={"id":"eq.true","select":"currency,updated_at","limit":"1"})
+    if status!=200:return jsonify(result),status
+    if not result:
+        return jsonify({"currency":"ETB"}),200
+    return jsonify(result[0]),200
+
+@app.patch("/api/settings")
+def update_settings():
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    currency=str(data.get("currency","")).strip().upper()
+    if not currency or len(currency)>10:
+        return jsonify({"error":"Currency is required and must be 1-10 characters"}),400
+    if not all(ch.isalnum() or ch in " _-₿$€£¥" for ch in currency):
+        return jsonify({"error":"Currency contains unsupported characters"}),400
+    status,result=sb("station_settings",method="PATCH",params={"id":"eq.true"},body={"currency":currency,"updated_at":datetime.now(timezone.utc).isoformat()},prefer="return=representation")
+    if status>=400:return jsonify(result),status
+    if not result:
+        status,result=sb("station_settings",method="POST",body={"id":True,"currency":currency},prefer="return=representation")
+        if status>=400:return jsonify(result),status
+    return jsonify(result[0] if isinstance(result,list) else result),200
+
 @app.get("/api/products")
 def products():
     auth=require_login()
