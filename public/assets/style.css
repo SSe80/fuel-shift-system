@@ -842,3 +842,111 @@
   .attendant-page .handover-pending-main{padding:12px}
   .attendant-page .handover-pending-section{padding:11px 12px}
 }
+
+/* Completed shift takeover calculation card */
+.attendant-page .shift-takeover-card{
+  border:1px solid #a9b8c7 !important;
+  box-shadow:0 8px 28px rgba(31,48,68,.09);
+  overflow:hidden;
+}
+.attendant-page .takeover-hero{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:16px;
+  background:#eef5fb;
+  border-bottom:1px solid #d8e2ec;
+}
+.attendant-page .takeover-hero-icon{
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:800;
+  background:#fff;
+  border:1px solid #b8c8d8;
+}
+.attendant-page .takeover-card-title{font-size:16px;font-weight:800;color:#17212b}
+.attendant-page .takeover-card-subtitle{font-size:12px;color:#657383;margin-top:2px}
+.attendant-page .takeover-summary-grid,
+.attendant-page .takeover-total-grid,
+.attendant-page .takeover-tank-grid{
+  display:grid;
+  gap:10px;
+  padding:14px 16px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.attendant-page .takeover-summary-grid>div,
+.attendant-page .takeover-total-grid>div,
+.attendant-page .takeover-tank-grid>div{
+  padding:10px 12px;
+  border:1px solid #e0e6ec;
+  border-radius:10px;
+  background:#fff;
+}
+.attendant-page .takeover-summary-grid span,
+.attendant-page .takeover-total-grid span,
+.attendant-page .takeover-tank-grid span{
+  display:block;
+  font-size:11px;
+  color:#6d7884;
+  margin-bottom:4px;
+}
+.attendant-page .takeover-summary-grid strong,
+.attendant-page .takeover-total-grid strong,
+.attendant-page .takeover-tank-grid strong{font-size:13px;color:#17212b}
+.attendant-page .takeover-section{
+  padding:0 16px 14px;
+}
+.attendant-page .takeover-section-title{
+  font-size:12px;
+  font-weight:800;
+  color:#435160;
+  margin:0 0 8px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.attendant-page .takeover-calc-row{
+  border:1px solid #e0e6ec;
+  border-radius:10px;
+  padding:11px 12px;
+  margin-top:8px;
+  background:#fff;
+}
+.attendant-page .takeover-calc-row>div:first-child{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  flex-wrap:wrap;
+}
+.attendant-page .takeover-calc-row>div:first-child strong{font-size:12px}
+.attendant-page .takeover-calc-row>div:first-child small{color:#6d7884}
+.attendant-page .takeover-nozzle-pill{
+  font-size:10px;
+  font-weight:800;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#edf1f5;
+  border:1px solid #d9e0e7;
+}
+.attendant-page .takeover-calc-values{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:7px;
+  margin-top:9px;
+}
+.attendant-page .takeover-calc-values span{
+  font-size:11px;
+  color:#657383;
+  border-top:1px solid #edf0f3;
+  padding-top:7px;
+}
+.attendant-page .takeover-calc-values b{display:block;color:#273442;font-size:10px;margin-bottom:2px}
+@media(max-width:640px){
+  .attendant-page .takeover-summary-grid,
+  .attendant-page .takeover-total-grid,
+  .attendant-page .takeover-tank-grid{grid-template-columns:1fr}
+  .attendant-page .takeover-calc-values{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
