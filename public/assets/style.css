@@ -1960,3 +1960,35 @@
   .admin-sales-page .admin-sale-actions{display:grid;grid-template-columns:1fr 1fr}
   .admin-sales-page .admin-sale-actions button{width:100%}
 }
+
+/* Admin Dashboard — tank movement ledger */
+body[data-app-page="adminDashboard"] .tank-movement-group{margin:0 0 12px;padding:16px;border:1px solid #e2e7ed;border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(20,35,50,.055)}
+body[data-app-page="adminDashboard"] .tank-movement-group:last-child{margin-bottom:0}
+body[data-app-page="adminDashboard"] .tank-movement-group-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:12px;border-bottom:1px solid #edf1f5}
+body[data-app-page="adminDashboard"] .tank-movement-product{display:flex;align-items:center;gap:7px;color:#667085;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+body[data-app-page="adminDashboard"] .tank-movement-product i{width:8px;height:8px;border-radius:50%;display:inline-block;border:1px solid #d0d5dd}
+body[data-app-page="adminDashboard"] .tank-movement-group h4{margin:4px 0 2px;font-size:16px}
+body[data-app-page="adminDashboard"] .tank-movement-group-head small{color:#667085;font-size:11px}
+body[data-app-page="adminDashboard"] .tank-movement-current{text-align:right}
+body[data-app-page="adminDashboard"] .tank-movement-current strong{display:block;font-size:16px}
+body[data-app-page="adminDashboard"] .tank-movement-current span{font-size:11px;color:#667085}
+body[data-app-page="adminDashboard"] .tank-movement-list{display:grid}
+body[data-app-page="adminDashboard"] .tank-movement-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto auto;align-items:center;gap:9px;padding:11px 0;border-bottom:1px solid #edf1f5}
+body[data-app-page="adminDashboard"] .tank-movement-row:last-child{border-bottom:0}
+body[data-app-page="adminDashboard"] .tank-movement-icon{width:27px;height:27px;display:grid;place-items:center;border-radius:8px;background:#f2f5f8;color:#52606d;font-weight:800;font-size:13px}
+body[data-app-page="adminDashboard"] .tank-movement-main{min-width:0}
+body[data-app-page="adminDashboard"] .tank-movement-main strong{display:block;font-size:12px}
+body[data-app-page="adminDashboard"] .tank-movement-main small{display:block;margin-top:2px;color:#7b8794;font-size:10px;line-height:1.35;overflow-wrap:anywhere}
+body[data-app-page="adminDashboard"] .tank-movement-qty{font-size:12px;font-weight:800;white-space:nowrap}
+body[data-app-page="adminDashboard"] .tank-movement-qty.negative{color:#b42318}
+body[data-app-page="adminDashboard"] .tank-movement-qty.positive{color:#176b3a}
+body[data-app-page="adminDashboard"] .tank-movement-balance{min-width:82px;text-align:right;padding-left:9px;border-left:1px solid #edf1f5}
+body[data-app-page="adminDashboard"] .tank-movement-balance small{display:block;color:#98a2b3;font-size:9px;text-transform:uppercase;font-weight:800}
+body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11px}
+@media(max-width:620px){
+ body[data-app-page="adminDashboard"]{padding:10px}
+ body[data-app-page="adminDashboard"] .tank-movement-group{padding:13px}
+ body[data-app-page="adminDashboard"] .tank-movement-row{grid-template-columns:28px minmax(0,1fr) auto;gap:8px}
+ body[data-app-page="adminDashboard"] .tank-movement-balance{grid-column:2/-1;border-left:0;border-top:1px solid #edf1f5;padding:7px 0 0;text-align:left}
+ body[data-app-page="adminDashboard"] .tank-movement-qty{grid-column:3;grid-row:1}
+}
