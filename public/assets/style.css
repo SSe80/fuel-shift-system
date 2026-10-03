@@ -1354,3 +1354,18 @@
   display:block;
   text-align:left;
 }
+
+/* Keep minimized product color marker and code on one horizontal line */
+.admin-settings-page #products .settings-item-card:not(.expanded) .top > div:first-of-type > b{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:6px !important;
+  white-space:nowrap;
+  text-align:left !important;
+}
+.admin-settings-page #products .settings-item-card:not(.expanded) .top > div:first-of-type > b > span{
+  flex:0 0 14px;
+  margin-right:0 !important;
+  vertical-align:middle !important;
+}
