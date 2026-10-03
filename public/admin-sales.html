@@ -6,15 +6,6 @@
 <div class="nav"><a href="admin-dashboard.html">Dashboard</a><a href="admin-purchases.html">Purchases</a><a href="admin-sales.html">Sales</a><a href="admin-daily-report.html">Daily Report</a><a href="admin-settings.html">Settings</a></div>
 <section class="admin-sales-section">
   <div id="sales-summary" class="admin-sales-summary"></div>
-  <div class="admin-sales-toolbar">
-    <div class="admin-sales-filters">
-      <input id="admin-sales-search" type="search" placeholder="Search dispenser, attendant, shift…" oninput="filterAdminSales()">
-      <select id="admin-sales-period" onchange="filterAdminSales()" aria-label="Sales period">
-        <option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option>
-      </select>
-      <button type="button" onclick="refreshAdminSales()">↻ Refresh</button>
-    </div>
-  </div>
   <div id="sales-confirmation-status" class="page-status"></div>
 
   <div class="admin-sales-separated-section pending-sales-section">
@@ -29,6 +20,15 @@
     <div class="admin-sales-section-heading">
       <div><span class="section-kicker">RECORDS</span><h2>Sales History</h2><p class="muted">Previously confirmed shift sales.</p></div>
       <span class="admin-sales-section-count" id="confirmed-sales-count">0 confirmed</span>
+    </div>
+    <div class="admin-sales-history-tools">
+      <div class="admin-sales-filters">
+        <input id="admin-sales-search" type="search" placeholder="Search dispenser, attendant, shift…" oninput="filterAdminSales()">
+        <select id="admin-sales-period" onchange="filterAdminSales()" aria-label="Sales period">
+          <option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option>
+        </select>
+        <button type="button" onclick="refreshAdminSales()">↻ Refresh</button>
+      </div>
     </div>
     <div id="sales-history-list" class="admin-sales-list"></div>
   </div>
