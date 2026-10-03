@@ -29,12 +29,12 @@
 .purchase-wizard-card .top{padding-bottom:4px}
 .purchase-wizard-card .top .section-kicker{display:block;margin-bottom:5px}
 .purchase-wizard-card .top h3{margin:0;font-size:21px;line-height:1.25}
-.purchase-card-title{font-size:15px;font-weight:700;margin-top:10px;color:#101828}
+.purchase-card-title{font-size:20px;font-weight:700;margin-top:10px;color:#101828}
 .purchase-step-description{margin:4px 0 0;font-size:13px;line-height:1.5}
 .purchase-step-indicator{margin:18px 0 22px}
 .purchase-wizard-step{padding:0 2px}
 .purchase-wizard-step .purchase-field{margin-bottom:16px}
-.purchase-wizard-step label{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;font-size:13px;font-weight:600;color:#344054}
+.purchase-wizard-step label{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;font-size:13px;font-weight:600;color:#344054}
 .purchase-wizard-step input,.purchase-wizard-step select{width:100%;min-height:46px;border-radius:11px}
 .purchase-input-unit{display:flex;align-items:center}
 .purchase-input-unit input{border-radius:11px 0 0 11px!important}
@@ -137,8 +137,7 @@
       if(!Number.isFinite(q)||q<=0){setStatus('Enter a valid quantity before continuing.',true);return;}
     }
     if(step===3){
-      const tank=purchaseTanks.find(t=>String(t.id)===String(tankSelect.value));
-      const q=Number(document.getElementById('purchase-liters')?.value||0);
+      const q=parseQuantity(document.getElementById('purchase-liters')?.value);
       const invoice=document.getElementById('purchase-invoice')?.value.trim()||'Not provided';
       const review=document.getElementById('purchase-review');
       if(review)review.innerHTML='<div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div><div class="purchase-review-row"><span>Order number</span><strong>'+purchaseH(orderNumber)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseH(purchaseLiters(orderedQuantity))+' L</strong></div><div class="purchase-review-row"><span>Received quantity</span><strong>'+purchaseH(purchaseLiters(q))+' L</strong></div><div class="purchase-review-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>';
@@ -171,11 +170,11 @@
     }catch(e){setStatus(e.message||'Failed to load purchases.',true);}
   };
   window.createPurchase=async function(){
-    const tank=tankSelect?.value||'';
-    const q=Number(document.getElementById('purchase-liters')?.value||0);
+    const product=productSelect?.value||'';
+    const q=parseQuantity(document.getElementById('purchase-liters')?.value);
     const invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
     if(!product||!Number.isFinite(q)||q<=0){setStatus('Purchase details are incomplete.',true);return;}
-    const tankRecord=purchaseTanks.find(t=>String(t.product)===String(product));
+    const tankRecord=purchaseTanks.find(t=>String(t.product)===String(product)&&t.active!==false);
     if(!tankRecord){setStatus('No tank is assigned to the selected product.',true);return;}
     try{
       setStatus('Recording purchase…',false);
