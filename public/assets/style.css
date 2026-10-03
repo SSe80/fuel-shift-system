@@ -1157,3 +1157,19 @@
   min-height:40px;
   padding:9px 13px;
 }
+
+.admin-sales-page .admin-sales-list{display:grid;gap:14px}
+.admin-sales-page .admin-sale-confirm-card{border:1px solid #e3e8ee;border-radius:16px;background:#fff;box-shadow:0 7px 22px rgba(20,35,50,.06)}
+.admin-sales-page .admin-sale-confirm-card .top{align-items:flex-start}
+.admin-sales-page .pending-sale-badge{padding:5px 9px;border-radius:999px;background:#fff3d6;color:#8a5a00;font-size:12px;font-weight:800}
+.admin-sales-page .admin-sale-context{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+.admin-sales-page .admin-sale-context>div{padding:10px 12px;border:1px solid #e7ebef;border-radius:10px;background:#fafbfc}
+.admin-sales-page .admin-sale-context span,.admin-sales-page .admin-sale-total span{display:block;color:#7b8794;font-size:12px}
+.admin-sales-page .admin-sale-context strong{display:block;margin-top:3px;font-size:14px}
+.admin-sales-page .admin-sale-check-section{border-top:1px solid #edf0f3;padding-top:12px}
+.admin-sales-page .admin-sale-check-row{display:flex;gap:10px;align-items:flex-start;padding:11px 10px;margin-top:7px;border:1px solid #e5eaf0;border-radius:10px;background:#fbfcfe;cursor:pointer}
+.admin-sales-page .admin-sale-check-row input{margin-top:3px;width:18px;height:18px}
+.admin-sales-page .admin-sale-check-row span{display:grid;gap:3px}
+.admin-sales-page .admin-sale-check-row small{color:#6b7682;line-height:1.35}
+.admin-sales-page .admin-sale-total{display:flex;justify-content:space-between;align-items:center;margin:12px 0;padding:11px 12px;border-radius:10px;background:#f5f7fa}
+@media(max-width:560px){.admin-sales-page .admin-sale-context{grid-template-columns:1fr}}
