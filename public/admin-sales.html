@@ -4,7 +4,25 @@
 <main class="wrap">
 <header class="settings-header"><div><span class="eyebrow">STATION CONTROL</span><h1>Sales</h1><p class="muted">Review and confirm sales submitted after shift handovers.</p></div><a class="settings-back" href="admin-dashboard.html">← Dashboard</a></header>
 <div class="nav"><a href="admin-dashboard.html">Dashboard</a><a href="admin-purchases.html">Purchases</a><a href="admin-sales.html">Sales</a><a href="admin-daily-report.html">Daily Report</a><a href="admin-settings.html">Settings</a></div>
-<section><div id="sales-confirmation-list" class="admin-sales-list"></div><div id="sales-confirmation-status" class="page-status"></div><div class="admin-sales-history-header"><span class="section-kicker">SHIFT HISTORY</span><h2>Confirmed Shift Sales</h2><p class="muted">Completed record sales confirmed by admin.</p></div><div id="sales-history-list" class="admin-sales-list"></div></section>
+<section class="admin-sales-section">
+  <div id="sales-summary" class="admin-sales-summary"></div>
+  <div class="admin-sales-toolbar">
+    <div class="admin-sales-tabs" role="tablist" aria-label="Sales views">
+      <button type="button" class="admin-sales-tab active" data-sales-tab="pending" onclick="setAdminSalesTab('pending')">Pending <span id="pending-sales-count">0</span></button>
+      <button type="button" class="admin-sales-tab" data-sales-tab="history" onclick="setAdminSalesTab('history')">Confirmed History <span id="confirmed-sales-count">0</span></button>
+    </div>
+    <div class="admin-sales-filters">
+      <input id="admin-sales-search" type="search" placeholder="Search dispenser, attendant, shift…" oninput="filterAdminSales()">
+      <select id="admin-sales-period" onchange="filterAdminSales()" aria-label="Sales period">
+        <option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option>
+      </select>
+      <button type="button" onclick="refreshAdminSales()">↻ Refresh</button>
+    </div>
+  </div>
+  <div id="sales-confirmation-status" class="page-status"></div>
+  <div id="sales-confirmation-list" class="admin-sales-list"></div>
+  <div id="sales-history-list" class="admin-sales-list" hidden></div>
+</section>
 <div id="admin-sale-history-details" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="closeAdminSaleHistoryDetails()"></div><div class="modal-card takeover-details-modal"><div class="top"><div><span class="section-kicker">SHIFT HISTORY</span><h3>Shift Details</h3></div><button type="button" class="modal-close" onclick="closeAdminSaleHistoryDetails()">×</button></div><div id="admin-sale-history-details-content"></div><div class="row"><button type="button" class="primary" onclick="closeAdminSaleHistoryDetails()">Close</button></div></div></div></main>
-<script src="assets/app.js?v=20261003-14"></script><script src="assets/app-boot.js?v=20261002-03"></script>
+<script src="assets/app.js?v=20261003-24"></script><script src="assets/app-boot.js?v=20261002-03"></script>
 </body></html>
