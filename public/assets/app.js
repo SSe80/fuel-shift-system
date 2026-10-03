@@ -645,6 +645,23 @@ function renderAdminSalesSummary(){
 function setAdminSalesTab(tab){
   adminSalesTab=tab==='history'?'history':'pending';
   document.querySelectorAll('.admin-sales-tab').forEach(b=>b.classList.toggle('active',b.dataset.salesTab===adminSalesTab));
+  filterAdminSales();
+}
+function renderAdminSalesSummary(){
+  const box=document.getElementById('sales-summary'); if(!box)return;
+  const pending=adminSalesData.pending||[], history=adminSalesData.history||[];
+  const pendingEntries=pending.reduce((n,x)=>n+(Array.isArray(x.sales)?x.sales.length:0),0);
+  const pendingAmount=pending.reduce((n,x)=>n+(Array.isArray(x.sales)?x.sales.reduce((s,y)=>s+Number(y.amount||0),0):0),0);
+  const confirmedLiters=history.reduce((n,x)=>n+Number(x.takeover?.total_sales_liters||0),0);
+  const confirmedAmount=history.reduce((n,x)=>n+Number(x.takeover?.total_sales_amount||0),0);
+  const cards=[['Pending shifts',pending.length,'awaiting admin'],['Sales to check',pendingEntries,'submitted entries'],['Pending amount',money(pendingAmount),'awaiting confirmation'],['Confirmed liters',liters(confirmedLiters)+' L','shift history'],['Confirmed amount',money(confirmedAmount),'confirmed shifts']];
+  box.innerHTML=cards.map(c=>'<div class="admin-sales-stat"><span>'+h(c[0])+'</span><strong>'+h(String(c[1]))+'</strong><small>'+h(c[2])+'</small></div>').join('');
+  const pc=document.getElementById('pending-sales-count'),hc=document.getElementById('confirmed-sales-count');
+  if(pc)pc.textContent=pending.length;if(hc)hc.textContent=history.length;
+}
+function setAdminSalesTab(tab){
+  adminSalesTab=tab==='history'?'history':'pending';
+  document.querySelectorAll('.admin-sales-tab').forEach(b=>b.classList.toggle('active',b.dataset.salesTab===adminSalesTab));
   const p=document.getElementById('sales-confirmation-list'),hbox=document.getElementById('sales-history-list');
   if(p)p.hidden=adminSalesTab!=='pending';if(hbox)hbox.hidden=adminSalesTab!=='history';filterAdminSales();
 }
@@ -661,15 +678,17 @@ function bindAdminSaleChecks(){
   });
 }
 function filterAdminSales(){
-  const source=adminSalesData[adminSalesTab]||[], box=document.getElementById(adminSalesTab==='pending'?'sales-confirmation-list':'sales-history-list');
-  if(!box)return;
-  const rows=source.filter(adminSalesMatches);
-  if(!rows.length){
-    box.innerHTML='<div class="card admin-sales-empty"><div class="empty-icon">'+(adminSalesTab==='pending'?'✓':'—')+'</div><strong>'+(adminSalesTab==='pending'?'No pending sales confirmations':'No confirmed sales match your filters')+'</strong><p class="muted">'+(adminSalesTab==='pending'?'All submitted shift sales have been reviewed.':'Try clearing the search or date filter.')+'</p></div>';
-    return;
+  const pendingBox=document.getElementById('sales-confirmation-list');
+  const historyBox=document.getElementById('sales-history-list');
+  const pendingRows=(adminSalesData.pending||[]).filter(adminSalesMatches);
+  const historyRows=(adminSalesData.history||[]).filter(adminSalesMatches);
+  if(pendingBox){
+    pendingBox.innerHTML=pendingRows.length?pendingRows.map(renderAdminPendingSaleCard).join(''):'<div class="card admin-sales-empty"><div class="empty-icon">✓</div><strong>No pending sales confirmations</strong><p class="muted">All submitted shift sales have been reviewed.</p></div>';
   }
-  box.innerHTML=rows.map(adminSalesTab==='pending'?renderAdminPendingSaleCard:renderAdminHistorySaleCard).join('');
-  if(adminSalesTab==='pending')bindAdminSaleChecks();
+  if(historyBox){
+    historyBox.innerHTML=historyRows.length?historyRows.map(renderAdminHistorySaleCard).join(''):'<div class="card admin-sales-empty"><div class="empty-icon">—</div><strong>No confirmed sales history</strong><p class="muted">Confirmed sales will appear here after admin review.</p></div>';
+  }
+  bindAdminSaleChecks();
 }
 function renderAdminPendingSaleCard(item){
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],dispenser=item.dispenser?.name||'Dispenser',shift=item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||''));
