@@ -1,1 +1,52 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Purchases</title><link rel="stylesheet" href="assets/style.css"></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">RECEIVE STOCK</span><h2>Record purchase</h2><p>Enter the delivery details. The received liters will be added to the selected tank.</p></div></div><form class="purchase-form" onsubmit="createPurchase(event)"><div class="purchase-field"><label for="purchase-tank">Tank</label><select id="purchase-tank" required><option value="">Select tank</option></select></div><div class="purchase-field"><label for="purchase-product">Product</label><select id="purchase-product" required><option value="">Select product</option></select></div><div class="purchase-field purchase-wide"><label for="purchase-liters">Quantity received</label><div class="purchase-input-unit"><input id="purchase-liters" type="number" min="0.1" step="0.1" placeholder="0.0" inputmode="decimal" required><span>Liters</span></div></div><div class="purchase-field"><label for="purchase-supplier">Supplier <small>Optional</small></label><input id="purchase-supplier" placeholder="Supplier name"></div><div class="purchase-field"><label for="purchase-invoice">Invoice number <small>Optional</small></label><input id="purchase-invoice" placeholder="Invoice / delivery number"></div><div class="purchase-form-actions"><button type="submit" class="primary">Record Purchase</button><button type="reset">Clear</button></div></form><div id="purchase-status" class="purchase-status"></div></section><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">PURCHASE HISTORY</span><h2>Recent purchases</h2><p>Latest fuel deliveries recorded at the station.</p></div></div><div id="purchase-list" class="purchase-list"></div></section><div id="toast" class="toast"></div></main><script src="assets/app.js?v=20261003-02"></script><script>loadPurchases();</script></body></html>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Purchases</title><link rel="stylesheet" href="assets/style.css"></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">RECEIVE STOCK</span><h2>Record purchase</h2><p>Select the tank and enter the delivery details. The tank already determines the product.</p></div></div><form class="purchase-form" onsubmit="createPurchase(event)"><div class="purchase-field"><label for="purchase-tank">Tank</label><select id="purchase-tank" required><option value="">Select tank</option></select></div><div class="purchase-field purchase-wide"><label for="purchase-liters">Quantity received</label><div class="purchase-input-unit"><input id="purchase-liters" type="number" min="0.1" step="0.1" placeholder="0.0" inputmode="decimal" required><span>Liters</span></div></div><div class="purchase-field"><label for="purchase-supplier">Supplier <small>Optional</small></label><input id="purchase-supplier" placeholder="Supplier name"></div><div class="purchase-field"><label for="purchase-invoice">Invoice number <small>Optional</small></label><input id="purchase-invoice" placeholder="Invoice / delivery number"></div><div class="purchase-form-actions"><button type="submit" class="primary">Record Purchase</button><button type="reset">Clear</button></div></form><div id="purchase-status" class="purchase-status"></div></section><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">PURCHASE HISTORY</span><h2>Recent purchases</h2><p>Latest fuel deliveries recorded at the station.</p></div></div><div id="purchase-list" class="purchase-list"></div></section><div id="toast" class="toast"></div></main><script src="assets/app.js?v=20261003-03"></script><script>
+(function(){
+  const tankSelect=document.getElementById('purchase-tank');
+  const status=document.getElementById('purchase-status');
+  const list=document.getElementById('purchase-list');
+  const setStatus=(message,isError)=>{if(status){status.textContent=message||'';status.className='purchase-status'+(isError?' error':'');}};
+  window.loadPurchases=async function(){
+    try{
+      setStatus('Loading…',false);
+      const [tanks,purchases,products]=await Promise.all([api('/api/tanks'),api('/api/purchases'),api('/api/products')]);
+      const activeTanks=tanks.filter(t=>t.active!==false);
+      const productMap=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
+      if(tankSelect){
+        const current=tankSelect.value;
+        tankSelect.innerHTML='<option value="">Select tank</option>'+activeTanks.map(t=>{
+          const p=productMap[String(t.product||'').toLowerCase()];
+          return '<option value="'+h(t.id)+'">'+h(t.tank_code||t.name||t.id)+(p?.code_name?' — '+h(p.code_name):t.product?' — '+h(t.product):'')+'</option>';
+        }).join('');
+        if(activeTanks.some(t=>String(t.id)===String(current)))tankSelect.value=current;
+      }
+      if(list){
+        list.innerHTML=purchases.length?purchases.map(p=>{
+          const t=activeTanks.find(x=>String(x.id)===String(p.tank_id))||tanks.find(x=>String(x.id)===String(p.tank_id));
+          const prod=productMap[String(p.product||t?.product||'').toLowerCase()];
+          return '<article class="purchase-card"><div class="purchase-card-top"><strong><span class="purchase-product-dot" style="background:'+h(prod?.color||'#999')+'"></span>'+h(prod?.code_name||p.product||t?.product||'Purchase')+'</strong><b>'+h(liters(p.quantity_liters))+' L</b></div><div class="purchase-card-meta"><span>Tank: <b>'+h(t?.tank_code||'—')+'</b></span><span>Attendant: <b>'+h(p.attendant?.name||'No ongoing shift')+'</b></span><span>Shift: '+h(p.shift?.id?p.shift.id.slice(0,8):'—')+'</span><span>Supplier: <b>'+h(p.supplier||'Not provided')+'</b></span><span>Invoice: <b>'+h(p.invoice_number||'Not provided')+'</b></span><span>'+new Date(p.purchase_date).toLocaleString()+'</span></div></article>';
+        }).join(''):'<div class="purchase-empty">No purchases recorded yet.</div>';
+      }
+      setStatus('',false);
+    }catch(e){setStatus(e.message||'Failed to load purchases.',true);}
+  };
+  window.createPurchase=async function(event){
+    event.preventDefault();
+    const tank=tankSelect?.value||'';
+    const q=Number(document.getElementById('purchase-liters')?.value||0);
+    const supplier=document.getElementById('purchase-supplier')?.value.trim()||'';
+    const invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
+    if(!tank||!Number.isFinite(q)||q<=0){setStatus('Select a tank and enter a valid quantity.',true);return;}
+    const tankRecord=(await api('/api/tanks')).find(t=>String(t.id)===String(tank));
+    if(!tankRecord?.product){setStatus('The selected tank has no product assigned.',true);return;}
+    try{
+      await api('/api/purchases',{method:'POST',body:JSON.stringify({product:tankRecord.product,tank_id:tank,quantity_liters:q,supplier,invoice_number:invoice})});
+      document.getElementById('purchase-liters').value='';
+      document.getElementById('purchase-supplier').value='';
+      document.getElementById('purchase-invoice').value='';
+      setStatus('Purchase recorded successfully.',false);
+      toast('Purchase recorded successfully');
+      await loadPurchases();
+    }catch(e){setStatus(e.message||'Failed to record purchase.',true);}
+  };
+  loadPurchases();
+})();
+</script></body></html>
