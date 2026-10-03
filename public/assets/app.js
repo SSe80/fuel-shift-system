@@ -16,14 +16,25 @@ function showSettingsConfirmation(title,details,action,successTitle,successDetai
   if(successActions)successActions.style.display='none';
   modal.classList.add('open');modal.setAttribute('aria-hidden','false');
 }
+function restorePendingSettingsOrder(pending){
+  if(!pending?.containerKey||!Array.isArray(pending.originalOrder))return;
+  const cards=[...document.querySelectorAll('.settings-item-card[data-settings-key="'+pending.containerKey+'"][data-settings-id]')];
+  if(!cards.length)return;
+  const byId=new Map(cards.map(card=>[String(card.dataset.settingsId),card]));
+  const container=cards[0].parentElement;
+  pending.originalOrder.forEach(id=>{
+    const card=byId.get(String(id));
+    if(card&&card.parentElement===container)container.appendChild(card);
+  });
+}
 function closeSettingsConfirmation(){
   const modal=document.getElementById('settings-confirm-modal');
-  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
   const pendingReorder=window.pendingSettingsReorder;
+  if(pendingReorder)restorePendingSettingsOrder(pendingReorder);
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
   window.pendingSettingsReorder=null;
   window.pendingSettingsAction=null;
   window.pendingSettingsSuccess=null;
-  if(pendingReorder)setTimeout(()=>loadSettingsData(),0);
 }
 function showSettingsSuccess(title,details){
   const modal=document.getElementById('settings-confirm-modal');
