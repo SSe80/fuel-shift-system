@@ -1701,7 +1701,9 @@ const updateDrag=()=>{
   const movable=cards.filter(x=>x!==state.card&&!x.classList.contains('settings-active-card'));
   const beforeActive=state.beforeActive;
   const afterActive=state.afterActive;
+  const sameProductGroup=x=>!state.groupKey||x.dataset.dispenserProductGroup===state.groupKey||x.dataset.tankProductGroup===state.groupKey;
   const bounded=movable.filter(x=>{
+    if(!sameProductGroup(x))return false;
     if(beforeActive && (x===beforeActive || !state.isAfter(beforeActive,x)))return false;
     if(afterActive && (x===afterActive || !state.isBefore(x,afterActive)))return false;
     return true;
@@ -1716,6 +1718,10 @@ const updateDrag=()=>{
   }else if(state.placeholder.parentElement===state.container){
     if(afterActive){
       if(state.placeholder.nextElementSibling!==afterActive)state.container.insertBefore(state.placeholder,afterActive);
+    }else if(state.groupKey){
+      const nextGroup=cards.find(x=>x.dataset.tankProductGroup!==state.groupKey&&x.dataset.dispenserProductGroup!==state.groupKey);
+      if(nextGroup&&state.placeholder.nextElementSibling!==nextGroup)state.container.insertBefore(state.placeholder,nextGroup);
+      else if(state.container.lastElementChild!==state.placeholder)state.container.appendChild(state.placeholder);
     }else if(state.container.lastElementChild!==state.placeholder){
       state.container.appendChild(state.placeholder);
     }
@@ -1736,10 +1742,13 @@ handle.addEventListener('pointerdown',e=>{
   const cardIndex=cardsAtStart.indexOf(card);
   const beforeActive=[...cardsAtStart].slice(0,cardIndex).reverse().find(x=>x.classList.contains('settings-active-card'))||null;
   const afterActive=[...cardsAtStart].slice(cardIndex+1).find(x=>x.classList.contains('settings-active-card'))||null;
+  const groupKey=(handle.dataset.settingsKey==='tanks'||handle.dataset.settingsKey==='dispensers')
+    ?(card.dataset.tankProductGroup||card.dataset.dispenserProductGroup||'')
+    :'';
   const isAfter=(a,b)=>cardsAtStart.indexOf(a)<cardsAtStart.indexOf(b);
   const isBefore=(a,b)=>cardsAtStart.indexOf(a)>-1&&cardsAtStart.indexOf(a)<cardsAtStart.indexOf(b);
   state={card,container,key:handle.dataset.settingsKey,original:settingsOrderFromContainer(container),
-    beforeActive,afterActive,isAfter,isBefore,
+    groupKey,beforeActive,afterActive,isAfter,isBefore,
     startY:e.clientY,startX:e.clientX,dragging:false,rect};
   pendingY=e.clientY;
   try{handle.setPointerCapture(e.pointerId);}catch(_){}
