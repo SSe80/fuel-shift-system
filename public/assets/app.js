@@ -702,11 +702,38 @@ function bindAdminSaleChecks(){
   });
 }
 function toggleSalesHistorySearch(){
-  const tools=document.getElementById('admin-sales-history-tools');
+  const modal=document.getElementById('admin-sales-filter-modal');
+  const input=document.getElementById('admin-sales-search-modal');
+  const search=document.getElementById('admin-sales-search');
+  const period=document.getElementById('admin-sales-period');
+  const modalSearch=document.getElementById('admin-sales-search-modal');
+  const modalPeriod=document.getElementById('admin-sales-period-modal');
+  if(!modal)return;
+  if(modalSearch&&search)modalSearch.value=search.value||'';
+  if(modalPeriod&&period)modalPeriod.value=period.value||'all';
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+  if(modalSearch)setTimeout(()=>modalSearch.focus(),50);
+}
+function closeSalesHistoryFilters(){
+  const modal=document.getElementById('admin-sales-filter-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+function syncSalesHistorySearch(value){
   const input=document.getElementById('admin-sales-search');
-  if(!tools)return;
-  tools.hidden=!tools.hidden;
-  if(!tools.hidden&&input){setTimeout(()=>input.focus(),50);}
+  if(input)input.value=value||'';
+}
+function syncSalesHistoryPeriod(value){
+  const select=document.getElementById('admin-sales-period');
+  if(select)select.value=value||'all';
+}
+function clearSalesHistoryFilters(){
+  syncSalesHistorySearch('');
+  syncSalesHistoryPeriod('all');
+  const input=document.getElementById('admin-sales-search-modal');
+  const period=document.getElementById('admin-sales-period-modal');
+  if(input)input.value='';
+  if(period)period.value='all';
+  filterAdminSales();
 }
 function filterAdminSales(){
   const pendingBox=document.getElementById('sales-confirmation-list');
