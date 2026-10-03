@@ -1020,3 +1020,15 @@
   .attendant-page .takeover-detail-total{gap:8px}
   .attendant-page .takeover-detail-total strong{font-size:13px}
 }
+
+.admin-settings-page .settings-checkbox{display:flex;align-items:center;gap:9px;font-weight:700}
+.admin-settings-page .settings-checkbox input{width:18px;height:18px;min-height:18px;margin:0}
+.admin-settings-page textarea,.attendant-page textarea{
+  width:100%;font-family:inherit;resize:vertical;min-height:92px;padding:11px 13px;
+  border:1px solid #d6dee8;border-radius:11px;background:#fff;color:#17202a;outline:none;
+}
+.admin-settings-page textarea:focus,.attendant-page textarea:focus{border-color:#4b8ee8;box-shadow:0 0 0 3px #1264d81a}
+.attendant-page .takeover-sale-description{
+  margin:-2px 0 2px;padding:10px 12px;border-radius:10px;background:#f8fafc;
+  color:#667085;font-size:12.5px;line-height:1.45;border:1px solid #e5eaf0;
+}
