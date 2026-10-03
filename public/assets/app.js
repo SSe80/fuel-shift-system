@@ -443,7 +443,7 @@ async function _cancelAdminPendingShift(id){
   }catch(e){throw e;}
 }
 async function loadSettingsData(){
-  const [employees,tanks,dispensers,products,shifts]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts')]);
+  const [employees,tanks,dispensers,products,shifts,saleTypes]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts'),api('/api/sale-types')]);
   const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
   const codeForProduct=product=>productByName[String(product||'').toLowerCase()]?.code_name||product;
   const pendingHandovers=shifts.filter(x=>x.status==='assigned');
@@ -457,6 +457,11 @@ async function loadSettingsData(){
 
   document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card ${p.active?'settings-active-card':''}"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><div class="settings-card-details"><div><span>Name:</span> <b>${h(p.name)}</b></div><div><span>Status:</span> <b>${p.active?'Active':'Inactive'}</b></div><div><span>Price:</span> <b>${p.selling_price==null?'Not set':Number(p.selling_price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'Activate'}</button><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeProduct('${p.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
   window.productRecords=products;
+  const saleBox=document.getElementById('sale-types');
+  if(saleBox){
+    saleBox.innerHTML=saleTypes.length?saleTypes.map(s=>'<div class="card '+(s.active?'settings-active-card':'')+'"><div class="top"><div><b>'+h(s.name)+'</b><div class="settings-card-details"><div><span>Description:</span> <b>'+h(s.description||'No description')+'</b></div><div><span>Reason:</span> <b>'+(s.reason_required?'Required':'Optional')+'</b></div><div><span>Status:</span> <b>'+(s.active?'Active':'Inactive')+'</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleSaleType(\''+s.id+'\','+s.active+')">'+(s.active?'Deactivate':'Activate')+'</button><button type="button" onclick="openSaleTypeEdit(\''+s.id+'\')">Edit</button><button type="button" class="settings-remove-action" onclick="removeSaleType(\''+s.id+'\')">Remove</button></div></div></div>').join(''):'<p class="muted">No sales configured.</p>';
+  }
+  window.saleTypeRecords=saleTypes;
   document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card ${e.active?'settings-active-card':''}"><div class="top"><div><b>${h(e.name)}</b><div class="settings-card-details"><div><span>Operator ID:</span> <b>${h(e.operator_id)}</b></div><div><span>Phone:</span> <b>${h(e.phone)}</b></div><div><span>Role:</span> <b>${h(e.role)}</b></div><div><span>Status:</span> <b>${e.active?'Active':'Inactive'}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleUser('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button><button type="button" onclick="openUserEdit('${e.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeUser('${e.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No users.</p>';
   window.employeeRecords=employees;
   document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card ${t.active!==false?'settings-active-card':''}"><div class="top"><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><div class="settings-card-details"><div><span>Capacity:</span> <b>${liters(t.capacity_liters)} L</b></div><div><span>Status:</span> <b>${t.active===false?'Inactive':'Active'}</b></div><div><span>Opening stock:</span> <b>${t.opening_stock_liters==null?'Not recorded':liters(t.opening_stock_liters)+' L'}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
@@ -619,6 +624,55 @@ async function _createProduct(event){
     await loadSettingsData();
   }catch(e){throw e;}
 }
+async function createSaleType(event){
+  event.preventDefault();
+  try{
+    await api('/api/sale-types',{method:'POST',body:JSON.stringify({
+      name:document.getElementById('sale-type-name').value.trim(),
+      description:document.getElementById('sale-type-description').value.trim(),
+      reason_required:document.getElementById('sale-type-reason').checked
+    })});
+    closeAddModal('add-sale-type-modal');
+    document.getElementById('sale-type-name').value='';
+    document.getElementById('sale-type-description').value='';
+    document.getElementById('sale-type-reason').checked=false;
+    await loadSettingsData();
+  }catch(e){throw e;}
+}
+function openSaleTypeEdit(id){
+  const s=(window.saleTypeRecords||[]).find(x=>String(x.id)===String(id)); if(!s)return;
+  document.getElementById('edit-sale-type-id').value=s.id;
+  document.getElementById('edit-sale-type-name').value=s.name||'';
+  document.getElementById('edit-sale-type-description').value=s.description||'';
+  document.getElementById('edit-sale-type-reason').checked=!!s.reason_required;
+  const modal=document.getElementById('sale-type-edit-modal');
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+}
+function closeSaleTypeEdit(){
+  const modal=document.getElementById('sale-type-edit-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+async function saveSaleTypeEdit(event){
+  event.preventDefault();
+  const id=document.getElementById('edit-sale-type-id').value;
+  try{
+    await api('/api/sale-types/'+id,{method:'PATCH',body:JSON.stringify({
+      name:document.getElementById('edit-sale-type-name').value.trim(),
+      description:document.getElementById('edit-sale-type-description').value.trim(),
+      reason_required:document.getElementById('edit-sale-type-reason').checked
+    })});
+    closeSaleTypeEdit();await loadSettingsData();
+  }catch(e){throw e;}
+}
+async function _removeSaleType(id){await api('/api/sale-types/'+id,{method:'DELETE'});await loadSettingsData();}
+function removeSaleType(id){
+  const s=settingsRecord(window.saleTypeRecords,id);
+  const details='<p><b>Sale:</b> '+h(s?.name||id)+'</p>'+settingsStatus('Will be permanently removed');
+  showSettingsConfirmation('Review Sale Removal',details,()=>_removeSaleType(id),'Sale removed successfully','<p>The sale was removed successfully.</p>'+details);
+}
+async function _toggleSaleType(id,active){await api('/api/sale-types/'+id,{method:'PATCH',body:JSON.stringify({active:!active})});await loadSettingsData();}
+function toggleSaleType(id,active){showSettingsConfirmation(active?'Deactivate Sale':'Activate Sale','<p><b>Sale:</b> '+h((window.saleTypeRecords||[]).find(x=>String(x.id)===String(id))?.name||id)+'</p>',()=>_toggleSaleType(id,active),active?'Sale deactivated':'Sale activated','The sale status was updated.');}
+
 async function _removeProduct(id){try{await api('/api/products/'+id,{method:'DELETE'});await loadSettingsData();}catch(e){throw e;}}
 function removeProduct(id){
   const p=settingsRecord(window.productRecords,id);
