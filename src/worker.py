@@ -1188,18 +1188,14 @@ def shift_takeovers():
     auth=require_login()
     if auth:return auth
     if session.get("role")!="admin":
-        # Read the sender's takeover rows directly with the Worker service key.
-        # This keeps the Record Sale task available immediately after the
-        # receiving attendant confirms the handover, without depending on RPC
-        # execution permissions or SETOF response serialization.
-        status,rows=sb("shift_takeovers",params={
-            "select":"*",
-            "from_employee_id":"eq."+str(session["employee_id"]),
-            "order":"shift_ended_at.desc",
-            "limit":"50"
+        # Use the JSON-returning SECURITY DEFINER function. This avoids the
+        # SETOF/composite serialization issue and does not depend on direct
+        # table read policies for the attendant.
+        status,result=rpc("list_my_shift_takeovers",{
+            "p_employee_id":session["employee_id"]
         })
-        if status!=200:return jsonify(rows),status
-        return jsonify(rows if isinstance(rows,list) else []),200
+        if status>=400:return jsonify(result),status
+        return jsonify(result if isinstance(result,list) else []),200
     params={"select":"*","order":"shift_ended_at.desc","limit":"50"}
     status,rows=sb("shift_takeovers",params=params)
     if status!=200:return jsonify(rows),status
