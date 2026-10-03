@@ -847,12 +847,12 @@ function downloadAdminSaleHistoryDetails(id){
     kids.push(pageId+' 0 R');
     const textCommands=pageLinesForPage.map((line,index)=>{
       const escaped=clean(line).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
-      return (index?'0 -15 Td\\n':'')+'('+escaped+') Tj';
-    }).join('\\n');
-    const stream='BT\\n/F1 11 Tf\\n50 760 Td\\n'+textCommands+'\\nET';
+      return (index?'0 -15 Td\n':'')+'('+escaped+') Tj';
+    }).join('\n');
+    const stream='BT\n/F1 11 Tf\n50 760 Td\n'+textCommands+'\nET';
     objects.push(
       {id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents '+contentId+' 0 R >>'},
-      {id:contentId,body:'<< /Length '+stream.length+' >>\\nstream\\n'+stream+'\\nendstream'}
+      {id:contentId,body:'<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream'}
     );
   });
   objects.push(
@@ -861,18 +861,18 @@ function downloadAdminSaleHistoryDetails(id){
   );
   objects.sort((a,b)=>a.id-b.id);
 
-  let pdf='%PDF-1.4\\n%PDF-1.4\\n';
+  let pdf='%PDF-1.4\n%PDF-1.4\n';
   const offsets=[];
   objects.forEach(object=>{
     offsets[object.id]=pdf.length;
-    pdf+=object.id+' 0 obj\\n'+object.body+'\\nendobj\\n';
+    pdf+=object.id+' 0 obj\n'+object.body+'\nendobj\n';
   });
   const xrefOffset=pdf.length;
-  pdf+='xref\\n0 '+(objects.length+1)+'\\n0000000000 65535 f \\n';
+  pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
   for(let i=1;i<=objects.length;i++){
-    pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \\n';
+    pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \n';
   }
-  pdf+='trailer\\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\\nstartxref\\n'+xrefOffset+'\\n%%EOF';
+  pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xrefOffset+'\n%%EOF';
 
   const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'}));
   const link=document.createElement('a');
