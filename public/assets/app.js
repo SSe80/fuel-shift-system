@@ -612,13 +612,21 @@ async function adminDashboard(){
       const movementLabels={opening:'Opening',purchase:'Purchase',sale:'Sale',adjustment:'Adjustment',dip:'Dip'};
       const groups=new Map();
       movementRows.forEach(m=>{const key=String(m.tank_id||m.tank_code||'');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(m);});
+      allTanks.filter(t=>t.active===true).forEach(t=>{
+        const key=String(t.id);
+        if(!groups.has(key)){
+          const p=allProducts.find(x=>String(x.name||'').toLowerCase()===String(t.product||'').toLowerCase())||{};
+          groups.set(key,[{tank_id:t.id,tank_code:t.tank_code,tank_product:t.product,product_code:p.code_name||t.product,product_name:p.name||t.product,product_color:p.color||'',current_liters:t.current_liters,capacity_liters:t.capacity_liters,no_movement_history:true}]);
+        }
+      });
       const orderedGroups=[...groups.entries()].sort((a,b)=>String(a[1][0]?.tank_code||'').localeCompare(String(b[1][0]?.tank_code||'')));
       movementBox.innerHTML=orderedGroups.length?orderedGroups.map(([key,rows])=>{
         const first=rows[0]||{},code=first.product_code||first.tank_product||'—',name=first.product_name||first.tank_product||'Unknown product',dot=productColors[String(name).toLowerCase()]||first.product_color||'',current=Number(first.current_liters||0),capacity=Number(first.capacity_liters||0),pct=capacity>0?Math.max(0,Math.min(100,current/capacity*100)):0;
+        const noHistory=first.no_movement_history===true;
         return '<section class="tank-movement-group"><div class="tank-movement-group-head"><div><span class="tank-movement-product"><i style="'+(dot?'background:'+h(dot)+';':'')+'"></i>'+h(code)+'</span><h4>'+h(first.tank_code||'Tank')+'</h4><small>'+h(name)+'</small></div><div class="tank-movement-current"><strong>'+liters(current)+' L</strong><span>'+pct.toFixed(1)+'% full</span></div></div><div class="tank-movement-list">'+rows.map(m=>{
           const type=String(m.movement_type||'').toLowerCase(),qty=Number(m.quantity_liters||0),signed=type==='sale'?-Math.abs(qty):qty,sign=signed>0?'+':signed<0?'−':'';
           return '<div class="tank-movement-row"><div class="tank-movement-icon">'+(type==='purchase'?'↓':type==='sale'?'↑':type==='adjustment'?'±':type==='opening'?'◷':'•')+'</div><div class="tank-movement-main"><strong>'+h(movementLabels[type]||m.movement_type||'Movement')+'</strong><small>'+new Date(m.created_at).toLocaleString()+(m.notes?' • '+h(m.notes):'')+'</small></div><div class="tank-movement-qty '+(signed<0?'negative':'positive')+'">'+sign+liters(Math.abs(signed))+' L</div><div class="tank-movement-balance"><small>Balance</small><strong>'+liters(m.balance_after)+' L</strong></div></div>';
-        }).join('')+'</div></section>';
+        }).join('')+'</div>'+(noHistory?'<div class="tank-movement-no-history"><strong>No movement history</strong><span>Current stock is '+liters(current)+' L, but an opening/anchor movement has not been recorded yet.</span></div>':'')+'</section>';
       }).join(''):'<div class="card"><p>No tank movements recorded.</p></div>';
     }
     const recent=[...todaySales.map(s=>({time:s.sale_time,text:'Sale • '+codeForProduct(s.product)+' • '+liters(s.quantity_liters)+' L • '+money(s.amount)})),...purchases.filter(p=>String(p.purchase_date||'').slice(0,10)===today).map(p=>({time:p.purchase_date,text:'Purchase • '+codeForProduct(p.product)+' • '+liters(p.quantity_liters)+' L'})),...activeShifts.map(s=>({time:s.assigned_at||s.created_at,text:'Shift active • '+(activeEmployees.find(e=>e.id===s.employee_id)?.name||'Attendant')+' • '+((dispensers.find(d=>d.id===s.nozzle_id)||{}).nozzle_code||'Dispenser')}))].sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,12);
