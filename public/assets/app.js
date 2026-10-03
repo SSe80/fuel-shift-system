@@ -1740,11 +1740,12 @@ handle.addEventListener('pointerdown',e=>{
   const rect=card.getBoundingClientRect();
   const cardsAtStart=Array.from(container.querySelectorAll(':scope > .settings-item-card[data-settings-id]'));
   const cardIndex=cardsAtStart.indexOf(card);
-  const beforeActive=[...cardsAtStart].slice(0,cardIndex).reverse().find(x=>x.classList.contains('settings-active-card'))||null;
-  const afterActive=[...cardsAtStart].slice(cardIndex+1).find(x=>x.classList.contains('settings-active-card'))||null;
   const groupKey=(handle.dataset.settingsKey==='tanks'||handle.dataset.settingsKey==='dispensers')
     ?(card.dataset.tankProductGroup||card.dataset.dispenserProductGroup||'')
     :'';
+  const sameGroupAtStart=x=>!groupKey||x.dataset.tankProductGroup===groupKey||x.dataset.dispenserProductGroup===groupKey;
+  const beforeActive=[...cardsAtStart].slice(0,cardIndex).reverse().find(x=>x.classList.contains('settings-active-card')&&sameGroupAtStart(x))||null;
+  const afterActive=[...cardsAtStart].slice(cardIndex+1).find(x=>x.classList.contains('settings-active-card')&&sameGroupAtStart(x))||null;
   const isAfter=(a,b)=>cardsAtStart.indexOf(a)<cardsAtStart.indexOf(b);
   const isBefore=(a,b)=>cardsAtStart.indexOf(a)>-1&&cardsAtStart.indexOf(a)<cardsAtStart.indexOf(b);
   state={card,container,key:handle.dataset.settingsKey,original:settingsOrderFromContainer(container),
