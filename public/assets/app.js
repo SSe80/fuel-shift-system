@@ -338,7 +338,7 @@ async function userDashboard(){
         '<div class="handover-pending-summary">'+
           '<div class="handover-pending-main"><span>Receiving attendant</span><strong>'+h(employeeNames[x.to_employee_id]||x.to_employee_id)+'</strong></div>'+
           '<div class="handover-pending-section"><div class="handover-pending-title">Closing meter readings</div>'+renderHandoverReadings(x)+'</div>'+
-          '<div class="handover-pending-main"><span>Tank closing stock</span><strong>'+liters(x.closing_liters)+' L</strong></div>'+
+          '<div class="handover-pending-main"><span>Tank closing liters</span><strong>'+liters(x.closing_liters)+' L</strong></div>'+
         '</div>'+
         '<div class="row handover-pending-actions"><button type="button" class="btn" onclick="cancelPendingHandover(\''+x.id+'\')">Cancel Handover</button></div>'+
       '</div>';
@@ -421,7 +421,7 @@ async function userDashboard(){
           '<div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n?.nozzle_code||s.nozzle_id)+'</strong></div></div>'+
           '<div class="pending-info-divider"></div>'+
           '<div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank connected</span><strong>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</strong></div></div>'+
-          '<div class="pending-tank-opening active-opening-reading"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank opening reading</span><strong>'+liters(s.opening_tank_liters)+' <small>L</small></strong></div></div>'+
+          '<div class="pending-tank-opening active-opening-reading"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank opening liters</span><strong>'+liters(s.opening_tank_liters)+' <small>L</small></strong></div></div>'+
         '</div>'+
         '<div class="pending-nozzle-section active-reading-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Shift nozzle readings</div>'+
           nozzleReadings+
@@ -715,7 +715,7 @@ async function loadSettingsData(){
     tankGroupMap.get(groupKey).items.push(t);
   });
   const groupedTanks=tankGroups.flatMap((group,groupIndex)=>group.items.map((t,itemIndex)=>({t,groupIndex,itemIndex,groupKey:group.key})));
-  document.getElementById('tanks').innerHTML=groupedTanks.length?groupedTanks.map(({t,groupIndex,itemIndex,groupKey})=>`${itemIndex===0?`<div class="settings-product-group-label"><span class="settings-product-group-color" style="background:${h(colorForProduct(t.product))}"></span>${h(codeForProduct(t.product))}</div>`:''}<div class="card settings-item-card ${t.active!==false?'settings-active-card':''} ${itemIndex===0&&groupIndex>0?'tank-group-start':''}" data-tank-product-group="${h(groupKey)}" data-settings-key="tanks" data-settings-id="${t.id}" onclick="toggleSettingsItem(event,this)"><div class="top"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">⋮</button><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><div class="settings-card-details"><div><span>Capacity:</span> <b>${liters(t.capacity_liters)} L</b></div><div><span>Status:</span> <b>${t.active===false?'Inactive':'Active'}</b></div><div><span>Opening stock:</span> <b>${t.opening_stock_liters==null?'Not recorded':liters(t.opening_stock_liters)+' L'}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
+  document.getElementById('tanks').innerHTML=groupedTanks.length?groupedTanks.map(({t,groupIndex,itemIndex,groupKey})=>`${itemIndex===0?`<div class="settings-product-group-label"><span class="settings-product-group-color" style="background:${h(colorForProduct(t.product))}"></span>${h(codeForProduct(t.product))}</div>`:''}<div class="card settings-item-card ${t.active!==false?'settings-active-card':''} ${itemIndex===0&&groupIndex>0?'tank-group-start':''}" data-tank-product-group="${h(groupKey)}" data-settings-key="tanks" data-settings-id="${t.id}" onclick="toggleSettingsItem(event,this)"><div class="top"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">⋮</button><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><div class="settings-card-details"><div><span>Capacity:</span> <b>${liters(t.capacity_liters)} L</b></div><div><span>Status:</span> <b>${t.active===false?'Inactive':'Active'}</b></div><div><span>Opening liters:</span> <b>${t.opening_stock_liters==null?'Not recorded':liters(t.opening_stock_liters)+' L'}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
   window.tankRecords=tanks;
   const dispenserGroups=[];
   const dispenserGroupMap=new Map();
@@ -1189,7 +1189,7 @@ function openDispenserActivation(id){
   const message=document.getElementById('dispenser-activate-message');
   if(message)message.innerHTML='<b>'+h(d.nozzle_code||'Dispenser')+'</b> — '+h(product?.code_name||d.product||'');
   const tankLabel=document.getElementById('dispenser-activation-tank-label');
-  if(tankLabel)tankLabel.firstChild.textContent=''+(tank?.tank_code||'Tank')+' opening reading (liters)';
+  if(tankLabel)tankLabel.firstChild.textContent=''+(tank?.tank_code||'Tank')+' opening liters';
   const tankLitersInput=document.getElementById('dispenser-activation-tank-liters');
   if(tankLitersInput){
     const activationReading=Number(tank.opening_stock_liters);
@@ -1246,7 +1246,7 @@ async function _confirmDispenserActivation(){
   const review=document.getElementById('dispenser-activation-review');
   const confirmation=document.getElementById('dispenser-attendant-confirmation');
   if(!Number.isFinite(openingTankLiters)||openingTankLiters<0){
-    error.textContent='Enter the tank opening reading in liters.';
+    error.textContent='Enter the tank opening liters in liters.';
     error.style.display='block'; return false;
   }
   if(!employeeId){
@@ -1257,7 +1257,7 @@ async function _confirmDispenserActivation(){
     error.textContent='Activate at least one nozzle and enter its opening meter reading before continuing.';
     error.style.display='block'; return false;
   }
-  if(review)review.innerHTML='<div class="card" style="margin:0"><b>Attendant reading confirmation</b><p style="margin:6px 0">Attendant: <b>'+h(attendantName)+'</b></p><p style="margin:6px 0">Tank opening: <b>'+liters(openingTankLiters)+' L</b></p><p style="margin:6px 0">Nozzle opening readings: '+selected.map(x=>'<b>'+h(x.nozzle_id)+'</b> = '+liters(x.activation_number)).join(' • ')+'</p><p class="muted" style="margin:6px 0 0">The selected Attendant must review these readings and confirm they are correct before the shift is activated.</p></div>';
+  if(review)review.innerHTML='<div class="card" style="margin:0"><b>Attendant reading confirmation</b><p style="margin:6px 0">Attendant: <b>'+h(attendantName)+'</b></p><p style="margin:6px 0">Tank opening liters: <b>'+liters(openingTankLiters)+' L</b></p><p style="margin:6px 0">Nozzle opening readings: '+selected.map(x=>'<b>'+h(x.nozzle_id)+'</b> = '+liters(x.activation_number)).join(' • ')+'</p><p class="muted" style="margin:6px 0 0">The selected Attendant must review these readings and confirm they are correct before the shift is activated.</p></div>';
   try{
     await api('/api/shifts',{method:'POST',body:JSON.stringify({
       employee_id:employeeId,
@@ -1481,7 +1481,7 @@ function continueHandover(event){
     '<div class="handover-review-summary">'+
       '<div class="handover-review-main"><span>Receiving attendant</span><strong>'+h(employeeName)+'</strong></div>'+
       '<div class="handover-review-section"><div class="handover-review-section-title">Closing meter readings</div>'+reviewNozzles+'</div>'+
-      '<div class="handover-review-main"><span>Tank closing stock</span><strong>'+closingLiters.toLocaleString(undefined,{maximumFractionDigits:2})+' L</strong></div>'+
+      '<div class="handover-review-main"><span>Tank closing liters</span><strong>'+closingLiters.toLocaleString(undefined,{maximumFractionDigits:2})+' L</strong></div>'+
     '</div>';
   closeHandoverModal('handover-input-modal');
   const review=document.getElementById('handover-review-modal');
@@ -1513,7 +1513,7 @@ async function loadPendingHandovers(){
     const [hs,emps]=await Promise.all([api('/api/handovers'),api('/api/users').catch(()=>[])]);
     const names=Object.fromEntries(emps.map(e=>[e.id,e.name]));
     const pending=hs.filter(x=>x.status==='pending');
-    document.getElementById('pending-list').innerHTML=pending.length?pending.map(x=>`<div class="card"><h3>Handover ${h(x.id.slice(0,8))}</h3><p>From: <b>${h(names[x.from_employee_id]||x.from_employee_id)}</b><br>To: <b>${h(names[x.to_employee_id]||x.to_employee_id)}</b></p><p>Closing meter: ${liters(x.closing_reading)} • Tank: ${liters(x.closing_liters)} L</p><form class="form" onsubmit="confirmHandover(event,'${x.id}')"><input id="confirm-reading-${x.id}" type="number" min="0" step="0.01" placeholder="Opening meter" required><input id="confirm-mm-${x.id}" type="number" min="0" step="0.01" placeholder="Opening dip (mm)" required><input id="confirm-liters-${x.id}" type="number" min="0" step="0.01" placeholder="Opening tank liters" required><button class="primary">Confirm & Start Shift</button></form></div>`).join(''):'<div class="card"><p>No pending handovers.</p></div>';
+    document.getElementById('pending-list').innerHTML=pending.length?pending.map(x=>`<div class="card"><h3>Handover ${h(x.id.slice(0,8))}</h3><p>From: <b>${h(names[x.from_employee_id]||x.from_employee_id)}</b><br>To: <b>${h(names[x.to_employee_id]||x.to_employee_id)}</b></p><p>Closing meter: ${liters(x.closing_reading)} • Tank: ${liters(x.closing_liters)} L</p><form class="form" onsubmit="confirmHandover(event,'${x.id}')"><input id="confirm-reading-${x.id}" type="number" min="0" step="0.01" placeholder="Opening meter" required><input id="confirm-mm-${x.id}" type="number" min="0" step="0.01" placeholder="Tank opening dip (mm) required><input id="confirm-liters-${x.id}" type="number" min="0" step="0.01" placeholder="Tank opening liters" required><button class="primary">Confirm & Start Shift</button></form></div>`).join(''):'<div class="card"><p>No pending handovers.</p></div>';
   }catch(e){document.getElementById('pending-list').textContent=e.message;}
 }
 async function confirmHandover(e,id){e.preventDefault();try{await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('confirm-reading-'+id).value),opening_mm:Number(document.getElementById('confirm-mm-'+id).value),opening_liters:Number(document.getElementById('confirm-liters-'+id).value),pin:document.getElementById('confirm-pin-'+id).value})});toast('Handover confirmed');setTimeout(()=>location.href='attendant-dashboard.html',700);}catch(x){toast(x.message);}}
@@ -1661,7 +1661,7 @@ async function _confirmGenericActivationReview(){
     const stock=document.getElementById('tank-opening-stock')?.value.trim()||'';
     const stockNumber=stock===''?NaN:Number(stock);
     if(!Number.isFinite(stockNumber)||stockNumber<0){toast('Enter a valid opening stock reading in liters');return;}
-    details+='<p style="margin:7px 0"><b>Opening stock:</b> '+h(liters(stockNumber))+' L</p>';
+    details+='<p style="margin:7px 0"><b>Opening liters:</b> '+h(liters(stockNumber))+' L</p>';
     successDetails='<p><b>'+h(item?.tank_code||id)+'</b> activated successfully.</p>'+details;
   }
   showSettingsConfirmation('Review '+label+' Activation',details,()=>_confirmGenericActivation(),
@@ -1682,11 +1682,11 @@ async function confirmDispenserActivation(){
     const value=Number(input.value);
     return Number.isFinite(value)&&value>=0?{nozzleId,value}:null;
   }).filter(Boolean);
-  if(!Number.isFinite(tankNumber)||tankNumber<0){toast('Enter the tank opening reading in liters.');return;}
+  if(!Number.isFinite(tankNumber)||tankNumber<0){toast('Enter the tank opening liters in liters.');return;}
   if(!employeeId){toast('Select an attendant before continuing.');return;}
   if(!selected.length){toast('Activate at least one nozzle and enter its opening meter reading before continuing.');return;}
   const readings=selected.map(x=>'<p style="margin:5px 0"><b>'+h(x.nozzleId)+':</b> '+h(liters(x.value))+'</p>').join('');
-  const details='<p><b>Dispenser:</b> '+h(d.nozzle_code||id)+'</p><p><b>Attendant:</b> '+h(employee)+'</p><p><b>Opening stock:</b> '+h(liters(tankNumber))+' L</p><p><b>Nozzle opening readings:</b></p>'+readings+settingsStatus('Pending — dispenser remains inactive until attendant confirms');
+  const details='<p><b>Dispenser:</b> '+h(d.nozzle_code||id)+'</p><p><b>Attendant:</b> '+h(employee)+'</p><p><b>Opening liters:</b> '+h(liters(tankNumber))+' L</p><p><b>Nozzle opening readings:</b></p>'+readings+settingsStatus('Pending — dispenser remains inactive until attendant confirms');
   showSettingsConfirmation('Review Dispenser Shift Assignment',details,()=>_confirmDispenserActivation(),
     'Shift assignment created successfully','<p>The assignment was sent to <b>'+h(employee)+'</b>.</p>'+details);
 }
