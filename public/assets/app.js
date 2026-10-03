@@ -701,6 +701,13 @@ function bindAdminSaleChecks(){
     updateAdminSaleConfirmButton(card);
   });
 }
+function toggleSalesHistorySearch(){
+  const tools=document.getElementById('admin-sales-history-tools');
+  const input=document.getElementById('admin-sales-search');
+  if(!tools)return;
+  tools.hidden=!tools.hidden;
+  if(!tools.hidden&&input){setTimeout(()=>input.focus(),50);}
+}
 function filterAdminSales(){
   const pendingBox=document.getElementById('sales-confirmation-list');
   const historyBox=document.getElementById('sales-history-list');
