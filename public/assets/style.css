@@ -1173,3 +1173,36 @@
 .admin-sales-page .admin-sale-check-row small{color:#6b7682;line-height:1.35}
 .admin-sales-page .admin-sale-total{display:flex;justify-content:space-between;align-items:center;margin:12px 0;padding:11px 12px;border-radius:10px;background:#f5f7fa}
 @media(max-width:560px){.admin-sales-page .admin-sale-context{grid-template-columns:1fr}}
+
+/* Compact and expandable Admin Settings item cards */
+.admin-settings-page .settings-item-card{
+  cursor:pointer;
+}
+.admin-settings-page .settings-item-card .settings-card-details{
+  display:none;
+}
+.admin-settings-page .settings-item-card.expanded .settings-card-details{
+  display:block;
+}
+.admin-settings-page .settings-item-card:not(.expanded) .settings-card-actions{
+  margin-top:0;
+}
+.admin-settings-page .settings-item-card:not(.expanded) .settings-card-actions button{
+  min-height:34px;
+  padding:7px 10px;
+}
+.admin-settings-page .settings-item-card .settings-card-details{
+  margin-top:7px;
+}
+.admin-settings-page .settings-item-card .dispenser-main-body{
+  display:none;
+}
+.admin-settings-page .settings-item-card.expanded .dispenser-main-body{
+  display:block;
+}
+.admin-settings-page .settings-item-card .dispenser-card-actions{
+  margin-top:0;
+}
+.admin-settings-page .settings-item-card:not(.expanded) .dispenser-card-actions{
+  padding-top:0;
+}
