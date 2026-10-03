@@ -61,7 +61,10 @@
       <div class="purchase-wizard-actions"><button type="button" onclick="closePurchaseModal()">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(1)">Continue</button></div>
     </section>
     <section class="purchase-wizard-step" data-purchase-step="2">
-      <div class="purchase-field purchase-wide"><label for="purchase-liters">Quantity received</label><div class="purchase-input-unit"><input id="purchase-liters" type="text" inputmode="decimal" autocomplete="off" placeholder="0" required><span>Liters</span></div></div>
+      <div class="purchase-field"><label for="purchase-driver-name">Driver name</label><input id="purchase-driver-name" type="text" placeholder="Driver name" autocomplete="name" required></div>
+      <div class="purchase-field"><label for="purchase-driver-phone">Driver phone number</label><input id="purchase-driver-phone" type="tel" inputmode="tel" placeholder="Driver phone number" autocomplete="tel" required></div>
+      <div class="purchase-field"><label for="purchase-plate-number">Plate number</label><input id="purchase-plate-number" type="text" placeholder="Plate number" autocomplete="off" required></div>
+      <div class="purchase-field"><label for="purchase-truck-compartments">Truck compartments</label><select id="purchase-truck-compartments" required><option value="">Select compartments</option><option value="2">2 compartments</option><option value="3">3 compartments</option><option value="4">4 compartments</option><option value="5">5 compartments</option></select></div>
       <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(2)">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(2)">Continue</button></div>
     </section>
     <section class="purchase-wizard-step" data-purchase-step="3">
@@ -105,7 +108,7 @@
     purchaseStep=step;
     document.querySelectorAll('.purchase-wizard-step').forEach(el=>el.classList.toggle('active',Number(el.dataset.purchaseStep)===step));
     const titles=['Order','Delivery','Invoice','Review'];
-    const descriptions=['Select the product and enter the order details.','Enter the quantity actually received.','Enter the invoice or delivery number.','Review the delivery before confirming.'];
+    const descriptions=['Select the product and enter the order details.','Enter the truck and driver details.','Enter the invoice or delivery number.','Review the delivery before confirming.'];
     const title=document.getElementById('purchase-step-title');
     const desc=document.getElementById('purchase-step-description');
     if(title)title.textContent=titles[step-1];
@@ -134,8 +137,11 @@
       if(!Number.isFinite(orderedQuantity)||orderedQuantity<=0){setStatus('Enter a valid ordered quantity before continuing.',true);return;}
     }
     if(step===2){
-      const q=parseQuantity(document.getElementById('purchase-liters')?.value);
-      if(!Number.isFinite(q)||q<=0){setStatus('Enter a valid quantity before continuing.',true);return;}
+      const driverName=document.getElementById('purchase-driver-name')?.value.trim()||'';
+      const driverPhone=document.getElementById('purchase-driver-phone')?.value.trim()||'';
+      const plateNumber=document.getElementById('purchase-plate-number')?.value.trim()||'';
+      const compartments=document.getElementById('purchase-truck-compartments')?.value||'';
+      if(!driverName||!driverPhone||!plateNumber||!compartments){setStatus('Complete all truck details before continuing.',true);return;}
     }
     if(step===3){
       const q=parseQuantity(document.getElementById('purchase-liters')?.value);
@@ -183,6 +189,10 @@
       await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product:product,tank_id:tankRecord.id,quantity_liters:q,invoice_number:invoice,order_number:document.getElementById('purchase-order-number')?.value.trim()||''})});
       document.getElementById('purchase-liters').value='';
       document.getElementById('purchase-ordered-quantity').value='';
+      document.getElementById('purchase-driver-name').value='';
+      document.getElementById('purchase-driver-phone').value='';
+      document.getElementById('purchase-plate-number').value='';
+      document.getElementById('purchase-truck-compartments').value='';
       document.getElementById('purchase-order-number').value='';
       document.getElementById('purchase-product').value='';
       document.getElementById('purchase-invoice').value='';
