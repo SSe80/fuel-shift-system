@@ -374,21 +374,7 @@ async function userDashboard(){
         '</div>'+
       '</div>';
     }).join('');
-    const takeoverHtml=completedTakeovers.slice(0,5).map(t=>{
-      const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
-      const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
-      const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
-      return '<div class="card shift-takeover-card">'+
-        '<div class="takeover-hero"><div class="takeover-hero-icon">↔</div><div><div class="takeover-card-title">Shift Handover</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+'</div></div></div>'+
-        '<div class="takeover-total-grid">'+
-          '<div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div>'+
-          '<div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
-        '</div>'+
-        '<div class="row takeover-sale-action">'+
-          '<button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button>'+
-        '</div>'+
-      '</div>';
-    }).join('');
+    const takeoverHtml='';
     const activeForDisplay=active.filter(s=>!pendingOutgoingHandovers.some(x=>String(x.shift_id)===String(s.id)));
     const activeHtml=activeForDisplay.map(s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
@@ -413,7 +399,7 @@ async function userDashboard(){
         '<button class="primary active-close-shift" type="button" onclick="closeShift(event,\''+s.id+'\')">Close Shift</button></div></div>';
     }).join('');
 
-    box.innerHTML=pendingShiftHtml+pendingTakeoverHtml+takeoverHtml+pendingOutgoingHtml+pendingIncomingHtml+activeHtml;
+    box.innerHTML=pendingShiftHtml+pendingTakeoverHtml+pendingOutgoingHtml+pendingIncomingHtml+activeHtml;
     if(!box.innerHTML)box.innerHTML='';
   }catch(e){
     if(e.message==='Unauthorized')location.href='attendant-login.html';
@@ -452,12 +438,28 @@ async function loadAttendantShiftPage(){
       .filter(t=>!t.sales_recorded_at)
       .map(t=>String(t.shift_id)));
     const history=mine.filter(s=>s.status!=='assigned'&&!pendingTakeoverShiftIds.has(String(s.id)));
+    const confirmedTakeovers=(Array.isArray(takeovers)?takeovers:[]).filter(t=>String(t.from_employee_id)===String(me.id)&&(t.sales_status==='confirmed'||(!t.sales_status&&t.sales_recorded_at)));
     const historyBox=document.getElementById('shift-history');
     if(historyBox){
-      historyBox.innerHTML=history.length?[...history].sort((a,b)=>new Date(b.start_time||b.assigned_at||b.created_at)-new Date(a.start_time||a.assigned_at||a.created_at)).map(s=>{
+      const shiftHistoryHtml=history.map(s=>{
         const n=nozzles.find(x=>x.id===s.nozzle_id);
         return '<div class="card"><div class="top"><h3>Shift '+h(s.id.slice(0,8))+'</h3><span class="badge">'+h(s.status)+'</span></div><p>Dispenser: <b>'+h(n?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(n?.product||''))+'</p><p>Opening meter: <b>'+liters(s.opening_reading)+'</b> • Closing meter: <b>'+liters(s.closing_reading)+'</b></p><p class="muted">'+(s.start_time?'Started: '+new Date(s.start_time).toLocaleString():'Assigned: '+new Date(s.assigned_at||s.created_at).toLocaleString())+(s.end_time?' • Ended: '+new Date(s.end_time).toLocaleString():'')+'</p></div>';
+      }).join('');
+      const takeoverHistoryHtml=confirmedTakeovers.map(t=>{
+        const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
+        const n=nozzles.find(x=>String(x.id)===String(takeoverShift?.nozzle_id));
+        return '<div class="card shift-takeover-history-card"><div class="top"><div><span class="section-kicker">SHIFT HANDOVER</span><h3>'+h(n?.nozzle_code||'Dispenser')+'</h3></div><span class="badge">Sales confirmed</span></div><p>Shift ended: <b>'+new Date(t.shift_ended_at).toLocaleString()+'</b></p><p>Receiving attendant: <b>'+h(employees.find(e=>String(e.id)===String(t.to_employee_id))?.name||t.to_employee_id||'—')+'</b></p><p>Sales: <b>'+liters(t.total_sales_liters)+' L</b> • <b>'+money(t.total_sales_amount)+'</b></p><p class="muted">Sales confirmed: '+(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+'</p></div>';
+      }).join('');
+      const allHistory=[...history.map(s=>({time:new Date(s.start_time||s.assigned_at||s.created_at),html:s})),...confirmedTakeovers.map(t=>({time:new Date(t.shift_ended_at),html:t}))].sort((a,b)=>b.time-a.time);
+      historyBox.innerHTML=allHistory.length?allHistory.map(item=>{
+        if(item.html?.shift_ended_at)return takeoverHistoryHtml.split('</div><div class="card')[0]?takeoverHistoryHtml:''; 
+        return shiftHistoryHtml;
       }).join(''):'<div class="card"><p>No shift history yet.</p></div>';
+      // Render the two history groups in chronological order without duplicating records.
+      const records=[];
+      history.forEach(s=>records.push({time:new Date(s.start_time||s.assigned_at||s.created_at),html:shiftHistoryHtml ? '<div class="card"><div class="top"><h3>Shift '+h(s.id.slice(0,8))+'</h3><span class="badge">'+h(s.status)+'</span></div><p>Dispenser: <b>'+h(nozzles.find(x=>x.id===s.nozzle_id)?.nozzle_code||s.nozzle_id)+'</b> • '+h(codeForProduct(nozzles.find(x=>x.id===s.nozzle_id)?.product||''))+'</p><p>Opening meter: <b>'+liters(s.opening_reading)+'</b> • Closing meter: <b>'+liters(s.closing_reading)+'</b></p><p class="muted">'+(s.start_time?'Started: '+new Date(s.start_time).toLocaleString():'Assigned: '+new Date(s.assigned_at||s.created_at).toLocaleString())+(s.end_time?' • Ended: '+new Date(s.end_time).toLocaleString():'')+'</p></div>': ''}));
+      confirmedTakeovers.forEach(t=>records.push({time:new Date(t.shift_ended_at),html:'<div class="card shift-takeover-history-card"><div class="top"><div><span class="section-kicker">SHIFT HANDOVER</span><h3>'+h(nozzles.find(x=>String(x.id)===String(shifts.find(s=>String(s.id)===String(t.shift_id))?.nozzle_id))?.nozzle_code||'Dispenser')+'</h3></div><span class="badge">Sales confirmed</span></div><p>Shift ended: <b>'+new Date(t.shift_ended_at).toLocaleString()+'</b></p><p>Receiving attendant: <b>'+h(employees.find(e=>String(e.id)===String(t.to_employee_id))?.name||t.to_employee_id||'—')+'</b></p><p>Sales: <b>'+liters(t.total_sales_liters)+' L</b> • <b>'+money(t.total_sales_amount)+'</b></p><p class="muted">Sales confirmed: '+(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+'</p></div>'}));
+      historyBox.innerHTML=records.sort((a,b)=>b.time-a.time).map(x=>x.html).join('')||'<div class="card"><p>No shift history yet.</p></div>';
     }
   }catch(e){
     if(e.message==='Unauthorized')location.href='attendant-login.html';
