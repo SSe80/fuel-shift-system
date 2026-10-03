@@ -2024,3 +2024,34 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .admin-sales-page .admin-sales-history-tools .admin-sales-filters{grid-template-columns:1fr}
   .admin-sales-page .admin-sales-history-tools button{width:100%}
 }
+
+
+/* Admin Sales — full page layout aligned with Admin Purchases */
+.admin-sales-page{background:#f5f7fa!important;padding:18px!important;color:#17202a}
+.admin-sales-page .wrap{max-width:720px;margin:auto;padding:0}
+.admin-sales-page .purchase-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:10px 2px 18px}
+.admin-sales-page .purchase-header h1{margin:0;font-size:28px;line-height:1.1;letter-spacing:-.03em}
+.admin-sales-page .purchase-header .eyebrow{display:block;color:#1264d8;font-size:10px;letter-spacing:.14em;font-weight:800;margin-bottom:5px}
+.admin-sales-page .purchase-header .muted{margin:7px 0 0;font-size:13px;line-height:1.45}
+.admin-sales-page .purchase-back{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;min-height:38px;padding:8px 12px;border:1px solid #d8e0e8;border-radius:10px;background:#fff;color:#344054;font-size:13px;font-weight:750;box-shadow:0 2px 8px #17202a0a}
+.admin-sales-page .purchase-back:hover{background:#f8fafc;transform:translateY(-1px)}
+.admin-sales-page .sales-page-sections{display:grid;gap:12px;margin:0}
+.admin-sales-page .admin-sales-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.admin-sales-page .admin-sales-stat{margin:0;padding:14px 15px;border:1px solid #e2e7ed;border-radius:14px;background:#fff;box-shadow:0 5px 18px #17202a0e}
+.admin-sales-page .admin-sales-stat strong{font-size:19px}
+.admin-sales-page .admin-sales-separated-section.purchase-section{margin:0;padding:18px;border:1px solid #e1e8f0;border-radius:20px;background:#fff;box-shadow:0 7px 26px #17202a0d}
+.admin-sales-page .admin-sales-section-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 16px;padding:0 0 15px;border-bottom:1px solid #edf1f5}
+.admin-sales-page .admin-sales-section-heading h2{margin:0;font-size:21px;letter-spacing:-.02em}
+.admin-sales-page .admin-sales-section-heading p{margin:5px 0 0;font-size:13px;line-height:1.45}
+.admin-sales-page .admin-sales-section-heading .section-kicker{color:#1264d8;margin-bottom:5px}
+.admin-sales-page .admin-sales-section-count{padding:5px 8px;border:1px solid #e1e7ee;border-radius:999px;background:#f6f8fa;color:#667085;font-size:11px;font-weight:800}
+.admin-sales-page .pending-sales-section{border-top:3px solid #d6a43b!important}
+.admin-sales-page .sales-history-section{border-top:3px solid #7d8996!important}
+.admin-sales-page .admin-sales-list{display:grid;gap:10px}
+.admin-sales-page .admin-sales-history-tools{margin:0 0 14px;padding:12px;border:1px solid #e1e7ee;border-radius:14px;background:#fbfcfe}
+.admin-sales-page .admin-sales-history-tools .admin-sales-filters{display:grid;grid-template-columns:1fr 150px auto;gap:8px}
+.admin-sales-page .admin-sales-history-tools input,.admin-sales-page .admin-sales-history-tools select{min-height:42px;padding:10px 11px;border:1px solid #d6dde6;border-radius:10px;background:#fff;font:inherit}
+.admin-sales-page .admin-sales-history-tools button{min-height:42px;padding:10px 13px;border-radius:10px}
+.admin-sales-page .admin-sales-list>.card,.admin-sales-page .admin-sale-confirm-card{margin:0}
+.admin-sales-page .admin-sales-empty{padding:28px 18px!important;border-style:dashed!important;background:#fafbfc!important;box-shadow:none!important}
+@media(max-width:600px){.admin-sales-page{padding:10px!important}.admin-sales-page .purchase-header{align-items:flex-start;padding:12px 4px 17px}.admin-sales-page .purchase-header h1{font-size:27px}.admin-sales-page .purchase-back{padding:9px 11px}.admin-sales-page .admin-sales-summary{grid-template-columns:1fr 1fr}.admin-sales-page .admin-sales-separated-section.purchase-section{padding:16px;border-radius:17px}.admin-sales-page .admin-sales-section-heading{align-items:flex-start}.admin-sales-page .admin-sales-section-heading h2{font-size:19px}.admin-sales-page .admin-sales-history-tools .admin-sales-filters{grid-template-columns:1fr}.admin-sales-page .admin-sales-history-tools button{width:100%}}
