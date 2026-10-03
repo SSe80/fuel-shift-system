@@ -430,8 +430,7 @@ async function userDashboard(){
         '<div class="pending-nozzle-section active-reading-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Shift nozzle readings</div>'+
           nozzleReadings+
         '</div>'+
-        '<div class="row active-shift-actions"><button class="btn active-handover-btn" type="button" onclick="openDashboardHandover(\''+s.id+'\')">Handover</button>'+
-        '<button class="primary active-close-shift" type="button" onclick="closeShift(event,\''+s.id+'\')">Close Shift</button></div></div>';
+        '<div class="row active-shift-actions"><button class="btn active-handover-btn" type="button" onclick="openDashboardHandover(\''+s.id+'\')">Handover</button></div></div>';
     }).join('');
 
     box.innerHTML=pendingShiftHtml+takeoverHtml+pendingTakeoverHtml+pendingOutgoingHtml+pendingIncomingHtml+activeHtml;
@@ -549,12 +548,13 @@ async function cancelPendingHandover(id){
   }catch(e){toast(e.message);}
 }
 
-async function closeShift(event,id){
-  if(event?.preventDefault)event.preventDefault();
+
+async function adminDeactivateShift(id){
+  if(!confirm('Deactivate this active shift? The attendant will no longer be able to continue this shift.'))return;
   try{
-    await api('/api/shifts/'+id+'/close',{method:'POST',body:'{}'});
-    toast('Shift closed');
-    await userDashboard();
+    await api('/api/shifts/'+id+'/deactivate',{method:'POST',body:'{}'});
+    toast('Shift deactivated');
+    await adminDashboard();
   }catch(e){toast(e.message);}
 }
 
@@ -585,7 +585,7 @@ async function adminDashboard(){
       const tank=tanks.find(t=>t.id===d.tank_id);
       const shift=activeShifts.find(s=>s.nozzle_id===d.id);
       const attendant=shift?activeEmployees.find(e=>e.id===shift.employee_id):null;
-      return '<div class="stat"><b>'+h(d.nozzle_code)+'</b><span>'+h(codeForProduct(d.product))+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small></div>';
+      return '<div class="stat"><b>'+h(d.nozzle_code)+'</b><span>'+h(codeForProduct(d.product))+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small>'+(shift?'<button class="btn" type="button" style="margin-top:8px" onclick="adminDeactivateShift(\''+shift.id+'\')">Deactivate Shift</button>':'')+'</div>';
     }).join(''):'<div class="card"><p>No activated dispensers.</p></div>';
     el('attendants').innerHTML=activeEmployees.filter(e=>e.role==='attendant').length?activeEmployees.filter(e=>e.role==='attendant').map(e=>{
       const shift=activeShifts.find(s=>s.employee_id===e.id);
