@@ -1664,3 +1664,130 @@
  .admin-sales-section-heading h2{font-size:18px}
  .admin-sales-section-count{font-size:11px}
 }
+
+
+/* Admin Sales — match the Admin Settings layout */
+.admin-sales-page{
+  background:#f5f7fa !important;
+  color:#17202a;
+  min-height:100vh;
+  padding:20px 16px 40px;
+}
+.admin-sales-page .wrap{max-width:820px}
+.admin-sales-page .settings-header{
+  padding:8px 2px 18px;
+}
+.admin-sales-page .settings-header h1{
+  font-size:27px;
+  letter-spacing:-.035em;
+}
+.admin-sales-page .settings-header .eyebrow{
+  color:#1264d8;
+  font-size:10px;
+  letter-spacing:.14em;
+}
+.admin-sales-page .settings-back{
+  min-height:38px;
+  padding:8px 13px;
+  border:1px solid #dfe4ea;
+  border-radius:10px;
+  background:#fff;
+  color:#344054;
+  box-shadow:0 2px 8px rgba(20,35,50,.05);
+}
+.admin-sales-page .nav{
+  margin-bottom:20px;
+  padding:4px;
+  border:1px solid #dfe4ea;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 3px 12px rgba(20,35,50,.05);
+}
+.admin-sales-page .nav a{
+  padding:8px 12px;
+  border-radius:8px;
+  font-size:13px;
+}
+.admin-sales-page .nav a.active{
+  background:#eef4ff;
+  color:#1457ad;
+  box-shadow:inset 0 0 0 1px #d7e5fb;
+}
+.admin-sales-page .admin-sales-section{display:grid;gap:12px}
+.admin-sales-page .admin-sales-summary{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.admin-sales-page .admin-sales-stat{
+  margin:0;
+  padding:16px 17px;
+  border:1px solid #e2e7ed;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 5px 18px rgba(20,35,50,.055);
+}
+.admin-sales-page .admin-sales-stat strong{font-size:19px}
+.admin-sales-page .admin-sales-toolbar{
+  padding:12px;
+  border:1px solid #e2e7ed;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 5px 18px rgba(20,35,50,.055);
+}
+.admin-sales-page .admin-sales-separated-section{
+  margin-top:0;
+  padding:16px 17px;
+  border:1px solid #e2e7ed;
+  border-top:3px solid #dfe4ea;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 5px 18px rgba(20,35,50,.055);
+}
+.admin-sales-page .admin-sales-separated-section+.admin-sales-separated-section{margin-top:12px}
+.admin-sales-page .pending-sales-section{border-top-color:#d6a43b}
+.admin-sales-page .sales-history-section{border-top-color:#7d8996}
+.admin-sales-page .admin-sales-section-heading{
+  padding-bottom:12px;
+  margin-bottom:12px;
+}
+.admin-sales-page .admin-sales-section-heading h2{
+  font-size:18px;
+  letter-spacing:-.02em;
+}
+.admin-sales-page .admin-sales-section-heading p{font-size:12px}
+.admin-sales-page .admin-sales-list{display:grid;gap:10px}
+.admin-sales-page .admin-sales-list>.card{
+  margin:0;
+  padding:15px 16px;
+  border:1px solid #e2e7ed;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 4px 14px rgba(20,35,50,.045);
+}
+.admin-sales-page .admin-sale-card,
+.admin-sales-page .admin-history-card{
+  border-color:#e2e7ed !important;
+}
+.admin-sales-page .admin-sales-empty{
+  padding:25px 18px !important;
+  border-style:dashed !important;
+  box-shadow:none !important;
+  background:#fafbfc !important;
+}
+.admin-sales-page .admin-sales-filters input,
+.admin-sales-page .admin-sales-filters select{
+  border-color:#d6dde6;
+  border-radius:10px;
+}
+.admin-sales-page .admin-sales-filters button{
+  min-height:40px;
+  border-radius:10px;
+}
+@media(max-width:600px){
+  .admin-sales-page{padding:10px}
+  .admin-sales-page .wrap{padding:0 0 28px}
+  .admin-sales-page .settings-header{padding:12px 4px 17px}
+  .admin-sales-page .settings-header h1{font-size:27px}
+  .admin-sales-page .admin-sales-summary{grid-template-columns:1fr 1fr}
+  .admin-sales-page .admin-sales-separated-section{padding:13px}
+}
