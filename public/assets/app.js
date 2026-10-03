@@ -308,7 +308,7 @@ async function userDashboard(){
           '<div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
         '</div>'+
         '<div class="row takeover-sale-action">'+
-          '<button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Continue</button>'+
+          '<button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button>'+
           '<button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button>'+
         '</div>'+
       '</div>';
