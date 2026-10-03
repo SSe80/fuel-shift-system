@@ -610,100 +610,103 @@ async function adminDashboard(){
     el('dashboard-status').textContent=low.length?low.length+' tank(s) are at or below 10% capacity.':'Dashboard shows only activated Settings records.';
   }catch(e){const s=document.getElementById('dashboard-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
+let adminSalesData={pending:[],history:[]};
+let adminSalesTab='pending';
+
+function adminSalesDate(item){
+  const t=item?.takeover||item||{};
+  return t.shift_ended_at||t.sales_confirmed_at||t.shift_started_at||t.created_at||'';
+}
+function adminSalesMatches(item){
+  const q=(document.getElementById('admin-sales-search')?.value||'').trim().toLowerCase();
+  const period=document.getElementById('admin-sales-period')?.value||'all';
+  const t=item?.takeover||{};
+  const hay=[item?.dispenser?.name,item?.from_employee?.name,item?.to_employee?.name,item?.shift?.name,t.shift_id,t.id,item?.dispenser?.nozzle_code,item?.dispenser?.product,...(Array.isArray(item?.sales)?item.sales.map(s=>s.sale_type_name):[])].filter(Boolean).join(' ').toLowerCase();
+  if(q&&!hay.includes(q))return false;
+  if(period==='all')return true;
+  const d=new Date(adminSalesDate(item)), now=new Date();
+  if(Number.isNaN(d.getTime()))return false;
+  if(period==='today')return d.toDateString()===now.toDateString();
+  const days=Number(period);
+  return Number.isFinite(days)&&((now-d)/86400000)<=days&&d<=now;
+}
+function renderAdminSalesSummary(){
+  const box=document.getElementById('sales-summary'); if(!box)return;
+  const pending=adminSalesData.pending||[], history=adminSalesData.history||[];
+  const pendingEntries=pending.reduce((n,x)=>n+(Array.isArray(x.sales)?x.sales.length:0),0);
+  const pendingAmount=pending.reduce((n,x)=>n+(Array.isArray(x.sales)?x.sales.reduce((s,y)=>s+Number(y.amount||0),0):0),0);
+  const confirmedLiters=history.reduce((n,x)=>n+Number(x.takeover?.total_sales_liters||0),0);
+  const confirmedAmount=history.reduce((n,x)=>n+Number(x.takeover?.total_sales_amount||0),0);
+  const cards=[['Pending shifts',pending.length,'awaiting admin'],['Sales to check',pendingEntries,'submitted entries'],['Pending amount',money(pendingAmount),'awaiting confirmation'],['Confirmed liters',liters(confirmedLiters)+' L','shift history'],['Confirmed amount',money(confirmedAmount),'confirmed shifts']];
+  box.innerHTML=cards.map(c=>'<div class="admin-sales-stat"><span>'+h(c[0])+'</span><strong>'+h(String(c[1]))+'</strong><small>'+h(c[2])+'</small></div>').join('');
+  const pc=document.getElementById('pending-sales-count'),hc=document.getElementById('confirmed-sales-count');
+  if(pc)pc.textContent=pending.length;if(hc)hc.textContent=history.length;
+}
+function setAdminSalesTab(tab){
+  adminSalesTab=tab==='history'?'history':'pending';
+  document.querySelectorAll('.admin-sales-tab').forEach(b=>b.classList.toggle('active',b.dataset.salesTab===adminSalesTab));
+  const p=document.getElementById('sales-confirmation-list'),hbox=document.getElementById('sales-history-list');
+  if(p)p.hidden=adminSalesTab!=='pending';if(hbox)hbox.hidden=adminSalesTab!=='history';filterAdminSales();
+}
+function filterAdminSales(){
+  const source=adminSalesData[adminSalesTab]||[], box=document.getElementById(adminSalesTab==='pending'?'sales-confirmation-list':'sales-history-list');
+  if(!box)return;
+  const rows=source.filter(adminSalesMatches);
+  if(!rows.length){
+    box.innerHTML='<div class="card admin-sales-empty"><div class="empty-icon">'+(adminSalesTab==='pending'?'✓':'—')+'</div><strong>'+(adminSalesTab==='pending'?'No pending sales confirmations':'No confirmed sales match your filters')+'</strong><p class="muted">'+(adminSalesTab==='pending'?'All submitted shift sales have been reviewed.':'Try clearing the search or date filter.')+'</p></div>';
+    return;
+  }
+  box.innerHTML=rows.map(adminSalesTab==='pending'?renderAdminPendingSaleCard:renderAdminHistorySaleCard).join('');
+}
+function renderAdminPendingSaleCard(item){
+  const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],dispenser=item.dispenser?.name||'Dispenser',shift=item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||''));
+  const submitted=sales.reduce((sum,x)=>sum+Number(x.amount||0),0),calculated=Number(t.total_sales_amount||0),variance=submitted-calculated;
+  const checked=sales.map(s=>'<label class="admin-sale-check-row"><input type="checkbox" class="admin-sale-check" data-sale-id="'+h(s.id)+'"><span><strong>'+h(s.sale_type_name||'Sale')+'</strong><small>'+(s.sale_type_description?h(s.sale_type_description)+' • ':'')+'Amount: '+money(s.amount)+(s.reason?' • Reason: '+h(s.reason):'')+'</small></span></label>').join('');
+  return '<article class="card admin-sale-confirm-card" data-takeover-id="'+h(t.id)+'"><div class="top"><div><span class="section-kicker">SALE CONFIRMATION</span><h3>'+h(dispenser)+'</h3><p class="muted">'+h(shift)+'</p></div><span class="pending-sale-badge">Pending</span></div>'+
+    '<div class="admin-sale-context"><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Calculated amount</span><strong>'+money(calculated)+'</strong></div></div>'+
+    '<div class="admin-sale-review-strip"><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(Math.abs(variance)<0.005?'match':'difference')+'">'+(Math.abs(variance)<0.005?'Amount matches':'Amount difference')+' <b>'+money(Math.abs(variance))+'</b></span></div>'+
+    '<div class="admin-sale-check-section"><div class="takeover-detail-heading">Sales to check <small>Check every entry before confirming</small></div>'+checked+'</div>'+
+    '<div class="admin-sale-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="row admin-sale-actions"><button type="button" onclick="cancelAdminSaleConfirmation(\''+t.id+'\')">Cancel</button><button type="button" class="primary" onclick="confirmAdminSaleConfirmation(\''+t.id+'\')">Confirm sales</button></div></article>';
+}
+function renderAdminHistorySaleCard(item){
+  const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],from=item.from_employee?.name||'Attendant',to=item.to_employee?.name||'Attendant',dispenser=item.dispenser?.name||'Dispenser';
+  return '<article class="card compact-confirmed-sale-card admin-history-sale-card"><div class="top"><div><span class="section-kicker">SALES CONFIRMED</span><h3>'+h(dispenser)+'</h3><p class="muted">'+h(from)+' → '+h(to)+'</p></div><span class="badge">Confirmed</span></div>'+
+    '<div class="compact-sale-summary"><span>Shift '+h(String(t.shift_id||'').slice(0,8))+'</span><span>'+liters(t.total_sales_liters)+' L</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
+    '<div class="admin-history-meta"><span>Confirmed <b>'+h(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+'</b></span><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span></div>'+
+    '<button type="button" class="btn compact-detail-button" onclick="openAdminSaleHistoryDetails(\''+h(t.id)+'\')">View details</button></article>';
+}
+async function refreshAdminSales(){
+  const status=document.getElementById('sales-confirmation-status');if(status)status.textContent='Refreshing sales…';
+  await adminSalesConfirmations();
+}
 async function adminSalesConfirmations(){
   try{
-    const me=await currentUser();
-    if(me.role!=='admin')return location.href='admin-login.html';
+    const me=await currentUser();if(me.role!=='admin')return location.href='admin-login.html';
     await window.stationCurrencyReady;
     const [list,history]=await Promise.all([api('/api/sales/confirmations'),api('/api/sales/history')]);
-    const box=document.getElementById('sales-confirmation-list');
-    if(!box)return;
-    if(!Array.isArray(list)||!list.length){
-      box.innerHTML='<div class="card"><p class="muted">No pending sales confirmations.</p></div>';
-      return;
-    }
-    box.innerHTML=list.length?list.map(item=>{
-      const t=item.takeover||{};
-      const sales=Array.isArray(item.sales)?item.sales:[];
-      const dispenser=item.dispenser?.name||'Dispenser';
-      const shift=item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||''));
-      const checked=sales.map(s=>'<label class="admin-sale-check-row"><input type="checkbox" class="admin-sale-check" data-sale-id="'+h(s.id)+'"><span><strong>'+h(s.sale_type_name||'Sale')+'</strong><small>'+(s.sale_type_description?h(s.sale_type_description)+' • ':'')+'Amount: '+money(s.amount)+(s.reason?' • Reason: '+h(s.reason):'')+'</small></span></label>').join('');
-      return '<div class="card admin-sale-confirm-card" data-takeover-id="'+h(t.id)+'">'+
-        '<div class="top"><div><span class="section-kicker">SALE CONFIRMATION</span><h3>'+h(dispenser)+'</h3><p class="muted">'+h(shift)+'</p></div><span class="pending-sale-badge">Pending</span></div>'+
-        '<div class="admin-sale-context"><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Calculated amount</span><strong>'+money(t.total_sales_amount)+'</strong></div></div>'+
-        '<div class="admin-sale-check-section"><div class="takeover-detail-heading">Sales to check</div>'+checked+'</div>'+
-        '<div class="admin-sale-total"><span>Submitted sales total</span><strong>'+money(sales.reduce((sum,x)=>sum+Number(x.amount||0),0))+'</strong></div>'+
-        '<div class="row"><button type="button" onclick="cancelAdminSaleConfirmation(\''+t.id+'\')">Cancel</button><button type="button" class="primary" onclick="confirmAdminSaleConfirmation(\''+t.id+'\')">Confirm</button></div>'+
-      '</div>';
-    }).join(''):'<div class="card"><p class="muted">No pending sales confirmations.</p></div>';
-
-    const historyBox=document.getElementById('sales-history-list');
-    if(historyBox){
-      const confirmed=Array.isArray(history)?history:[];
-      historyBox.innerHTML=confirmed.length?confirmed.map(item=>{
-        const t=item.takeover||{};
-        const sales=Array.isArray(item.sales)?item.sales:[];
-        const from=item.from_employee?.name||'Attendant';
-        const to=item.to_employee?.name||'Attendant';
-        const dispenser=item.dispenser?.name||'Dispenser';
-        return '<div class="card compact-confirmed-sale-card admin-history-sale-card">'+
-          '<div class="top"><div><span class="section-kicker">SALES CONFIRMED</span><h3>'+h(dispenser)+'</h3><p class="muted">'+h(from)+' → '+h(to)+'</p></div><span class="badge">Confirmed</span></div>'+
-          '<div class="compact-sale-summary"><span>Shift '+h(String(t.shift_id||'').slice(0,8))+'</span><span>'+liters(t.total_sales_liters)+' L</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
-          '<p class="muted">Confirmed '+(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+'</p>'+
-          '<button type="button" class="btn compact-detail-button" onclick="openAdminSaleHistoryDetails(\''+h(t.id)+'\')">Details</button>'+
-        '</div>';
-      }).join(''):'<div class="card"><p class="muted">No confirmed shift sales yet.</p></div>';
-      window.adminConfirmedSaleHistory=confirmed;
-    }
+    adminSalesData={pending:Array.isArray(list)?list:[],history:Array.isArray(history)?history:[]};
+    renderAdminSalesSummary();filterAdminSales();
+    const status=document.getElementById('sales-confirmation-status');if(status)status.textContent='';
   }catch(e){
-    const box=document.getElementById('sales-confirmation-status');
-    if(box)box.textContent=e.message;
+    const box=document.getElementById('sales-confirmation-status');if(box)box.textContent=e.message;
     if(e.message==='Unauthorized')location.href='admin-login.html';
   }
 }
 function openAdminSaleHistoryDetails(id){
-  const item=(window.adminConfirmedSaleHistory||[]).find(x=>String(x.takeover?.id)===String(id));
-  if(!item)return;
-  const t=item.takeover||{}, sales=Array.isArray(item.sales)?item.sales:[];
-  const content='<div class="takeover-detail-summary">'+
-    '<div><span>Shift ID</span><strong>'+h(t.shift_id||'—')+'</strong></div>'+
-    '<div><span>From attendant</span><strong>'+h(item.from_employee?.name||'—')+'</strong></div>'+
-    '<div><span>Receiving attendant</span><strong>'+h(item.to_employee?.name||'—')+'</strong></div>'+
-    '<div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div>'+
-    '<div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div>'+
-    '<div><span>Dispenser</span><strong>'+h(item.dispenser?.name||'—')+'</strong></div>'+
-    '</div>'+
-    '<div class="takeover-detail-sales"><div class="takeover-detail-heading">Record Sale</div>'+
-    (sales.map(s=>'<p><b>'+h(s.sale_type_name||'Sale')+'</b> — '+money(s.amount)+(s.reason?' • Reason: '+h(s.reason):'')+'</p>').join('')||'<p class="muted">No sale entries.</p>')+
-    '</div><div class="takeover-detail-total"><span>Total</span><strong>'+liters(t.total_sales_liters)+' L</strong><strong>'+money(t.total_sales_amount)+'</strong></div>'+
-    '<p class="muted">Admin confirmed: '+(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+'</p>';
-  const modal=document.getElementById('admin-sale-history-details');
-  const box=document.getElementById('admin-sale-history-details-content');
-  if(box)box.innerHTML=content;
-  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+  const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));if(!item)return;
+  const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[];
+  const content='<div class="takeover-detail-summary"><div><span>Shift ID</span><strong>'+h(t.shift_id||'—')+'</strong></div><div><span>From attendant</span><strong>'+h(item.from_employee?.name||'—')+'</strong></div><div><span>Receiving attendant</span><strong>'+h(item.to_employee?.name||'—')+'</strong></div><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Dispenser</span><strong>'+h(item.dispenser?.name||'—')+'</strong></div></div><div class="takeover-detail-sales"><div class="takeover-detail-heading">Record Sale</div>'+(sales.map(s=>'<p><b>'+h(s.sale_type_name||'Sale')+'</b> — '+money(s.amount)+(s.reason?' • Reason: '+h(s.reason):'')+'</p>').join('')||'<p class="muted">No sale entries.</p>')+'</div><div class="takeover-detail-total"><span>Total</span><strong>'+liters(t.total_sales_liters)+' L</strong><strong>'+money(t.total_sales_amount)+'</strong></div><p class="muted">Admin confirmed: '+(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+'</p>';
+  const modal=document.getElementById('admin-sale-history-details'),box=document.getElementById('admin-sale-history-details-content');if(box)box.innerHTML=content;if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
 }
-function closeAdminSaleHistoryDetails(){
-  const modal=document.getElementById('admin-sale-history-details');
-  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-}
+function closeAdminSaleHistoryDetails(){const modal=document.getElementById('admin-sale-history-details');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}}
 async function confirmAdminSaleConfirmation(id){
-  const card=document.querySelector('.admin-sale-confirm-card[data-takeover-id="'+id+'"]');
-  const ids=Array.from(card?.querySelectorAll('.admin-sale-check:checked')||[]).map(x=>x.getAttribute('data-sale-id'));
-  const total=card?.querySelectorAll('.admin-sale-check').length||0;
+  const card=document.querySelector('.admin-sale-confirm-card[data-takeover-id="'+id+'"]'),ids=Array.from(card?.querySelectorAll('.admin-sale-check:checked')||[]).map(x=>x.getAttribute('data-sale-id')),total=card?.querySelectorAll('.admin-sale-check').length||0;
   if(!ids.length||ids.length!==total){toast('Tick every sale before confirming');return;}
-  try{
-    await api('/api/sales/confirmations/'+id+'/confirm',{method:'POST',body:JSON.stringify({checked_sale_ids:ids})});
-    toast('Sales confirmed');
-    await adminSalesConfirmations();
-  }catch(e){toast(e.message);}
+  try{await api('/api/sales/confirmations/'+id+'/confirm',{method:'POST',body:JSON.stringify({checked_sale_ids:ids})});toast('Sales confirmed');await adminSalesConfirmations();}catch(e){toast(e.message);}
 }
 async function cancelAdminSaleConfirmation(id){
   if(!confirm('Cancel this pending sale record? The attendant will be able to record it again.'))return;
-  try{
-    await api('/api/sales/confirmations/'+id+'/cancel',{method:'POST',body:'{}'});
-    toast('Sale confirmation cancelled');
-    await adminSalesConfirmations();
-  }catch(e){toast(e.message);}
+  try{await api('/api/sales/confirmations/'+id+'/cancel',{method:'POST',body:'{}'});toast('Sale confirmation cancelled');await adminSalesConfirmations();}catch(e){toast(e.message);}
 }
 
 function settingsMoveHandle(key,id,label){return '<button type="button" class="settings-move-handle" data-settings-key="'+h(key)+'" data-settings-id="'+h(id)+'" title="Hold and drag to move" aria-label="Hold and drag '+h(label||'item')+'" onclick="event.stopPropagation()">⋮</button>';}
