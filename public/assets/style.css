@@ -1096,3 +1096,21 @@
 }
 .attendant-page .takeover-sale-match{background:#eef8f1;color:#24733c;border:1px solid #cfe9d6}
 .attendant-page .takeover-sale-mismatch{background:#fff1f2;color:#a12838;border:1px solid #f1c5cb}
+
+
+/* Clear disabled state for takeover sale confirmation */
+.attendant-page .takeover-action-modal button.confirm-sale-button:disabled{
+  background:#d9dee5 !important;
+  border-color:#c9d0d8 !important;
+  color:#8a949f !important;
+  box-shadow:none !important;
+  cursor:not-allowed !important;
+  opacity:1 !important;
+  transform:none !important;
+}
+.attendant-page .takeover-action-modal button.confirm-sale-button:disabled:hover{
+  background:#d9dee5 !important;
+  border-color:#c9d0d8 !important;
+  color:#8a949f !important;
+  box-shadow:none !important;
+}
