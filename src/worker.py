@@ -1262,6 +1262,14 @@ def sale_confirmations():
     if status>=400:return jsonify(result),status
     return jsonify(result if isinstance(result,list) else []),200
 
+@app.get("/api/sales/history")
+def sale_history():
+    auth=require_admin()
+    if auth:return auth
+    status,result=rpc("list_confirmed_shift_takeover_sales",{})
+    if status>=400:return jsonify(result),status
+    return jsonify(result if isinstance(result,list) else []),200
+
 @app.post("/api/sales/confirmations/<takeover_id>/confirm")
 def confirm_sale_confirmation(takeover_id):
     auth=require_admin()
