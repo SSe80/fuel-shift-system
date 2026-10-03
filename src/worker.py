@@ -1214,6 +1214,37 @@ def create_purchase():
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
+@app.get("/api/inventory-summary")
+def inventory_summary():
+    auth=require_admin()
+    if auth:return auth
+    ts,tanks=sb("tanks",params={"select":"id,tank_code,product,capacity_liters,current_liters,opening_stock_liters,active","order":"tank_code.asc"})
+    if ts!=200:return jsonify(tanks),ts
+    ps,purchases_rows=sb("purchases",params={"select":"tank_id,product_id,product,quantity_liters,purchase_date","limit":"5000","order":"purchase_date.asc"})
+    if ps!=200:return jsonify(purchases_rows),ps
+    ss,sales_rows=sb("sales",params={"select":"product,quantity_liters,sale_time","limit":"5000","order":"sale_time.asc"})
+    if ss!=200:return jsonify(sales_rows),ss
+    result=[]
+    for tank in tanks:
+        if not tank.get("active"):continue
+        tid=str(tank.get("id"))
+        product=str(tank.get("product") or "")
+        purchases=sum(float(x.get("quantity_liters") or 0) for x in purchases_rows
+                      if str(x.get("tank_id") or "")==tid)
+        sales=sum(float(x.get("quantity_liters") or 0) for x in sales_rows
+                  if str(x.get("product") or "").strip().lower()==product.strip().lower())
+        opening=tank.get("opening_stock_liters")
+        current=float(tank.get("current_liters") or 0)
+        result.append({
+            "tank_id":tank.get("id"),"tank_code":tank.get("tank_code"),
+            "product":product,"capacity_liters":tank.get("capacity_liters"),
+            "opening_stock_liters":opening,"purchases_liters":purchases,
+            "sales_liters":sales,"current_liters":current,
+            "expected_liters":(float(opening or 0)+purchases-sales),
+            "stock_difference_liters":current-(float(opening or 0)+purchases-sales)
+        })
+    return jsonify(result),200
+
 @app.get("/api/tank-movements")
 def tank_movements():
     auth=require_admin()
