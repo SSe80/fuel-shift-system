@@ -855,6 +855,8 @@ function openAdminSaleHistoryDetails(id){
     '<div class="history-detail-confirmed"><span>✓</span><div><strong>Confirmed by admin</strong><small>'+h(confirmed)+'</small></div></div>'
   ].join('');
   const modal=document.getElementById('admin-sale-history-details');
+  const download=document.getElementById('admin-sale-history-download');
+  if(download)download.dataset.takeoverId=String(id);
   const box=document.getElementById('admin-sale-history-details-content');
   if(box)box.innerHTML=content;
   if(modal){
