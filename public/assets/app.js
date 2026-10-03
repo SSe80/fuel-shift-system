@@ -267,6 +267,7 @@ function closeTakeoverDetails(){
 
 async function userDashboard(){
   try{
+    await window.stationCurrencyReady;
     const me=await currentUser();
     if(me.role!=='attendant')return location.href='attendant-login.html';
     document.getElementById('name').textContent=me.name;
@@ -492,6 +493,7 @@ async function closeShift(event,id){
 
 async function adminDashboard(){
   try{
+    await window.stationCurrencyReady;
     const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
     const [allTanks,sales,allShifts,allProducts,allDispensers,employees,purchases]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles'),api('/api/users'),api('/api/purchases')]);
     const products=allProducts.filter(p=>p.active===true);
@@ -1162,6 +1164,8 @@ async function createShift(e){e.preventDefault();try{await api('/api/shifts',{me
 
 async function loadSaleContext(){
   try{
+    await window.stationCurrencyReady;
+    const saleCurrency=document.getElementById('sale-currency'); if(saleCurrency)saleCurrency.textContent='('+currencyLabel()+')';
     const [shifts,nozzles,products]=await Promise.all([api('/api/shifts'),api('/api/nozzles'),api('/api/products')]);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
@@ -1196,6 +1200,7 @@ async function addSale(){
   try{const r=await api('/api/sales',{method:'POST',body:JSON.stringify({shift_id:shiftId,product:document.getElementById('product').value,quantity_liters:litersSold,unit_price:price,payment_method:document.getElementById('payment').value})});toast('Sale recorded: '+liters(r.sale?.quantity_liters||litersSold)+' L');document.getElementById('liters').value='';await loadSalesHistory();}catch(e){toast(e.message);}
 }
 async function loadSalesHistory(){
+  await window.stationCurrencyReady;
   const box=document.getElementById('sales-history');
   if(!box)return;
   try{
@@ -1371,6 +1376,7 @@ async function createPurchase(e){e.preventDefault();try{await api('/api/purchase
 
 async function loadDailyReport(){
   try{
+    await window.stationCurrencyReady;
     const d=document.getElementById('report-date').value||new Date().toISOString().slice(0,10),[r,products]=await Promise.all([api('/api/reports/daily?date='+encodeURIComponent(d)),api('/api/products')]);
      const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
      const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
