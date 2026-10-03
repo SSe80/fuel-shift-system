@@ -908,6 +908,47 @@ def shifts():
     params={"select":"*","order":"created_at.desc","limit":"100"}
     if session.get("role")!="admin":params["employee_id"]="eq."+session["employee_id"]
     status,rows=sb("shifts",params=params)
+    if status != 200:
+        return jsonify(rows),status
+
+    # Enrich shifts from the normalized physical-nozzle reading tables.
+    # Legacy fields remain in the response for backward compatibility.
+    shift_ids=[str(r.get("id")) for r in rows if r.get("id")]
+    if shift_ids:
+        rs,reading_rows=sb("shift_nozzle_readings",params={
+            "shift_id":"in.("+",".join(shift_ids)+")",
+            "select":"id,shift_id,nozzle_id,opening_reading,closing_reading,opening_mm,closing_mm,opening_liters,closing_liters,opening_source_reading_id,closing_source_handover_id,opened_at,closed_at"
+        })
+        if rs==200:
+            nozzle_ids=[str(r.get("nozzle_id")) for r in reading_rows if r.get("nozzle_id")]
+            nozzle_map={}
+            if nozzle_ids:
+                ns,nrows=sb("dispenser_nozzles",params={
+                    "id":"in.("+",".join(sorted(set(nozzle_ids)))+")",
+                    "select":"id,dispenser_id,nozzle_number,nozzle_code,product_id,tank_id,active"
+                })
+                if ns==200:
+                    nozzle_map={str(r.get("id")):r for r in nrows}
+                    dispenser_ids=[str(r.get("dispenser_id")) for r in nrows if r.get("dispenser_id")]
+                    dispenser_map={}
+                    if dispenser_ids:
+                        ds,drows=sb("dispensers",params={
+                            "id":"in.("+",".join(sorted(set(dispenser_ids)))+")",
+                            "select":"id,dispenser_code,active"
+                        })
+                        if ds==200:
+                            dispenser_map={str(r.get("id")):r for r in drows}
+                    for rr in reading_rows:
+                        dn=nozzle_map.get(str(rr.get("nozzle_id")),{})
+                        rr["nozzle_code"]=dn.get("nozzle_code")
+                        rr["nozzle_number"]=dn.get("nozzle_number")
+                        rr["dispenser_id"]=dn.get("dispenser_id")
+                        rr["dispenser_code"]=dispenser_map.get(str(dn.get("dispenser_id")),{}).get("dispenser_code")
+            by_shift={}
+            for rr in reading_rows:
+                by_shift.setdefault(str(rr.get("shift_id")),[]).append(rr)
+            for row in rows:
+                row["nozzle_readings"]=by_shift.get(str(row.get("id")),[])
     return jsonify(rows),status
 
 @app.post("/api/shifts")
