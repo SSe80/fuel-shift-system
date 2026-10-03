@@ -364,7 +364,7 @@ async function userDashboard(){
 
     const takeoverList=Array.isArray(takeovers)?takeovers:[];
     const pendingTakeovers=takeoverList.filter(x=>x.sales_status==='pending_admin');
-    const readyTakeovers=takeoverList.filter(x=>!x.sales_status||x.sales_status==='awaiting_attendant'||x.sales_status==='cancelled');
+    const readyTakeovers=takeoverList.filter(x=>x.sales_status==='awaiting_attendant'&&String(x.from_employee_id)===String(me.id));
     const completedTakeovers=takeoverList.filter(x=>x.sales_status==='confirmed'||(!x.sales_status&&x.sales_recorded_at));
     window.dashboardSaleTypes=Array.isArray(saleTypes)?saleTypes:[];
     window.takeoverRecords=takeoverList;
@@ -389,12 +389,12 @@ async function userDashboard(){
         '</div>'+
       '</div>';
     }).join('');
-    const takeoverHtml=readyTakeovers.slice(0,5).map(t=>{
+    const takeoverHtml=readyTakeovers.map(t=>{
       const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
       const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
       const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
       return '<div class="card shift-takeover-card">'+
-        '<div class="takeover-hero"><div class="takeover-hero-icon">↔</div><div><div class="takeover-card-title">Shift Handover</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+'</div></div></div>'+
+        '<div class="takeover-hero"><div class="takeover-hero-icon">↔</div><div><div class="takeover-card-title">Record Sale</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+' • Handover completed</div></div></div>'+
         '<div class="takeover-total-grid"><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div></div>'+
         '<div class="row takeover-sale-action"><button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button><button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button></div>'+
       '</div>';
