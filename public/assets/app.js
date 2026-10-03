@@ -1369,7 +1369,10 @@ async function openDashboardHandover(shiftId){
       to_employee_id:'',
       closing_reading:null,
       closing_nozzle_readings:[],
-      closing_liters:null
+      closing_liters:null,
+      nozzle_readings:Array.isArray(selected.nozzle_readings)?selected.nozzle_readings:[],
+      shift_nozzle_readings:Array.isArray(selected.nozzle_readings)?selected.nozzle_readings:[],
+      activation_nozzles:Array.isArray(selected.activation_nozzles)?selected.activation_nozzles:[]
     };
 
     const receiving=employees.filter(e=>String(e.id)!==String(me.id));
@@ -1387,10 +1390,23 @@ async function openDashboardHandover(shiftId){
     if(tankEl)tankEl.textContent=tank?.tank_code||nozzle?.tank_id||'Not connected';
 
     const nozzleInputs=document.getElementById('handover-nozzle-readings');
+    const normalizedOpenings=Array.isArray(selected.nozzle_readings)?selected.nozzle_readings:[];
+    const activationOpenings=Array.isArray(selected.activation_nozzles)?selected.activation_nozzles:[];
+    const openingForNozzle=(id)=>{
+      const nr=normalizedOpenings.find(r=>String(r.nozzle_code||r.nozzle_id)===String(id));
+      if(nr&&Number.isFinite(Number(nr.opening_reading)))return Number(nr.opening_reading);
+      const ar=activationOpenings.find(r=>String(r.nozzle_id)===String(id));
+      return ar&&Number.isFinite(Number(ar.opening_reading))?Number(ar.opening_reading):null;
+    };
     if(nozzleInputs){
-      nozzleInputs.innerHTML=nozzleIds.map((id,i)=>
-        '<label class="handover-nozzle-input"><span>Nozzle '+(i+1)+' — '+h(id)+'</span><input id="handover-nozzle-reading-'+i+'" type="number" min="0" step="0.01" placeholder="Enter closing meter reading" required></label>'
-      ).join('');
+      nozzleInputs.innerHTML=nozzleIds.map((id,i)=>{
+        const opening=openingForNozzle(id);
+        const minAttr=opening!==null?' min="'+opening+'"':' min="0"';
+        const placeholder=opening!==null?'Closing must be '+opening+' or higher':'Enter closing meter reading';
+        return '<label class="handover-nozzle-input"><span>Nozzle '+(i+1)+' — '+h(id)+'</span>'+
+          '<small class="muted">Opening: '+(opening!==null?Number(opening).toLocaleString():'Not recorded')+'</small>'+
+          '<input id="handover-nozzle-reading-'+i+'" type="number"'+minAttr+' step="0.01" placeholder="'+placeholder+'" required></label>';
+      }).join('');
     }
     const closingLiters=document.getElementById('handover-closing-liters');
     if(closingLiters)closingLiters.value='';
@@ -1441,6 +1457,18 @@ function continueHandover(event){
   const closingLiters=Number(document.getElementById('handover-closing-liters').value);
   if(!to){toast('Select a receiving attendant');return;}
   if(!closingNozzleReadings.length||closingNozzleReadings.some(x=>!Number.isFinite(x.reading)||x.reading<0)){toast('Enter a valid closing reading for every dispenser nozzle');return;}
+  const normalizedOpenings=Array.isArray(window.handoverDraft?.nozzle_readings)?window.handoverDraft.nozzle_readings:[];
+  const selectedShiftOpening=window.handoverDraft?.shift_nozzle_readings||[];
+  const activationOpenings=Array.isArray(window.handoverDraft?.activation_nozzles)?window.handoverDraft.activation_nozzles:[];
+  for(const item of closingNozzleReadings){
+    const nr=normalizedOpenings.find(r=>String(r.nozzle_code||r.nozzle_id)===String(item.nozzle_id))||selectedShiftOpening.find(r=>String(r.nozzle_code||r.nozzle_id)===String(item.nozzle_id));
+    const ar=activationOpenings.find(r=>String(r.nozzle_id)===String(item.nozzle_id));
+    const opening=nr&&Number.isFinite(Number(nr.opening_reading))?Number(nr.opening_reading):(ar&&Number.isFinite(Number(ar.opening_reading))?Number(ar.opening_reading):null);
+    if(opening!==null&&item.reading<opening){
+      toast('Closing reading for '+item.nozzle_id+' cannot be lower than opening reading ('+opening+').');
+      return;
+    }
+  }
   if(!Number.isFinite(closingLiters)||closingLiters<0){toast('Enter valid tank closing liters');return;}
   const primaryReading=closingNozzleReadings[0].reading;
   window.handoverDraft={...window.handoverDraft,to_employee_id:to,closing_reading:primaryReading,closing_nozzle_readings:closingNozzleReadings,closing_liters:closingLiters};
