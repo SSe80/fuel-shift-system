@@ -126,14 +126,26 @@ function continueTakeoverSale(){
   const confirm=document.getElementById('takeover-sale-confirm-modal');
   const content=document.getElementById('takeover-sale-confirm-content');
   const total=sales.reduce((sum,x)=>sum+x.amount,0);
+  const calculated=Number(takeover.total_sales_amount||0);
+  const difference=Math.abs(total-calculated);
+  const missingReason=sales.find(x=>x.reason_required&&!x.reason);
+  const matches=difference<=1 && sales.length>0 && !missingReason;
   if(content)content.innerHTML=
-    '<div class="takeover-sale-summary takeover-confirm-summary"><div><span>Calculated liters</span><strong>'+liters(takeover.total_sales_liters)+' L</strong></div><div><span>Calculated sales amount</span><strong>'+money(takeover.total_sales_amount)+'</strong></div></div>'+
+    '<div class="takeover-sale-summary takeover-confirm-summary"><div><span>Calculated liters</span><strong>'+liters(takeover.total_sales_liters)+' L</strong></div><div><span>Calculated sales amount</span><strong>'+money(calculated)+'</strong></div></div>'+
     '<div class="takeover-review-card"><div class="takeover-review-title">Review entered sales</div>'+
     (sales.length?sales.map(x=>'<div class="takeover-confirm-sale-row"><span>'+h(x.name)+'</span><strong>'+money(x.amount)+'</strong></div>').join(''):'<div class="takeover-review-empty">No sale amounts entered.</div>')+
     '<div class="takeover-confirm-total"><span>Entered sales total</span><strong>'+money(total)+'</strong></div>'+
-    '</div>';
+    '<div class="takeover-confirm-check"><span>Difference</span><b>'+money(difference)+'</b></div></div>'+
+    (missingReason?'<div class="takeover-sale-mismatch">Reason required for '+h(missingReason.name)+'.</div>':
+     !sales.length?'<div class="takeover-sale-mismatch">Enter at least one sale amount.</div>':
+     matches?'<div class="takeover-sale-match">Sales total is within the allowed ETB 1.00 difference.</div>':
+     '<div class="takeover-sale-mismatch">Sales total must be within ETB 1.00 of the calculated amount.</div>');
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  if(confirm){confirm.classList.add('open');confirm.setAttribute('aria-hidden','false');}
+  if(confirm){
+    confirm.classList.add('open');confirm.setAttribute('aria-hidden','false');
+    const button=confirm.querySelector('button.confirm-sale-button');
+    if(button)button.disabled=!matches;
+  }
 }
 function editTakeoverSaleEntries(){
   const modal=document.getElementById('takeover-sale-confirm-modal');
