@@ -206,7 +206,7 @@ async function confirmTakeoverSale(){
     await api('/api/shift-takeovers/'+id+'/record-sale',{method:'POST',body:JSON.stringify({sales:sales.map(x=>({sale_type_id:x.sale_type_id,amount:x.amount,reason:x.reason||null}))})});
     closeTakeoverSaleConfirm();
     closeTakeoverSaleModal();
-    toast('Sale recorded');
+    toast('Sale submitted for admin confirmation');
     await userDashboard();
   }catch(e){
     if(button)button.disabled=false;
@@ -253,6 +253,15 @@ function openTakeoverDetails(id){
 function closeTakeoverDetails(){
   const modal=document.getElementById('takeover-details-modal');
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+
+async function cancelPendingTakeoverSale(id){
+  if(!confirm('Cancel this pending sale record?'))return;
+  try{
+    await api('/api/shift-takeovers/'+id+'/cancel-sale',{method:'POST',body:'{}'});
+    toast('Pending sale cancelled');
+    await userDashboard();
+  }catch(e){toast(e.message);}
 }
 
 async function userDashboard(){
@@ -339,16 +348,32 @@ async function userDashboard(){
       '</div>';
     }).join('');
 
-    const completedTakeovers=Array.isArray(takeovers)
-      ?takeovers.filter(x=>String(x.from_employee_id)===String(me.id)&&!x.sales_recorded_at)
-      :[];
+    const takeoverList=Array.isArray(takeovers)?takeovers.filter(x=>String(x.from_employee_id)===String(me.id)):[];
+    const pendingTakeovers=takeoverList.filter(x=>x.sales_status==='pending_admin');
+    const completedTakeovers=takeoverList.filter(x=>x.sales_status==='confirmed'||(!x.sales_status&&x.sales_recorded_at));
     window.dashboardSaleTypes=Array.isArray(saleTypes)?saleTypes:[];
-    window.takeoverRecords=completedTakeovers;
+    window.takeoverRecords=takeoverList;
     window.dashboardShiftRecords=shifts;
     window.dashboardNozzleRecords=nozzles;
     window.dashboardEmployeeRecords=employees;
     window.dashboardTankRecords=tanks;
 
+    const pendingTakeoverHtml=pendingTakeovers.slice(0,5).map(t=>{
+      const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
+      const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
+      const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
+      return '<div class="card shift-takeover-card pending-takeover-sale-card">'+
+        '<div class="takeover-hero"><div class="takeover-hero-icon">◷</div><div><div class="takeover-card-title">Pending Sale Confirmation</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+' • Waiting for admin</div></div></div>'+
+        '<div class="takeover-total-grid">'+
+          '<div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div>'+
+          '<div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
+        '</div>'+
+        '<div class="row takeover-sale-action">'+
+          '<button class="btn" type="button" onclick="cancelPendingTakeoverSale(\''+t.id+'\')">Cancel</button>'+
+          '<button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button>'+
+        '</div>'+
+      '</div>';
+    }).join('');
     const takeoverHtml=completedTakeovers.slice(0,5).map(t=>{
       const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
       const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
@@ -360,7 +385,6 @@ async function userDashboard(){
           '<div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
         '</div>'+
         '<div class="row takeover-sale-action">'+
-          '<button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button>'+
           '<button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button>'+
         '</div>'+
       '</div>';
@@ -389,7 +413,7 @@ async function userDashboard(){
         '<button class="primary active-close-shift" type="button" onclick="closeShift(event,\''+s.id+'\')">Close Shift</button></div></div>';
     }).join('');
 
-    box.innerHTML=pendingShiftHtml+takeoverHtml+pendingOutgoingHtml+pendingIncomingHtml+activeHtml;
+    box.innerHTML=pendingShiftHtml+pendingTakeoverHtml+takeoverHtml+pendingOutgoingHtml+pendingIncomingHtml+activeHtml;
     if(!box.innerHTML)box.innerHTML='';
   }catch(e){
     if(e.message==='Unauthorized')location.href='attendant-login.html';
