@@ -6,11 +6,25 @@
     return body && body.getAttribute('data-app-page');
   }
 
+  function status(message) {
+    var s = document.getElementById('settings-status') ||
+            document.getElementById('dashboard-status') ||
+            document.getElementById('sales-confirmation-status');
+    if (s) s.textContent = message;
+  }
+
   function run(name) {
-    if (typeof window[name] === 'function') {
-      try { window[name](); } catch (e) {
-        var s = document.getElementById('settings-status') || document.getElementById('dashboard-status');
-        if (s) s.textContent = 'Application error: ' + (e.message || e);
+    var fn = window[name];
+    if (typeof fn === 'function') {
+      try {
+        var result = fn();
+        if (result && typeof result.catch === 'function') {
+          result.catch(function (e) {
+            status('Application error: ' + (e && e.message ? e.message : e));
+          });
+        }
+      } catch (e) {
+        status('Application error: ' + (e && e.message ? e.message : e));
       }
       return true;
     }
@@ -19,19 +33,21 @@
 
   function loadAppAndRun(name) {
     if (run(name)) return;
+
     var script = document.createElement('script');
-    script.src = 'assets/app.js?recovery=20261003-06';
+    script.src = 'assets/app.js?v=20261004-01';
     script.async = false;
+
     script.onload = function () {
       if (!run(name)) {
-        var s = document.getElementById('settings-status') || document.getElementById('dashboard-status');
-        if (s) s.textContent = 'Application script loaded but page functions are unavailable.';
+        status('Application loaded, but "' + name + '" is not available. Check the browser console for a JavaScript error.');
       }
     };
+
     script.onerror = function () {
-      var s = document.getElementById('settings-status') || document.getElementById('dashboard-status');
-      if (s) s.textContent = 'Application script could not be loaded.';
+      status('Application script could not be loaded.');
     };
+
     document.head.appendChild(script);
   }
 
