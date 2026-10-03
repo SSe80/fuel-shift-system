@@ -618,6 +618,9 @@ async function cancelAdminSaleConfirmation(id){
   }catch(e){toast(e.message);}
 }
 
+function settingsMoveHandle(key,id,label){return '<button type="button" class="settings-move-handle" data-settings-key="'+h(key)+'" data-settings-id="'+h(id)+'" title="Hold and drag to move" aria-label="Hold and drag '+h(label||'item')+'" onclick="event.stopPropagation()">↕</button>';}
+function applySavedSettingsOrder(records,key,orders){const saved=Array.isArray(orders?.[key])?orders[key].map(String):[];const rank=new Map(saved.map((id,i)=>[id,i]));return [...records].sort((a,b)=>(rank.has(String(a.id))?rank.get(String(a.id)):Number.MAX_SAFE_INTEGER)-(rank.has(String(b.id))?rank.get(String(b.id)):Number.MAX_SAFE_INTEGER));}
+function settingsOrderFromContainer(container){return Array.from(container?.querySelectorAll(':scope > .settings-item-card[data-settings-id]')||[]).map(x=>String(x.dataset.settingsId));}
 async function adminSettings(){
   try{
     const me=await currentUser();
@@ -636,7 +639,9 @@ async function _cancelAdminPendingShift(id){
   }catch(e){throw e;}
 }
 async function loadSettingsData(){
-  const [employees,tanks,dispensers,products,shifts,saleTypes,stationSettings]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts'),api('/api/sale-types'),api('/api/settings')]);
+  let [employees,tanks,dispensers,products,shifts,saleTypes,stationSettings]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts'),api('/api/sale-types'),api('/api/settings')]);
+  const savedOrders=stationSettings?.item_orders||{};
+  products=applySavedSettingsOrder(products,'products',savedOrders);saleTypes=applySavedSettingsOrder(saleTypes,'saleTypes',savedOrders);employees=applySavedSettingsOrder(employees,'employees',savedOrders);tanks=applySavedSettingsOrder(tanks,'tanks',savedOrders);dispensers=applySavedSettingsOrder(dispensers,'dispensers',savedOrders);
   const stationCurrency=String(stationSettings?.currency||'ETB').trim();
   window.stationCurrency=stationCurrency;
   const currencyInput=document.getElementById('station-currency');
