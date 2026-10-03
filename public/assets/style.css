@@ -1216,3 +1216,11 @@
 .admin-settings-page .settings-item-card.expanded .dispenser-card-actions{
   display:flex;
 }
+
+/* Force-hide every button inside minimized Settings sub-cards. */
+.admin-settings-page .settings-item-card:not(.expanded) button{
+  display:none !important;
+}
+.admin-settings-page .settings-item-card.expanded button{
+  display:inline-flex;
+}
