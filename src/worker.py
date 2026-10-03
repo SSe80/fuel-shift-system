@@ -1237,6 +1237,26 @@ def inventory_summary():
         if ns!=200:return jsonify(nozzle_rows),ns
         nozzle_map={str(x.get("id")):x for x in nozzle_rows}
 
+    # Completed shift handovers also contain physical nozzle sales that may
+    # not yet exist as rows in public.sales. Count only the unrecorded portion
+    # so normal fuel-sale rows are never double-counted.
+    hs,handovers_rows=sb("shift_takeovers",params={
+        "select":"shift_id,tank_id,tank_sales_liters",
+        "limit":"5000"
+    })
+    if hs!=200:return jsonify(handovers_rows),hs
+
+    recorded_sales_by_shift={}
+    for sale in sales_rows:
+        sid=str(sale.get("shift_id") or "")
+        if not sid:continue
+        nozzle=nozzle_map.get(str(sale.get("nozzle_id"))) or {}
+        if not nozzle.get("tank_id"):continue
+        recorded_sales_by_shift[(sid,str(nozzle.get("tank_id")))] = (
+            recorded_sales_by_shift.get((sid,str(nozzle.get("tank_id"))),0)
+            + float(sale.get("quantity_liters") or 0)
+        )
+
     result=[]
     for tank in tanks:
         if not tank.get("active"):continue
@@ -1246,6 +1266,19 @@ def inventory_summary():
                       if str(x.get("tank_id") or "")==tid)
         sales=sum(float(x.get("quantity_liters") or 0) for x in sales_rows
                   if str((nozzle_map.get(str(x.get("nozzle_id"))) or {}).get("tank_id") or "")==tid)
+
+        # Add physical sales captured by completed handovers when those liters
+        # have not already been recorded as individual fuel-sale rows.
+        handover_sales=0
+        for takeover in handovers_rows:
+            if str(takeover.get("tank_id") or "")!=tid:
+                continue
+            sid=str(takeover.get("shift_id") or "")
+            physical=float(takeover.get("tank_sales_liters") or 0)
+            recorded=recorded_sales_by_shift.get((sid,tid),0)
+            handover_sales += max(physical-recorded,0)
+
+        sales += handover_sales
         opening=tank.get("opening_stock_liters")
         current=float(tank.get("current_liters") or 0)
         result.append({
