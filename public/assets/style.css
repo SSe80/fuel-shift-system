@@ -2059,8 +2059,8 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 
 /* Sales history search — compact icon trigger */
 .admin-sales-page .sales-history-section .admin-sales-section-heading{position:relative;padding-right:46px}
-.admin-sales-page .sales-history-search-icon{position:absolute;right:0;top:0;width:36px;height:36px;display:grid;place-items:center;padding:0;border:1px solid #dbe2e9;border-radius:10px;background:#f8fafc;color:#344054;font-size:21px;font-weight:800;line-height:1;cursor:pointer}
-.admin-sales-page .sales-history-search-icon:hover{background:#eef4ff;color:#1457ad;border-color:#cbdcf5;transform:translateY(-1px)}
+.admin-sales-page .sales-history-search-icon{position:absolute;right:0;top:0;width:36px;height:36px;display:grid;place-items:center;padding:0;border:0;background:transparent;color:#667085;font-size:23px;font-weight:700;line-height:1;cursor:pointer;transition:color .15s,transform .15s}
+.admin-sales-page .sales-history-search-icon:hover{background:transparent;color:#1264d8;transform:scale(1.08)}
 .admin-sales-page .admin-sales-history-tools[hidden]{display:none}
 .admin-sales-page .admin-sales-history-tools{margin-top:0}
 @media(max-width:600px){.admin-sales-page .sales-history-search-icon{width:34px;height:34px;font-size:20px}}
