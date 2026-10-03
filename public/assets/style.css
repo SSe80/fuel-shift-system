@@ -1374,3 +1374,10 @@
 .admin-settings-page .settings-item-card.settings-active-card .settings-move-handle{
   display:none !important;
 }
+
+/* Active cards must never show or allow the reorder control */
+.admin-settings-page .settings-item-card.settings-active-card .settings-move-handle,
+.admin-settings-page .settings-item-card.dispenser-active-card .settings-move-handle{
+  display:none !important;
+  pointer-events:none !important;
+}
