@@ -306,8 +306,12 @@ async function userDashboard(){
     const pendingShiftHtml=pendingShifts.map(s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
       const readings=Array.isArray(s.activation_nozzles)?s.activation_nozzles:[];
+      const configuredNozzleIds=Array.isArray(n?.nozzle_ids)?n.nozzle_ids:[];
       const nozzleReadings=readings.length
-        ?readings.map((x,i)=>'<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(x.opening_reading)+'</div><div class="pending-nozzle-code">'+h(x.nozzle_id)+'</div></div>').join('')
+        ?readings.map((x,i)=>{
+          const nozzleCode=x?.nozzle_id||configuredNozzleIds[i]||('Nozzle '+(i+1));
+          return '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(x?.opening_reading)+'</div><div class="pending-nozzle-code">'+h(nozzleCode)+'</div></div>';
+        }).join('')
         :'<div class="muted">No nozzle readings recorded.</div>';
       return '<div class="card pending-confirmation-card">'+
         '<div class="pending-hero"><div class="pending-hero-icon">◷</div><div><div class="pending-card-title">Pending Shift Confirmation</div><div class="pending-card-subtitle">Please review the shift details and confirm when ready.</div></div></div>'+
