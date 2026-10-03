@@ -554,6 +554,58 @@ async function adminDashboard(){
     el('dashboard-status').textContent=low.length?low.length+' tank(s) are at or below 10% capacity.':'Dashboard shows only activated Settings records.';
   }catch(e){const s=document.getElementById('dashboard-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
+async function adminSalesConfirmations(){
+  try{
+    const me=await currentUser();
+    if(me.role!=='admin')return location.href='admin-login.html';
+    await window.stationCurrencyReady;
+    const list=await api('/api/sales/confirmations');
+    const box=document.getElementById('sales-confirmation-list');
+    if(!box)return;
+    if(!Array.isArray(list)||!list.length){
+      box.innerHTML='<div class="card"><p class="muted">No pending sales confirmations.</p></div>';
+      return;
+    }
+    box.innerHTML=list.map(item=>{
+      const t=item.takeover||{};
+      const sales=Array.isArray(item.sales)?item.sales:[];
+      const dispenser=item.dispenser?.name||'Dispenser';
+      const shift=item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||''));
+      const checked=sales.map(s=>'<label class="admin-sale-check-row"><input type="checkbox" class="admin-sale-check" data-sale-id="'+h(s.id)+'"><span><strong>'+h(s.sale_type_name||'Sale')+'</strong><small>'+(s.sale_type_description?h(s.sale_type_description)+' • ':'')+'Amount: '+money(s.amount)+(s.reason?' • Reason: '+h(s.reason):'')+'</small></span></label>').join('');
+      return '<div class="card admin-sale-confirm-card" data-takeover-id="'+h(t.id)+'">'+
+        '<div class="top"><div><span class="section-kicker">SALE CONFIRMATION</span><h3>'+h(dispenser)+'</h3><p class="muted">'+h(shift)+'</p></div><span class="pending-sale-badge">Pending</span></div>'+
+        '<div class="admin-sale-context"><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Calculated amount</span><strong>'+money(t.total_sales_amount)+'</strong></div></div>'+
+        '<div class="admin-sale-check-section"><div class="takeover-detail-heading">Sales to check</div>'+checked+'</div>'+
+        '<div class="admin-sale-total"><span>Submitted sales total</span><strong>'+money(sales.reduce((sum,x)=>sum+Number(x.amount||0),0))+'</strong></div>'+
+        '<div class="row"><button type="button" onclick="cancelAdminSaleConfirmation(\''+t.id+'\')">Cancel</button><button type="button" class="primary" onclick="confirmAdminSaleConfirmation(\''+t.id+'\')">Confirm</button></div>'+
+      '</div>';
+    }).join('');
+  }catch(e){
+    const box=document.getElementById('sales-confirmation-status');
+    if(box)box.textContent=e.message;
+    if(e.message==='Unauthorized')location.href='admin-login.html';
+  }
+}
+async function confirmAdminSaleConfirmation(id){
+  const card=document.querySelector('.admin-sale-confirm-card[data-takeover-id="'+id+'"]');
+  const ids=Array.from(card?.querySelectorAll('.admin-sale-check:checked')||[]).map(x=>x.getAttribute('data-sale-id'));
+  const total=card?.querySelectorAll('.admin-sale-check').length||0;
+  if(!ids.length||ids.length!==total){toast('Tick every sale before confirming');return;}
+  try{
+    await api('/api/sales/confirmations/'+id+'/confirm',{method:'POST',body:JSON.stringify({checked_sale_ids:ids})});
+    toast('Sales confirmed');
+    await adminSalesConfirmations();
+  }catch(e){toast(e.message);}
+}
+async function cancelAdminSaleConfirmation(id){
+  if(!confirm('Cancel this pending sale record? The attendant will be able to record it again.'))return;
+  try{
+    await api('/api/sales/confirmations/'+id+'/cancel',{method:'POST',body:'{}'});
+    toast('Sale confirmation cancelled');
+    await adminSalesConfirmations();
+  }catch(e){toast(e.message);}
+}
+
 async function adminSettings(){
   try{
     const me=await currentUser();
