@@ -1043,3 +1043,43 @@
 .admin-settings-page #sale-types button:not(.primary){background:#eef2f6;color:#344054}
 .admin-settings-page #sale-types button[onclick*="toggle"]{background:#eaf2ff;color:#1457ad}
 .admin-settings-page #sale-types button[onclick*="remove"]{color:#9a3412;background:#fff3e8}
+
+.attendant-page .takeover-total-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;padding:10px 14px;
+}
+.attendant-page .takeover-total-grid>div{padding:8px 10px;border-radius:9px}
+.attendant-page .takeover-total-grid span{font-size:10px;margin-bottom:2px}
+.attendant-page .takeover-total-grid strong{font-size:12px}
+.attendant-page .takeover-sales-entry-section{padding:0 14px 12px}
+.attendant-page .takeover-sales-entry-title{
+  font-size:12px;font-weight:850;text-transform:uppercase;letter-spacing:.05em;
+  color:#435160;margin-bottom:7px;
+}
+.attendant-page .takeover-sale-entry{
+  padding:10px;border:1px solid #e0e6ec;border-radius:10px;background:#fff;margin-top:7px;
+}
+.attendant-page .takeover-sale-entry-head{
+  display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:9px;align-items:center;
+}
+.attendant-page .takeover-sale-entry-head strong{font-size:13px;color:#263442}
+.attendant-page .takeover-sale-entry-head small{display:block;margin-top:2px;color:#788391;font-size:10.5px;line-height:1.35}
+.attendant-page .takeover-sale-amount{
+  width:100%;height:40px;padding:8px 9px;border:1px solid #d5dde6;border-radius:9px;
+  font-weight:800;text-align:right;background:#fafbfd;
+}
+.attendant-page .takeover-sale-reason-label{display:block;margin-top:8px;font-size:11px;font-weight:750;color:#66717d}
+.attendant-page .takeover-sale-reason{margin-top:4px;min-height:60px}
+.attendant-page .takeover-confirm-sales{border:1px solid #e0e6ec;border-radius:11px;overflow:hidden;background:#fff}
+.attendant-page .takeover-confirm-sale-row,.attendant-page .takeover-confirm-total{
+  display:flex;justify-content:space-between;gap:12px;padding:12px 13px;border-bottom:1px solid #edf0f3;
+}
+.attendant-page .takeover-confirm-sale-row span{color:#66717d;font-size:12px}
+.attendant-page .takeover-confirm-sale-row strong{font-size:13px;color:#263442}
+.attendant-page .takeover-confirm-total{background:#fafbfd;border-bottom:0}
+.attendant-page .takeover-confirm-total span{font-weight:800;color:#435160}
+.attendant-page .takeover-confirm-total strong{font-size:16px;color:#7e1626}
+.attendant-page .takeover-confirm-check{margin-top:9px;font-size:11px;color:#697582;text-align:right}
+@media(max-width:420px){
+  .attendant-page .takeover-sale-entry-head{grid-template-columns:minmax(0,1fr) 105px}
+}
