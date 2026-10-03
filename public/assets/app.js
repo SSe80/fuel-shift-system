@@ -501,7 +501,10 @@ async function _cancelAdminPendingShift(id){
   }catch(e){throw e;}
 }
 async function loadSettingsData(){
-  const [employees,tanks,dispensers,products,shifts,saleTypes]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts'),api('/api/sale-types')]);
+  const [employees,tanks,dispensers,products,shifts,saleTypes,stationSettings]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts'),api('/api/sale-types'),api('/api/settings')]);
+  const stationCurrency=String(stationSettings?.currency||'ETB').trim();
+  const currencyInput=document.getElementById('station-currency');
+  if(currencyInput)currencyInput.value=stationCurrency;
   const productByName=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p]));
   const codeForProduct=product=>productByName[String(product||'').toLowerCase()]?.code_name||product;
   const pendingHandovers=shifts.filter(x=>x.status==='assigned');
@@ -513,7 +516,7 @@ async function loadSettingsData(){
   const pendingBox=document.getElementById('pending-handovers');
   if(pendingBox) pendingBox.innerHTML='';
 
-  document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card ${p.active?'settings-active-card':''}"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><div class="settings-card-details"><div><span>Name:</span> <b>${h(p.name)}</b></div><div><span>Status:</span> <b>${p.active?'Active':'Inactive'}</b></div><div><span>Price:</span> <b>${p.selling_price==null?'Not set':Number(p.selling_price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'Activate'}</button><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeProduct('${p.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
+  document.getElementById('products').innerHTML=products.length?products.map(p=>`<div class="card ${p.active?'settings-active-card':''}"><div class="top"><div><b><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${h(p.color)};vertical-align:-1px;margin-right:6px"></span>${h(p.code_name)}</b><div class="settings-card-details"><div><span>Name:</span> <b>${h(p.name)}</b></div><div><span>Status:</span> <b>${p.active?'Active':'Inactive'}</b></div><div><span>Price:</span> <b>${p.selling_price==null?'Not set':h(stationCurrency+' '+Number(p.selling_price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}))}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Deactivate':'Activate'}</button><button type="button" onclick="openProductEdit('${p.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeProduct('${p.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No products.</p>';
   window.productRecords=products;
   const saleBox=document.getElementById('sale-types');
   if(saleBox){
@@ -643,6 +646,7 @@ function openProductEdit(id){
   document.getElementById('edit-product-color').value=p.color||'#1264d8';
   bindPriceInputs('edit-product-price-major','edit-product-price-cents');
   setPriceParts(p.selling_price,'edit-product-price-major','edit-product-price-cents');
+  const currencyLabel=document.getElementById('edit-product-currency'); if(currencyLabel)currencyLabel.textContent='('+String(document.getElementById('station-currency')?.value||'ETB').trim()+')';
   const modal=document.getElementById('product-edit-modal');
   modal.classList.add('open');
   modal.setAttribute('aria-hidden','false');
@@ -654,6 +658,17 @@ function closeProductEdit(){
   modal.setAttribute('aria-hidden','true');
   document.getElementById('product-edit-form').reset();
 }
+async function saveStationCurrency(){
+  const input=document.getElementById('station-currency');
+  const currency=String(input?.value||'').trim().toUpperCase();
+  if(!currency){toast('Enter a currency');return;}
+  const details='<p><b>Currency:</b> '+h(currency)+'</p>'+settingsStatus('Applies to all product prices');
+  showSettingsConfirmation('Review Currency Change',details,async()=>{
+    await api('/api/settings',{method:'PATCH',body:JSON.stringify({currency})});
+    await loadSettingsData();
+  },'Currency updated successfully','<p>The station currency is now <b>'+h(currency)+'</b>.</p>'+details);
+}
+
 async function _saveProductEdit(event){
   event.preventDefault();
   const id=document.getElementById('edit-product-id').value;
@@ -745,6 +760,7 @@ function openProductActivation(id){
   document.getElementById('activation-target-id').value=id;
   document.getElementById('activation-target-type').value='product';
   document.getElementById('activation-target-title').textContent='Activate Product?';
+  const currencyLabel=document.getElementById('activation-product-currency'); if(currencyLabel)currencyLabel.textContent='('+String(document.getElementById('station-currency')?.value||'ETB').trim()+')';
   const priceBox=document.getElementById('product-activation-price');
   if(priceBox){priceBox.style.display='block';bindPriceInputs('activation-price-major','activation-price-cents');setPriceParts(p.selling_price,'activation-price-major','activation-price-cents');}
   document.getElementById('activation-target-message').innerHTML='<b>'+h(p.code_name)+'</b> — '+h(p.name)+'<br><span class="muted">This product will become available for tanks, dispensers and sales.</span>';
