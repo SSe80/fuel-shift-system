@@ -2065,3 +2065,17 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 .admin-sales-page .admin-sales-history-tools[hidden]{display:none}
 .admin-sales-page .admin-sales-history-tools{margin-top:0}
 @media(max-width:600px){.admin-sales-page .sales-history-search-icon{width:34px;height:34px;font-size:20px}}
+
+
+/* Sales history filters — popup opened from the search icon */
+.admin-sales-page .admin-sales-filter-modal .modal-card{width:min(100% - 28px,430px);padding:19px}
+.admin-sales-page .admin-sales-filter-card .top{align-items:flex-start;margin-bottom:18px}
+.admin-sales-page .admin-sales-filter-card h3{margin:0;font-size:19px}
+.admin-sales-page .admin-sales-filter-modal-fields{display:grid;gap:12px}
+.admin-sales-page .admin-sales-filter-modal-fields label{display:grid;gap:6px}
+.admin-sales-page .admin-sales-filter-modal-fields label>span{font-size:11px;font-weight:800;color:#667085;text-transform:uppercase;letter-spacing:.06em}
+.admin-sales-page .admin-sales-filter-modal-fields input,
+.admin-sales-page .admin-sales-filter-modal-fields select{width:100%;min-height:44px;padding:10px 12px;border:1px solid #d6dde6;border-radius:10px;background:#fff;font:inherit;box-sizing:border-box}
+.admin-sales-page .admin-sales-filter-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.admin-sales-page .admin-sales-filter-modal-actions button{min-height:40px;padding:9px 14px;border-radius:10px}
+@media(max-width:560px){.admin-sales-page .admin-sales-filter-modal-actions{display:grid;grid-template-columns:1fr 1fr}.admin-sales-page .admin-sales-filter-modal-actions button{width:100%}}
