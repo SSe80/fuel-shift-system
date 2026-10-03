@@ -2139,3 +2139,9 @@ function toggleSettingsItem(event,item){
   if(event && event.target && event.target.closest('button,a,input,select,textarea'))return;
   item.classList.toggle('expanded');
 }
+
+// Explicit page entry exports for the boot loader.
+window.adminDashboard=adminDashboard;
+window.adminSalesConfirmations=adminSalesConfirmations;
+window.adminSettings=adminSettings;
+window.userDashboard=userDashboard;
