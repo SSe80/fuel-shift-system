@@ -153,7 +153,6 @@
       <form id="tank-edit-form" class="modal-card form" onsubmit="saveTankEdit(event)">
         <div class="top"><h3>Edit Fuel Tank</h3><button type="button" class="modal-close" onclick="closeTankEdit()" aria-label="Close">×</button></div>
         <input id="edit-tank-id" type="hidden">
-        <label>Tank order<select id="edit-tank-order" required></select></label>
         <label>Tank size (liters)<input id="edit-tank-capacity" type="number" min="1" step="0.01" required></label>
         <div class="row">
           <button type="submit" class="primary">Save Changes</button>
@@ -172,7 +171,6 @@
         <input id="edit-dispenser-id" type="hidden">
         <label>Product<select id="edit-dispenser-product" required></select></label>
         <label>Tank<select id="edit-dispenser-tank" required></select></label>
-        <label>Dispenser order<select id="edit-dispenser-order" required></select></label>
         <label>Nozzles<select id="edit-dispenser-nozzle-count" required>
           <option value="1">1 nozzle</option><option value="2">2 nozzles</option><option value="3">3 nozzles</option><option value="4">4 nozzles</option>
         </select></label>
