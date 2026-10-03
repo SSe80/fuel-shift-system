@@ -154,9 +154,9 @@ async function userDashboard(){
           '<div class="pending-tank-opening"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank opening</span><strong>'+liters(x.closing_liters)+' <small>L</small></strong></div></div>'+
         '</div>'+
         '<div class="pending-nozzle-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Nozzle opening readings</div>'+nozzleReadings+'</div>'+
-        '<form class="form" onsubmit="confirmHandoverFromDashboard(event,\\''+x.id+'\\')">'+
+        '<form class="form" onsubmit="confirmHandoverFromDashboard(event,\''+x.id+'\\')">'+
           '<input id="dashboard-handover-pin-'+x.id+'" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required>'+
-          '<div class="row"><button class="primary">Confirm Readings & Start Shift</button><button type="button" onclick="cancelPendingHandover(\\''+x.id+'\\')">Cancel Shift</button></div>'+
+          '<div class="row"><button class="primary">Confirm Readings & Start Shift</button><button type="button" onclick="cancelPendingHandover(\''+x.id+'\\')">Cancel Shift</button></div>'+
         '</form>'+
       '</div>';
     }).join('');
