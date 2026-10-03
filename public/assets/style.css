@@ -1585,3 +1585,12 @@
     grid-template-columns:1fr;
   }
 }
+
+
+.compact-confirmed-sale-card{padding:14px 16px;margin-bottom:10px}
+.compact-confirmed-sale-card .top{margin-bottom:8px}
+.compact-confirmed-sale-card h3{margin:2px 0 0;font-size:1rem}
+.compact-sale-summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0}
+.compact-sale-summary span,.compact-sale-summary strong{font-size:.9rem}
+.compact-sale-summary strong{margin-left:auto}
+.compact-detail-button{margin-top:4px;padding:7px 12px;font-size:.85rem}
