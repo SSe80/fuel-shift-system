@@ -993,6 +993,17 @@ def handovers():
                 row["source_tank_code"]=tank.get("tank_code")
     return jsonify(rows),200
 
+@app.get("/api/shift-takeovers")
+def shift_takeovers():
+    auth=require_login()
+    if auth:return auth
+    params={"select":"*","order":"shift_ended_at.desc","limit":"50"}
+    if session.get("role")!="admin":
+        params["from_employee_id"]="eq."+session["employee_id"]
+    status,rows=sb("shift_takeovers",params=params)
+    if status!=200:return jsonify(rows),status
+    return jsonify(rows),200
+
 @app.post("/api/handovers")
 def create_handover():
     eid=session.get("employee_id")
