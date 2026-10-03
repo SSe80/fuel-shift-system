@@ -1678,8 +1678,8 @@ const updateDrag=()=>{
   const beforeActive=state.beforeActive;
   const afterActive=state.afterActive;
   const bounded=movable.filter(x=>{
-    if(beforeActive && (x===beforeActive || !isAfter(beforeActive,x)))return false;
-    if(afterActive && (x===afterActive || !isBefore(x,afterActive)))return false;
+    if(beforeActive && (x===beforeActive || !state.isAfter(beforeActive,x)))return false;
+    if(afterActive && (x===afterActive || !state.isBefore(x,afterActive)))return false;
     return true;
   });
   let target=null;
