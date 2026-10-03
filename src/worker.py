@@ -1050,7 +1050,7 @@ def admin_deactivate_shift(shift_id):
         if ns>=400:return jsonify({"error":nr}),ns
     # Also deactivate normalized physical nozzles belonging to this dispenser.
     if nozzle_id:
-        ns,nr=sb("nozzles",params={"id":"eq."+nozzle_id,"select":"nozzle_code"},limit=None)
+        ns,nr=sb("nozzles",params={"id":"eq."+nozzle_id,"select":"nozzle_ids"})
         if ns==200 and nr:
             codes=nr[0].get("nozzle_ids") or []
             if codes:
