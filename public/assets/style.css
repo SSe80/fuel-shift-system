@@ -1385,23 +1385,26 @@
 
 /* Keep dispenser cards classified by product with a clear group break */
 .admin-settings-page #dispensers .dispenser-group-start{
-  margin-top:26px !important;
-  padding-top:24px !important;
-  border-top:2px solid #e4e9ef !important;
+  margin-top:20px !important;
+  padding-top:18px !important;
+  border-top:1px solid #dfe4ea !important;
 }
 
 
 /* Keep tank cards classified by product with a clear group break */
 .admin-settings-page #tanks .tank-group-start{
-  margin-top:26px !important;
-  padding-top:24px !important;
-  border-top:2px solid #e4e9ef !important;
+  margin-top:20px !important;
+  padding-top:18px !important;
+  border-top:1px solid #dfe4ea !important;
 }
 
 
 /* Small product labels for grouped tank/dispenser sections */
 .admin-settings-page .settings-product-group-label{
-  margin:18px 0 7px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin:14px 0 7px;
   padding:0 3px;
   color:#667085;
   font-size:11px;
@@ -1409,6 +1412,15 @@
   letter-spacing:.08em;
   text-transform:uppercase;
   line-height:1.2;
+}
+.admin-settings-page .settings-product-group-color{
+  width:9px;
+  height:9px;
+  flex:0 0 9px;
+  display:inline-block;
+  border-radius:50%;
+  border:1px solid #d0d5dd;
+  box-sizing:border-box;
 }
 .admin-settings-page #tanks .settings-product-group-label:first-child,
 .admin-settings-page #dispensers .settings-product-group-label:first-child{
