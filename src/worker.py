@@ -1095,6 +1095,35 @@ def record_shift_takeover_sale(takeover_id):
     if status>=400:return jsonify(result),status
     return jsonify(result),200
 
+@app.post("/api/shift-takeovers/<takeover_id>/cancel-sale")
+def cancel_shift_takeover_sale(takeover_id):
+    auth=require_login()
+    if auth:return auth
+    status,current=sb("shift_takeovers",params={
+        "id":"eq."+takeover_id,
+        "from_employee_id":"eq."+session["employee_id"],
+        "sales_status":"eq.pending_admin",
+        "select":"id",
+        "limit":"1"
+    })
+    if status!=200:return jsonify({"error":current}),status
+    if not current:return jsonify({"error":"Pending sale record not found"}),404
+    status,result=rpc("cancel_shift_takeover_sales",{
+        "p_takeover_id":takeover_id,
+        "p_admin_id":session["employee_id"]
+    })
+    if status>=400:
+        # Attendant cancellation is handled directly below because the RPC is admin-only.
+        status,result=sb("shift_takeover_sales",method="DELETE",params={"takeover_id":"eq."+takeover_id},body=None)
+        if status>=400:return jsonify({"error":result}),status
+        status,result=sb("shift_takeovers",method="PATCH",params={"id":"eq."+takeover_id,"sales_status":"eq.pending_admin"},body={
+            "sales_status":"cancelled","sales_cancelled_at":datetime.now(timezone.utc).isoformat(),
+            "sales_submitted_at":None,"sales_recorded_at":None,"sales_recorded_by":None
+        },prefer="return=representation")
+        if status>=400:return jsonify({"error":result}),status
+        return jsonify(result),200
+    return jsonify(result),200
+
 @app.get("/api/shift-takeovers")
 def shift_takeovers():
     auth=require_login()
