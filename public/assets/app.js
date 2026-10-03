@@ -83,12 +83,28 @@ function openTakeoverSaleModal(id){
   const takeover=(window.takeoverRecords||[]).find(x=>String(x.id)===String(id));
   if(!takeover)return;
   window.pendingTakeoverSaleId=id;
+  window.takeoverSaleTypes=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
   const modal=document.getElementById('takeover-sale-modal');
   const summary=document.getElementById('takeover-sale-summary');
   const method=document.getElementById('takeover-sale-method');
+  const type=document.getElementById('takeover-sale-type');
+  const reason=document.getElementById('takeover-sale-reason');
   if(summary)summary.innerHTML='<div><span>Liters sold</span><strong>'+liters(takeover.total_sales_liters)+' L</strong></div><div><span>Sales amount</span><strong>'+money(takeover.total_sales_amount)+'</strong></div>';
   if(method)method.value='';
+  if(type)type.innerHTML='<option value="">Select sale type</option>'+window.takeoverSaleTypes.map(s=>'<option value="'+h(s.id)+'">'+h(s.name)+'</option>').join('');
+  if(reason)reason.value='';
+  updateTakeoverSaleReason();
   if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+}
+function updateTakeoverSaleReason(){
+  const typeId=document.getElementById('takeover-sale-type')?.value||'';
+  const sale=(window.takeoverSaleTypes||[]).find(x=>String(x.id)===String(typeId));
+  const wrap=document.getElementById('takeover-sale-reason-wrap');
+  const reason=document.getElementById('takeover-sale-reason');
+  const desc=document.getElementById('takeover-sale-description');
+  if(desc)desc.innerHTML=sale?.description?'<span>'+h(sale.description)+'</span>':'';
+  if(wrap){wrap.style.display=sale?.reason_required?'block':'none';}
+  if(reason)reason.required=!!sale?.reason_required;
 }
 function closeTakeoverSaleModal(){
   const modal=document.getElementById('takeover-sale-modal');
@@ -99,11 +115,16 @@ async function submitTakeoverSale(event){
   event.preventDefault();
   const id=window.pendingTakeoverSaleId;
   const method=document.getElementById('takeover-sale-method')?.value||'';
-  if(!id||!method){toast('Select the sales type');return;}
+  const saleTypeId=document.getElementById('takeover-sale-type')?.value||'';
+  const saleReason=document.getElementById('takeover-sale-reason')?.value.trim()||'';
+  const saleType=(window.takeoverSaleTypes||[]).find(x=>String(x.id)===String(saleTypeId));
+  if(!id||!method){toast('Select the payment method');return;}
+  if(!saleTypeId){toast('Select the sale type');return;}
+  if(saleType?.reason_required&&!saleReason){toast('Enter the reason for this sale');return;}
   const button=event.target.querySelector('button.primary');
   if(button)button.disabled=true;
   try{
-    await api('/api/shift-takeovers/'+id+'/record-sale',{method:'POST',body:JSON.stringify({payment_method:method})});
+    await api('/api/shift-takeovers/'+id+'/record-sale',{method:'POST',body:JSON.stringify({payment_method:method,sale_type_id:saleTypeId,sale_reason:saleReason})});
     closeTakeoverSaleModal();
     toast('Sale recorded');
     await userDashboard();
@@ -158,8 +179,8 @@ async function userDashboard(){
     const me=await currentUser();
     if(me.role!=='attendant')return location.href='attendant-login.html';
     document.getElementById('name').textContent=me.name;
-    const [shifts,nozzles,products,tanks,handovers,employees,takeovers]=await Promise.all([
-      api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/tanks'),api('/api/handovers'),api('/api/users'),api('/api/shift-takeovers').catch(()=>[])
+    const [shifts,nozzles,products,tanks,handovers,employees,takeovers,saleTypes]=await Promise.all([
+      api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/tanks'),api('/api/handovers'),api('/api/users'),api('/api/shift-takeovers').catch(()=>[]),api('/api/sale-types').catch(()=>[])
     ]);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
@@ -239,6 +260,7 @@ async function userDashboard(){
     const completedTakeovers=Array.isArray(takeovers)
       ?takeovers.filter(x=>String(x.from_employee_id)===String(me.id)&&!x.sales_recorded_at)
       :[];
+    window.dashboardSaleTypes=Array.isArray(saleTypes)?saleTypes:[];
     window.takeoverRecords=completedTakeovers;
     window.dashboardShiftRecords=shifts;
     window.dashboardNozzleRecords=nozzles;
