@@ -2335,3 +2335,33 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .admin-sales-page .admin-sale-history-detail-actions{gap:5px}
   .admin-sales-page .admin-sale-history-detail-actions .admin-sale-history-download{padding:7px 9px}
 }
+
+
+/* Admin Sales History — compact detail card with inner scrolling */
+.admin-sales-page #admin-sale-history-details .takeover-details-modal{
+  width:min(620px,100%);
+  max-height:82vh;
+  overflow:hidden;
+  padding:0;
+}
+.admin-sales-page #admin-sale-history-details .takeover-details-modal>.top{
+  flex:0 0 auto;
+}
+.admin-sales-page #admin-sale-history-details-content{
+  max-height:calc(82vh - 76px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  padding:14px 20px 18px;
+}
+@media(max-width:560px){
+  .admin-sales-page #admin-sale-history-details .takeover-details-modal{
+    width:calc(100vw - 24px);
+    max-height:86vh;
+  }
+  .admin-sales-page #admin-sale-history-details-content{
+    max-height:calc(86vh - 68px);
+    padding:12px 14px 15px;
+  }
+}
