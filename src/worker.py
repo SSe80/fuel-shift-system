@@ -327,7 +327,7 @@ def update_employee(employee_id):
 def sale_types():
     auth=require_login()
     if auth:return auth
-    status,result=rpc("list_active_sale_types",{})
+    status,result=rpc("list_active_sale_types",{"p_include_inactive":session.get("role")=="admin"})
     if status>=400:return jsonify(result),status
     return jsonify(result if isinstance(result,list) else []),200
 
