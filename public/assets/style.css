@@ -1389,3 +1389,11 @@
   padding-top:24px !important;
   border-top:2px solid #e4e9ef !important;
 }
+
+
+/* Keep tank cards classified by product with a clear group break */
+.admin-settings-page #tanks .tank-group-start{
+  margin-top:26px !important;
+  padding-top:24px !important;
+  border-top:2px solid #e4e9ef !important;
+}
