@@ -434,7 +434,7 @@ async function userDashboard(){
         '<button class="primary active-close-shift" type="button" onclick="closeShift(event,\''+s.id+'\')">Close Shift</button></div></div>';
     }).join('');
 
-    box.innerHTML=pendingShiftHtml+pendingTakeoverHtml+pendingOutgoingHtml+pendingIncomingHtml+activeHtml;
+    box.innerHTML=pendingShiftHtml+takeoverHtml+pendingTakeoverHtml+pendingOutgoingHtml+pendingIncomingHtml+activeHtml;
     if(!box.innerHTML)box.innerHTML='';
   }catch(e){
     if(e.message==='Unauthorized')location.href='attendant-login.html';
