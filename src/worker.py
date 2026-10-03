@@ -1183,25 +1183,15 @@ def create_sale():
 def purchases():
     auth=require_admin()
     if auth:return auth
-    status,rows=sb("purchases",params={"select":"*","order":"purchase_date.desc","limit":"200"})
+    status_filter=str(request.args.get("status") or "").strip()
+    params={"select":"*","order":"purchase_date.desc","limit":"200"}
+    if status_filter in ("pending_discharge","discharged","cancelled"):
+        params["status"]="eq."+status_filter
+    status,rows=sb("purchases",params=params)
     if status != 200:
         return jsonify(rows),status
-    shift_ids=list({str(r.get("shift_id")) for r in rows if r.get("shift_id")})
-    shifts={}
-    employees={}
-    if shift_ids:
-        ss,sr=sb("shifts",params={"id":"in.("+",".join(shift_ids)+")","select":"id,employee_id,nozzle_id,status,start_time,end_time"})
-        if ss==200:
-            shifts={str(x["id"]):x for x in sr}
-            employee_ids=list({str(x.get("employee_id")) for x in sr if x.get("employee_id")})
-            if employee_ids:
-                es,er=sb("employees",params={"id":"in.("+",".join(employee_ids)+")","select":"id,name"})
-                if es==200:
-                    employees={str(x["id"]):x for x in er}
     for row in rows:
-        shift=shifts.get(str(row.get("shift_id")))
-        row["shift"]=shift
-        row["attendant"]=employees.get(str(shift.get("employee_id"))) if shift else None
+        row["attendant"]=None
     return jsonify(rows),200
 
 @app.post("/api/purchases")
@@ -1212,10 +1202,43 @@ def create_purchase():
     product,tank_id=str(data.get("product","")).strip(),str(data.get("tank_id","")).strip()
     try: qty=float(data.get("quantity_liters",0))
     except (TypeError,ValueError):return jsonify({"error":"Invalid quantity"}),400
+    try: ordered=float(data.get("ordered_quantity_liters")) if data.get("ordered_quantity_liters") is not None else None
+    except (TypeError,ValueError):return jsonify({"error":"Invalid ordered quantity"}),400
     if not product or not tank_id or qty<=0:return jsonify({"error":"Product, tank and positive quantity are required"}),400
-    status,result=rpc("record_fuel_purchase",{"p_product":product,"p_quantity_liters":qty,"p_tank_id":tank_id,"p_supplier":"","p_invoice_number":data.get("invoice_number",""),"p_created_by":session["employee_id"],"p_shift_id":None})
+    compartments=data.get("truck_compartments")
+    try: compartments=int(compartments) if compartments is not None else None
+    except (TypeError,ValueError):return jsonify({"error":"Invalid truck compartments"}),400
+    status,result=rpc("record_pending_fuel_purchase",{
+        "p_product":product,
+        "p_quantity_liters":qty,
+        "p_tank_id":tank_id,
+        "p_invoice_number":data.get("invoice_number",""),
+        "p_created_by":session["employee_id"],
+        "p_ordered_quantity_liters":ordered,
+        "p_driver_name":data.get("driver_name",""),
+        "p_driver_phone":data.get("driver_phone",""),
+        "p_plate_number":data.get("plate_number",""),
+        "p_truck_compartments":compartments,
+        "p_compartment_liters":data.get("compartment_liters")
+    })
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
+
+@app.post("/api/purchases/<purchase_id>/discharge")
+def discharge_purchase(purchase_id):
+    auth=require_admin()
+    if auth:return auth
+    try:
+        import uuid
+        purchase_uuid=str(uuid.UUID(str(purchase_id)))
+    except (ValueError,TypeError,AttributeError):
+        return jsonify({"error":"Invalid purchase id"}),400
+    status,result=rpc("discharge_fuel_purchase",{
+        "p_purchase_id":purchase_uuid,
+        "p_discharged_by":session["employee_id"]
+    })
+    if status>=400:return jsonify({"error":result}),status
+    return jsonify(result),200
 
 @app.get("/api/inventory-summary")
 def inventory_summary():
