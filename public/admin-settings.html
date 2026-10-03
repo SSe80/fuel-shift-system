@@ -27,6 +27,7 @@
   </section>
 
   <section class="settings-section card"><div class="section-heading"><div><span class="section-kicker">FUEL CATALOG</span><h2>Products</h2><p>Configure fuel names, codes, colors, and selling prices.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-product-modal')">＋ Add product</button></div>
+    <div class="card" style="margin-bottom:14px"><div class="top"><div><b>Station currency</b><div class="muted">One currency is used for every product price. Product prices remain numeric in the database.</div></div><button type="button" class="primary" onclick="saveStationCurrency()">Save currency</button></div><div class="row" style="align-items:center;margin-top:10px"><input id="station-currency" type="text" maxlength="10" placeholder="ETB" autocomplete="off" style="max-width:180px;text-transform:uppercase" aria-label="Station currency"></div></div>
     <div id="products"></div>
   </section>
 
@@ -83,7 +84,7 @@
       <div class="top"><h3 id="activation-target-title">Activate?</h3><button type="button" class="modal-close" onclick="closeGenericActivation()" aria-label="Close">×</button></div>
       <p id="activation-target-message">Confirm activation.</p>
       <div id="product-activation-price" class="form" style="display:none">
-        <label>Selling price</label>
+        <label>Selling price <span id="edit-product-currency" class="muted"></span></label>
         <div class="row" style="align-items:center">
           <input id="activation-price-major" type="text" inputmode="numeric" placeholder="0" aria-label="Price whole amount" style="flex:1">
           <span style="font-weight:700">.</span>
