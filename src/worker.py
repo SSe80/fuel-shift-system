@@ -244,6 +244,27 @@ def employees():
     status, rows = sb("employees", params=params)
     return jsonify(rows), status
 
+@app.get("/api/handover-receivers")
+def handover_receivers():
+    auth=require_login()
+    if auth:return auth
+    eid=str(session.get("employee_id") or "")
+    es,emps=sb("employees",params={
+        "select":"id,name,phone,operator_id,role,active",
+        "role":"eq.attendant",
+        "active":"eq.true",
+        "order":"name.asc"
+    })
+    if es!=200:return jsonify(emps),es
+    ss,shifts=sb("shifts",params={
+        "select":"employee_id,status",
+        "status":"in.(assigned,active)",
+        "limit":"1000"
+    })
+    if ss!=200:return jsonify(shifts),ss
+    busy={str(x.get("employee_id")) for x in shifts}
+    return jsonify([e for e in emps if str(e.get("id"))!=eid and str(e.get("id")) not in busy]),200
+
 @app.post("/api/users")
 @app.post("/api/employees")
 def create_employee():
