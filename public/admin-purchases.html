@@ -234,3 +234,16 @@
   loadPurchases();
 })();
 </script></body></html>
+<style>
+/* Compact, scrollable purchase review */
+.purchase-wizard-card{max-height:86vh}
+.purchase-wizard-step[data-purchase-step="4"]{min-height:0}
+.purchase-wizard-step[data-purchase-step="4"] #purchase-review-content{max-height:44vh;overflow-y:auto;overscroll-behavior:contain;padding-right:3px;scrollbar-width:thin}
+.purchase-wizard-step[data-purchase-step="4"] .purchase-review-section{padding:7px 10px;margin-bottom:7px;border-radius:10px}
+.purchase-wizard-step[data-purchase-step="4"] .purchase-review-section h4{margin:0 0 2px;font-size:13px}
+.purchase-wizard-step[data-purchase-step="4"] .purchase-review-row{padding:6px 0;gap:10px}
+.purchase-wizard-step[data-purchase-step="4"] .purchase-review-row span,.purchase-wizard-step[data-purchase-step="4"] .purchase-review-row strong{font-size:12px}
+.purchase-wizard-step[data-purchase-step="4"] .purchase-review-difference{margin-top:6px;padding:8px 10px;font-size:12px}
+.purchase-wizard-step[data-purchase-step="4"] .purchase-wizard-actions{margin-top:10px;padding-top:10px}
+@media(max-width:600px){.purchase-wizard-card{max-height:90vh}.purchase-wizard-step[data-purchase-step="4"] #purchase-review-content{max-height:42vh}}
+</style>
