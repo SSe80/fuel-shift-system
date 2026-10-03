@@ -138,6 +138,9 @@ def health():
 
 @app.get("/api/diagnostics")
 def diagnostics():
+    admin_error = require_admin()
+    if admin_error:
+        return admin_error
     checks = {}
     checks["session"] = {
         "authenticated": bool(session.get("employee_id")),
