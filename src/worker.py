@@ -1222,7 +1222,7 @@ def inventory_summary():
     if ts!=200:return jsonify(tanks),ts
     ps,purchases_rows=sb("purchases",params={"select":"tank_id,product_id,product,quantity_liters,purchase_date","limit":"5000","order":"purchase_date.asc"})
     if ps!=200:return jsonify(purchases_rows),ps
-    ss,sales_rows=sb("sales",params={"select":"nozzle_id,product,quantity_liters,sale_time","limit":"5000","order":"sale_time.asc"})
+    ss,sales_rows=sb("sales",params={"select":"shift_id,nozzle_id,product,quantity_liters,sale_time","limit":"5000","order":"sale_time.asc"})
     if ss!=200:return jsonify(sales_rows),ss
 
     # Fuel sales belong to a tank through the sale's nozzle. Do not aggregate
