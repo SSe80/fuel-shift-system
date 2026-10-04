@@ -1,0 +1,79 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Purchase History</title><link rel="stylesheet" href="assets/style.css">
+<style>
+.purchase-full-history-list{display:grid;gap:10px}
+.purchase-full-history-card{padding:0!important;overflow:hidden;border-left:4px solid #12b76a!important}
+.purchase-full-history-head{width:100%;min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px 12px 17px;border:0;background:#fff;color:#17202a;text-align:left;cursor:pointer}
+.purchase-full-history-title{min-width:0;display:flex;align-items:center;gap:9px}
+.purchase-full-history-title .dot{width:9px;height:9px;flex:0 0 9px;border-radius:50%;box-shadow:0 0 0 1px rgba(16,24,40,.12)}
+.purchase-full-history-title>span:last-child{min-width:0;display:flex;flex-direction:column;gap:3px}
+.purchase-full-history-title strong{font-size:14px;line-height:1.2;font-weight:800;overflow-wrap:anywhere}
+.purchase-full-history-title small{font-size:10px;color:#8a949e}
+.purchase-full-history-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.purchase-full-history-right .badge{background:#ecfdf3;color:#027a48}
+.purchase-full-history-toggle{width:27px;height:27px;display:grid;place-items:center;border:1px solid #dce3ea;border-radius:8px;background:#f8fafc;color:#667085;font-weight:800}
+.purchase-full-history-body{padding:0 14px 13px;border-top:1px solid #edf1f4}
+.purchase-full-history-body[hidden]{display:none}
+.purchase-full-history-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
+.purchase-full-history-grid>div{padding:9px 10px;border-radius:10px;background:#f8fafc}
+.purchase-full-history-grid span{display:block;font-size:10px;color:#667085}
+.purchase-full-history-grid strong{display:block;margin-top:3px;font-size:13px;color:#101828}
+@media(max-width:560px){.purchase-full-history-grid{grid-template-columns:1fr 1fr}.purchase-full-history-title strong{font-size:13px}}
+</style></head>
+<body class="admin-purchases-page" data-app-page="adminPurchaseHistory"><main class="wrap">
+<header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchase History</h1><p class="muted">All purchases with completed tank stock recording.</p></div><a class="purchase-back" href="admin-purchases.html">← Purchases</a></header>
+<section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">RECORDS</span><h2>Tank Stock Recorded</h2><p class="muted">Complete recorded purchase history.</p></div><span class="admin-sales-section-count" id="purchase-history-count">0 recorded</span></div>
+<div class="purchase-history-tools" style="display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap"><input id="purchase-history-search" type="search" placeholder="Search invoice or product…" oninput="renderFullPurchaseHistory()"><select id="purchase-history-period" onchange="renderFullPurchaseHistory()"><option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select><button type="button" onclick="loadFullPurchaseHistory()">↻ Refresh</button></div>
+<div id="purchase-history-status" class="page-status"></div><div id="full-purchase-history-list" class="purchase-full-history-list"></div></section>
+</main>
+<script src="assets/app.js?v=20261005-03"></script>
+<script>
+(function(){
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let records=[];
+function matches(p){
+ const q=(document.getElementById('purchase-history-search')?.value||'').trim().toLowerCase();
+ const hay=[p.invoice_number,p.product,p.product_code,p.plate_number,p.driver_name].filter(Boolean).join(' ').toLowerCase();
+ if(q&&!hay.includes(q))return false;
+ const period=document.getElementById('purchase-history-period')?.value||'all';
+ if(period!=='all'){
+  const raw=p.discharged_at||p.purchase_date||p.created_at; const d=raw?new Date(raw):null;
+  if(!d||Number.isNaN(d.getTime()))return false;
+  const now=new Date();
+  if(period==='today'){if(d.toDateString()!==now.toDateString())return false;}
+  else if(d<new Date(now.getTime()-Number(period)*86400000))return false;
+ }
+ return true;
+}
+window.toggleFullPurchaseHistoryCard=function(id){
+ const card=document.querySelector('.purchase-full-history-card[data-id="'+CSS.escape(String(id))+'"]'); if(!card)return;
+ const open=card.classList.toggle('expanded'); const body=card.querySelector('.purchase-full-history-body'); const toggle=card.querySelector('.purchase-full-history-toggle'); const head=card.querySelector('.purchase-full-history-head');
+ if(body)body.hidden=!open;if(head)head.setAttribute('aria-expanded',open?'true':'false');if(toggle)toggle.textContent=open?'⌃':'⌄';
+};
+window.renderFullPurchaseHistory=function(){
+ const box=document.getElementById('full-purchase-history-list');if(!box)return;
+ const rows=records.filter(matches);
+ if(!rows.length){box.innerHTML='<div class="purchase-empty">No tank stock recorded purchases found.</div>';return;}
+ box.innerHTML=rows.map(p=>{
+  const product=p.product||p.product_code||'—',invoice=p.invoice_number?('Invoice #'+p.invoice_number):'Purchase — No Invoice';
+  const purchaseDate=p.purchase_date||p.created_at; const discharged=p.discharged_at;
+  const comps=Array.isArray(p.compartment_liters)?p.compartment_liters:[]; const delivered=comps.reduce((s,v)=>s+Number(v||0),0);
+  const history=Array.isArray(p.discharge_history)?p.discharge_history:[]; const tanks=[...new Set(history.map(e=>e?.tank_code||e?.tank_id).filter(Boolean))].join(', ')||'—';
+  return '<article class="purchase-card purchase-full-history-card" data-id="'+esc(p.id)+'"><button type="button" class="purchase-full-history-head" onclick="toggleFullPurchaseHistoryCard(this.dataset.id)" data-id="'+esc(p.id)+'" aria-expanded="false"><span class="purchase-full-history-title"><span class="dot"></span><span><strong>'+esc(invoice)+'</strong><small>'+esc(product)+' · '+esc(purchaseDate?new Date(purchaseDate).toLocaleString():'—')+'</small></span></span><span class="purchase-full-history-right"><span class="badge">✓ RECORDED</span><span class="purchase-full-history-toggle">⌄</span></span></button><div class="purchase-full-history-body" hidden><div class="purchase-full-history-grid"><div><span>Delivered quantity</span><strong>'+esc(delivered.toLocaleString())+' L</strong></div><div><span>Invoice</span><strong>'+esc(p.invoice_number||'—')+'</strong></div><div><span>Purchase date</span><strong>'+esc(purchaseDate?new Date(purchaseDate).toLocaleString():'—')+'</strong></div><div><span>Discharge date</span><strong>'+esc(discharged?new Date(discharged).toLocaleString():'—')+'</strong></div><div><span>Tank</span><strong>'+esc(tanks)+'</strong></div><div><span>Driver</span><strong>'+esc(p.driver_name||'—')+'</strong></div></div></div></article>';
+ }).join('');
+};
+window.loadFullPurchaseHistory=async function(){
+ const status=document.getElementById('purchase-history-status');
+ try{
+  if(status)status.textContent='Loading purchase history…';
+  const me=await currentUser();if(me.role!=='admin')return location.href='admin-login.html';
+  const rows=await api('/api/purchases?status=discharged');
+  records=(Array.isArray(rows)?rows:[]).filter(p=>{const h=Array.isArray(p.discharge_history)?p.discharge_history:[];return h.length>0&&h.every(e=>e?.tank_stock_recorded===true);});
+  const count=document.getElementById('purchase-history-count');if(count)count.textContent=records.length+' recorded';
+  renderFullPurchaseHistory();if(status)status.textContent='';
+ }catch(e){if(status)status.textContent=e.message||'Unable to load purchase history.';}
+};
+window.addEventListener('DOMContentLoaded',loadFullPurchaseHistory);
+})();
+</script></body></html>
