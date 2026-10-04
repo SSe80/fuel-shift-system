@@ -502,6 +502,17 @@
   .purchase-discharge-card{max-height:92vh}
   .discharge-compartments,.discharge-tanks,.discharge-review{max-height:48vh}
 }
+</style><style>
+.purchase-history-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.purchase-history-card-actions button,.purchase-history-partial-footer button{min-height:38px;padding:0 11px;border-radius:9px;font-size:12px;font-weight:800}
+.purchase-history-partial-footer button{margin-left:0}
+.purchase-history-partial-footer{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.purchase-history-partial-footer span{padding-top:3px}
+.tank-stock-card{width:min(470px,calc(100% - 24px))}
+.tank-stock-info{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0;padding:11px;border:1px solid #e4e7ec;border-radius:13px;background:#f8fafc}
+.tank-stock-info span{display:block;font-size:10px;color:#667085}.tank-stock-info strong{display:block;margin-top:3px;font-size:12px;color:#101828;overflow-wrap:anywhere}
+.tank-stock-field{margin-top:12px;padding:12px;border:1px solid #e4e7ec;border-radius:13px;background:#fff}
+.tank-stock-field label{display:block;margin-bottom:6px;font-size:13px;font-weight:700;color:#344054}.tank-stock-field input{min-height:46px}.tank-stock-field small{display:block;margin-top:6px;font-size:11px;line-height:1.4;color:#667085}
 </style></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseModal()"></div>
 <div class="modal-card purchase-modal-card purchase-wizard-card">
@@ -794,10 +805,10 @@
 
     if(p.status!=='discharged'){
       const event=lastEvent;
-      return '<article class="purchase-card purchase-history-partial-card"><div class="purchase-history-partial-head"><div><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(productCode)+'</strong></div><small>Purchase '+purchaseH(datePurchase)+'</small></div><span class="purchase-history-partial-badge">PARTIAL</span></div><div class="purchase-history-partial-event"><div><span>Discharged</span><strong>'+purchaseH(purchaseLiters(event?.discharged_quantity_liters||0))+' L</strong></div><div><span>Date & time</span><strong>'+purchaseH(event?.discharge_datetime?new Date(event.discharge_datetime).toLocaleString():'—')+'</strong><span class="purchase-history-invoice">Invoice: <b>'+purchaseH(p.invoice_number||'—')+'</b></span></div><div><span>Tank</span><strong>'+purchaseH(event?.tank_code||tank?.tank_code||'—')+'</strong></div></div><div class="purchase-history-partial-footer"><span>Total discharged <b>'+purchaseH(purchaseLiters(discharged))+' L</b></span><span>Remaining <b>'+purchaseH(purchaseLiters(remaining))+' L</b></span><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button></div></article>';
+      return '<article class="purchase-card purchase-history-partial-card"><div class="purchase-history-partial-head"><div><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(productCode)+'</strong></div><small>Purchase '+purchaseH(datePurchase)+'</small></div><span class="purchase-history-partial-badge">PARTIAL</span></div><div class="purchase-history-partial-event"><div><span>Discharged</span><strong>'+purchaseH(purchaseLiters(event?.discharged_quantity_liters||0))+' L</strong></div><div><span>Date & time</span><strong>'+purchaseH(event?.discharge_datetime?new Date(event.discharge_datetime).toLocaleString():'—')+'</strong><span class="purchase-history-invoice">Invoice: <b>'+purchaseH(p.invoice_number||'—')+'</b></span></div><div><span>Tank</span><strong>'+purchaseH(event?.tank_code||tank?.tank_code||'—')+'</strong></div></div><div class="purchase-history-partial-footer"><span>Total discharged <b>'+purchaseH(purchaseLiters(discharged))+' L</b></span><span>Remaining <b>'+purchaseH(purchaseLiters(remaining))+' L</b></span><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button><button type="button" onclick="openTankStockCard(this.dataset.id,this.dataset.tank,this.dataset.stock,this.dataset.when)" data-id="'+purchaseH(p.id)+'" data-tank="'+purchaseH(event?.tank_id||p.tank_id||'')+'" data-stock="'+purchaseH(event?.tank_liters_after??'')+'" data-when="'+purchaseH(event?.discharge_datetime||'')+'">Tank Stock</button></div></article>';
     }
 
-    return '<article class="purchase-card purchase-history-full-card"><div class="purchase-history-full-head"><div><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(productCode)+'</strong></div><small>Purchase '+purchaseH(datePurchase)+'</small></div><span class="purchase-history-full-badge">DISCHARGED</span></div><div class="purchase-history-full-main"><div><span>Delivered quantity</span><strong>'+purchaseH(purchaseLiters(total))+' L</strong></div><div><span>Invoice</span><strong>'+purchaseH(p.invoice_number||'—')+'</strong></div><div><span>Fully discharged</span><strong>'+purchaseH(p.discharged_at?new Date(p.discharged_at).toLocaleString():'—')+'</strong></div></div><button type="button" class="purchase-history-details-btn" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button></article>';
+    return '<article class="purchase-card purchase-history-full-card"><div class="purchase-history-full-head"><div><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(productCode)+'</strong></div><small>Purchase '+purchaseH(datePurchase)+'</small></div><span class="purchase-history-full-badge">DISCHARGED</span></div><div class="purchase-history-full-main"><div><span>Delivered quantity</span><strong>'+purchaseH(purchaseLiters(total))+' L</strong></div><div><span>Invoice</span><strong>'+purchaseH(p.invoice_number||'—')+'</strong></div><div><span>Fully discharged</span><strong>'+purchaseH(p.discharged_at?new Date(p.discharged_at).toLocaleString():'—')+'</strong></div></div><div class="purchase-history-card-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button><button type="button" class="primary" onclick="openTankStockCard(this.dataset.id,this.dataset.tank,this.dataset.stock,this.dataset.when)" data-id="'+purchaseH(p.id)+'" data-tank="'+purchaseH(lastEvent?.tank_id||p.tank_id||'')+'" data-stock="'+purchaseH(lastEvent?.tank_liters_after??'')+'" data-when="'+purchaseH(lastEvent?.discharge_datetime||p.discharged_at||'')+'">Tank Stock</button></div></article>';
   };
   window.loadPurchases=async function(){
     try{
@@ -1005,6 +1016,50 @@
     if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
   };
 
+  window.openTankStockCard=function(purchaseId,tankId,expectedStock,operationWhen){
+    const modal=document.getElementById('tank-stock-modal');
+    const pid=document.getElementById('tank-stock-purchase-id');
+    const tid=document.getElementById('tank-stock-tank-id');
+    const expected=document.getElementById('tank-stock-expected');
+    const when=document.getElementById('tank-stock-when');
+    const input=document.getElementById('tank-stock-input');
+    const status=document.getElementById('tank-stock-status');
+    const p=purchaseDetailData?.find(x=>String(x.id)===String(purchaseId));
+    if(!modal||!tid||!input)return;
+    pid.value=String(purchaseId||'');
+    tid.value=String(tankId||p?.tank_id||'');
+    expected.textContent=expectedStock!==''&&expectedStock!=null?purchaseLiters(expectedStock)+' L':'—';
+    when.textContent=operationWhen?new Date(operationWhen).toLocaleString():'—';
+    input.value='';
+    status.textContent='';
+    status.className='purchase-status';
+    const tank=purchaseDetailTanks?.find(x=>String(x.id)===String(tid.value));
+    document.getElementById('tank-stock-name').textContent=tank?.tank_code||'Selected tank';
+    document.getElementById('tank-stock-capacity').textContent=tank?.capacity_liters!=null?purchaseLiters(tank.capacity_liters)+' L':'—';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+  };
+  window.closeTankStockCard=function(){
+    const modal=document.getElementById('tank-stock-modal');
+    if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  };
+  window.saveTankStock=async function(){
+    const tid=document.getElementById('tank-stock-tank-id')?.value||'';
+    const pid=document.getElementById('tank-stock-purchase-id')?.value||'';
+    const input=document.getElementById('tank-stock-input');
+    const status=document.getElementById('tank-stock-status');
+    const liters=parseQuantity(input?.value);
+    if(!tid||!Number.isFinite(liters)||liters<0){if(status){status.textContent='Enter the tank stock after discharge.';status.className='purchase-status error';}return;}
+    const tank=purchaseDetailTanks?.find(x=>String(x.id)===String(tid));
+    if(tank?.capacity_liters!=null&&liters>Number(tank.capacity_liters)){if(status){status.textContent='Tank stock cannot exceed tank capacity.';status.className='purchase-status error';}return;}
+    try{
+      if(status){status.textContent='Saving tank stock…';status.className='purchase-status';}
+      await purchaseApi('/api/tanks/'+encodeURIComponent(tid)+'/stock',{method:'PATCH',body:JSON.stringify({stock_liters:liters,purchase_id:pid})});
+      closeTankStockCard();
+      await loadPurchases();
+    }catch(e){if(status){status.textContent=e.message||'Failed to save tank stock.';status.className='purchase-status error';}}
+  };
+
   window.closePurchaseSuccess=function(){
     const modal=document.getElementById('purchase-success-modal');
     if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
@@ -1182,7 +1237,22 @@
 .purchase-failed-icon{background:#fef3f2;color:#d92d20}
 #purchase-failed-modal .purchase-confirmation-actions{grid-template-columns:1fr}
 </style>
-<style>\n.purchase-history-invoice{display:block;margin-top:3px;font-size:10px;color:#667085}.purchase-history-invoice b{color:#101828;font-size:11px}\n</style>\n</body></html>
+<style>\n.purchase-history-invoice{display:block;margin-top:3px;font-size:10px;color:#667085}.purchase-history-invoice b{color:#101828;font-size:11px}\n</style>\n<div id="tank-stock-modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" onclick="closeTankStockCard()"></div>
+  <div class="modal-card purchase-confirmation-card tank-stock-card">
+    <div class="top"><div><span class="section-kicker">TANK STOCK</span><h3>Fill Tank Stock</h3></div><button type="button" class="modal-close" onclick="closeTankStockCard()">×</button></div>
+    <div class="tank-stock-info">
+      <div><span>Tank</span><strong id="tank-stock-name">—</strong></div>
+      <div><span>Capacity</span><strong id="tank-stock-capacity">—</strong></div>
+      <div><span>Discharge time</span><strong id="tank-stock-when">—</strong></div>
+      <div><span>Expected after discharge</span><strong id="tank-stock-expected">—</strong></div>
+    </div>
+    <input type="hidden" id="tank-stock-purchase-id"><input type="hidden" id="tank-stock-tank-id">
+    <div class="tank-stock-field"><label for="tank-stock-input">Tank stock after discharge</label><div class="purchase-input-unit"><input id="tank-stock-input" inputmode="decimal" placeholder="Enter liters"><span>L</span></div><small>Enter the physical tank stock reading after this discharge operation.</small></div>
+    <div id="tank-stock-status" class="purchase-status"></div>
+    <div class="purchase-confirmation-actions"><button type="button" onclick="closeTankStockCard()">Cancel</button><button type="button" class="primary" onclick="saveTankStock()">Save Tank Stock</button></div>
+  </div>
+</div></body></html>
 <style>
 /* Compact, scrollable purchase review */
 .purchase-wizard-card{max-height:86vh}
