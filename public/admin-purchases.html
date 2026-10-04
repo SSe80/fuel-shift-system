@@ -888,6 +888,7 @@ window.ensurePurchasePdfEngine=async function(){
   await new Promise((resolve,reject)=>{
     const existing=document.querySelector('script[data-purchase-pdf-engine="jspdf"]');
     if(existing){
+      if(window.jspdf?.jsPDF){resolve();return;}
       existing.addEventListener('load',resolve,{once:true});
       existing.addEventListener('error',()=>reject(new Error('The PDF engine could not be loaded.')),{once:true});
       return;
@@ -904,9 +905,13 @@ window.ensurePurchasePdfEngine=async function(){
 };
 
 window.downloadPurchaseDetailPdf=async function(){
-  const p=window.currentPurchaseDetailData ||
-    purchaseDetailData?.find(x=>String(x.id)===String(window.currentPurchaseDetailId||''));
-  if(!p){openPurchaseFailed('Purchase details are not available.','PDF Download Failed');return;}
+  const p=window.currentPurchaseDetailData;
+  const fail=(msg)=>{if(typeof window.openPurchaseFailed==='function')window.openPurchaseFailed(msg,'PDF Download Failed');else alert(msg);};
+  if(!p){fail('Purchase details are not available.');return;}
+  const h=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num=value=>Number(value||0);
+  const liters=value=>num(value).toLocaleString(undefined,{maximumFractionDigits:2});
+  const localDate=value=>{try{return value?new Date(value).toLocaleString():'—';}catch(_){return '—';}};
   const button=document.querySelector('.purchase-detail-download');
   try{
     if(button){button.disabled=true;button.textContent='Preparing PDF…';}
@@ -944,38 +949,39 @@ window.downloadPurchaseDetailPdf=async function(){
     };
     const rows=(items,yy)=>{
       items.forEach((r,i)=>{
-        const v=String(r[1]??'—'),lines=doc.splitTextToSize(v,CW*.56),h=Math.max(7,lines.length*4.2);
+        const v=String(r[1]??'—'),lines=doc.splitTextToSize(v,CW*.56),rh=Math.max(7,lines.length*4.2);
         if(i&&yy-2>H-24){addPage();yy=section('Purchase Details',y);}
         if(i){doc.setDrawColor(...line);doc.line(M+4,yy-2,W-M-4,yy-2);}
         text(r[0],M+4,yy,8.5,muted);
         doc.setFont('helvetica','bold');doc.setFontSize(8.8);doc.setTextColor(...dark);
-        doc.text(lines,W-M-4,yy,{align:'right'});yy+=h;
+        doc.text(lines,W-M-4,yy,{align:'right'});yy+=rh;
       });return yy;
     };
-    const product=p.product||'Fuel',invoice=p.invoice_number||'—';
-    const ordered=Number(p.ordered_quantity_liters||0);
+    const product=String(p.product||'Fuel'),invoice=String(p.invoice_number||'—');
+    const ordered=num(p.ordered_quantity_liters);
     const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
-    const delivered=compartments.reduce((s,v)=>s+Number(v||0),0);
-    const discharged=Number(p.discharged_quantity_liters||0);
+    const delivered=compartments.reduce((s,v)=>s+num(v),0);
+    const discharged=num(p.discharged_quantity_liters);
     const remaining=Math.max(delivered-discharged,0);
     const status=String(p.status||'').replaceAll('_',' ')||'Purchase';
     const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
     const tankIds=[p.tank_id,...history.map(e=>e?.tank_id)].filter(Boolean).map(String);
-    const tanks=[...(window.purchaseDetailTanks||[])].filter((t,i,a)=>tankIds.includes(String(t.id))&&a.findIndex(x=>String(x.id)===String(t.id))===i);
-
+    const tanks=Array.isArray(window.currentPurchaseDetailTanks)
+      ?window.currentPurchaseDetailTanks.filter((t,i,a)=>tankIds.includes(String(t.id))&&a.findIndex(x=>String(x.id)===String(t.id))===i)
+      :history.map(e=>({id:e?.tank_id,tank_code:e?.tank_code,product}));
     header();
     doc.setFillColor(...blue);doc.roundedRect(M,y,CW,40,4,4,'F');
     text('PURCHASE HISTORY',M+6,y+9,8.5,[220,232,255],'bold');
     wrap(invoice==='—'?'Purchase — No Invoice':'Invoice #'+invoice,M+6,y+20,CW*.62,17,white,'bold',6);
     text(product,W-M-6,y+10,9,white,'bold',{align:'right'});
-    text(purchaseLiters(delivered)+' L delivered',W-M-6,y+21,11,white,'bold',{align:'right'});
+    text(liters(delivered)+' L delivered',W-M-6,y+21,11,white,'bold',{align:'right'});
     text(status.toUpperCase(),W-M-6,y+30,7.5,[220,232,255],'bold',{align:'right'});
     y+=48;
 
     y=section('Purchase Summary',y);
     y=rows([['Invoice',invoice],['Purchase ID',p.id||'—'],['Product',product],['Status',status],
-      ['Ordered quantity',purchaseLiters(ordered)+' L'],['Delivered quantity',purchaseLiters(delivered)+' L'],
-      ['Discharged quantity',purchaseLiters(discharged)+' L'],['Remaining quantity',purchaseLiters(remaining)+' L']],y)+5;
+      ['Ordered quantity',liters(ordered)+' L'],['Delivered quantity',liters(delivered)+' L'],
+      ['Discharged quantity',liters(discharged)+' L'],['Remaining quantity',liters(remaining)+' L']],y)+5;
 
     y=section('Truck & Driver',y);
     y=rows([['Driver',p.driver_name||'—'],['Phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],
@@ -989,7 +995,7 @@ window.downloadPurchaseDetailPdf=async function(){
         ensure(12);const x=M+(i%2)*colW;
         doc.setFillColor(...soft);doc.roundedRect(x,y-5,colW-4,10,2,2,'F');
         text('Compartment '+(i+1),x+4,y+1,8,muted);
-        text(purchaseLiters(v)+' L',x+colW-8,y+1,9,dark,'bold',{align:'right'});
+        text(liters(v)+' L',x+colW-8,y+1,9,dark,'bold',{align:'right'});
         if(i%2===1)y+=14;
       });
       if(compartments.length%2)y+=14;
@@ -1016,9 +1022,8 @@ window.downloadPurchaseDetailPdf=async function(){
       doc.setDrawColor(...line);doc.setFillColor(...white);doc.roundedRect(M,y,CW,boxH,3,3,'FD');
       text('DISCHARGE '+(i+1),M+5,y+8,9,dark,'bold');
       const stockRecorded=e.tank_stock_recorded===true;
-      const qty=Number(e.discharged_quantity_liters||0),before=Number(e.tank_liters_before),recorded=Number(e.tank_stock_recorded_liters);
-      const expected=Number.isFinite(before)?before+qty:null;
-      const diff=Number.isFinite(recorded)&&expected!=null?recorded-expected:null;
+      const qty=num(e.discharged_quantity_liters),before=Number(e.tank_liters_before),recorded=Number(e.tank_stock_recorded_liters);
+      const expected=Number.isFinite(before)?before+qty:null,diff=Number.isFinite(recorded)&&expected!=null?recorded-expected:null;
       const tol=Math.max(5,qty*.01),high=diff!=null&&Math.abs(diff)>tol;
       const st=stockRecorded?(high?'Difference high':'Stock reconciled'):'Stock not recorded';
       doc.setFillColor(...(high||!stockRecorded?[254,242,242]:[236,253,245]));
@@ -1026,13 +1031,13 @@ window.downloadPurchaseDetailPdf=async function(){
       text(st,W-M-29,y+9,7.2,high||!stockRecorded?red:green,'bold',{align:'center'});
       let yy=y+17;
       const detailRows=[
-        ['Date & time',e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():(e.created_at?new Date(e.created_at).toLocaleString():'—')],
-        ['Tank',(window.purchaseDetailTanks||[]).find(t=>String(t.id)===String(e.tank_id))?.tank_code||'—'],
-        ['Quantity discharged',purchaseLiters(qty)+' L'],
-        ['Tank stock before',Number.isFinite(before)?purchaseLiters(before)+' L':'—'],
-        ['Expected after',expected!=null?purchaseLiters(expected)+' L':'—'],
-        ['Tank stock recorded',stockRecorded&&Number.isFinite(recorded)?purchaseLiters(recorded)+' L':'Not recorded'],
-        ['Stock difference',diff!=null?(diff>0?'+':'')+purchaseLiters(diff)+' L':'—']
+        ['Date & time',localDate(e.discharge_datetime||e.created_at)],
+        ['Tank',e.tank_code||tanks.find(t=>String(t.id)===String(e.tank_id))?.tank_code||'—'],
+        ['Quantity discharged',liters(qty)+' L'],
+        ['Tank stock before',Number.isFinite(before)?liters(before)+' L':'—'],
+        ['Expected after',expected!=null?liters(expected)+' L':'—'],
+        ['Tank stock recorded',stockRecorded&&Number.isFinite(recorded)?liters(recorded)+' L':'Not recorded'],
+        ['Stock difference',diff!=null?(diff>0?'+':'')+liters(diff)+' L':'—']
       ];
       detailRows.forEach((r,j)=>{
         if(j){doc.setDrawColor(...line);doc.line(M+5,yy-2,W-M-5,yy-2);}
@@ -1045,7 +1050,6 @@ window.downloadPurchaseDetailPdf=async function(){
       }
       y+=boxH+6;
     });
-
     const finalRemark=[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||
       String(p.purchase_remark||p.remark||'').trim();
     if(finalRemark){ensure(28);y=section('Purchase Remark',y);y+=wrap(finalRemark,M+5,y,CW-10,9,dark,'normal',4.5)+7;}
@@ -1054,12 +1058,13 @@ window.downloadPurchaseDetailPdf=async function(){
     const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);
     doc.save('purchase_'+safe+'.pdf');
   }catch(e){
-    openPurchaseFailed(e.message||'Unable to create the PDF.','PDF Download Failed');
+    fail(e.message||'Unable to create the PDF.');
   }finally{
     if(button){button.disabled=false;button.textContent='Download PDF';}
   }
 };
 </script>
+
 <script src="assets/app.js?v=20261004-11"></script><script>
 (function(){
   const productSelect=document.getElementById('purchase-product');
@@ -1798,170 +1803,3 @@ window.downloadPurchaseDetailPdf=async function(){
   cursor:not-allowed;
   opacity:.62;
   background:#f8fafc;
-  border-color:#e5e7eb;
-}
-.discharge-tank-card.unavailable input{cursor:not-allowed;}
-.discharge-tank-card span em{
-  display:block;
-  margin-top:3px;
-  font-size:10px;
-  font-style:normal;
-  font-weight:600;
-  color:#667085;
-}
-.discharge-tank-card.unavailable span em{color:#b42318;}
-.discharge-tank-card:not(.unavailable) span em{color:#027a48;}
-</style>
-
-<style>
-/* Tank stock carousel refinement */
-.tank-stock-carousel{overflow:hidden;border-radius:14px;touch-action:pan-y;overscroll-behavior-x:contain}
-.tank-stock-track{display:flex;width:100%;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden}
-.tank-stock-slide{min-width:100%;flex:0 0 100%;box-sizing:border-box}
-.tank-stock-remark-card{margin-top:12px;padding:15px;border:1px solid #dfe5ec;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(16,24,40,.04)}
-.tank-stock-remark-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
-.tank-stock-remark-heading label{display:block;margin:0;font-size:15px;font-weight:800;color:#101828}
-.tank-stock-remark-heading p{margin:3px 0 0;font-size:11px;line-height:1.4;color:#667085}
-.tank-stock-remark-heading>span{flex:0 0 auto;padding:4px 8px;border-radius:999px;background:#f2f4f7;color:#667085;font-size:9px;font-weight:800;text-transform:uppercase}
-.tank-stock-remark-input{display:block;width:100%;min-height:128px;box-sizing:border-box;resize:vertical;border:1.5px solid #cbd5e1;border-radius:12px;outline:0;background:#f8fafc;padding:12px 13px;font:inherit;font-size:14px;line-height:1.5;color:#101828;transition:border-color .18s ease,box-shadow .18s ease,background .18s ease}
-.tank-stock-remark-input:focus{border-color:#2563eb;background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
-.tank-stock-remark-input::placeholder{color:#98a2b3}
-.tank-stock-remark-footer{display:flex;justify-content:space-between;gap:10px;margin-top:7px;font-size:10px;color:#98a2b3}
-.tank-stock-remark-count{font-weight:700;color:#667085}
-@media(max-width:560px){.tank-stock-remark-card{padding:13px}.tank-stock-remark-input{min-height:150px;font-size:14px}}
-</style>
-<style>
-/* Tank reading before discharge */
-.discharge-tank-reading-field{margin-top:14px;margin-bottom:0;padding:12px;border:1px solid #e4e7ec;border-radius:12px;background:#f8fafc}
-.discharge-tank-reading-field label{margin-bottom:5px!important;font-size:13px!important;font-weight:700!important;color:#344054!important}
-.discharge-tank-reading-field input{min-height:46px}
-.discharge-tank-reading-hint{display:block;margin-top:6px;font-size:11px;line-height:1.4;color:#667085}
-</style>
-
-<style>
-.discharge-tank-reading-inline{margin:6px 0 10px;padding:10px 12px;border:1px solid #d0d5dd;border-radius:12px;background:#f8fafc}
-.discharge-tank-reading-inline label{display:block;margin-bottom:5px!important;font-size:13px!important;font-weight:700!important;color:#344054!important}
-.discharge-tank-reading-inline input{min-height:44px}
-.discharge-tank-reading-inline .discharge-tank-reading-hint{display:block;margin-top:5px;font-size:11px;line-height:1.35;color:#667085}
-</style>
-
-<style>
-.discharge-tank-shift{display:block;margin-top:2px;font-size:10px!important;font-weight:600;color:#667085!important}
-</style>
-
-<style>
-.discharge-tank-capacity-label{display:block!important;font-size:10px!important;color:#667085!important;margin-top:2px}
-</style>
-
-<style>
-.purchase-detail-discharge-event{margin-top:8px;padding:10px;border:1px solid #e4e7ec;border-radius:10px;background:#f8fafc}
-.purchase-detail-event-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
-.purchase-detail-stock-alert,.purchase-detail-stock-ok{display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:999px;font-size:9px;font-weight:800;white-space:nowrap}
-.purchase-detail-stock-alert{background:#fef3f2;color:#d92d20;border:1px solid #fecdca}
-.purchase-detail-stock-ok{background:#ecfdf3;color:#027a48;border:1px solid #abefc6}
-.purchase-detail-remark{margin-top:10px;padding:11px 12px;border:1px solid #dfe5ec;border-radius:11px;background:#fff}
-.purchase-detail-remark-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px}
-.purchase-detail-remark-head h5{margin:0;font-size:12px;color:#344054}
-.purchase-detail-remark-head span{padding:3px 7px;border-radius:999px;background:#f2f4f7;color:#667085;font-size:9px;font-weight:800;text-transform:uppercase}
-.purchase-detail-remark p{margin:0;font-size:12px;line-height:1.45;color:#475467;white-space:pre-wrap;overflow-wrap:anywhere}
-.purchase-detail-tank-card{margin-top:8px;padding:10px;border:1px solid #e4e7ec;border-radius:10px;background:#f8fafc}
-.purchase-detail-tank-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
-.purchase-detail-tank-head strong{font-size:13px;color:#101828}
-.purchase-detail-tank-head span{padding:3px 7px;border-radius:999px;background:#eaf2ff;color:#2563eb;font-size:9px;font-weight:800;text-transform:uppercase}
-.purchase-detail-tank-card .purchase-detail-row{padding:7px 0}
-</style>
-
-<style>
-.purchase-discharge-pending-card,.purchase-history-partial-card,.purchase-history-full-card{padding:11px;border-radius:15px;border:1px solid #e4e7ec;background:#fff;box-shadow:0 2px 8px rgba(16,24,40,.06);margin-bottom:9px}
-.purchase-discharge-pending-head,.purchase-history-partial-head,.purchase-history-full-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.purchase-discharge-pending-head small,.purchase-history-partial-head small,.purchase-history-full-head small{display:block;margin-top:4px;font-size:11px;color:#667085}
-.purchase-discharge-remaining{display:flex;justify-content:space-between;align-items:center;margin:10px 0;padding:9px 10px;border-radius:12px;background:#f8fafc}
-.purchase-discharge-remaining span,.purchase-history-partial-event span,.purchase-history-full-main span{font-size:11px;color:#667085}
-.purchase-discharge-remaining strong{font-size:20px;color:#2563eb}
-.purchase-discharge-pending-info{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:#667085}
-.purchase-discharge-pending-info b{display:block;color:#101828;margin-top:3px}
-.purchase-discharge-pending-actions{display:flex;gap:8px;margin-top:16px;padding-top:2px}
-.purchase-discharge-pending-actions button{flex:1;min-height:40px;padding:0 14px;font-size:13px;border-radius:9px}
-.purchase-history-partial-card{border-left:4px solid #f59e0b}
-.purchase-history-partial-badge,.purchase-history-full-badge{font-size:10px;font-weight:800;padding:5px 8px;border-radius:999px;background:#fff7ed;color:#b54708}
-.purchase-history-full-badge{background:#ecfdf3;color:#027a48}
-.purchase-history-alert-icon{display:flex;align-items:center;justify-content:center;width:22px;height:22px;flex:0 0 22px;margin:0 0 4px auto;border-radius:50%;background:#fef3f2;border:1px solid #fecdca;color:#d92d20;font-size:13px;line-height:1}.purchase-history-status-alert{display:flex;flex-direction:column;align-items:flex-end;gap:0}
-.purchase-history-partial-event{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:10px;margin:12px 0;padding:9px 10px;border-radius:11px;background:#f8fafc}
-.purchase-history-partial-event strong,.purchase-history-full-main strong{display:block;margin-top:3px;font-size:13px;color:#101828}
-.purchase-history-partial-footer{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px;color:#667085}
-.purchase-history-partial-footer button{margin-left:auto}
-.purchase-history-full-card{border-left:4px solid #12b76a}
-.purchase-history-full-main{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:12px;margin:11px 0}
-.purchase-history-details-btn{width:100%}
-@media(max-width:560px){.purchase-history-partial-event{grid-template-columns:1fr 1fr}.purchase-history-partial-event>div:nth-child(3){grid-column:2}.purchase-history-partial-event>div:nth-child(4){grid-column:1/-1}.purchase-history-full-main{grid-template-columns:1fr 1fr}.purchase-history-full-main>div:last-child{grid-column:1/-1}}
-</style>
-<style>
-/* Purchase confirmation card */
-.purchase-confirmation-card{width:min(470px,calc(100% - 24px));max-height:88vh;border-radius:18px;overflow:hidden}
-.purchase-confirmation-card .top{padding-bottom:8px}
-.purchase-confirmation-card .top h3{margin:0;font-size:24px;line-height:1.25}
-.purchase-confirmation-body{display:flex;align-items:flex-start;gap:12px;padding:14px;border:1px solid #e4e7ec;border-radius:14px;background:#f8fafc}
-.purchase-confirmation-icon{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border-radius:50%;background:#e8eef8;color:#2563eb;font-size:18px;font-weight:900}
-.purchase-confirmation-body strong{display:block;font-size:14px;line-height:1.35;color:#101828}
-.purchase-confirmation-body p{margin:4px 0 0;font-size:12px;line-height:1.45}
-.purchase-confirmation-summary{margin-top:12px;border:1px solid #e4e7ec;border-radius:14px;padding:4px 13px;background:#fff}
-.purchase-confirmation-row{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid #edf0f4;font-size:12px}
-.purchase-confirmation-row:last-child{border-bottom:0}
-.purchase-confirmation-row span{color:#667085}
-.purchase-confirmation-row strong{color:#101828;text-align:right;overflow-wrap:anywhere}
-.purchase-confirmation-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #edf0f4}
-.purchase-confirmation-actions button{min-height:44px;border-radius:10px;padding:0 14px;font-size:13px;font-weight:800}
-.purchase-confirmation-actions button:first-child{background:#eef1f4;color:#101828;border:0}
-.purchase-confirmation-actions .primary{background:#2563eb;color:#fff;border:0}
-@media(max-width:560px){.purchase-confirmation-card{width:calc(100% - 20px)}.purchase-confirmation-actions button{min-height:46px}}
-</style>
-<style>
-/* Purchase success card shown only after a successful confirmation */
-.purchase-success-icon{background:#ecfdf3;color:#027a48}
-#purchase-success-modal .purchase-confirmation-actions{grid-template-columns:1fr}
-</style>
-<style>
-.purchase-failed-icon{background:#fef3f2;color:#d92d20}
-#purchase-failed-modal .purchase-confirmation-actions{grid-template-columns:1fr}
-</style>
-<style>.purchase-history-invoice-box{min-width:0}.purchase-history-invoice-box strong{font-size:13px}
-.purchase-history-stock-group{margin-bottom:16px}
-.purchase-history-stock-group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 9px;padding:0 2px 7px;border-bottom:1px solid #e4e7ec;font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
-.purchase-history-stock-group-head strong{min-width:20px;height:20px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font-size:10px;background:#f2f4f7;color:#667085}
-.purchase-history-stock-group.unrecorded .purchase-history-stock-group-head{color:#b42318;border-bottom-color:#fecdca}
-.purchase-history-stock-group.unrecorded .purchase-history-stock-group-head strong{background:#fef3f2;color:#d92d20}
-.purchase-history-stock-group.recorded .purchase-history-stock-group-head{color:#027a48;border-bottom-color:#d1fadf}
-.purchase-history-stock-group.recorded .purchase-history-stock-group-head strong{background:#ecfdf3;color:#027a48}</style><div id="tank-stock-modal" class="modal" aria-hidden="true">
-  <div class="modal-backdrop" onclick="closeTankStockCard()"></div>
-  <div class="modal-card purchase-confirmation-card tank-stock-card">
-    <div class="top"><div><span class="section-kicker">TANK STOCK</span><h3>Fill Tank Stock</h3></div><button type="button" class="modal-close" onclick="closeTankStockCard()">×</button></div>
-    <div class="tank-stock-carousel-head"><span>Discharge operations</span><strong id="tank-stock-counter">1 / 1</strong></div>
-    <div class="tank-stock-carousel"><div id="tank-stock-track" class="tank-stock-track"></div></div>
-    <div class="tank-stock-carousel-nav" aria-label="Discharge operation navigation"><button type="button" id="tank-stock-prev" onclick="stepTankStockSlide(-1)" aria-label="Previous discharge" title="Previous discharge">‹</button><div id="tank-stock-dots" class="tank-stock-dots"></div><button type="button" id="tank-stock-next" onclick="stepTankStockSlide(1)" aria-label="Next discharge" title="Next discharge">›</button></div>
-    <div id="tank-stock-status" class="purchase-status"></div>
-  </div>
-</div></body></html>
-<style>
-/* Compact, scrollable purchase review */
-.purchase-wizard-card{max-height:86vh}
-.purchase-wizard-step[data-purchase-step="4"]{min-height:0}
-.purchase-wizard-step[data-purchase-step="4"] #purchase-review-content{max-height:44vh;overflow-y:auto;overscroll-behavior:contain;padding-right:3px;scrollbar-width:thin}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-review-section{padding:7px 10px;margin-bottom:7px;border-radius:10px}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-review-section h4{margin:0 0 2px;font-size:13px}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-review-row{padding:6px 0;gap:10px}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-review-row span,.purchase-wizard-step[data-purchase-step="4"] .purchase-review-row strong{font-size:12px}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-review-difference{margin-top:6px;padding:8px 10px;font-size:12px}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-wizard-actions{margin-top:10px;padding-top:10px}
-@media(max-width:600px){.purchase-wizard-card{max-height:90vh}.purchase-wizard-step[data-purchase-step="4"] #purchase-review-content{max-height:42vh}}
-</style>
-<style>
-/* Improve review readability while keeping it compact */
-.purchase-wizard-step[data-purchase-step="4"] #purchase-review-content{max-height:44vh;overflow-y:auto;font-size:13px}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-review-section{padding:9px 12px;margin-bottom:8px}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-review-section h4{font-size:15px;line-height:1.3;margin:0 0 5px;color:#2563eb}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-review-row{padding:7px 0;line-height:1.35}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-review-row span{font-size:13px;color:#475467;flex:1;min-width:0}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-review-row strong{font-size:13px;color:#101828;max-width:60%;overflow-wrap:anywhere}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-review-difference{padding:9px 11px;font-size:13px;line-height:1.35}
-.purchase-wizard-step[data-purchase-step="4"] .purchase-review-difference strong{color:#101828}
-</style>
