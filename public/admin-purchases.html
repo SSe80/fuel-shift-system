@@ -897,18 +897,7 @@ window.downloadPurchaseDetailPdf=function(){
   }
 };
 </script><script>
-window.ensurePurchasePdfEngine=async function(){
-  if(window.jspdf?.jsPDF)return window.jspdf.jsPDF;
-  await new Promise((resolve,reject)=>{
-    const s=document.createElement('script');
-    s.src='https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js';
-    s.onload=()=>resolve();
-    s.onerror=()=>reject(new Error('The PDF engine could not be loaded. Check your internet connection and try again.'));
-    document.head.appendChild(s);
-  });
-  if(!window.jspdf?.jsPDF)throw new Error('The PDF engine loaded incorrectly.');
-  return window.jspdf.jsPDF;
-};
+
 window.downloadPurchaseDetailPdf=function(){
   const p=purchaseDetailData?.find(x=>String(x.id)===String(window.currentPurchaseDetailId||''));
   if(!p){openPurchaseFailed('Purchase details are not available.','PDF Download Failed');return;}
