@@ -535,9 +535,52 @@
 .tank-stock-ledger strong{display:block;margin-top:3px;font-size:13px;color:#101828}
 .tank-stock-slide .tank-stock-field{margin-top:11px;padding:11px;border:1px solid #e4e7ec;border-radius:11px;background:#fff}
 .tank-stock-slide .tank-stock-field label{display:block;margin-bottom:6px;font-size:12px;font-weight:700;color:#344054}
-.tank-stock-slide .tank-stock-field .purchase-input-unit{display:flex;width:100%;align-items:stretch}
-.tank-stock-slide .tank-stock-field .purchase-input-unit input{flex:1 1 auto;width:1px;min-width:0;box-sizing:border-box;min-height:44px;border-radius:11px 0 0 11px!important}
-.tank-stock-slide .tank-stock-field .purchase-input-unit span{flex:0 0 58px;box-sizing:border-box;justify-content:center;min-height:44px;padding:0 10px;border-radius:0 11px 11px 0;background:#f8fafc}
+.tank-stock-slide .tank-stock-field .purchase-input-unit{
+  display:flex;
+  width:100%;
+  align-items:stretch;
+  box-sizing:border-box;
+  border:1.5px solid #98a2b3;
+  border-radius:12px;
+  overflow:hidden;
+  background:#fff;
+  transition:border-color .18s ease,box-shadow .18s ease;
+}
+.tank-stock-slide .tank-stock-field .purchase-input-unit:focus-within{
+  border-color:#2563eb;
+  box-shadow:0 0 0 3px rgba(37,99,235,.12);
+}
+.tank-stock-slide .tank-stock-field .purchase-input-unit input{
+  flex:1 1 auto;
+  width:1px;
+  min-width:0;
+  box-sizing:border-box;
+  min-height:46px;
+  border:0!important;
+  outline:0!important;
+  border-radius:0!important;
+  background:#fff;
+  padding:0 12px;
+  font-size:16px;
+  color:#101828;
+}
+.tank-stock-slide .tank-stock-field .purchase-input-unit input::placeholder{color:#98a2b3}
+.tank-stock-slide .tank-stock-field .purchase-input-unit span{
+  flex:0 0 56px;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:46px;
+  padding:0 10px;
+  border:0;
+  border-left:1px solid #e4e7ec;
+  border-radius:0;
+  background:#f8fafc;
+  color:#667085;
+  font-size:13px;
+  font-weight:700;
+}
 .tank-stock-slide .tank-stock-field small{display:block;margin-top:6px;font-size:10px;color:#667085;line-height:1.35}
 .tank-stock-slide-actions{margin-top:10px}
 .tank-stock-slide-actions button{width:100%;min-height:40px;border-radius:9px;font-size:13px;font-weight:800}
@@ -1138,36 +1181,43 @@
     prev.disabled=tankStockCarousel.index===0; next.disabled=tankStockCarousel.index===tankStockCarousel.events.length-1;
     track.style.transform='translateX(-'+(tankStockCarousel.index*100)+'%)';
   }
+  let tankStockSwipe={active:false,startX:0,startY:0,deltaX:0};
   function bindTankStockSwipe(){
     const carousel=document.querySelector('.tank-stock-carousel');
-    if(!carousel||carousel.dataset.swipeBound==='true')return;
+    const track=document.getElementById('tank-stock-track');
+    if(!carousel||!track||carousel.dataset.swipeBound==='true')return;
     carousel.dataset.swipeBound='true';
-    let startX=0,startY=0,tracking=false;
+    const finishSwipe=function(){
+      if(!tankStockSwipe.active)return;
+      const dx=tankStockSwipe.deltaX;
+      tankStockSwipe.active=false;
+      track.style.transition='transform .28s cubic-bezier(.22,.61,.36,1)';
+      if(Math.abs(dx)>=45){
+        window.goTankStockSlide(tankStockCarousel.index+(dx<0?1:-1));
+      }else{
+        track.style.transform='translateX(-'+(tankStockCarousel.index*100)+'%)';
+      }
+      tankStockSwipe.deltaX=0;
+    };
     carousel.addEventListener('touchstart',function(e){
       if(!e.touches||e.touches.length!==1)return;
-      const target=e.target;
-      if(target.closest('input,button'))return;
-      startX=e.touches[0].clientX;
-      startY=e.touches[0].clientY;
-      tracking=true;
+      if(e.target.closest&&e.target.closest('input,button'))return;
+      tankStockSwipe={active:true,startX:e.touches[0].clientX,startY:e.touches[0].clientY,deltaX:0};
+      track.style.transition='none';
     },{passive:true});
     carousel.addEventListener('touchmove',function(e){
-      if(!tracking||!e.touches||e.touches.length!==1)return;
-      const dx=e.touches[0].clientX-startX;
-      const dy=e.touches[0].clientY-startY;
-      if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>10)e.preventDefault();
+      if(!tankStockSwipe.active||!e.touches||e.touches.length!==1)return;
+      const dx=e.touches[0].clientX-tankStockSwipe.startX;
+      const dy=e.touches[0].clientY-tankStockSwipe.startY;
+      if(Math.abs(dx)<=Math.abs(dy)+4)return;
+      e.preventDefault();
+      tankStockSwipe.deltaX=dx;
+      const width=carousel.clientWidth||1;
+      const percent=(dx/width)*100;
+      track.style.transform='translateX(calc(-'+(tankStockCarousel.index*100)+'% + '+percent+'%))';
     },{passive:false});
-    carousel.addEventListener('touchend',function(e){
-      if(!tracking)return;
-      tracking=false;
-      const touch=e.changedTouches&&e.changedTouches[0];
-      if(!touch)return;
-      const dx=touch.clientX-startX;
-      const dy=touch.clientY-startY;
-      if(Math.abs(dx)<50||Math.abs(dx)<=Math.abs(dy))return;
-      window.stepTankStockSlide(dx<0?1:-1);
-    },{passive:true});
-    carousel.addEventListener('touchcancel',function(){tracking=false;},{passive:true});
+    carousel.addEventListener('touchend',finishSwipe,{passive:true});
+    carousel.addEventListener('touchcancel',finishSwipe,{passive:true});
   }
   window.goTankStockSlide=function(index){if(!tankStockCarousel.events.length)return;tankStockCarousel.index=Math.max(0,Math.min(Number(index)||0,tankStockCarousel.events.length-1));renderTankStockCarousel();};
   window.stepTankStockSlide=function(direction){window.goTankStockSlide(tankStockCarousel.index+direction);};
