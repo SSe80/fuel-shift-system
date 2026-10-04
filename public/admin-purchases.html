@@ -70,6 +70,23 @@
  .purchase-pending-card .purchase-compartment-list{grid-template-columns:1fr 1fr}
 }
 </style><style>
+/* Product code + color code header */
+.purchase-pending-card .purchase-card-main-row{align-items:center}
+.purchase-pending-card .purchase-product-identity{display:flex;align-items:center;gap:9px;min-width:0}
+.purchase-pending-card .purchase-product-identity strong{font-size:18px;line-height:1.2;font-weight:800;color:#17202a;overflow-wrap:anywhere}
+.purchase-pending-card .purchase-product-color{display:inline-flex;align-items:center;padding:4px 8px;border:1px solid #d9e1e8;border-radius:999px;background:#fff;color:#667085;font-size:10px;line-height:1.1;font-weight:700;white-space:nowrap}
+.purchase-pending-card .purchase-card-header-right{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.purchase-pending-card .purchase-card-header-right>b{font-size:20px;line-height:1.1;color:#2563eb;font-weight:800;white-space:nowrap}
+.purchase-pending-card .purchase-card-header-right .purchase-pending-status{order:0}
+@media(max-width:560px){
+  .purchase-pending-card .purchase-product-identity{gap:6px}
+  .purchase-pending-card .purchase-product-identity strong{font-size:16px}
+  .purchase-pending-card .purchase-product-color{font-size:9px;padding:4px 6px}
+  .purchase-pending-card .purchase-card-header-right{gap:6px}
+  .purchase-pending-card .purchase-card-header-right>b{font-size:17px}
+  .purchase-pending-card .purchase-card-header-right .purchase-pending-status{font-size:9px}
+}
+
 /* Final purchase card header + action controls */
 .purchase-pending-card .purchase-card-top{
   display:block;
@@ -336,7 +353,8 @@
     const abs=Math.abs(difference);
     const diffText=difference===0?'Matches ordered quantity':difference>0?'Over delivered by '+purchaseLiters(abs)+' L':'Short delivered by '+purchaseLiters(abs)+' L';
     const rows=inputs.map((input,i)=>'<div class="purchase-review-row"><span>Compartment '+(i+1)+'</span><strong>'+purchaseLiters(parseQuantity(input.value))+' L</strong></div>').join('');
-    review.innerHTML='<div class="purchase-review-section"><h4>1. Order</h4><div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div><div class="purchase-review-row"><span>Invoice number</span><strong>'+purchaseH(invoice)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div></div>'+
+    const selectedProduct=purchaseProducts.find(p=>String(p.name||'').toLowerCase()===String(product||'').toLowerCase()); const productCode=selectedProduct?.code_name||product||'—';
+    review.innerHTML='<div class="purchase-review-section"><h4>1. Order</h4><div class="purchase-review-row"><span>Product code</span><strong>'+purchaseH(productCode)+'</strong></div><div class="purchase-review-row"><span>Invoice number</span><strong>'+purchaseH(invoice)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div></div>'+
       '<div class="purchase-review-section"><h4>2. Truck</h4><div class="purchase-review-row"><span>Driver name</span><strong>'+purchaseH(driver)+'</strong></div><div class="purchase-review-row"><span>Driver phone</span><strong>'+purchaseH(phone)+'</strong></div><div class="purchase-review-row"><span>Plate number</span><strong>'+purchaseH(plate)+'</strong></div><div class="purchase-review-row"><span>Compartments</span><strong>'+count+'</strong></div></div>'+
       '<div class="purchase-review-section"><h4>3. Quantity</h4>'+rows+'<div class="purchase-review-row"><span>Delivered quantity</span><strong>'+purchaseLiters(delivered)+' L</strong></div><div class="purchase-review-difference"><span>Difference</span><strong>'+purchaseH(diffText)+'</strong></div></div>';
   }
@@ -346,14 +364,16 @@
   window.openPurchaseDetail=function(purchaseId){
     const p=purchaseDetailData?.find(x=>String(x.id)===String(purchaseId)); if(!p)return;
     const tank=purchaseDetailTanks?.find(x=>String(x.id)===String(p.tank_id));
-    const productName=p.product||tank?.product||'Purchase';
+    const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||tank?.product||'').toLowerCase());
+    const productCode=productRecord?.code_name||'—';
+    const productColor=productRecord?.color||'—';
     const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
     const ordered=Number(p.ordered_quantity_liters||0), delivered=Number(p.quantity_liters||0), diff=delivered-ordered;
     const difference=diff===0?'Matches order':diff>0?'Over by '+purchaseLiters(diff)+' L':'Short by '+purchaseLiters(Math.abs(diff))+' L';
     const rows=(items)=>items.map(([label,value])=>'<div class="purchase-detail-row"><span>'+purchaseH(label)+'</span><strong>'+purchaseH(value)+'</strong></div>').join('');
     const compartmentRows=compartments.map((v,i)=>'<div class="purchase-detail-compartment"><span>Compartment '+(i+1)+'</span><b>'+purchaseLiters(v)+' L</b></div>').join('');
     const el=document.getElementById('purchase-detail-content');
-    if(el)el.innerHTML='<section class="purchase-detail-section"><h4>Order</h4>'+rows([['Product',productName],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L']])+'</section>'+
+    if(el)el.innerHTML='<section class="purchase-detail-section"><h4>Order</h4>'+rows([['Product code',productCode],['Color code',productColor],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L']])+'</section>'+
       '<section class="purchase-detail-section"><h4>Truck & Driver</h4>'+rows([['Driver name',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Compartments',String(p.truck_compartments||'—')],['Tank',tank?.tank_code||tank?.product||'—']])+'</section>'+
       '<section class="purchase-detail-section"><h4>Delivery</h4>'+rows([['Delivered quantity',purchaseLiters(delivered)+' L'],['Difference',difference],['Purchase date',p.purchase_date?new Date(p.purchase_date).toLocaleString():'—'],['Status',p.status||'—'],['Discharged at',p.discharged_at?new Date(p.discharged_at).toLocaleString():'Not discharged']])+
       (compartments.length?'<div class="purchase-detail-compartments"><h5>Compartment quantities</h5>'+compartmentRows+'</div>':'')+'</section>';
@@ -361,11 +381,13 @@
   };
   let purchaseDetailTanks=[];
   const renderPurchaseCard=(p,tank,dischargeMode)=>{
-    const productName=p.product||tank?.product||'Purchase';
+    const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||tank?.product||'').toLowerCase());
+    const productCode=productRecord?.code_name||'—';
+    const productColor=productRecord?.color||'—';
     const delivered=Number(p.quantity_liters||0), ordered=Number(p.ordered_quantity_liters||0), difference=delivered-ordered;
     const differenceText=difference===0?'Matches order':difference>0?'Over by '+purchaseLiters(difference)+' L':'Short by '+purchaseLiters(Math.abs(difference))+' L';
     const button=dischargeMode?'<button type="button" class="primary" onclick="dischargePurchase(this.dataset.id)" data-id="'+purchaseH(p.id)+'">Discharge Purchase</button>':'';
-    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div class="purchase-card-status-row"><div class="purchase-pending-status">'+(dischargeMode?'Pending discharge':'Discharged')+'</div></div><div class="purchase-card-main-row"><strong>'+purchaseH(productName)+'</strong><b>'+purchaseH(purchaseLiters(delivered))+' L</b></div></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>Delivered <b>'+purchaseH(purchaseLiters(delivered))+' L</b></span><span>Difference <b>'+purchaseH(differenceText)+'</b></span></div><div class="purchase-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button>'+button+'</div></article>';
+    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div class="purchase-card-main-row"><div class="purchase-product-identity"><strong>'+purchaseH(productCode)+'</strong><span class="purchase-product-color">Color: '+purchaseH(productColor)+'</span></div><div class="purchase-card-header-right"><div class="purchase-pending-status">'+(dischargeMode?'Pending discharge':'Discharged')+'</div><b>'+purchaseH(purchaseLiters(delivered))+' L</b></div></div></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>Delivered <b>'+purchaseH(purchaseLiters(delivered))+' L</b></span><span>Difference <b>'+purchaseH(differenceText)+'</b></span></div><div class="purchase-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button>'+button+'</div></article>';
   };
   window.loadPurchases=async function(){
     try{
