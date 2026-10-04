@@ -105,17 +105,14 @@
   color:#17202a;
 }
 .purchase-pending-card .purchase-product-color{
-  display:inline-flex;
-  align-items:center;
-  padding:4px 8px;
-  border:1px solid #d9e1e8;
-  border-radius:999px;
-  background:#fff;
-  color:#667085;
-  font-size:10px;
-  line-height:1.1;
-  font-weight:700;
-  white-space:nowrap;
+  display:inline-block;
+  width:10px;
+  height:10px;
+  flex:0 0 10px;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  box-shadow:0 0 0 1px rgba(16,24,40,.10);
 }
 .purchase-pending-card .purchase-card-status-row{
   display:flex;
@@ -139,8 +136,9 @@
     font-size:17px;
   }
   .purchase-pending-card .purchase-product-color{
-    font-size:9px;
-    padding:4px 7px;
+    width:9px;
+    height:9px;
+    flex-basis:9px;
   }
   .purchase-pending-card .purchase-card-status-row>b{
     font-size:18px;
@@ -447,7 +445,7 @@
     const delivered=Number(p.quantity_liters||0), ordered=Number(p.ordered_quantity_liters||0), difference=delivered-ordered;
     const differenceText=difference===0?'Matches order':difference>0?'Over by '+purchaseLiters(difference)+' L':'Short by '+purchaseLiters(Math.abs(difference))+' L';
     const button=dischargeMode?'<button type="button" class="primary" onclick="dischargePurchase(this.dataset.id)" data-id="'+purchaseH(p.id)+'">Discharge Purchase</button>':'';
-    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div class="purchase-product-identity"><strong>'+purchaseH(productCode)+'</strong><span class="purchase-product-color">'+purchaseH(productColor)+'</span></div><div class="purchase-card-status-row"><div class="purchase-pending-status">'+(dischargeMode?'Pending discharge':'Discharged')+'</div><b>'+purchaseH(purchaseLiters(delivered))+' L</b></div></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>Delivered <b>'+purchaseH(purchaseLiters(delivered))+' L</b></span><span>Difference <b>'+purchaseH(differenceText)+'</b></span></div><div class="purchase-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button>'+button+'</div></article>';
+    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div class="purchase-product-identity"><strong>'+purchaseH(productCode)+'</strong><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span></div><div class="purchase-card-status-row"><div class="purchase-pending-status">'+(dischargeMode?'Pending discharge':'Discharged')+'</div><b>'+purchaseH(purchaseLiters(delivered))+' L</b></div></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>Delivered <b>'+purchaseH(purchaseLiters(delivered))+' L</b></span><span>Difference <b>'+purchaseH(differenceText)+'</b></span></div><div class="purchase-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button>'+button+'</div></article>';
   };
   window.loadPurchases=async function(){
     try{
