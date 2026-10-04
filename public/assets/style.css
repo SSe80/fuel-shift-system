@@ -2549,3 +2549,13 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
  .attendant-dashboard-page .active-shift-head{padding:14px 14px 12px}
  .attendant-dashboard-page .active-shift-actions{padding:10px 12px 12px}
 }
+
+/* Active shift nozzle readings: cleaner row treatment and slightly larger readings */
+.active-shift-card .pending-nozzle-reading{
+  padding:9px 2px;
+  border-color:#f0f2f5;
+  background:transparent;
+}
+.active-shift-card .pending-nozzle-number{
+  font-size:16px;
+}
