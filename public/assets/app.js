@@ -2109,10 +2109,10 @@ async function loadDailyReport(){
     }
 
     document.getElementById('report-summary').innerHTML=
-      '<div class="daily-stat primary-stat"><span>Fuel volume sold</span><b>'+liters(s.sales_liters)+' L</b><small>Completed shift readings included</small></div>'+
+      '<div class="daily-stat primary-stat"><span>Fuel volume sold</span><b>'+liters(s.sales_liters)+' L</b><small>All shift sales combined</small></div>'+
       '<div class="daily-stat"><span>Recorded sales</span><b>'+money(s.sales_amount)+'</b><small>Confirmed monetary sales</small></div>'+
       '<div class="daily-stat"><span>Fuel received</span><b>'+liters(s.purchases_liters)+' L</b><small>Purchase records for the day</small></div>'+
-      '<div class="daily-stat"><span>Completed shifts</span><b>'+Number(s.completed_shifts||0)+'</b><small>Shift reconciliations</small></div>';
+      '<div class="daily-stat"><span>Completed shifts</span><b>'+Number(s.completed_shifts||0)+'</b><small>Individual shift reconciliations</small></div>';
 
     const rows=Object.entries(s.by_product||{}).sort((a,b)=>Number(b[1]?.liters||0)-Number(a[1]?.liters||0)).map(([p,v])=>
       '<tr><td><b>'+h(codeForProduct(p))+'</b></td><td>'+liters(v.liters)+'</td></tr>'
@@ -2130,21 +2130,60 @@ async function loadDailyReport(){
     }).join('');
     document.getElementById('report-purchases').innerHTML=purchaseRows||'<tr><td colspan="3" class="daily-empty">No fuel received.</td></tr>';
 
-    const shifts=(r.shift_summary||[]).map(x=>{
+    // 1) Individual shifts — every shift started on the selected date is
+    // shown separately, even when the same dispenser has multiple shifts.
+    const shifts=(r.shift_summary||[]).map((x,index)=>{
       const variance=Number(x.tank_variance_liters||0);
       const vc=dailyReportVarianceClass(variance);
+      const openingRows=(x.opening_readings||[]).map((v,i)=>
+        '<span>Nozzle '+(i+1)+': <b>'+reading(v.reading)+'</b></span>'
+      ).join('');
+      const closingRows=(x.closing_readings||[]).map((v,i)=>
+        '<span>Nozzle '+(i+1)+': <b>'+reading(v.reading)+'</b></span>'
+      ).join('');
       return '<article class="daily-shift-card">'+
-        '<div class="daily-shift-head"><div><b>'+h(x.attendant||'Unknown')+'</b><span>'+h(codeForProduct(x.product))+' · '+h(x.tank||'—')+'</span></div><span class="daily-shift-time">'+h(dailyReportTime(x.ended_at))+'</span></div>'+
+        '<div class="daily-shift-head"><div><b>Shift '+(index+1)+' · '+h(x.attendant||'Unknown')+'</b><span>'+h(x.dispenser||'—')+' · '+h(codeForProduct(x.product))+' · '+h(x.tank||'—')+'</span></div><span class="daily-shift-time">'+h(dailyReportTime(x.started_at))+' → '+h(dailyReportTime(x.ended_at))+'</span></div>'+
         '<div class="daily-shift-grid">'+
           '<div><span>Fuel sold</span><b>'+liters(x.sales_liters)+' L</b></div>'+
           '<div><span>Sales amount</span><b>'+money(x.sales_amount)+'</b></div>'+
           '<div><span>Tank opening</span><b>'+liters(x.tank_opening_liters)+' L</b></div>'+
           '<div><span>Tank closing</span><b>'+liters(x.tank_closing_liters)+' L</b></div>'+
         '</div>'+
+        '<div class="daily-shift-reading-row"><div><span>Opening meter</span><div>'+ (openingRows||'<span>—</span>') +'</div></div><div><span>Closing meter</span><div>'+ (closingRows||'<span>—</span>') +'</div></div></div>'+
         '<div class="daily-shift-foot"><span>Receiver: '+h(x.receiver||'—')+'</span><span class="daily-variance '+vc+'">Tank variance: '+liters(variance)+' L</span></div>'+
       '</article>';
     }).join('');
-    document.getElementById('report-shifts').innerHTML=shifts||'<div class="daily-empty">No completed shifts for this date.</div>';
+    document.getElementById('report-shifts').innerHTML=shifts||'<div class="daily-empty">No shifts started on this date.</div>';
+
+    // 2) Combined dispenser/day reconciliation — first shift establishes
+    // the opening boundary and last shift establishes the closing boundary.
+    const combined=(r.dispenser_summary||[]).map(x=>{
+      const opening=(x.opening_readings||[]).map((v,i)=>
+        '<span>Nozzle '+(i+1)+': <b>'+reading(v.reading)+'</b></span>'
+      ).join('');
+      const closing=(x.closing_readings||[]).map((v,i)=>
+        '<span>Nozzle '+(i+1)+': <b>'+reading(v.reading)+'</b></span>'
+      ).join('');
+      const shiftLines=(x.shifts||[]).map((z,i)=>
+        '<div class="daily-combined-shift"><span>Shift '+(i+1)+' · '+h(z.attendant||'Unknown')+'</span><b>'+liters(z.sales_liters)+' L</b><b>'+money(z.sales_amount)+'</b></div>'
+      ).join('');
+      return '<article class="daily-shift-card daily-combined-card">'+
+        '<div class="daily-shift-head"><div><b>'+h(x.dispenser||'—')+'</b><span>'+h(codeForProduct(x.product))+' · '+h(x.tank||'—')+' · '+Number(x.shift_count||0)+' shift(s)</span></div><span class="daily-shift-time">'+h(dailyReportTime(x.first_shift_started_at))+' → '+h(dailyReportTime(x.last_shift_ended_at))+'</span></div>'+
+        '<div class="daily-shift-grid">'+
+          '<div><span>Combined fuel sold</span><b>'+liters(x.sales_liters)+' L</b></div>'+
+          '<div><span>Combined sales</span><b>'+money(x.sales_amount)+'</b></div>'+
+          '<div><span>First shift tank opening</span><b>'+liters(x.opening_tank_liters)+' L</b></div>'+
+          '<div><span>Last shift tank closing</span><b>'+liters(x.closing_tank_liters)+' L</b></div>'+
+        '</div>'+
+        '<div class="daily-shift-reading-row"><div><span>First shift opening meter</span><div>'+ (opening||'<span>—</span>') +'</div></div><div><span>Last shift closing meter</span><div>'+ (closing||'<span>—</span>') +'</div></div></div>'+
+        '<div class="daily-combined-shifts">'+
+          '<div class="daily-combined-label">Sales by shift</div>'+shiftLines+
+        '</div>'+
+        '<div class="daily-shift-foot"><span>Opening → closing tank change: '+liters(x.tank_change_liters)+' L</span><span class="daily-variance '+dailyReportVarianceClass(x.tank_change_liters)+'">Dispenser total: '+liters(x.sales_liters)+' L</span></div>'+
+      '</article>';
+    }).join('');
+    document.getElementById('report-combined').innerHTML=combined||'<div class="daily-empty">No dispenser sales to combine.</div>';
+
     status.textContent='';
   }catch(e){
     status.textContent=e.message||'Unable to load the daily report.';
@@ -2153,6 +2192,8 @@ async function loadDailyReport(){
     document.getElementById('report-payments').innerHTML='';
     document.getElementById('report-purchases').innerHTML='';
     document.getElementById('report-shifts').innerHTML='';
+    const combined=document.getElementById('report-combined');
+    if(combined)combined.innerHTML='';
   }
 }
 async function saveDailyReport(){
