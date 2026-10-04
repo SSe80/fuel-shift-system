@@ -204,11 +204,12 @@ function closeTakeoverSaleConfirm(){
   window.pendingTakeoverRecord=null;
 }
 function backToTakeoverSaleEntry(){
-  closeTakeoverSaleConfirm();
-  if(window.pendingTakeoverSaleId){
-    const modal=document.getElementById('takeover-sale-modal');
-    if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
-  }
+  const confirm=document.getElementById('takeover-sale-confirm-modal');
+  const entry=document.getElementById('takeover-sale-modal');
+  if(confirm){confirm.classList.remove('open');confirm.setAttribute('aria-hidden','true');}
+  if(entry){entry.classList.add('open');entry.setAttribute('aria-hidden','false');}
+  // Keep the selected takeover and entered sales in memory so the attendant
+  // can edit them without losing the current handover record.
 }
 async function confirmTakeoverSale(){
   const id=window.pendingTakeoverSaleId;
