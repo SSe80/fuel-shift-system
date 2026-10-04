@@ -573,14 +573,13 @@
   grid-column:2;
   grid-row:1;
 }
-.purchase-history-partial-card .purchase-history-partial-event .purchase-history-invoice-box{
+.purchase-history-partial-card .purchase-history-partial-event>div:nth-child(3){
   grid-column:2;
   grid-row:2;
 }
 .purchase-history-partial-card .purchase-history-partial-event>div:nth-child(4){
-  grid-column:1 / -1;
-  grid-row:3;
-  padding-top:2px;
+  grid-column:1;
+  grid-row:2;
 }
 .purchase-history-partial-card .purchase-history-partial-actions{
   display:grid;
@@ -588,7 +587,8 @@
   gap:8px;
   margin-top:9px;
 }
-.purchase-history-partial-card .purchase-history-partial-actions button{
+.purchase-history-partial-card .purchase-history-partial-actions button,
+.purchase-history-card-actions button{
   width:100%;
   min-height:40px;
   height:40px;
@@ -597,14 +597,17 @@
   border-radius:9px;
   font-size:13px;
   font-weight:800;
+  box-sizing:border-box;
+}
+.purchase-history-partial-card .purchase-history-partial-actions .primary,
+.purchase-history-card-actions .primary{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
 }
 @media(max-width:560px){
   .purchase-history-partial-card .purchase-history-partial-event{
     grid-template-columns:1fr 1fr;
-  }
-  .purchase-history-partial-card .purchase-history-partial-event>div:nth-child(4){
-    grid-column:1 / -1;
-    grid-row:3;
   }
 }
 </style>
