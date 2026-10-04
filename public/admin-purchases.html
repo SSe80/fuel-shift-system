@@ -732,8 +732,10 @@
       const activeProducts=productsData.filter(p=>p.active!==false).filter(p=>activeTanks.some(t=>String(t.product||'').toLowerCase()===String(p.name||'').toLowerCase()));
       const productSelect=document.getElementById('purchase-product');
       if(productSelect)productSelect.innerHTML='<option value="">Select product</option>'+activeProducts.sort((a,b)=>String(a.code_name||a.name).localeCompare(String(b.code_name||b.name))).map(p=>'<option value="'+purchaseH(p.name)+'">'+purchaseH(p.code_name||p.name)+'</option>').join('');
+      const partialPending=pending.filter(p=>Array.isArray(p.discharge_history)&&p.discharge_history.length>0);
+      const historyWithPartial=[...partialPending,...history.filter(h=>!partialPending.some(p=>String(p.id)===String(h.id)))];
       if(dischargeList)dischargeList.innerHTML=pending.length?pending.map(p=>{const t=tanks.find(x=>String(x.id)===String(p.tank_id));return renderPurchaseCard(p,t,true);}).join(''):'<div class="purchase-empty">No purchases waiting for discharge.</div>';
-      if(list)list.innerHTML=history.length?history.map(p=>{const t=tanks.find(x=>String(x.id)===String(p.tank_id));return renderPurchaseCard(p,t,false);}).join(''):'<div class="purchase-empty">No discharged purchases yet.</div>';
+      if(list)list.innerHTML=historyWithPartial.length?historyWithPartial.map(p=>{const t=tanks.find(x=>String(x.id)===String(p.tank_id));return renderPurchaseCard(p,t,false);}).join(''):'<div class="purchase-empty">No discharged purchases yet.</div>';
       setStatus('',false);
     }catch(e){
       setStatus(e.message||'Failed to load purchases.',true);
@@ -984,6 +986,10 @@
 
 <style>
 .discharge-tank-capacity-label{display:block!important;font-size:10px!important;color:#667085!important;margin-top:2px}
+</style>
+
+<style>
+.purchase-detail-discharge-event{margin-top:8px;padding:10px;border:1px solid #e4e7ec;border-radius:10px;background:#f8fafc}
 </style>
 </body></html>
 <style>
