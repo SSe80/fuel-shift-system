@@ -686,7 +686,28 @@
 .discharge-tank-card>span>small{display:block}
 @media(max-width:560px){.discharge-tank-shift-item{font-size:10px}}
 </style>
-</head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
+<style>
+/* Purchase history detail — polished card layout */
+.purchase-detail-card{width:min(620px,calc(100% - 20px));max-height:92vh;border-radius:20px;overflow:hidden;background:#f8fafc}
+.purchase-detail-card>.top{padding:16px 18px 12px;background:#fff;border-bottom:1px solid #e4e7ec}
+.purchase-detail-content{max-height:70vh;overflow-y:auto;padding:12px 14px 4px;scrollbar-width:thin}
+.purchase-detail-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:16px;border:1px solid #e0e7ef;border-radius:16px;background:#fff;box-shadow:0 4px 14px rgba(16,24,40,.05);margin-bottom:10px}
+.purchase-detail-kicker{display:block;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#98a2b3;margin-bottom:5px}
+.purchase-detail-product{display:flex;align-items:center;gap:8px}.purchase-detail-product-dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 2px rgba(16,24,40,.08);flex:0 0 10px}.purchase-detail-product h4{margin:0;font-size:20px;line-height:1.2;color:#101828}.purchase-detail-hero p{margin:5px 0 0;font-size:11px;color:#667085}
+.purchase-detail-status-badge,.purchase-detail-delivery-status{display:inline-flex;align-items:center;justify-content:center;padding:6px 9px;border-radius:999px;font-size:9px;font-weight:850;text-transform:uppercase;white-space:nowrap}
+.purchase-detail-status-badge.success,.purchase-detail-delivery-status{background:#ecfdf3;color:#027a48;border:1px solid #abefc6}.purchase-detail-status-badge.pending{background:#fff7ed;color:#b54708;border:1px solid #fedf89}
+.purchase-detail-section{border:1px solid #e1e7ee;border-radius:14px;padding:12px 13px;margin-bottom:9px;background:#fff;box-shadow:0 2px 7px rgba(16,24,40,.035)}
+.purchase-detail-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:3px}.purchase-detail-section-head h4{margin:0;color:#101828;font-size:14px}.purchase-detail-section-head>span:not(.purchase-detail-delivery-status){padding:3px 7px;border-radius:999px;background:#f2f4f7;color:#667085;font-size:9px;font-weight:800}
+.purchase-detail-summary{padding:0;overflow:hidden}.purchase-detail-summary-grid{display:grid;grid-template-columns:1fr 1fr}.purchase-detail-summary-grid>div{padding:12px;border-bottom:1px solid #edf0f4}.purchase-detail-summary-grid>div:nth-child(odd){border-right:1px solid #edf0f4}.purchase-detail-summary-grid>div:nth-last-child(-n+2){border-bottom:0}.purchase-detail-summary-grid span,.purchase-detail-event-grid span{display:block;font-size:10px;color:#667085}.purchase-detail-summary-grid strong{display:block;margin-top:3px;font-size:15px;color:#101828}
+.purchase-detail-row{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid #f0f2f5;font-size:12px}.purchase-detail-row:last-child{border-bottom:0}.purchase-detail-row span{color:#667085}.purchase-detail-row strong{color:#101828;text-align:right;overflow-wrap:anywhere}
+.purchase-detail-compartments{margin-top:8px;padding-top:8px;border-top:1px solid #edf0f4}.purchase-detail-compartments h5{margin:0 0 3px;font-size:11px;color:#475467}.purchase-detail-compartment{display:flex;justify-content:space-between;padding:6px 0;font-size:11px}.purchase-detail-compartment span{color:#667085}.purchase-detail-compartment b{color:#101828}
+.purchase-detail-tank-card{margin-top:7px;padding:10px;border:1px solid #e4e7ec;border-radius:11px;background:#f8fafc}.purchase-detail-tank-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:3px}.purchase-detail-tank-head>div{display:flex;align-items:center;gap:7px}.purchase-detail-tank-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}.purchase-detail-tank-head strong{font-size:12px;color:#101828}.purchase-detail-tank-head>span{padding:3px 7px;border-radius:999px;background:#eaf2ff;color:#2563eb;font-size:8px;font-weight:800;text-transform:uppercase}.purchase-detail-tank-card .purchase-detail-row{padding:6px 0}
+.purchase-detail-discharge-event{margin-top:8px;padding:11px;border:1px solid #e4e7ec;border-radius:12px;background:#f8fafc}.purchase-detail-event-title{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px}.purchase-detail-event-title>div{min-width:0}.purchase-detail-event-number{display:block;font-size:8px;font-weight:800;letter-spacing:.07em;color:#98a2b3}.purchase-detail-event-title strong{display:block;margin-top:2px;font-size:12px;color:#101828}.purchase-detail-stock-alert,.purchase-detail-stock-ok{display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:999px;font-size:8px;font-weight:850;white-space:nowrap}.purchase-detail-stock-alert{background:#fef3f2;color:#d92d20;border:1px solid #fecdca}.purchase-detail-stock-ok{background:#ecfdf3;color:#027a48;border:1px solid #abefc6}
+.purchase-detail-event-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.purchase-detail-event-grid>div{padding:7px 0;border-top:1px solid #edf0f4}.purchase-detail-event-grid strong{display:block;margin-top:2px;font-size:11px;color:#101828;overflow-wrap:anywhere}
+.purchase-detail-remark{margin:2px 0 8px;padding:13px;border:1px solid #dfe5ec;border-radius:14px;background:#fff;box-shadow:0 2px 7px rgba(16,24,40,.035)}.purchase-detail-remark-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}.purchase-detail-remark-head h4{margin:0;font-size:14px;color:#101828}.purchase-detail-remark-head>span{padding:4px 8px;border-radius:999px;background:#f2f4f7;color:#667085;font-size:8px;font-weight:800;text-transform:uppercase}.purchase-detail-remark p{margin:0;padding:10px 11px;border-radius:10px;background:#f8fafc;font-size:11px;line-height:1.5;color:#475467;white-space:pre-wrap;overflow-wrap:anywhere}
+.purchase-detail-actions{padding:10px 14px 14px;background:#fff;border-top:1px solid #e4e7ec}.purchase-detail-actions button{width:100%;min-height:42px;border-radius:11px}
+@media(max-width:560px){.purchase-detail-card{width:calc(100% - 12px);max-height:94vh}.purchase-detail-content{max-height:74vh;padding:10px 9px 3px}.purchase-detail-hero{padding:14px}.purchase-detail-product h4{font-size:18px}.purchase-detail-summary-grid strong{font-size:14px}.purchase-detail-section{padding:11px 11px}.purchase-detail-event-grid{grid-template-columns:1fr}.purchase-detail-event-title{align-items:flex-start}}
+</style></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseModal()"></div>
 <div class="modal-card purchase-modal-card purchase-wizard-card">
   <div class="top">
@@ -956,19 +977,41 @@
     const p=purchaseDetailData?.find(x=>String(x.id)===String(purchaseId)); if(!p)return;
     const tank=purchaseDetailTanks?.find(x=>String(x.id)===String(p.tank_id));
     const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||tank?.product||'').toLowerCase());
-    const productCode=productRecord?.code_name||'—';
+    const productCode=productRecord?.code_name||p.product||'—';
+    const productColor=productRecord?.color||'#2563eb';
     const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
     const dischargedIndexes=Array.isArray(p.discharged_compartment_indexes)?p.discharged_compartment_indexes:[];
     const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
-    const ordered=Number(p.ordered_quantity_liters||0), total=compartments.reduce((sum,v)=>sum+Number(v||0),0), discharged=Number(p.discharged_quantity_liters||0), remaining=Math.max(total-discharged,0);
+    const ordered=Number(p.ordered_quantity_liters||0);
+    const total=compartments.reduce((sum,v)=>sum+Number(v||0),0);
+    const discharged=Number(p.discharged_quantity_liters||0);
+    const remaining=Math.max(total-discharged,0);
     const difference=total-ordered===0?'Matches order':total-ordered>0?'Over by '+purchaseLiters(total-ordered)+' L':'Short by '+purchaseLiters(Math.abs(total-ordered))+' L';
+    const statusText=String(p.status||'').replaceAll('_',' ');
     const rows=items=>items.map(([label,value])=>'<div class="purchase-detail-row"><span>'+purchaseH(label)+'</span><strong>'+purchaseH(value)+'</strong></div>').join('');
     const compartmentRows=compartments.map((v,i)=>'<div class="purchase-detail-compartment"><span>Compartment '+(i+1)+' · '+(dischargedIndexes.includes(i+1)?'Discharged':'Undischarged')+'</span><b>'+purchaseLiters(v)+' L</b></div>').join('');
-    const eventRows=history.map((e,i)=>{      const before=Number(e.tank_liters_before), qty=Number(e.discharged_quantity_liters||0);      const recordedRaw=e.tank_stock_recorded_liters;      const recorded=Number(recordedRaw);      const hasBefore=Number.isFinite(before), hasRecorded=Number.isFinite(recorded);      const expectedAfter=hasBefore?before+qty:null;      const diff=hasBefore&&hasRecorded?recorded-expectedAfter:null;      const tolerance=Number.isFinite(qty)?Math.max(5,qty*0.01):5;      const differenceHigh=Number.isFinite(diff)&&Math.abs(diff)>tolerance;      const stockStatus=e.tank_stock_recorded===true?(differenceHigh?'⚠ Difference high':'✓ Stock reconciled'):'⚠ Tank stock not recorded';      const stockClass=e.tank_stock_recorded===true?(differenceHigh?'purchase-detail-stock-alert':'purchase-detail-stock-ok'):'purchase-detail-stock-alert';      return '<div class="purchase-detail-discharge-event"><div class="purchase-detail-event-title"><strong>Discharge '+(i+1)+'</strong><span class="'+stockClass+'">'+stockStatus+'</span></div>'+rows([        ['Date & time',e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—'],        ['Compartments',Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'Compartment '+x).join(', '):'—'],        ['Quantity discharged',purchaseLiters(qty)+' L'],        ['Tank',e.tank_code||'—'],        ['Tank stock before',hasBefore?purchaseLiters(before)+' L':'—'],        ['Expected tank stock after',Number.isFinite(expectedAfter)?purchaseLiters(expectedAfter)+' L':'—'],        ['Tank stock recorded',hasRecorded?purchaseLiters(recorded)+' L':'Not recorded'],        ['Stock difference',Number.isFinite(diff)?(diff>0?'+':'')+purchaseLiters(diff)+' L':'—']      ])+'</div>';    }).join('');
+    const eventRows=history.map((e,i)=>{
+      const before=Number(e.tank_liters_before), qty=Number(e.discharged_quantity_liters||0), recorded=Number(e.tank_stock_recorded_liters);
+      const hasBefore=Number.isFinite(before), hasRecorded=Number.isFinite(recorded), expectedAfter=hasBefore?before+qty:null;
+      const diff=hasBefore&&hasRecorded?recorded-expectedAfter:null;
+      const tolerance=Number.isFinite(qty)?Math.max(5,qty*0.01):5;
+      const differenceHigh=Number.isFinite(diff)&&Math.abs(diff)>tolerance;
+      const recordedOk=e.tank_stock_recorded===true&&!differenceHigh;
+      const stockStatus=e.tank_stock_recorded===true?(differenceHigh?'Difference high':'Stock reconciled'):'Tank stock not recorded';
+      const stockClass=recordedOk?'purchase-detail-stock-ok':'purchase-detail-stock-alert';
+      return '<article class="purchase-detail-discharge-event"><div class="purchase-detail-event-title"><div><span class="purchase-detail-event-number">DISCHARGE '+(i+1)+'</span><strong>'+purchaseH(e.tank_code||'Tank')+'</strong></div><span class="'+stockClass+'">'+(recordedOk?'✓ ':'⚠ ')+stockStatus+'</span></div><div class="purchase-detail-event-grid">'+
+        '<div><span>Date & time</span><strong>'+purchaseH(e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—')+'</strong></div>'+
+        '<div><span>Compartments</span><strong>'+purchaseH(Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'C'+x).join(', '):'—')+'</strong></div>'+
+        '<div><span>Quantity discharged</span><strong>'+purchaseH(purchaseLiters(qty))+' L</strong></div>'+
+        '<div><span>Tank stock before</span><strong>'+purchaseH(hasBefore?purchaseLiters(before)+' L':'—')+'</strong></div>'+
+        '<div><span>Expected closing</span><strong>'+purchaseH(Number.isFinite(expectedAfter)?purchaseLiters(expectedAfter)+' L':'—')+'</strong></div>'+
+        '<div><span>Recorded closing</span><strong>'+purchaseH(hasRecorded?purchaseLiters(recorded)+' L':'Not recorded')+'</strong></div>'+
+        '<div><span>Stock difference</span><strong>'+purchaseH(Number.isFinite(diff)?(diff>0?'+':'')+purchaseLiters(diff)+' L':'—')+'</strong></div>'+
+      '</div></article>';
+    }).join('');
     const tankEntries=[];
     const addTankEntry=(tankId,tankCode)=>{
-      const key=String(tankId||tankCode||'');
-      if(!key)return;
+      const key=String(tankId||tankCode||''); if(!key)return;
       if(!tankEntries.some(x=>x.key===key))tankEntries.push({key,tankId:String(tankId||''),tankCode:tankCode||'—'});
     };
     addTankEntry(tank?.id,tank?.tank_code);
@@ -979,17 +1022,27 @@
       const matching=direct.length?direct:purchaseShifts.filter(s=>String(s.status||'').toLowerCase()==='active'&&Array.isArray(s.nozzle_readings)&&s.nozzle_readings.some(n=>String(n.tank_id)===String(entry.tankId)));
       const attendants=[...new Map(matching.map(s=>{const name=s.employee_name||purchaseEmployees.find(e=>String(e.id)===String(s.employee_id))?.name||'Assigned attendant';return [String(s.employee_id||name),name];})).values()];
       const attendantText=attendants.length?attendants.join(', '):'No active shift attendant';
-      return '<div class="purchase-detail-tank-card"><div class="purchase-detail-tank-head"><strong>'+purchaseH(entry.tankCode)+'</strong><span>Tank</span></div>'+rows([['Shift attendants',attendantText]])+'</div>';
+      return '<article class="purchase-detail-tank-card"><div class="purchase-detail-tank-head"><div><span class="purchase-detail-tank-dot" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(entry.tankCode)+'</strong></div><span>Tank</span></div>'+rows([['Shift attendants',attendantText]])+'</article>';
     }).join('');
     const purchaseRemark=[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||'';
     const el=document.getElementById('purchase-detail-content');
-    if(el)el.innerHTML='<section class="purchase-detail-section"><h4>Order</h4>'+rows([['Product',productCode],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L'],['Purchase date & time',p.purchase_date?new Date(p.purchase_date).toLocaleString():'—']])+'</section>'+
-      '<section class="purchase-detail-section"><h4>Truck & Driver</h4>'+rows([['Driver name',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Compartments',String(p.truck_compartments||'—')]])+'</section>'+
-      (tankSections?'<section class="purchase-detail-section"><h4>Tanks</h4>'+tankSections+'</section>':'')+
-      '<section class="purchase-detail-section"><h4>Delivery</h4>'+rows([['Delivered quantity',purchaseLiters(total)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Undischarged quantity',purchaseLiters(remaining)+' L'],['Difference',difference],['Status',p.status||'—'],['Fully discharged at',p.discharged_at?new Date(p.discharged_at).toLocaleString():'Not yet']])+
-      (compartments.length?'<div class="purchase-detail-compartments"><h5>Compartment quantities</h5>'+compartmentRows+'</div>':'')+
-      (history.length?'<div class="purchase-detail-compartments"><h5>Discharge history</h5>'+eventRows+'</div>':'')+
-      '<div class="purchase-detail-remark"><div class="purchase-detail-remark-head"><h5>Purchase remark</h5><span>Optional</span></div><p>'+purchaseH(purchaseRemark||'—')+'</p></div></section>';
+    if(el)el.innerHTML=
+      '<div class="purchase-detail-hero">'+
+        '<div><span class="purchase-detail-kicker">PURCHASE HISTORY</span><div class="purchase-detail-product"><span class="purchase-detail-product-dot" style="background:'+purchaseH(productColor)+'"></span><h4>'+purchaseH(productCode)+'</h4></div><p>'+purchaseH(p.invoice_number||'No invoice')+'</p></div>'+
+        '<div class="purchase-detail-status-badge '+(String(p.status||'').toLowerCase()==='discharged'?'success':'pending')+'">'+purchaseH(statusText||'Purchase')+'</div>'+
+      '</div>'+
+      '<section class="purchase-detail-section purchase-detail-summary"><div class="purchase-detail-summary-grid">'+
+        '<div><span>Delivered quantity</span><strong>'+purchaseH(purchaseLiters(total))+' L</strong></div>'+
+        '<div><span>Discharged quantity</span><strong>'+purchaseH(purchaseLiters(discharged))+' L</strong></div>'+
+        '<div><span>Undischarged quantity</span><strong>'+purchaseH(purchaseLiters(remaining))+' L</strong></div>'+
+        '<div><span>Purchase date</span><strong>'+purchaseH(p.purchase_date?new Date(p.purchase_date).toLocaleString():'—')+'</strong></div>'+
+      '</div></section>'+
+      '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Order</h4></div>'+rows([['Product',productCode],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L'],['Difference',difference]])+'</section>'+
+      '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Truck & Driver</h4></div>'+rows([['Driver name',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Compartments',String(p.truck_compartments||'—')]])+(compartments.length?'<div class="purchase-detail-compartments"><h5>Compartment quantities</h5>'+compartmentRows+'</div>':'')+'</section>'+
+      (tankSections?'<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Tanks</h4><span>'+tankEntries.length+' tank'+(tankEntries.length===1?'':'s')+'</span></div>'+tankSections+'</section>':'')+
+      '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Delivery</h4><span class="purchase-detail-delivery-status">'+purchaseH(statusText||'—')+'</span></div>'+rows([['Delivered quantity',purchaseLiters(total)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Undischarged quantity',purchaseLiters(remaining)+' L'],['Difference',difference],['Fully discharged at',p.discharged_at?new Date(p.discharged_at).toLocaleString():'Not yet']])+'</section>'+
+      (history.length?'<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Discharge History</h4><span>'+history.length+' operation'+(history.length===1?'':'s')+'</span></div>'+eventRows+'</section>':'')+
+      '<section class="purchase-detail-remark"><div class="purchase-detail-remark-head"><div><span class="purchase-detail-kicker">FINAL NOTE</span><h4>Purchase Remark</h4></div><span>Optional</span></div><p>'+purchaseH(purchaseRemark||'No remark added for this purchase.')+'</p></section>';
     const m=document.getElementById('purchase-detail-modal');if(m){m.classList.add('open');m.setAttribute('aria-hidden','false');}
   };
   let purchaseDetailTanks=[];
