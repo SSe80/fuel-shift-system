@@ -1021,6 +1021,7 @@
   window.openPurchaseDetail=function(purchaseId){
     window.currentPurchaseDetailId=purchaseId;
     const p=purchaseDetailData?.find(x=>String(x.id)===String(purchaseId)); if(!p)return;
+    window.currentPurchaseDetailData=p;
     const tank=purchaseDetailTanks?.find(x=>String(x.id)===String(p.tank_id));
     const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||tank?.product||'').toLowerCase());
     const productCode=productRecord?.code_name||p.product||'—';
