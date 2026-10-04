@@ -1188,76 +1188,57 @@
     if(!modal||!track||!p)return;
     tankStockCarousel.events=getTankStockEvents(p.id);
     if(!tankStockCarousel.events.length){closeTankStockCard();return;}
-    const slideCount=tankStockCarousel.events.length*2;
+    const slideCount=tankStockCarousel.events.length+1;
     tankStockCarousel.index=Math.max(0,Math.min(tankStockCarousel.index,slideCount-1));
-    const eventPosition=Math.floor(tankStockCarousel.index/2);
+    const remark=tankStockCarousel.events[tankStockCarousel.events.length-1]?.event?.tank_stock_remark||'';
     track.innerHTML=tankStockCarousel.events.map((item,pos)=>{
       const e=item.event,tank=purchaseDetailTanks?.find(t=>String(t.id)===String(e.tank_id));
-      const remark=e.tank_stock_remark||'';
       const before=Number(e.tank_liters_before||0),discharged=Number(e.discharged_quantity_liters||0),expected=Number(e.tank_liters_after||before+discharged);
       const compartments=Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'C'+x).join(', '):'—';
-      return '<section class="tank-stock-slide tank-stock-reading-slide" data-slide="'+(pos*2)+'"><div class="tank-stock-slide-head"><div><span class="section-kicker">DISCHARGE '+(item.index+1)+'</span><h4>'+purchaseH(e.tank_code||tank?.tank_code||'Tank')+'</h4></div><span class="tank-stock-operation-badge">TANK STOCK</span></div><div class="tank-stock-operation-meta"><div><span>Date & time</span><strong>'+purchaseH(e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—')+'</strong></div><div><span>Compartments</span><strong>'+purchaseH(compartments)+'</strong></div></div><div class="tank-stock-ledger"><div><span>Tank opening</span><strong>'+purchaseH(purchaseLiters(before))+' L</strong></div><div><span>Discharged</span><strong>'+purchaseH(purchaseLiters(discharged))+' L</strong></div><div><span>Expected closing</span><strong>'+purchaseH(purchaseLiters(expected))+' L</strong></div></div><div class="tank-stock-field"><label>Tank closing stock</label><div class="purchase-input-unit"><input class="tank-stock-slide-input" inputmode="decimal" placeholder="Enter tank liters"><span>L</span></div><small>Enter the physical tank reading after this discharge operation.</small></div><div class="tank-stock-slide-actions"><button type="button" class="primary" onclick="goTankStockSlide('+((pos*2)+1)+')">Next: Remark</button></div></section>'+
-      '<section class="tank-stock-slide tank-stock-remark-slide" data-slide="'+((pos*2)+1)+'"><div class="tank-stock-slide-head"><div><span class="section-kicker">DISCHARGE '+(item.index+1)+'</span><h4>Remark</h4></div><span class="tank-stock-operation-badge">OPTIONAL</span></div><div class="tank-stock-remark-card"><label>Remark <span>Optional</span></label><textarea class="tank-stock-remark-input" rows="7" maxlength="1000" placeholder="Write a remark about this tank stock reading...">'+purchaseH(remark)+'</textarea></div><div class="tank-stock-slide-actions"><button type="button" class="primary" onclick="saveTankStock()">Save Tank Stock</button></div></section>';
-    }).join('');
+      const isLast=pos===tankStockCarousel.events.length-1;
+      return '<section class="tank-stock-slide tank-stock-reading-slide" data-slide="'+pos+'"><div class="tank-stock-slide-head"><div><span class="section-kicker">DISCHARGE '+(item.index+1)+'</span><h4>'+purchaseH(e.tank_code||tank?.tank_code||'Tank')+'</h4></div><span class="tank-stock-operation-badge">TANK STOCK</span></div><div class="tank-stock-operation-meta"><div><span>Date & time</span><strong>'+purchaseH(e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—')+'</strong></div><div><span>Compartments</span><strong>'+purchaseH(compartments)+'</strong></div></div><div class="tank-stock-ledger"><div><span>Tank opening</span><strong>'+purchaseH(purchaseLiters(before))+' L</strong></div><div><span>Discharged</span><strong>'+purchaseH(purchaseLiters(discharged))+' L</strong></div><div><span>Expected closing</span><strong>'+purchaseH(purchaseLiters(expected))+' L</strong></div></div><div class="tank-stock-field"><label>Tank closing stock</label><div class="purchase-input-unit"><input class="tank-stock-slide-input" inputmode="decimal" placeholder="Enter tank liters"></div><small>Enter the physical tank reading after this discharge operation.</small></div><div class="tank-stock-slide-actions"><button type="button" class="primary" onclick="goTankStockSlide('+(pos+1)+')">'+(isLast?'Next: Remark':'Next')+'</button></div></section>';
+    }).join('')+
+    '<section class="tank-stock-slide tank-stock-remark-slide" data-slide="'+tankStockCarousel.events.length+'"><div class="tank-stock-slide-head"><div><span class="section-kicker">FINAL STEP</span><h4>Remark</h4></div><span class="tank-stock-operation-badge">OPTIONAL</span></div><div class="tank-stock-remark-card"><div class="tank-stock-remark-heading"><div><label for="tank-stock-final-remark">Remark</label><p>Optional note for these tank stock readings.</p></div><span>Optional</span></div><textarea id="tank-stock-final-remark" class="tank-stock-remark-input" rows="7" maxlength="1000" placeholder="Write any note, discrepancy, or observation...">'+purchaseH(remark)+'</textarea><div class="tank-stock-remark-footer"><span>Maximum 1,000 characters</span><span class="tank-stock-remark-count">0 / 1000</span></div></div><div class="tank-stock-slide-actions"><button type="button" class="primary" onclick="saveTankStock()">Save Tank Stock</button></div></section>';
     dots.innerHTML=Array.from({length:slideCount},(_,i)=>'<button type="button" class="tank-stock-dot '+(i===tankStockCarousel.index?'active':'')+'" onclick="goTankStockSlide('+i+')" aria-label="Tank stock slide '+(i+1)+'"></button>').join('');
-    counter.textContent=(eventPosition+1)+' / '+tankStockCarousel.events.length+' • '+(tankStockCarousel.index%2===0?'Tank Stock':'Remark');
+    counter.textContent=tankStockCarousel.index<tankStockCarousel.events.length?((tankStockCarousel.index+1)+' / '+tankStockCarousel.events.length+' • Tank Stock'):'Remark • Final step';
     prev.disabled=tankStockCarousel.index===0; next.disabled=tankStockCarousel.index===slideCount-1;
-    track.style.transform='translateX(-'+(tankStockCarousel.index*100)+'%)';
+    track.style.transform='translate3d(-'+(tankStockCarousel.index*100)+'%,0,0)';
+    const remarkInput=document.getElementById('tank-stock-final-remark'),count=remarkInput?.parentElement?.querySelector('.tank-stock-remark-count');
+    if(remarkInput&&count)count.textContent=remarkInput.value.length+' / 1000';
+    if(remarkInput&&!remarkInput.dataset.countBound){remarkInput.dataset.countBound='true';remarkInput.addEventListener('input',()=>{const c=remarkInput.parentElement?.querySelector('.tank-stock-remark-count');if(c)c.textContent=remarkInput.value.length+' / 1000';});}
   }
-  let tankStockSwipe={active:false,pointerId:null,startX:0,startY:0,deltaX:0};
+  let tankStockSwipe={active:false,pointerId:null,startX:0,startY:0,deltaX:0,locked:false};
   function bindTankStockSwipe(){
-    const carousel=document.querySelector('.tank-stock-carousel');
-    const track=document.getElementById('tank-stock-track');
+    const carousel=document.querySelector('.tank-stock-carousel'),track=document.getElementById('tank-stock-track');
     if(!carousel||!track||carousel.dataset.swipeBound==='true')return;
     carousel.dataset.swipeBound='true';
-    const endSwipe=function(){
+    const finish=function(){
       if(!tankStockSwipe.active)return;
-      const dx=tankStockSwipe.deltaX;
-      tankStockSwipe.active=false;
-      tankStockSwipe.pointerId=null;
-      track.style.transition='transform .32s cubic-bezier(.22,.61,.36,1)';
-      if(Math.abs(dx)>=40){
-        const direction=dx<0?1:-1;
-        const targetIndex=tankStockCarousel.index+direction;
-        if(targetIndex!==tankStockCarousel.index){
-          window.goTankStockSlide(targetIndex);
-        }else{
-          track.style.transform='translateX(-'+(tankStockCarousel.index*100)+'%)';
-        }
-      }else{
-        track.style.transform='translateX(-'+(tankStockCarousel.index*100)+'%)';
-      }
+      const dx=tankStockSwipe.deltaX,current=tankStockCarousel.index,width=carousel.clientWidth||1;
+      tankStockSwipe.active=false;tankStockSwipe.pointerId=null;tankStockSwipe.locked=false;
+      const target=current+(dx<0?1:-1);
+      track.style.transition='transform .34s cubic-bezier(.22,.61,.36,1)';
+      if(Math.abs(dx)/width>.16&&target>=0&&target<=tankStockCarousel.events.length)window.goTankStockSlide(target);
+      else track.style.transform='translate3d(-'+(current*100)+'%,0,0)';
       tankStockSwipe.deltaX=0;
     };
     carousel.addEventListener('pointerdown',function(e){
       if(e.pointerType==='mouse'&&e.button!==0)return;
-      if(e.target.closest&&e.target.closest('input,button'))return;
-      tankStockSwipe={active:true,pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,deltaX:0};
-      if(carousel.setPointerCapture)carousel.setPointerCapture(e.pointerId);
-      track.style.transition='none';
-    });
+      if(e.target.closest&&e.target.closest('input,button,textarea'))return;
+      tankStockSwipe={active:true,pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,deltaX:0,locked:false};
+      carousel.setPointerCapture?.(e.pointerId);track.style.transition='none';
+    },{passive:true});
     carousel.addEventListener('pointermove',function(e){
       if(!tankStockSwipe.active||e.pointerId!==tankStockSwipe.pointerId)return;
-      const dx=e.clientX-tankStockSwipe.startX;
-      const dy=e.clientY-tankStockSwipe.startY;
-      if(Math.abs(dx)<=Math.abs(dy)+4)return;
-      e.preventDefault();
-      tankStockSwipe.deltaX=dx;
-      const width=carousel.clientWidth||1;
-      const percent=(dx/width)*100;
-      track.style.transform='translateX(calc(-'+(tankStockCarousel.index*100)+'% + '+percent+'%))';
-    });
-    carousel.addEventListener('pointerup',function(e){
-      if(e.pointerId===tankStockSwipe.pointerId)endSwipe();
-    });
-    carousel.addEventListener('pointercancel',function(e){
-      if(e.pointerId===tankStockSwipe.pointerId)endSwipe();
-    });
-    carousel.addEventListener('lostpointercapture',function(){
-      if(tankStockSwipe.active)endSwipe();
-    });
+      const dx=e.clientX-tankStockSwipe.startX,dy=e.clientY-tankStockSwipe.startY;
+      if(!tankStockSwipe.locked){if(Math.abs(dx)<8&&Math.abs(dy)<8)return;if(Math.abs(dy)>Math.abs(dx)){tankStockSwipe.active=false;return;}tankStockSwipe.locked=true;}
+      e.preventDefault();tankStockSwipe.deltaX=dx;
+      track.style.transform='translate3d(calc(-'+(tankStockCarousel.index*100)+'% + '+((dx/(carousel.clientWidth||1))*100)+'%),0,0)';
+    },{passive:false});
+    carousel.addEventListener('pointerup',function(e){if(e.pointerId===tankStockSwipe.pointerId)finish();});
+    carousel.addEventListener('pointercancel',function(e){if(e.pointerId===tankStockSwipe.pointerId)finish();});
   }
-  window.goTankStockSlide=function(index){if(!tankStockCarousel.events.length)return;tankStockCarousel.index=Math.max(0,Math.min(Number(index)||0,tankStockCarousel.events.length-1));renderTankStockCarousel();};
+  window.goTankStockSlide=function(index){const slideCount=tankStockCarousel.events.length+1;if(!tankStockCarousel.events.length)return;tankStockCarousel.index=Math.max(0,Math.min(Number(index)||0,slideCount-1));renderTankStockCarousel();};
   window.stepTankStockSlide=function(direction){window.goTankStockSlide(tankStockCarousel.index+direction);};
   window.openTankStockCard=function(purchaseId){
     const modal=document.getElementById('tank-stock-modal');if(!modal)return;
@@ -1267,25 +1248,28 @@
   };
   window.closeTankStockCard=function(){const modal=document.getElementById('tank-stock-modal');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}tankStockCarousel={purchaseId:null,events:[],index:0};};
   window.saveTankStock=async function(){
-    const eventPosition=Math.floor(tankStockCarousel.index/2),activeEvent=tankStockCarousel.events[eventPosition],modal=document.getElementById('tank-stock-modal'),stockInput=modal?.querySelector('.tank-stock-reading-slide[data-slide="'+(eventPosition*2)+'"] .tank-stock-slide-input'),remarkInput=modal?.querySelector('.tank-stock-remark-slide[data-slide="'+(eventPosition*2+1)+'"] .tank-stock-remark-input'),status=document.getElementById('tank-stock-status'),p=purchaseDetailData?.find(x=>String(x.id)===String(tankStockCarousel.purchaseId));
-    if(!p||!activeEvent||!stockInput)return;
-    const e=activeEvent.event,tankId=String(e.tank_id||''),liters=parseQuantity(stockInput.value),remark=(remarkInput?.value||'').trim(),tank=purchaseDetailTanks?.find(x=>String(x.id)===tankId);
-    if(!tankId||!Number.isFinite(liters)||liters<0){if(status){status.textContent='Enter the tank closing stock.';status.className='purchase-status error';}return;}
-    if(tank?.capacity_liters!=null&&liters>Number(tank.capacity_liters)){if(status){status.textContent='Tank stock cannot exceed tank capacity.';status.className='purchase-status error';}return;}
+    const modal=document.getElementById('tank-stock-modal'),status=document.getElementById('tank-stock-status'),p=purchaseDetailData?.find(x=>String(x.id)===String(tankStockCarousel.purchaseId));
+    if(!p||!tankStockCarousel.events.length)return;
+    const inputs=Array.from(modal?.querySelectorAll('.tank-stock-reading-slide .tank-stock-slide-input')||[]);
+    if(inputs.length!==tankStockCarousel.events.length)return;
+    const readings=[];
+    for(let i=0;i<tankStockCarousel.events.length;i++){
+      const item=tankStockCarousel.events[i],e=item.event,tankId=String(e.tank_id||''),liters=parseQuantity(inputs[i].value),tank=purchaseDetailTanks?.find(x=>String(x.id)===tankId);
+      if(!tankId||!Number.isFinite(liters)||liters<0){tankStockCarousel.index=i;renderTankStockCarousel();document.querySelector('.tank-stock-reading-slide[data-slide="'+i+'"] .tank-stock-slide-input')?.focus();if(status){status.textContent='Enter the tank closing stock for every discharge.';status.className='purchase-status error';}return;}
+      if(tank?.capacity_liters!=null&&liters>Number(tank.capacity_liters)){tankStockCarousel.index=i;renderTankStockCarousel();document.querySelector('.tank-stock-reading-slide[data-slide="'+i+'"] .tank-stock-slide-input')?.focus();if(status){status.textContent='Tank stock cannot exceed tank capacity.';status.className='purchase-status error';}return;}
+      readings.push({item,tankId,liters});
+    }
+    const remark=(modal?.querySelector('#tank-stock-final-remark')?.value||'').trim();
     try{
       if(status){status.textContent='Saving tank stock…';status.className='purchase-status';}
-      await purchaseApi('/api/tanks/'+encodeURIComponent(tankId)+'/stock',{method:'PATCH',body:JSON.stringify({stock_liters:liters,purchase_id:p.id,event_index:activeEvent.index,remark})});
-      const savedIndex=activeEvent.index;
-      await loadPurchases();
-      const remainingEvents=getTankStockEvents(tankStockCarousel.purchaseId);
-      if(!remainingEvents.length){closeTankStockCard();return;}
-      tankStockCarousel.events=remainingEvents;
-      const nextPosition=remainingEvents.findIndex(x=>x.index>savedIndex);
-      tankStockCarousel.index=nextPosition>=0?nextPosition*2:Math.min(eventPosition*2,remainingEvents.length*2-1);
-      renderTankStockCarousel();
-      const refreshedStatus=document.getElementById('tank-stock-status');
-      if(refreshedStatus){refreshedStatus.textContent='Tank stock saved. Remaining discharge operations are shown.';refreshedStatus.className='purchase-status success';}
-    }catch(e){if(status){status.textContent=e.message||'Failed to save tank stock.';status.className='purchase-status error';}openPurchaseFailed(e.message||'Failed to save tank stock.','Tank Stock Failed');}
+      for(const row of readings)await purchaseApi('/api/tanks/'+encodeURIComponent(row.tankId)+'/stock',{method:'PATCH',body:JSON.stringify({stock_liters:row.liters,purchase_id:p.id,event_index:row.item.index,remark:''})});
+      const last=readings[readings.length-1];
+      await purchaseApi('/api/tanks/'+encodeURIComponent(last.tankId)+'/stock',{method:'PATCH',body:JSON.stringify({stock_liters:last.liters,purchase_id:p.id,event_index:last.item.index,remark,remark_only:true})});
+      await loadPurchases();closeTankStockCard();
+    }catch(e){
+      if(status){status.textContent=e.message||'Failed to save tank stock.';status.className='purchase-status error';}
+      openPurchaseFailed(e.message||'Failed to save tank stock.','Tank Stock Failed');
+    }
   };
 
   window.closePurchaseSuccess=function(){
@@ -1387,6 +1371,23 @@
 </style>
 
 <style>
+<style>
+/* Tank stock carousel refinement */
+.tank-stock-carousel{overflow:hidden;border-radius:14px;touch-action:pan-y;overscroll-behavior-x:contain}
+.tank-stock-track{display:flex;width:100%;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden}
+.tank-stock-slide{min-width:100%;flex:0 0 100%;box-sizing:border-box}
+.tank-stock-remark-card{margin-top:12px;padding:15px;border:1px solid #dfe5ec;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(16,24,40,.04)}
+.tank-stock-remark-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+.tank-stock-remark-heading label{display:block;margin:0;font-size:15px;font-weight:800;color:#101828}
+.tank-stock-remark-heading p{margin:3px 0 0;font-size:11px;line-height:1.4;color:#667085}
+.tank-stock-remark-heading>span{flex:0 0 auto;padding:4px 8px;border-radius:999px;background:#f2f4f7;color:#667085;font-size:9px;font-weight:800;text-transform:uppercase}
+.tank-stock-remark-input{display:block;width:100%;min-height:128px;box-sizing:border-box;resize:vertical;border:1.5px solid #cbd5e1;border-radius:12px;outline:0;background:#f8fafc;padding:12px 13px;font:inherit;font-size:14px;line-height:1.5;color:#101828;transition:border-color .18s ease,box-shadow .18s ease,background .18s ease}
+.tank-stock-remark-input:focus{border-color:#2563eb;background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.tank-stock-remark-input::placeholder{color:#98a2b3}
+.tank-stock-remark-footer{display:flex;justify-content:space-between;gap:10px;margin-top:7px;font-size:10px;color:#98a2b3}
+.tank-stock-remark-count{font-weight:700;color:#667085}
+@media(max-width:560px){.tank-stock-remark-card{padding:13px}.tank-stock-remark-input{min-height:150px;font-size:14px}}
+</style>
 /* Tank reading before discharge */
 .discharge-tank-reading-field{margin-top:14px;margin-bottom:0;padding:12px;border:1px solid #e4e7ec;border-radius:12px;background:#f8fafc}
 .discharge-tank-reading-field label{margin-bottom:5px!important;font-size:13px!important;font-weight:700!important;color:#344054!important}
