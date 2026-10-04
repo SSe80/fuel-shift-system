@@ -984,7 +984,16 @@
       const partialPending=pending.filter(p=>Array.isArray(p.discharge_history)&&p.discharge_history.length>0);
       const historyWithPartial=[...partialPending,...history.filter(h=>!partialPending.some(p=>String(p.id)===String(h.id)))];
       if(dischargeList)dischargeList.innerHTML=pending.length?pending.map(p=>{const t=tanks.find(x=>String(x.id)===String(p.tank_id));return renderPurchaseCard(p,t,true);}).join(''):'<div class="purchase-empty">No purchases waiting for discharge.</div>';
-      if(list)list.innerHTML=historyWithPartial.length?historyWithPartial.map(p=>{const t=tanks.find(x=>String(x.id)===String(p.tank_id));return renderPurchaseCard(p,t,false);}).join(''):'<div class="purchase-empty">No discharged purchases yet.</div>';
+      if(list){
+        if(!historyWithPartial.length){
+          list.innerHTML='<div class="purchase-empty">No discharged purchases yet.</div>';
+        }else{
+          const unrecordedHistory=historyWithPartial.filter(p=>Array.isArray(p.discharge_history)&&p.discharge_history.some(e=>!e?.tank_stock_recorded));
+          const recordedHistory=historyWithPartial.filter(p=>!unrecordedHistory.some(x=>String(x.id)===String(p.id)));
+          const renderHistoryGroup=(items,title,kind)=>items.length?'<section class="purchase-history-stock-group '+kind+'"><div class="purchase-history-stock-group-head"><span>'+title+'</span><strong>'+items.length+'</strong></div>'+items.map(p=>{const t=tanks.find(x=>String(x.id)===String(p.tank_id));return renderPurchaseCard(p,t,false);}).join('')+'</section>':'';
+          list.innerHTML=renderHistoryGroup(unrecordedHistory,'⚠ Tank Stock Not Recorded','unrecorded')+renderHistoryGroup(recordedHistory,'✓ Tank Stock Recorded','recorded');
+        }
+      }
       setStatus('',false);
     }catch(e){
       setStatus(e.message||'Failed to load purchases.',true);
@@ -1512,7 +1521,14 @@
 .purchase-failed-icon{background:#fef3f2;color:#d92d20}
 #purchase-failed-modal .purchase-confirmation-actions{grid-template-columns:1fr}
 </style>
-<style>.purchase-history-invoice-box{min-width:0}.purchase-history-invoice-box strong{font-size:13px}</style><div id="tank-stock-modal" class="modal" aria-hidden="true">
+<style>.purchase-history-invoice-box{min-width:0}.purchase-history-invoice-box strong{font-size:13px}
+.purchase-history-stock-group{margin-bottom:16px}
+.purchase-history-stock-group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 9px;padding:0 2px 7px;border-bottom:1px solid #e4e7ec;font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+.purchase-history-stock-group-head strong{min-width:20px;height:20px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font-size:10px;background:#f2f4f7;color:#667085}
+.purchase-history-stock-group.unrecorded .purchase-history-stock-group-head{color:#b42318;border-bottom-color:#fecdca}
+.purchase-history-stock-group.unrecorded .purchase-history-stock-group-head strong{background:#fef3f2;color:#d92d20}
+.purchase-history-stock-group.recorded .purchase-history-stock-group-head{color:#027a48;border-bottom-color:#d1fadf}
+.purchase-history-stock-group.recorded .purchase-history-stock-group-head strong{background:#ecfdf3;color:#027a48}</style><div id="tank-stock-modal" class="modal" aria-hidden="true">
   <div class="modal-backdrop" onclick="closeTankStockCard()"></div>
   <div class="modal-card purchase-confirmation-card tank-stock-card">
     <div class="top"><div><span class="section-kicker">TANK STOCK</span><h3>Fill Tank Stock</h3></div><button type="button" class="modal-close" onclick="closeTankStockCard()">×</button></div>
