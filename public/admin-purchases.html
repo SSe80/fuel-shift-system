@@ -929,6 +929,7 @@
   };
   function renderPurchaseReview(){
     const review=document.getElementById('purchase-review-content');if(!review)return;
+    const productValue=productSelect?.value||'';
     const product=productSelect?.selectedOptions?.[0]?.textContent||'—';
     const tank=tankSelect?.selectedOptions?.[0]?.textContent||'—';
     const invoice=document.getElementById('purchase-invoice')?.value.trim()||'—';
@@ -943,7 +944,7 @@
     const abs=Math.abs(difference);
     const diffText=difference===0?'Matches ordered quantity':difference>0?'Over delivered by '+purchaseLiters(abs)+' L':'Short delivered by '+purchaseLiters(abs)+' L';
     const rows=inputs.map((input,i)=>'<div class="purchase-review-row"><span>Compartment '+(i+1)+'</span><strong>'+purchaseLiters(parseQuantity(input.value))+' L</strong></div>').join('');
-    const selectedProduct=purchaseProducts.find(p=>String(p.name||'').toLowerCase()===String(product||'').toLowerCase()); const productCode=selectedProduct?.code_name||'—';
+    const selectedProduct=purchaseProducts.find(p=>String(p.name||'').toLowerCase()===String(productValue||'').toLowerCase()); const productCode=selectedProduct?.code_name||product||'—';
     review.innerHTML='<div class="purchase-review-section"><h4>1. Order</h4><div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(productCode)+'</strong></div><div class="purchase-review-row"><span>Planned destination tank</span><strong>'+purchaseH(tank)+'</strong></div><div class="purchase-review-row"><span>Invoice number</span><strong>'+purchaseH(invoice)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div></div>'+
       '<div class="purchase-review-section"><h4>2. Truck</h4><div class="purchase-review-row"><span>Driver name</span><strong>'+purchaseH(driver)+'</strong></div><div class="purchase-review-row"><span>Driver phone</span><strong>'+purchaseH(phone)+'</strong></div><div class="purchase-review-row"><span>Plate number</span><strong>'+purchaseH(plate)+'</strong></div><div class="purchase-review-row"><span>Compartments</span><strong>'+count+'</strong></div></div>'+
       '<div class="purchase-review-section"><h4>3. Quantity</h4>'+rows+'<div class="purchase-review-row"><span>Delivered quantity</span><strong>'+purchaseLiters(delivered)+' L</strong></div><div class="purchase-review-difference"><span>Difference</span><strong>'+purchaseH(diffText)+'</strong></div></div>';
