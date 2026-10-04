@@ -1934,28 +1934,109 @@ def daily_report():
     report_date=request.args.get("date") or date.today().isoformat()
     try: date.fromisoformat(report_date)
     except ValueError:return jsonify({"error":"Invalid date"}),400
-    sales_status,sales_rows=sb("sales",params={"sale_time":"gte."+report_date+"T00:00:00Z","select":"shift_id,product,quantity_liters,unit_price,amount,payment_method,sale_time,employee_id","order":"sale_time.asc","limit":"1000"})
-    if sales_status==200:
-        sales_rows=[x for x in sales_rows if str(x.get("sale_time",""))[:10]==report_date]
-    handover_status,handover_rows=sb("shift_takeovers",params={"shift_ended_at":"gte."+report_date+"T00:00:00Z","select":"shift_id,total_sales_liters,total_sales_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_purchases_liters,tank_sales_liters,tank_variance_liters,sales_status,shift_ended_at","order":"shift_ended_at.asc","limit":"1000"})
-    if handover_status==200:
-        handover_rows=[x for x in handover_rows if str(x.get("shift_ended_at",""))[:10]==report_date]
-    purchases_status,purchase_rows=sb("purchases",params={"purchase_date":"gte."+report_date+"T00:00:00Z","select":"product,quantity_liters,supplier,tank_id,purchase_date","order":"purchase_date.asc","limit":"1000"})
-    if purchases_status==200:
-        purchase_rows=[x for x in purchase_rows if str(x.get("purchase_date",""))[:10]==report_date]
+
+    sales_status,sales_rows=sb("sales",params={
+        "sale_time":"gte."+report_date+"T00:00:00Z",
+        "select":"id,shift_id,product,quantity_liters,unit_price,amount,payment_method,sale_time,employee_id,sale_type_id,sale_reason",
+        "order":"sale_time.asc","limit":"5000"
+    })
+    handover_status,handover_rows=sb("shift_takeovers",params={
+        "shift_ended_at":"gte."+report_date+"T00:00:00Z",
+        "select":"id,shift_id,from_employee_id,to_employee_id,shift_started_at,shift_ended_at,total_sales_liters,total_sales_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_purchases_liters,tank_sales_liters,tank_variance_liters,tank_variance_pct,sales_status,sales_submitted_at,sales_confirmed_at",
+        "order":"shift_ended_at.asc","limit":"5000"
+    })
+    purchases_status,purchase_rows=sb("purchases",params={
+        "purchase_date":"gte."+report_date+"T00:00:00Z",
+        "select":"id,product,quantity_liters,supplier,invoice_number,tank_id,purchase_date,status",
+        "order":"purchase_date.asc","limit":"5000"
+    })
+    if sales_status==200:sales_rows=[x for x in sales_rows if str(x.get("sale_time",""))[:10]==report_date]
+    if handover_status==200:handover_rows=[x for x in handover_rows if str(x.get("shift_ended_at",""))[:10]==report_date]
+    if purchases_status==200:purchase_rows=[x for x in purchase_rows if str(x.get("purchase_date",""))[:10]==report_date]
     if sales_status!=200:return jsonify({"error":sales_rows}),sales_status
     if handover_status!=200:return jsonify({"error":handover_rows}),handover_status
     if purchases_status!=200:return jsonify({"error":purchase_rows}),purchases_status
+
     takeover_shift_ids={str(x.get("shift_id")) for x in handover_rows if x.get("shift_id")}
-    direct_fuel_liters=sum(float(x.get("quantity_liters") or 0) for x in sales_rows if str(x.get("shift_id") or "") not in takeover_shift_ids)
+    direct_fuel_rows=[x for x in sales_rows if str(x.get("shift_id") or "") not in takeover_shift_ids and float(x.get("quantity_liters") or 0)>0]
+    direct_fuel_liters=sum(float(x.get("quantity_liters") or 0) for x in direct_fuel_rows)
     handover_fuel_liters=sum(float(x.get("total_sales_liters") or 0) for x in handover_rows)
     total_l=direct_fuel_liters+handover_fuel_liters
     total_a=sum(float(x.get("amount") or 0) for x in sales_rows)
+    fuel_amount=sum(float(x.get("amount") or 0) for x in direct_fuel_rows)
+    other_amount=total_a-fuel_amount
     total_p=sum(float(x.get("quantity_liters") or 0) for x in purchase_rows)
+
     by_product={}
+    for x in direct_fuel_rows:
+        p=x.get("product") or "Unknown"
+        row=by_product.setdefault(p,{"liters":0,"amount":0})
+        row["liters"]+=float(x.get("quantity_liters") or 0)
+        row["amount"]+=float(x.get("amount") or 0)
+
+    tank_ids={str(x.get("tank_id")) for x in handover_rows if x.get("tank_id")}
+    tank_map={}
+    if tank_ids:
+        ts,tr=sb("tanks",params={"id":"in.("+",".join(tank_ids)+")","select":"id,tank_code,product"})
+        if ts==200:tank_map={str(x.get("id")):x for x in tr}
+    for x in handover_rows:
+        p=(tank_map.get(str(x.get("tank_id"))) or {}).get("product") or "Unknown"
+        row=by_product.setdefault(p,{"liters":0,"amount":0})
+        row["liters"]+=float(x.get("total_sales_liters") or 0)
+
+    payment_methods={}
     for x in sales_rows:
-        p=x.get("product","Unknown"); by_product.setdefault(p,{"liters":0,"amount":0}); by_product[p]["liters"]+=float(x.get("quantity_liters") or 0); by_product[p]["amount"]+=float(x.get("amount") or 0)
-    return jsonify({"date":report_date,"sales":sales_rows,"purchases":purchase_rows,"handovers":handover_rows,"summary":{"sales_liters":total_l,"sales_amount":total_a,"purchases_liters":total_p,"by_product":by_product}})
+        method=x.get("payment_method") or "other"
+        payment_methods[method]=payment_methods.get(method,0)+float(x.get("amount") or 0)
+
+    employee_ids={str(x.get("employee_id")) for x in sales_rows if x.get("employee_id")}
+    employee_ids.update(str(x.get("from_employee_id")) for x in handover_rows if x.get("from_employee_id"))
+    employee_ids.update(str(x.get("to_employee_id")) for x in handover_rows if x.get("to_employee_id"))
+    employee_map={}
+    if employee_ids:
+        es,er=sb("employees",params={"id":"in.("+",".join(employee_ids)+")","select":"id,name,operator_id"})
+        if es==200:employee_map={str(x.get("id")):x for x in er}
+
+    all_tank_ids={str(x.get("tank_id")) for x in handover_rows+purchase_rows if x.get("tank_id")}
+    if all_tank_ids and not tank_map:
+        ts,tr=sb("tanks",params={"id":"in.("+",".join(all_tank_ids)+")","select":"id,tank_code,product"})
+        if ts==200:tank_map={str(x.get("id")):x for x in tr}
+    elif all_tank_ids:
+        missing=all_tank_ids-set(tank_map)
+        if missing:
+            ts,tr=sb("tanks",params={"id":"in.("+",".join(missing)+")","select":"id,tank_code,product"})
+            if ts==200:tank_map.update({str(x.get("id")):x for x in tr})
+
+    shift_summary=[]
+    for x in handover_rows:
+        from_emp=employee_map.get(str(x.get("from_employee_id"))) or {}
+        to_emp=employee_map.get(str(x.get("to_employee_id"))) or {}
+        tank=tank_map.get(str(x.get("tank_id"))) or {}
+        shift_summary.append({
+            "shift_id":x.get("shift_id"),
+            "attendant":from_emp.get("name") or "Unknown",
+            "receiver":to_emp.get("name") or "—",
+            "tank":tank.get("tank_code") or "—",
+            "product":tank.get("product") or "Unknown",
+            "started_at":x.get("shift_started_at"),
+            "ended_at":x.get("shift_ended_at"),
+            "sales_liters":float(x.get("total_sales_liters") or 0),
+            "sales_amount":float(x.get("total_sales_amount") or 0),
+            "tank_opening_liters":float(x.get("tank_opening_liters") or 0),
+            "tank_closing_liters":float(x.get("tank_closing_liters") or 0),
+            "tank_purchases_liters":float(x.get("tank_purchases_liters") or 0),
+            "tank_sales_liters":float(x.get("tank_sales_liters") or 0),
+            "tank_variance_liters":float(x.get("tank_variance_liters") or 0),
+            "tank_variance_pct":float(x.get("tank_variance_pct") or 0),
+            "sales_status":x.get("sales_status"),
+            "sales_submitted_at":x.get("sales_submitted_at"),
+            "sales_confirmed_at":x.get("sales_confirmed_at")
+        })
+
+    return jsonify({"date":report_date,"sales":sales_rows,"purchases":purchase_rows,"handovers":handover_rows,"shift_summary":shift_summary,"summary":{
+        "sales_liters":total_l,"sales_amount":total_a,"fuel_sales_amount":fuel_amount,"other_sales_amount":other_amount,
+        "purchases_liters":total_p,"by_product":by_product,"payment_methods":payment_methods,"completed_shifts":len(handover_rows)
+    }})
 
 @app.post("/api/reports/daily")
 def generate_report():
@@ -1966,7 +2047,7 @@ def generate_report():
     try: date.fromisoformat(report_date)
     except ValueError:return jsonify({"error":"Invalid date"}),400
     status,result=rpc("generate_daily_report",{"p_report_date":report_date,"p_generated_by":session["employee_id"]})
-    if status>=400:return jsonify({"error":result}),status
+    if status>=400:return jsonify(result),status
     return jsonify(result),201
 
 @app.route("/", defaults={"path":""})
