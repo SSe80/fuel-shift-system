@@ -884,7 +884,7 @@ function downloadAdminSaleHistoryDetails(id){
 
   const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'}));
   const link=document.createElement('a');
-  const stamp=(t.shift_ended_at||t.shift_started_at||new Date().toISOString()).replace(/[^0-9]/g,'').slice(0,14);
+  const stamp=(p.purchase_date||p.created_at||new Date().toISOString()).replace(/[^0-9]/g,'').slice(0,14);
   link.href=url;
   link.download='shift-'+String(t.shift_id||id).slice(0,8)+'-'+stamp+'.pdf';
   document.body.appendChild(link);
