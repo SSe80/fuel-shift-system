@@ -1218,7 +1218,7 @@
       tankStockSwipe.active=false;tankStockSwipe.pointerId=null;tankStockSwipe.locked=false;
       track.style.transition='transform .28s cubic-bezier(.22,.61,.36,1)';
       // A short deliberate horizontal swipe is enough to move exactly one card.
-      if(Math.abs(dx)>=24){
+      if(Math.abs(dx)>=18){
         const target=current+(dx<0?1:-1);
         if(target>=0&&target<=tankStockCarousel.events.length)window.goTankStockSlide(target);
         else track.style.transform='translate3d(-'+(current*100)+'%,0,0)';
@@ -1229,7 +1229,8 @@
     };
     carousel.addEventListener('pointerdown',function(e){
       if(e.pointerType==='mouse'&&e.button!==0)return;
-      if(e.target.closest&&e.target.closest('input,button,textarea'))return;
+      // Allow horizontal swipes to start over fields too. Buttons remain tappable.
+      if(e.target.closest&&e.target.closest('button'))return;
       tankStockSwipe={active:true,pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,deltaX:0,locked:false};
       carousel.setPointerCapture?.(e.pointerId);
       track.style.transition='none';
@@ -1244,10 +1245,11 @@
       }
       e.preventDefault();
       tankStockSwipe.deltaX=dx;
-      // Keep the drag visual subtle; the card snaps to the next/previous card on release.
+      // Keep the track directly under the finger so the swipe feels immediate.
       const width=carousel.clientWidth||1;
-      const visual=Math.max(-34,Math.min(34,(dx/width)*100));
-      track.style.transform='translate3d(calc(-'+(tankStockCarousel.index*100)+'% + '+visual+'%),0,0)';
+      const maxDrag=Math.max(90,width*0.45);
+      const visual=Math.max(-maxDrag,Math.min(maxDrag,dx));
+      track.style.transform='translate3d(calc(-'+(tankStockCarousel.index*100)+'% + '+visual+'px),0,0)';
     },{passive:false});
     carousel.addEventListener('pointerup',function(e){if(e.pointerId===tankStockSwipe.pointerId)finish();});
     carousel.addEventListener('pointercancel',function(e){if(e.pointerId===tankStockSwipe.pointerId)finish();});
