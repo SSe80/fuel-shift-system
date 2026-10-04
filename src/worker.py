@@ -1041,6 +1041,9 @@ def shifts():
                         rr["nozzle_code"]=dn.get("nozzle_code")
                         rr["nozzle_number"]=dn.get("nozzle_number")
                         rr["dispenser_id"]=dn.get("dispenser_id")
+                        rr["tank_id"]=dn.get("tank_id")
+                        rr["product_id"]=dn.get("product_id")
+                        rr["active"]=dn.get("active")
                         rr["dispenser_code"]=dispenser_map.get(str(dn.get("dispenser_id")),{}).get("dispenser_code")
             by_shift={}
             for rr in reading_rows:
