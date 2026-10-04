@@ -530,7 +530,7 @@
     </section>
     <section class="purchase-wizard-step" data-purchase-step="4">
       <div id="purchase-review-content" class="purchase-review"></div>
-      <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(4)">Return</button><button type="button" class="primary" onclick="createPurchase()">Confirm Purchase</button></div>
+      <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(4)">Return</button><button type="button" class="primary" onclick="openPurchaseConfirmation()">Confirm Purchase</button></div>
     </section>
   </form>
   <div id="purchase-status" class="purchase-status"></div>
@@ -562,10 +562,33 @@
     <div id="purchase-discharge-review" class="discharge-review"></div>
     <div class="purchase-wizard-actions">
       <button type="button" onclick="setDischargeStep(2)">Return</button>
-      <button type="button" class="primary" onclick="confirmPurchaseDischarge()">Discharge Purchase</button>
+      <button type="button" class="primary" onclick="openDischargeConfirmation()">Discharge Purchase</button>
     </div>
   </section>
   <div id="purchase-discharge-status" class="purchase-status"></div>
+</div>
+</div><div id="purchase-confirmation-modal" class="modal" aria-hidden="true">
+<div class="modal-backdrop" onclick="closePurchaseConfirmation()"></div>
+<div class="modal-card purchase-confirmation-card">
+  <div class="top">
+    <div>
+      <span id="purchase-confirmation-kicker" class="section-kicker">CONFIRM ACTION</span>
+      <h3 id="purchase-confirmation-title">Confirm Purchase</h3>
+    </div>
+    <button type="button" class="modal-close" onclick="closePurchaseConfirmation()">×</button>
+  </div>
+  <div class="purchase-confirmation-body">
+    <div id="purchase-confirmation-icon" class="purchase-confirmation-icon">✓</div>
+    <div>
+      <strong id="purchase-confirmation-heading">Please review before confirming.</strong>
+      <p id="purchase-confirmation-message" class="muted">This action will update the purchase record.</p>
+    </div>
+  </div>
+  <div id="purchase-confirmation-summary" class="purchase-confirmation-summary"></div>
+  <div class="purchase-confirmation-actions">
+    <button type="button" onclick="closePurchaseConfirmation()">Cancel</button>
+    <button type="button" class="primary" id="purchase-confirmation-confirm">Confirm</button>
+  </div>
 </div>
 </div><div id="purchase-detail-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseDetail()"></div>
@@ -902,7 +925,69 @@
     }
   };
 
-  window.confirmPurchaseDischarge=async function(){
+  function openPurchaseConfirmationCard(kind,summary){
+    const modal=document.getElementById('purchase-confirmation-modal');
+    const title=document.getElementById('purchase-confirmation-title');
+    const kicker=document.getElementById('purchase-confirmation-kicker');
+    const heading=document.getElementById('purchase-confirmation-heading');
+    const message=document.getElementById('purchase-confirmation-message');
+    const summaryEl=document.getElementById('purchase-confirmation-summary');
+    const confirm=document.getElementById('purchase-confirmation-confirm');
+    if(!modal||!title||!heading||!message||!summaryEl||!confirm)return;
+    const isDischarge=kind==='discharge';
+    kicker.textContent=isDischarge?'DISCHARGE PURCHASE':'RECEIVE STOCK';
+    title.textContent=isDischarge?'Confirm Discharge':'Confirm Purchase';
+    heading.textContent=isDischarge?'Ready to discharge this fuel purchase?':'Ready to confirm this fuel purchase?';
+    message.textContent=isDischarge
+      ?'Please review the selected compartments and destination tank. Confirm only when the tank reading is correct.'
+      :'Please review the purchase details. Once confirmed, the purchase will move to Discharge Purchase.';
+    confirm.textContent=isDischarge?'Confirm Discharge':'Confirm Purchase';
+    summaryEl.innerHTML=summary||'';
+    confirm.onclick=isDischarge?'confirmPurchaseDischarge()':'createPurchase()';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+  }
+  window.closePurchaseConfirmation=function(){
+    const modal=document.getElementById('purchase-confirmation-modal');
+    if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  };
+  window.openPurchaseConfirmation=function(){
+    const product=productSelect?.selectedOptions?.[0]?.textContent||'—';
+    const invoice=document.getElementById('purchase-invoice')?.value.trim()||'—';
+    const ordered=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
+    const inputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
+    const delivered=inputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
+    openPurchaseConfirmationCard('purchase',
+      '<div class="purchase-confirmation-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div>'+
+      '<div class="purchase-confirmation-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>'+
+      '<div class="purchase-confirmation-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div>'+
+      '<div class="purchase-confirmation-row"><span>Delivered quantity</span><strong>'+purchaseLiters(delivered)+' L</strong></div>');
+  };
+  window.openDischargeConfirmation=function(){
+    const state=purchaseDischargeState;
+    const p=state.purchase;
+    if(!p||!state.tankId||!state.selectedIndexes?.length)return;
+    const values=Array.isArray(p.compartment_liters)?p.compartment_liters:[Number(p.quantity_liters||0)];
+    const total=state.selectedIndexes.reduce((sum,i)=>sum+Number(values[i-1]||0),0);
+    const tank=state.tanks.find(t=>String(t.id)===String(state.tankId));
+    openPurchaseConfirmationCard('discharge',
+      '<div class="purchase-confirmation-row"><span>Product</span><strong>'+purchaseH(p.product||'—')+'</strong></div>'+
+      '<div class="purchase-confirmation-row"><span>Invoice</span><strong>'+purchaseH(p.invoice_number||'—')+'</strong></div>'+
+      '<div class="purchase-confirmation-row"><span>Compartments</span><strong>'+purchaseH(state.selectedIndexes.join(', '))+'</strong></div>'+
+      '<div class="purchase-confirmation-row"><span>Discharge quantity</span><strong>'+purchaseLiters(total)+' L</strong></div>'+
+      '<div class="purchase-confirmation-row"><span>Destination tank</span><strong>'+purchaseH(tank?.tank_code||'—')+'</strong></div>'+
+      '<div class="purchase-confirmation-row"><span>Tank liters before</span><strong>'+purchaseLiters(state.tankLitersBefore)+' L</strong></div>');
+  };
+  window.confirmPurchaseDischarge=function(){
+    closePurchaseConfirmation();
+    return window.performPurchaseDischarge();
+  };
+  window.createPurchase=function(){
+    closePurchaseConfirmation();
+    return window.performCreatePurchase();
+  };
+
+  window.performPurchaseDischarge=async function(){
     const state=purchaseDischargeState;
     if(!state.purchaseId||!state.tankId||!state.selectedIndexes.length)return;
     try{
@@ -922,7 +1007,7 @@
   };
 
   window.dischargePurchase=function(purchaseId){openPurchaseDischarge(purchaseId);};
-  window.createPurchase=async function(){
+  window.performCreatePurchase=async function(){
     const product=productSelect?.value||'';
     const invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
     const compartmentInputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
@@ -1023,6 +1108,26 @@
 .purchase-history-full-main{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:12px;margin:11px 0}
 .purchase-history-details-btn{width:100%}
 @media(max-width:560px){.purchase-history-partial-event{grid-template-columns:1fr 1fr}.purchase-history-partial-event>div:last-child{grid-column:1/-1}.purchase-history-full-main{grid-template-columns:1fr 1fr}.purchase-history-full-main>div:last-child{grid-column:1/-1}}
+</style>
+<style>
+/* Purchase confirmation card */
+.purchase-confirmation-card{width:min(470px,calc(100% - 24px));max-height:88vh;border-radius:18px;overflow:hidden}
+.purchase-confirmation-card .top{padding-bottom:8px}
+.purchase-confirmation-card .top h3{margin:0;font-size:24px;line-height:1.25}
+.purchase-confirmation-body{display:flex;align-items:flex-start;gap:12px;padding:14px;border:1px solid #e4e7ec;border-radius:14px;background:#f8fafc}
+.purchase-confirmation-icon{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border-radius:50%;background:#e8eef8;color:#2563eb;font-size:18px;font-weight:900}
+.purchase-confirmation-body strong{display:block;font-size:14px;line-height:1.35;color:#101828}
+.purchase-confirmation-body p{margin:4px 0 0;font-size:12px;line-height:1.45}
+.purchase-confirmation-summary{margin-top:12px;border:1px solid #e4e7ec;border-radius:14px;padding:4px 13px;background:#fff}
+.purchase-confirmation-row{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid #edf0f4;font-size:12px}
+.purchase-confirmation-row:last-child{border-bottom:0}
+.purchase-confirmation-row span{color:#667085}
+.purchase-confirmation-row strong{color:#101828;text-align:right;overflow-wrap:anywhere}
+.purchase-confirmation-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #edf0f4}
+.purchase-confirmation-actions button{min-height:44px;border-radius:10px;padding:0 14px;font-size:13px;font-weight:800}
+.purchase-confirmation-actions button:first-child{background:#eef1f4;color:#101828;border:0}
+.purchase-confirmation-actions .primary{background:#2563eb;color:#fff;border:0}
+@media(max-width:560px){.purchase-confirmation-card{width:calc(100% - 20px)}.purchase-confirmation-actions button{min-height:46px}}
 </style>
 </body></html>
 <style>
