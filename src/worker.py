@@ -1236,18 +1236,23 @@ def discharge_purchase(purchase_id):
     data=request.get_json(silent=True) or {}
     tank_id=str(data.get("tank_id","")).strip()
     indexes=data.get("compartment_indexes",[])
+    tank_liters_before=data.get("tank_liters_before")
     if not tank_id or not isinstance(indexes,list) or not indexes:
         return jsonify({"error":"Tank and at least one compartment are required"}),400
     try:
         tank_uuid=str(uuid.UUID(tank_id))
         indexes=[int(x) for x in indexes]
+        tank_liters_before=float(tank_liters_before)
     except (ValueError,TypeError):
-        return jsonify({"error":"Invalid tank or compartment selection"}),400
+        return jsonify({"error":"Invalid tank, compartment selection, or tank liters"}),400
+    if tank_liters_before < 0:
+        return jsonify({"error":"Tank liters before discharge cannot be negative"}),400
     status,result=rpc("discharge_fuel_purchase",{
         "p_purchase_id":purchase_uuid,
         "p_discharged_by":session["employee_id"],
         "p_tank_id":tank_uuid,
-        "p_compartment_indexes":indexes
+        "p_compartment_indexes":indexes,
+        "p_tank_liters_before":tank_liters_before
     })
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),200
