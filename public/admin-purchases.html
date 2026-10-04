@@ -797,7 +797,7 @@
       return '<label class="discharge-tank-card'+(canReceive?'':' unavailable')+'">'+
         '<input type="radio" name="discharge-tank" value="'+purchaseH(t.id)+'" onchange="selectDischargeTank(this)"'+(canReceive?'':' disabled')+'>'+
         '<span><b>'+purchaseH(t.tank_code||'Tank')+'</b><small>'+purchaseH(t.product||product)+'</small><em class="discharge-tank-shift">'+purchaseH((()=>{const shift=purchaseShifts.find(x=>x.status==='active'&&Array.isArray(x.nozzle_readings)&&x.nozzle_readings.some(n=>String(n.tank_id)===String(t.id)));if(!shift)return 'No active shift';const emp=purchaseEmployees.find(e=>String(e.id)===String(shift.employee_id));return 'Shift: '+(emp?.name||'Assigned attendant');})())+'</em><em>'+purchaseH(capacityText)+'</em></span>'+
-        '<strong>'+purchaseH(purchaseLiters(current))+' / '+purchaseH(purchaseLiters(capacity))+' L</strong></label>';
+        '<strong>'+purchaseH(purchaseLiters(capacity))+' L</strong></label>';
     }).join('');
     purchaseDischargeState.tankId=null;
   }
