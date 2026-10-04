@@ -517,6 +517,35 @@
 .tank-stock-info span{display:block;font-size:10px;color:#667085}.tank-stock-info strong{display:block;margin-top:3px;font-size:12px;color:#101828;overflow-wrap:anywhere}
 .tank-stock-field{margin-top:12px;padding:12px;border:1px solid #e4e7ec;border-radius:13px;background:#fff}
 .tank-stock-field label{display:block;margin-bottom:6px;font-size:13px;font-weight:700;color:#344054}.tank-stock-field input{min-height:46px}.tank-stock-field small{display:block;margin-top:6px;font-size:11px;line-height:1.4;color:#667085}
+</style><style>
+.tank-stock-card{width:min(500px,calc(100% - 24px));overflow:hidden}
+.tank-stock-carousel-head{display:flex;justify-content:space-between;align-items:center;margin:10px 0 8px;padding:0 2px;font-size:11px;color:#667085}
+.tank-stock-carousel-head strong{font-size:12px;color:#101828}
+.tank-stock-carousel{overflow:hidden;border-radius:14px}
+.tank-stock-track{display:flex;width:100%;transition:transform .25s ease}
+.tank-stock-slide{min-width:100%;box-sizing:border-box;padding:13px;border:1px solid #e4e7ec;border-radius:14px;background:#f8fafc}
+.tank-stock-slide-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.tank-stock-slide-head h4{margin:3px 0 0;font-size:20px;color:#101828}
+.tank-stock-operation-badge{white-space:nowrap;padding:5px 8px;border-radius:999px;background:#fff7ed;color:#b54708;font-size:9px;font-weight:800}
+.tank-stock-operation-meta{display:grid;grid-template-columns:1.35fr 1fr;gap:9px;margin-top:12px}
+.tank-stock-operation-meta span,.tank-stock-ledger span{display:block;font-size:10px;color:#667085}
+.tank-stock-operation-meta strong{display:block;margin-top:3px;font-size:12px;color:#101828;overflow-wrap:anywhere}
+.tank-stock-ledger{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:10px}
+.tank-stock-ledger>div{padding:9px;border-radius:10px;background:#fff;border:1px solid #eaecf0}
+.tank-stock-ledger strong{display:block;margin-top:3px;font-size:13px;color:#101828}
+.tank-stock-slide .tank-stock-field{margin-top:11px;padding:11px;border:1px solid #e4e7ec;border-radius:11px;background:#fff}
+.tank-stock-slide .tank-stock-field label{display:block;margin-bottom:6px;font-size:12px;font-weight:700;color:#344054}
+.tank-stock-slide .tank-stock-field input{min-height:44px}
+.tank-stock-slide .tank-stock-field small{display:block;margin-top:6px;font-size:10px;color:#667085;line-height:1.35}
+.tank-stock-slide-actions{margin-top:10px}
+.tank-stock-slide-actions button{width:100%;min-height:40px;border-radius:9px;font-size:13px;font-weight:800}
+.tank-stock-carousel-nav{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-top:10px}
+.tank-stock-carousel-nav>button{min-height:34px;padding:0 10px;border:1px solid #d0d5dd;border-radius:9px;background:#fff;font-size:11px;font-weight:700;color:#344054}
+.tank-stock-carousel-nav>button:disabled{opacity:.4}
+.tank-stock-dots{display:flex;justify-content:center;gap:5px}
+.tank-stock-dot{width:7px;height:7px;border:0;border-radius:50%;padding:0;background:#d0d5dd}
+.tank-stock-dot.active{width:18px;border-radius:5px;background:#2563eb}
+@media(max-width:560px){.tank-stock-ledger{grid-template-columns:1fr}.tank-stock-operation-meta{grid-template-columns:1fr}}
 </style></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseModal()"></div>
 <div class="modal-card purchase-modal-card purchase-wizard-card">
@@ -1020,48 +1049,59 @@
     if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
   };
 
-  window.openTankStockCard=function(purchaseId,tankId,expectedStock,operationWhen){
-    const modal=document.getElementById('tank-stock-modal');
-    const pid=document.getElementById('tank-stock-purchase-id');
-    const tid=document.getElementById('tank-stock-tank-id');
-    const expected=document.getElementById('tank-stock-expected');
-    const when=document.getElementById('tank-stock-when');
-    const input=document.getElementById('tank-stock-input');
-    const status=document.getElementById('tank-stock-status');
+  let tankStockCarousel={purchaseId:null,events:[],index:0};
+  function getTankStockEvents(purchaseId){
     const p=purchaseDetailData?.find(x=>String(x.id)===String(purchaseId));
-    if(!modal||!tid||!input)return;
-    pid.value=String(purchaseId||'');
-    tid.value=String(tankId||p?.tank_id||'');
-    expected.textContent=expectedStock!==''&&expectedStock!=null?purchaseLiters(expectedStock)+' L':'—';
-    when.textContent=operationWhen?new Date(operationWhen).toLocaleString():'—';
-    input.value='';
-    status.textContent='';
-    status.className='purchase-status';
-    const tank=purchaseDetailTanks?.find(x=>String(x.id)===String(tid.value));
-    document.getElementById('tank-stock-name').textContent=tank?.tank_code||'Selected tank';
-    document.getElementById('tank-stock-capacity').textContent=tank?.capacity_liters!=null?purchaseLiters(tank.capacity_liters)+' L':'—';
-    modal.classList.add('open');
-    modal.setAttribute('aria-hidden','false');
+    const history=Array.isArray(p?.discharge_history)?p.discharge_history:[];
+    return history.map((event,index)=>({event,index})).filter(x=>!x.event?.tank_stock_recorded);
+  }
+  function renderTankStockCarousel(){
+    const modal=document.getElementById('tank-stock-modal'),track=document.getElementById('tank-stock-track'),dots=document.getElementById('tank-stock-dots'),counter=document.getElementById('tank-stock-counter'),prev=document.getElementById('tank-stock-prev'),next=document.getElementById('tank-stock-next');
+    const p=purchaseDetailData?.find(x=>String(x.id)===String(tankStockCarousel.purchaseId));
+    if(!modal||!track||!p)return;
+    tankStockCarousel.events=getTankStockEvents(p.id);
+    if(!tankStockCarousel.events.length){closeTankStockCard();return;}
+    tankStockCarousel.index=Math.max(0,Math.min(tankStockCarousel.index,tankStockCarousel.events.length-1));
+    track.innerHTML=tankStockCarousel.events.map((item,pos)=>{
+      const e=item.event,tank=purchaseDetailTanks?.find(t=>String(t.id)===String(e.tank_id));
+      const before=Number(e.tank_liters_before||0),discharged=Number(e.discharged_quantity_liters||0),expected=Number(e.tank_liters_after||before+discharged);
+      const compartments=Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'C'+x).join(', '):'—';
+      return '<section class="tank-stock-slide" data-slide="'+pos+'"><div class="tank-stock-slide-head"><div><span class="section-kicker">DISCHARGE '+(item.index+1)+'</span><h4>'+purchaseH(e.tank_code||tank?.tank_code||'Tank')+'</h4></div><span class="tank-stock-operation-badge">STOCK REQUIRED</span></div><div class="tank-stock-operation-meta"><div><span>Date & time</span><strong>'+purchaseH(e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—')+'</strong></div><div><span>Compartments</span><strong>'+purchaseH(compartments)+'</strong></div></div><div class="tank-stock-ledger"><div><span>Tank opening</span><strong>'+purchaseH(purchaseLiters(before))+' L</strong></div><div><span>Discharged</span><strong>'+purchaseH(purchaseLiters(discharged))+' L</strong></div><div><span>Expected closing</span><strong>'+purchaseH(purchaseLiters(expected))+' L</strong></div></div><div class="tank-stock-field"><label>Tank closing stock</label><div class="purchase-input-unit"><input class="tank-stock-slide-input" inputmode="decimal" placeholder="Enter tank liters"><span>L</span></div><small>Enter the physical tank reading after this discharge operation.</small></div><div class="tank-stock-slide-actions"><button type="button" class="primary" onclick="saveTankStock()">Save Tank Stock</button></div></section>';
+    }).join('');
+    dots.innerHTML=tankStockCarousel.events.map((_,i)=>'<button type="button" class="tank-stock-dot '+(i===tankStockCarousel.index?'active':'')+'" onclick="goTankStockSlide('+i+')" aria-label="Discharge '+(i+1)+'"></button>').join('');
+    counter.textContent=(tankStockCarousel.index+1)+' / '+tankStockCarousel.events.length;
+    prev.disabled=tankStockCarousel.index===0; next.disabled=tankStockCarousel.index===tankStockCarousel.events.length-1;
+    track.style.transform='translateX(-'+(tankStockCarousel.index*100)+'%)';
+  }
+  window.goTankStockSlide=function(index){if(!tankStockCarousel.events.length)return;tankStockCarousel.index=Math.max(0,Math.min(Number(index)||0,tankStockCarousel.events.length-1));renderTankStockCarousel();};
+  window.stepTankStockSlide=function(direction){window.goTankStockSlide(tankStockCarousel.index+direction);};
+  window.openTankStockCard=function(purchaseId){
+    const modal=document.getElementById('tank-stock-modal');if(!modal)return;
+    tankStockCarousel={purchaseId:String(purchaseId||''),events:getTankStockEvents(purchaseId),index:0};
+    if(!tankStockCarousel.events.length){openPurchaseFailed('All discharge operations for this purchase already have tank stock recorded.','Tank Stock Complete');return;}
+    renderTankStockCarousel();modal.classList.add('open');modal.setAttribute('aria-hidden','false');
   };
-  window.closeTankStockCard=function(){
-    const modal=document.getElementById('tank-stock-modal');
-    if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  };
+  window.closeTankStockCard=function(){const modal=document.getElementById('tank-stock-modal');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}tankStockCarousel={purchaseId:null,events:[],index:0};};
   window.saveTankStock=async function(){
-    const tid=document.getElementById('tank-stock-tank-id')?.value||'';
-    const pid=document.getElementById('tank-stock-purchase-id')?.value||'';
-    const input=document.getElementById('tank-stock-input');
-    const status=document.getElementById('tank-stock-status');
-    const liters=parseQuantity(input?.value);
-    if(!tid||!Number.isFinite(liters)||liters<0){if(status){status.textContent='Enter the tank stock after discharge.';status.className='purchase-status error';}return;}
-    const tank=purchaseDetailTanks?.find(x=>String(x.id)===String(tid));
+    const activeEvent=tankStockCarousel.events[tankStockCarousel.index],modal=document.getElementById('tank-stock-modal'),input=modal?.querySelector('.tank-stock-slide[data-slide="'+tankStockCarousel.index+'"] .tank-stock-slide-input'),status=document.getElementById('tank-stock-status'),p=purchaseDetailData?.find(x=>String(x.id)===String(tankStockCarousel.purchaseId));
+    if(!p||!activeEvent||!input)return;
+    const e=activeEvent.event,tankId=String(e.tank_id||''),liters=parseQuantity(input.value),tank=purchaseDetailTanks?.find(x=>String(x.id)===tankId);
+    if(!tankId||!Number.isFinite(liters)||liters<0){if(status){status.textContent='Enter the tank closing stock.';status.className='purchase-status error';}return;}
     if(tank?.capacity_liters!=null&&liters>Number(tank.capacity_liters)){if(status){status.textContent='Tank stock cannot exceed tank capacity.';status.className='purchase-status error';}return;}
     try{
       if(status){status.textContent='Saving tank stock…';status.className='purchase-status';}
-      await purchaseApi('/api/tanks/'+encodeURIComponent(tid)+'/stock',{method:'PATCH',body:JSON.stringify({stock_liters:liters,purchase_id:pid})});
-      closeTankStockCard();
+      await purchaseApi('/api/tanks/'+encodeURIComponent(tankId)+'/stock',{method:'PATCH',body:JSON.stringify({stock_liters:liters,purchase_id:p.id,event_index:activeEvent.index})});
+      const savedIndex=activeEvent.index;
       await loadPurchases();
-    }catch(e){if(status){status.textContent=e.message||'Failed to save tank stock.';status.className='purchase-status error';}}
+      const remainingEvents=getTankStockEvents(tankStockCarousel.purchaseId);
+      if(!remainingEvents.length){closeTankStockCard();return;}
+      tankStockCarousel.events=remainingEvents;
+      const nextPosition=remainingEvents.findIndex(x=>x.index>savedIndex);
+      tankStockCarousel.index=nextPosition>=0?nextPosition:Math.min(tankStockCarousel.index,remainingEvents.length-1);
+      renderTankStockCarousel();
+      const refreshedStatus=document.getElementById('tank-stock-status');
+      if(refreshedStatus){refreshedStatus.textContent='Tank stock saved. Remaining discharge operations are shown.';refreshedStatus.className='purchase-status success';}
+    }catch(e){if(status){status.textContent=e.message||'Failed to save tank stock.';status.className='purchase-status error';}openPurchaseFailed(e.message||'Failed to save tank stock.','Tank Stock Failed');}
   };
 
   window.closePurchaseSuccess=function(){
@@ -1245,16 +1285,10 @@
   <div class="modal-backdrop" onclick="closeTankStockCard()"></div>
   <div class="modal-card purchase-confirmation-card tank-stock-card">
     <div class="top"><div><span class="section-kicker">TANK STOCK</span><h3>Fill Tank Stock</h3></div><button type="button" class="modal-close" onclick="closeTankStockCard()">×</button></div>
-    <div class="tank-stock-info">
-      <div><span>Tank</span><strong id="tank-stock-name">—</strong></div>
-      <div><span>Capacity</span><strong id="tank-stock-capacity">—</strong></div>
-      <div><span>Discharge time</span><strong id="tank-stock-when">—</strong></div>
-      <div><span>Expected after discharge</span><strong id="tank-stock-expected">—</strong></div>
-    </div>
-    <input type="hidden" id="tank-stock-purchase-id"><input type="hidden" id="tank-stock-tank-id">
-    <div class="tank-stock-field"><label for="tank-stock-input">Tank stock after discharge</label><div class="purchase-input-unit"><input id="tank-stock-input" inputmode="decimal" placeholder="Enter liters"><span>L</span></div><small>Enter the physical tank stock reading after this discharge operation.</small></div>
+    <div class="tank-stock-carousel-head"><span>Discharge operations</span><strong id="tank-stock-counter">1 / 1</strong></div>
+    <div class="tank-stock-carousel"><div id="tank-stock-track" class="tank-stock-track"></div></div>
+    <div class="tank-stock-carousel-nav"><button type="button" id="tank-stock-prev" onclick="stepTankStockSlide(-1)">‹ Previous</button><div id="tank-stock-dots" class="tank-stock-dots"></div><button type="button" id="tank-stock-next" onclick="stepTankStockSlide(1)">Next ›</button></div>
     <div id="tank-stock-status" class="purchase-status"></div>
-    <div class="purchase-confirmation-actions"><button type="button" onclick="closeTankStockCard()">Cancel</button><button type="button" class="primary" onclick="saveTankStock()">Save Tank Stock</button></div>
   </div>
 </div></body></html>
 <style>
