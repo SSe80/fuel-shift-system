@@ -87,6 +87,80 @@
   .purchase-pending-card .purchase-card-header-right .purchase-pending-status{font-size:9px}
 }
 
+/* Purchase card header: color + code, delivered below, status opposite */
+.purchase-pending-card .purchase-card-top{
+  padding:14px 18px 15px 20px;
+}
+.purchase-pending-card .purchase-card-header-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+.purchase-pending-card .purchase-product-identity{
+  display:grid;
+  grid-template-columns:auto auto;
+  align-items:center;
+  justify-content:start;
+  column-gap:8px;
+  row-gap:5px;
+  min-width:0;
+}
+.purchase-pending-card .purchase-product-color{
+  grid-column:1;
+  grid-row:1;
+  width:11px;
+  height:11px;
+  flex:0 0 11px;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  box-shadow:0 0 0 1px rgba(16,24,40,.12);
+}
+.purchase-pending-card .purchase-product-identity strong{
+  grid-column:2;
+  grid-row:1;
+  font-size:19px;
+  line-height:1.2;
+  font-weight:800;
+  color:#17202a;
+}
+.purchase-pending-card .purchase-card-delivered{
+  grid-column:2;
+  grid-row:2;
+  font-size:20px;
+  line-height:1.1;
+  color:#2563eb;
+  font-weight:800;
+  white-space:nowrap;
+}
+.purchase-pending-card .purchase-pending-status{
+  flex:0 0 auto;
+  margin-top:1px;
+}
+@media(max-width:560px){
+  .purchase-pending-card .purchase-card-top{
+    padding:13px 14px 14px 17px;
+  }
+  .purchase-pending-card .purchase-card-header-row{
+    gap:10px;
+  }
+  .purchase-pending-card .purchase-product-identity strong{
+    font-size:17px;
+  }
+  .purchase-pending-card .purchase-product-color{
+    width:10px;
+    height:10px;
+  }
+  .purchase-pending-card .purchase-card-delivered{
+    font-size:18px;
+  }
+  .purchase-pending-card .purchase-pending-status{
+    font-size:10px;
+    padding:5px 8px;
+  }
+}
+
 /* Product code first, status underneath */
 .purchase-pending-card .purchase-card-top{
   display:block;
@@ -424,14 +498,13 @@
     const tank=purchaseDetailTanks?.find(x=>String(x.id)===String(p.tank_id));
     const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||tank?.product||'').toLowerCase());
     const productCode=productRecord?.code_name||'—';
-    const productColor=productRecord?.color||'—';
     const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
     const ordered=Number(p.ordered_quantity_liters||0), delivered=Number(p.quantity_liters||0), diff=delivered-ordered;
     const difference=diff===0?'Matches order':diff>0?'Over by '+purchaseLiters(diff)+' L':'Short by '+purchaseLiters(Math.abs(diff))+' L';
     const rows=(items)=>items.map(([label,value])=>'<div class="purchase-detail-row"><span>'+purchaseH(label)+'</span><strong>'+purchaseH(value)+'</strong></div>').join('');
     const compartmentRows=compartments.map((v,i)=>'<div class="purchase-detail-compartment"><span>Compartment '+(i+1)+'</span><b>'+purchaseLiters(v)+' L</b></div>').join('');
     const el=document.getElementById('purchase-detail-content');
-    if(el)el.innerHTML='<section class="purchase-detail-section"><h4>Order</h4>'+rows([['Product code',productCode],['Color code',productColor],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L']])+'</section>'+
+    if(el)el.innerHTML='<section class="purchase-detail-section"><h4>Order</h4>'+rows([['Product code',productCode],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L']])+'</section>'+
       '<section class="purchase-detail-section"><h4>Truck & Driver</h4>'+rows([['Driver name',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Compartments',String(p.truck_compartments||'—')],['Tank',tank?.tank_code||'—']])+'</section>'+
       '<section class="purchase-detail-section"><h4>Delivery</h4>'+rows([['Delivered quantity',purchaseLiters(delivered)+' L'],['Difference',difference],['Purchase date',p.purchase_date?new Date(p.purchase_date).toLocaleString():'—'],['Status',p.status||'—'],['Discharged at',p.discharged_at?new Date(p.discharged_at).toLocaleString():'Not discharged']])+
       (compartments.length?'<div class="purchase-detail-compartments"><h5>Compartment quantities</h5>'+compartmentRows+'</div>':'')+'</section>';
@@ -445,7 +518,7 @@
     const delivered=Number(p.quantity_liters||0), ordered=Number(p.ordered_quantity_liters||0), difference=delivered-ordered;
     const differenceText=difference===0?'Matches order':difference>0?'Over by '+purchaseLiters(difference)+' L':'Short by '+purchaseLiters(Math.abs(difference))+' L';
     const button=dischargeMode?'<button type="button" class="primary" onclick="dischargePurchase(this.dataset.id)" data-id="'+purchaseH(p.id)+'">Discharge Purchase</button>':'';
-    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div class="purchase-product-identity"><strong>'+purchaseH(productCode)+'</strong><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span></div><div class="purchase-card-status-row"><div class="purchase-pending-status">'+(dischargeMode?'Pending discharge':'Discharged')+'</div><b>'+purchaseH(purchaseLiters(delivered))+' L</b></div></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>Delivered <b>'+purchaseH(purchaseLiters(delivered))+' L</b></span><span>Difference <b>'+purchaseH(differenceText)+'</b></span></div><div class="purchase-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button>'+button+'</div></article>';
+    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div class="purchase-card-header-row"><div class="purchase-product-identity"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(productCode)+'</strong><b class="purchase-card-delivered">'+purchaseH(purchaseLiters(delivered))+' L</b></div><div class="purchase-pending-status">'+(dischargeMode?'Pending discharge':'Discharged')+'</div></div></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>Delivered <b>'+purchaseH(purchaseLiters(delivered))+' L</b></span><span>Difference <b>'+purchaseH(differenceText)+'</b></span></div><div class="purchase-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button>'+button+'</div></article>';
   };
   window.loadPurchases=async function(){
     try{
