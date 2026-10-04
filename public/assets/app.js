@@ -894,7 +894,7 @@ function downloadAdminSaleHistoryDetails(id){
   toast('PDF downloaded');
 }function downloadPurchaseDetailPdf(){
   const id=window.currentPurchaseDetailId;
-  const item=window.currentPurchaseDetailData||((typeof purchaseDetailData!=='undefined'&&Array.isArray(purchaseDetailData)?purchaseDetailData:[]).find(x=>String(x.id)===String(id));
+  const item=window.currentPurchaseDetailData||((typeof purchaseDetailData!=='undefined'&&Array.isArray(purchaseDetailData)?purchaseDetailData:[]).find(x=>String(x.id)===String(id)));
   if(!item){toast('Purchase details are not available. Please reopen the detail card and try again.');return;}
   const p=item;
   const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
