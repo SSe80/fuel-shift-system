@@ -946,14 +946,51 @@ window.downloadPurchaseDetailPdf=async function(){
     if(button){button.disabled=true;button.textContent='Preparing PDF…';}
     const jsPDF=await window.ensurePurchasePdfEngine();
     const doc=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
-    const W=210,H=297,M=11,CW=W-M*2;
-    const blue=[37,99,235],blueDark=[29,78,216],dark=[18,28,45],muted=[100,116,139],line=[226,232,240],soft=[248,250,252],pale=[239,246,255],green=[2,122,72],white=[255,255,255];
-    let y=11;
+    const W=210,H=297,M=13,CW=W-M*2;
+    const blue=[37,99,235],blueDark=[30,64,175],dark=[15,23,42],muted=[100,116,139],line=[226,232,240],soft=[248,250,252],pale=[239,246,255],green=[2,122,72],red=[180,35,24],white=[255,255,255];
+    let y=0,pageNo=0;
     const text=(s,x,yy,size=8,color=dark,style='normal',opt={})=>{doc.setFont('helvetica',style);doc.setFontSize(size);doc.setTextColor(...color);doc.text(String(s??'—'),x,yy,opt);};
-    const fit=(s,max,size=6.5)=>{let z=size;doc.setFont('helvetica','bold');while(z>4.2&&doc.getTextWidth(String(s??'—'))>max){z-=.3;doc.setFontSize(z);}return z;};
-    const fieldRow=(items,yy,cols=items.length)=>{const n=Math.max(1,Math.min(cols,items.length)),gap=3.2,cellW=(CW-gap*(n-1))/n;items.forEach((r,i)=>{const col=i%n,x=M+col*(cellW+gap);doc.setFont('helvetica','bold');doc.setFontSize(n>=7?4.7:n>=5?5.3:6);doc.setTextColor(...muted);const ls=doc.splitTextToSize(String(r[0]??'—'),cellW);doc.text(ls,x,yy);const v=String(r[1]??'—');const z=fit(v,cellW,n>=7?5.6:n>=5?6.1:7);doc.setTextColor(...dark);doc.text(v,x,yy+4.3);});return yy+Math.max(9,n>=7?8.5:9.5);};
-    const panel=(x,yy,w,h,title)=>{doc.setFillColor(...soft);doc.roundedRect(x,yy,w,h,2.5,2.5,'F');text(title.toUpperCase(),x+4,yy+5,6.5,blueDark,'bold');doc.setDrawColor(...line);doc.setLineWidth(.3);doc.line(x+4,yy+7.2,x+w-4,yy+7.2);};
-    const sectionFields=(x,w,items,yy)=>{const n=items.length,gap=2.5,cellW=(w-gap*(n-1))/n;items.forEach((r,i)=>{const xx=x+i*(cellW+gap);doc.setFont('helvetica','bold');doc.setFontSize(n>=7?4.6:6);doc.setTextColor(...muted);doc.text(String(r[0]),xx,yy);const v=String(r[1]??'—');fit(v,cellW,n>=7?5.5:6.8);doc.setTextColor(...dark);doc.text(v,xx,yy+4.2);});};
+    const fit=(s,max,size=7,min=4.5,style='bold')=>{let z=size;doc.setFont('helvetica',style);while(z>min&&doc.getTextWidth(String(s??'—'))>max)z-=.25;return z;};
+    const wrap=(s,max,size=7,style='normal')=>{doc.setFont('helvetica',style);doc.setFontSize(size);return doc.splitTextToSize(String(s??'—'),max);};
+    const pageHeader=()=>{
+      pageNo++;
+      doc.setFillColor(...blue);doc.rect(0,0,W,8,'F');
+      text('FUEL SHIFT SYSTEM',M,17,7.5,blueDark,'bold');
+      text('PURCHASE HISTORY',M,26,18,dark,'bold');
+      text('Purchase, delivery and tank-discharge record',M,32.5,7,muted);
+      const inv=p.invoice_number?String(p.invoice_number):'NO INVOICE';
+      text(inv==='NO INVOICE'?inv:'INVOICE #'+inv,W-M,18,7.5,white,'bold','normal',{align:'right'});
+      text(String(p.product||'Fuel'),W-M,26,11,white,'bold','normal',{align:'right'});
+      text(localDate(p.purchase_datetime||p.created_at),W-M,32.5,7,muted,'normal','normal',{align:'right'});
+      doc.setDrawColor(...line);doc.setLineWidth(.35);doc.line(M,37,W-M,37);
+      y=43;
+    };
+    const footer=()=>{
+      doc.setDrawColor(...line);doc.setLineWidth(.3);doc.line(M,H-12,W-M,H-12);
+      text('Fuel Shift System · Purchase History',M,H-6.5,6.2,muted);
+      text(String(pageNo),W-M,H-6.5,6.2,muted,'normal','normal',{align:'right'});
+    };
+    const sectionTitle=(title,yy)=>{
+      text(title.toUpperCase(),M,yy,7,blueDark,'bold');
+      doc.setDrawColor(...blue);doc.setLineWidth(.7);doc.line(M,yy+2,W-M,yy+2);
+      return yy+9;
+    };
+    const infoGrid=(items,yy,cols)=>{
+      const gap=5,n=Math.min(cols,items.length),cellW=(CW-gap*(n-1))/n,rowH=14;
+      items.forEach((item,i)=>{
+        const col=i%n,row=Math.floor(i/n),x=M+col*(cellW+gap),top=yy+row*rowH;
+        text(String(item[0]??'—'),x,top+3.5,5.6,muted,'bold');
+        const v=String(item[1]??'—'),lines=wrap(v,cellW,7,'bold').slice(0,2);
+        doc.setFont('helvetica','bold');doc.setFontSize(fit(lines[0]||'—',cellW,7));
+        doc.setTextColor(...dark);doc.text(lines[0]||'—',x,top+8.5);
+        if(lines[1])doc.text(lines[1],x,top+12);
+      });
+      return yy+Math.ceil(items.length/n)*rowH;
+    };
+    const ruleBox=(x,yy,w,h)=>{
+      doc.setFillColor(...soft);doc.roundedRect(x,yy,w,h,2,2,'F');
+      doc.setDrawColor(...line);doc.setLineWidth(.25);doc.roundedRect(x,yy,w,h,2,2,'S');
+    };
     const product=String(p.product||'Fuel'),invoice=String(p.invoice_number||'—'),ordered=num(p.ordered_quantity_liters);
     const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[],delivered=compartments.reduce((s,v)=>s+num(v),0),discharged=num(p.discharged_quantity_liters),remaining=Math.max(delivered-discharged,0);
     const status=String(p.status||'').replaceAll('_',' ')||'Purchase',history=Array.isArray(p.discharge_history)?p.discharge_history:[];
@@ -961,60 +998,99 @@ window.downloadPurchaseDetailPdf=async function(){
     const tanks=Array.isArray(window.currentPurchaseDetailTanks)?window.currentPurchaseDetailTanks.filter((t,i,a)=>tankIds.includes(String(t.id))&&a.findIndex(x=>String(x.id)===String(t.id))===i):[];
     const finalRemark=[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||String(p.purchase_remark||p.remark||'').trim();
 
-    // Header.
-    doc.setFillColor(...blue);doc.rect(0,0,W,9,'F');
-    text('FUEL SHIFT SYSTEM',M,18,7.2,blueDark,'bold');
-    text('PURCHASE HISTORY',M,27,17,dark,'bold');
-    text('Detailed purchase and discharge record',M,33,7,muted);
-    text(invoice==='—'?'NO INVOICE':'INVOICE #'+invoice,W-M,19,8,white,'bold','normal',{align:'right'});
-    text(product,W-M,27,11,white,'bold','normal',{align:'right'});
-    text(localDate(p.purchase_datetime||p.created_at),W-M,33,7,muted,'normal',{align:'right'});
-    y=39;
+    pageHeader();
 
-    // Highlight strip.
-    doc.setFillColor(...pale);doc.roundedRect(M,y,CW,14,3,3,'F');
-    const stats=[['DELIVERED',liters(delivered)+' L'],['ORDERED',liters(ordered)+' L'],['DISCHARGED',liters(discharged)+' L'],['STATUS',status.toUpperCase()]];
-    const sw=(CW-9)/4;stats.forEach((s,i)=>{const x=M+i*(sw+3);text(s[0],x,y+5,5.1,muted,'bold');text(s[1],i===3?x+sw:s[1],y+10.5,i===3?6.5:9,i===3?blueDark:(i===2?green:dark),'bold',i===3?{align:'right'}:{});});
-    y+=19;
+    // Executive summary.
+    doc.setFillColor(...pale);doc.roundedRect(M,y,CW,20,3,3,'F');
+    const stats=[['ORDERED',liters(ordered)+' L'],['DELIVERED',liters(delivered)+' L'],['DISCHARGED',liters(discharged)+' L'],['REMAINING',liters(remaining)+' L']];
+    const sw=(CW-15)/4;
+    stats.forEach((s,i)=>{const x=M+i*(sw+5);text(s[0],x,y+6,5.4,muted,'bold');text(s[1],x,y+14,10,i===3&&remaining>0?red:(i===2?green:dark),'bold');});
+    y+=29;
 
-    // Row 1.
-    const gap=4,third=(CW-gap*2)/3,rowTop=y,rowH=31;
-    panel(M,rowTop,third,rowH,'Purchase Summary');
-    sectionFields(M+4,third-8,[['Invoice',invoice],['Product',product],['Status',status],['Ordered',liters(ordered)+' L'],['Delivered',liters(delivered)+' L'],['Discharged',liters(discharged)+' L'],['Remaining',liters(remaining)+' L']],rowTop+11);
-    const tx=M+third+gap;panel(tx,rowTop,third,rowH,'Truck & Driver');
-    sectionFields(tx+4,third-8,[['Driver',p.driver_name||'—'],['Phone',p.driver_phone||'—'],['Plate',p.plate_number||'—'],['Compartments',p.truck_compartments||compartments.length||'—']],rowTop+11);
-    const cx=tx+third+gap;panel(cx,rowTop,third,rowH,'Compartment Breakdown');
-    sectionFields(cx+4,third-8,compartments.length?compartments.map((v,i)=>['C'+(i+1),liters(v)+' L']):[['Info','No quantities']],rowTop+11);
-    y=rowTop+rowH+5;
+    // Row 1: three clean information blocks.
+    y=sectionTitle('Purchase Summary',y);
+    const row1Y=y;
+    const gap=5,third=(CW-gap*2)/3;
+    ruleBox(M,row1Y,third,40);text('Purchase',M+4,row1Y+7,6.5,blueDark,'bold');
+    infoGrid([['Invoice',invoice],['Product',product],['Status',status],['Ordered',liters(ordered)+' L'],['Delivered',liters(delivered)+' L'],['Discharged',liters(discharged)+' L']],M+4,row1Y+10,3);
+    const tx=M+third+gap;ruleBox(tx,row1Y,third,40);text('Truck & Driver',tx+4,row1Y+7,6.5,blueDark,'bold');
+    infoGrid([['Driver',p.driver_name||'—'],['Phone',p.driver_phone||'—'],['Plate',p.plate_number||'—'],['Compartments',p.truck_compartments||compartments.length||'—']],tx+4,row1Y+10,2);
+    const cx=tx+third+gap;ruleBox(cx,row1Y,third,40);text('Compartment Breakdown',cx+4,row1Y+7,6.5,blueDark,'bold');
+    const compItems=compartments.length?compartments.map((v,i)=>['C'+(i+1),liters(v)+' L']):[['Info','No quantities']];
+    infoGrid(compItems,cx+4,row1Y+10,2);
+    y=row1Y+46;
 
-    // Row 2.
-    const tankH=22;panel(M,y,CW,tankH,'Tank Information');
-    if(!tanks.length) sectionFields(M+4,CW-8,[['Info','No tank information recorded.']],y+11);
-    else {
-      const items=tanks.map(t=>{const shifts=Array.isArray(t.active_shifts)?t.active_shifts:[];return [t.tank_code||t.name||'Tank',(t.product||product)+' · '+(shifts.map(s=>s.attendant_name||s.attendant||s.name).filter(Boolean).join(', ')||'No active shift')];});
-      sectionFields(M+4,CW-8,items.slice(0,4),y+11);
+    // Tank information.
+    y=sectionTitle('Tank Information',y);
+    if(!tanks.length){
+      text('No tank information recorded.',M,y+5,7,muted,'normal');
+      y+=13;
+    }else{
+      const tankGap=5,tankW=(CW-tankGap*2)/3;
+      tanks.slice(0,6).forEach((t,i)=>{
+        const col=i%3,row=Math.floor(i/3),x=M+col*(tankW+tankGap),top=y+row*23;
+        ruleBox(x,top,tankW,19);
+        const shifts=Array.isArray(t.active_shifts)?t.active_shifts:[];
+        const shiftNames=shifts.map(s=>s.attendant_name||s.attendant||s.name).filter(Boolean);
+        text(String(t.tank_code||t.name||'Tank'),x+4,top+7,7.2,dark,'bold');
+        text(String(t.product||product),x+4,top+12,5.7,muted,'normal');
+        text(shiftNames.length?shiftNames.join(', '):'No active shift',x+4,top+16,5.3,muted,'normal');
+      });
+      y+=Math.ceil(Math.min(tanks.length,6)/3)*23+4;
     }
-    y+=tankH+5;
 
-    // Row 3.
-    const dischargeTop=y,dh=Math.max(22,Math.min(70,13+history.length*9));
-    panel(M,dischargeTop,CW,dh,'Discharge History');
-    if(!history.length) sectionFields(M+4,CW-8,[['Info','No discharge operations recorded.']],dischargeTop+11);
-    else history.forEach((e,i)=>{
-      const stock=e.tank_stock_recorded===true,qty=num(e.discharged_quantity_liters),before=Number(e.tank_liters_before),recorded=Number(e.tank_stock_recorded_liters),expected=Number.isFinite(before)?before+qty:null,diff=Number.isFinite(recorded)&&expected!=null?recorded-expected:null;
-      const tankCode=e.tank_code||tanks.find(t=>String(t.id)===String(e.tank_id))?.tank_code||'—';
-      const items=[['Date',localDate(e.discharge_datetime||e.created_at)],['Tank',tankCode],['Discharged',liters(qty)+' L'],['Before',Number.isFinite(before)?liters(before)+' L':'—'],['Expected',expected!=null?liters(expected)+' L':'—'],['Recorded',stock&&Number.isFinite(recorded)?liters(recorded)+' L':'Not recorded'],['Difference',diff!=null?(diff>0?'+':'')+liters(diff)+' L':'—']];
-      sectionFields(M+4,CW-8,items,dischargeTop+11+i*8.2);
-    });
-    y=dischargeTop+dh+5;
+    // Discharge history. Each operation is a readable card and includes its shift attendant(s).
+    y=sectionTitle('Discharge History',y);
+    if(!history.length){
+      text('No discharge operations recorded.',M,y+5,7,muted,'normal');
+      y+=13;
+    }else{
+      for(let i=0;i<history.length;i++){
+        const e=history[i]||{},qty=num(e.discharged_quantity_liters),before=Number(e.tank_liters_before),recorded=Number(e.tank_stock_recorded_liters);
+        const expected=Number.isFinite(before)?before+qty:null,diff=Number.isFinite(recorded)&&expected!=null?recorded-expected:null;
+        const tankCode=e.tank_code||tanks.find(t=>String(t.id)===String(e.tank_id))?.tank_code||'—';
+        const shiftNames=(Array.isArray(e.shift_attendants)?e.shift_attendants:Array.isArray(e.attendants)?e.attendants:[]).map(s=>typeof s==='string'?s:(s?.name||s?.attendant_name||s?.full_name||'')).filter(Boolean);
+        const fallbackShift=e.shift_attendant_name||e.attendant_name||e.shift_name||'';
+        const attendants=shiftNames.length?shiftNames.join(', '):(fallbackShift||'No shift attendant recorded');
+        const stock=e.tank_stock_recorded===true;
+        const cardH=35;
+        if(y+cardH>H-18){footer();doc.addPage();pageHeader();y=sectionTitle('Discharge History · Continued',y);}
+        ruleBox(M,y,CW,cardH);
+        doc.setFillColor(...(stock?green:red));doc.roundedRect(M,y,3,cardH,1.5,1.5,'F');
+        text('OPERATION '+(i+1),M+7,y+7,6.2,blueDark,'bold');
+        text(localDate(e.discharge_datetime||e.created_at),W-M-4,y+7,5.8,muted,'normal','normal',{align:'right'});
+        const cols=[
+          ['Tank',tankCode],['Shift attendant(s)',attendants],['Discharged',liters(qty)+' L'],
+          ['Stock before',Number.isFinite(before)?liters(before)+' L':'—'],['Expected after',expected!=null?liters(expected)+' L':'—'],
+          ['Recorded stock',stock&&Number.isFinite(recorded)?liters(recorded)+' L':'Not recorded'],['Difference',diff!=null?(diff>0?'+':'')+liters(diff)+' L':'—']
+        ];
+        const g=4,n=4,cw=(CW-14-g*3)/4;
+        cols.forEach((item,j)=>{
+          const col=j%4,row=Math.floor(j/4),x=M+7+col*(cw+g),top=y+11+row*11;
+          text(item[0],x,top+2.8,4.7,muted,'bold');
+          const v=String(item[1]),z=fit(v,cw,5.7);
+          text(v,x,top+7,z,item[0]==='Difference'&&diff!=null&&Math.abs(diff)>0.000001?red:dark,'bold');
+        });
+        y+=cardH+5;
+      }
+    }
 
-    // Row 4.
-    const rh=finalRemark?20:17;panel(M,y,CW,rh,'Purchase Remark');
-    sectionFields(M+4,CW-8,[['Remark',finalRemark||'No remark recorded.']],y+11);
+    // Remark, with wrapped text and enough room.
+    if(finalRemark){
+      if(y+27>H-18){footer();doc.addPage();pageHeader();y=sectionTitle('Purchase Remark',y);}
+      y=sectionTitle('Purchase Remark',y);
+      const lines=wrap(finalRemark,CW-8,7,'normal').slice(0,5);
+      const rh=Math.max(18,10+lines.length*4);
+      ruleBox(M,y,CW,rh);
+      lines.forEach((line,i)=>text(line,M+4,y+7+i*4.1,7,muted,'normal'));
+      y+=rh+4;
+    }
 
-    doc.setDrawColor(...line);doc.setLineWidth(.3);doc.line(M,H-12,W-M,H-12);
-    text('Fuel Shift System · Purchase History',M,H-6.5,6.2,muted);
-    text('1 / 1',W-M,H-6.5,6.2,muted,'normal',{align:'right'});
+    // Bottom identity line.
+    if(y>H-25){footer();doc.addPage();pageHeader();}
+    text('Purchase record',M,y+2,5.5,muted,'bold');
+    text('Generated from the confirmed purchase record',M,y+7,5.5,muted);
+    footer();
     const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);
     doc.save('purchase_'+safe+'.pdf');
   }catch(e){fail(e.message||'Unable to create the PDF.');}
