@@ -1293,8 +1293,17 @@
     try{
       if(status){status.textContent='Saving tank stock…';status.className='purchase-status';}
       await purchaseApi('/api/tanks/'+encodeURIComponent(tankId)+'/stock',{method:'PATCH',body:JSON.stringify({stock_liters:liters,purchase_id:p.id,event_index:item.index,remark:''})});
+      item.event.tank_stock_recorded=true;
+      item.event.tank_stock_recorded_liters=liters;
+      item.event.tank_stock_recorded_at=new Date().toISOString();
+      const nextIndex=Math.min(pos+1,tankStockCarousel.events.length);
       await loadPurchases();
-      closeTankStockCard();
+      tankStockCarousel.index=nextIndex;
+      renderTankStockCarousel();
+      if(status){
+        status.textContent=nextIndex>pos?'Tank stock saved. Next card opened.':'Tank stock saved.';
+        status.className='purchase-status success';
+      }
     }catch(e){
       if(status){status.textContent=e.message||'Failed to save tank stock.';status.className='purchase-status error';}
       openPurchaseFailed(e.message||'Failed to save tank stock.','Tank Stock Failed');
