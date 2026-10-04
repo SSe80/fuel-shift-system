@@ -87,6 +87,51 @@
   .purchase-pending-card .purchase-card-header-right .purchase-pending-status{font-size:9px}
 }
 
+/* Purchase card sizing and left alignment */
+.purchase-pending-card .purchase-card-header-row{
+  justify-content:space-between;
+}
+.purchase-pending-card .purchase-product-identity{
+  align-items:flex-start;
+  margin-left:0;
+}
+.purchase-pending-card .purchase-product-title{
+  justify-content:flex-start;
+}
+.purchase-pending-card .purchase-card-delivered{
+  margin-left:0;
+  font-size:23px;
+}
+.purchase-pending-card .purchase-product-title strong{
+  font-size:22px;
+}
+.purchase-pending-card .purchase-card-meta{
+  grid-template-columns:1fr;
+}
+.purchase-pending-card .purchase-card-meta>span{
+  font-size:16px;
+}
+.purchase-pending-card .purchase-card-meta>span b{
+  font-size:18px;
+  font-weight:800;
+}
+.purchase-pending-card .purchase-card-meta>span:nth-child(1) b,
+.purchase-pending-card .purchase-card-meta>span:nth-child(2) b,
+.purchase-pending-card .purchase-card-meta>span:nth-child(3) b,
+.purchase-pending-card .purchase-card-meta>span:nth-child(4) b{
+  font-size:18px;
+}
+@media(max-width:560px){
+  .purchase-pending-card .purchase-product-title strong{
+    font-size:20px;
+  }
+  .purchase-pending-card .purchase-card-delivered{
+    font-size:22px;
+  }
+  .purchase-pending-card .purchase-card-meta>span b{
+    font-size:18px;
+  }
+}
 /* Product color directly beside product text */
 .purchase-pending-card .purchase-product-identity{
   display:flex;
