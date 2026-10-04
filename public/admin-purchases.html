@@ -939,7 +939,7 @@ window.downloadPurchaseDetailPdf=async function(){
       const x=M+i*(boxW+4);doc.setFillColor(...soft);doc.roundedRect(x,y-2,boxW,20,3,3,'F');text(a[0],x+5,y+5,6.8,muted,'bold');text(a[1],x+5,y+14,11,navy,'bold');
     }); y+=27;
     y=section('Purchase details',y);
-    const detailRows=[['Invoice',invoice],['Purchase ID',p.id||'—'],['Product',product],['Status',status],['Order date',p.created_at?new Date(p.created_at).toLocaleString():'—']];
+    const detailRows=[['Invoice',invoice],['Product',product],['Status',status],['Order date',p.created_at?new Date(p.created_at).toLocaleString():'—']];
     detailRows.forEach((r,i)=>{ensure(10);if(i){doc.setDrawColor(...line);doc.line(M+4,y-2,W-M-4,y-2);}text(r[0],M+4,y,8,muted);text(r[1],W-M-4,y,8.5,navy,'bold',{align:'right'});y+=7;}); y+=5;
 
     y=section('Truck & driver',y);
@@ -1195,7 +1195,7 @@ window.downloadPurchaseDetailPdf=async function(){
         '<div><span>Undischarged quantity</span><strong>'+purchaseH(purchaseLiters(remaining))+' L</strong></div>'+
         '<div><span>Purchase date</span><strong>'+purchaseH(p.purchase_date?new Date(p.purchase_date).toLocaleString():'—')+'</strong></div>'+
       '</div></section>'+
-      '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Order</h4></div>'+rows([['Product',productCode],['Invoice number',p.invoice_number||'—'],['Purchase ID',p.id||'—'],['Ordered quantity',purchaseLiters(ordered)+' L'],['Difference',difference]])+'</section>'+
+      '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Order</h4></div>'+rows([['Product',productCode],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L'],['Difference',difference]])+'</section>'+
       '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Truck & Driver</h4></div>'+rows([['Driver name',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Compartments',String(p.truck_compartments||'—')]])+(compartments.length?'<div class="purchase-detail-compartments"><h5>Compartment quantities</h5>'+compartmentRows+'</div>':'')+'</section>'+
       (tankSections?'<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Tanks</h4><span>'+tankEntries.length+' tank'+(tankEntries.length===1?'':'s')+'</span></div>'+tankSections+'</section>':'')+
       '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Delivery</h4><span class="purchase-detail-delivery-status">'+purchaseH(statusText||'—')+'</span></div>'+rows([['Delivered quantity',purchaseLiters(total)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Undischarged quantity',purchaseLiters(remaining)+' L'],['Difference',difference],['Fully discharged at',p.discharged_at?new Date(p.discharged_at).toLocaleString():'Not yet']])+'</section>'+
