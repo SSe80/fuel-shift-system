@@ -468,6 +468,40 @@
 .purchase-detail-actions{display:flex;justify-content:flex-end;padding-top:10px}
 .purchase-detail-actions button{min-height:40px;min-width:100px;border-radius:10px}
 @media(max-width:560px){.purchase-pending-card{width:100%}.purchase-pending-card .purchase-card-meta{grid-template-columns:1fr}.purchase-detail-card{width:calc(100% - 20px);max-height:90vh}.purchase-detail-content{max-height:64vh}}
+</style><style>
+/* Discharge Purchase wizard */
+.purchase-discharge-card{width:min(520px,calc(100% - 28px));max-height:90vh;border-radius:18px;overflow:hidden}
+.purchase-discharge-card .top h3{margin:0;font-size:26px;line-height:1.25}
+.purchase-discharge-indicator{display:flex;align-items:center;gap:7px;margin:18px 0 22px}
+.purchase-discharge-indicator span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#edf0f4;color:#667085;font-size:12px;font-weight:700}
+.purchase-discharge-indicator span.active{background:#e7eef7;color:#344054}
+.purchase-discharge-indicator span.current{background:#111827;color:#fff}
+.purchase-discharge-indicator i{height:1px;flex:1;background:#e2e8f0}
+.purchase-discharge-step{display:none}
+.purchase-discharge-step.active{display:block}
+.discharge-compartments,.discharge-tanks{display:grid;gap:9px;max-height:52vh;overflow:auto;padding:2px}
+.discharge-compartment-card,.discharge-tank-card{display:grid;align-items:center;gap:10px;border:1px solid #dfe5ec;border-radius:12px;padding:12px 13px;background:#fff;cursor:pointer}
+.discharge-compartment-card{grid-template-columns:auto 1fr auto}
+.discharge-compartment-card input,.discharge-tank-card input{width:19px;height:19px;margin:0;accent-color:#2563eb}
+.discharge-compartment-card.selected,.discharge-tank-card.selected{border-color:#2563eb;background:#f5f9ff;box-shadow:0 0 0 1px #2563eb}
+.discharge-compartment-name,.discharge-tank-card span{font-size:14px;font-weight:700;color:#344054}
+.discharge-compartment-card strong,.discharge-tank-card>strong{font-size:14px;color:#2563eb}
+.discharge-tank-card{grid-template-columns:auto 1fr auto}
+.discharge-tank-card span{display:flex;flex-direction:column;gap:2px}
+.discharge-tank-card small{font-size:11px;color:#8a949e;font-weight:500}
+.discharge-total,.discharge-review-total{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;padding:11px 12px;border-radius:10px;background:#f5f8fb;border:1px solid #e4e9ef}
+.discharge-total span,.discharge-review-total span{font-size:12px;color:#667085}
+.discharge-total strong,.discharge-review-total strong{font-size:16px;color:#2563eb}
+.discharge-review{max-height:52vh;overflow:auto}
+.discharge-review .purchase-review-section{margin-bottom:9px}
+.discharge-review-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #edf0f4}
+.discharge-review-row:last-child{border-bottom:0}
+.discharge-review-row span{font-size:12px;color:#667085}
+.discharge-review-row strong{text-align:right;font-size:13px;color:#101828;overflow-wrap:anywhere}
+@media(max-width:600px){
+  .purchase-discharge-card{max-height:92vh}
+  .discharge-compartments,.discharge-tanks,.discharge-review{max-height:48vh}
+}
 </style></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseModal()"></div>
 <div class="modal-card purchase-modal-card purchase-wizard-card">
@@ -501,7 +535,39 @@
   </form>
   <div id="purchase-status" class="purchase-status"></div>
 </div>
-</div><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">DISCHARGE PURCHASE</span><h2>Discharge Purchase</h2><p class="muted">Confirmed purchases waiting to be discharged into station tanks.</p></div></div><div id="purchase-discharge-list" class="purchase-list"></div></section><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">PURCHASE HISTORY</span><h2>Purchase History</h2><p class="muted">Purchases that have been discharged into station tanks.</p></div></div><div id="purchase-list" class="purchase-list"></div></section><div id="purchase-detail-modal" class="modal" aria-hidden="true">
+</div><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">DISCHARGE PURCHASE</span><h2>Discharge Purchase</h2><p class="muted">Confirmed purchases waiting to be discharged into station tanks.</p></div></div><div id="purchase-discharge-list" class="purchase-list"></div></section><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">PURCHASE HISTORY</span><h2>Purchase History</h2><p class="muted">Purchases that have been discharged into station tanks.</p></div></div><div id="purchase-list" class="purchase-list"></div></section><div id="purchase-discharge-modal" class="modal" aria-hidden="true">
+<div class="modal-backdrop" onclick="closePurchaseDischarge()"></div>
+<div class="modal-card purchase-discharge-card">
+  <div class="top">
+    <div><span class="section-kicker">DISCHARGE PURCHASE</span><h3>Discharge Purchase</h3><div id="purchase-discharge-step-title" class="purchase-card-title">Compartments</div><p id="purchase-discharge-step-description" class="muted purchase-step-description">Select the compartments to discharge.</p></div>
+    <button type="button" class="modal-close" onclick="closePurchaseDischarge()">×</button>
+  </div>
+  <div class="purchase-discharge-indicator"><span class="current">1</span><i></i><span>2</span><i></i><span>3</span></div>
+  <section class="purchase-discharge-step active" data-discharge-step="1">
+    <div id="purchase-discharge-compartments" class="discharge-compartments"></div>
+    <div class="discharge-total"><span>Selected quantity</span><strong id="purchase-discharge-selected-total">0 L</strong></div>
+    <div class="purchase-wizard-actions">
+      <button type="button" onclick="closePurchaseDischarge()">Cancel</button>
+      <button type="button" class="primary" onclick="continueDischargeStep(1)">Continue</button>
+    </div>
+  </section>
+  <section class="purchase-discharge-step" data-discharge-step="2">
+    <div id="purchase-discharge-tanks" class="discharge-tanks"></div>
+    <div class="purchase-wizard-actions">
+      <button type="button" onclick="closePurchaseDischarge()">Cancel</button>
+      <button type="button" class="primary" onclick="continueDischargeStep(2)">Continue</button>
+    </div>
+  </section>
+  <section class="purchase-discharge-step" data-discharge-step="3">
+    <div id="purchase-discharge-review" class="discharge-review"></div>
+    <div class="purchase-wizard-actions">
+      <button type="button" onclick="continueDischargeStep(2)">Return</button>
+      <button type="button" class="primary" onclick="confirmPurchaseDischarge()">Discharge Purchase</button>
+    </div>
+  </section>
+  <div id="purchase-discharge-status" class="purchase-status"></div>
+</div>
+</div><div id="purchase-detail-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseDetail()"></div>
 <div class="modal-card purchase-detail-card">
   <div class="top"><div><span class="section-kicker">PURCHASE DETAILS</span><h3>Purchase Details</h3></div><button type="button" class="modal-close" onclick="closePurchaseDetail()">×</button></div>
@@ -661,15 +727,137 @@
       if(list)list.innerHTML='<div class="purchase-empty">Purchase history unavailable right now.</div>';
     }
   };
-  window.dischargePurchase=async function(purchaseId){
-    if(!purchaseId)return;
+  let purchaseDischargeState={purchase:null,purchaseId:null,selectedIndexes:[],tankId:null,tanks:[]};
+
+  function setDischargeStep(step){
+    document.querySelectorAll('.purchase-discharge-step').forEach(el=>el.classList.toggle('active',Number(el.dataset.dischargeStep)===step));
+    document.querySelectorAll('.purchase-discharge-indicator span').forEach((el,i)=>{el.classList.toggle('current',i===step-1);el.classList.toggle('active',i<step);});
+    const titles=['Compartments','Tank','Review'];
+    const descriptions=['Select the compartments to discharge.','Select an active tank for this product.','Review the compartments and destination tank before confirming.'];
+    const title=document.getElementById('purchase-discharge-step-title');
+    const desc=document.getElementById('purchase-discharge-step-description');
+    if(title)title.textContent=titles[step-1];
+    if(desc)desc.textContent=descriptions[step-1];
+    const status=document.getElementById('purchase-discharge-status');
+    if(status){status.textContent='';status.className='purchase-status';}
+  }
+
+  function selectedDischargeIndexes(){
+    return Array.from(document.querySelectorAll('#purchase-discharge-compartments input[type="checkbox"]:checked')).map(x=>Number(x.value)).filter(Number.isInteger);
+  }
+
+  window.toggleDischargeCompartment=function(input){
+    const card=input.closest('.discharge-compartment-card');
+    if(card)card.classList.toggle('selected',input.checked);
+    purchaseDischargeState.selectedIndexes=selectedDischargeIndexes();
+    const p=purchaseDischargeState.purchase;
+    const values=Array.isArray(p?.compartment_liters)?p.compartment_liters:[Number(p?.quantity_liters||0)];
+    const total=purchaseDischargeState.selectedIndexes.reduce((sum,i)=>sum+Number(values[i-1]||0),0);
+    const el=document.getElementById('purchase-discharge-selected-total');
+    if(el)el.textContent=purchaseLiters(total)+' L';
+  };
+
+  function renderDischargeCompartments(){
+    const wrap=document.getElementById('purchase-discharge-compartments');
+    const p=purchaseDischargeState.purchase;
+    if(!wrap||!p)return;
+    let values=Array.isArray(p.compartment_liters)?p.compartment_liters:[Number(p.quantity_liters||0)];
+    const already=(Array.isArray(p.discharged_compartment_indexes)?p.discharged_compartment_indexes:[]).map(Number);
+    const available=values.map((v,i)=>({index:i+1,liters:Number(v||0)})).filter(x=>!already.includes(x.index)&&x.liters>0);
+    wrap.innerHTML=available.length?available.map(x=>'<label class="discharge-compartment-card"><input type="checkbox" value="'+x.index+'" onchange="toggleDischargeCompartment(this)"><span class="discharge-compartment-name">Compartment '+x.index+'</span><strong>'+purchaseLiters(x.liters)+' L</strong></label>').join(''):'<div class="purchase-empty">No compartments remain to be discharged.</div>';
+    purchaseDischargeState.selectedIndexes=[];
+    const total=document.getElementById('purchase-discharge-selected-total');if(total)total.textContent='0 L';
+  }
+
+  function renderDischargeTanks(){
+    const wrap=document.getElementById('purchase-discharge-tanks');
+    const p=purchaseDischargeState.purchase;
+    if(!wrap||!p)return;
+    const product=p.product||'';
+    const tanks=(purchaseTanks||[]).filter(t=>t.active!==false&&(
+      (p.product_id&&t.product_id&&String(p.product_id)===String(t.product_id)) ||
+      String(t.product||'').toLowerCase()===String(product).toLowerCase()
+    ));
+    purchaseDischargeState.tanks=tanks;
+    if(!tanks.length){wrap.innerHTML='<div class="purchase-empty">No active tank is available for this product.</div>';return;}
+    wrap.innerHTML=tanks.map(t=>'<label class="discharge-tank-card"><input type="radio" name="discharge-tank" value="'+purchaseH(t.id)+'" onchange="selectDischargeTank(this)"><span><b>'+purchaseH(t.tank_code||'Tank')+'</b><small>'+purchaseH(t.product||product)+'</small></span><strong>'+purchaseH(purchaseLiters(t.current_liters))+' / '+purchaseH(purchaseLiters(t.capacity_liters))+' L</strong></label>').join('');
+    purchaseDischargeState.tankId=null;
+  }
+
+  window.selectDischargeTank=function(input){
+    document.querySelectorAll('#purchase-discharge-tanks .discharge-tank-card').forEach(card=>card.classList.toggle('selected',card.contains(input)));
+    purchaseDischargeState.tankId=input.checked?input.value:null;
+  };
+
+  function renderDischargeReview(){
+    const wrap=document.getElementById('purchase-discharge-review');
+    const p=purchaseDischargeState.purchase;
+    if(!wrap||!p)return;
+    const values=Array.isArray(p.compartment_liters)?p.compartment_liters:[Number(p.quantity_liters||0)];
+    const selected=purchaseDischargeState.selectedIndexes;
+    const total=selected.reduce((sum,i)=>sum+Number(values[i-1]||0),0);
+    const tank=purchaseDischargeState.tanks.find(t=>String(t.id)===String(purchaseDischargeState.tankId));
+    const productRecord=purchaseProducts.find(x=>String(x.id)===String(p.product_id))||purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||'').toLowerCase());
+    const product=productRecord?.code_name||p.product||'—';
+    const rows=selected.map(i=>'<div class="discharge-review-row"><span>Compartment '+i+'</span><strong>'+purchaseLiters(values[i-1])+' L</strong></div>').join('');
+    wrap.innerHTML='<section class="purchase-review-section"><h4>Product</h4><div class="discharge-review-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div><div class="discharge-review-row"><span>Invoice</span><strong>'+purchaseH(p.invoice_number||'—')+'</strong></div></section>'+
+      '<section class="purchase-review-section"><h4>Selected Compartments</h4>'+rows+'<div class="discharge-review-total"><span>Discharge quantity</span><strong>'+purchaseLiters(total)+' L</strong></div></section>'+
+      '<section class="purchase-review-section"><h4>Destination Tank</h4><div class="discharge-review-row"><span>Tank</span><strong>'+purchaseH(tank?.tank_code||'—')+'</strong></div><div class="discharge-review-row"><span>Current stock</span><strong>'+purchaseLiters(tank?.current_liters||0)+' L</strong></div></section>';
+  }
+
+  window.openPurchaseDischarge=function(purchaseId){
+    const p=purchaseDetailData?.find(x=>String(x.id)===String(purchaseId));
+    if(!p)return;
+    purchaseDischargeState={purchase:p,purchaseId:String(purchaseId),selectedIndexes:[],tankId:null,tanks:[]};
+    renderDischargeCompartments();
+    renderDischargeTanks();
+    setDischargeStep(1);
+    const m=document.getElementById('purchase-discharge-modal');
+    if(m){m.classList.add('open');m.setAttribute('aria-hidden','false');}
+  };
+
+  window.closePurchaseDischarge=function(){
+    const m=document.getElementById('purchase-discharge-modal');
+    if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}
+    purchaseDischargeState={purchase:null,purchaseId:null,selectedIndexes:[],tankId:null,tanks:[]};
+  };
+
+  window.continueDischargeStep=function(step){
+    if(step===1){
+      const selected=selectedDischargeIndexes();
+      if(!selected.length){const s=document.getElementById('purchase-discharge-status');if(s){s.textContent='Select at least one compartment.';s.className='purchase-status error';}return;}
+      purchaseDischargeState.selectedIndexes=selected;
+      renderDischargeTanks();
+      setDischargeStep(2);
+      return;
+    }
+    if(step===2){
+      if(!purchaseDischargeState.tankId){const s=document.getElementById('purchase-discharge-status');if(s){s.textContent='Select a tank before continuing.';s.className='purchase-status error';}return;}
+      renderDischargeReview();
+      setDischargeStep(3);
+    }
+  };
+
+  window.confirmPurchaseDischarge=async function(){
+    const state=purchaseDischargeState;
+    if(!state.purchaseId||!state.tankId||!state.selectedIndexes.length)return;
     try{
-      setStatus('Discharging purchase…',false);
-      await purchaseApi('/api/purchases/'+encodeURIComponent(purchaseId)+'/discharge',{method:'POST',body:'{}'});
+      const status=document.getElementById('purchase-discharge-status');
+      if(status){status.textContent='Discharging purchase…';status.className='purchase-status';}
+      await purchaseApi('/api/purchases/'+encodeURIComponent(state.purchaseId)+'/discharge',{
+        method:'POST',
+        body:JSON.stringify({tank_id:state.tankId,compartment_indexes:state.selectedIndexes})
+      });
+      closePurchaseDischarge();
       purchaseToast('Purchase discharged successfully');
       await loadPurchases();
-    }catch(e){setStatus(e.message||'Failed to discharge purchase.',true);}
+    }catch(e){
+      const status=document.getElementById('purchase-discharge-status');
+      if(status){status.textContent=e.message||'Failed to discharge purchase.';status.className='purchase-status error';}
+    }
   };
+
+  window.dischargePurchase=function(purchaseId){openPurchaseDischarge(purchaseId);};
   window.createPurchase=async function(){
     const product=productSelect?.value||'';
     const invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
