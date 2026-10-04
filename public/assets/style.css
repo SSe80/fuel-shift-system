@@ -2464,3 +2464,25 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .daily-station-dispenser{grid-template-columns:1fr auto}
   .daily-station-dispenser strong:last-child{grid-column:2}
 }
+
+/* Admin Sales History — minimized expandable cards */
+.admin-history-sale-minimized{padding:0;margin-bottom:10px;overflow:hidden;transition:box-shadow .18s ease,transform .18s ease}
+.admin-history-sale-minimized.expanded{box-shadow:0 7px 24px #17202a14}
+.admin-history-sale-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:transparent;border:0;border-radius:0;text-align:left;color:inherit}
+.admin-history-sale-head:hover{background:#f8fafc}
+.admin-history-sale-title{min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px}
+.admin-history-sale-title .section-kicker{margin:0;font-size:10px}
+.admin-history-sale-title strong{font-size:1rem;line-height:1.2}
+.admin-history-sale-title small{color:#667085;font-size:.8rem;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.admin-history-sale-right{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.admin-history-sale-toggle{width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:#eef3f8;color:#526273;font-size:18px;font-weight:800;line-height:1}
+.admin-history-sale-body{padding:0 16px 14px;border-top:1px solid #edf1f5;animation:adminHistorySaleExpand .18s ease-out}
+.admin-history-sale-body[hidden]{display:none}
+.admin-history-sale-body .compact-sale-summary{margin-top:12px}
+@keyframes adminHistorySaleExpand{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:620px){
+  .admin-history-sale-head{padding:13px 14px}
+  .admin-history-sale-body{padding:0 14px 13px}
+  .admin-history-sale-right{gap:7px}
+  .admin-history-sale-right .badge{font-size:11px;padding:4px 7px}
+}
