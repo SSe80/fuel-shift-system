@@ -901,9 +901,9 @@ window.downloadPurchaseDetailPdf=function(){
       return ids.includes(String(t.id))&&a.findIndex(x=>String(x.id)===String(t.id))===i;
     });
 
-    const esc=s=>String(s??'—').replace(/\\/g,'\\\\').replace(/\\(/g,'\\\\(').replace(/\\)/g,'\\\\)');
+    const esc=s=>String(s??'—').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
     const wrap=s=>{
-      const words=String(s??'—').split(/\\s+/), out=[]; let line='';
+      const words=String(s??'—').split(/\s+/), out=[]; let line='';
       words.forEach(w=>{if((line+' '+w).trim().length>86){if(line)out.push(line);line=w;}else line=(line+' '+w).trim();});
       if(line)out.push(line); return out.length?out:['—'];
     };
