@@ -673,6 +673,19 @@
   }
 }
 </style>
+<style>
+/* Discharge tank cards: show every active dispenser/shift separately. */
+.discharge-tank-shifts{display:grid;gap:5px;margin-top:7px}
+.discharge-tank-shift-item{display:flex;align-items:center;gap:6px;min-width:0;font-size:11px;line-height:1.3}
+.discharge-tank-shift-item .shift-dot{width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:#12b76a}
+.discharge-tank-shift-item b{flex:0 0 auto;font-weight:750;color:#344054}
+.discharge-tank-shift-item span{min-width:0;color:#667085;overflow-wrap:anywhere}
+.discharge-tank-no-shift{display:inline-flex;align-items:center;gap:5px;margin-top:7px;color:#98a2b3;font-size:11px}
+.discharge-tank-no-shift::before{content:"";width:6px;height:6px;border-radius:50%;background:#98a2b3}
+.discharge-tank-card>span{min-width:0}
+.discharge-tank-card>span>small{display:block}
+@media(max-width:560px){.discharge-tank-shift-item{font-size:10px}}
+</style>
 </head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseModal()"></div>
 <div class="modal-card purchase-modal-card purchase-wizard-card">
@@ -1052,20 +1065,46 @@
     const product=p.product||'';
     const values=Array.isArray(p.compartment_liters)?p.compartment_liters:[Number(p.quantity_liters||0)];
     const selected=purchaseDischargeState.selectedIndexes||[];
-    const dischargeTotal=selected.reduce((sum,i)=>sum+Number(values[i-1]||0),0);
     const tanks=(purchaseTanks||[]).filter(t=>t.active!==false&&(
       (p.product_id&&t.product_id&&String(p.product_id)===String(t.product_id)) ||
       String(t.product||'').toLowerCase()===String(product).toLowerCase()
     ));
     purchaseDischargeState.tanks=tanks;
-    if(!tanks.length){wrap.innerHTML='<div class="purchase-empty">No active tank is available for this product.</div>';return;}
+    if(!tanks.length){
+      wrap.innerHTML='<div class="purchase-empty">No active tank is available for this product.</div>';
+      return;
+    }
+
     wrap.innerHTML=tanks.map(t=>{
       const capacity=Number(t.capacity_liters||0);
       const canReceive=capacity>0;
-      const capacityText='';
+
+      // A tank can feed multiple dispensers, and each dispenser can have
+      // its own active shift. Keep every matching shift instead of
+      // collapsing the tank to the first one found.
+      const direct=Array.isArray(t.active_shifts)?t.active_shifts:[];
+      const shifts=direct.length ? direct : purchaseShifts.filter(x=>
+        String(x.status||'').toLowerCase()==='active' &&
+        Array.isArray(x.nozzle_readings) &&
+        x.nozzle_readings.some(n=>String(n.tank_id)===String(t.id))
+      );
+
+      const shiftMarkup=shifts.length
+        ? '<div class="discharge-tank-shifts">'+shifts.map((shift,index)=>{
+            const empName=shift.employee_name ||
+              purchaseEmployees.find(e=>String(e.id)===String(shift.employee_id))?.name ||
+              'Assigned attendant';
+            const dispenserCode=shift.dispenser_code ||
+              shift.nozzle_code ||
+              (shift.nozzle_readings||[]).find(n=>String(n.tank_id)===String(t.id))?.dispenser_code ||
+              'Dispenser';
+            return '<div class="discharge-tank-shift-item"><i class="shift-dot" aria-hidden="true"></i><b>Shift '+(index+1)+'</b><span>'+purchaseH(empName)+' · '+purchaseH(dispenserCode)+'</span></div>';
+          }).join('')+'</div>'
+        : '<div class="discharge-tank-no-shift">No active shift</div>';
+
       return '<label class="discharge-tank-card'+(canReceive?'':' unavailable')+'">'+
         '<input type="radio" name="discharge-tank" value="'+purchaseH(t.id)+'" onchange="selectDischargeTank(this)"'+(canReceive?'':' disabled')+'>'+
-        '<span><b>'+purchaseH(t.tank_code||'Tank')+'</b><small>'+purchaseH(t.product||product)+'</small><em class="discharge-tank-shift">'+purchaseH((()=>{const direct=Array.isArray(t.active_shifts)?t.active_shifts:[];const shifts=direct.length?direct:purchaseShifts.filter(x=>String(x.status||'').toLowerCase()==='active'&&Array.isArray(x.nozzle_readings)&&x.nozzle_readings.some(n=>String(n.tank_id)===String(t.id)));if(!shifts.length)return 'No active shift';return shifts.map((shift,index)=>{const empName=shift.employee_name||purchaseEmployees.find(e=>String(e.id)===String(shift.employee_id))?.name||'Assigned attendant';const dispenserCode=shift.dispenser_code||(shift.nozzle_readings||[]).find(n=>String(n.tank_id)===String(t.id))?.dispenser_code;return 'Shift '+(index+1)+': '+empName+(dispenserCode?' · '+dispenserCode:'');}).join(' | ');})())+'</em><em>'+purchaseH(capacityText)+'</em></span>'+
+        '<span><b>'+purchaseH(t.tank_code||'Tank')+'</b><small>'+purchaseH(t.product||product)+'</small>'+shiftMarkup+'</span>'+
         '<strong>'+purchaseH(purchaseLiters(capacity))+' L</strong></label>';
     }).join('');
     purchaseDischargeState.tankId=null;
