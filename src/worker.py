@@ -2033,7 +2033,7 @@ def daily_report():
             "sales_confirmed_at":x.get("sales_confirmed_at")
         })
 
-    return jsonify({"date":report_date,"sales":sales_rows,"purchases":purchase_rows,"handovers":handover_rows,"shift_summary":shift_summary,"summary":{
+    return jsonify({"date":report_date,"sales":sales_rows,"purchases":purchase_rows,"handovers":handover_rows,"shift_summary":shift_summary,"tanks_by_id":tank_map,"summary":{
         "sales_liters":total_l,"sales_amount":total_a,"fuel_sales_amount":fuel_amount,"other_sales_amount":other_amount,
         "purchases_liters":total_p,"by_product":by_product,"payment_methods":payment_methods,"completed_shifts":len(handover_rows)
     }})
