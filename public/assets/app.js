@@ -1981,6 +1981,15 @@ async function loadDailyReport(){
     const codeForProduct=p=>productCodes[String(p||'').toLowerCase()]||p||'Unknown';
     const s=r.summary||{};
     document.getElementById('report-subtitle').textContent=dailyReportDateLabel(d);
+    const ready=Boolean(r.report_ready);
+    status.textContent=ready ? 'Report ready — all shifts started on this date are complete.' :
+      'Report waiting — '+Number(r.completion?.incomplete_shift_count||0)+' shift(s) still incomplete.'+
+      (Number(r.completion?.unconfirmed_shift_count||0)?' Sales confirmation is also pending.':'');
+    const saveButton=document.querySelector('.daily-filter-actions .primary');
+    if(saveButton){
+      saveButton.disabled=!ready;
+      saveButton.title=ready?'Save the completed daily report':'Complete all shifts and sales confirmations first';
+    }
 
     document.getElementById('report-summary').innerHTML=
       '<div class="daily-stat primary-stat"><span>Fuel volume sold</span><b>'+liters(s.sales_liters)+' L</b><small>Completed shift readings included</small></div>'+
