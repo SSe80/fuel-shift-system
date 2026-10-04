@@ -697,6 +697,7 @@
   <form class="purchase-form" onsubmit="return false;">
     <section class="purchase-wizard-step active" data-purchase-step="1">
       <div class="purchase-field"><label for="purchase-product">Product</label><select id="purchase-product" required><option value="">Select product</option></select></div>
+      <div class="purchase-field"><label for="purchase-tank">Planned destination tank</label><select id="purchase-tank" required disabled><option value="">Select product first</option></select><small class="muted">Planned tank only. During discharge, the delivery can be split across matching tanks.</small></div>
       <div class="purchase-field"><label for="purchase-invoice">Invoice number</label><input id="purchase-invoice" type="text" placeholder="Invoice number" autocomplete="off" required></div>
       <div class="purchase-field purchase-wide"><label for="purchase-ordered-quantity">Ordered quantity</label><div class="purchase-input-unit"><input id="purchase-ordered-quantity" type="text" inputmode="decimal" autocomplete="off" placeholder="0" required><span>Liters</span></div></div>
       <div class="purchase-wizard-actions"><button type="button" onclick="closePurchaseModal()">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(1)">Continue</button></div>
@@ -847,6 +848,17 @@
     }
   }
   const bindQuantityFormatting=input=>{if(!input)return;input.addEventListener('input',()=>{const raw=input.value.replace(/[^0-9.]/g,'');const parts=raw.split('.');const normalized=parts.shift()+(parts.length?'.'+parts.join(''):''),digits=normalized.split('.'),integer=digits[0]||'',fraction=digits[1]!==undefined?digits[1].slice(0,2):'';input.value=integer?Number(integer).toLocaleString()+ (digits.length>1?'.'+fraction:''):'';});input.addEventListener('blur',()=>{if(input.value)input.value=formatQuantity(input.value);});};
+  const tankSelect=document.getElementById('purchase-tank');
+  function renderPurchaseTankOptions(){
+    if(!tankSelect)return;
+    const product=productSelect?.value||'';
+    const tanks=(purchaseTanks||[]).filter(t=>t.active!==false&&String(t.product||'').toLowerCase()===String(product).toLowerCase());
+    tankSelect.innerHTML=product
+      ? '<option value="">Select destination tank</option>'+tanks.map(t=>'<option value="'+purchaseH(t.id)+'">'+purchaseH(t.tank_code||'Tank')+' · '+purchaseLiters(t.current_liters)+' L</option>').join('')
+      : '<option value="">Select product first</option>';
+    tankSelect.disabled=!product||!tanks.length;
+  }
+  productSelect?.addEventListener('change',renderPurchaseTankOptions);
   bindQuantityFormatting(orderedQuantityInput); document.getElementById('purchase-truck-compartments')?.addEventListener('change',renderCompartmentInputs);
   const status=document.getElementById('purchase-status');
   const list=document.getElementById('purchase-list');
@@ -892,9 +904,11 @@
   window.continuePurchaseStep=function(step){
     if(step===1){
       const product=document.getElementById('purchase-product')?.value||'';
+      const tankId=tankSelect?.value||'';
       const invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
       const orderedQuantity=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
       if(!product){setStatus('Please select a product before continuing.',true);return;}
+      if(!tankId){setStatus('Please select the planned destination tank before continuing.',true);return;}
       if(!invoice){setStatus('Enter the invoice number before continuing.',true);return;}
       if(!Number.isFinite(orderedQuantity)||orderedQuantity<=0){setStatus('Enter a valid ordered quantity before continuing.',true);return;}
     }
@@ -916,6 +930,7 @@
   function renderPurchaseReview(){
     const review=document.getElementById('purchase-review-content');if(!review)return;
     const product=productSelect?.selectedOptions?.[0]?.textContent||'—';
+    const tank=tankSelect?.selectedOptions?.[0]?.textContent||'—';
     const invoice=document.getElementById('purchase-invoice')?.value.trim()||'—';
     const ordered=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
     const driver=document.getElementById('purchase-driver-name')?.value.trim()||'—';
@@ -929,7 +944,7 @@
     const diffText=difference===0?'Matches ordered quantity':difference>0?'Over delivered by '+purchaseLiters(abs)+' L':'Short delivered by '+purchaseLiters(abs)+' L';
     const rows=inputs.map((input,i)=>'<div class="purchase-review-row"><span>Compartment '+(i+1)+'</span><strong>'+purchaseLiters(parseQuantity(input.value))+' L</strong></div>').join('');
     const selectedProduct=purchaseProducts.find(p=>String(p.name||'').toLowerCase()===String(product||'').toLowerCase()); const productCode=selectedProduct?.code_name||'—';
-    review.innerHTML='<div class="purchase-review-section"><h4>1. Order</h4><div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(productCode)+'</strong></div><div class="purchase-review-row"><span>Invoice number</span><strong>'+purchaseH(invoice)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div></div>'+
+    review.innerHTML='<div class="purchase-review-section"><h4>1. Order</h4><div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(productCode)+'</strong></div><div class="purchase-review-row"><span>Planned destination tank</span><strong>'+purchaseH(tank)+'</strong></div><div class="purchase-review-row"><span>Invoice number</span><strong>'+purchaseH(invoice)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div></div>'+
       '<div class="purchase-review-section"><h4>2. Truck</h4><div class="purchase-review-row"><span>Driver name</span><strong>'+purchaseH(driver)+'</strong></div><div class="purchase-review-row"><span>Driver phone</span><strong>'+purchaseH(phone)+'</strong></div><div class="purchase-review-row"><span>Plate number</span><strong>'+purchaseH(plate)+'</strong></div><div class="purchase-review-row"><span>Compartments</span><strong>'+count+'</strong></div></div>'+
       '<div class="purchase-review-section"><h4>3. Quantity</h4>'+rows+'<div class="purchase-review-row"><span>Delivered quantity</span><strong>'+purchaseLiters(delivered)+' L</strong></div><div class="purchase-review-difference"><span>Difference</span><strong>'+purchaseH(diffText)+'</strong></div></div>';
   }
@@ -1446,6 +1461,7 @@
   window.dischargePurchase=function(purchaseId){openPurchaseDischarge(purchaseId);};
   window.performCreatePurchase=async function(){
     const product=productSelect?.value||'';
+    const tankId=tankSelect?.value||'';
     const invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
     const compartmentInputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
     const q=compartmentInputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
@@ -1454,12 +1470,12 @@
     const driverPhone=document.getElementById('purchase-driver-phone')?.value.trim()||'';
     const plateNumber=document.getElementById('purchase-plate-number')?.value.trim()||'';
     const compartments=Number(document.getElementById('purchase-truck-compartments')?.value||0);
-    if(!product||!invoice||!Number.isFinite(orderedQuantity)||orderedQuantity<=0||!compartments||compartmentInputs.length!==compartments||!Number.isFinite(q)||q<=0){setStatus('Purchase details are incomplete.',true);return;}
-    const tankRecord=purchaseTanks.find(t=>String(t.product)===String(product)&&t.active!==false);
-    if(!tankRecord){setStatus('No tank is assigned to the selected product.',true);return;}
+    if(!product||!tankId||!invoice||!Number.isFinite(orderedQuantity)||orderedQuantity<=0||!compartments||compartmentInputs.length!==compartments||!Number.isFinite(q)||q<=0){setStatus('Purchase details are incomplete. Select a destination tank.',true);return;}
+    const tankRecord=purchaseTanks.find(t=>String(t.id)===String(tankId)&&t.active!==false&&String(t.product||'').toLowerCase()===String(product).toLowerCase());
+    if(!tankRecord){setStatus('The selected destination tank is unavailable or does not match the product.',true);return;}
     try{
       setStatus('Confirming purchase…',false);
-      await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product,tank_id:tankRecord.id,quantity_liters:q,invoice_number:invoice,ordered_quantity_liters:orderedQuantity,driver_name:driverName,driver_phone:driverPhone,plate_number:plateNumber,truck_compartments:compartments,compartment_liters:compartmentInputs.map(input=>parseQuantity(input.value))})});
+      await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product,tank_id:tankId,quantity_liters:q,invoice_number:invoice,ordered_quantity_liters:orderedQuantity,driver_name:driverName,driver_phone:driverPhone,plate_number:plateNumber,truck_compartments:compartments,compartment_liters:compartmentInputs.map(input=>parseQuantity(input.value))})});
       const summary=
         '<div class="purchase-confirmation-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div>'+
         '<div class="purchase-confirmation-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>'+
@@ -1471,6 +1487,7 @@
       document.getElementById('purchase-plate-number').value='';
       document.getElementById('purchase-truck-compartments').value='';
       document.getElementById('purchase-product').value='';
+      if(tankSelect){tankSelect.innerHTML='<option value="">Select product first</option>';tankSelect.value='';tankSelect.disabled=true;}
       document.getElementById('purchase-invoice').value='';
       const container=document.getElementById('purchase-compartment-liters');if(container)container.innerHTML='';
       closePurchaseModal();
