@@ -1132,6 +1132,7 @@ window.downloadPurchaseDetailPdf=async function(){
     const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
     const dischargedIndexes=Array.isArray(p.discharged_compartment_indexes)?p.discharged_compartment_indexes:[];
     const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
+    const tankStockRecorded=history.length>0&&history.every(e=>e?.tank_stock_recorded===true);
     const ordered=Number(p.ordered_quantity_liters||0);
     const total=compartments.reduce((sum,v)=>sum+Number(v||0),0);
     const discharged=Number(p.discharged_quantity_liters||0);
