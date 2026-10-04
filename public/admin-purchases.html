@@ -884,7 +884,6 @@
 </div><div id="toast" class="toast"></div></main><script id="purchase-pdf-engine" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script>
 window.ensurePurchasePdfEngine=async function(){
   if(window.jspdf?.jsPDF)return window.jspdf.jsPDF;
-  if(window.jspdf?.jsPDF)return window.jspdf.jsPDF;
   await new Promise((resolve,reject)=>{
     const s=document.createElement('script');
     s.src='https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js';
@@ -981,7 +980,15 @@ window.downloadPurchaseDetailPdf=async function(){
     if(y>H-25)addPage();
     footer();
     const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);
-    doc.save('purchase_'+safe+'.pdf');
+    const pdfBlob=doc.output('blob');
+    const blobUrl=URL.createObjectURL(pdfBlob);
+    const link=document.createElement('a');
+    link.href=blobUrl;
+    link.download='purchase_'+safe+'.pdf';
+    link.style.display='none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(()=>{link.remove();URL.revokeObjectURL(blobUrl);},1000);
   }catch(e){
     openPurchaseFailed(e.message||'Unable to create the PDF.','PDF Download Failed');
   }finally{
@@ -990,7 +997,7 @@ window.downloadPurchaseDetailPdf=async function(){
   }
 }
 </script>
-<script src="assets/app.js?v=20261003-25"></script><script>
+<script src="assets/app.js?v=20261004-05"></script><script>
 (function(){
   const productSelect=document.getElementById('purchase-product');
   const orderedQuantityInput=document.getElementById('purchase-ordered-quantity');
