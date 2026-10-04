@@ -599,6 +599,8 @@
   const list=document.getElementById('purchase-list');
   let purchaseTanks=[];
   let purchaseProducts=[];
+  let purchaseShifts=[];
+  let purchaseEmployees=[];
   let purchaseStep=1;
   const purchaseApi=window.api||async function(path,options={}){
     const response=await fetch(path,{credentials:'same-origin',...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});
@@ -711,9 +713,9 @@
   window.loadPurchases=async function(){
     try{
       setStatus('Loading purchases…',false);
-      const [tanks,productsData,pending,history]=await Promise.all([purchaseApi('/api/tanks'),purchaseApi('/api/products'),purchaseApi('/api/purchases?status=pending_discharge'),purchaseApi('/api/purchases?status=discharged')]);
-      if(!Array.isArray(tanks)||!Array.isArray(productsData)||!Array.isArray(pending)||!Array.isArray(history))throw new Error('Unable to load purchase data');
-      purchaseTanks=tanks; purchaseDetailTanks=tanks; purchaseProducts=productsData; purchaseDetailData=[...pending,...history];
+      const [tanks,productsData,pending,history,shifts,employees]=await Promise.all([purchaseApi('/api/tanks'),purchaseApi('/api/products'),purchaseApi('/api/purchases?status=pending_discharge'),purchaseApi('/api/purchases?status=discharged'),purchaseApi('/api/shifts'),purchaseApi('/api/employees')]);
+      if(!Array.isArray(tanks)||!Array.isArray(productsData)||!Array.isArray(pending)||!Array.isArray(history)||!Array.isArray(shifts)||!Array.isArray(employees))throw new Error('Unable to load purchase data');
+      purchaseTanks=tanks; purchaseDetailTanks=tanks; purchaseProducts=productsData; purchaseShifts=shifts; purchaseEmployees=employees; purchaseDetailData=[...pending,...history];
       const activeTanks=tanks.filter(t=>t.active!==false);
       const activeProducts=productsData.filter(p=>p.active!==false).filter(p=>activeTanks.some(t=>String(t.product||'').toLowerCase()===String(p.name||'').toLowerCase()));
       const productSelect=document.getElementById('purchase-product');
@@ -794,7 +796,7 @@
           : 'Available '+purchaseLiters(available)+' L';
       return '<label class="discharge-tank-card'+(canReceive?'':' unavailable')+'">'+
         '<input type="radio" name="discharge-tank" value="'+purchaseH(t.id)+'" onchange="selectDischargeTank(this)"'+(canReceive?'':' disabled')+'>'+
-        '<span><b>'+purchaseH(t.tank_code||'Tank')+'</b><small>'+purchaseH(t.product||product)+'</small><em>'+purchaseH(capacityText)+'</em></span>'+
+        '<span><b>'+purchaseH(t.tank_code||'Tank')+'</b><small>'+purchaseH(t.product||product)+'</small><em class="discharge-tank-shift">'+purchaseH((()=>{const shift=purchaseShifts.find(x=>x.status==='active'&&Array.isArray(x.nozzle_readings)&&x.nozzle_readings.some(n=>String(n.tank_id)===String(t.id)));if(!shift)return 'No active shift';const emp=purchaseEmployees.find(e=>String(e.id)===String(shift.employee_id));return 'Shift: '+(emp?.name||'Assigned attendant');})())+'</em><em>'+purchaseH(capacityText)+'</em></span>'+
         '<strong>'+purchaseH(purchaseLiters(current))+' / '+purchaseH(purchaseLiters(capacity))+' L</strong></label>';
     }).join('');
     purchaseDischargeState.tankId=null;
@@ -967,6 +969,10 @@
 .discharge-tank-reading-inline label{display:block;margin-bottom:5px!important;font-size:13px!important;font-weight:700!important;color:#344054!important}
 .discharge-tank-reading-inline input{min-height:44px}
 .discharge-tank-reading-inline .discharge-tank-reading-hint{display:block;margin-top:5px;font-size:11px;line-height:1.35;color:#667085}
+</style>
+
+<style>
+.discharge-tank-shift{display:block;margin-top:2px;font-size:10px!important;font-weight:600;color:#667085!important}
 </style>
 </body></html>
 <style>
