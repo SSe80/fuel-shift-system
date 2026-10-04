@@ -656,7 +656,14 @@ def update_tank_stock(tank_id):
     if str(event.get("tank_id") or "") != str(tank_id):
         return jsonify({"error":"Selected tank does not match this discharge operation"}),400
     if event.get("tank_stock_recorded"):
-        return jsonify({"error":"Tank stock for this discharge operation is already recorded"}),409
+        if not data.get("remark_only"):
+            return jsonify({"error":"Tank stock for this discharge operation is already recorded"}),409
+        event["tank_stock_remark"]=remark
+        history[event_index]=event
+        ms,mr=sb("purchases",method="PATCH",params={"id":"eq."+purchase_id},body={"discharge_history":history},prefer="return=representation")
+        if ms>=400:
+            return jsonify({"error":"The tank stock was saved, but the remark could not be updated.","details":mr}),500
+        return jsonify({"ok":True,"event_index":event_index,"remark":remark}),200
 
     previous=float(tank.get("current_liters") or 0)
     delta=stock-previous
