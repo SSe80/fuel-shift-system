@@ -879,7 +879,7 @@ window.downloadPurchaseDetailPdf=async function(){
     const W=210, M=14, CW=W-M*2;
     const blue=[37,99,235], dark=[16,24,40], muted=[102,112,133], line=[228,231,236], soft=[248,250,252], green=[2,122,72], red=[217,45,32];
     let y=16;
-    const text=(s,x,yy,size=10,color=dark,style='normal')=>{doc.setFont('helvetica',style);doc.setFontSize(size);doc.setTextColor(...color);doc.text(String(s??'—'),x,yy);};
+    const text=(s,x,yy,size=10,color=dark,style='normal',options={})=>{doc.setFont('helvetica',style);doc.setFontSize(size);doc.setTextColor(...color);doc.text(String(s??'—'),x,yy,options);};
     const wrap=(s,x,yy,max,size=10,color=dark,style='normal')=>{doc.setFont('helvetica',style);doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(String(s??'—'),max);doc.text(lines,x,yy);return lines.length*4.4;};
     const lineSep=yy=>{doc.setDrawColor(...line);doc.line(M,yy,W-M,yy);};
     const section=(title,yy)=>{doc.setFillColor(...soft);doc.roundedRect(M,yy,CW,8,2,2,'F');text(title,M+4,yy+5.4,11,blue,'bold');return yy+13;};
@@ -899,10 +899,10 @@ window.downloadPurchaseDetailPdf=async function(){
     const tanks=[...(purchaseDetailTanks||[])].filter((t,i,a)=>tankIds.includes(String(t.id))&&a.findIndex(x=>String(x.id)===String(t.id))===i);
     doc.setFillColor(...blue);doc.roundedRect(M,y,CW,28,4,4,'F');
     text('PURCHASE HISTORY',M+6,y+8,9,[230,238,255],'bold');
-    wrap(product,M+6,y+17,CW*.6,17,[255,255,255],'bold');
+    wrap(invoice==='—'?'Purchase — No Invoice':'Invoice #'+invoice,M+6,y+17,CW*.6,17,[255,255,255],'bold');
     text(purchaseLiters(delivered)+' L',W-M-6,y+17,14,[255,255,255],'bold');text(status||'Purchase',W-M-6,y+23,8,[220,230,255],'normal');
     y+=35;
-    y=section('Purchase Summary',y);y=rows([['Invoice',invoice],['Ordered quantity',purchaseLiters(ordered)+' L'],['Delivered quantity',purchaseLiters(delivered)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Remaining quantity',purchaseLiters(remaining)+' L']],y)+5;
+    y=section('Purchase Summary',y);y=rows([['Invoice',invoice],['Purchase ID',p.id||'—'],['Ordered quantity',purchaseLiters(ordered)+' L'],['Delivered quantity',purchaseLiters(delivered)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Remaining quantity',purchaseLiters(remaining)+' L']],y)+5;
     y=section('Truck & Driver',y);y=rows([['Driver',p.driver_name||'—'],['Phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Truck compartments',p.truck_compartments||compartments.length||'—']],y)+5;
     y=section('Tanks',y);
     if(!tanks.length){text('No tank information recorded.',M+4,y,9,muted);y+=8;}
@@ -926,7 +926,7 @@ window.downloadPurchaseDetailPdf=async function(){
       yy=rows([['Date & time',e.created_at?new Date(e.created_at).toLocaleString():'—'],['Tank',(purchaseDetailTanks||[]).find(t=>String(t.id)===String(e.tank_id))?.tank_code||'—'],['Quantity discharged',purchaseLiters(qty)+' L'],['Tank stock before',Number.isFinite(before)?purchaseLiters(before)+' L':'—'],['Expected after',expected!=null?purchaseLiters(expected)+' L':'—'],['Tank stock recorded',stockRecorded&&Number.isFinite(recorded)?purchaseLiters(recorded)+' L':'Not recorded'],['Stock difference',diff!=null?(diff>0?'+':'')+purchaseLiters(diff)+' L':'—']],yy);
       y=Math.max(y+50,yy)+5;
     });
-    const remark=String(p.purchase_remark||p.remark||'').trim();
+    const remark=[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||String(p.purchase_remark||p.remark||'').trim();
     if(y>258){doc.addPage();y=16;}
     y=section('Purchase Remark',y);
     y+=wrap(remark||'No remark recorded.',M+4,y,CW-8,9,remark?dark:muted)+7;
