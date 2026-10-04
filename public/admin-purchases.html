@@ -765,6 +765,7 @@
     const status=document.getElementById('purchase-discharge-status');
     if(status){status.textContent='';status.className='purchase-status';}
   }
+  window.setDischargeStep=setDischargeStep;
 
   function selectedDischargeIndexes(){
     return Array.from(document.querySelectorAll('#purchase-discharge-compartments input[type="checkbox"]:checked')).map(x=>Number(x.value)).filter(Number.isInteger);
