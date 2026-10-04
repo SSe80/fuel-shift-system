@@ -983,7 +983,7 @@ window.downloadPurchaseDetailPdf=function(){
       const textCommands=pageLinesForPage.map((line,index)=>{
         const escaped=clean(line).replace(/\\/g,'\\\\').replace(/\(/g,'\\\\(').replace(/\)/g,'\\\\)');
         return (index?'0 -15 Td\n':'')+'('+escaped+') Tj';
-      }).join('\\n');
+      }).join('\n');
       const stream='BT\n/F1 11 Tf\n50 760 Td\n'+textCommands+'\nET';
       objects.push(
         {id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents '+contentId+' 0 R >>'},
