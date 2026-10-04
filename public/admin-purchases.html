@@ -890,10 +890,18 @@ window.downloadPurchaseDetailPdf=function(){
   const button=document.querySelector('.purchase-detail-download');
   if(button){button.disabled=true;button.textContent='Opening PDF…';}
   const url='/api/purchases/'+encodeURIComponent(id)+'/pdf';
-  try{ window.location.href=url; }
-  catch(e){
+  try{
+    const link=document.createElement('a');
+    link.href=url;
+    link.download='';
+    link.rel='noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(()=>{if(button){button.disabled=false;button.textContent='Download PDF';}},1200);
+  }catch(e){
     if(button){button.disabled=false;button.textContent='Download PDF';}
-    openPurchaseFailed(e?.message||'Unable to open the purchase PDF.','PDF Download Failed');
+    openPurchaseFailed(e?.message||'Unable to download the purchase PDF.','PDF Download Failed');
   }
 };
 </script>
