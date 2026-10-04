@@ -786,14 +786,9 @@
     purchaseDischargeState.tanks=tanks;
     if(!tanks.length){wrap.innerHTML='<div class="purchase-empty">No active tank is available for this product.</div>';return;}
     wrap.innerHTML=tanks.map(t=>{
-      const current=Number(t.current_liters||0), capacity=Number(t.capacity_liters||0);
-      const available=Math.max(capacity-current,0);
-      const canReceive=dischargeTotal>0&&available>=dischargeTotal;
-      const capacityText=canReceive
-        ? 'Available '+purchaseLiters(available)+' L'
-        : dischargeTotal>0
-          ? 'Insufficient capacity · '+purchaseLiters(available)+' L available'
-          : 'Available '+purchaseLiters(available)+' L';
+      const capacity=Number(t.capacity_liters||0);
+      const canReceive=capacity>0;
+      const capacityText='Tank capacity';
       return '<label class="discharge-tank-card'+(canReceive?'':' unavailable')+'">'+
         '<input type="radio" name="discharge-tank" value="'+purchaseH(t.id)+'" onchange="selectDischargeTank(this)"'+(canReceive?'':' disabled')+'>'+
         '<span><b>'+purchaseH(t.tank_code||'Tank')+'</b><small>'+purchaseH(t.product||product)+'</small><em class="discharge-tank-shift">'+purchaseH((()=>{const shifts=purchaseShifts.filter(x=>x.status==='active'&&Array.isArray(x.nozzle_readings)&&x.nozzle_readings.some(n=>String(n.tank_id)===String(t.id)));if(!shifts.length)return 'No active shift';return shifts.map((shift,index)=>{const emp=purchaseEmployees.find(e=>String(e.id)===String(shift.employee_id));const dispenser=(shift.nozzle_readings||[]).find(n=>String(n.tank_id)===String(t.id));return 'Shift '+(index+1)+': '+(emp?.name||'Assigned attendant')+(dispenser?.dispenser_code?' · '+dispenser.dispenser_code:'');}).join(' | ');})())+'</em><em>'+purchaseH(capacityText)+'</em></span>'+
@@ -973,6 +968,10 @@
 
 <style>
 .discharge-tank-shift{display:block;margin-top:2px;font-size:10px!important;font-weight:600;color:#667085!important}
+</style>
+
+<style>
+.discharge-tank-capacity-label{display:block!important;font-size:10px!important;color:#667085!important;margin-top:2px}
 </style>
 </body></html>
 <style>
