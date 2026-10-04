@@ -883,143 +883,18 @@
 </div>
 </div><div id="toast" class="toast"></div></main><script id="purchase-pdf-engine">
 window.downloadPurchaseDetailPdf=function(){
-  const p=purchaseDetailData?.find(x=>String(x.id)===String(window.currentPurchaseDetailId||''));
+  const id=window.currentPurchaseDetailId;
+  if(!id){openPurchaseFailed('Purchase details are not available.','PDF Download Failed');return;}
+  const p=purchaseDetailData?.find(x=>String(x.id)===String(id));
   if(!p){openPurchaseFailed('Purchase details are not available.','PDF Download Failed');return;}
   const button=document.querySelector('.purchase-detail-download');
-  try{
-    if(button){button.disabled=true;button.textContent='Preparing PDF…';}
-    const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
-    const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
-    const product=p.product||'Fuel';
-    const invoice=p.invoice_number||'—';
-    const delivered=compartments.reduce((s,v)=>s+Number(v||0),0);
-    const discharged=Number(p.discharged_quantity_liters||0);
-    const remaining=Math.max(delivered-discharged,0);
-    const status=String(p.status||'Purchase').replaceAll('_',' ');
-    const tanks=[...(purchaseDetailTanks||[])].filter((t,i,a)=>{
-      const ids=[p.tank_id,...history.map(e=>e?.tank_id)].filter(Boolean).map(String);
-      return ids.includes(String(t.id))&&a.findIndex(x=>String(x.id)===String(t.id))===i;
-    });
-
-    const esc=s=>String(s??'—').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
-    const wrap=s=>{
-      const words=String(s??'—').split(/\s+/), out=[]; let line='';
-      words.forEach(w=>{if((line+' '+w).trim().length>86){if(line)out.push(line);line=w;}else line=(line+' '+w).trim();});
-      if(line)out.push(line); return out.length?out:['—'];
-    };
-    const fmt=n=>{const v=Number(n);return Number.isFinite(v)?v.toLocaleString(undefined,{maximumFractionDigits:2}):'—';};
-    const lines=[];
-    const add=(text,size=10,bold=false,kind='text')=>lines.push({text:String(text),size,bold,kind});
-    const section=t=>{lines.push({kind:'section',text:String(t).toUpperCase()});};
-    const row=(a,b)=>{lines.push({kind:'row',a:String(a),b:String(b)});};
-    add('FUEL SHIFT SYSTEM',18,true,'title');
-    add('PURCHASE HISTORY',9,true,'subtitle');
-    add('Invoice #'+invoice,13,true,'hero');
-    add(product,10,true,'heroRight');
-    add(status.toUpperCase(),8,true,'badge');
-    add('');
-    section('Purchase overview');
-    row('Ordered',fmt(p.ordered_quantity_liters)+' L');
-    row('Delivered',fmt(delivered)+' L');
-    row('Discharged',fmt(discharged)+' L');
-    row('Remaining',fmt(remaining)+' L');
-    row('Order date',p.created_at?new Date(p.created_at).toLocaleString():'—');
-    section('Truck & driver');
-    row('Driver',p.driver_name||'—');
-    row('Phone',p.driver_phone||'—');
-    row('Plate number',p.plate_number||'—');
-    row('Compartments',p.truck_compartments||compartments.length||'—');
-    if(compartments.length)compartments.forEach((v,i)=>row('Compartment '+(i+1),fmt(v)+' L'));
-    section('Destination tanks');
-    if(!tanks.length)add('No tank information recorded.',9,false);
-    tanks.forEach(t=>{
-      row(t.tank_code||t.name||'Tank',t.product||product);
-      const shifts=Array.isArray(t.active_shifts)?t.active_shifts:[];
-      if(shifts.length)row('Shift attendant(s)',shifts.map(s=>s.attendant_name||s.attendant||s.name).filter(Boolean).join(', '));
-    });
-    section('Discharge history');
-    if(!history.length)add('No discharge operations recorded.',9,false);
-    history.forEach((e,i)=>{
-      add('Discharge '+String(i+1).padStart(2,'0'),11,true,'subhead');
-      const tank=(purchaseDetailTanks||[]).find(t=>String(t.id)===String(e?.tank_id))?.tank_code||'—';
-      const qty=Number(e?.discharged_quantity_liters||0),before=Number(e?.tank_liters_before),recorded=Number(e?.tank_stock_recorded_liters);
-      const expected=Number.isFinite(before)?before+qty:null,diff=Number.isFinite(recorded)&&expected!=null?recorded-expected:null;
-      row('Date & time',e?.created_at?new Date(e.created_at).toLocaleString():'—');
-      row('Tank',tank);
-      row('Quantity discharged',fmt(qty)+' L');
-      row('Tank stock before',Number.isFinite(before)?fmt(before)+' L':'—');
-      row('Expected closing',expected!=null?fmt(expected)+' L':'—');
-      row('Recorded closing',e?.tank_stock_recorded===true&&Number.isFinite(recorded)?fmt(recorded)+' L':'Not recorded');
-      row('Stock difference',diff!=null?(diff>0?'+':'')+fmt(diff)+' L':'—');
-      const remarks=String(e?.tank_stock_remark||'').trim();
-      if(remarks)row('Remark',remarks);
-    });
-    const finalRemark=[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||String(p.purchase_remark||p.remark||'').trim();
-    if(finalRemark){section('Purchase remark');wrap(finalRemark).forEach(x=>add(x,9,false));}
-
-    const pageW=612,pageH=792,margin=42,usable=pageW-margin*2;
-    const pages=[], page=[];
-    let y=margin;
-    const newPage=()=>{if(page.length)pages.push(page.splice(0));y=margin;};
-    const pushLine=o=>{if(y>pageH-52)newPage();page.push({...o,y});y+=o.kind==='section'?27:o.kind==='title'?24:o.kind==='hero'?22:o.kind==='subhead'?19:o.kind==='row'?17:15;};
-    lines.forEach(o=>{
-      if(o.kind==='text'&&o.text===''){y+=7;return;}
-      if(o.kind==='section'&&y>pageH-75)newPage();
-      if(o.kind==='row'&&String(o.b||'').length>70){
-        wrap(o.b).forEach((part,idx)=>pushLine({kind:'row',a:idx?'':o.a,b:part}));
-      }else pushLine(o);
-    });
-    if(page.length)pages.push(page.splice(0));
-
-    const contentForPage=items=>{
-      const out=['q'];
-      out.push('0.22 0.38 0.72 rg 0 756 612 36 re f');
-      out.push('0.96 0.97 0.99 rg 42 690 528 1 re f');
-      items.forEach(o=>{
-        const yy=o.y;
-        if(o.kind==='title'){out.push('0.08 0.13 0.22 rg BT /F1 18 Tf 42 '+(792-yy)+' Td ('+esc(o.text)+') Tj ET');}
-        else if(o.kind==='subtitle'){out.push('0.39 0.43 0.49 rg BT /F1 9 Tf 42 '+(792-yy)+' Td ('+esc(o.text)+') Tj ET');}
-        else if(o.kind==='section'){out.push('0.94 0.96 1 rg 42 '+(792-yy-10)+' 528 20 re f');out.push('0.12 0.31 0.72 rg BT /F1 8 Tf 48 '+(792-yy+2)+' Td ('+esc(o.text)+') Tj ET');}
-        else if(o.kind==='hero'){out.push('0.08 0.13 0.22 rg BT /F1 '+o.size+' Tf 42 '+(792-yy)+' Td ('+esc(o.text)+') Tj ET');}
-        else if(o.kind==='heroRight'){out.push('0.08 0.13 0.22 rg BT /F1 '+o.size+' Tf 570 '+(792-yy)+' Td ('+esc(o.text)+') Tj ET');}
-        else if(o.kind==='badge'){out.push('0.15 0.39 0.92 rg 462 '+(792-yy-10)+' 108 18 re f');out.push('1 1 1 rg BT /F1 8 Tf 516 '+(792-yy+1)+' Td ('+esc(o.text)+') Tj ET');}
-        else if(o.kind==='subhead'){out.push('0.08 0.13 0.22 rg BT /F1 11 Tf 42 '+(792-yy)+' Td ('+esc(o.text)+') Tj ET');}
-        else if(o.kind==='row'){out.push('0.40 0.44 0.50 rg BT /F1 8 Tf 48 '+(792-yy)+' Td ('+esc(o.a)+') Tj ET');out.push('0.08 0.13 0.22 rg BT /F1 8.5 Tf 570 '+(792-yy)+' Td ('+esc(o.b)+') Tj ET');out.push('0.90 0.91 0.93 RG 48 '+(792-yy+6)+' m 564 '+(792-yy+6)+' l S');}
-      });
-      out.push('0.40 0.44 0.50 rg BT /F1 7 Tf 42 25 Td (Fuel Shift System  |  Purchase History) Tj ET');
-      out.push('0.40 0.44 0.50 rg BT /F1 7 Tf 570 25 Td (Page '+pages.indexOf(items)+1+' / '+pages.length+') Tj ET');
-      out.push('Q');
-      return out.join('\\n');
-    };
-    const objects=[];
-    const fontObj=3;
-    const pageObjs=[];
-    const contentObjs=[];
-    let objNo=4;
-    pages.forEach(items=>{contentObjs.push(objNo++);pageObjs.push(objNo++);});
-    const kids=pageObjs.map(n=>n+' 0 R').join(' ');
-    objects[1]='<< /Type /Catalog /Pages 2 0 R >>';
-    objects[2]='<< /Type /Pages /Kids ['+kids+'] /Count '+pages.length+' >>';
-    objects[3]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
-    pages.forEach((items,idx)=>{
-      const ci=contentObjs[idx],pi=pageObjs[idx],stream=contentForPage(items);
-      objects[ci]='<< /Length '+stream.length+' >>\\nstream\\n'+stream+'\\nendstream';
-      objects[pi]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents '+ci+' 0 R >>';
-    });
-    let pdf='%PDF-1.4\\n%âãÏÓ\\n',offsets=[0];
-    for(let n=1;n<objects.length;n++){offsets[n]=pdf.length;pdf+=n+' 0 obj\\n'+objects[n]+'\\nendobj\\n';}
-    const xref=pdf.length;pdf+='xref\\n0 '+objects.length+'\\n0000000000 65535 f \\n';
-    for(let n=1;n<objects.length;n++)pdf+=String(offsets[n]).padStart(10,'0')+' 00000 n \\n';
-    pdf+='trailer\\n<< /Size '+objects.length+' /Root 1 0 R >>\\nstartxref\\n'+xref+'\\n%%EOF';
-    const bytes=new TextEncoder().encode(pdf);
-    const blob=new Blob([bytes],{type:'application/pdf'});
-    const url=URL.createObjectURL(blob);
-    const link=document.createElement('a');
-    link.href=url;link.download='purchase_'+String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50)+'.pdf';
-    link.style.display='none';document.body.appendChild(link);link.click();
-    setTimeout(()=>{link.remove();URL.revokeObjectURL(url);},1500);
-  }catch(e){openPurchaseFailed(e?.message||'Unable to create the PDF.','PDF Download Failed');}
-  finally{if(button){button.disabled=false;button.textContent='Download PDF';}}
+  if(button){button.disabled=true;button.textContent='Opening PDF…';}
+  const url='/api/purchases/'+encodeURIComponent(id)+'/pdf';
+  try{ window.location.href=url; }
+  catch(e){
+    if(button){button.disabled=false;button.textContent='Download PDF';}
+    openPurchaseFailed(e?.message||'Unable to open the purchase PDF.','PDF Download Failed');
+  }
 };
 </script><script>
 window.ensurePurchasePdfEngine=async function(){
