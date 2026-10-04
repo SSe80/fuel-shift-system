@@ -712,6 +712,33 @@
 .purchase-detail-remark{margin:2px 0 8px;padding:13px;border:1px solid #dfe5ec;border-radius:14px;background:#fff;box-shadow:0 2px 7px rgba(16,24,40,.035)}.purchase-detail-remark-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}.purchase-detail-remark-head h4{margin:0;font-size:14px;color:#101828}.purchase-detail-remark-head>span{padding:4px 8px;border-radius:999px;background:#f2f4f7;color:#667085;font-size:8px;font-weight:800;text-transform:uppercase}.purchase-detail-remark p{margin:0;padding:10px 11px;border-radius:10px;background:#f8fafc;font-size:11px;line-height:1.5;color:#475467;white-space:pre-wrap;overflow-wrap:anywhere}
 .purchase-detail-actions{padding:10px 14px 14px;background:#fff;border-top:1px solid #e4e7ec}.purchase-detail-actions button{width:100%;min-height:42px;border-radius:11px}
 @media(max-width:560px){.purchase-detail-card{width:calc(100% - 12px);max-height:94vh}.purchase-detail-content{max-height:74vh;padding:10px 9px 3px}.purchase-detail-hero{padding:14px}.purchase-detail-product h4{font-size:18px}.purchase-detail-summary-grid strong{font-size:14px}.purchase-detail-section{padding:11px 11px}.purchase-detail-event-grid{grid-template-columns:1fr}.purchase-detail-event-title{align-items:flex-start}}
+</style><style>
+/* Compact purchase detail card */
+.purchase-detail-card{width:min(480px,calc(100% - 16px));max-height:88vh;border-radius:15px}
+.purchase-detail-card .top{padding:12px 14px 9px;gap:8px}
+.purchase-detail-card .top .section-kicker{font-size:9px;letter-spacing:.08em}
+.purchase-detail-card .top h3{font-size:20px;line-height:1.15;margin:2px 0 0}
+.purchase-detail-card .modal-close{width:32px;height:32px;font-size:20px}
+.purchase-detail-content{max-height:63vh;padding:8px 12px 10px}
+.purchase-detail-section{padding:8px 10px;margin-bottom:7px;border-radius:10px}
+.purchase-detail-section h4,.purchase-detail-section .section-title{font-size:11px;margin:0 0 5px}
+.purchase-detail-row{padding:4px 0;font-size:11px;line-height:1.25;min-height:0}
+.purchase-detail-row span{font-size:10px}
+.purchase-detail-row strong{font-size:11px}
+.purchase-detail-content .purchase-detail-hero{padding:9px 10px!important;margin-bottom:7px!important}
+.purchase-detail-content .purchase-detail-hero h4{font-size:15px}
+.purchase-detail-content .purchase-detail-hero p{font-size:10px}
+.purchase-detail-content .purchase-detail-compartments{gap:5px;margin-top:5px}
+.purchase-detail-content .purchase-detail-compartment{padding:5px 6px;font-size:10px}
+.purchase-detail-actions{grid-template-columns:1.25fr 1fr;gap:7px;padding:8px 12px 10px}
+.purchase-detail-actions button{min-height:37px;height:37px;border-radius:9px;font-size:11px}
+@media(max-width:600px){
+ .purchase-detail-card{width:calc(100% - 12px);max-height:90vh}
+ .purchase-detail-content{max-height:66vh;padding:7px 9px 9px}
+ .purchase-detail-section{padding:7px 9px;margin-bottom:6px}
+ .purchase-detail-row{padding:3px 0}
+ .purchase-detail-actions{padding:7px 9px 9px}
+}
 </style></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseModal()"></div>
 <div class="modal-card purchase-modal-card purchase-wizard-card">
