@@ -720,7 +720,7 @@
     if(dischargeMode){
       const undischargedIndexes=compartments.map((_,i)=>i+1).filter(i=>!(Array.isArray(p.discharged_compartment_indexes)?p.discharged_compartment_indexes:[]).includes(i));
       const undischargedText=undischargedIndexes.length?undischargedIndexes.map(i=>'C'+i).join(', '):'None';
-      return '<article class="purchase-card purchase-discharge-pending-card"><div class="purchase-discharge-pending-head"><div><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(productCode)+'</strong></div><small>Purchase · '+purchaseH(datePurchase)+'</small></div><span class="purchase-pending-status">PENDING</span></div><div class="purchase-discharge-remaining"><span>Undischarged quantity</span><strong>'+purchaseH(purchaseLiters(remaining))+' L</strong></div><div class="purchase-discharge-pending-info"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Remaining compartments <b>'+purchaseH(undischargedText)+'</b></span></div><div class="purchase-discharge-pending-actions"><button type="button" onclick="dischargePurchase(this.dataset.id)" data-id="'+purchaseH(p.id)+'" class="primary">Continue Discharge</button><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">Details</button></div></article>';
+      return '<article class="purchase-card purchase-discharge-pending-card"><div class="purchase-discharge-pending-head"><div><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(productCode)+'</strong></div><small>Purchase · '+purchaseH(datePurchase)+'</small></div><span class="purchase-pending-status">PENDING</span></div><div class="purchase-discharge-remaining"><span>Undischarged quantity</span><strong>'+purchaseH(purchaseLiters(remaining))+' L</strong></div><div class="purchase-discharge-pending-info"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Remaining compartments <b>'+purchaseH(undischargedText)+'</b></span></div><div class="purchase-discharge-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">Details</button><button type="button" onclick="dischargePurchase(this.dataset.id)" data-id="'+purchaseH(p.id)+'" class="primary">Continue Discharge</button></div></article>';
     }
 
     if(p.status!=='discharged'){
@@ -1001,25 +1001,25 @@
 </style>
 
 <style>
-.purchase-discharge-pending-card,.purchase-history-partial-card,.purchase-history-full-card{padding:14px;border-radius:16px;border:1px solid #e4e7ec;background:#fff;box-shadow:0 2px 8px rgba(16,24,40,.06);margin-bottom:12px}
+.purchase-discharge-pending-card,.purchase-history-partial-card,.purchase-history-full-card{padding:11px;border-radius:15px;border:1px solid #e4e7ec;background:#fff;box-shadow:0 2px 8px rgba(16,24,40,.06);margin-bottom:9px}
 .purchase-discharge-pending-head,.purchase-history-partial-head,.purchase-history-full-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .purchase-discharge-pending-head small,.purchase-history-partial-head small,.purchase-history-full-head small{display:block;margin-top:4px;font-size:11px;color:#667085}
-.purchase-discharge-remaining{display:flex;justify-content:space-between;align-items:center;margin:13px 0;padding:11px 12px;border-radius:12px;background:#f8fafc}
+.purchase-discharge-remaining{display:flex;justify-content:space-between;align-items:center;margin:10px 0;padding:9px 10px;border-radius:12px;background:#f8fafc}
 .purchase-discharge-remaining span,.purchase-history-partial-event span,.purchase-history-full-main span{font-size:11px;color:#667085}
 .purchase-discharge-remaining strong{font-size:20px;color:#2563eb}
 .purchase-discharge-pending-info{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:#667085}
 .purchase-discharge-pending-info b{display:block;color:#101828;margin-top:3px}
-.purchase-discharge-pending-actions{display:flex;gap:8px;margin-top:13px}
+.purchase-discharge-pending-actions{display:flex;gap:8px;margin-top:10px}
 .purchase-discharge-pending-actions button{flex:1}
 .purchase-history-partial-card{border-left:4px solid #f59e0b}
 .purchase-history-partial-badge,.purchase-history-full-badge{font-size:10px;font-weight:800;padding:5px 8px;border-radius:999px;background:#fff7ed;color:#b54708}
 .purchase-history-full-badge{background:#ecfdf3;color:#027a48}
-.purchase-history-partial-event{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:10px;margin:12px 0;padding:11px;border-radius:12px;background:#f8fafc}
+.purchase-history-partial-event{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:10px;margin:12px 0;padding:9px 10px;border-radius:11px;background:#f8fafc}
 .purchase-history-partial-event strong,.purchase-history-full-main strong{display:block;margin-top:3px;font-size:13px;color:#101828}
 .purchase-history-partial-footer{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px;color:#667085}
 .purchase-history-partial-footer button{margin-left:auto}
 .purchase-history-full-card{border-left:4px solid #12b76a}
-.purchase-history-full-main{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:12px;margin:14px 0}
+.purchase-history-full-main{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:12px;margin:11px 0}
 .purchase-history-details-btn{width:100%}
 @media(max-width:560px){.purchase-history-partial-event{grid-template-columns:1fr 1fr}.purchase-history-partial-event>div:last-child{grid-column:1/-1}.purchase-history-full-main{grid-template-columns:1fr 1fr}.purchase-history-full-main>div:last-child{grid-column:1/-1}}
 </style>
