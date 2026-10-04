@@ -1958,12 +1958,13 @@ def daily_report():
     if purchases_status!=200:return jsonify({"error":purchase_rows}),purchases_status
 
     takeover_shift_ids={str(x.get("shift_id")) for x in handover_rows if x.get("shift_id")}
-    direct_fuel_rows=[x for x in sales_rows if str(x.get("shift_id") or "") not in takeover_shift_ids and float(x.get("quantity_liters") or 0)>0]
+    fuel_sale_rows=[x for x in sales_rows if float(x.get("quantity_liters") or 0)>0]
+    direct_fuel_rows=[x for x in fuel_sale_rows if str(x.get("shift_id") or "") not in takeover_shift_ids]
     direct_fuel_liters=sum(float(x.get("quantity_liters") or 0) for x in direct_fuel_rows)
     handover_fuel_liters=sum(float(x.get("total_sales_liters") or 0) for x in handover_rows)
     total_l=direct_fuel_liters+handover_fuel_liters
     total_a=sum(float(x.get("amount") or 0) for x in sales_rows)
-    fuel_amount=sum(float(x.get("amount") or 0) for x in direct_fuel_rows)
+    fuel_amount=sum(float(x.get("amount") or 0) for x in fuel_sale_rows)
     other_amount=total_a-fuel_amount
     total_p=sum(float(x.get("quantity_liters") or 0) for x in purchase_rows)
 
