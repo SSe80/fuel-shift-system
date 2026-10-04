@@ -774,17 +774,34 @@
     const p=purchaseDischargeState.purchase;
     if(!wrap||!p)return;
     const product=p.product||'';
+    const values=Array.isArray(p.compartment_liters)?p.compartment_liters:[Number(p.quantity_liters||0)];
+    const selected=purchaseDischargeState.selectedIndexes||[];
+    const dischargeTotal=selected.reduce((sum,i)=>sum+Number(values[i-1]||0),0);
     const tanks=(purchaseTanks||[]).filter(t=>t.active!==false&&(
       (p.product_id&&t.product_id&&String(p.product_id)===String(t.product_id)) ||
       String(t.product||'').toLowerCase()===String(product).toLowerCase()
     ));
     purchaseDischargeState.tanks=tanks;
     if(!tanks.length){wrap.innerHTML='<div class="purchase-empty">No active tank is available for this product.</div>';return;}
-    wrap.innerHTML=tanks.map(t=>'<label class="discharge-tank-card"><input type="radio" name="discharge-tank" value="'+purchaseH(t.id)+'" onchange="selectDischargeTank(this)"><span><b>'+purchaseH(t.tank_code||'Tank')+'</b><small>'+purchaseH(t.product||product)+'</small></span><strong>'+purchaseH(purchaseLiters(t.current_liters))+' / '+purchaseH(purchaseLiters(t.capacity_liters))+' L</strong></label>').join('');
+    wrap.innerHTML=tanks.map(t=>{
+      const current=Number(t.current_liters||0), capacity=Number(t.capacity_liters||0);
+      const available=Math.max(capacity-current,0);
+      const canReceive=dischargeTotal>0&&available>=dischargeTotal;
+      const capacityText=canReceive
+        ? 'Available '+purchaseLiters(available)+' L'
+        : dischargeTotal>0
+          ? 'Insufficient capacity · '+purchaseLiters(available)+' L available'
+          : 'Available '+purchaseLiters(available)+' L';
+      return '<label class="discharge-tank-card'+(canReceive?'':' unavailable')+'">'+
+        '<input type="radio" name="discharge-tank" value="'+purchaseH(t.id)+'" onchange="selectDischargeTank(this)"'+(canReceive?'':' disabled')+'>'+
+        '<span><b>'+purchaseH(t.tank_code||'Tank')+'</b><small>'+purchaseH(t.product||product)+'</small><em>'+purchaseH(capacityText)+'</em></span>'+
+        '<strong>'+purchaseH(purchaseLiters(current))+' / '+purchaseH(purchaseLiters(capacity))+' L</strong></label>';
+    }).join('');
     purchaseDischargeState.tankId=null;
   }
 
   window.selectDischargeTank=function(input){
+    if(input.disabled)return;
     document.querySelectorAll('#purchase-discharge-tanks .discharge-tank-card').forEach(card=>card.classList.toggle('selected',card.contains(input)));
     purchaseDischargeState.tankId=input.checked?input.value:null;
   };
@@ -888,7 +905,28 @@
   };
   loadPurchases();
 })();
-</script></body></html>
+</script>
+<style>
+/* Prevent selecting a tank that cannot receive the selected discharge */
+.discharge-tank-card.unavailable{
+  cursor:not-allowed;
+  opacity:.62;
+  background:#f8fafc;
+  border-color:#e5e7eb;
+}
+.discharge-tank-card.unavailable input{cursor:not-allowed;}
+.discharge-tank-card span em{
+  display:block;
+  margin-top:3px;
+  font-size:10px;
+  font-style:normal;
+  font-weight:600;
+  color:#667085;
+}
+.discharge-tank-card.unavailable span em{color:#b42318;}
+.discharge-tank-card:not(.unavailable) span em{color:#027a48;}
+</style>
+</body></html>
 <style>
 /* Compact, scrollable purchase review */
 .purchase-wizard-card{max-height:86vh}
