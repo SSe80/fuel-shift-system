@@ -747,12 +747,16 @@ function filterAdminSales(){
   const pendingBox=document.getElementById('sales-confirmation-list');
   const historyBox=document.getElementById('sales-history-list');
   const pendingRows=(adminSalesData.pending||[]).filter(adminSalesMatches);
-  const historyRows=(adminSalesData.history||[]).filter(adminSalesMatches);
+  const allHistoryRows=(adminSalesData.history||[]).filter(adminSalesMatches);
+  const historyRows=allHistoryRows.slice(0,3);
   if(pendingBox){
     pendingBox.innerHTML=pendingRows.length?pendingRows.map(renderAdminPendingSaleCard).join(''):'<div class="card admin-sales-empty"><div class="empty-icon">✓</div><strong>No pending sales confirmations</strong><p class="muted">All submitted shift sales have been reviewed.</p></div>';
   }
   if(historyBox){
     historyBox.innerHTML=historyRows.length?historyRows.map(renderAdminHistorySaleCard).join(''):'<div class="card admin-sales-empty"><div class="empty-icon">—</div><strong>No confirmed sales history</strong><p class="muted">Confirmed sales will appear here after admin review.</p></div>';
+    if(allHistoryRows.length>3){
+      historyBox.innerHTML+='<div class="sales-history-show-more-wrap"><a class="btn primary sales-history-show-more" href="admin-sales-history.html">Show more</a></div>';
+    }
   }
   bindAdminSaleChecks();
 }
