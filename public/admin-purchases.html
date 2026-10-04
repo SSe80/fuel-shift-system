@@ -1238,6 +1238,20 @@ window.downloadPurchaseDetailPdf=async function(){
     const m=document.getElementById('purchase-detail-modal');if(m){m.classList.add('open');m.setAttribute('aria-hidden','false');}
   };
   let purchaseDetailTanks=[];
+  window.togglePurchaseHistoryRecordedCard=function(id){
+    const cards=document.querySelectorAll('.purchase-history-recorded-minimized');
+    let card=null;
+    cards.forEach(el=>{if(String(el.getAttribute('data-id'))===String(id))card=el;});
+    if(!card)return;
+    const expanded=card.classList.toggle('expanded');
+    const body=card.querySelector('.purchase-history-recorded-body');
+    const toggle=card.querySelector('.purchase-history-recorded-toggle');
+    const head=card.querySelector('.purchase-history-recorded-head');
+    if(body)body.hidden=!expanded;
+    if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
+    if(toggle)toggle.textContent=expanded?'⌃':'⌄';
+  };
+
   const renderPurchaseCard=(p,tank,dischargeMode)=>{
     const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||tank?.product||'').toLowerCase());
     const productCode=productRecord?.code_name||'—';
