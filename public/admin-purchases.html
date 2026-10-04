@@ -582,6 +582,12 @@
   font-weight:700;
 }
 .tank-stock-slide .tank-stock-field small{display:block;margin-top:6px;font-size:10px;color:#667085;line-height:1.35}
+.tank-stock-remark-card{margin-top:11px;padding:11px;border:1px solid #e4e7ec;border-radius:11px;background:#fff}
+.tank-stock-remark-card label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;font-size:12px;font-weight:700;color:#344054}
+.tank-stock-remark-card label span{font-size:10px;font-weight:600;color:#98a2b3}
+.tank-stock-remark-input{display:block;width:100%;min-height:88px;box-sizing:border-box;resize:vertical;border:1.5px solid #98a2b3;border-radius:12px;outline:0;background:#fff;padding:10px 12px;font:inherit;font-size:14px;line-height:1.45;color:#101828;transition:border-color .18s ease,box-shadow .18s ease}
+.tank-stock-remark-input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.tank-stock-remark-input::placeholder{color:#98a2b3}
 .tank-stock-slide-actions{margin-top:10px}
 .tank-stock-slide-actions button{width:100%;min-height:40px;border-radius:9px;font-size:13px;font-weight:800}
 .tank-stock-carousel-nav{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:12px;margin-top:12px}
@@ -1185,9 +1191,10 @@
     tankStockCarousel.index=Math.max(0,Math.min(tankStockCarousel.index,tankStockCarousel.events.length-1));
     track.innerHTML=tankStockCarousel.events.map((item,pos)=>{
       const e=item.event,tank=purchaseDetailTanks?.find(t=>String(t.id)===String(e.tank_id));
+      const remark=e.tank_stock_remark||'';
       const before=Number(e.tank_liters_before||0),discharged=Number(e.discharged_quantity_liters||0),expected=Number(e.tank_liters_after||before+discharged);
       const compartments=Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'C'+x).join(', '):'—';
-      return '<section class="tank-stock-slide" data-slide="'+pos+'"><div class="tank-stock-slide-head"><div><span class="section-kicker">DISCHARGE '+(item.index+1)+'</span><h4>'+purchaseH(e.tank_code||tank?.tank_code||'Tank')+'</h4></div><span class="tank-stock-operation-badge">STOCK REQUIRED</span></div><div class="tank-stock-operation-meta"><div><span>Date & time</span><strong>'+purchaseH(e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—')+'</strong></div><div><span>Compartments</span><strong>'+purchaseH(compartments)+'</strong></div></div><div class="tank-stock-ledger"><div><span>Tank opening</span><strong>'+purchaseH(purchaseLiters(before))+' L</strong></div><div><span>Discharged</span><strong>'+purchaseH(purchaseLiters(discharged))+' L</strong></div><div><span>Expected closing</span><strong>'+purchaseH(purchaseLiters(expected))+' L</strong></div></div><div class="tank-stock-field"><label>Tank closing stock</label><div class="purchase-input-unit"><input class="tank-stock-slide-input" inputmode="decimal" placeholder="Enter tank liters"><span>L</span></div><small>Enter the physical tank reading after this discharge operation.</small></div><div class="tank-stock-slide-actions"><button type="button" class="primary" onclick="saveTankStock()">Save Tank Stock</button></div></section>';
+      return '<section class="tank-stock-slide" data-slide="'+pos+'"><div class="tank-stock-slide-head"><div><span class="section-kicker">DISCHARGE '+(item.index+1)+'</span><h4>'+purchaseH(e.tank_code||tank?.tank_code||'Tank')+'</h4></div><span class="tank-stock-operation-badge">STOCK REQUIRED</span></div><div class="tank-stock-operation-meta"><div><span>Date & time</span><strong>'+purchaseH(e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—')+'</strong></div><div><span>Compartments</span><strong>'+purchaseH(compartments)+'</strong></div></div><div class="tank-stock-ledger"><div><span>Tank opening</span><strong>'+purchaseH(purchaseLiters(before))+' L</strong></div><div><span>Discharged</span><strong>'+purchaseH(purchaseLiters(discharged))+' L</strong></div><div><span>Expected closing</span><strong>'+purchaseH(purchaseLiters(expected))+' L</strong></div></div><div class="tank-stock-field"><label>Tank closing stock</label><div class="purchase-input-unit"><input class="tank-stock-slide-input" inputmode="decimal" placeholder="Enter tank liters"><span>L</span></div><small>Enter the physical tank reading after this discharge operation.</small></div><div class="tank-stock-remark-card"><label>Remark <span>Optional</span></label><textarea class="tank-stock-remark-input" rows="4" maxlength="1000" placeholder="Write a remark about this tank stock reading...">'+purchaseH(remark)+'</textarea></div><div class="tank-stock-slide-actions"><button type="button" class="primary" onclick="saveTankStock()">Save Tank Stock</button></div></section>';
     }).join('');
     dots.innerHTML=tankStockCarousel.events.map((_,i)=>'<button type="button" class="tank-stock-dot '+(i===tankStockCarousel.index?'active':'')+'" onclick="goTankStockSlide('+i+')" aria-label="Discharge '+(i+1)+'"></button>').join('');
     counter.textContent=(tankStockCarousel.index+1)+' / '+tankStockCarousel.events.length;
@@ -1259,12 +1266,12 @@
   window.saveTankStock=async function(){
     const activeEvent=tankStockCarousel.events[tankStockCarousel.index],modal=document.getElementById('tank-stock-modal'),input=modal?.querySelector('.tank-stock-slide[data-slide="'+tankStockCarousel.index+'"] .tank-stock-slide-input'),status=document.getElementById('tank-stock-status'),p=purchaseDetailData?.find(x=>String(x.id)===String(tankStockCarousel.purchaseId));
     if(!p||!activeEvent||!input)return;
-    const e=activeEvent.event,tankId=String(e.tank_id||''),liters=parseQuantity(input.value),tank=purchaseDetailTanks?.find(x=>String(x.id)===tankId);
+    const e=activeEvent.event,tankId=String(e.tank_id||''),liters=parseQuantity(input.value),remark=(modal?.querySelector('.tank-stock-slide[data-slide="'+tankStockCarousel.index+'"] .tank-stock-remark-input')?.value||'').trim(),tank=purchaseDetailTanks?.find(x=>String(x.id)===tankId);
     if(!tankId||!Number.isFinite(liters)||liters<0){if(status){status.textContent='Enter the tank closing stock.';status.className='purchase-status error';}return;}
     if(tank?.capacity_liters!=null&&liters>Number(tank.capacity_liters)){if(status){status.textContent='Tank stock cannot exceed tank capacity.';status.className='purchase-status error';}return;}
     try{
       if(status){status.textContent='Saving tank stock…';status.className='purchase-status';}
-      await purchaseApi('/api/tanks/'+encodeURIComponent(tankId)+'/stock',{method:'PATCH',body:JSON.stringify({stock_liters:liters,purchase_id:p.id,event_index:activeEvent.index})});
+      await purchaseApi('/api/tanks/'+encodeURIComponent(tankId)+'/stock',{method:'PATCH',body:JSON.stringify({stock_liters:liters,purchase_id:p.id,event_index:activeEvent.index,remark})});
       const savedIndex=activeEvent.index;
       await loadPurchases();
       const remainingEvents=getTankStockEvents(tankStockCarousel.purchaseId);
