@@ -553,6 +553,14 @@
   </section>
   <section class="purchase-discharge-step" data-discharge-step="2">
     <div id="purchase-discharge-tanks" class="discharge-tanks"></div>
+    <div class="purchase-field discharge-tank-reading-field">
+      <label for="purchase-discharge-tank-liters">Tank liters before discharge</label>
+      <div class="purchase-input-unit">
+        <input id="purchase-discharge-tank-liters" type="text" inputmode="decimal" autocomplete="off" placeholder="Enter tank liters">
+        <span>L</span>
+      </div>
+      <small class="discharge-tank-reading-hint">Enter the tank reading immediately before receiving the selected compartments.</small>
+    </div>
     <div class="purchase-wizard-actions">
       <button type="button" onclick="closePurchaseDischarge()">Cancel</button>
       <button type="button" class="primary" onclick="continueDischargeStep(2)">Continue</button>
@@ -727,7 +735,7 @@
       if(list)list.innerHTML='<div class="purchase-empty">Purchase history unavailable right now.</div>';
     }
   };
-  let purchaseDischargeState={purchase:null,purchaseId:null,selectedIndexes:[],tankId:null,tanks:[]};
+  let purchaseDischargeState={purchase:null,purchaseId:null,selectedIndexes:[],tankId:null,tankLitersBefore:null,tanks:[]};
 
   function setDischargeStep(step){
     document.querySelectorAll('.purchase-discharge-step').forEach(el=>el.classList.toggle('active',Number(el.dataset.dischargeStep)===step));
@@ -804,6 +812,13 @@
     if(input.disabled)return;
     document.querySelectorAll('#purchase-discharge-tanks .discharge-tank-card').forEach(card=>card.classList.toggle('selected',card.contains(input)));
     purchaseDischargeState.tankId=input.checked?input.value:null;
+    const tank=purchaseDischargeState.tanks.find(t=>String(t.id)===String(input.value));
+    const field=document.getElementById('purchase-discharge-tank-liters');
+    if(field){
+      field.value=tank?formatQuantity(tank.current_liters):'';
+      purchaseDischargeState.tankLitersBefore=tank?Number(tank.current_liters||0):null;
+    }
+    if(field)field.focus();
   };
 
   function renderDischargeReview(){
@@ -814,18 +829,20 @@
     const selected=purchaseDischargeState.selectedIndexes;
     const total=selected.reduce((sum,i)=>sum+Number(values[i-1]||0),0);
     const tank=purchaseDischargeState.tanks.find(t=>String(t.id)===String(purchaseDischargeState.tankId));
+    const tankBefore=Number(purchaseDischargeState.tankLitersBefore||0);
+    const tankAfter=tankBefore+total;
     const productRecord=purchaseProducts.find(x=>String(x.id)===String(p.product_id))||purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||'').toLowerCase());
     const product=productRecord?.code_name||p.product||'—';
     const rows=selected.map(i=>'<div class="discharge-review-row"><span>Compartment '+i+'</span><strong>'+purchaseLiters(values[i-1])+' L</strong></div>').join('');
     wrap.innerHTML='<section class="purchase-review-section"><h4>Product</h4><div class="discharge-review-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div><div class="discharge-review-row"><span>Invoice</span><strong>'+purchaseH(p.invoice_number||'—')+'</strong></div></section>'+
       '<section class="purchase-review-section"><h4>Selected Compartments</h4>'+rows+'<div class="discharge-review-total"><span>Discharge quantity</span><strong>'+purchaseLiters(total)+' L</strong></div></section>'+
-      '<section class="purchase-review-section"><h4>Destination Tank</h4><div class="discharge-review-row"><span>Tank</span><strong>'+purchaseH(tank?.tank_code||'—')+'</strong></div><div class="discharge-review-row"><span>Current stock</span><strong>'+purchaseLiters(tank?.current_liters||0)+' L</strong></div></section>';
+      '<section class="purchase-review-section"><h4>Destination Tank</h4><div class="discharge-review-row"><span>Tank</span><strong>'+purchaseH(tank?.tank_code||'—')+'</strong></div><div class="discharge-review-row"><span>Tank liters before discharge</span><strong>'+purchaseLiters(tankBefore)+' L</strong></div><div class="discharge-review-row"><span>Tank liters after discharge</span><strong>'+purchaseLiters(tankAfter)+' L</strong></div></section>';
   }
 
   window.openPurchaseDischarge=function(purchaseId){
     const p=purchaseDetailData?.find(x=>String(x.id)===String(purchaseId));
     if(!p)return;
-    purchaseDischargeState={purchase:p,purchaseId:String(purchaseId),selectedIndexes:[],tankId:null,tanks:[]};
+    purchaseDischargeState={purchase:p,purchaseId:String(purchaseId),selectedIndexes:[],tankId:null,tankLitersBefore:null,tanks:[]};
     renderDischargeCompartments();
     renderDischargeTanks();
     setDischargeStep(1);
@@ -836,7 +853,7 @@
   window.closePurchaseDischarge=function(){
     const m=document.getElementById('purchase-discharge-modal');
     if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}
-    purchaseDischargeState={purchase:null,purchaseId:null,selectedIndexes:[],tankId:null,tanks:[]};
+    purchaseDischargeState={purchase:null,purchaseId:null,selectedIndexes:[],tankId:null,tankLitersBefore:null,tanks:[]};
   };
 
   window.continueDischargeStep=function(step){
@@ -850,6 +867,19 @@
     }
     if(step===2){
       if(!purchaseDischargeState.tankId){const s=document.getElementById('purchase-discharge-status');if(s){s.textContent='Select a tank before continuing.';s.className='purchase-status error';}return;}
+      const field=document.getElementById('purchase-discharge-tank-liters');
+      const tankLitersBefore=parseQuantity(field?.value);
+      if(!Number.isFinite(tankLitersBefore)||tankLitersBefore<0){
+        const s=document.getElementById('purchase-discharge-status');if(s){s.textContent='Enter the tank liters before discharge.';s.className='purchase-status error';}return;
+      }
+      const values=Array.isArray(purchaseDischargeState.purchase?.compartment_liters)?purchaseDischargeState.purchase.compartment_liters:[Number(purchaseDischargeState.purchase?.quantity_liters||0)];
+      const total=(purchaseDischargeState.selectedIndexes||[]).reduce((sum,i)=>sum+Number(values[i-1]||0),0);
+      const tank=purchaseDischargeState.tanks.find(t=>String(t.id)===String(purchaseDischargeState.tankId));
+      if(tank && tank.capacity_liters!=null && tankLitersBefore+total>Number(tank.capacity_liters)){
+        const available=Math.max(Number(tank.capacity_liters)-tankLitersBefore,0);
+        const s=document.getElementById('purchase-discharge-status');if(s){s.textContent='Discharge exceeds tank capacity. Only '+purchaseLiters(available)+' L is available.';s.className='purchase-status error';}return;
+      }
+      purchaseDischargeState.tankLitersBefore=tankLitersBefore;
       renderDischargeReview();
       setDischargeStep(3);
     }
@@ -863,7 +893,7 @@
       if(status){status.textContent='Discharging purchase…';status.className='purchase-status';}
       await purchaseApi('/api/purchases/'+encodeURIComponent(state.purchaseId)+'/discharge',{
         method:'POST',
-        body:JSON.stringify({tank_id:state.tankId,compartment_indexes:state.selectedIndexes})
+        body:JSON.stringify({tank_id:state.tankId,compartment_indexes:state.selectedIndexes,tank_liters_before:state.tankLitersBefore})
       });
       closePurchaseDischarge();
       purchaseToast('Purchase discharged successfully');
@@ -925,6 +955,14 @@
 }
 .discharge-tank-card.unavailable span em{color:#b42318;}
 .discharge-tank-card:not(.unavailable) span em{color:#027a48;}
+</style>
+
+<style>
+/* Tank reading before discharge */
+.discharge-tank-reading-field{margin-top:14px;margin-bottom:0;padding:12px;border:1px solid #e4e7ec;border-radius:12px;background:#f8fafc}
+.discharge-tank-reading-field label{margin-bottom:5px!important;font-size:13px!important;font-weight:700!important;color:#344054!important}
+.discharge-tank-reading-field input{min-height:46px}
+.discharge-tank-reading-hint{display:block;margin-top:6px;font-size:11px;line-height:1.4;color:#667085}
 </style>
 </body></html>
 <style>
