@@ -1969,10 +1969,11 @@ def daily_report():
     total_p=sum(float(x.get("quantity_liters") or 0) for x in purchase_rows)
 
     by_product={}
-    for x in direct_fuel_rows:
+    for x in fuel_sale_rows:
         p=x.get("product") or "Unknown"
         row=by_product.setdefault(p,{"liters":0,"amount":0})
-        row["liters"]+=float(x.get("quantity_liters") or 0)
+        if str(x.get("shift_id") or "") not in takeover_shift_ids:
+            row["liters"]+=float(x.get("quantity_liters") or 0)
         row["amount"]+=float(x.get("amount") or 0)
 
     tank_ids={str(x.get("tank_id")) for x in handover_rows if x.get("tank_id")}
