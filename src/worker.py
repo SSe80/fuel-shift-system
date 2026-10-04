@@ -2102,8 +2102,24 @@ def generate_report():
     if auth:return auth
     data=request.get_json(silent=True) or {}
     report_date=data.get("date") or date.today().isoformat()
-    try: date.fromisoformat(report_date)
+    try: report_day=date.fromisoformat(report_date)
     except ValueError:return jsonify({"error":"Invalid date"}),400
+    day_start=report_date+"T00:00:00+03:00"
+    day_end=(report_day+timedelta(days=1)).isoformat()+"T00:00:00+03:00"
+    ss,day_shifts=sb("shifts",params={
+        "start_time":"gte."+day_start,"start_time":"lt."+day_end,
+        "select":"id,end_time","limit":"5000"
+    })
+    if ss!=200:return jsonify({"error":day_shifts}),ss
+    shift_ids=[str(x.get("id")) for x in day_shifts if x.get("id")]
+    if any(not x.get("end_time") for x in day_shifts):
+        return jsonify({"error":"Daily report is not ready: all shifts that started on this date must be completed first.","report_ready":False,"total_shifts":len(day_shifts),"completed_shifts":sum(1 for x in day_shifts if x.get("end_time"))}),409
+    filt="in.("+",".join(shift_ids)+")" if shift_ids else "in.(00000000-0000-0000-0000-000000000000)"
+    hs,day_handovers=sb("shift_takeovers",params={"shift_id":filt,"select":"shift_id,sales_status","limit":"5000"})
+    if hs!=200:return jsonify({"error":day_handovers}),hs
+    unconfirmed=[x for x in day_handovers if x.get("sales_status") not in ("confirmed",None)]
+    if unconfirmed:
+        return jsonify({"error":"Daily report is not ready: sales confirmation is still pending for one or more completed shifts.","report_ready":False,"unconfirmed_shifts":len(unconfirmed)}),409
     status,result=rpc("generate_daily_report",{"p_report_date":report_date,"p_generated_by":session["employee_id"]})
     if status>=400:return jsonify(result),status
     return jsonify(result),201
