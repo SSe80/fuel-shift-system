@@ -1208,33 +1208,47 @@
     if(remarkInput&&count)count.textContent=remarkInput.value.length+' / 1000';
     if(remarkInput&&!remarkInput.dataset.countBound){remarkInput.dataset.countBound='true';remarkInput.addEventListener('input',()=>{tankStockCarousel.remark=remarkInput.value;const c=remarkInput.parentElement?.querySelector('.tank-stock-remark-count');if(c)c.textContent=remarkInput.value.length+' / 1000';});}
   }
-  let tankStockSwipe={active:false,pointerId:null,startX:0,startY:0,deltaX:0,locked:false};
+    let tankStockSwipe={active:false,pointerId:null,startX:0,startY:0,deltaX:0,locked:false};
   function bindTankStockSwipe(){
     const carousel=document.querySelector('.tank-stock-carousel'),track=document.getElementById('tank-stock-track');
     if(!carousel||!track||carousel.dataset.swipeBound==='true')return;
     carousel.dataset.swipeBound='true';
     const finish=function(){
       if(!tankStockSwipe.active)return;
-      const dx=tankStockSwipe.deltaX,current=tankStockCarousel.index,width=carousel.clientWidth||1;
+      const dx=tankStockSwipe.deltaX,current=tankStockCarousel.index;
       tankStockSwipe.active=false;tankStockSwipe.pointerId=null;tankStockSwipe.locked=false;
-      const target=current+(dx<0?1:-1);
-      track.style.transition='transform .34s cubic-bezier(.22,.61,.36,1)';
-      if(Math.abs(dx)/width>.16&&target>=0&&target<=tankStockCarousel.events.length)window.goTankStockSlide(target);
-      else track.style.transform='translate3d(-'+(current*100)+'%,0,0)';
+      track.style.transition='transform .28s cubic-bezier(.22,.61,.36,1)';
+      // A short deliberate horizontal swipe is enough to move exactly one card.
+      if(Math.abs(dx)>=24){
+        const target=current+(dx<0?1:-1);
+        if(target>=0&&target<=tankStockCarousel.events.length)window.goTankStockSlide(target);
+        else track.style.transform='translate3d(-'+(current*100)+'%,0,0)';
+      }else{
+        track.style.transform='translate3d(-'+(current*100)+'%,0,0)';
+      }
       tankStockSwipe.deltaX=0;
     };
     carousel.addEventListener('pointerdown',function(e){
       if(e.pointerType==='mouse'&&e.button!==0)return;
       if(e.target.closest&&e.target.closest('input,button,textarea'))return;
       tankStockSwipe={active:true,pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,deltaX:0,locked:false};
-      carousel.setPointerCapture?.(e.pointerId);track.style.transition='none';
+      carousel.setPointerCapture?.(e.pointerId);
+      track.style.transition='none';
     },{passive:true});
     carousel.addEventListener('pointermove',function(e){
       if(!tankStockSwipe.active||e.pointerId!==tankStockSwipe.pointerId)return;
       const dx=e.clientX-tankStockSwipe.startX,dy=e.clientY-tankStockSwipe.startY;
-      if(!tankStockSwipe.locked){if(Math.abs(dx)<8&&Math.abs(dy)<8)return;if(Math.abs(dy)>Math.abs(dx)){tankStockSwipe.active=false;return;}tankStockSwipe.locked=true;}
-      e.preventDefault();tankStockSwipe.deltaX=dx;
-      track.style.transform='translate3d(calc(-'+(tankStockCarousel.index*100)+'% + '+((dx/(carousel.clientWidth||1))*100)+'%),0,0)';
+      if(!tankStockSwipe.locked){
+        if(Math.abs(dx)<6&&Math.abs(dy)<6)return;
+        if(Math.abs(dy)>Math.abs(dx)){tankStockSwipe.active=false;return;}
+        tankStockSwipe.locked=true;
+      }
+      e.preventDefault();
+      tankStockSwipe.deltaX=dx;
+      // Keep the drag visual subtle; the card snaps to the next/previous card on release.
+      const width=carousel.clientWidth||1;
+      const visual=Math.max(-34,Math.min(34,(dx/width)*100));
+      track.style.transform='translate3d(calc(-'+(tankStockCarousel.index*100)+'% + '+visual+'%),0,0)';
     },{passive:false});
     carousel.addEventListener('pointerup',function(e){if(e.pointerId===tankStockSwipe.pointerId)finish();});
     carousel.addEventListener('pointercancel',function(e){if(e.pointerId===tankStockSwipe.pointerId)finish();});
