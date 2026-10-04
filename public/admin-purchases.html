@@ -894,13 +894,14 @@ window.ensurePurchasePdfEngine=async function(){
   if(!window.jspdf?.jsPDF)throw new Error('The PDF engine loaded incorrectly.');
   return window.jspdf.jsPDF;
 };
-window.downloadPurchaseDetailPdf=async function(){
+window.downloadPurchaseDetailPdf=function(){
   const p=purchaseDetailData?.find(x=>String(x.id)===String(window.currentPurchaseDetailId||''));
   if(!p){openPurchaseFailed('Purchase details are not available.','PDF Download Failed');return;}
   try{
     const button=document.querySelector('.purchase-detail-download');
     if(button){button.disabled=true;button.textContent='Preparing PDF…';}
-    const jsPDF=await window.ensurePurchasePdfEngine();
+    const jsPDF=window.jspdf?.jsPDF;
+    if(!jsPDF)throw new Error('The PDF engine is not ready. Please wait a moment and try again.');
     const doc=new jsPDF({unit:'mm',format:'a4'});
     const W=210,H=297,M=15,CW=W-M*2;
     const navy=[20,32,52],blue=[37,99,235],blueDark=[29,78,216],muted=[98,108,125],line=[221,226,234],soft=[247,249,252],pale=[239,246,255],green=[5,150,105],red=[220,38,38],amber=[180,83,9],white=[255,255,255];
@@ -981,15 +982,7 @@ window.downloadPurchaseDetailPdf=async function(){
     if(y>H-25)addPage();
     footer();
     const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);
-    const pdfBlob=doc.output('blob');
-    const blobUrl=URL.createObjectURL(pdfBlob);
-    const link=document.createElement('a');
-    link.href=blobUrl;
-    link.download='purchase_'+safe+'.pdf';
-    link.style.display='none';
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(()=>{link.remove();URL.revokeObjectURL(blobUrl);},1000);
+    doc.save('purchase_'+safe+'.pdf');
   }catch(e){
     openPurchaseFailed(e.message||'Unable to create the PDF.','PDF Download Failed');
   }finally{
