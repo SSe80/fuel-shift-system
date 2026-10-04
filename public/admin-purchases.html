@@ -857,12 +857,6 @@
 </div><div id="toast" class="toast"></div></main><script id="purchase-pdf-engine" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script>
 window.ensurePurchasePdfEngine=async function(){
   if(window.jspdf?.jsPDF)return window.jspdf.jsPDF;
-  const existing=document.getElementById('purchase-pdf-engine');
-  if(existing&&!existing.dataset.fallbackAttached){
-    existing.dataset.fallbackAttached='1';
-    await new Promise(resolve=>{existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',resolve,{once:true});});
-    if(window.jspdf?.jsPDF)return window.jspdf.jsPDF;
-  }
   if(window.jspdf?.jsPDF)return window.jspdf.jsPDF;
   await new Promise((resolve,reject)=>{
     const s=document.createElement('script');
