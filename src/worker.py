@@ -1350,6 +1350,7 @@ def purchases():
 def purchase_pdf(purchase_id):
     auth=require_admin()
     if auth:return auth
+    # Generate a minimal valid PDF using only ASCII bytes; avoid runtime font/encoding issues.
     status,rows=sb("purchases",params={"id":"eq."+str(purchase_id),"select":"*","limit":"1"})
     if status!=200:return jsonify(rows),status
     if not rows:return jsonify({"error":"Purchase not found"}),404
