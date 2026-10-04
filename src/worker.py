@@ -613,6 +613,40 @@ def create_tank():
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
 
+@app.patch("/api/tanks/<tank_id>/stock")
+def update_tank_stock(tank_id):
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    try:
+        stock=float(data.get("stock_liters"))
+    except (TypeError,ValueError):
+        return jsonify({"error":"Invalid tank stock reading"}),400
+    if stock < 0:
+        return jsonify({"error":"Tank stock cannot be negative"}),400
+    status,rows=sb("tanks",params={"id":"eq."+tank_id,"select":"id,tank_code,product,capacity_liters,current_liters,active","limit":"1"})
+    if status!=200:return jsonify(rows),status
+    if not rows:return jsonify({"error":"Tank not found"}),404
+    tank=rows[0]
+    capacity=float(tank.get("capacity_liters") or 0)
+    if stock>capacity:return jsonify({"error":"Tank stock cannot exceed tank capacity"}),400
+    previous=float(tank.get("current_liters") or 0)
+    delta=stock-previous
+    body={"current_liters":stock,"updated_at":datetime.now(timezone.utc).isoformat()}
+    status,result=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body=body,prefer="return=representation")
+    if status>=400:return jsonify(result),status
+    if abs(delta)>0.000001:
+        ms,mr=sb("tank_movements",method="POST",body={
+            "tank_id":tank_id,
+            "movement_type":"adjustment",
+            "quantity_liters":delta,
+            "reference_id":data.get("purchase_id"),
+            "notes":"Physical tank stock recorded after purchase discharge",
+            "created_by":session.get("employee_id")
+        },prefer="return=representation")
+        if ms>=400:return jsonify({"error":mr}),ms
+    return jsonify({"ok":True,"tank":result[0] if isinstance(result,list) and result else result,"previous_liters":previous,"stock_liters":stock,"adjustment_liters":delta}),200
+
 @app.route("/api/tanks/<tank_id>", methods=["DELETE"])
 def delete_tank(tank_id):
     auth=require_admin()
