@@ -768,10 +768,30 @@ function renderAdminPendingSaleCard(item){
 }
 function renderAdminHistorySaleCard(item){
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],from=item.from_employee?.name||'Attendant',to=item.to_employee?.name||'Attendant',dispenser=item.dispenser?.name||'Dispenser';
-  return '<article class="card compact-confirmed-sale-card admin-history-sale-card"><div class="top"><div><span class="section-kicker">SALES CONFIRMED</span><h3>'+h(dispenser)+'</h3><p class="muted">'+h(from)+' → '+h(to)+'</p></div><span class="badge">Confirmed</span></div>'+
-    '<div class="compact-sale-summary"><span>Shift '+h(String(t.shift_id||'').slice(0,8))+'</span><span>'+liters(t.total_sales_liters)+' L</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
-    '<div class="admin-history-meta"><span>Confirmed <b>'+h(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+'</b></span><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span></div>'+
-    '<button type="button" class="btn compact-detail-button" onclick="openAdminSaleHistoryDetails(\''+h(t.id)+'\')">View details</button></article>';
+  return '<article class="card compact-confirmed-sale-card admin-history-sale-card admin-history-sale-minimized" data-takeover-id="'+h(t.id)+'">'+
+    '<button type="button" class="admin-history-sale-head" onclick="toggleAdminHistorySaleCard(this.dataset.id)" data-id="'+h(t.id)+'" aria-expanded="false">'+
+      '<span class="admin-history-sale-title"><span class="section-kicker">SALES CONFIRMED</span><strong>'+h(dispenser)+'</strong><small>'+h(from)+' → '+h(to)+'</small></span>'+
+      '<span class="admin-history-sale-right"><span class="badge">Confirmed</span><span class="admin-history-sale-toggle" aria-hidden="true">⌄</span></span>'+
+    '</button>'+
+    '<div class="admin-history-sale-body" hidden>'+
+      '<div class="compact-sale-summary"><span>Shift '+h(String(t.shift_id||'').slice(0,8))+'</span><span>'+liters(t.total_sales_liters)+' L</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
+      '<div class="admin-history-meta"><span>Confirmed <b>'+h(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+'</b></span><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span></div>'+
+      '<button type="button" class="btn compact-detail-button" onclick="openAdminSaleHistoryDetails(\''+h(t.id)+'\')">View details</button>'+
+    '</div>'+
+  '</article>';
+}
+function toggleAdminHistorySaleCard(id){
+  const cards=document.querySelectorAll('.admin-history-sale-minimized');
+  let card=null;
+  cards.forEach(el=>{if(String(el.getAttribute('data-takeover-id'))===String(id))card=el;});
+  if(!card)return;
+  const expanded=card.classList.toggle('expanded');
+  const body=card.querySelector('.admin-history-sale-body');
+  const toggle=card.querySelector('.admin-history-sale-toggle');
+  const head=card.querySelector('.admin-history-sale-head');
+  if(body)body.hidden=!expanded;
+  if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
+  if(toggle)toggle.textContent=expanded?'⌃':'⌄';
 }
 async function refreshAdminSales(){
   const status=document.getElementById('sales-confirmation-status');if(status)status.textContent='Refreshing sales…';
