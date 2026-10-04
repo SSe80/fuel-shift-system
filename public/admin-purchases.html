@@ -887,25 +887,144 @@ window.downloadPurchaseDetailPdf=function(){
   if(!id){openPurchaseFailed('Purchase details are not available.','PDF Download Failed');return;}
   const p=purchaseDetailData?.find(x=>String(x.id)===String(id));
   if(!p){openPurchaseFailed('Purchase details are not available.','PDF Download Failed');return;}
+
   const button=document.querySelector('.purchase-detail-download');
-  if(button){button.disabled=true;button.textContent='Opening PDF…';}
-  const url='/api/purchases/'+encodeURIComponent(id)+'/pdf';
+  if(button){button.disabled=true;button.textContent='Preparing PDF…';}
+
   try{
+    const clean=value=>String(value==null?'':value).replace(/[^ -~]/g,'?');
+    const wrap=(value,width)=>{
+      const words=clean(value).split(/\\s+/);
+      const out=[];let line='';
+      words.forEach(word=>{
+        if(!word)return;
+        const next=line?line+' '+word:word;
+        if(next.length>width){if(line)out.push(line);line=word;}else line=next;
+      });
+      if(line)out.push(line);
+      return out.length?out:[''];
+    };
+    const num=value=>Number(value||0);
+    const fmt=value=>num(value).toLocaleString(undefined,{maximumFractionDigits:2});
+    const dateText=value=>value?new Date(value).toLocaleString():'—';
+    const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
+    const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
+    const delivered=Number(p.delivered_quantity_liters||p.quantity_liters||0);
+    const discharged=Number(p.discharged_quantity_liters||0);
+    const remaining=Math.max(0,delivered-discharged);
+
+    const lines=[
+      'PURCHASE HISTORY - PURCHASE DETAIL','',
+      'Product: '+clean(p.product||p.product_code||''),
+      'Invoice: '+clean(p.invoice_number||''),
+      'Status: '+clean(p.status||''),
+      'Purchase date: '+clean(dateText(p.purchase_date||p.created_at)),
+      'Ordered quantity: '+fmt(p.quantity_liters||p.ordered_quantity_liters)+' L',
+      'Delivered quantity: '+fmt(delivered)+' L',
+      'Discharged quantity: '+fmt(discharged)+' L',
+      'Undischarged quantity: '+fmt(remaining)+' L',
+      '',
+      'ORDER',
+      '----------------------------------------',
+      'Supplier: '+clean(p.supplier||'—'),
+      'Invoice number: '+clean(p.invoice_number||'—'),
+      'Purchase date: '+clean(dateText(p.purchase_date||p.created_at)),
+      '',
+      'TRUCK & DRIVER',
+      '----------------------------------------',
+      'Driver: '+clean(p.driver_name||'—'),
+      'Driver phone: '+clean(p.driver_phone||'—'),
+      'Plate number: '+clean(p.plate_number||p.truck_plate||'—'),
+      'Compartments: '+clean(p.truck_compartments||compartments.length||'—')
+    ];
+
+    if(compartments.length){
+      lines.push('Compartment quantities:');
+      compartments.forEach((q,i)=>lines.push('  Compartment '+(i+1)+': '+fmt(q)+' L'));
+    }
+
+    lines.push('','DISCHARGE HISTORY','----------------------------------------');
+    if(!history.length){
+      lines.push('No discharge operations recorded.');
+    }else{
+      history.forEach((e,i)=>{
+        lines.push(
+          'Discharge '+(i+1)+': '+clean(dateText(e.discharge_datetime||e.discharged_at||e.created_at)),
+          '  Quantity: '+fmt(e.quantity_liters||e.discharged_quantity_liters)+' L',
+          '  Tank: '+clean(e.tank_code||e.tank_id||'—'),
+          '  Shift attendant(s): '+clean(e.shift_attendants||e.attendant_name||e.employee_name||'—'),
+          '  Tank stock before: '+fmt(e.tank_liters_before)+' L',
+          '  Expected closing: '+fmt(e.expected_closing_liters)+' L',
+          '  Recorded closing: '+fmt(e.tank_liters_after||e.recorded_closing_liters)+' L',
+          '  Stock status: '+clean(e.tank_stock_status||'—'),
+          ''
+        );
+      });
+    }
+
+    lines.push(
+      'PURCHASE REMARK',
+      '----------------------------------------',
+      clean(p.remark||p.purchase_remark||'No purchase remark recorded.'),
+      '',
+      'Generated from the confirmed purchase record.'
+    );
+
+    const pageLines=[];
+    lines.forEach(line=>pageLines.push(...wrap(line,88)));
+    const pages=[];
+    for(let i=0;i<pageLines.length;i+=46)pages.push(pageLines.slice(i,i+46));
+
+    const objects=[{id:1,body:'<< /Type /Catalog /Pages 2 0 R >>'}];
+    const kids=[];let nextId=4;
+    pages.forEach(pageLinesForPage=>{
+      const pageId=nextId++,contentId=nextId++;
+      kids.push(pageId+' 0 R');
+      const textCommands=pageLinesForPage.map((line,index)=>{
+        const escaped=clean(line).replace(/\\/g,'\\\\').replace(/\\(/g,'\\\\(').replace(/\\)/g,'\\\\)');
+        return (index?'0 -15 Td\\n':'')+'('+escaped+') Tj';
+      }).join('\\n');
+      const stream='BT\\n/F1 11 Tf\\n50 760 Td\\n'+textCommands+'\\nET';
+      objects.push(
+        {id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents '+contentId+' 0 R >>'},
+        {id:contentId,body:'<< /Length '+stream.length+' >>\\nstream\\n'+stream+'\\nendstream'}
+      );
+    });
+    objects.push(
+      {id:2,body:'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+pages.length+' >>'},
+      {id:3,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'}
+    );
+    objects.sort((a,b)=>a.id-b.id);
+
+    let pdf='%PDF-1.4\\n%PDF-1.4\\n';
+    const offsets=[];
+    objects.forEach(object=>{
+      offsets[object.id]=pdf.length;
+      pdf+=object.id+' 0 obj\\n'+object.body+'\\nendobj\\n';
+    });
+    const xrefOffset=pdf.length;
+    pdf+='xref\\n0 '+(objects.length+1)+'\\n0000000000 65535 f \\n';
+    for(let i=1;i<=objects.length;i++)pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \\n';
+    pdf+='trailer\\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\\nstartxref\\n'+xrefOffset+'\\n%%EOF';
+
+    const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'}));
     const link=document.createElement('a');
+    const stamp=(p.purchase_date||p.created_at||new Date().toISOString()).replace(/[^0-9]/g,'').slice(0,14);
     link.href=url;
-    link.download='';
-    link.rel='noopener';
+    link.download='purchase-'+clean(p.invoice_number||id).replace(/[^A-Za-z0-9_-]/g,'_')+'-'+stamp+'.pdf';
     document.body.appendChild(link);
     link.click();
     link.remove();
-    setTimeout(()=>{if(button){button.disabled=false;button.textContent='Download PDF';}},1200);
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    if(button){button.disabled=false;button.textContent='Download PDF';}
+    if(typeof window.toast==='function')window.toast('PDF downloaded');
   }catch(e){
     if(button){button.disabled=false;button.textContent='Download PDF';}
-    openPurchaseFailed(e?.message||'Unable to download the purchase PDF.','PDF Download Failed');
+    openPurchaseFailed(e?.message||'Unable to generate the purchase PDF.','PDF Download Failed');
   }
 };
 </script>
-<script src="assets/app.js?v=20261004-06"></script><script>
+<script src="assets/app.js?v=20261004-07"></script><script>
 (function(){
   const productSelect=document.getElementById('purchase-product');
   const orderedQuantityInput=document.getElementById('purchase-ordered-quantity');
