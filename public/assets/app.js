@@ -1083,6 +1083,31 @@ function closeAdminSaleReview(){
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
   window.pendingAdminSaleReviewId=null;
 }
+async function showAdminSaleConfirmResult(success, message, summary){
+  const successModal=document.getElementById('admin-sale-confirm-success-modal');
+  const failedModal=document.getElementById('admin-sale-confirm-failed-modal');
+  if(success){
+    if(successModal){
+      const box=document.getElementById('admin-sale-confirm-success-summary');
+      if(box)box.innerHTML=summary||'';
+      successModal.classList.add('open');
+      successModal.setAttribute('aria-hidden','false');
+    }else toast('Sales confirmed successfully');
+  }else{
+    if(failedModal){
+      const msg=document.getElementById('admin-sale-confirm-failed-message');
+      if(msg)msg.textContent=message||'The sales could not be confirmed.';
+      failedModal.classList.add('open');
+      failedModal.setAttribute('aria-hidden','false');
+    }else toast(message||'Sales confirmation failed');
+  }
+}
+function closeAdminSaleConfirmResult(){
+  ['admin-sale-confirm-success-modal','admin-sale-confirm-failed-modal'].forEach(id=>{
+    const modal=document.getElementById(id);
+    if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  });
+}
 async function finalizeAdminSaleConfirmation(){
   const id=window.pendingAdminSaleReviewId;
   if(!id)return;
@@ -1092,7 +1117,15 @@ async function finalizeAdminSaleConfirmation(){
   if(!ids.length||ids.length!==total){closeAdminSaleReview();toast('Tick every sale before confirming');return;}
   const button=document.getElementById('admin-sale-final-confirm');
   if(button)button.disabled=true;
-  try{await api('/api/sales/confirmations/'+id+'/confirm',{method:'POST',body:JSON.stringify({checked_sale_ids:ids})});closeAdminSaleReview();toast('Sales confirmed');await adminSalesConfirmations();}catch(e){if(button)button.disabled=false;toast(e.message);}
+  try{
+    const result=await api('/api/sales/confirmations/'+id+'/confirm',{method:'POST',body:JSON.stringify({checked_sale_ids:ids})});
+    closeAdminSaleReview();
+    await adminSalesConfirmations();
+    showAdminSaleConfirmResult(true,'',`<div class="purchase-confirmation-row"><span>Confirmed sales</span><strong>${ids.length}</strong></div>`);
+  }catch(e){
+    if(button)button.disabled=false;
+    showAdminSaleConfirmResult(false,e.message);
+  }
 }
 async function confirmAdminSaleConfirmation(id){openAdminSaleReview(id);}
 async function cancelAdminSaleConfirmation(id){
