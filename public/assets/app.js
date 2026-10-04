@@ -643,6 +643,7 @@ async function adminDashboard(){
   }catch(e){const s=document.getElementById('dashboard-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
 let adminSalesData={pending:[],history:[]};
+let adminSalesHistoryData={history:[]};
 let adminSalesTab='pending';
 
 function adminSalesDate(item){
@@ -2624,8 +2625,69 @@ function toggleSettingsItem(event,item){
   item.classList.toggle('expanded');
 }
 
+
+function adminSalesHistoryMatches(item,search,period){
+  const t=item.takeover||{};
+  const hay=[
+    item.dispenser?.name,item.dispenser?.nozzle_code,item.from_employee?.name,item.to_employee?.name,
+    item.shift?.name,t.shift_id
+  ].filter(Boolean).join(' ').toLowerCase();
+  if(search && !hay.includes(search.toLowerCase()))return false;
+  if(period && period!=='all'){
+    const raw=t.sales_confirmed_at||t.shift_ended_at||t.shift_started_at;
+    const d=raw?new Date(raw):null;
+    if(!d || Number.isNaN(d.getTime()))return false;
+    const now=new Date();
+    if(period==='today'){
+      if(d.toDateString()!==now.toDateString())return false;
+    }else{
+      const days=Number(period);
+      if(Number.isFinite(days) && d < new Date(now.getTime()-days*86400000))return false;
+    }
+  }
+  return true;
+}
+function filterAdminSalesHistoryPage(){
+  const box=document.getElementById('full-sales-history-list');
+  if(!box)return;
+  const search=(document.getElementById('full-sales-history-search')?.value||'').trim();
+  const period=document.getElementById('full-sales-history-period')?.value||'all';
+  const rows=(adminSalesHistoryData.history||[]).filter(x=>adminSalesHistoryMatches(x,search,period));
+  if(!rows.length){
+    box.innerHTML='<div class="card admin-sales-empty"><div class="empty-icon">—</div><strong>No sales history found</strong><p class="muted">Try a different search or date filter.</p></div>';
+    return;
+  }
+  box.innerHTML=rows.map(renderAdminHistorySaleCard).join('');
+}
+async function adminSalesHistory(){
+  try{
+    const me=await currentUser();
+    if(me.role!=='admin')return location.href='admin-login.html';
+    await window.stationCurrencyReady;
+    const history=await api('/api/sales/history');
+    adminSalesHistoryData={history:Array.isArray(history)?history:[]};
+    const count=document.getElementById('full-sales-history-count');
+    if(count)count.textContent=adminSalesHistoryData.history.length+' confirmed';
+    filterAdminSalesHistoryPage();
+    const status=document.getElementById('full-sales-history-status');
+    if(status)status.textContent='';
+  }catch(e){
+    const status=document.getElementById('full-sales-history-status');
+    if(status)status.textContent=e.message;
+    if(e.message==='Unauthorized')location.href='admin-login.html';
+  }
+}
+function refreshAdminSalesHistory(){
+  const search=document.getElementById('full-sales-history-search');
+  const period=document.getElementById('full-sales-history-period');
+  if(search)search.value='';
+  if(period)period.value='all';
+  return adminSalesHistory();
+}
+
 // Explicit page entry exports for the boot loader.
 window.adminDashboard=adminDashboard;
 window.adminSalesConfirmations=adminSalesConfirmations;
+window.adminSalesHistory=adminSalesHistory;
 window.adminSettings=adminSettings;
 window.userDashboard=userDashboard;
