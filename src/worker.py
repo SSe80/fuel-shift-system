@@ -625,6 +625,10 @@ def update_tank_stock(tank_id):
     if stock < 0:
         return jsonify({"error":"Tank stock cannot be negative"}),400
 
+    remark = str(data.get("remark") or "").strip()
+    if len(remark) > 1000:
+        return jsonify({"error":"Remark is too long"}),400
+
     purchase_id=str(data.get("purchase_id") or "").strip()
     event_index=data.get("event_index")
     try:
@@ -661,6 +665,7 @@ def update_tank_stock(tank_id):
     event["tank_stock_recorded_liters"]=stock
     event["tank_stock_recorded_at"]=now
     event["tank_stock_adjustment_liters"]=delta
+    event["tank_stock_remark"]=remark
     history[event_index]=event
 
     body={"current_liters":stock,"updated_at":now}
