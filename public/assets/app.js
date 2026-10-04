@@ -427,18 +427,17 @@ async function userDashboard(){
       const nozzleReadings=readings.map((x,i)=>
         '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(x.opening_reading ?? x.reading)+'</div><div class="pending-nozzle-code">'+h(x.nozzle_id||n?.nozzle_code||s.nozzle_id)+'</div></div>'
       ).join('');
-      return '<div class="card dashboard-purchase-card pending pending-confirmation-card active-shift-card">'+
-        '<div class="pending-hero active-shift-hero"><div class="pending-hero-icon">✓</div><div><div class="pending-card-title">Active Shift</div><div class="pending-card-subtitle">Your shift is active and ready for fuel sales.</div></div></div>'+
-        '<div class="pending-shift-info active-shift-info">'+
-          '<div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n?.nozzle_code||s.nozzle_id)+'</strong></div></div>'+
-          '<div class="pending-info-divider"></div>'+
-          '<div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank connected</span><strong>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</strong></div></div>'+
-          '<div class="pending-tank-opening active-opening-reading"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank opening liters</span><strong>'+liters(s.opening_tank_liters)+' <small>L</small></strong></div></div>'+
+      return '<div class="card dashboard-purchase-card active active-shift-card">'+
+        '<div class="active-shift-head"><div><span class="section-kicker">ACTIVE SHIFT</span><h3>Shift in Progress</h3><p>Sales are active on this dispenser.</p></div><span class="badge active-shift-badge">Active</span></div>'+
+        '<div class="active-shift-meta">'+
+          '<div><span>Dispenser</span><strong>'+h(n?.nozzle_code||s.nozzle_id)+'</strong></div>'+
+          '<div><span>Tank</span><strong>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</strong></div>'+
+          '<div><span>Tank opening</span><strong>'+liters(s.opening_tank_liters)+' L</strong></div>'+
         '</div>'+
-        '<div class="pending-nozzle-section active-reading-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Shift nozzle readings</div>'+
-          nozzleReadings+
+        '<div class="active-shift-readings"><div class="active-shift-readings-head"><span>Opening readings</span><small>'+readings.length+' nozzle'+(readings.length===1?'':'s')+'</small></div>'+
+          '<div class="active-shift-reading-list">'+nozzleReadings+'</div>'+
         '</div>'+
-        '<div class="row active-shift-actions"><button class="btn active-handover-btn" type="button" onclick="openDashboardHandover(\''+s.id+'\')">Handover</button></div></div>';
+        '<div class="active-shift-actions"><button class="btn active-handover-btn" type="button" onclick="openDashboardHandover(\''+s.id+'\')">Handover</button></div></div>';
     }).join('');
 
     const wrapSection=(kicker,title,content)=>content?'<section class="dashboard-section"><div class="dashboard-section-head"><div><span class="section-kicker">'+kicker+'</span><h2>'+title+'</h2></div></div><div class="dashboard-section-cards">'+content+'</div></section>':'';
