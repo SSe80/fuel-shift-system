@@ -1937,8 +1937,8 @@ def daily_report():
     except ValueError:
         return jsonify({"error":"Invalid date"}),400
 
-    # A daily report is a SHIFT-DAY report. A shift belongs to the day on
-    # which it STARTED, not the day on which it ended.
+    # A report day is defined by SHIFT START DATE in Africa/Addis_Ababa.
+    # A dispenser can have multiple sequential shifts on the same day.
     next_day=(report_day+timedelta(days=1)).isoformat()
     day_start=report_date+"T00:00:00+03:00"
     day_end=next_day+"T00:00:00+03:00"
@@ -1956,13 +1956,18 @@ def daily_report():
 
     sales_status,sales_rows=sb("sales",params={
         "shift_id":shift_id_filter,
-        "select":"id,shift_id,product,quantity_liters,unit_price,amount,payment_method,sale_time,employee_id,sale_type_id,sale_reason",
+        "select":"id,shift_id,product,quantity_liters,unit_price,amount,payment_method,sale_time,employee_id,sale_type_id,sale_reason,nozzle_id",
         "order":"sale_time.asc","limit":"10000"
     })
     handover_status,handover_rows=sb("shift_takeovers",params={
         "shift_id":shift_id_filter,
         "select":"id,shift_id,from_employee_id,to_employee_id,shift_started_at,shift_ended_at,total_sales_liters,total_sales_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_purchases_liters,tank_sales_liters,tank_variance_liters,tank_variance_pct,sales_status,sales_submitted_at,sales_confirmed_at,status",
         "order":"shift_ended_at.asc","limit":"5000"
+    })
+    nozzle_reading_status,nozzle_reading_rows=sb("shift_nozzle_readings",params={
+        "shift_id":shift_id_filter,
+        "select":"shift_id,nozzle_id,opening_reading,closing_reading,opening_liters,closing_liters,opened_at,closed_at",
+        "order":"created_at.asc","limit":"20000"
     })
     purchases_status,purchase_rows=sb("purchases",params={
         "purchase_date":"gte."+day_start,
@@ -1972,9 +1977,14 @@ def daily_report():
     })
     if sales_status!=200:return jsonify({"error":sales_rows}),sales_status
     if handover_status!=200:return jsonify({"error":handover_rows}),handover_status
+    if nozzle_reading_status!=200:return jsonify({"error":nozzle_reading_rows}),nozzle_reading_status
     if purchases_status!=200:return jsonify({"error":purchase_rows}),purchases_status
 
     handover_by_shift={str(x.get("shift_id")):x for x in handover_rows if x.get("shift_id")}
+    readings_by_shift={}
+    for row in nozzle_reading_rows:
+        readings_by_shift.setdefault(str(row.get("shift_id")),[]).append(row)
+
     incomplete_shifts=[]
     unconfirmed_shifts=[]
     for x in day_shifts:
@@ -2005,12 +2015,12 @@ def daily_report():
         if str(x.get("shift_id") or "") not in takeover_shift_ids:
             row["liters"]+=float(x.get("quantity_liters") or 0)
         row["amount"]+=float(x.get("amount") or 0)
-
     tank_ids={str(x.get("tank_id")) for x in handover_rows if x.get("tank_id")}
     tank_map={}
     if tank_ids:
         ts,tr=sb("tanks",params={"id":"in.("+",".join(tank_ids)+")","select":"id,tank_code,product"})
         if ts==200:tank_map={str(x.get("id")):x for x in tr}
+
     for x in handover_rows:
         p=(tank_map.get(str(x.get("tank_id"))) or {}).get("product") or "Unknown"
         row=by_product.setdefault(p,{"liters":0,"amount":0})
@@ -2024,6 +2034,22 @@ def daily_report():
         sale_type=x.get("product") or "Unknown"
         sales_by_type[sale_type]=sales_by_type.get(sale_type,0)+float(x.get("amount") or 0)
 
+    # Resolve dispenser/tank and employee labels once for both the individual
+    # shift cards and the combined-per-dispenser reconciliation.
+    dispenser_ids={str(x.get("nozzle_id")) for x in day_shifts if x.get("nozzle_id")}
+    dispenser_map={}
+    if dispenser_ids:
+        ns,nr=sb("nozzles",params={
+            "id":"in.("+",".join(dispenser_ids)+")",
+            "select":"id,nozzle_code,product,tank_id"
+        })
+        if ns==200:dispenser_map={str(x.get("id")):x for x in nr}
+        dispenser_tank_ids={str(x.get("tank_id")) for x in dispenser_map.values() if x.get("tank_id")}
+        missing_tank_ids=dispenser_tank_ids-set(tank_map)
+        if missing_tank_ids:
+            ts,tr=sb("tanks",params={"id":"in.("+",".join(missing_tank_ids)+")","select":"id,tank_code,product"})
+            if ts==200:tank_map.update({str(x.get("id")):x for x in tr})
+
     employee_ids={str(x.get("employee_id")) for x in sales_rows if x.get("employee_id")}
     employee_ids.update(str(x.get("employee_id")) for x in day_shifts if x.get("employee_id"))
     employee_ids.update(str(x.get("from_employee_id")) for x in handover_rows if x.get("from_employee_id"))
@@ -2034,45 +2060,116 @@ def daily_report():
         if es==200:employee_map={str(x.get("id")):x for x in er}
 
     all_tank_ids={str(x.get("tank_id")) for x in handover_rows+purchase_rows if x.get("tank_id")}
-    if all_tank_ids and not tank_map:
-        ts,tr=sb("tanks",params={"id":"in.("+",".join(all_tank_ids)+")","select":"id,tank_code,product"})
-        if ts==200:tank_map={str(x.get("id")):x for x in tr}
-    elif all_tank_ids:
-        missing=all_tank_ids-set(tank_map)
-        if missing:
-            ts,tr=sb("tanks",params={"id":"in.("+",".join(missing)+")","select":"id,tank_code,product"})
-            if ts==200:tank_map.update({str(x.get("id")):x for x in tr})
+    missing=all_tank_ids-set(tank_map)
+    if missing:
+        ts,tr=sb("tanks",params={"id":"in.("+",".join(missing)+")","select":"id,tank_code,product"})
+        if ts==200:tank_map.update({str(x.get("id")):x for x in tr})
 
+    sales_by_shift={}
+    for row in sales_rows:
+        sales_by_shift.setdefault(str(row.get("shift_id")),[]).append(row)
+
+    # Individual shift results are always listed first. For a handover shift,
+    # the takeover calculation is the authoritative shift sales result.
     shift_summary=[]
     for x in day_shifts:
         sid=str(x.get("id"))
         from_emp=employee_map.get(str(x.get("employee_id"))) or {}
         h=handover_by_shift.get(sid) or {}
-        receiver=employee_map.get(str(h.get("to_employee_id"))) or {}
-        tank=tank_map.get(str(h.get("tank_id"))) or {}
-        direct_l=sum(float(v.get("quantity_liters") or 0) for v in sales_rows if str(v.get("shift_id") or "")==sid and float(v.get("quantity_liters") or 0)>0)
+        dispenser=dispenser_map.get(str(x.get("nozzle_id"))) or {}
+        tank=tank_map.get(str(dispenser.get("tank_id") or h.get("tank_id"))) or {}
+        direct_l=sum(float(v.get("quantity_liters") or 0) for v in sales_by_shift.get(sid,[]) if float(v.get("quantity_liters") or 0)>0)
         shift_l=float(h.get("total_sales_liters") or direct_l)
-        shift_a=float(h.get("total_sales_amount") or sum(float(v.get("amount") or 0) for v in sales_rows if str(v.get("shift_id") or "")==sid))
+        shift_a=float(h.get("total_sales_amount") or sum(float(v.get("amount") or 0) for v in sales_by_shift.get(sid,[])))
+        shift_readings=readings_by_shift.get(sid,[])
         shift_summary.append({
             "shift_id":x.get("id"),
+            "dispenser_id":x.get("nozzle_id"),
+            "dispenser":dispenser.get("nozzle_code") or "—",
             "attendant":from_emp.get("name") or "Unknown",
-            "receiver":receiver.get("name") or "—",
+            "receiver":(employee_map.get(str(h.get("to_employee_id"))) or {}).get("name") or "—",
             "tank":tank.get("tank_code") or "—",
-            "product":tank.get("product") or "Unknown",
+            "tank_id":dispenser.get("tank_id") or h.get("tank_id"),
+            "product":dispenser.get("product") or tank.get("product") or "Unknown",
             "started_at":x.get("start_time"),
             "ended_at":x.get("end_time"),
             "sales_liters":shift_l,
             "sales_amount":shift_a,
             "tank_opening_liters":float(h.get("tank_opening_liters") or x.get("opening_tank_liters") or 0),
-            "tank_closing_liters":float(h.get("tank_closing_liters") or 0),
+            "tank_closing_liters":float(h.get("tank_closing_liters") or x.get("closing_liters") or 0),
             "tank_purchases_liters":float(h.get("tank_purchases_liters") or 0),
-            "tank_sales_liters":float(h.get("tank_sales_liters") or 0),
+            "tank_sales_liters":float(h.get("tank_sales_liters") or shift_l),
             "tank_variance_liters":float(h.get("tank_variance_liters") or 0),
             "tank_variance_pct":float(h.get("tank_variance_pct") or 0),
+            "opening_readings":[
+                {"nozzle_id":r.get("nozzle_id"),"reading":float(r.get("opening_reading") or 0),"liters":float(r.get("opening_liters") or 0)}
+                for r in shift_readings
+            ],
+            "closing_readings":[
+                {"nozzle_id":r.get("nozzle_id"),"reading":float(r.get("closing_reading") or 0),"liters":float(r.get("closing_liters") or 0)}
+                for r in shift_readings
+            ],
             "sales_status":h.get("sales_status") or ("completed" if x.get("end_time") else "in_progress"),
             "sales_submitted_at":h.get("sales_submitted_at"),
             "sales_confirmed_at":h.get("sales_confirmed_at")
         })
+
+    # Combined dispenser/day reconciliation:
+    # first shift = opening boundary; last shift = closing boundary.
+    # Sales are the sum of every individual shift belonging to that dispenser.
+    dispenser_groups={}
+    shift_by_id={str(x.get("id")):x for x in shift_summary}
+    for x in shift_summary:
+        key=str(x.get("dispenser_id") or "")
+        if not key: continue
+        dispenser_groups.setdefault(key,[]).append(x)
+
+    dispenser_summary=[]
+    for dispenser_id,items in dispenser_groups.items():
+        items.sort(key=lambda z:str(z.get("started_at") or ""))
+        first=items[0]
+        last=items[-1]
+        nozzle=dispenser_map.get(dispenser_id) or {}
+        tank_id=nozzle.get("tank_id") or first.get("tank_id") or last.get("tank_id")
+        tank=tank_map.get(str(tank_id)) or {}
+        combined_sales_l=sum(float(z.get("sales_liters") or 0) for z in items)
+        combined_sales_a=sum(float(z.get("sales_amount") or 0) for z in items)
+        first_openings=first.get("opening_readings") or []
+        last_closings=last.get("closing_readings") or []
+        dispenser_summary.append({
+            "dispenser_id":dispenser_id,
+            "dispenser":first.get("dispenser") or "—",
+            "product":first.get("product") or tank.get("product") or "Unknown",
+            "tank_id":tank_id,
+            "tank":tank.get("tank_code") or first.get("tank") or "—",
+            "shift_count":len(items),
+            "first_shift_id":first.get("shift_id"),
+            "first_shift_started_at":first.get("started_at"),
+            "last_shift_id":last.get("shift_id"),
+            "last_shift_started_at":last.get("started_at"),
+            "last_shift_ended_at":last.get("ended_at"),
+            "opening_tank_liters":float(first.get("tank_opening_liters") or 0),
+            "closing_tank_liters":float(last.get("tank_closing_liters") or 0),
+            "tank_change_liters":float(last.get("tank_closing_liters") or 0)-float(first.get("tank_opening_liters") or 0),
+            "sales_liters":combined_sales_l,
+            "sales_amount":combined_sales_a,
+            "opening_readings":first_openings,
+            "closing_readings":last_closings,
+            "shifts":[
+                {
+                    "shift_id":z.get("shift_id"),
+                    "attendant":z.get("attendant"),
+                    "started_at":z.get("started_at"),
+                    "ended_at":z.get("ended_at"),
+                    "sales_liters":z.get("sales_liters"),
+                    "sales_amount":z.get("sales_amount"),
+                    "tank_opening_liters":z.get("tank_opening_liters"),
+                    "tank_closing_liters":z.get("tank_closing_liters")
+                } for z in items
+            ]
+        })
+
+    dispenser_summary.sort(key=lambda z:(str(z.get("dispenser") or ""),str(z.get("first_shift_started_at") or "")))
 
     return jsonify({
         "date":report_date,
@@ -2088,6 +2185,7 @@ def daily_report():
         "purchases":purchase_rows,
         "handovers":handover_rows,
         "shift_summary":shift_summary,
+        "dispenser_summary":dispenser_summary,
         "tanks_by_id":tank_map,
         "summary":{
             "sales_liters":total_l,"sales_amount":total_a,"fuel_sales_amount":fuel_amount,"other_sales_amount":other_amount,
