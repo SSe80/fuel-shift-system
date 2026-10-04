@@ -206,10 +206,17 @@ function closeTakeoverSaleConfirm(){
 function backToTakeoverSaleEntry(){
   const confirm=document.getElementById('takeover-sale-confirm-modal');
   const entry=document.getElementById('takeover-sale-modal');
+  const sales=Array.isArray(window.pendingTakeoverSales)?window.pendingTakeoverSales:[];
+  document.querySelectorAll('#takeover-sale-type-list .takeover-sale-entry').forEach(row=>{
+    const typeId=row.getAttribute('data-sale-type');
+    const sale=sales.find(x=>String(x.sale_type_id)===String(typeId));
+    const input=row.querySelector('.takeover-sale-amount');
+    const reason=row.querySelector('.takeover-sale-reason');
+    if(input)input.value=sale?.amount??'';
+    if(reason)reason.value=sale?.reason||'';
+  });
   if(confirm){confirm.classList.remove('open');confirm.setAttribute('aria-hidden','true');}
   if(entry){entry.classList.add('open');entry.setAttribute('aria-hidden','false');}
-  // Keep the selected takeover and entered sales in memory so the attendant
-  // can edit them without losing the current handover record.
 }
 async function confirmTakeoverSale(){
   const id=window.pendingTakeoverSaleId;
