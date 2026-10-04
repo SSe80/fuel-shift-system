@@ -1987,9 +1987,12 @@ def daily_report():
         row["liters"]+=float(x.get("total_sales_liters") or 0)
 
     payment_methods={}
+    sales_by_type={}
     for x in sales_rows:
         method=x.get("payment_method") or "other"
         payment_methods[method]=payment_methods.get(method,0)+float(x.get("amount") or 0)
+        sale_type=x.get("product") or "Unknown"
+        sales_by_type[sale_type]=sales_by_type.get(sale_type,0)+float(x.get("amount") or 0)
 
     employee_ids={str(x.get("employee_id")) for x in sales_rows if x.get("employee_id")}
     employee_ids.update(str(x.get("from_employee_id")) for x in handover_rows if x.get("from_employee_id"))
@@ -2037,7 +2040,7 @@ def daily_report():
 
     return jsonify({"date":report_date,"sales":sales_rows,"purchases":purchase_rows,"handovers":handover_rows,"shift_summary":shift_summary,"tanks_by_id":tank_map,"summary":{
         "sales_liters":total_l,"sales_amount":total_a,"fuel_sales_amount":fuel_amount,"other_sales_amount":other_amount,
-        "purchases_liters":total_p,"by_product":by_product,"payment_methods":payment_methods,"completed_shifts":len(handover_rows)
+        "purchases_liters":total_p,"by_product":by_product,"payment_methods":payment_methods,"sales_by_type":sales_by_type,"completed_shifts":len(handover_rows)
     }})
 
 @app.post("/api/reports/daily")
