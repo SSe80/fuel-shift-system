@@ -2123,7 +2123,7 @@ async function loadDailyReport(){
     const payments=Object.entries(s.sales_by_type||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([type,amount])=>
       '<div class="daily-list-row"><span>'+h(type)+'</span><b>'+money(amount)+'</b></div>'
     ).join('');
-    document.getElementById('report-payments').innerHTML=payments||'<div class="daily-empty">No recorded sales.</div>';
+    document.getElementById('report-payments').innerHTML=payments||'<div class="daily-empty">No sales methods recorded.</div>';
 
     const purchaseRows=(r.purchases||[]).map(x=>{
       const tank=(x.tank_id&&r.tanks_by_id?.[x.tank_id])||{};
@@ -2168,6 +2168,9 @@ async function loadDailyReport(){
       const shiftLines=(x.shifts||[]).map((z,i)=>
         '<div class="daily-combined-shift"><span>Shift '+(i+1)+' · '+h(z.attendant||'Unknown')+'</span><b>'+liters(z.sales_liters)+' L</b><b>'+money(z.sales_amount)+'</b></div>'
       ).join('');
+      const methodLines=Object.entries(x.sales_by_method||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([method,amount])=>
+        '<div class="daily-combined-method"><span>'+h(method)+'</span><b>'+money(amount)+'</b></div>'
+      ).join('');
       return '<article class="daily-shift-card daily-combined-card">'+
         '<div class="daily-shift-head"><div><b>'+h(x.dispenser||'—')+'</b><span>'+h(codeForProduct(x.product))+' · '+h(x.tank||'—')+' · '+Number(x.shift_count||0)+' shift(s)</span></div><span class="daily-shift-time">'+h(dailyReportTime(x.first_shift_started_at))+' → '+h(dailyReportTime(x.last_shift_ended_at))+'</span></div>'+
         '<div class="daily-shift-grid">'+
@@ -2180,10 +2183,39 @@ async function loadDailyReport(){
         '<div class="daily-combined-shifts">'+
           '<div class="daily-combined-label">Sales by shift</div>'+shiftLines+
         '</div>'+
+        '<div class="daily-combined-methods">'+
+          '<div class="daily-combined-label">Sales by method</div>'+(methodLines||'<div class="daily-empty">No sales method records.</div>')+
+        '</div>'+
         '<div class="daily-shift-foot"><span>Opening → closing tank change: '+liters(x.tank_change_liters)+' L</span><span class="daily-variance '+dailyReportVarianceClass(x.tank_change_liters)+'">Dispenser total: '+liters(x.sales_liters)+' L</span></div>'+
       '</article>';
     }).join('');
     document.getElementById('report-combined').innerHTML=combined||'<div class="daily-empty">No dispenser sales to combine.</div>';
+
+    // 3) Final station-wide total — this is the last level of the report.
+    // It is summed from the already-combined dispenser totals.
+    const station=r.station_summary||{};
+    const stationMethods=Object.entries(station.sales_by_method||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([method,amount])=>
+      '<div class="daily-station-method"><span>'+h(method)+'</span><b>'+money(amount)+'</b></div>'
+    ).join('');
+    const stationDispensers=(station.dispensers||[]).map(x=>
+      '<div class="daily-station-dispenser"><div><b>'+h(x.dispenser||'—')+'</b><small>'+h(codeForProduct(x.product))+' · '+Number(x.shift_count||0)+' shift(s)</small></div><strong>'+liters(x.sales_liters)+' L</strong><strong>'+money(x.sales_amount)+'</strong></div>'
+    ).join('');
+    const stationEl=document.getElementById('report-station-total');
+    if(stationEl)stationEl.innerHTML=
+      '<div class="daily-station-total-grid">'+
+        '<div class="daily-station-total-main"><span>Total fuel sold</span><b>'+liters(station.sales_liters)+' L</b></div>'+
+        '<div><span>Total sales</span><b>'+money(station.sales_amount)+'</b></div>'+
+        '<div><span>Dispensers</span><b>'+Number(station.dispenser_count||0)+'</b></div>'+
+        '<div><span>Shifts</span><b>'+Number(station.shift_count||0)+'</b></div>'+
+      '</div>'+
+      '<div class="daily-station-breakdown">'+
+        '<div class="daily-combined-label">Combined sales by method</div>'+
+        (stationMethods||'<div class="daily-empty">No sales method records.</div>')+
+      '</div>'+
+      '<div class="daily-station-breakdown">'+
+        '<div class="daily-combined-label">Dispenser contribution</div>'+
+        (stationDispensers||'<div class="daily-empty">No dispenser sales.</div>')+
+      '</div>';
 
     status.textContent='';
   }catch(e){
@@ -2195,6 +2227,8 @@ async function loadDailyReport(){
     document.getElementById('report-shifts').innerHTML='';
     const combined=document.getElementById('report-combined');
     if(combined)combined.innerHTML='';
+    const station=document.getElementById('report-station-total');
+    if(station)station.innerHTML='';
   }
 }
 async function saveDailyReport(){
