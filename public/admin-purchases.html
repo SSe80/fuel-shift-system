@@ -70,7 +70,7 @@
  .purchase-pending-card .purchase-compartment-list{grid-template-columns:1fr 1fr}
 }
 </style><style>
-/* Product code + color code header */
+/* Product + color code header */
 .purchase-pending-card .purchase-card-main-row{align-items:center}
 .purchase-pending-card .purchase-product-identity{display:flex;align-items:center;gap:9px;min-width:0}
 .purchase-pending-card .purchase-product-identity strong{font-size:18px;line-height:1.2;font-weight:800;color:#17202a;overflow-wrap:anywhere}
@@ -87,6 +87,46 @@
   .purchase-pending-card .purchase-card-header-right .purchase-pending-status{font-size:9px}
 }
 
+/* Final purchase header: product on top, delivered liters below */
+.purchase-pending-card .purchase-product-identity{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  min-width:0;
+  margin:0;
+}
+.purchase-pending-card .purchase-product-text{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;
+  min-width:0;
+}
+.purchase-pending-card .purchase-product-identity strong{
+  font-size:19px;
+  line-height:1.15;
+  font-weight:800;
+  color:#17202a;
+}
+.purchase-pending-card .purchase-card-delivered{
+  display:block;
+  font-size:20px;
+  line-height:1.1;
+  color:#2563eb;
+  font-weight:800;
+  white-space:nowrap;
+}
+.purchase-pending-card .purchase-card-header-row{
+  align-items:flex-start;
+}
+@media(max-width:560px){
+  .purchase-pending-card .purchase-product-identity strong{
+    font-size:17px;
+  }
+  .purchase-pending-card .purchase-card-delivered{
+    font-size:18px;
+  }
+}
 /* Purchase card header: color + code, delivered below, status opposite */
 .purchase-pending-card .purchase-card-top{
   padding:14px 18px 15px 20px;
@@ -161,7 +201,7 @@
   }
 }
 
-/* Product code first, status underneath */
+/* Product first, status underneath */
 .purchase-pending-card .purchase-card-top{
   display:block;
 }
@@ -486,7 +526,7 @@
     const diffText=difference===0?'Matches ordered quantity':difference>0?'Over delivered by '+purchaseLiters(abs)+' L':'Short delivered by '+purchaseLiters(abs)+' L';
     const rows=inputs.map((input,i)=>'<div class="purchase-review-row"><span>Compartment '+(i+1)+'</span><strong>'+purchaseLiters(parseQuantity(input.value))+' L</strong></div>').join('');
     const selectedProduct=purchaseProducts.find(p=>String(p.name||'').toLowerCase()===String(product||'').toLowerCase()); const productCode=selectedProduct?.code_name||'—';
-    review.innerHTML='<div class="purchase-review-section"><h4>1. Order</h4><div class="purchase-review-row"><span>Product code</span><strong>'+purchaseH(productCode)+'</strong></div><div class="purchase-review-row"><span>Invoice number</span><strong>'+purchaseH(invoice)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div></div>'+
+    review.innerHTML='<div class="purchase-review-section"><h4>1. Order</h4><div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(productCode)+'</strong></div><div class="purchase-review-row"><span>Invoice number</span><strong>'+purchaseH(invoice)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div></div>'+
       '<div class="purchase-review-section"><h4>2. Truck</h4><div class="purchase-review-row"><span>Driver name</span><strong>'+purchaseH(driver)+'</strong></div><div class="purchase-review-row"><span>Driver phone</span><strong>'+purchaseH(phone)+'</strong></div><div class="purchase-review-row"><span>Plate number</span><strong>'+purchaseH(plate)+'</strong></div><div class="purchase-review-row"><span>Compartments</span><strong>'+count+'</strong></div></div>'+
       '<div class="purchase-review-section"><h4>3. Quantity</h4>'+rows+'<div class="purchase-review-row"><span>Delivered quantity</span><strong>'+purchaseLiters(delivered)+' L</strong></div><div class="purchase-review-difference"><span>Difference</span><strong>'+purchaseH(diffText)+'</strong></div></div>';
   }
@@ -504,7 +544,7 @@
     const rows=(items)=>items.map(([label,value])=>'<div class="purchase-detail-row"><span>'+purchaseH(label)+'</span><strong>'+purchaseH(value)+'</strong></div>').join('');
     const compartmentRows=compartments.map((v,i)=>'<div class="purchase-detail-compartment"><span>Compartment '+(i+1)+'</span><b>'+purchaseLiters(v)+' L</b></div>').join('');
     const el=document.getElementById('purchase-detail-content');
-    if(el)el.innerHTML='<section class="purchase-detail-section"><h4>Order</h4>'+rows([['Product code',productCode],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L']])+'</section>'+
+    if(el)el.innerHTML='<section class="purchase-detail-section"><h4>Order</h4>'+rows([['Product',productCode],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L']])+'</section>'+
       '<section class="purchase-detail-section"><h4>Truck & Driver</h4>'+rows([['Driver name',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Compartments',String(p.truck_compartments||'—')],['Tank',tank?.tank_code||'—']])+'</section>'+
       '<section class="purchase-detail-section"><h4>Delivery</h4>'+rows([['Delivered quantity',purchaseLiters(delivered)+' L'],['Difference',difference],['Purchase date',p.purchase_date?new Date(p.purchase_date).toLocaleString():'—'],['Status',p.status||'—'],['Discharged at',p.discharged_at?new Date(p.discharged_at).toLocaleString():'Not discharged']])+
       (compartments.length?'<div class="purchase-detail-compartments"><h5>Compartment quantities</h5>'+compartmentRows+'</div>':'')+'</section>';
@@ -518,7 +558,7 @@
     const delivered=Number(p.quantity_liters||0), ordered=Number(p.ordered_quantity_liters||0), difference=delivered-ordered;
     const differenceText=difference===0?'Matches order':difference>0?'Over by '+purchaseLiters(difference)+' L':'Short by '+purchaseLiters(Math.abs(difference))+' L';
     const button=dischargeMode?'<button type="button" class="primary" onclick="dischargePurchase(this.dataset.id)" data-id="'+purchaseH(p.id)+'">Discharge Purchase</button>':'';
-    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div class="purchase-card-header-row"><div class="purchase-product-identity"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(productCode)+'</strong><b class="purchase-card-delivered">'+purchaseH(purchaseLiters(delivered))+' L</b></div><div class="purchase-pending-status">'+(dischargeMode?'Pending discharge':'Discharged')+'</div></div></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>Delivered <b>'+purchaseH(purchaseLiters(delivered))+' L</b></span><span>Difference <b>'+purchaseH(differenceText)+'</b></span></div><div class="purchase-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button>'+button+'</div></article>';
+    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div class="purchase-card-header-row"><div class="purchase-product-identity"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><div class="purchase-product-text"><strong>'+purchaseH(productCode)+'</strong><b class="purchase-card-delivered">'+purchaseH(purchaseLiters(delivered))+' L</b></div></div><div class="purchase-pending-status">'+(dischargeMode?'Pending discharge':'Discharged')+'</div></div></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>Delivered <b>'+purchaseH(purchaseLiters(delivered))+' L</b></span><span>Difference <b>'+purchaseH(differenceText)+'</b></span></div><div class="purchase-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button>'+button+'</div></article>';
   };
   window.loadPurchases=async function(){
     try{
