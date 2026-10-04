@@ -935,7 +935,7 @@
     const difference=total-ordered===0?'Matches order':total-ordered>0?'Over by '+purchaseLiters(total-ordered)+' L':'Short by '+purchaseLiters(Math.abs(total-ordered))+' L';
     const rows=items=>items.map(([label,value])=>'<div class="purchase-detail-row"><span>'+purchaseH(label)+'</span><strong>'+purchaseH(value)+'</strong></div>').join('');
     const compartmentRows=compartments.map((v,i)=>'<div class="purchase-detail-compartment"><span>Compartment '+(i+1)+' · '+(dischargedIndexes.includes(i+1)?'Discharged':'Undischarged')+'</span><b>'+purchaseLiters(v)+' L</b></div>').join('');
-    const eventRows=history.map((e,i)=>{      const before=Number(e.tank_liters_before), qty=Number(e.discharged_quantity_liters||0);      const recordedRaw=e.tank_stock_recorded_liters;      const recorded=Number(recordedRaw);      const hasBefore=Number.isFinite(before), hasRecorded=Number.isFinite(recorded);      const expectedAfter=hasBefore?before+qty:null;      const diff=hasBefore&&hasRecorded?recorded-expectedAfter:null;      const tolerance=Number.isFinite(qty)?Math.max(5,qty*0.01):5;      const differenceHigh=Number.isFinite(diff)&&Math.abs(diff)>tolerance;      const stockStatus=e.tank_stock_recorded===true?(differenceHigh?'⚠ Difference high':'✓ Stock reconciled'):'⚠ Tank stock not recorded';      const stockClass=e.tank_stock_recorded===true?(differenceHigh?'purchase-detail-stock-alert':'purchase-detail-stock-ok'):'purchase-detail-stock-alert';      return '<div class="purchase-detail-discharge-event"><div class="purchase-detail-event-title"><strong>Discharge '+(i+1)+'</strong><span class="'+stockClass+'">'+stockStatus+'</span></div>'+rows([        ['Date & time',e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—'],        ['Compartments',Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'Compartment '+x).join(', '):'—'],        ['Quantity discharged',purchaseLiters(qty)+' L'],        ['Tank',e.tank_code||'—'],        ['Tank stock before',hasBefore?purchaseLiters(before)+' L':'—'],        ['Expected tank stock after',Number.isFinite(expectedAfter)?purchaseLiters(expectedAfter)+' L':'—'],        ['Tank stock recorded',hasRecorded?purchaseLiters(recorded)+' L':'Not recorded'],        ['Stock difference',Number.isFinite(diff)?(diff>0?'+':'')+purchaseLiters(diff)+' L':'—']      ])+'</div>';    }).join('');
+    const eventRows=history.map((e,i)=>{      const before=Number(e.tank_liters_before), qty=Number(e.discharged_quantity_liters||0);      const recordedRaw=e.tank_stock_recorded_liters;      const recorded=Number(recordedRaw);      const hasBefore=Number.isFinite(before), hasRecorded=Number.isFinite(recorded);      const expectedAfter=hasBefore?before+qty:null;      const diff=hasBefore&&hasRecorded?recorded-expectedAfter:null;      const tolerance=Number.isFinite(qty)?Math.max(5,qty*0.01):5;      const differenceHigh=Number.isFinite(diff)&&Math.abs(diff)>tolerance;      const stockStatus=e.tank_stock_recorded===true?(differenceHigh?'⚠ Difference high':'✓ Stock reconciled'):'⚠ Tank stock not recorded';      const stockClass=e.tank_stock_recorded===true?(differenceHigh?'purchase-detail-stock-alert':'purchase-detail-stock-ok'):'purchase-detail-stock-alert';      return '<div class="purchase-detail-discharge-event"><div class="purchase-detail-event-title"><strong>Discharge '+(i+1)+'</strong><span class="'+stockClass+'">'+stockStatus+'</span></div>'+rows([        ['Date & time',e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—'],        ['Compartments',Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'Compartment '+x).join(', '):'—'],        ['Quantity discharged',purchaseLiters(qty)+' L'],        ['Tank',e.tank_code||'—'],        ['Tank stock before',hasBefore?purchaseLiters(before)+' L':'—'],        ['Expected tank stock after',Number.isFinite(expectedAfter)?purchaseLiters(expectedAfter)+' L':'—'],        ['Tank stock recorded',hasRecorded?purchaseLiters(recorded)+' L':'Not recorded'],        ['Stock difference',Number.isFinite(diff)?(diff>0?'+':'')+purchaseLiters(diff)+' L':'—'],        ['Remark',e.tank_stock_remark?String(e.tank_stock_remark).trim()||'—':'—']      ])+'</div>';    }).join('');
     const el=document.getElementById('purchase-detail-content');
     if(el)el.innerHTML='<section class="purchase-detail-section"><h4>Order</h4>'+rows([['Product',productCode],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L'],['Purchase date & time',p.purchase_date?new Date(p.purchase_date).toLocaleString():'—']])+'</section>'+
       '<section class="purchase-detail-section"><h4>Truck & Driver</h4>'+rows([['Driver name',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Compartments',String(p.truck_compartments||'—')],['Tank',tank?.tank_code||'—']])+'</section>'+
@@ -1186,7 +1186,7 @@
     if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
   };
 
-  let tankStockCarousel={purchaseId:null,events:[],index:0,readings:{},remark:''};
+  let tankStockCarousel={purchaseId:null,events:[],index:0,readings:{},remark:'',remarkSaved:false};
   function getTankStockEvents(purchaseId){
     const p=purchaseDetailData?.find(x=>String(x.id)===String(purchaseId));
     const history=Array.isArray(p?.discharge_history)?p.discharge_history:[];
@@ -1197,7 +1197,8 @@
     const p=purchaseDetailData?.find(x=>String(x.id)===String(tankStockCarousel.purchaseId));
     if(!modal||!track||!p)return;
     tankStockCarousel.events=getTankStockEvents(p.id);
-    if(!tankStockCarousel.events.length){closeTankStockCard();return;}
+    const hasHistory=Array.isArray(p.discharge_history)&&p.discharge_history.length>0;
+    if(!tankStockCarousel.events.length&&!hasHistory){closeTankStockCard();return;}
     const slideCount=tankStockCarousel.events.length+1;
     tankStockCarousel.index=Math.max(0,Math.min(tankStockCarousel.index,slideCount-1));
     const remark=tankStockCarousel.remark||tankStockCarousel.events[tankStockCarousel.events.length-1]?.event?.tank_stock_remark||'';
@@ -1298,7 +1299,8 @@
       item.event.tank_stock_recorded_at=new Date().toISOString();
       const nextIndex=Math.min(pos+1,tankStockCarousel.events.length);
       await loadPurchases();
-      tankStockCarousel.index=nextIndex;
+      tankStockCarousel.events=getTankStockEvents(p.id);
+      tankStockCarousel.index=Math.min(pos,tankStockCarousel.events.length);
       renderTankStockCarousel();
       if(status){
         status.textContent=nextIndex>pos?'Tank stock saved. Next card opened.':'Tank stock saved.';
@@ -1312,29 +1314,42 @@
 
   window.saveTankStock=async function(){
     const modal=document.getElementById('tank-stock-modal'),status=document.getElementById('tank-stock-status'),p=purchaseDetailData?.find(x=>String(x.id)===String(tankStockCarousel.purchaseId));
-    if(!p||!tankStockCarousel.events.length)return;
-    const inputs=Array.from(modal?.querySelectorAll('.tank-stock-reading-slide .tank-stock-slide-input')||[]);
-    if(inputs.length!==tankStockCarousel.events.length)return;
-    const readings=[];
-    for(let i=0;i<tankStockCarousel.events.length;i++){
-      const item=tankStockCarousel.events[i],e=item.event,tankId=String(e.tank_id||''),liters=parseQuantity(inputs[i].value),tank=purchaseDetailTanks?.find(x=>String(x.id)===tankId);
-      if(!tankId||!Number.isFinite(liters)||liters<0){tankStockCarousel.index=i;renderTankStockCarousel();document.querySelector('.tank-stock-reading-slide[data-slide="'+i+'"] .tank-stock-slide-input')?.focus();if(status){status.textContent='Enter the tank closing stock for every discharge.';status.className='purchase-status error';}return;}
-      if(tank?.capacity_liters!=null&&liters>Number(tank.capacity_liters)){tankStockCarousel.index=i;renderTankStockCarousel();document.querySelector('.tank-stock-reading-slide[data-slide="'+i+'"] .tank-stock-slide-input')?.focus();if(status){status.textContent='Tank stock cannot exceed tank capacity.';status.className='purchase-status error';}return;}
-      readings.push({item,tankId,liters});
-    }
+    if(!p)return;
+    const remarkSlide=tankStockCarousel.index===tankStockCarousel.events.length;
     const remark=(modal?.querySelector('#tank-stock-final-remark')?.value||tankStockCarousel.remark||'').trim();
     try{
-      if(status){status.textContent='Saving tank stock…';status.className='purchase-status';}
+      if(status){status.textContent=remarkSlide?'Saving tank stock remark…':'Saving tank stock…';status.className='purchase-status';}
+      if(remarkSlide){
+        const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
+        const last=history[history.length-1];
+        if(!last){throw new Error('No discharge operation is available for this tank stock record.');}
+        const tankId=String(last.tank_id||'');
+        if(!tankId){throw new Error('The discharge tank could not be identified.');}
+        await purchaseApi('/api/tanks/'+encodeURIComponent(tankId)+'/stock',{method:'PATCH',body:JSON.stringify({stock_liters:Number(last.tank_stock_recorded_liters||0),purchase_id:p.id,event_index:history.length-1,remark,remark_only:true})});
+        tankStockCarousel.remark=remark;
+        tankStockCarousel.remarkSaved=true;
+        await loadPurchases();
+        closeTankStockCard();
+        return;
+      }
+      const inputs=Array.from(modal?.querySelectorAll('.tank-stock-reading-slide .tank-stock-slide-input')||[]);
+      if(inputs.length!==tankStockCarousel.events.length)return;
+      const readings=[];
+      for(let i=0;i<tankStockCarousel.events.length;i++){
+        const item=tankStockCarousel.events[i],e=item.event,tankId=String(e.tank_id||''),liters=parseQuantity(inputs[i].value),tank=purchaseDetailTanks?.find(x=>String(x.id)===tankId);
+        if(!tankId||!Number.isFinite(liters)||liters<0){tankStockCarousel.index=i;renderTankStockCarousel();document.querySelector('.tank-stock-reading-slide[data-slide="'+i+'"] .tank-stock-slide-input')?.focus();if(status){status.textContent='Enter the tank closing stock.';status.className='purchase-status error';}return;}
+        if(tank?.capacity_liters!=null&&liters>Number(tank.capacity_liters)){tankStockCarousel.index=i;renderTankStockCarousel();document.querySelector('.tank-stock-reading-slide[data-slide="'+i+'"] .tank-stock-slide-input')?.focus();if(status){status.textContent='Tank stock cannot exceed tank capacity.';status.className='purchase-status error';}return;}
+        readings.push({item,tankId,liters});
+      }
       for(const row of readings)await purchaseApi('/api/tanks/'+encodeURIComponent(row.tankId)+'/stock',{method:'PATCH',body:JSON.stringify({stock_liters:row.liters,purchase_id:p.id,event_index:row.item.index,remark:''})});
-      const last=readings[readings.length-1];
-      await purchaseApi('/api/tanks/'+encodeURIComponent(last.tankId)+'/stock',{method:'PATCH',body:JSON.stringify({stock_liters:last.liters,purchase_id:p.id,event_index:last.item.index,remark,remark_only:true})});
-      await loadPurchases();closeTankStockCard();
+      await loadPurchases();
+      tankStockCarousel.index=0;
+      renderTankStockCarousel();
     }catch(e){
       if(status){status.textContent=e.message||'Failed to save tank stock.';status.className='purchase-status error';}
       openPurchaseFailed(e.message||'Failed to save tank stock.','Tank Stock Failed');
     }
   };
-
   window.closePurchaseSuccess=function(){
     const modal=document.getElementById('purchase-success-modal');
     if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
