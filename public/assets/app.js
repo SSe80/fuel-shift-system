@@ -777,7 +777,7 @@ async function refreshAdminSales(){
   const status=document.getElementById('sales-confirmation-status');if(status)status.textContent='Refreshing sales…';
   await adminSalesConfirmations();
 }
-async function adminSalesConfirmations(){
+async async function adminSalesConfirmations(){
   try{
     const me=await currentUser();if(me.role!=='admin')return location.href='admin-login.html';
     await window.stationCurrencyReady;
