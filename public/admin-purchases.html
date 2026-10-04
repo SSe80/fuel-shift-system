@@ -876,15 +876,25 @@ window.downloadPurchaseDetailPdf=async function(){
     if(button){button.disabled=true;button.textContent='Preparing PDF…';}
     const jsPDF=await window.ensurePurchasePdfEngine();
     const doc=new jsPDF({unit:'mm',format:'a4'});
-    const W=210, M=14, CW=W-M*2;
-    const blue=[37,99,235], dark=[16,24,40], muted=[102,112,133], line=[228,231,236], soft=[248,250,252], green=[2,122,72], red=[217,45,32];
-    let y=16;
+    const W=210,H=297,M=14,CW=W-M*2;
+    const blue=[37,99,235],blueDark=[30,64,175],dark=[16,24,40],muted=[102,112,133],line=[226,232,240],soft=[248,250,252],pale=[239,246,255],green=[2,122,72],red=[217,45,32],white=[255,255,255];
+    let y=14,page=1;
     const text=(s,x,yy,size=10,color=dark,style='normal',options={})=>{doc.setFont('helvetica',style);doc.setFontSize(size);doc.setTextColor(...color);doc.text(String(s??'—'),x,yy,options);};
-    const wrap=(s,x,yy,max,size=10,color=dark,style='normal')=>{doc.setFont('helvetica',style);doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(String(s??'—'),max);doc.text(lines,x,yy);return lines.length*4.4;};
-    const lineSep=yy=>{doc.setDrawColor(...line);doc.line(M,yy,W-M,yy);};
-    const section=(title,yy)=>{doc.setFillColor(...soft);doc.roundedRect(M,yy,CW,8,2,2,'F');text(title,M+4,yy+5.4,11,blue,'bold');return yy+13;};
+    const wrap=(s,x,yy,max,size=10,color=dark,style='normal',lineH=4.3)=>{doc.setFont('helvetica',style);doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(String(s??'—'),max);doc.text(lines,x,yy);return Math.max(1,lines.length)*lineH;};
+    const footer=()=>{doc.setDrawColor(...line);doc.line(M,H-16,W-M,H-16);text('Fuel Shift System · Purchase History',M,H-9,7.5,muted);text('Page '+page,W-M,H-9,7.5,muted,'normal',{align:'right'});};
+    const header=()=>{doc.setFillColor(...blue);doc.rect(0,0,W,8,'F');text('PURCHASE DOCUMENT',M,18,8,blue,'bold');text('Fuel Shift System',W-M,18,8,muted,'normal',{align:'right'});};
+    const addPage=()=>{footer();doc.addPage();page++;y=14;header();};
+    const ensure=(need=12)=>{if(y+need>H-24){addPage();return true;}return false;};
+    const section=(title,yy)=>{ensure(14);doc.setFillColor(...pale);doc.roundedRect(M,yy,CW,8,2,2,'F');text(title.toUpperCase(),M+4,yy+5.4,9,blueDark,'bold');return yy+13;};
     const rows=(items,yy)=>{
-      items.forEach((r,i)=>{if(i)lineSep(yy-2);text(r[0],M+4,yy,9,muted);const v=String(r[1]??'—');const lines=doc.splitTextToSize(v,CW*.55);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...dark);doc.text(lines,W-M-4,yy,{align:'right'});yy+=Math.max(7,lines.length*4.3);});return yy;
+      items.forEach((r,i)=>{
+        const v=String(r[1]??'—'), lines=doc.splitTextToSize(v,CW*.56), h=Math.max(7,lines.length*4.2);
+        if(i&&yy-2>H-24){addPage();yy=section('Purchase Details',y);}
+        if(i) {doc.setDrawColor(...line);doc.line(M+4,yy-2,W-M-4,yy-2);}
+        text(r[0],M+4,yy,8.5,muted);
+        doc.setFont('helvetica','bold');doc.setFontSize(8.8);doc.setTextColor(...dark);doc.text(lines,W-M-4,yy,{align:'right'});
+        yy+=h;
+      });return yy;
     };
     const product=p.product||purchaseDetailTanks?.find(x=>String(x.id)===String(p.tank_id))?.product||'Fuel';
     const invoice=p.invoice_number||'—';
@@ -893,44 +903,75 @@ window.downloadPurchaseDetailPdf=async function(){
     const delivered=compartments.reduce((s,v)=>s+Number(v||0),0);
     const discharged=Number(p.discharged_quantity_liters||0);
     const remaining=Math.max(delivered-discharged,0);
-    const status=String(p.status||'').replaceAll('_',' ');
+    const status=String(p.status||'').replaceAll('_',' ')||'Purchase';
     const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
     const tankIds=[p.tank_id,...history.map(e=>e?.tank_id)].filter(Boolean).map(String);
     const tanks=[...(purchaseDetailTanks||[])].filter((t,i,a)=>tankIds.includes(String(t.id))&&a.findIndex(x=>String(x.id)===String(t.id))===i);
-    doc.setFillColor(...blue);doc.roundedRect(M,y,CW,28,4,4,'F');
-    text('PURCHASE HISTORY',M+6,y+8,9,[230,238,255],'bold');
-    wrap(invoice==='—'?'Purchase — No Invoice':'Invoice #'+invoice,M+6,y+17,CW*.6,17,[255,255,255],'bold');
-    text(purchaseLiters(delivered)+' L',W-M-6,y+17,14,[255,255,255],'bold');text(status||'Purchase',W-M-6,y+23,8,[220,230,255],'normal');
-    y+=35;
-    y=section('Purchase Summary',y);y=rows([['Invoice',invoice],['Purchase ID',p.id||'—'],['Ordered quantity',purchaseLiters(ordered)+' L'],['Delivered quantity',purchaseLiters(delivered)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Remaining quantity',purchaseLiters(remaining)+' L']],y)+5;
-    y=section('Truck & Driver',y);y=rows([['Driver',p.driver_name||'—'],['Phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Truck compartments',p.truck_compartments||compartments.length||'—']],y)+5;
-    y=section('Tanks',y);
-    if(!tanks.length){text('No tank information recorded.',M+4,y,9,muted);y+=8;}
-    else tanks.forEach(t=>{text(t.tank_code||t.name||'Tank',M+4,y,10,dark,'bold');text(t.product||product,W-M-4,y,9,muted,'normal',{align:'right'});y+=6;const shifts=Array.isArray(t.active_shifts)?t.active_shifts:[];if(shifts.length){const names=shifts.map(s=>s.attendant_name||s.attendant||s.name).filter(Boolean).join(', ');y+=wrap('Shift attendants: '+(names||'—'),M+4,y,CW-8,8,muted);}y+=4;});
-    y+=3;
-    if(y>260){doc.addPage();y=16;}
-    y=section('Discharge History',y);
-    if(!history.length){text('No discharge operations recorded.',M+4,y,9,muted);y+=8;}
-    else history.forEach((e,i)=>{
-      if(y>260){doc.addPage();y=16;y=section('Discharge History — continued',y);}
-      doc.setDrawColor(...line);doc.roundedRect(M,y,CW,Math.min(52,48+(e.remark?8:0)),2,2,'S');
-      text('Discharge '+(i+1),M+4,y+7,10,dark,'bold');
-      const stockRecorded=e.tank_stock_recorded===true;
-      const qty=Number(e.discharged_quantity_liters||0), before=Number(e.tank_liters_before), recorded=Number(e.tank_stock_recorded_liters);
-      const expected=Number.isFinite(before)?before+qty:null, diff=Number.isFinite(recorded)&&expected!=null?recorded-expected:null;
-      const tol=Math.max(5,qty*.01);
-      const high=diff!=null&&Math.abs(diff)>tol;
-      const st=stockRecorded?(high?'Difference high':'Stock reconciled'):'Tank stock not recorded';
-      text(st,W-M-4,y+7,8,high||!stockRecorded?red:green,'bold',{align:'right'});
-      let yy=y+14;
-      yy=rows([['Date & time',e.created_at?new Date(e.created_at).toLocaleString():'—'],['Tank',(purchaseDetailTanks||[]).find(t=>String(t.id)===String(e.tank_id))?.tank_code||'—'],['Quantity discharged',purchaseLiters(qty)+' L'],['Tank stock before',Number.isFinite(before)?purchaseLiters(before)+' L':'—'],['Expected after',expected!=null?purchaseLiters(expected)+' L':'—'],['Tank stock recorded',stockRecorded&&Number.isFinite(recorded)?purchaseLiters(recorded)+' L':'Not recorded'],['Stock difference',diff!=null?(diff>0?'+':'')+purchaseLiters(diff)+' L':'—']],yy);
-      y=Math.max(y+50,yy)+5;
+
+    header();
+    doc.setFillColor(...blue);doc.roundedRect(M,y,CW,40,4,4,'F');
+    text('PURCHASE HISTORY',M+6,y+9,8.5,[220,232,255],'bold');
+    wrap(invoice==='—'?'Purchase — No Invoice':'Invoice #'+invoice,M+6,y+20,CW*.62,17,white,'bold',6);
+    text(product,W-M-6,y+10,9,white,'bold',{align:'right'});
+    text(purchaseLiters(delivered)+' L delivered',W-M-6,y+21,11,white,'bold',{align:'right'});
+    text(status.toUpperCase(),W-M-6,y+30,7.5,[220,232,255],'bold',{align:'right'});
+    y+=48;
+
+    y=section('Purchase Summary',y);
+    y=rows([['Invoice',invoice],['Purchase ID',p.id||'—'],['Product',product],['Status',status],['Ordered quantity',purchaseLiters(ordered)+' L'],['Delivered quantity',purchaseLiters(delivered)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Remaining quantity',purchaseLiters(remaining)+' L']],y)+5;
+
+    y=section('Truck & Driver',y);
+    y=rows([['Driver',p.driver_name||'—'],['Phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Truck compartments',p.truck_compartments||compartments.length||'—']],y)+5;
+
+    y=section('Compartment Breakdown',y);
+    if(!compartments.length){text('No compartment quantities recorded.',M+4,y,8.8,muted);y+=9;}
+    else{
+      const colW=CW/2;
+      compartments.forEach((v,i)=>{ensure(12);const x=M+(i%2)*colW, yy=y+((i%2)*0);doc.setFillColor(...soft);doc.roundedRect(x,yy-5,colW-4,10,2,2,'F');text('Compartment '+(i+1),x+4,yy+1,8,muted);text(purchaseLiters(v)+' L',x+colW-8,yy+1,9,dark,'bold',{align:'right'});if(i%2===1)y+=14;});if(compartments.length%2)y+=14;
+    }
+    y+=2;
+
+    y=section('Tank Information',y);
+    if(!tanks.length){text('No tank information recorded.',M+4,y,8.8,muted);y+=9;}
+    else tanks.forEach(t=>{
+      ensure(18);
+      doc.setDrawColor(...line);doc.roundedRect(M,y-4,CW,15,2,2,'S');
+      text(t.tank_code||t.name||'Tank',M+4,y+2,9,dark,'bold');
+      text(t.product||product,W-M-4,y+2,8.5,muted,'normal',{align:'right'});
+      const shifts=Array.isArray(t.active_shifts)?t.active_shifts:[];
+      if(shifts.length)wrap('Active shift: '+shifts.map(s=>s.attendant_name||s.attendant||s.name).filter(Boolean).join(', '),M+4,y+8,CW-8,7.5,muted);
+      y+=18;
     });
-    const remark=[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||String(p.purchase_remark||p.remark||'').trim();
-    if(y>258){doc.addPage();y=16;}
-    y=section('Purchase Remark',y);
-    y+=wrap(remark||'No remark recorded.',M+4,y,CW-8,9,remark?dark:muted)+7;
-    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...muted);doc.text('Generated from Fuel Shift System purchase history',M,289);
+
+    y+=2;
+    y=section('Discharge History',y);
+    if(!history.length){text('No discharge operations recorded.',M+4,y,8.8,muted);y+=10;}
+    else history.forEach((e,i)=>{
+      const remark=String(e?.tank_stock_remark||'').trim();
+      const boxH=remark?67:56;
+      if(y+boxH>H-24){addPage();y=section('Discharge History — Continued',y);}
+      doc.setDrawColor(...line);doc.setFillColor(...white);doc.roundedRect(M,y,CW,boxH,3,3,'FD');
+      text('DISCHARGE '+(i+1),M+5,y+8,9,dark,'bold');
+      const stockRecorded=e.tank_stock_recorded===true;
+      const qty=Number(e.discharged_quantity_liters||0),before=Number(e.tank_liters_before),recorded=Number(e.tank_stock_recorded_liters);
+      const expected=Number.isFinite(before)?before+qty:null,diff=Number.isFinite(recorded)&&expected!=null?recorded-expected:null;
+      const tol=Math.max(5,qty*.01),high=diff!=null&&Math.abs(diff)>tol;
+      const st=stockRecorded?(high?'Difference high':'Stock reconciled'):'Stock not recorded';
+      doc.setFillColor(...(high||!stockRecorded?[254,242,242]:[236,253,245]));doc.roundedRect(W-M-54,y+3,50,9,2,2,'F');
+      text(st,W-M-29,y+9,7.2,high||!stockRecorded?red:green,'bold',{align:'center'});
+      let yy=y+17;
+      const detailRows=[['Date & time',e.created_at?new Date(e.created_at).toLocaleString():'—'],['Tank',(purchaseDetailTanks||[]).find(t=>String(t.id)===String(e.tank_id))?.tank_code||'—'],['Quantity discharged',purchaseLiters(qty)+' L'],['Tank stock before',Number.isFinite(before)?purchaseLiters(before)+' L':'—'],['Expected after',expected!=null?purchaseLiters(expected)+' L':'—'],['Tank stock recorded',stockRecorded&&Number.isFinite(recorded)?purchaseLiters(recorded)+' L':'Not recorded'],['Stock difference',diff!=null?(diff>0?'+':'')+purchaseLiters(diff)+' L':'—']];
+      detailRows.forEach((r,j)=>{if(j){doc.setDrawColor(...line);doc.line(M+5,yy-2,W-M-5,yy-2);}text(r[0],M+5,yy,7.6,muted);text(r[1],W-M-5,yy,8,dark,'bold',{align:'right'});yy+=5.8;});
+      if(remark){doc.setFillColor(...soft);doc.roundedRect(M+5,y+boxH-15,CW-10,10,2,2,'F');text('Remark',M+9,y+boxH-9,7.2,muted,'bold');wrap(remark,M+31,y+boxH-9,CW-40,7.2,dark,'normal',3.5);}
+      y+=boxH+6;
+    });
+
+    const finalRemark=[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||String(p.purchase_remark||p.remark||'').trim();
+    if(finalRemark){
+      ensure(28);y=section('Purchase Remark',y);y+=wrap(finalRemark,M+5,y,CW-10,9,dark,'normal',4.5)+7;
+    }
+    if(y>H-24)addPage();
+    footer();
     const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);
     doc.save('purchase_'+safe+'.pdf');
   }catch(e){
@@ -939,7 +980,7 @@ window.downloadPurchaseDetailPdf=async function(){
     const button=document.querySelector('.purchase-detail-download');
     if(button){button.disabled=false;button.textContent='Download PDF';}
   }
-};
+}
 </script>
 <script src="assets/app.js?v=20261003-25"></script><script>
 (function(){
