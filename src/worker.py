@@ -1357,6 +1357,24 @@ def create_purchase():
     try: ordered=float(data.get("ordered_quantity_liters")) if data.get("ordered_quantity_liters") is not None else None
     except (TypeError,ValueError):return jsonify({"error":"Invalid ordered quantity"}),400
     if not product or not tank_id or qty<=0:return jsonify({"error":"Product, tank and positive quantity are required"}),400
+
+    # A purchase must use an explicitly selected active tank matching the product.
+    # Never silently assign the first tank for a product.
+    tank_status,tank_rows=sb("tanks",params={
+        "select":"id,tank_code,product,product_id,active",
+        "id":"eq."+tank_id,
+        "limit":"1"
+    })
+    if tank_status!=200:
+        return jsonify({"error":"Unable to validate the selected tank"}),tank_status
+    if not tank_rows:
+        return jsonify({"error":"Selected tank was not found"}),404
+    selected_tank=tank_rows[0]
+    if selected_tank.get("active") is False:
+        return jsonify({"error":"Selected tank is inactive"}),409
+    if str(selected_tank.get("product") or "").strip().lower()!=product.lower():
+        return jsonify({"error":"Selected tank does not match the selected product"}),409
+
     compartments=data.get("truck_compartments")
     try: compartments=int(compartments) if compartments is not None else None
     except (TypeError,ValueError):return jsonify({"error":"Invalid truck compartments"}),400
