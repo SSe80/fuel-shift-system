@@ -2486,3 +2486,8 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .admin-history-sale-right{gap:7px}
   .admin-history-sale-right .badge{font-size:11px;padding:4px 7px}
 }
+
+
+/* Sales History — compact main-page preview */
+.sales-history-show-more-wrap{display:flex;justify-content:center;margin:12px 0 2px}
+.sales-history-show-more{min-width:140px;text-align:center}
