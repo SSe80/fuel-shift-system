@@ -45,7 +45,31 @@
 @media(max-width:600px){
   .purchase-wizard-card{width:calc(100% - 20px);max-height:92vh}
 }
-</style><style>.purchase-pending-card{border:1px solid #dbe4f0;background:#fbfdff}.purchase-pending-actions{margin-top:12px;padding-top:10px;border-top:1px solid #edf0f4}.purchase-pending-actions button{width:100%;min-height:40px;border-radius:10px}</style></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
+</style><style>
+/* Discharge Purchase — compact pending delivery card */
+.purchase-pending-card{position:relative;display:grid;gap:0;overflow:hidden;border:1px solid #dce5ee!important;border-radius:14px!important;background:#fff!important;box-shadow:0 2px 8px rgba(16,24,40,.04)}
+.purchase-pending-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#f59e0b}
+.purchase-pending-card .purchase-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px 11px 17px;border-bottom:1px solid #edf1f4;background:#fbfcfe}
+.purchase-pending-card .purchase-card-top strong{font-size:14px;color:#17202a;font-weight:850;overflow-wrap:anywhere}
+.purchase-pending-card .purchase-card-top>b{font-size:15px;color:#2563eb;white-space:nowrap}
+.purchase-pending-card .purchase-card-meta{display:grid!important;grid-template-columns:1fr 1fr;gap:0!important;padding:4px 16px!important}
+.purchase-pending-card .purchase-card-meta>span{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #f0f2f5;font-size:10px!important;color:#8a949e!important;min-width:0}
+.purchase-pending-card .purchase-card-meta>span:nth-last-child(-n+2){border-bottom:0}
+.purchase-pending-card .purchase-card-meta>span b{color:#344054;font-size:11px;overflow-wrap:anywhere;text-align:right}
+.purchase-pending-card .purchase-pending-status{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:999px;background:#fff4d8;color:#8a5a00;font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.03em}
+.purchase-pending-card .purchase-pending-status::before{content:"";width:6px;height:6px;border-radius:50%;background:#f59e0b}
+.purchase-pending-card .purchase-pending-actions{margin:0;padding:10px 14px 13px;border-top:1px solid #edf1f4;background:#fff}
+.purchase-pending-card .purchase-pending-actions button{width:100%;min-height:42px;border-radius:10px;font-size:12px;font-weight:800}
+.purchase-pending-card .purchase-compartment-list{display:grid;grid-template-columns:1fr 1fr;padding:0 16px 8px}
+.purchase-pending-card .purchase-compartment-list>span{padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:10px;color:#8a949e}
+.purchase-pending-card .purchase-compartment-list b{color:#344054;font-size:11px}
+@media(max-width:560px){
+ .purchase-pending-card .purchase-card-meta{grid-template-columns:1fr}
+ .purchase-pending-card .purchase-card-meta>span:nth-last-child(-n+2){border-bottom:1px solid #f0f2f5}
+ .purchase-pending-card .purchase-card-meta>span:last-child{border-bottom:0}
+ .purchase-pending-card .purchase-compartment-list{grid-template-columns:1fr 1fr}
+}
+</style></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseModal()"></div>
 <div class="modal-card purchase-modal-card purchase-wizard-card">
   <div class="top">
@@ -185,8 +209,10 @@
   const renderPurchaseCard=(p,tank,dischargeMode)=>{
     const productName=p.product||tank?.product||'Purchase';
     const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
-    const compartmentText=compartments.length?compartments.map((v,i)=>'<span>Compartment '+(i+1)+': <b>'+purchaseLiters(v)+' L</b></span>').join(''):'';
-    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><strong>'+purchaseH(productName)+'</strong><b>'+purchaseH(purchaseLiters(p.quantity_liters))+' L</b></div><div class="purchase-card-meta"><span>Invoice: <b>'+purchaseH(p.invoice_number||'Not provided')+'</b></span><span>Ordered: <b>'+purchaseH(purchaseLiters(p.ordered_quantity_liters||0))+' L</b></span><span>Delivered: <b>'+purchaseH(purchaseLiters(p.quantity_liters))+' L</b></span><span>Driver: <b>'+purchaseH(p.driver_name||'—')+'</b></span><span>Phone: <b>'+purchaseH(p.driver_phone||'—')+'</b></span><span>Plate: <b>'+purchaseH(p.plate_number||'—')+'</b></span><span>Compartments: <b>'+purchaseH(p.truck_compartments||'—')+'</b></span><span>Tank: <b>'+purchaseH(tank?.tank_code||'—')+'</b></span>'+compartmentText+'<span>'+new Date(p.purchase_date).toLocaleString()+'</span></div>'+(dischargeMode?'<div class="purchase-pending-actions"><button type="button" class="primary" onclick="dischargePurchase(\''+purchaseH(p.id)+'\')">Discharge</button></div>':'')+'</article>';
+    const compartmentText=compartments.length?'<div class="purchase-compartment-list">'+compartments.map((v,i)=>'<span>Compartment '+(i+1)+': <b>'+purchaseLiters(v)+' L</b></span>').join('')+'</div>':'';
+    const difference=(Number(p.quantity_liters||0)-Number(p.ordered_quantity_liters||0));
+    const differenceText=difference===0?'Matches order':difference>0?'Over by '+purchaseLiters(difference)+' L':'Short by '+purchaseLiters(Math.abs(difference))+' L';
+    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div><div class="purchase-pending-status">Pending discharge</div><strong>'+purchaseH(productName)+'</strong></div><b>'+purchaseH(purchaseLiters(p.quantity_liters))+' L</b></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>Ordered <b>'+purchaseH(purchaseLiters(p.ordered_quantity_liters||0))+' L</b></span><span>Delivered <b>'+purchaseH(purchaseLiters(p.quantity_liters))+' L</b></span><span>Difference <b>'+purchaseH(differenceText)+'</b></span><span>Driver <b>'+purchaseH(p.driver_name||'—')+'</b></span><span>Phone <b>'+purchaseH(p.driver_phone||'—')+'</b></span><span>Plate <b>'+purchaseH(p.plate_number||'—')+'</b></span><span>Compartments <b>'+purchaseH(p.truck_compartments||'—')+'</b></span><span>Date <b>'+purchaseH(new Date(p.purchase_date).toLocaleString())+'</b></span></div>'+compartmentText+(dischargeMode?'<div class="purchase-pending-actions"><button type="button" class="primary" onclick="dischargePurchase(\''+purchaseH(p.id)+'\')">Discharge Purchase</button></div>':'')+'</article>';
   };
   window.loadPurchases=async function(){
     try{
