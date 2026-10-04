@@ -1233,9 +1233,21 @@ def discharge_purchase(purchase_id):
         purchase_uuid=str(uuid.UUID(str(purchase_id)))
     except (ValueError,TypeError,AttributeError):
         return jsonify({"error":"Invalid purchase id"}),400
+    data=request.get_json(silent=True) or {}
+    tank_id=str(data.get("tank_id","")).strip()
+    indexes=data.get("compartment_indexes",[])
+    if not tank_id or not isinstance(indexes,list) or not indexes:
+        return jsonify({"error":"Tank and at least one compartment are required"}),400
+    try:
+        tank_uuid=str(uuid.UUID(tank_id))
+        indexes=[int(x) for x in indexes]
+    except (ValueError,TypeError):
+        return jsonify({"error":"Invalid tank or compartment selection"}),400
     status,result=rpc("discharge_fuel_purchase",{
         "p_purchase_id":purchase_uuid,
-        "p_discharged_by":session["employee_id"]
+        "p_discharged_by":session["employee_id"],
+        "p_tank_id":tank_uuid,
+        "p_compartment_indexes":indexes
     })
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),200
