@@ -2026,13 +2026,21 @@ def daily_report():
         row=by_product.setdefault(p,{"liters":0,"amount":0})
         row["liters"]+=float(x.get("total_sales_liters") or 0)
 
+    # Sales methods come from the configured Admin Settings sale types
+    # (for example Card, Cash, Transfer). Keep payment_method as a fallback
+    # for older/direct sales records that have no configured sale type.
+    sale_type_map={}
+    st_status,st_rows=sb("sale_types",params={"select":"id,name","limit":"500"})
+    if st_status==200:
+        sale_type_map={str(x.get("id")):str(x.get("name") or "Other") for x in st_rows}
     payment_methods={}
     sales_by_type={}
     for x in sales_rows:
-        method=x.get("payment_method") or "other"
-        payment_methods[method]=payment_methods.get(method,0)+float(x.get("amount") or 0)
-        sale_type=x.get("product") or "Unknown"
-        sales_by_type[sale_type]=sales_by_type.get(sale_type,0)+float(x.get("amount") or 0)
+        method=sale_type_map.get(str(x.get("sale_type_id") or "")) or str(x.get("payment_method") or "other")
+        amount=float(x.get("amount") or 0)
+        payment_methods[method]=payment_methods.get(method,0)+amount
+        sales_by_type[method]=sales_by_type.get(method,0)+amount
+
 
     # Resolve dispenser/tank and employee labels once for both the individual
     # shift cards and the combined-per-dispenser reconciliation.
@@ -2068,6 +2076,13 @@ def daily_report():
     sales_by_shift={}
     for row in sales_rows:
         sales_by_shift.setdefault(str(row.get("shift_id")),[]).append(row)
+
+    def sales_methods_for_shift(shift_id):
+        methods={}
+        for sale in sales_by_shift.get(str(shift_id),[]):
+            method=sale_type_map.get(str(sale.get("sale_type_id") or "")) or str(sale.get("payment_method") or "other")
+            methods[method]=methods.get(method,0)+float(sale.get("amount") or 0)
+        return methods
 
     # Individual shift results are always listed first. For a handover shift,
     # the takeover calculation is the authoritative shift sales result.
@@ -2111,7 +2126,8 @@ def daily_report():
             ],
             "sales_status":h.get("sales_status") or ("completed" if x.get("end_time") else "in_progress"),
             "sales_submitted_at":h.get("sales_submitted_at"),
-            "sales_confirmed_at":h.get("sales_confirmed_at")
+            "sales_confirmed_at":h.get("sales_confirmed_at"),
+            "sales_by_method":sales_methods_for_shift(sid)
         })
 
     # Combined dispenser/day reconciliation:
@@ -2134,6 +2150,10 @@ def daily_report():
         tank=tank_map.get(str(tank_id)) or {}
         combined_sales_l=sum(float(z.get("sales_liters") or 0) for z in items)
         combined_sales_a=sum(float(z.get("sales_amount") or 0) for z in items)
+        combined_methods={}
+        for z in items:
+            for method,amount in (z.get("sales_by_method") or {}).items():
+                combined_methods[method]=combined_methods.get(method,0)+float(amount or 0)
         first_openings=first.get("opening_readings") or []
         last_closings=last.get("closing_readings") or []
         dispenser_summary.append({
@@ -2153,6 +2173,7 @@ def daily_report():
             "tank_change_liters":float(last.get("tank_closing_liters") or 0)-float(first.get("tank_opening_liters") or 0),
             "sales_liters":combined_sales_l,
             "sales_amount":combined_sales_a,
+            "sales_by_method":combined_methods,
             "opening_readings":first_openings,
             "closing_readings":last_closings,
             "shifts":[
@@ -2171,6 +2192,35 @@ def daily_report():
 
     dispenser_summary.sort(key=lambda z:(str(z.get("dispenser") or ""),str(z.get("first_shift_started_at") or "")))
 
+    # Final station-wide total is built from combined dispenser totals, not raw
+    # sales rows, so multiple shifts are never double-counted.
+    station_methods={}
+    station_l=0
+    station_a=0
+    for dispenser in dispenser_summary:
+        station_l += float(dispenser.get("sales_liters") or 0)
+        station_a += float(dispenser.get("sales_amount") or 0)
+        for method,amount in (dispenser.get("sales_by_method") or {}).items():
+            station_methods[method]=station_methods.get(method,0)+float(amount or 0)
+    station_summary={
+        "dispenser_count":len(dispenser_summary),
+        "shift_count":len(shift_summary),
+        "sales_liters":station_l,
+        "sales_amount":station_a,
+        "sales_by_method":station_methods,
+        "dispensers":[
+            {
+                "dispenser_id":x.get("dispenser_id"),
+                "dispenser":x.get("dispenser"),
+                "product":x.get("product"),
+                "shift_count":x.get("shift_count"),
+                "sales_liters":x.get("sales_liters"),
+                "sales_amount":x.get("sales_amount"),
+                "sales_by_method":x.get("sales_by_method") or {}
+            } for x in dispenser_summary
+        ]
+    }
+
     return jsonify({
         "date":report_date,
         "report_ready":report_ready,
@@ -2186,6 +2236,7 @@ def daily_report():
         "handovers":handover_rows,
         "shift_summary":shift_summary,
         "dispenser_summary":dispenser_summary,
+        "station_summary":station_summary,
         "tanks_by_id":tank_map,
         "summary":{
             "sales_liters":total_l,"sales_amount":total_a,"fuel_sales_amount":fuel_amount,"other_sales_amount":other_amount,
