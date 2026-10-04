@@ -2491,3 +2491,61 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 /* Sales History — compact main-page preview */
 .sales-history-show-more-wrap{display:flex;justify-content:center;margin:12px 0 2px}
 .sales-history-show-more{min-width:140px;text-align:center}
+
+/* Attendant Dashboard — corrected active shift cards */
+.attendant-dashboard-page .active-shift-card{
+  overflow:hidden;
+  border:1px solid #dce5ee!important;
+  border-radius:15px!important;
+  background:#fff!important;
+  box-shadow:0 3px 12px rgba(16,24,40,.05)!important;
+  padding:0!important;
+}
+.attendant-dashboard-page .active-shift-card::before{content:"";display:block;height:3px;background:#12b76a}
+.attendant-dashboard-page .active-shift-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:15px 16px 13px;border-bottom:1px solid #edf1f4;background:#fbfefc;
+}
+.attendant-dashboard-page .active-shift-head h3{margin:2px 0 2px;font-size:16px;color:#17202a}
+.attendant-dashboard-page .active-shift-head p{margin:0;color:#7b8794;font-size:10px}
+.attendant-dashboard-page .active-shift-badge{
+  flex:0 0 auto;padding:5px 9px;border:1px solid #cfead9;border-radius:999px;
+  background:#effaf3;color:#167a45;font-size:9px;font-weight:850;
+}
+.attendant-dashboard-page .active-shift-meta{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:1px;background:#e8edf2;border-bottom:1px solid #edf1f4;
+}
+.attendant-dashboard-page .active-shift-meta>div{min-width:0;padding:12px 13px;background:#fff}
+.attendant-dashboard-page .active-shift-meta span,
+.attendant-dashboard-page .active-shift-readings-head span{
+  display:block;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:#98a2b3;font-weight:800;
+}
+.attendant-dashboard-page .active-shift-meta strong{
+  display:block;margin-top:4px;font-size:13px;color:#344054;overflow-wrap:anywhere;
+}
+.attendant-dashboard-page .active-shift-readings{padding:0 14px}
+.attendant-dashboard-page .active-shift-readings-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 2px 8px;border-bottom:1px solid #edf1f4;
+}
+.attendant-dashboard-page .active-shift-readings-head small{color:#98a2b3;font-size:9px;font-weight:750}
+.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-reading{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:9px 2px;border-bottom:1px solid #f0f2f5;
+}
+.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-reading:last-child{border-bottom:0}
+.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-number{font-size:13px;font-weight:850;color:#17202a}
+.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-code{font-size:10px;color:#7b8794;margin-left:auto}
+.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-top{display:none}
+.attendant-dashboard-page .active-shift-actions{
+  display:flex;justify-content:flex-end;gap:8px;padding:11px 14px 13px;
+  border-top:1px solid #edf1f4;background:#fbfcfe;
+}
+.attendant-dashboard-page .active-handover-btn{min-width:115px}
+@media(max-width:600px){
+ .attendant-dashboard-page .active-shift-meta{grid-template-columns:1fr 1fr}
+ .attendant-dashboard-page .active-shift-meta>div:last-child{grid-column:1/-1}
+ .attendant-dashboard-page .active-shift-head{padding:14px 14px 12px}
+ .attendant-dashboard-page .active-shift-actions{padding:10px 12px 12px}
+}
