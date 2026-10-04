@@ -894,7 +894,7 @@ window.downloadPurchaseDetailPdf=function(){
   try{
     const clean=value=>String(value==null?'':value).replace(/[^ -~]/g,'?');
     const wrap=(value,width)=>{
-      const words=clean(value).split(/\\s+/);
+      const words=clean(value).split(/\s+/);
       const out=[];let line='';
       words.forEach(word=>{
         if(!word)return;
@@ -981,8 +981,8 @@ window.downloadPurchaseDetailPdf=function(){
       const pageId=nextId++,contentId=nextId++;
       kids.push(pageId+' 0 R');
       const textCommands=pageLinesForPage.map((line,index)=>{
-        const escaped=clean(line).replace(/\\/g,'\\\\').replace(/\\(/g,'\\\\(').replace(/\\)/g,'\\\\)');
-        return (index?'0 -15 Td\\n':'')+'('+escaped+') Tj';
+        const escaped=clean(line).replace(/\\/g,'\\\\').replace(/\(/g,'\\\\(').replace(/\)/g,'\\\\)');
+        return (index?'0 -15 Td\n':'')+'('+escaped+') Tj';
       }).join('\\n');
       const stream='BT\n/F1 11 Tf\n50 760 Td\n'+textCommands+'\nET';
       objects.push(
