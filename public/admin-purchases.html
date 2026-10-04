@@ -553,14 +553,6 @@
   </section>
   <section class="purchase-discharge-step" data-discharge-step="2">
     <div id="purchase-discharge-tanks" class="discharge-tanks"></div>
-    <div class="purchase-field discharge-tank-reading-field">
-      <label for="purchase-discharge-tank-liters">Tank liters before discharge</label>
-      <div class="purchase-input-unit">
-        <input id="purchase-discharge-tank-liters" type="text" inputmode="decimal" autocomplete="off" placeholder="Enter tank liters">
-        <span>L</span>
-      </div>
-      <small class="discharge-tank-reading-hint">Enter the tank reading immediately before receiving the selected compartments.</small>
-    </div>
     <div class="purchase-wizard-actions">
       <button type="button" onclick="closePurchaseDischarge()">Cancel</button>
       <button type="button" class="primary" onclick="continueDischargeStep(2)">Continue</button>
@@ -813,13 +805,17 @@
     document.querySelectorAll('#purchase-discharge-tanks .discharge-tank-card').forEach(card=>card.classList.toggle('selected',card.contains(input)));
     purchaseDischargeState.tankId=input.checked?input.value:null;
     const tank=purchaseDischargeState.tanks.find(t=>String(t.id)===String(input.value));
-    const field=document.getElementById('purchase-discharge-tank-liters');
-    if(field){
-      field.value='';
-      field.placeholder=tank ? 'Stock: '+formatQuantity(tank.current_liters)+' L' : 'Enter tank liters';
-      purchaseDischargeState.tankLitersBefore=null;
+    const card=input.closest('.discharge-tank-card');
+    document.querySelectorAll('#purchase-discharge-tanks .discharge-tank-reading-inline').forEach(el=>el.remove());
+    purchaseDischargeState.tankLitersBefore=null;
+    if(tank && card){
+      const box=document.createElement('div');
+      box.className='purchase-field discharge-tank-reading-inline';
+      box.innerHTML='<label for="purchase-discharge-tank-liters">Tank liters before discharge</label><div class="purchase-input-unit"><input id="purchase-discharge-tank-liters" type="text" inputmode="decimal" autocomplete="off" placeholder="Stock: '+formatQuantity(tank.current_liters)+' L"><span>L</span></div><small class="discharge-tank-reading-hint">Enter the tank reading before discharge.</small>';
+      card.insertAdjacentElement('afterend',box);
+      const field=box.querySelector('#purchase-discharge-tank-liters');
+      if(field)field.focus();
     }
-    if(field)field.focus();
   };
 
   function renderDischargeReview(){
@@ -964,6 +960,13 @@
 .discharge-tank-reading-field label{margin-bottom:5px!important;font-size:13px!important;font-weight:700!important;color:#344054!important}
 .discharge-tank-reading-field input{min-height:46px}
 .discharge-tank-reading-hint{display:block;margin-top:6px;font-size:11px;line-height:1.4;color:#667085}
+</style>
+
+<style>
+.discharge-tank-reading-inline{margin:6px 0 10px;padding:10px 12px;border:1px solid #d0d5dd;border-radius:12px;background:#f8fafc}
+.discharge-tank-reading-inline label{display:block;margin-bottom:5px!important;font-size:13px!important;font-weight:700!important;color:#344054!important}
+.discharge-tank-reading-inline input{min-height:44px}
+.discharge-tank-reading-inline .discharge-tank-reading-hint{display:block;margin-top:5px;font-size:11px;line-height:1.35;color:#667085}
 </style>
 </body></html>
 <style>
