@@ -847,9 +847,77 @@
 <div class="modal-card purchase-detail-card">
   <div class="top"><div><span class="section-kicker">PURCHASE DETAILS</span><h3>Purchase Details</h3></div><button type="button" class="modal-close" onclick="closePurchaseDetail()">×</button></div>
   <div id="purchase-detail-content" class="purchase-detail-content"></div>
-  <div class="purchase-detail-actions"><button type="button" onclick="closePurchaseDetail()">Close</button></div>
+  <div class="purchase-detail-actions"><button type="button" class="purchase-detail-download" onclick="downloadPurchaseDetailPdf()">Download PDF</button><button type="button" onclick="closePurchaseDetail()">Close</button></div>
 </div>
-</div><div id="toast" class="toast"></div></main><script src="assets/app.js?v=20261003-25"></script><script>
+</div><div id="toast" class="toast"></div></main><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script>
+window.downloadPurchaseDetailPdf=async function(){
+  const p=purchaseDetailData?.find(x=>String(x.id)===String(window.currentPurchaseDetailId||''));
+  if(!p){openPurchaseFailed('Purchase details are not available.','PDF Download Failed');return;}
+  try{
+    if(!window.jspdf?.jsPDF) throw new Error('PDF engine is still loading. Please try again.');
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({unit:'mm',format:'a4'});
+    const W=210, M=14, CW=W-M*2;
+    const blue=[37,99,235], dark=[16,24,40], muted=[102,112,133], line=[228,231,236], soft=[248,250,252], green=[2,122,72], red=[217,45,32];
+    let y=16;
+    const text=(s,x,yy,size=10,color=dark,style='normal')=>{doc.setFont('helvetica',style);doc.setFontSize(size);doc.setTextColor(...color);doc.text(String(s??'—'),x,yy);};
+    const wrap=(s,x,yy,max,size=10,color=dark,style='normal')=>{doc.setFont('helvetica',style);doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(String(s??'—'),max);doc.text(lines,x,yy);return lines.length*4.4;};
+    const lineSep=yy=>{doc.setDrawColor(...line);doc.line(M,yy,W-M,yy);};
+    const section=(title,yy)=>{doc.setFillColor(...soft);doc.roundedRect(M,yy,CW,8,2,2,'F');text(title,M+4,yy+5.4,11,blue,'bold');return yy+13;};
+    const rows=(items,yy)=>{
+      items.forEach((r,i)=>{if(i)lineSep(yy-2);text(r[0],M+4,yy,9,muted);const v=String(r[1]??'—');const lines=doc.splitTextToSize(v,CW*.55);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...dark);doc.text(lines,W-M-4,yy,{align:'right'});yy+=Math.max(7,lines.length*4.3);});return yy;
+    };
+    const product=p.product||purchaseDetailTanks?.find(x=>String(x.id)===String(p.tank_id))?.product||'Fuel';
+    const invoice=p.invoice_number||'—';
+    const ordered=Number(p.ordered_quantity_liters||0);
+    const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
+    const delivered=compartments.reduce((s,v)=>s+Number(v||0),0);
+    const discharged=Number(p.discharged_quantity_liters||0);
+    const remaining=Math.max(delivered-discharged,0);
+    const status=String(p.status||'').replaceAll('_',' ');
+    const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
+    const tankIds=[p.tank_id,...history.map(e=>e?.tank_id)].filter(Boolean).map(String);
+    const tanks=[...(purchaseDetailTanks||[])].filter((t,i,a)=>tankIds.includes(String(t.id))&&a.findIndex(x=>String(x.id)===String(t.id))===i);
+    doc.setFillColor(...blue);doc.roundedRect(M,y,CW,28,4,4,'F');
+    text('PURCHASE HISTORY',M+6,y+8,9,[230,238,255],'bold');
+    wrap(product,M+6,y+17,CW*.6,17,[255,255,255],'bold');
+    text(purchaseLiters(delivered)+' L',W-M-6,y+17,14,[255,255,255],'bold');text(status||'Purchase',W-M-6,y+23,8,[220,230,255],'normal');
+    y+=35;
+    y=section('Purchase Summary',y);y=rows([['Invoice',invoice],['Ordered quantity',purchaseLiters(ordered)+' L'],['Delivered quantity',purchaseLiters(delivered)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Remaining quantity',purchaseLiters(remaining)+' L']],y)+5;
+    y=section('Truck & Driver',y);y=rows([['Driver',p.driver_name||'—'],['Phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Truck compartments',p.truck_compartments||compartments.length||'—']],y)+5;
+    y=section('Tanks',y);
+    if(!tanks.length){text('No tank information recorded.',M+4,y,9,muted);y+=8;}
+    else tanks.forEach(t=>{text(t.tank_code||t.name||'Tank',M+4,y,10,dark,'bold');text(t.product||product,W-M-4,y,9,muted,'normal',{align:'right'});y+=6;const shifts=Array.isArray(t.active_shifts)?t.active_shifts:[];if(shifts.length){const names=shifts.map(s=>s.attendant_name||s.attendant||s.name).filter(Boolean).join(', ');y+=wrap('Shift attendants: '+(names||'—'),M+4,y,CW-8,8,muted);}y+=4;});
+    y+=3;
+    if(y>260){doc.addPage();y=16;}
+    y=section('Discharge History',y);
+    if(!history.length){text('No discharge operations recorded.',M+4,y,9,muted);y+=8;}
+    else history.forEach((e,i)=>{
+      if(y>260){doc.addPage();y=16;y=section('Discharge History — continued',y);}
+      doc.setDrawColor(...line);doc.roundedRect(M,y,CW,Math.min(52,48+(e.remark?8:0)),2,2,'S');
+      text('Discharge '+(i+1),M+4,y+7,10,dark,'bold');
+      const stockRecorded=e.tank_stock_recorded===true;
+      const qty=Number(e.discharged_quantity_liters||0), before=Number(e.tank_liters_before), recorded=Number(e.tank_stock_recorded_liters);
+      const expected=Number.isFinite(before)?before+qty:null, diff=Number.isFinite(recorded)&&expected!=null?recorded-expected:null;
+      const tol=Math.max(5,qty*.01);
+      const high=diff!=null&&Math.abs(diff)>tol;
+      const st=stockRecorded?(high?'Difference high':'Stock reconciled'):'Tank stock not recorded';
+      text(st,W-M-4,y+7,8,high||!stockRecorded?red:green,'bold',{align:'right'});
+      let yy=y+14;
+      yy=rows([['Date & time',e.created_at?new Date(e.created_at).toLocaleString():'—'],['Tank',(purchaseDetailTanks||[]).find(t=>String(t.id)===String(e.tank_id))?.tank_code||'—'],['Quantity discharged',purchaseLiters(qty)+' L'],['Tank stock before',Number.isFinite(before)?purchaseLiters(before)+' L':'—'],['Expected after',expected!=null?purchaseLiters(expected)+' L':'—'],['Tank stock recorded',stockRecorded&&Number.isFinite(recorded)?purchaseLiters(recorded)+' L':'Not recorded'],['Stock difference',diff!=null?(diff>0?'+':'')+purchaseLiters(diff)+' L':'—']],yy);
+      y=Math.max(y+50,yy)+5;
+    });
+    const remark=String(p.purchase_remark||p.remark||'').trim();
+    if(y>258){doc.addPage();y=16;}
+    y=section('Purchase Remark',y);
+    y+=wrap(remark||'No remark recorded.',M+4,y,CW-8,9,remark?dark:muted)+7;
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...muted);doc.text('Generated from Fuel Shift System purchase history',M,289);
+    const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);
+    doc.save('purchase_'+safe+'.pdf');
+  }catch(e){openPurchaseFailed(e.message||'Unable to create the PDF.','PDF Download Failed');}
+};
+</script>
+<script src="assets/app.js?v=20261003-25"></script><script>
 (function(){
   const productSelect=document.getElementById('purchase-product');
   const orderedQuantityInput=document.getElementById('purchase-ordered-quantity');
@@ -973,7 +1041,7 @@
   const dischargeList=document.getElementById('purchase-discharge-list');
   let purchaseDetailData=null;
   window.closePurchaseDetail=function(){const m=document.getElementById('purchase-detail-modal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}};
-  window.openPurchaseDetail=function(purchaseId){
+  window.openPurchaseDetail=function(purchaseId){\n    window.currentPurchaseDetailId=purchaseId;
     const p=purchaseDetailData?.find(x=>String(x.id)===String(purchaseId)); if(!p)return;
     const tank=purchaseDetailTanks?.find(x=>String(x.id)===String(p.tank_id));
     const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||tank?.product||'').toLowerCase());
