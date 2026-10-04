@@ -1041,7 +1041,8 @@ window.downloadPurchaseDetailPdf=async function(){
   const dischargeList=document.getElementById('purchase-discharge-list');
   let purchaseDetailData=null;
   window.closePurchaseDetail=function(){const m=document.getElementById('purchase-detail-modal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}};
-  window.openPurchaseDetail=function(purchaseId){\n    window.currentPurchaseDetailId=purchaseId;
+  window.openPurchaseDetail=function(purchaseId){
+    window.currentPurchaseDetailId=purchaseId;
     const p=purchaseDetailData?.find(x=>String(x.id)===String(purchaseId)); if(!p)return;
     const tank=purchaseDetailTanks?.find(x=>String(x.id)===String(p.tank_id));
     const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||tank?.product||'').toLowerCase());
