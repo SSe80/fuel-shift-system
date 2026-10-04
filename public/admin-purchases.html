@@ -815,8 +815,9 @@
     const tank=purchaseDischargeState.tanks.find(t=>String(t.id)===String(input.value));
     const field=document.getElementById('purchase-discharge-tank-liters');
     if(field){
-      field.value=tank?formatQuantity(tank.current_liters):'';
-      purchaseDischargeState.tankLitersBefore=tank?Number(tank.current_liters||0):null;
+      field.value='';
+      field.placeholder=tank ? 'Stock: '+formatQuantity(tank.current_liters)+' L' : 'Enter tank liters';
+      purchaseDischargeState.tankLitersBefore=null;
     }
     if(field)field.focus();
   };
