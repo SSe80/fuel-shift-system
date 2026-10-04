@@ -1188,17 +1188,20 @@
     if(!modal||!track||!p)return;
     tankStockCarousel.events=getTankStockEvents(p.id);
     if(!tankStockCarousel.events.length){closeTankStockCard();return;}
-    tankStockCarousel.index=Math.max(0,Math.min(tankStockCarousel.index,tankStockCarousel.events.length-1));
+    const slideCount=tankStockCarousel.events.length*2;
+    tankStockCarousel.index=Math.max(0,Math.min(tankStockCarousel.index,slideCount-1));
+    const eventPosition=Math.floor(tankStockCarousel.index/2);
     track.innerHTML=tankStockCarousel.events.map((item,pos)=>{
       const e=item.event,tank=purchaseDetailTanks?.find(t=>String(t.id)===String(e.tank_id));
       const remark=e.tank_stock_remark||'';
       const before=Number(e.tank_liters_before||0),discharged=Number(e.discharged_quantity_liters||0),expected=Number(e.tank_liters_after||before+discharged);
       const compartments=Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'C'+x).join(', '):'—';
-      return '<section class="tank-stock-slide" data-slide="'+pos+'"><div class="tank-stock-slide-head"><div><span class="section-kicker">DISCHARGE '+(item.index+1)+'</span><h4>'+purchaseH(e.tank_code||tank?.tank_code||'Tank')+'</h4></div><span class="tank-stock-operation-badge">STOCK REQUIRED</span></div><div class="tank-stock-operation-meta"><div><span>Date & time</span><strong>'+purchaseH(e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—')+'</strong></div><div><span>Compartments</span><strong>'+purchaseH(compartments)+'</strong></div></div><div class="tank-stock-ledger"><div><span>Tank opening</span><strong>'+purchaseH(purchaseLiters(before))+' L</strong></div><div><span>Discharged</span><strong>'+purchaseH(purchaseLiters(discharged))+' L</strong></div><div><span>Expected closing</span><strong>'+purchaseH(purchaseLiters(expected))+' L</strong></div></div><div class="tank-stock-field"><label>Tank closing stock</label><div class="purchase-input-unit"><input class="tank-stock-slide-input" inputmode="decimal" placeholder="Enter tank liters"><span>L</span></div><small>Enter the physical tank reading after this discharge operation.</small></div><div class="tank-stock-remark-card"><label>Remark <span>Optional</span></label><textarea class="tank-stock-remark-input" rows="4" maxlength="1000" placeholder="Write a remark about this tank stock reading...">'+purchaseH(remark)+'</textarea></div><div class="tank-stock-slide-actions"><button type="button" class="primary" onclick="saveTankStock()">Save Tank Stock</button></div></section>';
+      return '<section class="tank-stock-slide tank-stock-reading-slide" data-slide="'+(pos*2)+'"><div class="tank-stock-slide-head"><div><span class="section-kicker">DISCHARGE '+(item.index+1)+'</span><h4>'+purchaseH(e.tank_code||tank?.tank_code||'Tank')+'</h4></div><span class="tank-stock-operation-badge">TANK STOCK</span></div><div class="tank-stock-operation-meta"><div><span>Date & time</span><strong>'+purchaseH(e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—')+'</strong></div><div><span>Compartments</span><strong>'+purchaseH(compartments)+'</strong></div></div><div class="tank-stock-ledger"><div><span>Tank opening</span><strong>'+purchaseH(purchaseLiters(before))+' L</strong></div><div><span>Discharged</span><strong>'+purchaseH(purchaseLiters(discharged))+' L</strong></div><div><span>Expected closing</span><strong>'+purchaseH(purchaseLiters(expected))+' L</strong></div></div><div class="tank-stock-field"><label>Tank closing stock</label><div class="purchase-input-unit"><input class="tank-stock-slide-input" inputmode="decimal" placeholder="Enter tank liters"><span>L</span></div><small>Enter the physical tank reading after this discharge operation.</small></div><div class="tank-stock-slide-actions"><button type="button" class="primary" onclick="goTankStockSlide('+((pos*2)+1)+')">Next: Remark</button></div></section>'+
+      '<section class="tank-stock-slide tank-stock-remark-slide" data-slide="'+((pos*2)+1)+'"><div class="tank-stock-slide-head"><div><span class="section-kicker">DISCHARGE '+(item.index+1)+'</span><h4>Remark</h4></div><span class="tank-stock-operation-badge">OPTIONAL</span></div><div class="tank-stock-remark-card"><label>Remark <span>Optional</span></label><textarea class="tank-stock-remark-input" rows="7" maxlength="1000" placeholder="Write a remark about this tank stock reading...">'+purchaseH(remark)+'</textarea></div><div class="tank-stock-slide-actions"><button type="button" class="primary" onclick="saveTankStock()">Save Tank Stock</button></div></section>';
     }).join('');
-    dots.innerHTML=tankStockCarousel.events.map((_,i)=>'<button type="button" class="tank-stock-dot '+(i===tankStockCarousel.index?'active':'')+'" onclick="goTankStockSlide('+i+')" aria-label="Discharge '+(i+1)+'"></button>').join('');
-    counter.textContent=(tankStockCarousel.index+1)+' / '+tankStockCarousel.events.length;
-    prev.disabled=tankStockCarousel.index===0; next.disabled=tankStockCarousel.index===tankStockCarousel.events.length-1;
+    dots.innerHTML=Array.from({length:slideCount},(_,i)=>'<button type="button" class="tank-stock-dot '+(i===tankStockCarousel.index?'active':'')+'" onclick="goTankStockSlide('+i+')" aria-label="Tank stock slide '+(i+1)+'"></button>').join('');
+    counter.textContent=(eventPosition+1)+' / '+tankStockCarousel.events.length+' • '+(tankStockCarousel.index%2===0?'Tank Stock':'Remark');
+    prev.disabled=tankStockCarousel.index===0; next.disabled=tankStockCarousel.index===slideCount-1;
     track.style.transform='translateX(-'+(tankStockCarousel.index*100)+'%)';
   }
   let tankStockSwipe={active:false,pointerId:null,startX:0,startY:0,deltaX:0};
@@ -1264,9 +1267,9 @@
   };
   window.closeTankStockCard=function(){const modal=document.getElementById('tank-stock-modal');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}tankStockCarousel={purchaseId:null,events:[],index:0};};
   window.saveTankStock=async function(){
-    const activeEvent=tankStockCarousel.events[tankStockCarousel.index],modal=document.getElementById('tank-stock-modal'),input=modal?.querySelector('.tank-stock-slide[data-slide="'+tankStockCarousel.index+'"] .tank-stock-slide-input'),status=document.getElementById('tank-stock-status'),p=purchaseDetailData?.find(x=>String(x.id)===String(tankStockCarousel.purchaseId));
-    if(!p||!activeEvent||!input)return;
-    const e=activeEvent.event,tankId=String(e.tank_id||''),liters=parseQuantity(input.value),remark=(modal?.querySelector('.tank-stock-slide[data-slide="'+tankStockCarousel.index+'"] .tank-stock-remark-input')?.value||'').trim(),tank=purchaseDetailTanks?.find(x=>String(x.id)===tankId);
+    const eventPosition=Math.floor(tankStockCarousel.index/2),activeEvent=tankStockCarousel.events[eventPosition],modal=document.getElementById('tank-stock-modal'),stockInput=modal?.querySelector('.tank-stock-reading-slide[data-slide="'+(eventPosition*2)+'"] .tank-stock-slide-input'),remarkInput=modal?.querySelector('.tank-stock-remark-slide[data-slide="'+(eventPosition*2+1)+'"] .tank-stock-remark-input'),status=document.getElementById('tank-stock-status'),p=purchaseDetailData?.find(x=>String(x.id)===String(tankStockCarousel.purchaseId));
+    if(!p||!activeEvent||!stockInput)return;
+    const e=activeEvent.event,tankId=String(e.tank_id||''),liters=parseQuantity(stockInput.value),remark=(remarkInput?.value||'').trim(),tank=purchaseDetailTanks?.find(x=>String(x.id)===tankId);
     if(!tankId||!Number.isFinite(liters)||liters<0){if(status){status.textContent='Enter the tank closing stock.';status.className='purchase-status error';}return;}
     if(tank?.capacity_liters!=null&&liters>Number(tank.capacity_liters)){if(status){status.textContent='Tank stock cannot exceed tank capacity.';status.className='purchase-status error';}return;}
     try{
@@ -1278,7 +1281,7 @@
       if(!remainingEvents.length){closeTankStockCard();return;}
       tankStockCarousel.events=remainingEvents;
       const nextPosition=remainingEvents.findIndex(x=>x.index>savedIndex);
-      tankStockCarousel.index=nextPosition>=0?nextPosition:Math.min(tankStockCarousel.index,remainingEvents.length-1);
+      tankStockCarousel.index=nextPosition>=0?nextPosition*2:Math.min(eventPosition*2,remainingEvents.length*2-1);
       renderTankStockCarousel();
       const refreshedStatus=document.getElementById('tank-stock-status');
       if(refreshedStatus){refreshedStatus.textContent='Tank stock saved. Remaining discharge operations are shown.';refreshedStatus.className='purchase-status success';}
