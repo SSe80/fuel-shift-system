@@ -1067,8 +1067,18 @@ window.downloadPurchaseDetailPdf=async function(){
       const recordedOk=e.tank_stock_recorded===true&&!differenceHigh;
       const stockStatus=e.tank_stock_recorded===true?(differenceHigh?'Difference high':'Stock reconciled'):'Tank stock not recorded';
       const stockClass=recordedOk?'purchase-detail-stock-ok':'purchase-detail-stock-alert';
-      return '<article class="purchase-detail-discharge-event"><div class="purchase-detail-event-title"><div><span class="purchase-detail-event-number">DISCHARGE '+(i+1)+'</span><strong>'+purchaseH(e.tank_code||'Tank')+'</strong></div><span class="'+stockClass+'">'+(recordedOk?'✓ ':'⚠ ')+stockStatus+'</span></div><div class="purchase-detail-event-grid">'+
+      const tankId=String(e.tank_id||'');
+      const tankRecord=purchaseDetailTanks?.find(t=>String(t.id)===tankId);
+      const direct=Array.isArray(tankRecord?.active_shifts)?tankRecord.active_shifts:[];
+      const matching=direct.length?direct:purchaseShifts.filter(s=>Array.isArray(s.nozzle_readings)&&s.nozzle_readings.some(n=>String(n.tank_id)===tankId));
+      const attendants=[...new Map(matching.map(s=>{
+        const name=s.employee_name||purchaseEmployees.find(emp=>String(emp.id)===String(s.employee_id))?.name||'Assigned attendant';
+        return [String(s.employee_id||name),name];
+      })).values()];
+      const attendantText=attendants.length?attendants.join(', '):'No shift attendant recorded';
+      return '<article class="purchase-detail-discharge-event"><div class="purchase-detail-event-title"><div><span class="purchase-detail-event-number">DISCHARGE '+(i+1)+'</span><strong>'+purchaseH(e.tank_code||tankRecord?.tank_code||'Tank')+'</strong></div><span class="'+stockClass+'">'+(recordedOk?'✓ ':'⚠ ')+stockStatus+'</span></div><div class="purchase-detail-event-grid">'+
         '<div><span>Date & time</span><strong>'+purchaseH(e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—')+'</strong></div>'+
+        '<div><span>Shift attendant(s)</span><strong>'+purchaseH(attendantText)+'</strong></div>'+
         '<div><span>Compartments</span><strong>'+purchaseH(Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'C'+x).join(', '):'—')+'</strong></div>'+
         '<div><span>Quantity discharged</span><strong>'+purchaseH(purchaseLiters(qty))+' L</strong></div>'+
         '<div><span>Tank stock before</span><strong>'+purchaseH(hasBefore?purchaseLiters(before)+' L':'—')+'</strong></div>'+
@@ -1085,12 +1095,7 @@ window.downloadPurchaseDetailPdf=async function(){
     addTankEntry(tank?.id,tank?.tank_code);
     history.forEach(e=>addTankEntry(e?.tank_id,e?.tank_code));
     const tankSections=tankEntries.map(entry=>{
-      const tankRecord=purchaseDetailTanks?.find(t=>String(t.id)===String(entry.tankId));
-      const direct=Array.isArray(tankRecord?.active_shifts)?tankRecord.active_shifts:[];
-      const matching=direct.length?direct:purchaseShifts.filter(s=>String(s.status||'').toLowerCase()==='active'&&Array.isArray(s.nozzle_readings)&&s.nozzle_readings.some(n=>String(n.tank_id)===String(entry.tankId)));
-      const attendants=[...new Map(matching.map(s=>{const name=s.employee_name||purchaseEmployees.find(e=>String(e.id)===String(s.employee_id))?.name||'Assigned attendant';return [String(s.employee_id||name),name];})).values()];
-      const attendantText=attendants.length?attendants.join(', '):'No active shift attendant';
-      return '<article class="purchase-detail-tank-card"><div class="purchase-detail-tank-head"><div><span class="purchase-detail-tank-dot" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(entry.tankCode)+'</strong></div><span>Tank</span></div>'+rows([['Shift attendants',attendantText]])+'</article>';
+      return '<article class="purchase-detail-tank-card"><div class="purchase-detail-tank-head"><div><span class="purchase-detail-tank-dot" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(entry.tankCode)+'</strong></div><span>Tank</span></div><div class="purchase-detail-row"><span>Discharge operations</span><strong>'+history.filter(e=>String(e?.tank_id||'')===String(entry.tankId)).length+'</strong></div></article>';
     }).join('');
     const purchaseRemark=[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||'';
     const el=document.getElementById('purchase-detail-content');
