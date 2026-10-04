@@ -41,7 +41,7 @@
 .purchase-input-unit span{min-height:46px;display:flex;align-items:center;padding:0 13px;border:1px solid #d0d5dd;border-left:0;border-radius:0 11px 11px 0;background:#f8fafc;color:#667085;font-size:13px;font-weight:600}
 .purchase-wizard-actions{margin-top:24px;padding-top:16px;border-top:1px solid #edf0f4}
 .purchase-wizard-actions button{min-height:43px}
-.purchase-review{margin-top:2px}.purchase-review-section{border:1px solid #e4e7ec;border-radius:12px;padding:10px 12px;margin-bottom:10px}.purchase-review-section h4{margin:0 0 4px;font-size:15px;color:#2563eb}.purchase-review-section .purchase-review-row{padding:9px 0}.purchase-review-difference{display:flex;justify-content:space-between;gap:12px;margin-top:10px;padding:11px 12px;border-radius:10px;background:#f8fafc;font-size:13px}
+.purchase-review{margin-top:2px}.purchase-review-section{border:1px solid #e4e7ec;border-radius:12px;padding:10px 12px;margin-bottom:10px}.purchase-review-section h4{margin:0 0 4px;font-size:15px;color:#2563eb}.purchase-review-section .purchase-review-row{padding:9px 0}.purchase-review-difference{display:flex;justify-content:space-between;gap:12px;margin-top:10px;padding:11px 12px;border-radius:10px;background:#f8fafc;font-size:13px}.purchase-review-difference.mismatch{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}.purchase-review-difference.match{background:#ecfdf3;border:1px solid #bbf7d0;color:#166534}.purchase-review-ack{display:flex;align-items:flex-start;gap:10px;margin-top:10px;padding:11px 12px;border:1px solid #fed7aa;border-radius:10px;background:#fffbeb;color:#7c2d12;font-size:12px;line-height:1.45}.purchase-review-ack input{width:18px;height:18px;min-height:18px;flex:0 0 18px;margin:1px 0 0;accent-color:#2563eb}.purchase-wizard-actions button:disabled{opacity:.45;cursor:not-allowed;filter:grayscale(.25)}
 @media(max-width:600px){
   .purchase-wizard-card{width:calc(100% - 20px);max-height:92vh}
 }
@@ -1109,12 +1109,24 @@ window.downloadPurchaseDetailPdf=function(){
     const delivered=inputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
     const difference=delivered-ordered;
     const abs=Math.abs(difference);
-    const diffText=difference===0?'Matches ordered quantity':difference>0?'Over delivered by '+purchaseLiters(abs)+' L':'Short delivered by '+purchaseLiters(abs)+' L';
+    const matches= Math.abs(difference) < 0.000001;
+    const diffText=matches?'Matches ordered quantity':difference>0?'Over delivered by '+purchaseLiters(abs)+' L':'Short delivered by '+purchaseLiters(abs)+' L';
     const rows=inputs.map((input,i)=>'<div class="purchase-review-row"><span>Compartment '+(i+1)+'</span><strong>'+purchaseLiters(parseQuantity(input.value))+' L</strong></div>').join('');
     const selectedProduct=purchaseProducts.find(p=>String(p.name||'').toLowerCase()===String(productValue||'').toLowerCase()); const productCode=selectedProduct?.code_name||product||'—';
     review.innerHTML='<div class="purchase-review-section"><h4>1. Order</h4><div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(productCode)+'</strong></div><div class="purchase-review-row"><span>Planned destination tank</span><strong>'+purchaseH(tank)+'</strong></div><div class="purchase-review-row"><span>Invoice number</span><strong>'+purchaseH(invoice)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div></div>'+
       '<div class="purchase-review-section"><h4>2. Truck</h4><div class="purchase-review-row"><span>Driver name</span><strong>'+purchaseH(driver)+'</strong></div><div class="purchase-review-row"><span>Driver phone</span><strong>'+purchaseH(phone)+'</strong></div><div class="purchase-review-row"><span>Plate number</span><strong>'+purchaseH(plate)+'</strong></div><div class="purchase-review-row"><span>Compartments</span><strong>'+count+'</strong></div></div>'+
-      '<div class="purchase-review-section"><h4>3. Quantity</h4>'+rows+'<div class="purchase-review-row"><span>Delivered quantity</span><strong>'+purchaseLiters(delivered)+' L</strong></div><div class="purchase-review-difference"><span>Difference</span><strong>'+purchaseH(diffText)+'</strong></div></div>';
+      '<div class="purchase-review-section"><h4>3. Quantity</h4>'+rows+'<div class="purchase-review-row"><span>Delivered quantity</span><strong>'+purchaseLiters(delivered)+' L</strong></div><div class="purchase-review-difference '+(matches?'match':'mismatch')+'"><span>Difference</span><strong>'+purchaseH(diffText)+'</strong></div>'+(matches?'':'<label class="purchase-review-ack"><input type="checkbox" id="purchase-quantity-mismatch-ack" onchange="updatePurchaseMismatchAcknowledgement()"> <span>I have reviewed the ordered quantity versus delivered quantity and acknowledge that they are different.</span></label>')+'</div>';
+    const confirmButton=document.querySelector('#purchase-wizard-modal .purchase-wizard-actions button[onclick="performCreatePurchase()"]');
+    if(confirmButton){confirmButton.disabled=!matches;}
+  }
+  window.updatePurchaseMismatchAcknowledgement=function(){
+    const ordered=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
+    const inputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
+    const delivered=inputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
+    const matches=Math.abs(delivered-ordered)<0.000001;
+    const acknowledged=!!document.getElementById('purchase-quantity-mismatch-ack')?.checked;
+    const confirmButton=document.querySelector('#purchase-wizard-modal .purchase-wizard-actions button[onclick="performCreatePurchase()"]');
+    if(confirmButton)confirmButton.disabled=!matches&&!acknowledged;
   }
   const dischargeList=document.getElementById('purchase-discharge-list');
   let purchaseDetailData=null;
@@ -1679,6 +1691,9 @@ window.downloadPurchaseDetailPdf=function(){
     const driverPhone=document.getElementById('purchase-driver-phone')?.value.trim()||'';
     const plateNumber=document.getElementById('purchase-plate-number')?.value.trim()||'';
     const compartments=Number(document.getElementById('purchase-truck-compartments')?.value||0);
+    const quantityMismatch=Math.abs(q-orderedQuantity)>=0.000001;
+    const mismatchAcknowledged=!!document.getElementById('purchase-quantity-mismatch-ack')?.checked;
+    if(quantityMismatch&&!mismatchAcknowledged){setStatus('Please acknowledge the ordered versus delivered quantity difference before confirming.',true);return;}
     if(!product||!tankId||!invoice||!Number.isFinite(orderedQuantity)||orderedQuantity<=0||!compartments||compartmentInputs.length!==compartments||!Number.isFinite(q)||q<=0){setStatus('Purchase details are incomplete. Select a destination tank.',true);return;}
     const tankRecord=purchaseTanks.find(t=>String(t.id)===String(tankId)&&t.active!==false&&String(t.product||'').toLowerCase()===String(product).toLowerCase());
     if(!tankRecord){setStatus('The selected destination tank is unavailable or does not match the product.',true);return;}
