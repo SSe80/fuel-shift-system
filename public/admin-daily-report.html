@@ -33,8 +33,13 @@
   </section>
 
   <section class="daily-section">
-    <div class="daily-section-head"><div><span class="daily-kicker">SHIFT RECONCILIATION</span><h2>Completed shifts</h2></div></div>
+    <div class="daily-section-head"><div><span class="daily-kicker">INDIVIDUAL SHIFTS</span><h2>Shift-by-shift sales</h2><p class="muted">Every shift that started on this date is listed separately, including multiple shifts on the same dispenser.</p></div></div>
     <div id="report-shifts" class="daily-shift-list"></div>
+  </section>
+
+  <section class="daily-section">
+    <div class="daily-section-head"><div><span class="daily-kicker">COMBINED DISPENSER REPORT</span><h2>Dispenser totals</h2><p class="muted">For each dispenser, the first shift supplies the opening meter and tank stock; the last shift supplies the closing meter and tank stock. All shifts in between are combined.</p></div></div>
+    <div id="report-combined" class="daily-shift-list"></div>
   </section>
 
   <div id="toast" class="toast"></div>
