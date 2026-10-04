@@ -927,10 +927,10 @@ window.downloadPurchaseDetailPdf=async function(){
     doc.setFillColor(...navy);doc.roundedRect(M,y,CW,42,4,4,'F');
     text('PURCHASE HISTORY',M+7,y+9,7.5,[180,195,220],'bold');
     wrap(invoice==='—'?'Purchase — No Invoice':'Invoice #'+invoice,M+7,y+21,CW*.62,18,white,'bold',6.2);
-    text(product,W-M-7,y+10,9,white,'bold','normal',{align:'right'});
+    text(product,W-M-7,y+10,9,white,'bold',{align:'right'});
     doc.setFillColor(...blue);doc.roundedRect(W-M-62,y+16,55,10,3,3,'F');
-    text(status.toUpperCase(),W-M-34.5,y+22.5,7.2,white,'bold','normal',{align:'center'});
-    text('Delivered '+purchaseLiters(delivered)+' L',W-M-7,y+34,8.5,[210,220,238],'normal','normal',{align:'right'});
+    text(status.toUpperCase(),W-M-34.5,y+22.5,7.2,white,'bold',{align:'center'});
+    text('Delivered '+purchaseLiters(delivered)+' L',W-M-7,y+34,8.5,[210,220,238],'normal',{align:'right'});
     y+=50;
 
     y=section('Purchase overview',y);
@@ -940,7 +940,7 @@ window.downloadPurchaseDetailPdf=async function(){
     }); y+=27;
     y=section('Purchase details',y);
     const detailRows=[['Invoice',invoice],['Purchase ID',p.id||'—'],['Product',product],['Status',status],['Order date',p.created_at?new Date(p.created_at).toLocaleString():'—']];
-    detailRows.forEach((r,i)=>{ensure(10);if(i){doc.setDrawColor(...line);doc.line(M+4,y-2,W-M-4,y-2);}text(r[0],M+4,y,8,muted);text(r[1],W-M-4,y,8.5,navy,'bold','normal',{align:'right'});y+=7;}); y+=5;
+    detailRows.forEach((r,i)=>{ensure(10);if(i){doc.setDrawColor(...line);doc.line(M+4,y-2,W-M-4,y-2);}text(r[0],M+4,y,8,muted);text(r[1],W-M-4,y,8.5,navy,'bold',{align:'right'});y+=7;}); y+=5;
 
     y=section('Truck & driver',y);
     const driverData=[['Driver',p.driver_name||'—'],['Phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Compartments',String(p.truck_compartments||compartments.length||'—')]];
@@ -950,12 +950,12 @@ window.downloadPurchaseDetailPdf=async function(){
     if(!compartments.length){text('No compartment quantities recorded.',M+4,y,8.5,muted);y+=10;}
     else{
       const cw=(CW-6)/2;
-      compartments.forEach((v,i)=>{const x=M+(i%2)*(cw+6),yy=y+Math.floor(i/2)*13;doc.setDrawColor(...line);doc.roundedRect(x,yy-5,cw,10,2,2,'S');text('Compartment '+(i+1),x+4,yy+1.2,7.5,muted);text(purchaseLiters(v)+' L',x+cw-4,yy+1.2,8.5,navy,'bold','normal',{align:'right'});});y+=Math.ceil(compartments.length/2)*13+3;
+      compartments.forEach((v,i)=>{const x=M+(i%2)*(cw+6),yy=y+Math.floor(i/2)*13;doc.setDrawColor(...line);doc.roundedRect(x,yy-5,cw,10,2,2,'S');text('Compartment '+(i+1),x+4,yy+1.2,7.5,muted);text(purchaseLiters(v)+' L',x+cw-4,yy+1.2,8.5,navy,'bold',{align:'right'});});y+=Math.ceil(compartments.length/2)*13+3;
     }
 
     y=section('Destination tanks',y);
     if(!tanks.length){text('No tank information recorded.',M+4,y,8.5,muted);y+=10;}
-    else tanks.forEach(t=>{ensure(17);doc.setFillColor(...soft);doc.roundedRect(M,y-4,CW,14,2,2,'F');text(t.tank_code||t.name||'Tank',M+5,y+2,8.5,navy,'bold');text(t.product||product,W-M-5,y+2,8,muted,'normal','normal',{align:'right'});const shifts=Array.isArray(t.active_shifts)?t.active_shifts:[];if(shifts.length)text(shifts.map(s=>s.attendant_name||s.attendant||s.name).filter(Boolean).join(', '),M+5,y+7,6.8,muted);y+=17;});
+    else tanks.forEach(t=>{ensure(17);doc.setFillColor(...soft);doc.roundedRect(M,y-4,CW,14,2,2,'F');text(t.tank_code||t.name||'Tank',M+5,y+2,8.5,navy,'bold');text(t.product||product,W-M-5,y+2,8,muted,'normal',{align:'right'});const shifts=Array.isArray(t.active_shifts)?t.active_shifts:[];if(shifts.length)text(shifts.map(s=>s.attendant_name||s.attendant||s.name).filter(Boolean).join(', '),M+5,y+7,6.8,muted);y+=17;});
 
     y+=3;y=section('Discharge history',y);
     if(!history.length){text('No discharge operations recorded.',M+4,y,8.5,muted);y+=10;}
@@ -967,11 +967,11 @@ window.downloadPurchaseDetailPdf=async function(){
       const stockRecorded=e.tank_stock_recorded===true,qty=Number(e.discharged_quantity_liters||0),before=Number(e.tank_liters_before),recorded=Number(e.tank_stock_recorded_liters);
       const expected=Number.isFinite(before)?before+qty:null,diff=Number.isFinite(recorded)&&expected!=null?recorded-expected:null,tol=Math.max(5,qty*.01),high=diff!=null&&Math.abs(diff)>tol;
       const statusText=stockRecorded?(high?'Difference high':'Stock reconciled'):'Stock not recorded',statusColor=high||!stockRecorded?red:green;
-      doc.setFillColor(...(high||!stockRecorded?[254,242,242]:[236,253,245]));doc.roundedRect(W-M-55,y+3,51,9,3,3,'F');text(statusText,W-M-29.5,y+9,6.9,statusColor,'bold','normal',{align:'center'});
+      doc.setFillColor(...(high||!stockRecorded?[254,242,242]:[236,253,245]));doc.roundedRect(W-M-55,y+3,51,9,3,3,'F');text(statusText,W-M-29.5,y+9,6.9,statusColor,'bold',{align:'center'});
       const tank=(purchaseDetailTanks||[]).find(t=>String(t.id)===String(e.tank_id))?.tank_code||'—';
       const vals=[['Date & time',e.created_at?new Date(e.created_at).toLocaleString():'—'],['Tank',tank],['Quantity discharged',purchaseLiters(qty)+' L'],['Tank stock before',Number.isFinite(before)?purchaseLiters(before)+' L':'—'],['Expected after',expected!=null?purchaseLiters(expected)+' L':'—'],['Recorded stock',stockRecorded&&Number.isFinite(recorded)?purchaseLiters(recorded)+' L':'Not recorded'],['Stock difference',diff!=null?(diff>0?'+':'')+purchaseLiters(diff)+' L':'—']];
       let yy=y+18;
-      vals.forEach((r,j)=>{if(j){doc.setDrawColor(...line);doc.line(M+5,yy-2,W-M-5,yy-2);}text(r[0],M+5,yy,7,muted);text(r[1],W-M-5,yy,7.7,navy,'bold','normal',{align:'right'});yy+=5.6;});
+      vals.forEach((r,j)=>{if(j){doc.setDrawColor(...line);doc.line(M+5,yy-2,W-M-5,yy-2);}text(r[0],M+5,yy,7,muted);text(r[1],W-M-5,yy,7.7,navy,'bold',{align:'right'});yy+=5.6;});
       if(remark){doc.setFillColor(...soft);doc.roundedRect(M+5,y+boxH-15,CW-10,10,2,2,'F');text('Remark',M+9,y+boxH-9,6.8,muted,'bold');wrap(remark,M+31,y+boxH-9,CW-40,7,navy,'normal',3.4);}
       y+=boxH+6;
     });
