@@ -566,82 +566,52 @@ def update_product(product_id):
 def tanks():
     auth = require_login()
     if auth: return auth
+
     status, rows = sb("tanks", params={"select":"id,tank_code,product,product_id,capacity_liters,current_mm,current_liters,opening_stock_liters,active,updated_at","order":"tank_code.asc"})
     if status != 200:
         return jsonify(rows), status
 
-    # Attach active shift ownership directly to each tank. This makes the
-    # discharge destination card independent of frontend shift/readings timing.
     for tank in rows:
         tank["active_shifts"] = []
 
-    active_status, active_rows = sb("shifts", params={
-        "status":"eq.active",
-        "select":"id,employee_id,nozzle_id,status,start_time,created_at",
-        "order":"created_at.asc",
-        "limit":"100"
-    })
-    if active_status == 200 and active_rows:
-        employee_ids=sorted(set(str(r.get("employee_id")) for r in active_rows if r.get("employee_id")))
-        employee_map={}
-        if employee_ids:
-            es,er=sb("employees",params={
-                "id":"in.("+",".join(employee_ids)+")",
-                "select":"id,name"
-            })
-            if es==200:
-                employee_map={str(e.get("id")):e.get("name") for e in er}
+    active_status, active_rows = sb("shifts", params={"status":"eq.active","select":"id,employee_id,status,start_time,created_at","order":"created_at.asc","limit":"100"})
+    if active_status != 200 or not active_rows:
+        return jsonify(rows), status
 
-        nozzle_ids=sorted(set(str(r.get("nozzle_id")) for r in active_rows if r.get("nozzle_id")))
-        physical_rows=[]
-        if nozzle_ids:
-            # The shift's legacy nozzle points to the dispenser. Use its
-            # normalized physical nozzles to identify the destination tank.
-            ns,nr=sb("nozzles",params={
-                "id":"in.("+",".join(nozzle_ids)+")",
-                "select":"id,nozzle_ids"
-            })
-            if ns==200:
-                codes=sorted(set(str(code) for n in nr for code in (n.get("nozzle_ids") or []) if code))
-                if codes:
-                    ds,dr=sb("dispenser_nozzles",params={
-                        "nozzle_code":"in.("+",".join(codes)+")",
-                        "select":"id,nozzle_code,dispenser_id,tank_id,product_id"
-                    })
-                    if ds==200:
-                        physical_rows=dr
+    employee_ids=sorted(set(str(r.get("employee_id")) for r in active_rows if r.get("employee_id")))
+    employee_map={}
+    if employee_ids:
+        es,er=sb("employees",params={"id":"in.("+",".join(employee_ids)+")","select":"id,name"})
+        if es==200: employee_map={str(e.get("id")):e.get("name") for e in er}
 
-        for shift in active_rows:
-            employee_name=employee_map.get(str(shift.get("employee_id"))) or "Assigned attendant"
-            shift_nozzle_id=str(shift.get("nozzle_id") or "")
-            matches=[n for n in physical_rows if str(n.get("nozzle_code") or "") and str(n.get("dispenser_id") or "")==""]
-            # Prefer the physical nozzles belonging to the shift's legacy
-            # dispenser by resolving its nozzle_codes above.
-            legacy_codes=[]
-            if shift_nozzle_id:
-                ns,nr=sb("nozzles",params={"id":"eq."+shift_nozzle_id,"select":"nozzle_ids","limit":"1"})
-                if ns==200 and nr:
-                    legacy_codes=[str(x) for x in (nr[0].get("nozzle_ids") or []) if x]
-            matches=[n for n in physical_rows if str(n.get("nozzle_code") or "") in legacy_codes]
-            for n in matches:
-                tank_id=str(n.get("tank_id") or "")
-                if not tank_id:
-                    continue
-                tank=next((t for t in rows if str(t.get("id"))==tank_id),None)
-                if not tank:
-                    continue
-                ds,dr=sb("dispensers",params={"id":"eq."+str(n.get("dispenser_id")),"select":"id,dispenser_code","limit":"1"})
-                dispenser_code=dr[0].get("dispenser_code") if ds==200 and dr else None
-                tank["active_shifts"].append({
-                    "shift_id":shift.get("id"),
-                    "employee_id":shift.get("employee_id"),
-                    "employee_name":employee_name,
-                    "dispenser_code":dispenser_code,
-                    "tank_id":tank_id,
-                    "product_id":n.get("product_id"),
-                    "nozzle_id":n.get("id"),
-                    "nozzle_code":n.get("nozzle_code")
-                })
+    shift_ids=sorted(set(str(r.get("id")) for r in active_rows if r.get("id")))
+    reading_rows=[]
+    if shift_ids:
+        rs,rr=sb("shift_nozzle_readings",params={"shift_id":"in.("+",".join(shift_ids)+")","select":"id,shift_id,nozzle_id,opening_reading"})
+        if rs==200: reading_rows=rr
+
+    nozzle_ids=sorted(set(str(r.get("nozzle_id")) for r in reading_rows if r.get("nozzle_id")))
+    physical_rows=[]
+    if nozzle_ids:
+        ns,nr=sb("dispenser_nozzles",params={"id":"in.("+",".join(nozzle_ids)+")","select":"id,nozzle_code,dispenser_id,tank_id,product_id"})
+        if ns==200: physical_rows=nr
+
+    dispenser_ids=sorted(set(str(n.get("dispenser_id")) for n in physical_rows if n.get("dispenser_id")))
+    dispenser_map={}
+    if dispenser_ids:
+        ds,dr=sb("dispensers",params={"id":"in.("+",".join(dispenser_ids)+")","select":"id,dispenser_code"})
+        if ds==200: dispenser_map={str(d.get("id")):d.get("dispenser_code") for d in dr}
+
+    shift_map={str(s.get("id")):s for s in active_rows}
+    nozzle_map={str(n.get("id")):n for n in physical_rows}
+    tank_map={str(t.get("id")):t for t in rows}
+    for reading in reading_rows:
+        shift=shift_map.get(str(reading.get("shift_id")))
+        nozzle=nozzle_map.get(str(reading.get("nozzle_id")))
+        if not shift or not nozzle: continue
+        tank=tank_map.get(str(nozzle.get("tank_id") or ""))
+        if not tank: continue
+        tank["active_shifts"].append({"shift_id":shift.get("id"),"employee_id":shift.get("employee_id"),"employee_name":employee_map.get(str(shift.get("employee_id"))) or "Assigned attendant","dispenser_code":dispenser_map.get(str(nozzle.get("dispenser_id"))),"tank_id":nozzle.get("tank_id"),"product_id":nozzle.get("product_id"),"nozzle_id":nozzle.get("id"),"nozzle_code":nozzle.get("nozzle_code"),"opening_reading":reading.get("opening_reading")})
     return jsonify(rows), status
 
 @app.post("/api/tanks")
