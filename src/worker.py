@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, session
 from workers import wsgi
 import os, base64, hmac, secrets
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 from pyodide.ffi import run_sync, to_js
 from js import crypto, Uint8Array, Object
 from supabase_rest import request as sb_request
@@ -1932,32 +1932,62 @@ def daily_report():
     auth=require_admin()
     if auth:return auth
     report_date=request.args.get("date") or date.today().isoformat()
-    try: date.fromisoformat(report_date)
-    except ValueError:return jsonify({"error":"Invalid date"}),400
+    try:
+        report_day=date.fromisoformat(report_date)
+    except ValueError:
+        return jsonify({"error":"Invalid date"}),400
+
+    # A daily report is a SHIFT-DAY report. A shift belongs to the day on
+    # which it STARTED, not the day on which it ended.
+    next_day=(report_day+timedelta(days=1)).isoformat()
+    day_start=report_date+"T00:00:00+03:00"
+    day_end=next_day+"T00:00:00+03:00"
+
+    shift_status,day_shifts=sb("shifts",params={
+        "start_time":"gte."+day_start,
+        "start_time":"lt."+day_end,
+        "select":"id,employee_id,nozzle_id,start_time,end_time,opening_reading,closing_reading,opening_liters,closing_liters,status,opening_tank_liters",
+        "order":"start_time.asc","limit":"5000"
+    })
+    if shift_status!=200:return jsonify({"error":day_shifts}),shift_status
+
+    shift_ids=[str(x.get("id")) for x in day_shifts if x.get("id")]
+    shift_id_filter="in.("+",".join(shift_ids)+")" if shift_ids else "in.(00000000-0000-0000-0000-000000000000)"
 
     sales_status,sales_rows=sb("sales",params={
-        "sale_time":"gte."+report_date+"T00:00:00Z",
+        "shift_id":shift_id_filter,
         "select":"id,shift_id,product,quantity_liters,unit_price,amount,payment_method,sale_time,employee_id,sale_type_id,sale_reason",
-        "order":"sale_time.asc","limit":"5000"
+        "order":"sale_time.asc","limit":"10000"
     })
     handover_status,handover_rows=sb("shift_takeovers",params={
-        "shift_ended_at":"gte."+report_date+"T00:00:00Z",
-        "select":"id,shift_id,from_employee_id,to_employee_id,shift_started_at,shift_ended_at,total_sales_liters,total_sales_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_purchases_liters,tank_sales_liters,tank_variance_liters,tank_variance_pct,sales_status,sales_submitted_at,sales_confirmed_at",
+        "shift_id":shift_id_filter,
+        "select":"id,shift_id,from_employee_id,to_employee_id,shift_started_at,shift_ended_at,total_sales_liters,total_sales_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_purchases_liters,tank_sales_liters,tank_variance_liters,tank_variance_pct,sales_status,sales_submitted_at,sales_confirmed_at,status",
         "order":"shift_ended_at.asc","limit":"5000"
     })
     purchases_status,purchase_rows=sb("purchases",params={
-        "purchase_date":"gte."+report_date+"T00:00:00Z",
+        "purchase_date":"gte."+day_start,
+        "purchase_date":"lt."+day_end,
         "select":"id,product,quantity_liters,supplier,invoice_number,tank_id,purchase_date,status",
         "order":"purchase_date.asc","limit":"5000"
     })
-    if sales_status==200:sales_rows=[x for x in sales_rows if str(x.get("sale_time",""))[:10]==report_date]
-    if handover_status==200:handover_rows=[x for x in handover_rows if str(x.get("shift_ended_at",""))[:10]==report_date]
-    if purchases_status==200:purchase_rows=[x for x in purchase_rows if str(x.get("purchase_date",""))[:10]==report_date]
     if sales_status!=200:return jsonify({"error":sales_rows}),sales_status
     if handover_status!=200:return jsonify({"error":handover_rows}),handover_status
     if purchases_status!=200:return jsonify({"error":purchase_rows}),purchases_status
 
-    takeover_shift_ids={str(x.get("shift_id")) for x in handover_rows if x.get("shift_id")}
+    handover_by_shift={str(x.get("shift_id")):x for x in handover_rows if x.get("shift_id")}
+    incomplete_shifts=[]
+    unconfirmed_shifts=[]
+    for x in day_shifts:
+        sid=str(x.get("id"))
+        if not x.get("end_time"):
+            incomplete_shifts.append(x)
+        h=handover_by_shift.get(sid)
+        if h and h.get("sales_status")!="confirmed":
+            unconfirmed_shifts.append({"shift_id":sid,"sales_status":h.get("sales_status") or "not_recorded"})
+
+    report_ready=(len(incomplete_shifts)==0 and len(unconfirmed_shifts)==0)
+
+    takeover_shift_ids=set(handover_by_shift)
     fuel_sale_rows=[x for x in sales_rows if float(x.get("quantity_liters") or 0)>0]
     direct_fuel_rows=[x for x in fuel_sale_rows if str(x.get("shift_id") or "") not in takeover_shift_ids]
     direct_fuel_liters=sum(float(x.get("quantity_liters") or 0) for x in direct_fuel_rows)
@@ -1995,6 +2025,7 @@ def daily_report():
         sales_by_type[sale_type]=sales_by_type.get(sale_type,0)+float(x.get("amount") or 0)
 
     employee_ids={str(x.get("employee_id")) for x in sales_rows if x.get("employee_id")}
+    employee_ids.update(str(x.get("employee_id")) for x in day_shifts if x.get("employee_id"))
     employee_ids.update(str(x.get("from_employee_id")) for x in handover_rows if x.get("from_employee_id"))
     employee_ids.update(str(x.get("to_employee_id")) for x in handover_rows if x.get("to_employee_id"))
     employee_map={}
@@ -2013,35 +2044,57 @@ def daily_report():
             if ts==200:tank_map.update({str(x.get("id")):x for x in tr})
 
     shift_summary=[]
-    for x in handover_rows:
-        from_emp=employee_map.get(str(x.get("from_employee_id"))) or {}
-        to_emp=employee_map.get(str(x.get("to_employee_id"))) or {}
-        tank=tank_map.get(str(x.get("tank_id"))) or {}
+    for x in day_shifts:
+        sid=str(x.get("id"))
+        from_emp=employee_map.get(str(x.get("employee_id"))) or {}
+        h=handover_by_shift.get(sid) or {}
+        receiver=employee_map.get(str(h.get("to_employee_id"))) or {}
+        tank=tank_map.get(str(h.get("tank_id"))) or {}
+        direct_l=sum(float(v.get("quantity_liters") or 0) for v in sales_rows if str(v.get("shift_id") or "")==sid and float(v.get("quantity_liters") or 0)>0)
+        shift_l=float(h.get("total_sales_liters") or direct_l)
+        shift_a=float(h.get("total_sales_amount") or sum(float(v.get("amount") or 0) for v in sales_rows if str(v.get("shift_id") or "")==sid))
         shift_summary.append({
-            "shift_id":x.get("shift_id"),
+            "shift_id":x.get("id"),
             "attendant":from_emp.get("name") or "Unknown",
-            "receiver":to_emp.get("name") or "—",
+            "receiver":receiver.get("name") or "—",
             "tank":tank.get("tank_code") or "—",
             "product":tank.get("product") or "Unknown",
-            "started_at":x.get("shift_started_at"),
-            "ended_at":x.get("shift_ended_at"),
-            "sales_liters":float(x.get("total_sales_liters") or 0),
-            "sales_amount":float(x.get("total_sales_amount") or 0),
-            "tank_opening_liters":float(x.get("tank_opening_liters") or 0),
-            "tank_closing_liters":float(x.get("tank_closing_liters") or 0),
-            "tank_purchases_liters":float(x.get("tank_purchases_liters") or 0),
-            "tank_sales_liters":float(x.get("tank_sales_liters") or 0),
-            "tank_variance_liters":float(x.get("tank_variance_liters") or 0),
-            "tank_variance_pct":float(x.get("tank_variance_pct") or 0),
-            "sales_status":x.get("sales_status"),
-            "sales_submitted_at":x.get("sales_submitted_at"),
-            "sales_confirmed_at":x.get("sales_confirmed_at")
+            "started_at":x.get("start_time"),
+            "ended_at":x.get("end_time"),
+            "sales_liters":shift_l,
+            "sales_amount":shift_a,
+            "tank_opening_liters":float(h.get("tank_opening_liters") or x.get("opening_tank_liters") or 0),
+            "tank_closing_liters":float(h.get("tank_closing_liters") or 0),
+            "tank_purchases_liters":float(h.get("tank_purchases_liters") or 0),
+            "tank_sales_liters":float(h.get("tank_sales_liters") or 0),
+            "tank_variance_liters":float(h.get("tank_variance_liters") or 0),
+            "tank_variance_pct":float(h.get("tank_variance_pct") or 0),
+            "sales_status":h.get("sales_status") or ("completed" if x.get("end_time") else "in_progress"),
+            "sales_submitted_at":h.get("sales_submitted_at"),
+            "sales_confirmed_at":h.get("sales_confirmed_at")
         })
 
-    return jsonify({"date":report_date,"sales":sales_rows,"purchases":purchase_rows,"handovers":handover_rows,"shift_summary":shift_summary,"tanks_by_id":tank_map,"summary":{
-        "sales_liters":total_l,"sales_amount":total_a,"fuel_sales_amount":fuel_amount,"other_sales_amount":other_amount,
-        "purchases_liters":total_p,"by_product":by_product,"payment_methods":payment_methods,"sales_by_type":sales_by_type,"completed_shifts":len(handover_rows)
-    }})
+    return jsonify({
+        "date":report_date,
+        "report_ready":report_ready,
+        "report_status":"ready" if report_ready else "waiting_for_shifts",
+        "completion":{
+            "total_shifts":len(day_shifts),
+            "completed_shifts":len(day_shifts)-len(incomplete_shifts),
+            "incomplete_shift_count":len(incomplete_shifts),
+            "unconfirmed_shift_count":len(unconfirmed_shifts)
+        },
+        "sales":sales_rows,
+        "purchases":purchase_rows,
+        "handovers":handover_rows,
+        "shift_summary":shift_summary,
+        "tanks_by_id":tank_map,
+        "summary":{
+            "sales_liters":total_l,"sales_amount":total_a,"fuel_sales_amount":fuel_amount,"other_sales_amount":other_amount,
+            "purchases_liters":total_p,"by_product":by_product,"payment_methods":payment_methods,"sales_by_type":sales_by_type,
+            "completed_shifts":len(day_shifts)-len(incomplete_shifts)
+        }
+    })
 
 @app.post("/api/reports/daily")
 def generate_report():
