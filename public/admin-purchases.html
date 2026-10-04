@@ -530,7 +530,7 @@
     </section>
     <section class="purchase-wizard-step" data-purchase-step="4">
       <div id="purchase-review-content" class="purchase-review"></div>
-      <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(4)">Return</button><button type="button" class="primary" onclick="openPurchaseConfirmation()">Confirm Purchase</button></div>
+      <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(4)">Return</button><button type="button" class="primary" onclick="performCreatePurchase()">Confirm Purchase</button></div>
     </section>
   </form>
   <div id="purchase-status" class="purchase-status"></div>
@@ -562,12 +562,35 @@
     <div id="purchase-discharge-review" class="discharge-review"></div>
     <div class="purchase-wizard-actions">
       <button type="button" onclick="setDischargeStep(2)">Return</button>
-      <button type="button" class="primary" onclick="openDischargeConfirmation()">Discharge Purchase</button>
+      <button type="button" class="primary" onclick="performPurchaseDischarge()">Discharge Purchase</button>
     </div>
   </section>
   <div id="purchase-discharge-status" class="purchase-status"></div>
 </div>
-</div><div id="purchase-confirmation-modal" class="modal" aria-hidden="true">
+</div><div id="purchase-success-modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" onclick="closePurchaseSuccess()"></div>
+  <div class="modal-card purchase-confirmation-card">
+    <div class="top">
+      <div>
+        <span id="purchase-success-kicker" class="section-kicker">COMPLETED</span>
+        <h3 id="purchase-success-title">Purchase Confirmed</h3>
+      </div>
+      <button type="button" class="modal-close" onclick="closePurchaseSuccess()">×</button>
+    </div>
+    <div class="purchase-confirmation-body">
+      <div class="purchase-confirmation-icon purchase-success-icon">✓</div>
+      <div>
+        <strong id="purchase-success-heading">Purchase confirmed successfully.</strong>
+        <p id="purchase-success-message" class="muted">The purchase has been recorded and moved to Discharge Purchase.</p>
+      </div>
+    </div>
+    <div id="purchase-success-summary" class="purchase-confirmation-summary"></div>
+    <div class="purchase-confirmation-actions">
+      <button type="button" class="primary" onclick="closePurchaseSuccess()">Done</button>
+    </div>
+  </div>
+</div>
+<div id="purchase-confirmation-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseConfirmation()"></div>
 <div class="modal-card purchase-confirmation-card">
   <div class="top">
@@ -925,66 +948,28 @@
     }
   };
 
-  function openPurchaseConfirmationCard(kind,summary){
-    const modal=document.getElementById('purchase-confirmation-modal');
-    const title=document.getElementById('purchase-confirmation-title');
-    const kicker=document.getElementById('purchase-confirmation-kicker');
-    const heading=document.getElementById('purchase-confirmation-heading');
-    const message=document.getElementById('purchase-confirmation-message');
-    const summaryEl=document.getElementById('purchase-confirmation-summary');
-    const confirm=document.getElementById('purchase-confirmation-confirm');
-    if(!modal||!title||!heading||!message||!summaryEl||!confirm)return;
+  function openPurchaseSuccess(kind,summary){
+    const modal=document.getElementById('purchase-success-modal');
+    const title=document.getElementById('purchase-success-title');
+    const kicker=document.getElementById('purchase-success-kicker');
+    const heading=document.getElementById('purchase-success-heading');
+    const message=document.getElementById('purchase-success-message');
+    const summaryEl=document.getElementById('purchase-success-summary');
+    if(!modal||!title||!kicker||!heading||!message||!summaryEl)return;
     const isDischarge=kind==='discharge';
-    kicker.textContent=isDischarge?'DISCHARGE PURCHASE':'RECEIVE STOCK';
-    title.textContent=isDischarge?'Confirm Discharge':'Confirm Purchase';
-    heading.textContent=isDischarge?'Ready to discharge this fuel purchase?':'Ready to confirm this fuel purchase?';
+    kicker.textContent=isDischarge?'DISCHARGE COMPLETED':'PURCHASE COMPLETED';
+    title.textContent=isDischarge?'Purchase Discharged':'Purchase Confirmed';
+    heading.textContent=isDischarge?'Fuel purchase discharged successfully.':'Purchase confirmed successfully.';
     message.textContent=isDischarge
-      ?'Please review the selected compartments and destination tank. Confirm only when the tank reading is correct.'
-      :'Please review the purchase details. Once confirmed, the purchase will move to Discharge Purchase.';
-    confirm.textContent=isDischarge?'Confirm Discharge':'Confirm Purchase';
+      ?'The selected compartments were discharged to the destination tank.'
+      :'The purchase has been recorded and moved to Discharge Purchase.';
     summaryEl.innerHTML=summary||'';
-    confirm.onclick=isDischarge?'confirmPurchaseDischarge()':'createPurchase()';
     modal.classList.add('open');
     modal.setAttribute('aria-hidden','false');
   }
-  window.closePurchaseConfirmation=function(){
-    const modal=document.getElementById('purchase-confirmation-modal');
+  window.closePurchaseSuccess=function(){
+    const modal=document.getElementById('purchase-success-modal');
     if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  };
-  window.openPurchaseConfirmation=function(){
-    const product=productSelect?.selectedOptions?.[0]?.textContent||'—';
-    const invoice=document.getElementById('purchase-invoice')?.value.trim()||'—';
-    const ordered=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
-    const inputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
-    const delivered=inputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
-    openPurchaseConfirmationCard('purchase',
-      '<div class="purchase-confirmation-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div>'+
-      '<div class="purchase-confirmation-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>'+
-      '<div class="purchase-confirmation-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div>'+
-      '<div class="purchase-confirmation-row"><span>Delivered quantity</span><strong>'+purchaseLiters(delivered)+' L</strong></div>');
-  };
-  window.openDischargeConfirmation=function(){
-    const state=purchaseDischargeState;
-    const p=state.purchase;
-    if(!p||!state.tankId||!state.selectedIndexes?.length)return;
-    const values=Array.isArray(p.compartment_liters)?p.compartment_liters:[Number(p.quantity_liters||0)];
-    const total=state.selectedIndexes.reduce((sum,i)=>sum+Number(values[i-1]||0),0);
-    const tank=state.tanks.find(t=>String(t.id)===String(state.tankId));
-    openPurchaseConfirmationCard('discharge',
-      '<div class="purchase-confirmation-row"><span>Product</span><strong>'+purchaseH(p.product||'—')+'</strong></div>'+
-      '<div class="purchase-confirmation-row"><span>Invoice</span><strong>'+purchaseH(p.invoice_number||'—')+'</strong></div>'+
-      '<div class="purchase-confirmation-row"><span>Compartments</span><strong>'+purchaseH(state.selectedIndexes.join(', '))+'</strong></div>'+
-      '<div class="purchase-confirmation-row"><span>Discharge quantity</span><strong>'+purchaseLiters(total)+' L</strong></div>'+
-      '<div class="purchase-confirmation-row"><span>Destination tank</span><strong>'+purchaseH(tank?.tank_code||'—')+'</strong></div>'+
-      '<div class="purchase-confirmation-row"><span>Tank liters before</span><strong>'+purchaseLiters(state.tankLitersBefore)+' L</strong></div>');
-  };
-  window.confirmPurchaseDischarge=function(){
-    closePurchaseConfirmation();
-    return window.performPurchaseDischarge();
-  };
-  window.createPurchase=function(){
-    closePurchaseConfirmation();
-    return window.performCreatePurchase();
   };
 
   window.performPurchaseDischarge=async function(){
@@ -997,9 +982,18 @@
         method:'POST',
         body:JSON.stringify({tank_id:state.tankId,compartment_indexes:state.selectedIndexes,tank_liters_before:state.tankLitersBefore})
       });
+      const p=state.purchase;
+      const values=Array.isArray(p?.compartment_liters)?p.compartment_liters:[Number(p?.quantity_liters||0)];
+      const total=state.selectedIndexes.reduce((sum,i)=>sum+Number(values[i-1]||0),0);
+      const tank=state.tanks.find(t=>String(t.id)===String(state.tankId));
+      const summary=
+        '<div class="purchase-confirmation-row"><span>Product</span><strong>'+purchaseH(p?.product||'—')+'</strong></div>'+
+        '<div class="purchase-confirmation-row"><span>Invoice</span><strong>'+purchaseH(p?.invoice_number||'—')+'</strong></div>'+
+        '<div class="purchase-confirmation-row"><span>Discharged quantity</span><strong>'+purchaseLiters(total)+' L</strong></div>'+
+        '<div class="purchase-confirmation-row"><span>Destination tank</span><strong>'+purchaseH(tank?.tank_code||'—')+'</strong></div>';
       closePurchaseDischarge();
-      purchaseToast('Purchase discharged successfully');
       await loadPurchases();
+      openPurchaseSuccess('discharge',summary);
     }catch(e){
       const status=document.getElementById('purchase-discharge-status');
       if(status){status.textContent=e.message||'Failed to discharge purchase.';status.className='purchase-status error';}
@@ -1023,6 +1017,11 @@
     try{
       setStatus('Confirming purchase…',false);
       await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product,tank_id:tankRecord.id,quantity_liters:q,invoice_number:invoice,ordered_quantity_liters:orderedQuantity,driver_name:driverName,driver_phone:driverPhone,plate_number:plateNumber,truck_compartments:compartments,compartment_liters:compartmentInputs.map(input=>parseQuantity(input.value))})});
+      const summary=
+        '<div class="purchase-confirmation-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div>'+
+        '<div class="purchase-confirmation-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>'+
+        '<div class="purchase-confirmation-row"><span>Ordered quantity</span><strong>'+purchaseLiters(orderedQuantity)+' L</strong></div>'+
+        '<div class="purchase-confirmation-row"><span>Delivered quantity</span><strong>'+purchaseLiters(q)+' L</strong></div>';
       document.getElementById('purchase-ordered-quantity').value='';
       document.getElementById('purchase-driver-name').value='';
       document.getElementById('purchase-driver-phone').value='';
@@ -1031,8 +1030,9 @@
       document.getElementById('purchase-product').value='';
       document.getElementById('purchase-invoice').value='';
       const container=document.getElementById('purchase-compartment-liters');if(container)container.innerHTML='';
-      purchaseToast('Purchase confirmed and moved to Discharge Purchase');
-      closePurchaseModal();await loadPurchases();
+      closePurchaseModal();
+      await loadPurchases();
+      openPurchaseSuccess('purchase',summary);
     }catch(e){setStatus(e.message||'Failed to confirm purchase.',true);}
   };
   loadPurchases();
@@ -1128,6 +1128,11 @@
 .purchase-confirmation-actions button:first-child{background:#eef1f4;color:#101828;border:0}
 .purchase-confirmation-actions .primary{background:#2563eb;color:#fff;border:0}
 @media(max-width:560px){.purchase-confirmation-card{width:calc(100% - 20px)}.purchase-confirmation-actions button{min-height:46px}}
+</style>
+<style>
+/* Purchase success card shown only after a successful confirmation */
+.purchase-success-icon{background:#ecfdf3;color:#027a48}
+#purchase-success-modal .purchase-confirmation-actions{grid-template-columns:1fr}
 </style>
 </body></html>
 <style>
