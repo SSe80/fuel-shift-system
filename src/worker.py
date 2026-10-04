@@ -1346,6 +1346,123 @@ def purchases():
         row["attendant"]=None
     return jsonify(rows),200
 
+@app.get("/api/purchases/<purchase_id>/pdf")
+def purchase_pdf(purchase_id):
+    auth=require_admin()
+    if auth:return auth
+    status,rows=sb("purchases",params={"id":"eq."+str(purchase_id),"select":"*","limit":"1"})
+    if status!=200:return jsonify(rows),status
+    if not rows:return jsonify({"error":"Purchase not found"}),404
+    p=rows[0]
+    history=p.get("discharge_history") or []
+    compartments=p.get("compartment_liters") or []
+    def fmt(v):
+        try:
+            n=float(v)
+            return f"{n:,.2f}".rstrip("0").rstrip(".")
+        except (TypeError,ValueError):
+            return "—"
+    def clean(v):
+        s=str(v if v is not None and str(v).strip() else "—")
+        return s.encode("latin-1","replace").decode("latin-1")
+    delivered=sum(float(v or 0) for v in compartments)
+    discharged=float(p.get("discharged_quantity_liters") or 0)
+    remaining=max(delivered-discharged,0)
+    lines=[
+        "FUEL SHIFT SYSTEM",
+        "PURCHASE HISTORY",
+        "",
+        "Invoice: "+clean(p.get("invoice_number") or "—"),
+        "Product: "+clean(p.get("product") or "—"),
+        "Status: "+clean(str(p.get("status") or "Purchase").replace("_"," ")),
+        "Purchase date: "+clean(p.get("purchase_date") or p.get("created_at") or "—"),
+        "",
+        "PURCHASE OVERVIEW",
+        "Ordered: "+fmt(p.get("ordered_quantity_liters"))+" L",
+        "Delivered: "+fmt(delivered)+" L",
+        "Discharged: "+fmt(discharged)+" L",
+        "Remaining: "+fmt(remaining)+" L",
+        "",
+        "TRUCK & DRIVER",
+        "Driver: "+clean(p.get("driver_name")),
+        "Phone: "+clean(p.get("driver_phone")),
+        "Plate: "+clean(p.get("plate_number")),
+        "Compartments: "+clean(p.get("truck_compartments") or len(compartments)),
+    ]
+    for i,v in enumerate(compartments):
+        lines.append("Compartment %d: %s L"%(i+1,fmt(v)))
+    lines += ["","DISCHARGE HISTORY"]
+    if not history:
+        lines.append("No discharge operations recorded.")
+    for i,e in enumerate(history):
+        lines += [
+            "Discharge %02d"%(i+1),
+            "Date & time: "+clean(e.get("created_at")),
+            "Tank: "+clean(e.get("tank_id")),
+            "Quantity discharged: "+fmt(e.get("discharged_quantity_liters"))+" L",
+            "Tank stock before: "+fmt(e.get("tank_liters_before"))+" L",
+            "Expected closing: "+fmt((float(e.get("tank_liters_before"))+float(e.get("discharged_quantity_liters"))) if e.get("tank_liters_before") is not None else None)+" L",
+            "Recorded closing: "+(fmt(e.get("tank_stock_recorded_liters"))+" L" if e.get("tank_stock_recorded") else "Not recorded"),
+            "Stock status: "+("Stock reconciled" if e.get("tank_stock_recorded") else "Tank stock not recorded"),
+        ]
+        remark=str(e.get("tank_stock_remark") or "").strip()
+        if remark: lines.append("Remark: "+clean(remark))
+        lines.append("")
+    final_remark=""
+    for e in reversed(history):
+        if str(e.get("tank_stock_remark") or "").strip():
+            final_remark=str(e.get("tank_stock_remark")).strip()
+            break
+    if not final_remark: final_remark=str(p.get("purchase_remark") or p.get("remark") or "").strip()
+    if final_remark:
+        lines += ["PURCHASE REMARK",clean(final_remark)]
+
+    def esc_pdf(s):
+        return clean(s).replace("\\","\\\\").replace("(","\\(").replace(")","\\)")
+    pages=[lines[i:i+45] for i in range(0,len(lines),45)] or [["Purchase"]]
+    objects=[]
+    objects.append("<< /Type /Catalog /Pages 2 0 R >>")
+    objects.append("")
+    objects.append("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+    page_numbers=[]
+    content_numbers=[]
+    next_obj=4
+    for _ in pages:
+        content_numbers.append(next_obj); page_numbers.append(next_obj+1); next_obj+=2
+    objects[1]="<< /Type /Pages /Kids ["+" ".join(str(n)+" 0 R" for n in page_numbers)+"] /Count "+str(len(pages))+" >>"
+    for page_no,page_lines in enumerate(pages):
+        stream=["q","0.12 0.39 0.92 rg 0 780 612 12 re f","0.08 0.13 0.22 rg BT /F1 18 Tf 42 750 Td ("+esc_pdf(page_lines[0] if page_lines else "Purchase")+" ) Tj ET"]
+        y=726
+        for line in page_lines[1:]:
+            if line and line.upper()==line and len(line)<40:
+                stream += ["0.94 0.96 1 rg 42 "+str(y-4)+" 528 18 re f","0.12 0.31 0.72 rg BT /F1 9 Tf 48 "+str(y)+" Td ("+esc_pdf(line)+") Tj ET"]
+                y-=25
+            elif line=="":
+                y-=8
+            else:
+                stream += ["0.30 0.34 0.40 rg BT /F1 9 Tf 48 "+str(y)+" Td ("+esc_pdf(line)+") Tj ET"]
+                y-=15
+            if y<45: break
+        stream += ["0.45 0.48 0.53 rg BT /F1 7 Tf 42 25 Td (Fuel Shift System - Purchase History) Tj ET","Q"]
+        body="\n".join(stream)
+        objects.append("<< /Length "+str(len(body.encode("latin-1","replace")))+" >>\nstream\n"+body+"\nendstream")
+        objects.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents "+str(content_numbers[page_no])+" 0 R >>")
+    pdf="%PDF-1.4\n%\xe2\xe3\xcf\xd3\n"
+    offsets=[0]
+    for n,obj in enumerate(objects,1):
+        offsets.append(len(pdf))
+        pdf+=str(n)+" 0 obj\n"+obj+"\nendobj\n"
+    xref=len(pdf)
+    pdf+="xref\n0 "+str(len(objects)+1)+"\n0000000000 65535 f \n"
+    for off in offsets[1:]: pdf+=str(off).zfill(10)+" 00000 n \n"
+    pdf+="trailer\n<< /Size "+str(len(objects)+1)+" /Root 1 0 R >>\nstartxref\n"+str(xref)+"\n%%EOF"
+    from flask import make_response
+    response=make_response(pdf.encode("latin-1","replace"))
+    response.headers["Content-Type"]="application/pdf"
+    response.headers["Content-Disposition"]='attachment; filename="purchase_'+clean(p.get("invoice_number") or purchase_id)+'.pdf"'
+    response.headers["Cache-Control"]="no-store"
+    return response
+
 @app.post("/api/purchases")
 def create_purchase():
     auth=require_admin()
