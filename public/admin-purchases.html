@@ -766,6 +766,9 @@
 .purchase-history-recorded-right .purchase-history-full-badge{font-size:9px;padding:4px 7px}
 .purchase-history-recorded-toggle{width:25px;height:25px;font-size:15px}
 }
+</style><style>
+.purchase-history-show-more-wrap{display:flex;justify-content:center;margin:12px 0 2px}
+.purchase-history-show-more{min-width:140px;text-align:center}
 </style></head><body class="admin-purchases-page" data-app-page="adminPurchases"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchases</h1><p class="muted">Receive fuel into station tanks and keep inventory records up to date.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header><section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">INVENTORY</span><h2>Purchase</h2><p class="muted">Add fuel received into a station tank.</p></div><button type="button" class="primary" onclick="openPurchaseModal()">＋ Add Purchase</button></div></section><div id="purchase-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closePurchaseModal()"></div>
 <div class="modal-card purchase-modal-card purchase-wizard-card">
@@ -1300,7 +1303,7 @@ window.downloadPurchaseDetailPdf=async function(){
         }else{
           const unrecordedHistory=historyWithPartial.filter(p=>Array.isArray(p.discharge_history)&&p.discharge_history.some(e=>!e?.tank_stock_recorded));
           const recordedHistory=historyWithPartial.filter(p=>!unrecordedHistory.some(x=>String(x.id)===String(p.id)));
-          const renderHistoryGroup=(items,title,kind)=>items.length?'<section class="purchase-history-stock-group '+kind+'"><div class="purchase-history-stock-group-head"><span>'+title+'</span><strong>'+items.length+'</strong></div>'+items.map(p=>{const t=tanks.find(x=>String(x.id)===String(p.tank_id));return renderPurchaseCard(p,t,false);}).join('')+'</section>':'';
+          const renderHistoryGroup=(items,title,kind)=>{if(!items.length)return '';const visible=kind==='recorded'?items.slice(0,3):items;const more=kind==='recorded'&&items.length>3?'<div class="purchase-history-show-more-wrap"><a class="btn primary purchase-history-show-more" href="admin-purchase-history.html">Show more</a></div>':'';return '<section class="purchase-history-stock-group '+kind+'"><div class="purchase-history-stock-group-head"><span>'+title+'</span><strong>'+items.length+'</strong></div>'+visible.map(p=>{const t=tanks.find(x=>String(x.id)===String(p.tank_id));return renderPurchaseCard(p,t,false);}).join('')+more+'</section>';};
           list.innerHTML=renderHistoryGroup(unrecordedHistory,'⚠ Tank Stock Not Recorded','unrecorded')+renderHistoryGroup(recordedHistory,'✓ Tank Stock Recorded','recorded');
         }
       }
