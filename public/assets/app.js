@@ -1991,7 +1991,7 @@ async function loadDailyReport(){
     const rows=Object.entries(s.by_product||{}).sort((a,b)=>Number(b[1]?.liters||0)-Number(a[1]?.liters||0)).map(([p,v])=>
       '<tr><td><b>'+h(codeForProduct(p))+'</b></td><td>'+liters(v.liters)+'</td></tr>'
     ).join('');
-    document.getElementById('report-table').innerHTML=rows||'<tr><td colspan="3" class="daily-empty">No fuel sales for this date.</td></tr>';
+    document.getElementById('report-table').innerHTML=rows||'<tr><td colspan="2" class="daily-empty">No fuel sales for this date.</td></tr>';
 
     const payments=Object.entries(s.sales_by_type||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([type,amount])=>
       '<div class="daily-list-row"><span>'+h(type)+'</span><b>'+money(amount)+'</b></div>'
