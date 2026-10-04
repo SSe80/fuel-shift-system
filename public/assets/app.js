@@ -1984,17 +1984,17 @@ async function loadDailyReport(){
 
     document.getElementById('report-summary').innerHTML=
       '<div class="daily-stat primary-stat"><span>Fuel volume sold</span><b>'+liters(s.sales_liters)+' L</b><small>Completed shift readings included</small></div>'+
-      '<div class="daily-stat"><span>Total sales</span><b>'+money(s.sales_amount)+'</b><small>All recorded sales</small></div>'+
-      '<div class="daily-stat"><span>Fuel sales amount</span><b>'+money(s.fuel_sales_amount)+'</b><small>Fuel-sale transactions</small></div>'+
-      '<div class="daily-stat"><span>Fuel received</span><b>'+liters(s.purchases_liters)+' L</b><small>'+Number(s.completed_shifts||0)+' completed shift'+(Number(s.completed_shifts||0)===1?'':'s')+'</small></div>';
+      '<div class="daily-stat"><span>Recorded sales</span><b>'+money(s.sales_amount)+'</b><small>Confirmed monetary sales</small></div>'+
+      '<div class="daily-stat"><span>Fuel received</span><b>'+liters(s.purchases_liters)+' L</b><small>Purchase records for the day</small></div>'+
+      '<div class="daily-stat"><span>Completed shifts</span><b>'+Number(s.completed_shifts||0)+'</b><small>Shift reconciliations</small></div>';
 
     const rows=Object.entries(s.by_product||{}).sort((a,b)=>Number(b[1]?.liters||0)-Number(a[1]?.liters||0)).map(([p,v])=>
-      '<tr><td><b>'+h(codeForProduct(p))+'</b></td><td>'+liters(v.liters)+'</td><td>'+money(v.amount)+'</td></tr>'
+      '<tr><td><b>'+h(codeForProduct(p))+'</b></td><td>'+liters(v.liters)+'</td></tr>'
     ).join('');
     document.getElementById('report-table').innerHTML=rows||'<tr><td colspan="3" class="daily-empty">No fuel sales for this date.</td></tr>';
 
-    const payments=Object.entries(s.payment_methods||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([method,amount])=>
-      '<div class="daily-list-row"><span>'+h(String(method).replace(/^./,x=>x.toUpperCase()))+'</span><b>'+money(amount)+'</b></div>'
+    const payments=Object.entries(s.sales_by_type||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([type,amount])=>
+      '<div class="daily-list-row"><span>'+h(type)+'</span><b>'+money(amount)+'</b></div>'
     ).join('');
     document.getElementById('report-payments').innerHTML=payments||'<div class="daily-empty">No recorded sales.</div>';
 
