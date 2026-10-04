@@ -521,8 +521,8 @@
 .tank-stock-card{width:min(500px,calc(100% - 24px));overflow:hidden}
 .tank-stock-carousel-head{display:flex;justify-content:space-between;align-items:center;margin:10px 0 8px;padding:0 2px;font-size:11px;color:#667085}
 .tank-stock-carousel-head strong{font-size:12px;color:#101828}
-.tank-stock-carousel{overflow:hidden;border-radius:14px}
-.tank-stock-track{display:flex;width:100%;transition:transform .25s ease}
+.tank-stock-carousel{overflow:hidden;border-radius:14px;touch-action:pan-y}
+.tank-stock-track{display:flex;width:100%;transition:transform .25s ease;will-change:transform}
 .tank-stock-slide{min-width:100%;box-sizing:border-box;padding:13px;border:1px solid #e4e7ec;border-radius:14px;background:#f8fafc}
 .tank-stock-slide-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .tank-stock-slide-head h4{margin:3px 0 0;font-size:20px;color:#101828}
@@ -535,17 +535,26 @@
 .tank-stock-ledger strong{display:block;margin-top:3px;font-size:13px;color:#101828}
 .tank-stock-slide .tank-stock-field{margin-top:11px;padding:11px;border:1px solid #e4e7ec;border-radius:11px;background:#fff}
 .tank-stock-slide .tank-stock-field label{display:block;margin-bottom:6px;font-size:12px;font-weight:700;color:#344054}
-.tank-stock-slide .tank-stock-field input{min-height:44px}
+.tank-stock-slide .tank-stock-field .purchase-input-unit{display:flex;width:100%;align-items:stretch}
+.tank-stock-slide .tank-stock-field .purchase-input-unit input{flex:1 1 auto;width:1px;min-width:0;box-sizing:border-box;min-height:44px;border-radius:11px 0 0 11px!important}
+.tank-stock-slide .tank-stock-field .purchase-input-unit span{flex:0 0 58px;box-sizing:border-box;justify-content:center;min-height:44px;padding:0 10px;border-radius:0 11px 11px 0;background:#f8fafc}
 .tank-stock-slide .tank-stock-field small{display:block;margin-top:6px;font-size:10px;color:#667085;line-height:1.35}
 .tank-stock-slide-actions{margin-top:10px}
 .tank-stock-slide-actions button{width:100%;min-height:40px;border-radius:9px;font-size:13px;font-weight:800}
-.tank-stock-carousel-nav{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-top:10px}
-.tank-stock-carousel-nav>button{min-height:34px;padding:0 10px;border:1px solid #d0d5dd;border-radius:9px;background:#fff;font-size:11px;font-weight:700;color:#344054}
-.tank-stock-carousel-nav>button:disabled{opacity:.4}
-.tank-stock-dots{display:flex;justify-content:center;gap:5px}
-.tank-stock-dot{width:7px;height:7px;border:0;border-radius:50%;padding:0;background:#d0d5dd}
-.tank-stock-dot.active{width:18px;border-radius:5px;background:#2563eb}
-@media(max-width:560px){.tank-stock-ledger{grid-template-columns:1fr}.tank-stock-operation-meta{grid-template-columns:1fr}}
+.tank-stock-carousel-nav{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:12px;margin-top:12px}
+.tank-stock-carousel-nav>button{width:40px;height:40px;min-height:40px;padding:0;border:1px solid #d0d5dd;border-radius:50%;display:grid;place-items:center;background:#fff;box-shadow:0 2px 6px rgba(16,24,40,.08);font-size:24px;line-height:1;font-weight:500;color:#344054;cursor:pointer;transition:transform .15s ease,background .15s ease,border-color .15s ease}
+.tank-stock-carousel-nav>button:hover:not(:disabled){background:#f8fafc;border-color:#98a2b3;transform:scale(1.04)}
+.tank-stock-carousel-nav>button:active:not(:disabled){transform:scale(.96)}
+.tank-stock-carousel-nav>button:disabled{opacity:.32;cursor:default;box-shadow:none}
+.tank-stock-dots{display:flex;justify-content:center;align-items:center;gap:6px;min-width:0}
+.tank-stock-dot{width:7px;height:7px;border:0;border-radius:50%;padding:0;background:#d0d5dd;cursor:pointer;transition:all .2s ease}
+.tank-stock-dot.active{width:20px;border-radius:5px;background:#2563eb}
+@media(max-width:560px){
+  .tank-stock-ledger{grid-template-columns:1fr}
+  .tank-stock-operation-meta{grid-template-columns:1fr}
+  .tank-stock-carousel-nav{grid-template-columns:42px 1fr 42px;gap:10px}
+  .tank-stock-carousel-nav>button{width:42px;height:42px;min-height:42px;font-size:25px}
+}
 </style><style>
 /* Purchase History — partial card alignment + button consistency */
 .purchase-history-partial-card .purchase-history-partial-event{
@@ -1126,13 +1135,44 @@
     prev.disabled=tankStockCarousel.index===0; next.disabled=tankStockCarousel.index===tankStockCarousel.events.length-1;
     track.style.transform='translateX(-'+(tankStockCarousel.index*100)+'%)';
   }
+  function bindTankStockSwipe(){
+    const carousel=document.querySelector('.tank-stock-carousel');
+    if(!carousel||carousel.dataset.swipeBound==='true')return;
+    carousel.dataset.swipeBound='true';
+    let startX=0,startY=0,tracking=false;
+    carousel.addEventListener('touchstart',function(e){
+      if(!e.touches||e.touches.length!==1)return;
+      const target=e.target;
+      if(target.closest('input,button'))return;
+      startX=e.touches[0].clientX;
+      startY=e.touches[0].clientY;
+      tracking=true;
+    },{passive:true});
+    carousel.addEventListener('touchmove',function(e){
+      if(!tracking||!e.touches||e.touches.length!==1)return;
+      const dx=e.touches[0].clientX-startX;
+      const dy=e.touches[0].clientY-startY;
+      if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>10)e.preventDefault();
+    },{passive:false});
+    carousel.addEventListener('touchend',function(e){
+      if(!tracking)return;
+      tracking=false;
+      const touch=e.changedTouches&&e.changedTouches[0];
+      if(!touch)return;
+      const dx=touch.clientX-startX;
+      const dy=touch.clientY-startY;
+      if(Math.abs(dx)<50||Math.abs(dx)<=Math.abs(dy))return;
+      window.stepTankStockSlide(dx<0?1:-1);
+    },{passive:true});
+    carousel.addEventListener('touchcancel',function(){tracking=false;},{passive:true});
+  }
   window.goTankStockSlide=function(index){if(!tankStockCarousel.events.length)return;tankStockCarousel.index=Math.max(0,Math.min(Number(index)||0,tankStockCarousel.events.length-1));renderTankStockCarousel();};
   window.stepTankStockSlide=function(direction){window.goTankStockSlide(tankStockCarousel.index+direction);};
   window.openTankStockCard=function(purchaseId){
     const modal=document.getElementById('tank-stock-modal');if(!modal)return;
     tankStockCarousel={purchaseId:String(purchaseId||''),events:getTankStockEvents(purchaseId),index:0};
     if(!tankStockCarousel.events.length){openPurchaseFailed('All discharge operations for this purchase already have tank stock recorded.','Tank Stock Complete');return;}
-    renderTankStockCarousel();modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+    renderTankStockCarousel();bindTankStockSwipe();modal.classList.add('open');modal.setAttribute('aria-hidden','false');
   };
   window.closeTankStockCard=function(){const modal=document.getElementById('tank-stock-modal');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}tankStockCarousel={purchaseId:null,events:[],index:0};};
   window.saveTankStock=async function(){
@@ -1340,7 +1380,7 @@
     <div class="top"><div><span class="section-kicker">TANK STOCK</span><h3>Fill Tank Stock</h3></div><button type="button" class="modal-close" onclick="closeTankStockCard()">×</button></div>
     <div class="tank-stock-carousel-head"><span>Discharge operations</span><strong id="tank-stock-counter">1 / 1</strong></div>
     <div class="tank-stock-carousel"><div id="tank-stock-track" class="tank-stock-track"></div></div>
-    <div class="tank-stock-carousel-nav"><button type="button" id="tank-stock-prev" onclick="stepTankStockSlide(-1)">‹ Previous</button><div id="tank-stock-dots" class="tank-stock-dots"></div><button type="button" id="tank-stock-next" onclick="stepTankStockSlide(1)">Next ›</button></div>
+    <div class="tank-stock-carousel-nav" aria-label="Discharge operation navigation"><button type="button" id="tank-stock-prev" onclick="stepTankStockSlide(-1)" aria-label="Previous discharge" title="Previous discharge">‹</button><div id="tank-stock-dots" class="tank-stock-dots"></div><button type="button" id="tank-stock-next" onclick="stepTankStockSlide(1)" aria-label="Next discharge" title="Next discharge">›</button></div>
     <div id="tank-stock-status" class="purchase-status"></div>
   </div>
 </div></body></html>
