@@ -1,1 +1,42 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Daily Report</title><link rel="stylesheet" href="assets/style.css"></head><body onload="document.getElementById('report-date').value=new Date().toISOString().slice(0,10);loadDailyReport()"><main class="wrap"><div class="top"><h2>Daily Report</h2><a href="admin-dashboard.html">Back</a></div><div class="card"><div class="row"><input id="report-date" type="date"><button onclick="loadDailyReport()">Load</button></div><button class="primary" onclick="saveDailyReport()">Save Report Snapshot</button></div><div id="report-summary"></div><div class="card"><h3>Sales by product</h3><table class="table"><thead><tr><th>Product</th><th>Liters</th><th>Amount</th></tr></thead><tbody id="report-table"></tbody></table></div><div id="report-status" class="muted"></div><div id="toast" class="toast"></div></main><script src="assets/app.js?v=20261003-25"></script></body></html>
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Sales Report</title><link rel="stylesheet" href="assets/style.css"></head>
+<body class="daily-report-page" onload="document.getElementById('report-date').value=new Date().toISOString().slice(0,10);loadDailyReport()">
+<main class="wrap daily-report-wrap">
+  <div class="daily-report-header">
+    <div><span class="daily-eyebrow">ADMIN REPORT</span><h1>Daily Sales Report</h1><p id="report-subtitle" class="muted">Sales, shifts and stock movement for the selected day.</p></div>
+    <a class="daily-back" href="admin-dashboard.html">Back</a>
+  </div>
+
+  <section class="daily-filter card">
+    <div><label for="report-date">Report date</label><input id="report-date" type="date" onchange="loadDailyReport()"></div>
+    <div class="daily-filter-actions"><button onclick="loadDailyReport()">Refresh</button><button class="primary" onclick="saveDailyReport()">Save Snapshot</button></div>
+  </section>
+
+  <div id="report-status" class="muted daily-status"></div>
+  <section id="report-summary" class="daily-summary-grid"></section>
+
+  <section class="daily-section">
+    <div class="daily-section-head"><div><span class="daily-kicker">FUEL SALES</span><h2>Sales by product</h2></div></div>
+    <div class="daily-table-wrap"><table class="table daily-table"><thead><tr><th>Product</th><th>Liters</th><th>Amount</th></tr></thead><tbody id="report-table"></tbody></table></div>
+  </section>
+
+  <section class="daily-two-col">
+    <div class="daily-section">
+      <div class="daily-section-head"><div><span class="daily-kicker">PAYMENTS</span><h2>Sales by payment</h2></div></div>
+      <div id="report-payments" class="daily-list"></div>
+    </div>
+    <div class="daily-section">
+      <div class="daily-section-head"><div><span class="daily-kicker">PURCHASES</span><h2>Fuel received</h2></div></div>
+      <div class="daily-table-wrap"><table class="table daily-table"><thead><tr><th>Product</th><th>Liters</th><th>Tank</th></tr></thead><tbody id="report-purchases"></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="daily-section">
+    <div class="daily-section-head"><div><span class="daily-kicker">SHIFT RECONCILIATION</span><h2>Completed shifts</h2></div></div>
+    <div id="report-shifts" class="daily-shift-list"></div>
+  </section>
+
+  <div id="toast" class="toast"></div>
+</main>
+<script src="assets/app.js?v=20261004-01"></script></body></html>
