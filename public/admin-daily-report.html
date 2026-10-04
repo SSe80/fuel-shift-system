@@ -4,13 +4,13 @@
 <body class="daily-report-page" onload="document.getElementById('report-date').value=new Date().toISOString().slice(0,10);loadDailyReport()">
 <main class="wrap daily-report-wrap">
   <div class="daily-report-header">
-    <div><span class="daily-eyebrow">ADMIN REPORT</span><h1>Daily Sales Report</h1><p id="report-subtitle" class="muted">Sales, shifts and stock movement for the selected day.</p></div>
+    <div><span class="daily-eyebrow">ADMIN REPORT</span><h1>Daily Sales Report</h1><p id="report-subtitle" class="muted">All sales from shifts that started on the selected day. The report becomes final when every shift is complete.</p></div>
     <a class="daily-back" href="admin-dashboard.html">Back</a>
   </div>
 
   <section class="daily-filter card">
-    <div><label for="report-date">Report date</label><input id="report-date" type="date" onchange="loadDailyReport()"></div>
-    <div class="daily-filter-actions"><button onclick="loadDailyReport()">Refresh</button><button class="primary" onclick="saveDailyReport()">Save Snapshot</button></div>
+    <div><label for="report-date">Shift start date</label><input id="report-date" type="date" onchange="loadDailyReport()"></div>
+    <div class="daily-filter-actions"><button onclick="loadDailyReport()">Refresh</button><button class="primary" onclick="saveDailyReport()">Generate Report</button></div>
   </section>
 
   <div id="report-status" class="muted daily-status"></div>
