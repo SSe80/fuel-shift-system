@@ -70,6 +70,110 @@
  .purchase-pending-card .purchase-compartment-list{grid-template-columns:1fr 1fr}
 }
 </style><style>
+/* Final purchase card header + action controls */
+.purchase-pending-card .purchase-card-top{
+  display:block;
+  padding:13px 18px 14px 20px;
+  background:#f8fafc;
+  border-bottom:1px solid #e7edf3;
+}
+.purchase-pending-card .purchase-card-status-row{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  min-height:22px;
+  margin-bottom:7px;
+}
+.purchase-pending-card .purchase-pending-status{
+  padding:5px 9px;
+  font-size:10px;
+  line-height:1;
+}
+.purchase-pending-card .purchase-card-main-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  min-width:0;
+}
+.purchase-pending-card .purchase-card-main-row strong{
+  min-width:0;
+  font-size:18px;
+  line-height:1.2;
+  font-weight:800;
+  color:#17202a;
+  overflow-wrap:anywhere;
+}
+.purchase-pending-card .purchase-card-main-row>b{
+  flex:0 0 auto;
+  font-size:20px;
+  line-height:1.1;
+  color:#2563eb;
+  font-weight:800;
+  white-space:nowrap;
+}
+.purchase-pending-card .purchase-pending-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin:0;
+  padding:12px 16px 15px;
+  border-top:1px solid #e7edf3;
+  background:#fff;
+}
+.purchase-pending-card .purchase-pending-actions button{
+  width:100%;
+  min-width:0;
+  min-height:48px;
+  height:48px;
+  padding:0 14px;
+  border:0;
+  border-radius:11px;
+  font-size:14px;
+  line-height:1.15;
+  font-weight:800;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.purchase-pending-card .purchase-pending-actions button:first-child{
+  background:#e9eef3;
+  color:#101828;
+}
+.purchase-pending-card .purchase-pending-actions button:first-child:hover{
+  background:#dde5ec;
+}
+.purchase-pending-card .purchase-pending-actions .primary{
+  background:#2563eb;
+  color:#fff;
+}
+.purchase-pending-card .purchase-pending-actions .primary:hover{
+  background:#1d4ed8;
+}
+@media(max-width:560px){
+  .purchase-pending-card .purchase-card-top{
+    padding:12px 14px 13px 17px;
+  }
+  .purchase-pending-card .purchase-card-main-row{
+    gap:10px;
+  }
+  .purchase-pending-card .purchase-card-main-row strong{
+    font-size:17px;
+  }
+  .purchase-pending-card .purchase-card-main-row>b{
+    font-size:18px;
+  }
+  .purchase-pending-card .purchase-pending-actions{
+    gap:9px;
+    padding:10px 12px 13px;
+  }
+  .purchase-pending-card .purchase-pending-actions button{
+    min-height:46px;
+    height:46px;
+    padding:0 9px;
+    font-size:13px;
+  }
+}
+
 /* Compact, larger discharge summary + full detail card */
 .purchase-pending-card{width:min(760px,100%);margin:0 auto;min-height:0}
 .purchase-pending-card .purchase-card-top{padding:16px 20px 14px 22px}
@@ -261,7 +365,7 @@
     const delivered=Number(p.quantity_liters||0), ordered=Number(p.ordered_quantity_liters||0), difference=delivered-ordered;
     const differenceText=difference===0?'Matches order':difference>0?'Over by '+purchaseLiters(difference)+' L':'Short by '+purchaseLiters(Math.abs(difference))+' L';
     const button=dischargeMode?'<button type="button" class="primary" onclick="dischargePurchase(this.dataset.id)" data-id="'+purchaseH(p.id)+'">Discharge Purchase</button>':'';
-    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div><div class="purchase-pending-status">'+(dischargeMode?'Pending discharge':'Discharged')+'</div><strong>'+purchaseH(productName)+'</strong></div><b>'+purchaseH(purchaseLiters(delivered))+' L</b></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>Delivered <b>'+purchaseH(purchaseLiters(delivered))+' L</b></span><span>Difference <b>'+purchaseH(differenceText)+'</b></span></div><div class="purchase-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button>'+button+'</div></article>';
+    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div class="purchase-card-status-row"><div class="purchase-pending-status">'+(dischargeMode?'Pending discharge':'Discharged')+'</div></div><div class="purchase-card-main-row"><strong>'+purchaseH(productName)+'</strong><b>'+purchaseH(purchaseLiters(delivered))+' L</b></div></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>Delivered <b>'+purchaseH(purchaseLiters(delivered))+' L</b></span><span>Difference <b>'+purchaseH(differenceText)+'</b></span></div><div class="purchase-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button>'+button+'</div></article>';
   };
   window.loadPurchases=async function(){
     try{
