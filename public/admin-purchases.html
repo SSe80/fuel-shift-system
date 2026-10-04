@@ -567,7 +567,30 @@
   </section>
   <div id="purchase-discharge-status" class="purchase-status"></div>
 </div>
-</div><div id="purchase-success-modal" class="modal" aria-hidden="true">
+</div><div id="purchase-failed-modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" onclick="closePurchaseFailed()"></div>
+  <div class="modal-card purchase-confirmation-card">
+    <div class="top">
+      <div>
+        <span class="section-kicker">ACTION FAILED</span>
+        <h3>Operation Failed</h3>
+      </div>
+      <button type="button" class="modal-close" onclick="closePurchaseFailed()">×</button>
+    </div>
+    <div class="purchase-confirmation-body">
+      <div class="purchase-confirmation-icon purchase-failed-icon">×</div>
+      <div>
+        <strong id="purchase-failed-heading">The operation could not be completed.</strong>
+        <p id="purchase-failed-message" class="muted">Please review the message below and try again.</p>
+      </div>
+    </div>
+    <div id="purchase-failed-summary" class="purchase-confirmation-summary"></div>
+    <div class="purchase-confirmation-actions">
+      <button type="button" class="primary" onclick="closePurchaseFailed()">Close</button>
+    </div>
+  </div>
+</div>
+<div id="purchase-success-modal" class="modal" aria-hidden="true">
   <div class="modal-backdrop" onclick="closePurchaseSuccess()"></div>
   <div class="modal-card purchase-confirmation-card">
     <div class="top">
@@ -967,6 +990,21 @@
     modal.classList.add('open');
     modal.setAttribute('aria-hidden','false');
   }
+  window.openPurchaseFailed=function(message,heading){
+    const modal=document.getElementById('purchase-failed-modal');
+    const h=document.getElementById('purchase-failed-heading');
+    const m=document.getElementById('purchase-failed-message');
+    if(!modal||!h||!m)return;
+    h.textContent=heading||'The operation could not be completed.';
+    m.textContent=message||'Please try again.';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+  };
+  window.closePurchaseFailed=function(){
+    const modal=document.getElementById('purchase-failed-modal');
+    if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  };
+
   window.closePurchaseSuccess=function(){
     const modal=document.getElementById('purchase-success-modal');
     if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
@@ -995,8 +1033,10 @@
       await loadPurchases();
       openPurchaseSuccess('discharge',summary);
     }catch(e){
+      const message=e.message||'Failed to discharge purchase.';
       const status=document.getElementById('purchase-discharge-status');
-      if(status){status.textContent=e.message||'Failed to discharge purchase.';status.className='purchase-status error';}
+      if(status){status.textContent=message;status.className='purchase-status error';}
+      openPurchaseFailed(message,'Discharge Purchase Failed');
     }
   };
 
@@ -1033,7 +1073,11 @@
       closePurchaseModal();
       await loadPurchases();
       openPurchaseSuccess('purchase',summary);
-    }catch(e){setStatus(e.message||'Failed to confirm purchase.',true);}
+    }catch(e){
+      const message=e.message||'Failed to confirm purchase.';
+      setStatus(message,true);
+      openPurchaseFailed(message,'Purchase Confirmation Failed');
+    }
   };
   loadPurchases();
 })();
@@ -1133,6 +1177,10 @@
 /* Purchase success card shown only after a successful confirmation */
 .purchase-success-icon{background:#ecfdf3;color:#027a48}
 #purchase-success-modal .purchase-confirmation-actions{grid-template-columns:1fr}
+</style>
+<style>
+.purchase-failed-icon{background:#fef3f2;color:#d92d20}
+#purchase-failed-modal .purchase-confirmation-actions{grid-template-columns:1fr}
 </style>
 </body></html>
 <style>
