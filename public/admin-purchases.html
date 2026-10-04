@@ -689,15 +689,19 @@
     const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||tank?.product||'').toLowerCase());
     const productCode=productRecord?.code_name||'—';
     const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
-    const ordered=Number(p.ordered_quantity_liters||0), delivered=Number(p.quantity_liters||0), diff=delivered-ordered;
-    const difference=diff===0?'Matches order':diff>0?'Over by '+purchaseLiters(diff)+' L':'Short by '+purchaseLiters(Math.abs(diff))+' L';
-    const rows=(items)=>items.map(([label,value])=>'<div class="purchase-detail-row"><span>'+purchaseH(label)+'</span><strong>'+purchaseH(value)+'</strong></div>').join('');
-    const compartmentRows=compartments.map((v,i)=>'<div class="purchase-detail-compartment"><span>Compartment '+(i+1)+'</span><b>'+purchaseLiters(v)+' L</b></div>').join('');
+    const dischargedIndexes=Array.isArray(p.discharged_compartment_indexes)?p.discharged_compartment_indexes:[];
+    const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
+    const ordered=Number(p.ordered_quantity_liters||0), total=compartments.reduce((sum,v)=>sum+Number(v||0),0), discharged=Number(p.discharged_quantity_liters||0), remaining=Math.max(total-discharged,0);
+    const difference=total-ordered===0?'Matches order':total-ordered>0?'Over by '+purchaseLiters(total-ordered)+' L':'Short by '+purchaseLiters(Math.abs(total-ordered))+' L';
+    const rows=items=>items.map(([label,value])=>'<div class="purchase-detail-row"><span>'+purchaseH(label)+'</span><strong>'+purchaseH(value)+'</strong></div>').join('');
+    const compartmentRows=compartments.map((v,i)=>'<div class="purchase-detail-compartment"><span>Compartment '+(i+1)+' · '+(dischargedIndexes.includes(i+1)?'Discharged':'Undischarged')+'</span><b>'+purchaseLiters(v)+' L</b></div>').join('');
+    const eventRows=history.map((e,i)=>'<div class="purchase-detail-discharge-event"><strong>Discharge '+(i+1)+'</strong>'+rows([['Date & time',e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—'],['Compartments',Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'Compartment '+x).join(', '):'—'],['Quantity',purchaseLiters(e.discharged_quantity_liters||0)+' L'],['Tank',e.tank_code||'—'],['Tank before',purchaseLiters(e.tank_liters_before||0)+' L'],['Tank after',purchaseLiters(e.tank_liters_after||0)+' L']])+'</div>').join('');
     const el=document.getElementById('purchase-detail-content');
-    if(el)el.innerHTML='<section class="purchase-detail-section"><h4>Order</h4>'+rows([['Product',productCode],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L']])+'</section>'+
+    if(el)el.innerHTML='<section class="purchase-detail-section"><h4>Order</h4>'+rows([['Product',productCode],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L'],['Purchase date & time',p.purchase_date?new Date(p.purchase_date).toLocaleString():'—']])+'</section>'+
       '<section class="purchase-detail-section"><h4>Truck & Driver</h4>'+rows([['Driver name',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Compartments',String(p.truck_compartments||'—')],['Tank',tank?.tank_code||'—']])+'</section>'+
-      '<section class="purchase-detail-section"><h4>Delivery</h4>'+rows([['Delivered quantity',purchaseLiters(delivered)+' L'],['Difference',difference],['Purchase date',p.purchase_date?new Date(p.purchase_date).toLocaleString():'—'],['Status',p.status||'—'],['Discharged at',p.discharged_at?new Date(p.discharged_at).toLocaleString():'Not discharged']])+
-      (compartments.length?'<div class="purchase-detail-compartments"><h5>Compartment quantities</h5>'+compartmentRows+'</div>':'')+'</section>';
+      '<section class="purchase-detail-section"><h4>Delivery</h4>'+rows([['Delivered quantity',purchaseLiters(total)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Undischarged quantity',purchaseLiters(remaining)+' L'],['Difference',difference],['Status',p.status||'—'],['Fully discharged at',p.discharged_at?new Date(p.discharged_at).toLocaleString():'Not yet']])+
+      (compartments.length?'<div class="purchase-detail-compartments"><h5>Compartment quantities</h5>'+compartmentRows+'</div>':'')+
+      (history.length?'<div class="purchase-detail-compartments"><h5>Discharge history</h5>'+eventRows+'</div>':'')+'</section>';
     const m=document.getElementById('purchase-detail-modal');if(m){m.classList.add('open');m.setAttribute('aria-hidden','false');}
   };
   let purchaseDetailTanks=[];
@@ -705,17 +709,25 @@
     const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||tank?.product||'').toLowerCase());
     const productCode=productRecord?.code_name||'—';
     const productColor=productRecord?.color||'—';
-    const delivered=Number(p.quantity_liters||0), ordered=Number(p.ordered_quantity_liters||0), difference=delivered-ordered;
-    const differenceText=difference===0?'Matches order':difference>0?'Over by '+purchaseLiters(difference)+' L':'Short by '+purchaseLiters(Math.abs(difference))+' L';
-    const button=dischargeMode?'<button type="button" class="primary" onclick="dischargePurchase(this.dataset.id)" data-id="'+purchaseH(p.id)+'">Discharge Purchase</button>':'';
-    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div class="purchase-card-header-row"><div class="purchase-product-identity"><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(productCode)+'</strong></div><b class="purchase-card-delivered">'+purchaseH(purchaseLiters(delivered))+' L</b></div><div class="purchase-pending-status">'+(dischargeMode?'Pending discharge':'Discharged')+'</div></div></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>Delivered <b>'+purchaseH(purchaseLiters(delivered))+' L</b></span><span>Difference <b>'+purchaseH(differenceText)+'</b></span></div><div class="purchase-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button>'+button+'</div></article>';
+    const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
+    const total=compartments.reduce((sum,v)=>sum+Number(v||0),0);
+    const discharged=Number(p.discharged_quantity_liters||0);
+    const remaining=Math.max(total-discharged,0);
+    const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
+    const lastEvent=history.length?history[history.length-1]:null;
+    const displayQty=dischargeMode?(p.status==='discharged'?total:discharged):remaining;
+    const label=dischargeMode?(p.status==='discharged'?'Delivered':'Discharged'):'Undischarged';
+    const status=dischargeMode?(p.status==='discharged'?'Discharged':'Partially discharged'):'Pending discharge';
+    const dateLine=dischargeMode?(lastEvent?'Last discharge: '+new Date(lastEvent.discharge_datetime).toLocaleString():'Purchase: '+(p.purchase_date?new Date(p.purchase_date).toLocaleString():'—')):'Purchase: '+(p.purchase_date?new Date(p.purchase_date).toLocaleString():'—');
+    const button=(!dischargeMode&&remaining>0)?'<button type="button" class="primary" onclick="dischargePurchase(this.dataset.id)" data-id="'+purchaseH(p.id)+'">Discharge Purchase</button>':'';
+    return '<article class="purchase-card purchase-pending-card"><div class="purchase-card-top"><div class="purchase-card-header-row"><div class="purchase-product-identity"><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(productCode)+'</strong></div><b class="purchase-card-delivered">'+purchaseH(purchaseLiters(displayQty))+' L</b></div><div class="purchase-pending-status">'+purchaseH(status)+'</div></div></div><div class="purchase-card-meta"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Tank <b>'+purchaseH(tank?.tank_code||tank?.product||'—')+'</b></span><span>'+purchaseH(label)+' <b>'+purchaseH(purchaseLiters(displayQty))+' L</b></span><span>Date & time <b>'+purchaseH(dateLine)+'</b></span></div><div class="purchase-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button>'+button+'</div></article>';
   };
   window.loadPurchases=async function(){
     try{
       setStatus('Loading purchases…',false);
       const [tanks,productsData,pending,history,shifts,employees]=await Promise.all([purchaseApi('/api/tanks'),purchaseApi('/api/products'),purchaseApi('/api/purchases?status=pending_discharge'),purchaseApi('/api/purchases?status=discharged'),purchaseApi('/api/shifts'),purchaseApi('/api/employees')]);
       if(!Array.isArray(tanks)||!Array.isArray(productsData)||!Array.isArray(pending)||!Array.isArray(history)||!Array.isArray(shifts)||!Array.isArray(employees))throw new Error('Unable to load purchase data');
-      purchaseTanks=tanks; purchaseDetailTanks=tanks; purchaseProducts=productsData; purchaseShifts=shifts; purchaseEmployees=employees; purchaseDetailData=[...pending,...history];
+      purchaseTanks=tanks; purchaseDetailTanks=tanks; purchaseProducts=productsData; purchaseShifts=shifts; purchaseEmployees=employees; purchaseDetailData=[...pending,...history.filter(h=>!pending.some(p=>String(p.id)===String(h.id)))];
       const activeTanks=tanks.filter(t=>t.active!==false);
       const activeProducts=productsData.filter(p=>p.active!==false).filter(p=>activeTanks.some(t=>String(t.product||'').toLowerCase()===String(p.name||'').toLowerCase()));
       const productSelect=document.getElementById('purchase-product');
