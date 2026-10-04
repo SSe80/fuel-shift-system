@@ -321,7 +321,7 @@ async function userDashboard(){
           return '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(x?.opening_reading)+'</div><div class="pending-nozzle-code">'+h(nozzleCode)+'</div></div>';
         }).join('')
         :'<div class="muted">No nozzle readings recorded.</div>';
-      return '<div class="card pending-confirmation-card">'+
+      return '<div class="card dashboard-purchase-card pending pending-confirmation-card">'+
         '<div class="pending-hero"><div class="pending-hero-icon">◷</div><div><div class="pending-card-title">Pending Shift Confirmation</div><div class="pending-card-subtitle">Please review the shift details and confirm when ready.</div></div></div>'+
         ''+
         '<div class="pending-shift-info"><div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n?.nozzle_code||s.nozzle_id)+'</strong></div></div><div class="pending-info-divider"></div><div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank</span><strong>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</strong></div></div><div class="pending-tank-opening"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank opening</span><strong>'+liters(s.opening_tank_liters)+' <small>L</small></strong></div></div></div>'+
@@ -345,7 +345,7 @@ async function userDashboard(){
 
     const pendingOutgoingHtml=pendingOutgoingHandovers.map(x=>{
       const shift=shifts.find(s=>s.id===x.shift_id), n=nozzles.find(item=>item.id===shift?.nozzle_id);
-      return '<div class="card pending-confirmation-card handover-pending-card">'+
+      return '<div class="card dashboard-purchase-card pending pending-confirmation-card handover-pending-card">'+
         '<div class="pending-hero"><div class="pending-hero-icon">↔</div><div><div class="pending-card-title">Pending Handover</div><div class="pending-card-subtitle">Waiting for the receiving attendant to confirm the handover.</div></div></div>'+
         '<div class="handover-pending-summary">'+
           '<div class="handover-pending-main"><span>Receiving attendant</span><strong>'+h(employeeNames[x.to_employee_id]||x.to_employee_id)+'</strong></div>'+
@@ -365,7 +365,7 @@ async function userDashboard(){
       const nozzleReadings=readings.map((r,i)=>
         '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(r.reading)+'</div><div class="pending-nozzle-code">'+h(r.nozzle_id||n?.nozzle_code||shift?.nozzle_id)+'</div></div>'
       ).join('');
-      return '<div class="card pending-confirmation-card handover-receive-card">'+
+      return '<div class="card dashboard-purchase-card pending pending-confirmation-card handover-receive-card">'+
         '<div class="pending-hero"><div class="pending-hero-icon">◷</div><div><div class="pending-card-title">Pending Shift Confirmation</div><div class="pending-card-subtitle">Please review the shift details and confirm when ready.</div></div></div>'+
         '<div class="pending-shift-info">'+
           '<div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(x.source_nozzle_code||n?.nozzle_code||shift?.nozzle_id||x.shift_id)+'</strong></div></div>'+
@@ -396,7 +396,7 @@ async function userDashboard(){
       const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
       const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
       const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
-      return '<div class="card shift-takeover-card pending-takeover-sale-card">'+
+      return '<div class="card dashboard-purchase-card takeover shift-takeover-card pending-takeover-sale-card">'+
         '<div class="takeover-hero"><div class="takeover-hero-icon">◷</div><div><div class="takeover-card-title">Pending Record Sale Confirmation</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+' • Waiting for admin</div></div></div>'+
         '<div class="takeover-total-grid">'+
           '<div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div>'+
@@ -412,7 +412,7 @@ async function userDashboard(){
       const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
       const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
       const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
-      return '<div class="card shift-takeover-card">'+
+      return '<div class="card dashboard-purchase-card takeover shift-takeover-card">'+
         '<div class="takeover-hero"><div class="takeover-hero-icon">↔</div><div><div class="takeover-card-title">Record Sale</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+' • Handover completed</div></div></div>'+
         '<div class="takeover-total-grid"><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div></div>'+
         '<div class="row takeover-sale-action"><button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button><button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button></div>'+
@@ -427,7 +427,7 @@ async function userDashboard(){
       const nozzleReadings=readings.map((x,i)=>
         '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(x.opening_reading ?? x.reading)+'</div><div class="pending-nozzle-code">'+h(x.nozzle_id||n?.nozzle_code||s.nozzle_id)+'</div></div>'
       ).join('');
-      return '<div class="card pending-confirmation-card active-shift-card">'+
+      return '<div class="card dashboard-purchase-card pending pending-confirmation-card active-shift-card">'+
         '<div class="pending-hero active-shift-hero"><div class="pending-hero-icon">✓</div><div><div class="pending-card-title">Active Shift</div><div class="pending-card-subtitle">Your shift is active and ready for fuel sales.</div></div></div>'+
         '<div class="pending-shift-info active-shift-info">'+
           '<div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n?.nozzle_code||s.nozzle_id)+'</strong></div></div>'+
@@ -441,7 +441,11 @@ async function userDashboard(){
         '<div class="row active-shift-actions"><button class="btn active-handover-btn" type="button" onclick="openDashboardHandover(\''+s.id+'\')">Handover</button></div></div>';
     }).join('');
 
-    box.innerHTML=pendingShiftHtml+takeoverHtml+pendingTakeoverHtml+pendingOutgoingHtml+pendingIncomingHtml+activeHtml;
+    const wrapSection=(kicker,title,content)=>content?'<section class="dashboard-section"><div class="dashboard-section-head"><div><span class="section-kicker">'+kicker+'</span><h2>'+title+'</h2></div></div><div class="dashboard-section-cards">'+content+'</div></section>':'';
+box.innerHTML=
+  wrapSection('SHIFT CONFIRMATIONS','Pending Shift Confirmations',pendingShiftHtml+pendingIncomingHtml)+
+  wrapSection('SHIFT HANDOVER','Record Sale & Handover',takeoverHtml+pendingTakeoverHtml+pendingOutgoingHtml)+
+  wrapSection('ACTIVE','Active Shifts',activeHtml);
     if(!box.innerHTML)box.innerHTML='';
   }catch(e){
     if(e.message==='Unauthorized')location.href='attendant-login.html';
@@ -469,7 +473,7 @@ async function loadAttendantShiftPage(){
         const n=nozzles.find(x=>x.id===s.nozzle_id);
         const readings=Array.isArray(s.activation_nozzles)?s.activation_nozzles:[];
         const nozzleReadings=readings.length?readings.map(x=>'<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(readings.indexOf(x)+1)+'</span></div><div class="pending-nozzle-number">'+reading(x.opening_reading)+'</div><div class="pending-nozzle-code">'+h(x.nozzle_id)+'</div></div>').join(''):'<div class="muted">No nozzle readings recorded.</div>';
-        return '<div class="card pending-confirmation-card">'+
+        return '<div class="card dashboard-purchase-card pending pending-confirmation-card">'+
           '<div class="pending-hero"><div class="pending-hero-icon">◷</div><div><div class="pending-card-title">Pending Shift Confirmation</div><div class="pending-card-subtitle">Please review the shift details and confirm when ready.</div></div></div>'+
           ''+
           '<div class="pending-shift-info"><div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n?.nozzle_code||s.nozzle_id)+'</strong></div></div><div class="pending-info-divider"></div><div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank</span><strong>'+h(tankNames[n?.tank_id]||n?.tank_id||'Not connected')+'</strong></div></div><div class="pending-tank-opening"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank opening</span><strong>'+liters(s.opening_tank_liters)+' <small>L</small></strong></div></div></div>'+
