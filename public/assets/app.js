@@ -895,7 +895,7 @@ function downloadAdminSaleHistoryDetails(id){
 }function downloadPurchaseDetailPdf(){
   const id=window.currentPurchaseDetailId;
   const item=(typeof purchaseDetailData!=='undefined'&&Array.isArray(purchaseDetailData)?purchaseDetailData:[]).find(x=>String(x.id)===String(id));
-  if(!item)return;
+  if(!item){toast('Purchase details are not available. Please reopen the detail card and try again.');return;}
   const p=item;
   const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
   const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
@@ -1001,7 +1001,7 @@ function downloadAdminSaleHistoryDetails(id){
 
   const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'}));
   const link=document.createElement('a');
-  const stamp=(t.shift_ended_at||t.shift_started_at||new Date().toISOString()).replace(/[^0-9]/g,'').slice(0,14);
+  const stamp=(p.purchase_date||p.created_at||new Date().toISOString()).replace(/[^0-9]/g,'').slice(0,14);
   link.href=url;
   link.download='purchase-'+String(p.invoice_number||id).replace(/[^A-Za-z0-9_-]/g,'_')+'-'+stamp+'.pdf';
   document.body.appendChild(link);
@@ -1010,6 +1010,7 @@ function downloadAdminSaleHistoryDetails(id){
   setTimeout(()=>URL.revokeObjectURL(url),1000);
   toast('PDF downloaded');
 }
+window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
 function openAdminSaleHistoryDetails(id){
   const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
   if(!item)return;
