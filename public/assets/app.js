@@ -1956,18 +1956,87 @@ async function createPurchase(e){
     toast(x.message);
   }
 }
+function dailyReportDateLabel(value){
+  if(!value)return 'Selected day';
+  const d=new Date(value+'T00:00:00');
+  return Number.isNaN(d.getTime())?value:d.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+function dailyReportTime(value){
+  if(!value)return '—';
+  const d=new Date(value);
+  return Number.isNaN(d.getTime())?String(value):d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+}
+function dailyReportVarianceClass(value){
+  const n=Number(value||0);
+  return Math.abs(n)<0.0001?'ok':(n>0?'positive':'negative');
+}
 async function loadDailyReport(){
+  const status=document.getElementById('report-status');
   try{
     await window.stationCurrencyReady;
-    const d=document.getElementById('report-date').value||new Date().toISOString().slice(0,10),[r,products]=await Promise.all([api('/api/reports/daily?date='+encodeURIComponent(d)),api('/api/products')]);
-     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
-     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
-    document.getElementById('report-summary').innerHTML=`<div class="statgrid"><div class="stat"><b>${liters(r.summary.sales_liters)} L</b><span>Sales volume</span></div><div class="stat"><b>${money(r.summary.sales_amount)}</b><span>Sales amount</span></div><div class="stat"><b>${liters(r.summary.purchases_liters)} L</b><span>Purchases</span></div></div>`;
-    const rows=Object.entries(r.summary.by_product).map(([p,v])=>`<tr><td>${h(codeForProduct(p))}</td><td>${liters(v.liters)}</td><td>${money(v.amount)}</td></tr>`).join('');
-    document.getElementById('report-table').innerHTML=rows||'<tr><td colspan="3">No sales</td></tr>';
-  }catch(e){document.getElementById('report-status').textContent=e.message;}
+    const d=document.getElementById('report-date').value||new Date().toISOString().slice(0,10);
+    status.textContent='Loading report…';
+    const [r,products]=await Promise.all([api('/api/reports/daily?date='+encodeURIComponent(d)),api('/api/products')]);
+    const productCodes=Object.fromEntries((products||[]).map(p=>[String(p.name||'').toLowerCase(),p.code_name||p.name]));
+    const codeForProduct=p=>productCodes[String(p||'').toLowerCase()]||p||'Unknown';
+    const s=r.summary||{};
+    document.getElementById('report-subtitle').textContent=dailyReportDateLabel(d);
+
+    document.getElementById('report-summary').innerHTML=
+      '<div class="daily-stat primary-stat"><span>Fuel volume sold</span><b>'+liters(s.sales_liters)+' L</b><small>Completed shift readings included</small></div>'+
+      '<div class="daily-stat"><span>Total sales</span><b>'+money(s.sales_amount)+'</b><small>All recorded sales</small></div>'+
+      '<div class="daily-stat"><span>Fuel sales amount</span><b>'+money(s.fuel_sales_amount)+'</b><small>Fuel-sale transactions</small></div>'+
+      '<div class="daily-stat"><span>Fuel received</span><b>'+liters(s.purchases_liters)+' L</b><small>'+Number(s.completed_shifts||0)+' completed shift'+(Number(s.completed_shifts||0)===1?'':'s')+'</small></div>';
+
+    const rows=Object.entries(s.by_product||{}).sort((a,b)=>Number(b[1]?.liters||0)-Number(a[1]?.liters||0)).map(([p,v])=>
+      '<tr><td><b>'+h(codeForProduct(p))+'</b></td><td>'+liters(v.liters)+'</td><td>'+money(v.amount)+'</td></tr>'
+    ).join('');
+    document.getElementById('report-table').innerHTML=rows||'<tr><td colspan="3" class="daily-empty">No fuel sales for this date.</td></tr>';
+
+    const payments=Object.entries(s.payment_methods||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([method,amount])=>
+      '<div class="daily-list-row"><span>'+h(String(method).replace(/^./,x=>x.toUpperCase()))+'</span><b>'+money(amount)+'</b></div>'
+    ).join('');
+    document.getElementById('report-payments').innerHTML=payments||'<div class="daily-empty">No recorded sales.</div>';
+
+    const purchaseRows=(r.purchases||[]).map(x=>{
+      const tank=(x.tank_id&&r.tanks_by_id?.[x.tank_id])||{};
+      return '<tr><td><b>'+h(codeForProduct(x.product))+'</b></td><td>'+liters(x.quantity_liters)+'</td><td>'+h(tank.tank_code||'—')+'</td></tr>';
+    }).join('');
+    document.getElementById('report-purchases').innerHTML=purchaseRows||'<tr><td colspan="3" class="daily-empty">No fuel received.</td></tr>';
+
+    const shifts=(r.shift_summary||[]).map(x=>{
+      const variance=Number(x.tank_variance_liters||0);
+      const vc=dailyReportVarianceClass(variance);
+      return '<article class="daily-shift-card">'+
+        '<div class="daily-shift-head"><div><b>'+h(x.attendant||'Unknown')+'</b><span>'+h(codeForProduct(x.product))+' · '+h(x.tank||'—')+'</span></div><span class="daily-shift-time">'+h(dailyReportTime(x.ended_at))+'</span></div>'+
+        '<div class="daily-shift-grid">'+
+          '<div><span>Fuel sold</span><b>'+liters(x.sales_liters)+' L</b></div>'+
+          '<div><span>Sales amount</span><b>'+money(x.sales_amount)+'</b></div>'+
+          '<div><span>Tank opening</span><b>'+liters(x.tank_opening_liters)+' L</b></div>'+
+          '<div><span>Tank closing</span><b>'+liters(x.tank_closing_liters)+' L</b></div>'+
+        '</div>'+
+        '<div class="daily-shift-foot"><span>Receiver: '+h(x.receiver||'—')+'</span><span class="daily-variance '+vc+'">Tank variance: '+liters(variance)+' L</span></div>'+
+      '</article>';
+    }).join('');
+    document.getElementById('report-shifts').innerHTML=shifts||'<div class="daily-empty">No completed shifts for this date.</div>';
+    status.textContent='';
+  }catch(e){
+    status.textContent=e.message||'Unable to load the daily report.';
+    document.getElementById('report-summary').innerHTML='';
+    document.getElementById('report-table').innerHTML='';
+    document.getElementById('report-payments').innerHTML='';
+    document.getElementById('report-purchases').innerHTML='';
+    document.getElementById('report-shifts').innerHTML='';
+  }
 }
-async function saveDailyReport(){try{await api('/api/reports/daily',{method:'POST',body:JSON.stringify({date:document.getElementById('report-date').value})});toast('Daily report saved');}catch(e){toast(e.message);}}
+async function saveDailyReport(){
+  try{
+    const dateValue=document.getElementById('report-date').value;
+    if(!dateValue){toast('Select a report date');return;}
+    await api('/api/reports/daily',{method:'POST',body:JSON.stringify({date:dateValue})});
+    toast('Daily report snapshot saved');
+  }catch(e){toast(e.message);}
+}
 
 function toast(msg){const e=document.getElementById('toast');if(e){e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',3000);}else alert(msg);}
 
