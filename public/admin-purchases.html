@@ -1273,7 +1273,7 @@
     if(!tankStockCarousel.events.length){openPurchaseFailed('All discharge operations for this purchase already have tank stock recorded.','Tank Stock Complete');return;}
     renderTankStockCarousel();bindTankStockSwipe();modal.classList.add('open');modal.setAttribute('aria-hidden','false');
   };
-  window.closeTankStockCard=function(){const modal=document.getElementById('tank-stock-modal');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}tankStockCarousel={purchaseId:null,events:[],index:0,readings:{},remark:''};};
+  window.closeTankStockCard=function(){const modal=document.getElementById('tank-stock-modal');if(tankStockCarousel.purchaseId&&!tankStockCarousel.remarkSaved&&tankStockCarousel.index===tankStockCarousel.events.length){const status=document.getElementById('tank-stock-status');if(status){status.textContent='Save the Remark card before closing. The remark is optional, so it can be left empty.';status.className='purchase-status error';}return;}if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}tankStockCarousel={purchaseId:null,events:[],index:0,readings:{},remark:'',remarkSaved:false};};
   window.saveTankStockCard=async function(pos){
     const modal=document.getElementById('tank-stock-modal'),status=document.getElementById('tank-stock-status'),p=purchaseDetailData?.find(x=>String(x.id)===String(tankStockCarousel.purchaseId));
     const item=tankStockCarousel.events[pos];
