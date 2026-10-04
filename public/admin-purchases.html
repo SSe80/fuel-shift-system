@@ -949,9 +949,27 @@
     const rows=items=>items.map(([label,value])=>'<div class="purchase-detail-row"><span>'+purchaseH(label)+'</span><strong>'+purchaseH(value)+'</strong></div>').join('');
     const compartmentRows=compartments.map((v,i)=>'<div class="purchase-detail-compartment"><span>Compartment '+(i+1)+' · '+(dischargedIndexes.includes(i+1)?'Discharged':'Undischarged')+'</span><b>'+purchaseLiters(v)+' L</b></div>').join('');
     const eventRows=history.map((e,i)=>{      const before=Number(e.tank_liters_before), qty=Number(e.discharged_quantity_liters||0);      const recordedRaw=e.tank_stock_recorded_liters;      const recorded=Number(recordedRaw);      const hasBefore=Number.isFinite(before), hasRecorded=Number.isFinite(recorded);      const expectedAfter=hasBefore?before+qty:null;      const diff=hasBefore&&hasRecorded?recorded-expectedAfter:null;      const tolerance=Number.isFinite(qty)?Math.max(5,qty*0.01):5;      const differenceHigh=Number.isFinite(diff)&&Math.abs(diff)>tolerance;      const stockStatus=e.tank_stock_recorded===true?(differenceHigh?'⚠ Difference high':'✓ Stock reconciled'):'⚠ Tank stock not recorded';      const stockClass=e.tank_stock_recorded===true?(differenceHigh?'purchase-detail-stock-alert':'purchase-detail-stock-ok'):'purchase-detail-stock-alert';      return '<div class="purchase-detail-discharge-event"><div class="purchase-detail-event-title"><strong>Discharge '+(i+1)+'</strong><span class="'+stockClass+'">'+stockStatus+'</span></div>'+rows([        ['Date & time',e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—'],        ['Compartments',Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'Compartment '+x).join(', '):'—'],        ['Quantity discharged',purchaseLiters(qty)+' L'],        ['Tank',e.tank_code||'—'],        ['Tank stock before',hasBefore?purchaseLiters(before)+' L':'—'],        ['Expected tank stock after',Number.isFinite(expectedAfter)?purchaseLiters(expectedAfter)+' L':'—'],        ['Tank stock recorded',hasRecorded?purchaseLiters(recorded)+' L':'Not recorded'],        ['Stock difference',Number.isFinite(diff)?(diff>0?'+':'')+purchaseLiters(diff)+' L':'—']      ])+'</div>';    }).join('');
+    const tankEntries=[];
+    const addTankEntry=(tankId,tankCode)=>{
+      const key=String(tankId||tankCode||'');
+      if(!key)return;
+      if(!tankEntries.some(x=>x.key===key))tankEntries.push({key,tankId:String(tankId||''),tankCode:tankCode||'—'});
+    };
+    addTankEntry(tank?.id,tank?.tank_code);
+    history.forEach(e=>addTankEntry(e?.tank_id,e?.tank_code));
+    const tankSections=tankEntries.map(entry=>{
+      const tankRecord=purchaseDetailTanks?.find(t=>String(t.id)===String(entry.tankId));
+      const direct=Array.isArray(tankRecord?.active_shifts)?tankRecord.active_shifts:[];
+      const matching=direct.length?direct:purchaseShifts.filter(s=>String(s.status||'').toLowerCase()==='active'&&Array.isArray(s.nozzle_readings)&&s.nozzle_readings.some(n=>String(n.tank_id)===String(entry.tankId)));
+      const attendants=[...new Map(matching.map(s=>{const name=s.employee_name||purchaseEmployees.find(e=>String(e.id)===String(s.employee_id))?.name||'Assigned attendant';return [String(s.employee_id||name),name];})).values()];
+      const attendantText=attendants.length?attendants.join(', '):'No active shift attendant';
+      return '<div class="purchase-detail-tank-card"><div class="purchase-detail-tank-head"><strong>'+purchaseH(entry.tankCode)+'</strong><span>Tank</span></div>'+rows([['Shift attendants',attendantText]])+'</div>';
+    }).join('');
+    const purchaseRemark=[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||'';
     const el=document.getElementById('purchase-detail-content');
     if(el)el.innerHTML='<section class="purchase-detail-section"><h4>Order</h4>'+rows([['Product',productCode],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L'],['Purchase date & time',p.purchase_date?new Date(p.purchase_date).toLocaleString():'—']])+'</section>'+
-      const tankShiftSource=Array.isArray(tank?.active_shifts)?tank.active_shifts:[];      const tankShifts=tankShiftSource.length?tankShiftSource:purchaseShifts.filter(s=>String(s.status||'').toLowerCase()==='active'&&Array.isArray(s.nozzle_readings)&&s.nozzle_readings.some(n=>String(n.tank_id)===String(tank?.id)));      const tankAttendants=[...new Map(tankShifts.map(s=>{const name=s.employee_name||purchaseEmployees.find(e=>String(e.id)===String(s.employee_id))?.name||'Assigned attendant';return [String(s.employee_id||name),name];})).values()];      const purchaseRemark=[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||'';      const tankShiftText=tankAttendants.length?tankAttendants.join(', '):'No active shift attendant';      '<section class="purchase-detail-section"><h4>Truck & Driver</h4>'+rows([['Driver name',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Compartments',String(p.truck_compartments||'—')],['Tank',tank?.tank_code||'—'],['Shift attendants',tankShiftText]])+'</section>'+
+      '<section class="purchase-detail-section"><h4>Truck & Driver</h4>'+rows([['Driver name',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Compartments',String(p.truck_compartments||'—')]])+'</section>'+
+      (tankSections?'<section class="purchase-detail-section"><h4>Tanks</h4>'+tankSections+'</section>':'')+
       '<section class="purchase-detail-section"><h4>Delivery</h4>'+rows([['Delivered quantity',purchaseLiters(total)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Undischarged quantity',purchaseLiters(remaining)+' L'],['Difference',difference],['Status',p.status||'—'],['Fully discharged at',p.discharged_at?new Date(p.discharged_at).toLocaleString():'Not yet']])+
       (compartments.length?'<div class="purchase-detail-compartments"><h5>Compartment quantities</h5>'+compartmentRows+'</div>':'')+
       (history.length?'<div class="purchase-detail-compartments"><h5>Discharge history</h5>'+eventRows+'</div>':'')+
@@ -1539,6 +1557,11 @@
 .purchase-detail-remark-head h5{margin:0;font-size:12px;color:#344054}
 .purchase-detail-remark-head span{padding:3px 7px;border-radius:999px;background:#f2f4f7;color:#667085;font-size:9px;font-weight:800;text-transform:uppercase}
 .purchase-detail-remark p{margin:0;font-size:12px;line-height:1.45;color:#475467;white-space:pre-wrap;overflow-wrap:anywhere}
+.purchase-detail-tank-card{margin-top:8px;padding:10px;border:1px solid #e4e7ec;border-radius:10px;background:#f8fafc}
+.purchase-detail-tank-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.purchase-detail-tank-head strong{font-size:13px;color:#101828}
+.purchase-detail-tank-head span{padding:3px 7px;border-radius:999px;background:#eaf2ff;color:#2563eb;font-size:9px;font-weight:800;text-transform:uppercase}
+.purchase-detail-tank-card .purchase-detail-row{padding:7px 0}
 </style>
 
 <style>
