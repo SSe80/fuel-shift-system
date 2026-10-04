@@ -1204,7 +1204,7 @@ window.downloadPurchaseDetailPdf=async function(){
   window.openPurchaseDetail=function(purchaseId){
     window.currentPurchaseDetailId=purchaseId;
     const p=purchaseDetailData?.find(x=>String(x.id)===String(purchaseId)); if(!p)return;
-    window.currentPurchaseDetailData=p;
+    window.currentPurchaseDetailData=p; window.currentPurchaseDetailTanks=purchaseDetailTanks;
     const tank=purchaseDetailTanks?.find(x=>String(x.id)===String(p.tank_id));
     const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||tank?.product||'').toLowerCase());
     const productCode=productRecord?.code_name||p.product||'—';
@@ -1798,8 +1798,3 @@ window.downloadPurchaseDetailPdf=async function(){
 })();
 </script>
 <style>
-/* Prevent selecting a tank that cannot receive the selected discharge */
-.discharge-tank-card.unavailable{
-  cursor:not-allowed;
-  opacity:.62;
-  background:#f8fafc;
