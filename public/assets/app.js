@@ -892,6 +892,123 @@ function downloadAdminSaleHistoryDetails(id){
   link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
   toast('PDF downloaded');
+}function downloadPurchaseDetailPdf(){
+  const id=window.currentPurchaseDetailId;
+  const item=(typeof purchaseDetailData!=='undefined'&&Array.isArray(purchaseDetailData)?purchaseDetailData:[]).find(x=>String(x.id)===String(id));
+  if(!item)return;
+  const p=item;
+  const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
+  const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
+  const delivered=Number(p.delivered_quantity_liters||p.quantity_liters||p.ordered_quantity_liters||0);
+  const discharged=Number(p.discharged_quantity_liters||0);
+  const remaining=Math.max(0,delivered-discharged);
+  const clean=value=>String(value==null?'':value).replace(/[^ -~]/g,'?');
+  const wrap=(value,width)=>{
+    const words=clean(value).split(/\s+/);
+    const out=[];
+    let line='';
+    words.forEach(word=>{
+      if(!word)return;
+      const next=line?line+' '+word:word;
+      if(next.length>width){
+        if(line)out.push(line);
+        line=word;
+      }else{
+        line=next;
+      }
+    });
+    if(line)out.push(line);
+    return out.length?out:[''];
+  };
+  const lines=[
+    'PURCHASE HISTORY - PURCHASE DETAIL','',
+    'Product: '+clean(p.product||p.product_code||''),
+    'Invoice: '+clean(p.invoice_number||''),
+    'Status: '+clean(p.status||''),
+    'Purchase date: '+clean(p.purchase_date?new Date(p.purchase_date).toLocaleString():(p.created_at?new Date(p.created_at).toLocaleString():'')),
+    'Ordered quantity: '+clean(Number(p.ordered_quantity_liters||p.quantity_liters||0).toLocaleString())+' L',
+    'Delivered quantity: '+clean(delivered.toLocaleString())+' L',
+    'Discharged quantity: '+clean(discharged.toLocaleString())+' L',
+    'Undischarged quantity: '+clean(remaining.toLocaleString())+' L',
+    '',
+    'ORDER','----------------------------------------',
+    'Invoice number: '+clean(p.invoice_number||'—'),
+    'Purchase date: '+clean(p.purchase_date?new Date(p.purchase_date).toLocaleString():(p.created_at?new Date(p.created_at).toLocaleString():'—')),
+    '',
+    'TRUCK & DRIVER','----------------------------------------',
+    'Driver: '+clean(p.driver_name||'—'),
+    'Driver phone: '+clean(p.driver_phone||'—'),
+    'Plate number: '+clean(p.plate_number||p.truck_plate||'—'),
+    'Compartments: '+clean(p.truck_compartments||compartments.length||'—')
+  ];
+  compartments.forEach((q,index)=>lines.push('Compartment '+(index+1)+': '+clean(Number(q||0).toLocaleString())+' L'));
+  lines.push('','DISCHARGE HISTORY','----------------------------------------');
+  if(!history.length)lines.push('No discharge operations recorded.');
+  history.forEach((e,index)=>{
+    lines.push(
+      'Discharge '+(index+1)+': '+clean(e.discharge_datetime||e.discharged_at||e.created_at||'—'),
+      'Quantity: '+clean(Number(e.quantity_liters||e.discharged_quantity_liters||0).toLocaleString())+' L',
+      'Tank: '+clean(e.tank_code||e.tank_id||'—'),
+      'Shift attendant(s): '+clean(e.shift_attendants||e.attendant_name||e.employee_name||'—'),
+      'Tank stock before: '+clean(Number(e.tank_liters_before||0).toLocaleString())+' L',
+      'Expected closing: '+clean(Number(e.expected_closing_liters||0).toLocaleString())+' L',
+      'Recorded closing: '+clean(Number(e.tank_liters_after||e.recorded_closing_liters||0).toLocaleString())+' L',
+      'Stock status: '+clean(e.tank_stock_status||'—'),''
+    );
+  });
+  lines.push('PURCHASE REMARK','----------------------------------------',clean(p.remark||p.purchase_remark||'No purchase remark recorded.'));
+
+  const pageLines=[];
+  lines.forEach(line=>pageLines.push(...wrap(line,88)));
+  const pages=[];
+  for(let i=0;i<pageLines.length;i+=46)pages.push(pageLines.slice(i,i+46));
+
+  const objects=[{id:1,body:'<< /Type /Catalog /Pages 2 0 R >>'}];
+  const kids=[];
+  let nextId=4;
+  pages.forEach(pageLinesForPage=>{
+    const pageId=nextId++;
+    const contentId=nextId++;
+    kids.push(pageId+' 0 R');
+    const textCommands=pageLinesForPage.map((line,index)=>{
+      const escaped=clean(line).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+      return (index?'0 -15 Td\n':'')+'('+escaped+') Tj';
+    }).join('\n');
+    const stream='BT\n/F1 11 Tf\n50 760 Td\n'+textCommands+'\nET';
+    objects.push(
+      {id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents '+contentId+' 0 R >>'},
+      {id:contentId,body:'<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream'}
+    );
+  });
+  objects.push(
+    {id:2,body:'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+pages.length+' >>'},
+    {id:3,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'}
+  );
+  objects.sort((a,b)=>a.id-b.id);
+
+  let pdf='%PDF-1.4\n%PDF-1.4\n';
+  const offsets=[];
+  objects.forEach(object=>{
+    offsets[object.id]=pdf.length;
+    pdf+=object.id+' 0 obj\n'+object.body+'\nendobj\n';
+  });
+  const xrefOffset=pdf.length;
+  pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
+  for(let i=1;i<=objects.length;i++){
+    pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \n';
+  }
+  pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xrefOffset+'\n%%EOF';
+
+  const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'}));
+  const link=document.createElement('a');
+  const stamp=(t.shift_ended_at||t.shift_started_at||new Date().toISOString()).replace(/[^0-9]/g,'').slice(0,14);
+  link.href=url;
+  link.download='purchase-'+String(p.invoice_number||id).replace(/[^A-Za-z0-9_-]/g,'_')+'-'+stamp+'.pdf';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('PDF downloaded');
 }
 function openAdminSaleHistoryDetails(id){
   const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
