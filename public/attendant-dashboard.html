@@ -1,4 +1,81 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Attendant Dashboard</title><link rel="stylesheet" href="assets/style.css?v=20261002-12"></head><body class="attendant-page attendant-dashboard-page" data-app-page="userDashboard"><main class="wrap"><header class="app-header"><div><span class="eyebrow">FUEL OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div><button class="header-action" onclick="logout()">Logout</button></header><nav class="nav" aria-label="Attendant navigation"><a class="active" href="attendant-dashboard.html">Dashboard</a><a href="shift.html">My Shift</a></nav><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div><div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-liters-label">Tank closing liter<input id="handover-closing-liters" type="number" min="0" step="0.01" placeholder="Enter tank closing liters" required></label><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="takeover-sale-modal" class="modal" aria-hidden="true">
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Attendant Dashboard</title><link rel="stylesheet" href="assets/style.css?v=20261002-12"><style>
+/* Attendant Dashboard — use the same visual language as Admin Purchases */
+.attendant-dashboard-page{background:#f7f9fc;color:#182230}
+.attendant-dashboard-page .wrap{max-width:980px}
+.attendant-dashboard-page .purchase-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:18px 4px 20px}
+.attendant-dashboard-page .purchase-header h1{margin:0;font-size:31px;letter-spacing:-.035em}
+.attendant-dashboard-page .purchase-header p{margin:7px 0 0;font-size:14px}
+.attendant-dashboard-page .purchase-back{padding:10px 14px;border:1px solid #d8e0e8;border-radius:12px;background:#fff;color:#334155;font-weight:750;box-shadow:0 2px 8px rgba(23,34,42,.04)}
+.attendant-dashboard-page .nav{margin:0 0 14px}
+.attendant-dashboard-page .page-heading{margin:0 0 14px;padding:18px;border:1px solid #e1e8f0;border-radius:18px;background:#fff;box-shadow:0 6px 22px rgba(23,34,42,.04)}
+.attendant-dashboard-page .page-heading h2{margin:0;font-size:18px}
+.attendant-dashboard-page .page-heading p{margin:5px 0 0}
+.attendant-dashboard-page #shift{display:grid;gap:14px}
+.attendant-dashboard-page .dashboard-section{margin:0;padding:18px;border:1px solid #e1e8f0;border-radius:18px;background:#fff;box-shadow:0 6px 22px rgba(23,34,42,.045)}
+.attendant-dashboard-page .dashboard-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px;padding-bottom:11px;border-bottom:1px solid #edf1f5}
+.attendant-dashboard-page .dashboard-section-head h2{margin:0;font-size:18px;letter-spacing:-.02em}
+.attendant-dashboard-page .dashboard-section-head .section-kicker{margin:0}
+.attendant-dashboard-page .dashboard-section-cards{display:grid;gap:10px}
+.attendant-dashboard-page .dashboard-empty{padding:14px;text-align:center;color:#98a2b3;font-size:12px;border:1px dashed #dfe6ed;border-radius:12px;background:#fafbfd}
+.attendant-dashboard-page .dashboard-purchase-card{position:relative;overflow:hidden;border:1px solid #dce5ee!important;border-radius:14px!important;background:#fff!important;box-shadow:0 2px 8px rgba(16,24,40,.04)!important;margin:0!important}
+.attendant-dashboard-page .dashboard-purchase-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#d0d5dd}
+.attendant-dashboard-page .dashboard-purchase-card.pending::before{background:#f59e0b}
+.attendant-dashboard-page .dashboard-purchase-card.active::before{background:#12b76a}
+.attendant-dashboard-page .dashboard-purchase-card .pending-hero,
+.attendant-dashboard-page .dashboard-purchase-card .takeover-hero{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px 11px 18px;border-bottom:1px solid #edf1f4;background:#fbfcfe}
+.attendant-dashboard-page .dashboard-purchase-card .pending-hero>div:last-child,
+.attendant-dashboard-page .dashboard-purchase-card .takeover-hero>div:last-child{min-width:0}
+.attendant-dashboard-page .dashboard-purchase-card .pending-card-title,
+.attendant-dashboard-page .dashboard-purchase-card .takeover-card-title{font-size:14px;font-weight:850;color:#17202a}
+.attendant-dashboard-page .dashboard-purchase-card .pending-card-subtitle,
+.attendant-dashboard-page .dashboard-purchase-card .takeover-card-subtitle{margin-top:3px;font-size:10px;color:#8a949e;overflow-wrap:anywhere}
+.attendant-dashboard-page .dashboard-purchase-card .pending-hero-icon,
+.attendant-dashboard-page .dashboard-purchase-card .takeover-hero-icon{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;border:1px solid #e1e7ed;border-radius:9px;background:#fff;color:#667085;font-size:14px}
+.attendant-dashboard-page .dashboard-purchase-card .pending-shift-info{display:grid;grid-template-columns:1fr 1px 1fr;gap:12px;padding:12px 16px}
+.attendant-dashboard-page .dashboard-purchase-card .pending-info-divider{background:#edf1f4}
+.attendant-dashboard-page .dashboard-purchase-card .pending-info-block,
+.attendant-dashboard-page .dashboard-purchase-card .pending-tank-opening{display:flex;align-items:center;gap:8px;min-width:0}
+.attendant-dashboard-page .dashboard-purchase-card .pending-info-icon{display:none}
+.attendant-dashboard-page .dashboard-purchase-card .pending-label,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-main span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:#98a2b3;font-weight:800}
+.attendant-dashboard-page .dashboard-purchase-card .pending-info-block strong,
+.attendant-dashboard-page .dashboard-purchase-card .pending-tank-opening strong,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-main strong{display:block;margin-top:3px;font-size:13px;color:#344054;overflow-wrap:anywhere}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-section,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-section{padding:0 16px 10px}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-heading,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-title{padding:9px 0;border-top:1px solid #edf1f4;border-bottom:1px solid #edf1f4;font-size:11px;font-weight:850;color:#475467}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-reading,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-reading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #f0f2f5}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-reading:last-child,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-reading:last-child{border-bottom:0}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-number,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-reading strong{font-size:13px;font-weight:800;color:#17202a}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-code,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-reading span{font-size:10px;color:#8a949e}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-top{display:none}
+.attendant-dashboard-page .dashboard-purchase-card .form,
+.attendant-dashboard-page .dashboard-purchase-card .row{padding:0 16px 13px}
+.attendant-dashboard-page .dashboard-purchase-card .form input{min-height:42px;border-radius:10px}
+.attendant-dashboard-page .dashboard-purchase-card .row{display:flex;gap:8px;margin-top:0}
+.attendant-dashboard-page .dashboard-purchase-card .row button{flex:1;min-height:40px;border-radius:9px;font-size:12px;font-weight:800}
+.attendant-dashboard-page .dashboard-purchase-card .takeover-total-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#e8edf2}
+.attendant-dashboard-page .dashboard-purchase-card .takeover-total-grid>div{padding:11px 13px;background:#fff}
+.attendant-dashboard-page .dashboard-purchase-card .takeover-total-grid span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:#98a2b3;font-weight:800}
+.attendant-dashboard-page .dashboard-purchase-card .takeover-total-grid strong{display:block;margin-top:4px;font-size:14px;color:#344054}
+.attendant-dashboard-page .dashboard-purchase-card .takeover-sale-action{padding:10px 14px 13px;border-top:1px solid #edf1f4;background:#fff}
+.attendant-dashboard-page .dashboard-purchase-card.active .active-shift-hero{background:#fbfefc}
+.attendant-dashboard-page .dashboard-purchase-card.active .active-shift-info{grid-template-columns:1fr 1px 1fr}
+.attendant-dashboard-page .dashboard-purchase-card.active .active-reading-section{padding-bottom:4px}
+@media(max-width:600px){
+ .attendant-dashboard-page .purchase-header{align-items:flex-start;padding:12px 4px 16px}
+ .attendant-dashboard-page .purchase-header h1{font-size:27px}
+ .attendant-dashboard-page .dashboard-section{padding:14px;border-radius:16px}
+ .attendant-dashboard-page .dashboard-purchase-card .pending-shift-info{grid-template-columns:1fr 1fr}
+ .attendant-dashboard-page .dashboard-purchase-card .pending-info-divider{display:none}
+ .attendant-dashboard-page .dashboard-purchase-card .pending-tank-opening{grid-column:1/-1;padding-top:9px;border-top:1px solid #edf1f4}
+}
+</style></head><body class="attendant-page attendant-dashboard-page admin-purchases-page" data-app-page="userDashboard"><main class="wrap"><header class="purchase-header"><div><span class="eyebrow">FUEL OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div><button class="purchase-back" type="button" onclick="logout()">Logout</button></header><nav class="nav" aria-label="Attendant navigation"><a class="active" href="attendant-dashboard.html">Dashboard</a><a href="shift.html">My Shift</a></nav><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div><div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-liters-label">Tank closing liter<input id="handover-closing-liters" type="number" min="0" step="0.01" placeholder="Enter tank closing liters" required></label><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="takeover-sale-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closeTakeoverSaleModal()"></div>
 <div class="modal-card takeover-action-modal">
 <div class="top"><div><span class="section-kicker">SHIFT HANDOVER</span><h3>Record Sale</h3></div><button type="button" class="modal-close" onclick="closeTakeoverSaleModal()" aria-label="Close">×</button></div>
