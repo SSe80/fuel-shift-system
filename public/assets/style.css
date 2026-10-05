@@ -3184,3 +3184,125 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .daily-report-page .daily-report-date-top b{font-size:15px}
   .daily-report-page .daily-confirm-head h3{font-size:18px}
 }
+
+/* DSR — sales awaiting confirmation */
+.daily-report-page .daily-confirm-methods{
+  margin-top:13px;
+  border:1px solid #dfe6ee;
+  border-radius:13px;
+  background:#fff;
+  overflow:hidden;
+}
+.daily-report-page .daily-confirm-methods .daily-confirm-label{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin:0;
+  padding:10px 12px;
+  background:#f7f9fc;
+  border-bottom:1px solid #e6ebf1;
+  color:#344054;
+  font-size:10px;
+  letter-spacing:.06em;
+}
+.daily-report-page .daily-confirm-methods .daily-confirm-label span{
+  font-weight:900;
+  text-transform:uppercase;
+}
+.daily-report-page .daily-confirm-methods .daily-confirm-label small{
+  color:#87919d;
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:0;
+  text-transform:none;
+}
+.daily-report-page .daily-dsr-select-all-row{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:9px;
+  min-height:46px;
+  padding:8px 11px;
+  background:#fbfcfe;
+  border-bottom:1px solid #e9edf2;
+  cursor:pointer;
+}
+.daily-report-page .daily-dsr-select-all-row input,
+.daily-report-page .daily-dsr-method-row input{
+  width:17px;
+  height:17px;
+  margin:0;
+  accent-color:#1264d8;
+}
+.daily-report-page .daily-dsr-select-all-row span{
+  min-width:0;
+}
+.daily-report-page .daily-dsr-select-all-row strong{
+  display:block;
+  font-size:11px;
+  color:#344054;
+}
+.daily-report-page .daily-dsr-select-all-row small{
+  display:block;
+  margin-top:2px;
+  color:#8a94a1;
+  font-size:9px;
+}
+.daily-report-page .daily-dsr-select-all-row em{
+  color:#1264d8;
+  font-size:9px;
+  font-style:normal;
+  font-weight:850;
+  white-space:nowrap;
+}
+.daily-report-page .daily-confirm-methods .daily-dsr-method-row{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  min-height:51px;
+  margin:0;
+  padding:8px 11px;
+  gap:9px;
+  border:0;
+  border-bottom:1px solid #edf1f4;
+  border-radius:0;
+  background:#fff;
+  cursor:pointer;
+}
+.daily-report-page .daily-confirm-methods .daily-dsr-method-row:last-child{border-bottom:0}
+.daily-report-page .daily-confirm-methods .daily-dsr-method-row span{min-width:0}
+.daily-report-page .daily-confirm-methods .daily-dsr-method-row span strong{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#17202a;
+  font-size:11px;
+}
+.daily-report-page .daily-confirm-methods .daily-dsr-method-row span small{
+  display:block;
+  margin-top:2px;
+  color:#8a94a1;
+  font-size:9px;
+}
+.daily-report-page .daily-confirm-methods .daily-dsr-method-row > strong:last-child{
+  margin-left:0;
+  color:#17202a;
+  font-size:12px;
+  font-variant-numeric:tabular-nums;
+}
+.daily-report-page .daily-confirm-card.is-waiting .daily-confirm-methods{
+  opacity:.78;
+}
+@media(max-width:600px){
+  .daily-report-page .daily-confirm-methods .daily-confirm-label{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:2px;
+  }
+  .daily-report-page .daily-dsr-method-row,
+  .daily-report-page .daily-dsr-select-all-row{
+    grid-template-columns:auto minmax(0,1fr) auto;
+  }
+}
