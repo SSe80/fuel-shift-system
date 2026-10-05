@@ -2028,24 +2028,44 @@ def _daily_confirmation_snapshot(report_date):
     # has actually recorded at least one sale entry. A duplicate handover for
     # any shift is explicitly blocking because there is no safe way to choose
     # an authoritative handover implicitly.
+    missing_handover_shifts=[
+        str(x.get("id")) for x in shifts
+        if len(takeovers_by_shift.get(str(x.get("id")),[]))==0
+    ]
+    missing_sales_shifts=[
+        str(x.get("id")) for x in shifts
+        if len(takeovers_by_shift.get(str(x.get("id")),[]))==1
+        and sale_count_by_takeover.get(str(takeovers_by_shift[str(x.get("id"))][0].get("id")),0)==0
+    ]
+    unsubmitted_sales_shifts=[
+        str(x.get("id")) for x in shifts
+        if len(takeovers_by_shift.get(str(x.get("id")),[]))==1
+        and not bool(takeovers_by_shift[str(x.get("id"))][0].get("sales_submitted_at"))
+    ]
+    unconfirmed_sales_shifts=[
+        str(x.get("id")) for x in shifts
+        if len(takeovers_by_shift.get(str(x.get("id")),[]))==1
+        and str(takeovers_by_shift[str(x.get("id"))][0].get("sales_status") or "")!="confirmed"
+    ]
     all_handover_recorded=(
         len(takeovers)==len(shifts)
         and not duplicate_handover_shifts
-        and all(len(takeovers_by_shift.get(str(x.get("id")),[]))==1 for x in shifts)
+        and not missing_handover_shifts
     )
     all_sales_recorded=(
-        all(
-            sale_count_by_takeover.get(str(t.get("id")),0)>0
-            and str(t.get("sales_status") or "") in ("pending_admin","confirmed")
-            and bool(t.get("sales_submitted_at"))
+        not missing_handover_shifts
+        and not duplicate_handover_shifts
+        and not missing_sales_shifts
+        and not unsubmitted_sales_shifts
+        and all(
+            str(t.get("sales_status") or "") in ("pending_admin","confirmed")
             for t in takeovers
         )
         and len(takeovers)==len(shifts)
-        and not duplicate_handover_shifts
     )
     dsr_ready=bool(all_complete and all_handover_recorded and all_sales_recorded)
     sales_ready=all(str(x.get("sales_status") or "confirmed")=="confirmed" for x in takeovers) if takeovers and not duplicate_handover_shifts else False
-    return {"date":report_date.isoformat(),"shift_count":len(shifts),"completed_shift_count":sum(1 for x in shifts if x.get("end_time")),"dispenser_count":len(dispenser_ids),"all_shifts_complete":all_complete,"all_handover_recorded":all_handover_recorded,"duplicate_handover_shifts":duplicate_handover_shifts,"all_sales_recorded":all_sales_recorded,"sales_confirmation_ready":sales_ready,"can_confirm":dsr_ready,"status":"pending" if dsr_ready else None,"total_sales_liters":sum(float(x.get("total_sales_liters") or 0) for x in takeovers),"total_sales_amount":sum(methods.values()),"sales_by_method":methods},None,200
+    return {"date":report_date.isoformat(),"shift_count":len(shifts),"completed_shift_count":sum(1 for x in shifts if x.get("end_time")),"dispenser_count":len(dispenser_ids),"all_shifts_complete":all_complete,"all_handover_recorded":all_handover_recorded,"duplicate_handover_shifts":duplicate_handover_shifts,"missing_handover_shifts":missing_handover_shifts,"missing_sales_shifts":missing_sales_shifts,"unsubmitted_sales_shifts":unsubmitted_sales_shifts,"unconfirmed_sales_shifts":unconfirmed_sales_shifts,"all_sales_recorded":all_sales_recorded,"sales_confirmation_ready":sales_ready,"can_confirm":dsr_ready,"status":"pending" if dsr_ready else None,"total_sales_liters":sum(float(x.get("total_sales_liters") or 0) for x in takeovers),"total_sales_amount":sum(methods.values()),"sales_by_method":methods},None,200
 
 @app.get("/api/reports/daily/confirmations")
 def daily_report_confirmations():
