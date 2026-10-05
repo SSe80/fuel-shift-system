@@ -1,0 +1,1 @@
+alter table public.tanks add column if not exists calibration_points jsonb;
