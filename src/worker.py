@@ -869,6 +869,14 @@ def update_tank_stock(tank_id):
     now=datetime.now(timezone.utc).isoformat()
     event["tank_stock_recorded"]=True
     event["tank_stock_recorded_liters"]=stock
+    if data.get("stock_mm") is not None:
+        try:
+            stock_mm=float(data.get("stock_mm"))
+        except (TypeError,ValueError):
+            return jsonify({"error":"Invalid tank dip reading"}),400
+        if stock_mm < 0:
+            return jsonify({"error":"Tank dip cannot be negative"}),400
+        event["tank_stock_recorded_mm"]=stock_mm
     event["tank_stock_recorded_at"]=now
     event["tank_stock_adjustment_liters"]=delta
     event["tank_stock_remark"]=remark
@@ -1003,6 +1011,14 @@ def update_tank(tank_id):
                     return jsonify({"error":"Opening stock cannot exceed tank capacity"}),400
                 body["current_liters"] = opening_stock
                 body["opening_stock_liters"] = opening_stock
+                if data.get("opening_stock_mm") is not None:
+                    try:
+                        opening_mm=float(data.get("opening_stock_mm"))
+                    except (TypeError,ValueError):
+                        return jsonify({"error":"Invalid opening dip reading"}),400
+                    if opening_mm < 0:
+                        return jsonify({"error":"Opening dip cannot be negative"}),400
+                    body["current_mm"]=opening_mm
                 body["active"] = True
             else:
                 body["active"] = False
