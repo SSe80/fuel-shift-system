@@ -1627,26 +1627,31 @@ function closeTankEdit(){
   modal.setAttribute('aria-hidden','true');
   document.getElementById('tank-edit-form').reset();
 }
-async function _saveTankEdit(event){
-  event.preventDefault();
+async function _saveTankEdit(){
   const id=document.getElementById('edit-tank-id').value;
   const capacity=Number(document.getElementById('edit-tank-capacity').value);
-  const mmRaw=document.getElementById('edit-tank-calibration-mm')?.value.trim()||'';
-  const litersRaw=document.getElementById('edit-tank-calibration-liters')?.value.trim()||'';
+  const mmEl=document.getElementById('edit-tank-calibration-mm');
+  const litersEl=document.getElementById('edit-tank-calibration-liters');
+  const mmRaw=(mmEl?.value||'').trim();
+  const litersRaw=(litersEl?.value||'').trim();
+  if(!id)throw new Error('Tank ID is missing.');
+  if(!Number.isFinite(capacity)||capacity<=0)throw new Error('Enter a valid tank capacity.');
   if((mmRaw && !litersRaw)||(!mmRaw && litersRaw)){
     throw new Error('Enter both calibration mm and calibration liters, or leave both blank.');
   }
-  try{
-    await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({
-      capacity_liters:capacity,
-      ...(mmRaw && litersRaw ? {
-        calibration_mm:Number(mmRaw),
-        calibration_liters:Number(litersRaw)
-      } : {})
-    })});
-    closeTankEdit();
-    await loadSettingsData();
-  }catch(e){throw e;}
+  const body={capacity_liters:capacity};
+  if(mmRaw&&litersRaw){
+    const calibrationMm=Number(mmRaw);
+    const calibrationLiters=Number(litersRaw);
+    if(!Number.isFinite(calibrationMm)||calibrationMm<=0)throw new Error('Calibration mm must be greater than zero.');
+    if(!Number.isFinite(calibrationLiters)||calibrationLiters<0)throw new Error('Calibration liters cannot be negative.');
+    if(calibrationLiters>capacity)throw new Error('Calibration liters cannot exceed tank capacity.');
+    body.calibration_mm=calibrationMm;
+    body.calibration_liters=calibrationLiters;
+  }
+  await api('/api/tanks/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify(body)});
+  closeTankEdit();
+  await loadSettingsData();
 }
 function convertTankDip(id,input){
   const t=(window.tankRecords||[]).find(x=>String(x.id)===String(id)); if(!t)return;
@@ -2984,10 +2989,19 @@ async function deactivateUser(id){
 }
 async function saveTankEdit(event){
   event.preventDefault();
-  const id=document.getElementById('edit-tank-id').value,old=settingsRecord(window.tankRecords,id);
+  const id=document.getElementById('edit-tank-id').value;
+  const old=settingsRecord(window.tankRecords,id);
+  if(!old)throw new Error('Tank record could not be found. Please reload the page and try again.');
   const cap=document.getElementById('edit-tank-capacity').value;
-  const details='<p><b>Tank:</b> '+h(old.tank_code||id)+'</p>'+settingsDiff('Capacity',liters(old.capacity_liters),liters(cap),'L');
-  showSettingsConfirmation('Review Tank Update',details,()=>_saveTankEdit(event),'Tank updated successfully','<p><b>'+h(old.tank_code||id)+'</b> was updated successfully.</p>'+details);
+  const mmRaw=(document.getElementById('edit-tank-calibration-mm')?.value||'').trim();
+  const litersRaw=(document.getElementById('edit-tank-calibration-liters')?.value||'').trim();
+  if((mmRaw&&!litersRaw)||(!mmRaw&&litersRaw)){
+    toast('Enter both calibration mm and calibration liters, or leave both blank.');
+    return;
+  }
+  const details='<p><b>Tank:</b> '+h(old.tank_code||id)+'</p>'+settingsDiff('Capacity',liters(old.capacity_liters),liters(cap),'L')+
+    ((mmRaw&&litersRaw)?'<p><b>Calibration:</b> '+h(mmRaw)+' mm = '+h(litersRaw)+' L</p>':'<p><b>Calibration:</b> Unchanged</p>');
+  showSettingsConfirmation('Review Tank Update',details,()=>_saveTankEdit(),'Tank updated successfully','<p><b>'+h(old.tank_code||id)+'</b> was updated successfully.</p>'+details);
 }
 async function deactivateTank(id){
   const t=settingsRecord(window.tankRecords,id);
