@@ -899,227 +899,186 @@ async function adminSalesConfirmations(){
     if(e.message==='Unauthorized')location.href='admin-login.html';
   }
 }
+function createStyledReportPdf(report){
+  const W=595,H=842,M=38,CONTENT_W=W-M*2,TOP=116,BOTTOM=48;
+  const clean=v=>String(v==null?'':v).replace(/[^ -~]/g,'?');
+  const esc=v=>clean(v).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  const wrap=(value,maxChars)=>{
+    const words=clean(value).split(/\\s+/),out=[];let line='';
+    words.forEach(word=>{
+      if(!word)return;
+      const next=line?line+' '+word:word;
+      if(next.length>maxChars){if(line)out.push(line);line=word;}else line=next;
+    });
+    if(line)out.push(line);
+    return out.length?out:[''];
+  };
+  const rgb=(r,g,b)=>String(r/255)+' '+String(g/255)+' '+String(b/255);
+  const pages=[[]];let y=H-TOP;
+  const ensure=(height)=>{
+    if(y-height<BOTTOM){pages.push([]);y=H-TOP;return true;}
+    return false;
+  };
+  const cmd=s=>pages[pages.length-1].push(s);
+  const rect=(x,yy,w,h,fill,stroke)=>{
+    let s='';
+    if(fill)s+=rgb(...fill)+' rg\n';
+    if(stroke)s+=rgb(...stroke)+' RG\n';
+    s+=(stroke?'0.7 w\n':'')+x+' '+yy+' '+w+' '+h+' re '+(fill&&stroke?'B':fill?'f':'S')+'\n';
+    cmd(s);
+  };
+  const text=(value,x,yy,size,bold=false,color=[31,41,55])=>{
+    cmd(rgb(...color)+' rg\nBT\n/F'+(bold?'2':'1')+' '+size+' Tf\n1 0 0 1 '+x+' '+yy+' Tm\n('+esc(value)+') Tj\nET\n');
+  };
+  const line=(x1,y1,x2,y2,color=[226,232,240],width=.7)=>{
+    cmd(rgb(...color)+' RG\n'+width+' w\n'+x1+' '+y1+' m '+x2+' '+y2+' l S\n');
+  };
+  const section=(title)=>{
+    if(ensure(42)){}
+    rect(M,y-25,CONTENT_W,25,[244,247,250],null);
+    text(title.toUpperCase(),M+10,y-17,9,true,[71,85,105]);
+    y-=37;
+  };
+  const kvGrid=(items,cols=2)=>{
+    const gap=8,w=(CONTENT_W-gap*(cols-1))/cols,h=43;
+    for(let i=0;i<items.length;i+=cols){
+      const row=items.slice(i,i+cols);ensure(h+8);
+      row.forEach((item,j)=>{
+        const x=M+j*(w+gap);
+        rect(x,y-h,w,h,[250,251,252],[229,234,240]);
+        text(item[0],x+9,y-13,7,false,[100,116,139]);
+        const vals=wrap(item[1]||'—',Math.max(16,Math.floor(w/6.2))).slice(0,2);
+        text(vals[0],x+9,y-28,10,true,[15,23,42]);
+        if(vals[1])text(vals[1],x+9,y-39,8,false,[71,85,105]);
+      });
+      y-=h+8;
+    }
+  };
+  const table=(headers,rows,widths)=>{
+    const total=widths.reduce((a,b)=>a+b,0),headH=25,rowH=27;
+    ensure(headH);
+    let x=M;
+    widths.forEach((w,i)=>{rect(x,y-headH,w,headH,[30,64,92],null);text(headers[i],x+7,y-16,7,true,[255,255,255]);x+=w;});
+    y-=headH;
+    rows.forEach(row=>{
+      const wrapped=row.map((v,i)=>wrap(v,widths[i]<90?13:22).slice(0,2));
+      const rh=Math.max(rowH,...wrapped.map(a=>a.length*10+10));
+      if(y-rh<BOTTOM){pages.push([]);y=H-TOP;table(headers,[],widths);return tableRow(row,wrapped,rh);}
+      tableRow(row,wrapped,rh);
+    });
+    function tableRow(row,wrapped,rh){
+      let x=M;wrapped.forEach((lines,i)=>{
+        rect(x,y-rh,widths[i],rh,[255,255,255],[231,235,239]);
+        lines.forEach((v,k)=>text(v,x+7,y-13-k*10,8,k===0&&i===0,[31,41,55]));
+        x+=widths[i];
+      });y-=rh;
+    }
+    y-=8;
+  };
+  const paragraph=value=>{
+    wrap(value,92).forEach(v=>{if(y-13<BOTTOM){pages.push([]);y=H-TOP;}text(v,M,y-10,8,false,[71,85,105]);y-=13;});
+  };
+
+  pages[0].push(rgb(...[37,99,168])+' rg\n'+M+' '+(H-78)+' '+CONTENT_W+' 78 re f\n');
+  text(report.title,M,H-40,22,true,[255,255,255]);
+  text(report.subtitle,M,H-58,9,false,[222,235,248]);
+  text(report.reference,M+CONTENT_W-150,H-40,8,true,[255,255,255]);
+  text(report.generated,M+CONTENT_W-150,H-58,7,false,[222,235,248]);
+  y=H-TOP;
+  if(report.summary){
+    rect(M,y-66,CONTENT_W,66,[248,250,252],[218,226,234]);
+    let x=M+14;
+    report.summary.forEach((s,i)=>{
+      if(i)line(x-9,y-12,x-9,y-54,[220,226,232],.6);
+      text(s[0],x,y-17,7,false,[100,116,139]);
+      text(s[1],x,y-38,13,true,[15,23,42]);
+      x+=CONTENT_W/report.summary.length;
+    });
+    y-=80;
+  }
+  (report.sections||[]).forEach(s=>{
+    section(s.title);
+    if(s.fields)kvGrid(s.fields,s.cols||2);
+    if(s.table)table(s.table.headers,s.table.rows,s.table.widths);
+    if(s.paragraph)paragraph(s.paragraph);
+  });
+  const objects=[{id:1,body:'<< /Type /Catalog /Pages 2 0 R >>'}],kids=[];let next=4;
+  pages.forEach((commands,pi)=>{
+    const pageId=next++,contentId=next++;kids.push(pageId+' 0 R');
+    commands.push(rgb(...[148,163,184])+' rg\nBT\n/F1 7 Tf\n1 0 0 1 '+M+' 25 Tm\n('+esc('Fuel Station Management • '+report.title)+') Tj\nET\n');
+    commands.push(rgb(...[148,163,184])+' rg\nBT\n/F1 7 Tf\n1 0 0 1 '+(W-80)+' 25 Tm\n('+esc('Page '+(pi+1)+' / '+pages.length)+') Tj\nET\n');
+    const stream=commands.join('');
+    objects.push({id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+contentId+' 0 R >>'},{id:contentId,body:'<< /Length '+stream.length+' >>\\nstream\\n'+stream+'\\nendstream'});
+  });
+  objects.push({id:2,body:'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+pages.length+' >>'},{id:3,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'},{id:4,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'});
+  objects.sort((a,b)=>a.id-b.id);
+  let pdf='%PDF-1.4\\n';const offsets=[];
+  objects.forEach(o=>{offsets[o.id]=pdf.length;pdf+=o.id+' 0 obj\\n'+o.body+'\\nendobj\\n';});
+  const xref=pdf.length;pdf+='xref\\n0 '+(objects.length+1)+'\\n0000000000 65535 f \\n';
+  for(let i=1;i<=objects.length;i++)pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \\n';
+  pdf+='trailer\\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\\nstartxref\\n'+xref+'\\n%%EOF';
+  return new Blob([pdf],{type:'application/pdf'});
+}
 function downloadAdminSaleHistoryDetails(id){
-  const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
-  if(!item)return;
-  const t=item.takeover||{};
-  const sales=Array.isArray(item.sales)?item.sales:[];
-  const total=Number(t.total_sales_amount||0);
+  const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));if(!item)return;
+  const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],total=Number(t.total_sales_amount||0);
   const entryTotal=sales.reduce((sum,s)=>sum+Number(s.amount||0),0);
-  const clean=value=>String(value==null?'':value).replace(/[^ -~]/g,'?');
-  const wrap=(value,width)=>{
-    const words=clean(value).split(/\s+/);
-    const out=[];
-    let line='';
-    words.forEach(word=>{
-      if(!word)return;
-      const next=line?line+' '+word:word;
-      if(next.length>width){
-        if(line)out.push(line);
-        line=word;
-      }else{
-        line=next;
-      }
-    });
-    if(line)out.push(line);
-    return out.length?out:[''];
-  };
-  const lines=[
-    'SALES HISTORY - SHIFT DETAIL','',
-    'Dispenser: '+clean(item.dispenser?.name||'Dispenser'),
-    'Product: '+clean(item.dispenser?.product_name||item.dispenser?.product||''),
-    'From attendant: '+clean(item.from_employee?.name||''),
-    'Received by: '+clean(item.to_employee?.name||''),
-    'Shift ID: '+clean(t.shift_id||id),
-    'Shift started: '+clean(t.shift_started_at?new Date(t.shift_started_at).toLocaleString():''),
-    'Shift ended: '+clean(t.shift_ended_at?new Date(t.shift_ended_at).toLocaleString():''),
-    'Confirmed by admin: '+clean(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():''),
-    'Liters sold: '+clean(liters(t.total_sales_liters))+' L',
-    'Confirmed total: '+clean(money(total)),'','RECORDED SALES',
-    '----------------------------------------'
-  ];
-  sales.forEach((sale,index)=>{
-    lines.push((index+1)+'. '+clean(sale.sale_type_name||'Sale')+'  '+clean(money(sale.amount)));
-    if(sale.sale_type_description)lines.push(...wrap('Description: '+sale.sale_type_description,88));
-    if(sale.reason)lines.push(...wrap('Reason: '+sale.reason,88));
+  const rows=sales.map((s,i)=>[String(i+1),s.sale_type_name||'Sale',money(s.amount),s.reason||s.sale_type_description||'—']);
+  const blob=createStyledReportPdf({
+    title:'SALES REPORT',subtitle:'Confirmed shift sales detail',reference:'DSR '+dailyReportIdFromTimestamp(t.shift_started_at),generated:'CONFIRMED',
+    summary:[['TOTAL SALES',money(total)],['LITERS SOLD',liters(t.total_sales_liters)+' L'],['ENTRIES',String(sales.length)],['STATUS','CONFIRMED']],
+    sections:[
+      {title:'Shift & Attendant',fields:[
+        ['Dispenser',item.dispenser?.name||'—'],['From attendant',item.from_employee?.name||'—'],
+        ['Received by',item.to_employee?.name||'—'],['Shift ID',t.shift_id||id],
+        ['Shift started',t.shift_started_at?new Date(t.shift_started_at).toLocaleString():'—'],['Shift ended',t.shift_ended_at?new Date(t.shift_ended_at).toLocaleString():'—'],
+        ['Confirmed',t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—']
+      ]},
+      {title:'Recorded Sales',table:{headers:['#','Sale type','Amount','Description / reason'],widths:[28,150,90,297],rows}},
+      {title:'Reconciliation',fields:[['Calculated total',money(total)],['Entries total',money(entryTotal)],['Difference',money(Math.abs(total-entryTotal))],['Confirmation','Admin confirmed']],cols:2}
+    ]
   });
-  lines.push(
-    '----------------------------------------',
-    'Entries total: '+clean(money(entryTotal)),
-    '',
-    'Status: Confirmed by admin'
-  );
-
-  const pageLines=[];
-  lines.forEach(line=>pageLines.push(...wrap(line,88)));
-  const pages=[];
-  for(let i=0;i<pageLines.length;i+=46)pages.push(pageLines.slice(i,i+46));
-
-  const objects=[{id:1,body:'<< /Type /Catalog /Pages 2 0 R >>'}];
-  const kids=[];
-  let nextId=4;
-  pages.forEach(pageLinesForPage=>{
-    const pageId=nextId++;
-    const contentId=nextId++;
-    kids.push(pageId+' 0 R');
-    const textCommands=pageLinesForPage.map((line,index)=>{
-      const escaped=clean(line).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
-      return (index?'0 -15 Td\n':'')+'('+escaped+') Tj';
-    }).join('\n');
-    const stream='BT\n/F1 11 Tf\n50 760 Td\n'+textCommands+'\nET';
-    objects.push(
-      {id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents '+contentId+' 0 R >>'},
-      {id:contentId,body:'<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream'}
-    );
-  });
-  objects.push(
-    {id:2,body:'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+pages.length+' >>'},
-    {id:3,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'}
-  );
-  objects.sort((a,b)=>a.id-b.id);
-
-  let pdf='%PDF-1.4\n%PDF-1.4\n';
-  const offsets=[];
-  objects.forEach(object=>{
-    offsets[object.id]=pdf.length;
-    pdf+=object.id+' 0 obj\n'+object.body+'\nendobj\n';
-  });
-  const xrefOffset=pdf.length;
-  pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
-  for(let i=1;i<=objects.length;i++){
-    pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \n';
-  }
-  pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xrefOffset+'\n%%EOF';
-
-  const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'}));
-  const link=document.createElement('a');
-  const stamp=(p.purchase_date||p.created_at||new Date().toISOString()).replace(/[^0-9]/g,'').slice(0,14);
-  link.href=url;
-  link.download='shift-'+String(t.shift_id||id).slice(0,8)+'-'+stamp+'.pdf';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-  toast('PDF downloaded');
-}function downloadPurchaseDetailPdf(){
+  const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='sales-'+String(t.shift_id||id).slice(0,12)+'.pdf';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('PDF downloaded');
+}
+function downloadPurchaseDetailPdf(){
   const id=window.currentPurchaseDetailId;
-  const item=window.currentPurchaseDetailData||((typeof purchaseDetailData!=='undefined'&&Array.isArray(purchaseDetailData)?purchaseDetailData:[]).find(x=>String(x.id)===String(id)));
-  if(!item){toast('Purchase details are not available. Please reopen the detail card and try again.');return;}
-  const p=item;
-  const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
-  const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
-  const delivered=Number(p.delivered_quantity_liters||p.quantity_liters||p.ordered_quantity_liters||0);
-  const discharged=Number(p.discharged_quantity_liters||0);
-  const remaining=Math.max(0,delivered-discharged);
-  const clean=value=>String(value==null?'':value).replace(/[^ -~]/g,'?');
-  const wrap=(value,width)=>{
-    const words=clean(value).split(/\s+/);
-    const out=[];
-    let line='';
-    words.forEach(word=>{
-      if(!word)return;
-      const next=line?line+' '+word:word;
-      if(next.length>width){
-        if(line)out.push(line);
-        line=word;
-      }else{
-        line=next;
-      }
-    });
-    if(line)out.push(line);
-    return out.length?out:[''];
-  };
-  const lines=[
-    'PURCHASE HISTORY - PURCHASE DETAIL','',
-    'Product: '+clean(p.product||p.product_code||''),
-    'Invoice: '+clean(p.invoice_number||''),
-    'Status: '+clean(p.status||''),
-    'Purchase date: '+clean(p.purchase_date?new Date(p.purchase_date).toLocaleString():(p.created_at?new Date(p.created_at).toLocaleString():'')),
-    'Ordered quantity: '+clean(Number(p.ordered_quantity_liters||p.quantity_liters||0).toLocaleString())+' L',
-    'Delivered quantity: '+clean(delivered.toLocaleString())+' L',
-    'Discharged quantity: '+clean(discharged.toLocaleString())+' L',
-    'Undischarged quantity: '+clean(remaining.toLocaleString())+' L',
-    '',
-    'ORDER','----------------------------------------',
-    'Invoice number: '+clean(p.invoice_number||'—'),
-    'Purchase date: '+clean(p.purchase_date?new Date(p.purchase_date).toLocaleString():(p.created_at?new Date(p.created_at).toLocaleString():'—')),
-    '',
-    'TRUCK & DRIVER','----------------------------------------',
-    'Driver: '+clean(p.driver_name||'—'),
-    'Driver phone: '+clean(p.driver_phone||'—'),
-    'Plate number: '+clean(p.plate_number||p.truck_plate||'—'),
-    'Compartments: '+clean(p.truck_compartments||compartments.length||'—')
-  ];
-  compartments.forEach((q,index)=>lines.push('Compartment '+(index+1)+': '+clean(Number(q||0).toLocaleString())+' L'));
-  lines.push('','DISCHARGE HISTORY','----------------------------------------');
-  if(!history.length)lines.push('No discharge operations recorded.');
-  history.forEach((e,index)=>{
-    lines.push(
-      'Discharge '+(index+1)+': '+clean(e.discharge_datetime||e.discharged_at||e.created_at||'—'),
-      'Quantity: '+clean(Number(e.quantity_liters||e.discharged_quantity_liters||0).toLocaleString())+' L',
-      'Tank: '+clean(e.tank_code||e.tank_id||'—'),
-      'Shift attendant(s): '+clean(e.shift_attendants||e.attendant_name||e.employee_name||'—'),
-      'Tank stock before: '+clean(Number(e.tank_liters_before||0).toLocaleString())+' L',
-      'Expected closing: '+clean(Number(e.expected_closing_liters||0).toLocaleString())+' L',
-      'Recorded closing: '+clean(Number(e.tank_liters_after||e.recorded_closing_liters||0).toLocaleString())+' L',
-      'Stock status: '+clean(e.tank_stock_status||'—'),''
-    );
+  const p=window.currentPurchaseDetailData||((typeof purchaseDetailData!=='undefined'&&Array.isArray(purchaseDetailData)?purchaseDetailData:[]).find(x=>String(x.id)===String(id)));
+  if(!p){toast('Purchase details are not available. Please reopen the detail card and try again.');return;}
+  const history=Array.isArray(p.discharge_history)?p.discharge_history:[],compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
+  const delivered=Number(p.delivered_quantity_liters||p.quantity_liters||p.ordered_quantity_liters||0),discharged=Number(p.discharged_quantity_liters||0),remaining=Math.max(0,delivered-discharged);
+  const dischargeRows=history.map((e,i)=>[
+    String(i+1),e.discharge_datetime||e.discharged_at||e.created_at||'—',
+    Number(e.quantity_liters||e.discharged_quantity_liters||0).toLocaleString()+' L',
+    e.tank_code||e.tank_id||'—',e.tank_stock_status||'—'
+  ]);
+  const compartmentRows=compartments.map((q,i)=>[String(i+1),'Compartment '+(i+1),Number(q||0).toLocaleString()+' L']);
+  const blob=createStyledReportPdf({
+    title:'PURCHASE REPORT',subtitle:'Purchase, truck and discharge record',reference:'Invoice '+(p.invoice_number||'—'),generated:p.status||'RECORDED',
+    summary:[['PRODUCT',p.product||p.product_code||'—'],['DELIVERED',delivered.toLocaleString()+' L'],['DISCHARGED',discharged.toLocaleString()+' L'],['REMAINING',remaining.toLocaleString()+' L']],
+    sections:[
+      {title:'Purchase Summary',fields:[
+        ['Product',p.product||p.product_code||'—'],['Invoice',p.invoice_number||'—'],
+        ['Purchase date',p.purchase_date?new Date(p.purchase_date).toLocaleString():(p.created_at?new Date(p.created_at).toLocaleString():'—')],
+        ['Ordered quantity',Number(p.ordered_quantity_liters||p.quantity_liters||0).toLocaleString()+' L'],
+        ['Delivered quantity',delivered.toLocaleString()+' L'],['Status',p.status||'—']
+      ]},
+      {title:'Truck & Driver',fields:[
+        ['Driver',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],
+        ['Plate number',p.plate_number||p.truck_plate||'—'],['Compartments',p.truck_compartments||compartments.length||'—']
+      ]},
+      {title:'Compartment Breakdown',table:{headers:['#','Compartment','Quantity'],widths:[40,250,275],rows:compartmentRows}},
+      {title:'Tank Information',fields:[
+        ['Tanks',[...new Set(history.map(e=>e?.tank_code||e?.tank_id).filter(Boolean))].join(', ')||'—'],
+        ['Discharge operations',String(history.length)],['Total discharged',discharged.toLocaleString()+' L'],['Remaining',remaining.toLocaleString()+' L']
+      ]},
+      {title:'Discharge History',table:{headers:['#','Date','Quantity','Tank','Status'],widths:[28,170,95,90,182],rows:dischargeRows.length?dischargeRows:[['—','No discharge operations recorded','—','—','—']]}},
+      {title:'Purchase Remark',paragraph:p.remark||p.purchase_remark||'No purchase remark recorded.'}
+    ]
   });
-  lines.push('PURCHASE REMARK','----------------------------------------',clean(p.remark||p.purchase_remark||'No purchase remark recorded.'));
-
-  const pageLines=[];
-  lines.forEach(line=>pageLines.push(...wrap(line,88)));
-  const pages=[];
-  for(let i=0;i<pageLines.length;i+=46)pages.push(pageLines.slice(i,i+46));
-
-  const objects=[{id:1,body:'<< /Type /Catalog /Pages 2 0 R >>'}];
-  const kids=[];
-  let nextId=4;
-  pages.forEach(pageLinesForPage=>{
-    const pageId=nextId++;
-    const contentId=nextId++;
-    kids.push(pageId+' 0 R');
-    const textCommands=pageLinesForPage.map((line,index)=>{
-      const escaped=clean(line).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
-      return (index?'0 -15 Td\n':'')+'('+escaped+') Tj';
-    }).join('\n');
-    const stream='BT\n/F1 11 Tf\n50 760 Td\n'+textCommands+'\nET';
-    objects.push(
-      {id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents '+contentId+' 0 R >>'},
-      {id:contentId,body:'<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream'}
-    );
-  });
-  objects.push(
-    {id:2,body:'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+pages.length+' >>'},
-    {id:3,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'}
-  );
-  objects.sort((a,b)=>a.id-b.id);
-
-  let pdf='%PDF-1.4\n%PDF-1.4\n';
-  const offsets=[];
-  objects.forEach(object=>{
-    offsets[object.id]=pdf.length;
-    pdf+=object.id+' 0 obj\n'+object.body+'\nendobj\n';
-  });
-  const xrefOffset=pdf.length;
-  pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
-  for(let i=1;i<=objects.length;i++){
-    pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \n';
-  }
-  pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xrefOffset+'\n%%EOF';
-
-  const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'}));
-  const link=document.createElement('a');
-  const stamp=(p.purchase_date||p.created_at||new Date().toISOString()).replace(/[^0-9]/g,'').slice(0,14);
-  link.href=url;
-  link.download='purchase-'+String(p.invoice_number||id).replace(/[^A-Za-z0-9_-]/g,'_')+'-'+stamp+'.pdf';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-  toast('PDF downloaded');
+  const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='purchase-'+String(p.invoice_number||id).replace(/[^A-Za-z0-9_-]/g,'_')+'.pdf';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('PDF downloaded');
 }
 window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
+
 function openAdminSaleHistoryDetails(id){
   const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
   if(!item)return;
