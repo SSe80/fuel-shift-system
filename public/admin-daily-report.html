@@ -24,7 +24,7 @@
   </section>
 
   <div id="daily-report-details" class="daily-report-details" hidden>
-  <div class="daily-detail-head"><div><span class="daily-kicker">DSR DETAIL</span><h2 id="daily-detail-title">Daily Sales Report</h2><p id="daily-detail-subtitle" class="muted">Complete daily reconciliation</p></div><button type="button" class="daily-detail-close" onclick="closeDailyReportDetails()">Close</button></div>
+  <div class="daily-detail-head"><div><span class="daily-kicker">DSR DETAIL</span><h2 id="daily-detail-title">Daily Sales Report</h2><p id="daily-detail-subtitle" class="muted">Complete daily reconciliation</p></div><button type="button" class="daily-detail-close" onclick="document.getElementById('daily-report-details').hidden=true;window.scrollTo({top:0,behavior:'smooth'})">Close</button></div>
   <div id="report-status" class="muted daily-status"></div>
   <section id="report-summary" class="daily-summary-grid"></section>
 
