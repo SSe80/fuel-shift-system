@@ -2384,40 +2384,142 @@ function downloadDailyReportPdf(){
   const r=window.currentDailyReportData;
   const d=window.currentDailyReportDate||document.getElementById('report-date')?.value;
   if(!r){toast('Open a DSR detail page first.');return;}
-  const lines=[
-    'DAILY SALES REPORT - DSR DETAIL',
-    '',
-    'DSR date: '+dailyReportIdLabel(d),
-    'Status: '+(r.report_ready?'Confirmed':'Pending'),
-    '',
-    'Fuel sold: '+liters(r.dsr_performance?.total_sales_liters||r.summary?.sales_liters)+' L',
-    'Total sales: '+money(r.dsr_performance?.total_sales_amount||r.summary?.sales_amount),
-    'Shifts: '+Number(r.dsr_performance?.shift_count||0),
-    'Dispensers: '+Number(r.dsr_performance?.dispenser_count||0),
-    ''
+
+  const escPdf=s=>String(s??'').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  const num=v=>Number.isFinite(Number(v))?Number(v):0;
+  const fmtL=v=>liters(num(v))+' L';
+  const fmtM=v=>money(num(v));
+  const perf=r.dsr_performance||{}, summary=r.summary||{};
+  const pages=[], W=595, H=842, margin=40, contentW=W-margin*2;
+  let page=[], y=H-margin;
+
+  const newPage=()=>{page=[];y=H-margin;pages.push(page);};
+  const line=(x1,y1,x2,y2)=>page.push('0.75 w 0.82 0.86 0.92 RG '+x1+' '+y1+' m '+x2+' '+y2+' l S');
+  const rect=(x,y,w,h,fill='0.97 0.98 1')=>{
+    page.push(fill+' rg '+x+' '+y+' '+w+' '+h+' re f');
+    page.push('0.75 w 0.82 0.86 0.92 RG '+x+' '+y+' '+w+' '+h+' re S');
+  };
+  const text=(x,yy,s,size=9,bold=false)=>{
+    page.push('BT /'+(bold?'F2':'F1')+' '+size+' Tf 0.15 0.20 0.28 rg '+x+' '+yy+' Td ('+escPdf(s)+') Tj ET');
+  };
+  const wrapped=(x,yy,s,maxChars=92,size=8.5,leading=12)=>{
+    const words=String(s??'').split(/\s+/), rows=[]; let row='';
+    words.forEach(w=>{const t=row?row+' '+w:w;if(t.length>maxChars){if(row)rows.push(row);row=w;}else row=t;});
+    if(row)rows.push(row);
+    rows.forEach((row,i)=>text(x,yy-i*leading,row,size,false));
+    return rows.length*leading;
+  };
+  const ensure=h=>{if(y-h<55){newPage();}};
+  const section=(title)=>{
+    ensure(34); y-=10; text(margin,y,title.toUpperCase(),11,true); y-=7; line(margin,y,W-margin,y); y-=16;
+  };
+  const kv=(label,value)=>{
+    ensure(28); text(margin,y,label,8,false); text(margin+150,y,String(value),9,true); y-=18;
+  };
+
+  newPage();
+  text(margin,y,'DAILY SALES REPORT',22,true); y-=24;
+  text(margin,y,'DSR · '+dailyReportIdLabel(d),11,false); y-=18;
+  text(margin,y,r.report_ready?'CONFIRMED':'RECONCILIATION REPORT',8,true); y-=16;
+  line(margin,y,W-margin,y); y-=24;
+
+  const metrics=[
+    ['Fuel sold',fmtL(perf.total_sales_liters??summary.sales_liters)],
+    ['Total sales',fmtM(perf.total_sales_amount??summary.sales_amount)],
+    ['Shifts',num(perf.shift_count)],
+    ['Dispensers',num(perf.dispenser_count)],
+    ['Tanks',num(perf.tank_count)]
   ];
-  (r.dsr_dispenser_details||[]).forEach(x=>{
-    lines.push('DISPENSER: '+(x.dispenser_name||x.name||'Dispenser'));
-    (x.nozzles||[]).forEach(n=>lines.push(
-      (n.nozzle_name||n.name||'Nozzle')+
-      ' | Opening '+reading(n.opening_reading)+
-      ' | Closing '+reading(n.closing_reading)+
-      ' | Meter delta '+liters(n.meter_delta_liters)+' L'+
-      ' | Sold '+liters(n.sales_liters)+' L'+
-      ' | Difference '+liters(n.meter_difference_liters)+' L'
-    ));
-    lines.push('');
+  const mw=(contentW-16)/2;
+  metrics.forEach((m,i)=>{
+    const col=i%2,row=Math.floor(i/2), x=margin+col*(mw+16), yy=y-row*58;
+    rect(x,yy-38,mw,44,i===0?'0.93 0.97 1':'0.97 0.98 1');
+    text(x+12,yy-10,m[0],8,false); text(x+12,yy-27,String(m[1]),14,true);
   });
-  const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const link=document.createElement('a');
-  link.href=url;
-  link.download='DSR-'+String(d||'report').replace(/[^A-Za-z0-9_-]/g,'_')+'.txt';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-  toast('DSR report downloaded');
+  y-=Math.ceil(metrics.length/2)*58+8;
+
+  section('Reconciliation summary');
+  kv('Report date',dailyReportIdLabel(d));
+  kv('Fuel sold',fmtL(perf.total_sales_liters??summary.sales_liters));
+  kv('Total sales',fmtM(perf.total_sales_amount??summary.sales_amount));
+  kv('Attendants',num(perf.attendant_count));
+  kv('Nozzles',num(perf.nozzle_count));
+
+  section('Dispenser & nozzle performance');
+  (r.dsr_dispenser_details||[]).forEach(disp=>{
+    ensure(72);
+    text(margin,y,String(disp.dispenser||disp.name||'Dispenser'),12,true); y-=16;
+    text(margin,y,fmtL(disp.sales_liters)+'  ·  '+fmtM(disp.sales_amount)+'  ·  '+num(disp.shift_count)+' shift(s)',8,false); y-=15;
+    (disp.nozzles||[]).forEach(n=>{
+      ensure(62);
+      rect(margin,y-45,contentW,52,'0.98 0.99 1');
+      text(margin+10,y-10,'NOZZLE '+num(n.nozzle_number)+' · '+String(n.nozzle_code||'Nozzle'),9,true);
+      text(margin+10,y-26,'Opening '+reading(n.opening_reading)+'   Closing '+reading(n.closing_reading),8,false);
+      text(margin+300,y-26,'Sold '+fmtL(n.sales_liters),8,false);
+      text(margin+10,y-39,'Meter '+fmtL(n.meter_delta_liters)+'   Difference '+fmtL(n.meter_difference_liters),8,false);
+      text(margin+300,y-39,'Reconciliation '+(n.meter_reconciliation_pct==null?'—':Number(n.meter_reconciliation_pct).toFixed(1)+'%'),8,false);
+      y-=62;
+    });
+    y-=4;
+  });
+
+  section('Tank reconciliation');
+  (r.dsr_tank_details||[]).forEach(t=>{
+    ensure(86);
+    const diff=num(t.difference_liters);
+    rect(margin,y-68,contentW,76,Math.abs(diff)<0.001?'0.96 0.99 0.97':'1 0.97 0.97');
+    text(margin+10,y-12,String(t.tank||'Tank')+' · '+String(t.product||''),11,true);
+    text(margin+10,y-29,'Opening '+fmtL(t.opening_stock_liters)+'   Purchases +'+fmtL(t.purchase_discharged_liters),8,false);
+    text(margin+10,y-44,'Sold −'+fmtL(t.sales_liters)+'   Expected '+fmtL(t.expected_closing_liters),8,false);
+    text(margin+10,y-59,'Recorded '+fmtL(t.closing_stock_liters)+'   Difference '+(diff>=0?'+':'')+fmtL(diff),8,true);
+    y-=86;
+  });
+
+  section('Sales summary');
+  const methods=r.dsr_sales_summary||r.sales_by_method||{};
+  Object.entries(methods).forEach(([k,v])=>{ensure(24);text(margin,y,String(k),9,false);text(margin+330,y,fmtM(v),9,true);y-=18;});
+
+  section('Shift summary');
+  (r.shift_summary||[]).forEach(s=>{
+    ensure(55);
+    const label=(s.attendant||s.employee_name||'Shift')+' · '+dailyReportTime(s.started_at||s.start_time)+' → '+dailyReportTime(s.ended_at||s.end_time);
+    wrapped(margin,y,label,90,8,11); y-=13;
+    text(margin,y,'Sold '+fmtL(s.sales_liters||s.total_sales_liters)+'   Sales '+fmtM(s.sales_amount||s.total_sales_amount),8,false); y-=18;
+  });
+
+  section('Final daily performance');
+  kv('Status',r.report_ready?'Confirmed':'Pending');
+  kv('Fuel sold',fmtL(perf.total_sales_liters??summary.sales_liters));
+  kv('Total sales',fmtM(perf.total_sales_amount??summary.sales_amount));
+  kv('Shifts',num(perf.shift_count));
+  kv('Dispensers',num(perf.dispenser_count));
+
+  const objects=[];
+  const add=s=>{objects.push(s);return objects.length;};
+  const font1=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  const font2=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  const contentIds=[];
+  pages.forEach(p=>contentIds.push(add('<< /Length '+p.join('\n').length+' >>\nstream\n'+p.join('\n')+'\nendstream')));
+  const pagesId=add('<< /Type /Pages /Kids [] /Count 0 >>');
+  const pageIds=[];
+  pages.forEach((_,i)=>pageIds.push(add('')));
+  const catalogId=add('<< /Type /Catalog /Pages '+pagesId+' 0 R >>');
+  objects[pagesId-1]='<< /Type /Pages /Kids ['+pageIds.map(id=>id+' 0 R').join(' ')+'] /Count '+pageIds.length+' >>';
+  pageIds.forEach((id,i)=>{
+    objects[id-1]='<< /Type /Page /Parent '+pagesId+' 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 '+font1+' 0 R /F2 '+font2+' 0 R >> >> /Contents '+contentIds[i]+' 0 R >>';
+  });
+  let pdf='%PDF-1.4\n';
+  const offsets=[0]; objects.forEach((obj,i)=>{offsets[i+1]=pdf.length;pdf+=(i+1)+' 0 obj\n'+obj+'\nendobj\n';});
+  const xref=pdf.length;
+  pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
+  for(let i=1;i<offsets.length;i++)pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+  pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root '+catalogId+' 0 R >>\nstartxref\n'+xref+'\n%%EOF';
+  const blob=new Blob([pdf],{type:'application/pdf'});
+  const url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download='DSR-'+String(d||'report').replace(/[^A-Za-z0-9_-]/g,'_')+'.pdf';
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  toast('DSR PDF downloaded');
 }
 async function loadDailyReport(){
   const details=document.getElementById('daily-report-details');
