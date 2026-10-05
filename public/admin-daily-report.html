@@ -4,14 +4,14 @@
 <body class="daily-report-page" onload="document.getElementById('report-date').value=new Date().toISOString().slice(0,10);loadDailyReportConfirmations()">
 <main class="wrap daily-report-wrap">
   <div class="daily-report-header">
-    <div><span class="daily-eyebrow">ADMIN REPORT</span><h1>Daily Sales Report</h1><p id="report-subtitle" class="muted">All sales from shifts that started on the selected day. The report becomes final when every shift is complete.</p></div>
+    <div><span class="daily-eyebrow">ADMIN REPORT</span><h1>Daily Sales Report</h1><p id="report-subtitle" class="muted">Daily sales summary by shift.</p></div>
     <a class="daily-back" href="admin-dashboard.html">Back</a>
   </div>
 
   <input id="report-date" type="hidden">
 
   <section class="daily-section daily-pending-section">
-    <div class="daily-section-head"><div><span class="daily-kicker">PENDING DSR CONFIRMATION</span><h2>Pending DSR confirmation</h2><p class="muted">When every shift started on a date has ended, all shift sale methods are combined here for one final admin confirmation.</p></div></div>
+    <div class="daily-section-head"><div><span class="daily-kicker">PENDING DSR CONFIRMATION</span><h2>Pending DSR confirmation</h2><p class="muted">Review and confirm all shift sales for this date.</p></div></div>
     <div id="daily-report-pending-confirmations" class="daily-report-pending-confirmations"></div>
   </section>
 
@@ -31,7 +31,7 @@
     </section>
 
     <section class="daily-section">
-      <div class="daily-section-head"><div><span class="daily-kicker">TANK RECONCILIATION</span><h2>Tank performance</h2><p class="muted">Opening and closing stock come from the first and last shift inputs. Purchases are based on fuel discharged into each tank during the report day.</p></div></div>
+      <div class="daily-section-head"><div><span class="daily-kicker">TANK RECONCILIATION</span><h2>Tank performance</h2><p class="muted">Opening and closing stock come from the first and last shift inputs. Purchases are based on fuel discharged into each tank during the report day.</p></div></section>
       <div id="report-tanks" class="dsr-tank-list"></div>
     </section>
 
