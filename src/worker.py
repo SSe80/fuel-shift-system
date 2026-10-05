@@ -707,6 +707,43 @@ def update_tank_calibration(tank_id):
     return jsonify(result[0] if isinstance(result,list) and result else result),200
 
 
+@app.patch("/api/tanks/<tank_id>/calibration-csv")
+def update_tank_calibration_csv(tank_id):
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    points=data.get("calibration_points")
+    if not isinstance(points,list) or len(points)<2:
+        return jsonify({"error":"Upload a CSV containing at least two calibration points."}),400
+    clean=[]
+    last_height=None
+    for point in points:
+        try:
+            height=float(point.get("height_mm"))
+            liters_value=float(point.get("liters"))
+        except (TypeError,ValueError,AttributeError):
+            return jsonify({"error":"Each calibration row must contain numeric height_mm and liters values."}),400
+        if height<0 or liters_value<0:
+            return jsonify({"error":"Calibration height and liters cannot be negative."}),400
+        if last_height is not None and height<=last_height:
+            return jsonify({"error":"Calibration heights must be strictly increasing."}),400
+        clean.append({"height_mm":height,"liters":liters_value})
+        last_height=height
+    ts,rows=sb("tanks",params={"id":"eq."+tank_id,"select":"id,tank_code,capacity_liters","limit":"1"})
+    if ts!=200:return jsonify(rows),ts
+    if not rows:return jsonify({"error":"Tank not found"}),404
+    capacity=float(rows[0].get("capacity_liters") or 0)
+    if clean[-1]["liters"]>capacity:
+        return jsonify({"error":"Calibration liters cannot exceed tank capacity."}),400
+    status,result=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body={
+        "calibration_points":clean,
+        "calibration_mm":clean[-1]["height_mm"],
+        "calibration_liters":clean[-1]["liters"],
+        "updated_at":datetime.now(timezone.utc).isoformat()
+    },prefer="return=representation")
+    if status>=400:return jsonify(result),status
+    return jsonify(result[0] if isinstance(result,list) and result else result),200
+
 @app.patch("/api/tanks/<tank_id>/dip")
 def update_tank_dip(tank_id):
     auth=require_admin()
@@ -719,15 +756,39 @@ def update_tank_dip(tank_id):
     if dip_mm < 0:
         return jsonify({"error":"Dip reading cannot be negative"}),400
 
-    ts,rows=sb("tanks",params={"id":"eq."+tank_id,"select":"id,tank_code,capacity_liters,calibration_mm,calibration_liters","limit":"1"})
+    ts,rows=sb("tanks",params={"id":"eq."+tank_id,"select":"id,tank_code,capacity_liters,calibration_mm,calibration_liters,calibration_points","limit":"1"})
     if ts!=200:return jsonify(rows),ts
     if not rows:return jsonify({"error":"Tank not found"}),404
     tank=rows[0]
-    ref_mm=tank.get("calibration_mm")
-    ref_liters=tank.get("calibration_liters")
-    if ref_mm is None or ref_liters is None or float(ref_mm)<=0:
-        return jsonify({"error":"This tank has no calibration reference. Save a calibration reference first."}),409
-    liters_value=dip_mm*float(ref_liters)/float(ref_mm)
+    points=tank.get("calibration_points")
+    liters_value=None
+    if isinstance(points,list) and len(points)>=2:
+        clean=[]
+        for point in points:
+            try:
+                ph=float(point.get("height_mm"))
+                pl=float(point.get("liters"))
+                if ph>=0 and pl>=0: clean.append((ph,pl))
+            except (TypeError,ValueError,AttributeError):
+                continue
+        clean=sorted(clean,key=lambda x:x[0])
+        if len(clean)>=2:
+            if dip_mm <= clean[0][0]:
+                liters_value=clean[0][1]
+            elif dip_mm >= clean[-1][0]:
+                liters_value=clean[-1][1]
+            else:
+                for (h1,l1),(h2,l2) in zip(clean,clean[1:]):
+                    if h1 <= dip_mm <= h2:
+                        ratio=(dip_mm-h1)/(h2-h1) if h2!=h1 else 0
+                        liters_value=l1+(l2-l1)*ratio
+                        break
+    if liters_value is None:
+        ref_mm=tank.get("calibration_mm")
+        ref_liters=tank.get("calibration_liters")
+        if ref_mm is None or ref_liters is None or float(ref_mm)<=0:
+            return jsonify({"error":"This tank has no calibration data. Upload a CSV calibration file first."}),409
+        liters_value=dip_mm*float(ref_liters)/float(ref_mm)
     capacity=float(tank.get("capacity_liters") or 0)
     if liters_value > capacity:
         return jsonify({"error":"The converted liters exceed tank capacity. Check the dip reading or calibration reference."}),400
