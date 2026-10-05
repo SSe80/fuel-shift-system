@@ -2310,9 +2310,12 @@ async function previewDailyReport(){
     const input=document.getElementById('report-date');
     if(input)input.value=date;
 
+    // Fetch the same authoritative report payload used by the DSR detail
+    // page. Preview mode only reads this data; it never confirms or writes it.
+    const r=await api('/api/reports/daily?date='+encodeURIComponent(date));
+
     // Reuse the authoritative DSR detail renderer, then move its populated
-    // sections into a dedicated report-paper modal. Nothing is confirmed or
-    // written to the DSR history by preview mode.
+    // sections into a dedicated report-paper modal.
     await loadDailyReport();
 
     const details=document.getElementById('daily-report-details');
