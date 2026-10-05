@@ -1080,7 +1080,8 @@ function downloadPurchaseDetailPdf(){
 window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
 
 function openAdminSaleHistoryDetails(id){
-  const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
+  const historySource=adminSalesHistoryData?.history||adminSalesData?.history||[];
+  const item=historySource.find(x=>String(x.takeover?.id)===String(id));
   if(!item)return;
   const t=item.takeover||{};
   const sales=Array.isArray(item.sales)?item.sales:[];
@@ -3290,7 +3291,7 @@ async function toggleAdminFullHistoryDsrGroup(dsrId){
   if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
   if(toggle)toggle.textContent=expanded?'⌃':'⌄';
 }
-async function adminSalesHistory(){
+async async function adminSalesHistory(){
   try{
     const me=await currentUser();
     if(me.role!=='admin')return location.href='admin-login.html';
