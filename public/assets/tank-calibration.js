@@ -10,7 +10,27 @@
       const raw=lines[i].trim();
       if(!raw) continue;
 
-      const cols=raw.split(/[,;\t]/).map(x=>x.trim().replace(/^"|"$/g,''));
+      // Parse the two-column calibration file without treating thousands
+      // separators inside numeric values as CSV delimiters.
+      let cols;
+      const delimiter = raw.includes(';') ? ';' : raw.includes('\t') ? '\t' : ',';
+      if(delimiter === ','){
+        const m=raw.match(/^\s*(?:"([^"]*)"|([^,]+))\s*,\s*(?:"([^"]*)"|([^,]+))\s*$/);
+        if(m) cols=[m[1]??m[2],m[3]??m[4]].map(x=>String(x).trim());
+        else{
+          const parts=raw.split(',');
+          if(parts.length>2){
+            // For the documented source format "Liters,Height mm",
+            // values such as 1,000,115 mean 1000 liters and 115 mm.
+            const numeric=parts.map(x=>x.trim());
+            if(numeric.every(x=>/^\d+(?:\.\d+)?$/.test(x))){
+              cols=[numeric.slice(0,-1).join(''),numeric[numeric.length-1]];
+            }else cols=numeric;
+          }else cols=raw.split(',').map(x=>x.trim());
+        }
+      }else{
+        cols=raw.split(delimiter).map(x=>x.trim().replace(/^"|"$/g,''));
+      }
 
       // Detect the column order from the header. This also supports the
       // user's source format: Liters,Height mm.
