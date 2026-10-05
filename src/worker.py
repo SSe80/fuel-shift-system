@@ -1971,10 +1971,14 @@ def daily_report_confirmations():
         if d:grouped.setdefault(d,[]).append(x)
     cards=[]
     for d,day_shifts in sorted(grouped.items(),reverse=True):
-        if not all(x.get("end_time") for x in day_shifts):continue
         snap,err,status=_daily_confirmation_snapshot(d)
         if err:return jsonify(err),status
         row=existing.get(d.isoformat())
+        if not snap["all_shifts_complete"]:
+            snap["status"]="waiting"
+            snap["id"]=(row or {}).get("id")
+            cards.append(snap)
+            continue
         if row and row.get("status")=="confirmed":
             snap["status"]="confirmed"; snap["confirmed_at"]=row.get("confirmed_at"); snap["confirmed_by"]=row.get("confirmed_by")
         else:
