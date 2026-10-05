@@ -1754,12 +1754,16 @@ function openDispenserActivation(id){
   const message=document.getElementById('dispenser-activate-message');
   if(message)message.innerHTML='<b>'+h(d.nozzle_code||'Dispenser')+'</b> — '+h(product?.code_name||d.product||'');
   const tankLabel=document.getElementById('dispenser-activation-tank-label');
-  if(tankLabel)tankLabel.firstChild.textContent=''+(tank?.tank_code||'Tank')+' opening liters';
-  const tankLitersInput=document.getElementById('dispenser-activation-tank-liters');
-  if(tankLitersInput){
-    const activationReading=Number(tank.opening_stock_liters);
-    tankLitersInput.value=Number.isFinite(activationReading)&&activationReading>=0?String(activationReading):'';
+  if(tankLabel)tankLabel.firstChild.textContent=''+(tank?.tank_code||'Tank')+' opening dip (mm)';
+  const tankDipInput=document.getElementById('dispenser-activation-tank-dip');
+  if(tankDipInput){
+    tankDipInput.value='';
+    tankDipInput.dataset.tankId=tank.id;
   }
+  const tankEquivalent=document.getElementById('dispenser-activation-tank-equivalent');
+  if(tankEquivalent)tankEquivalent.textContent='Enter a dip to calculate liters.';
+  const tankLitersInput=document.getElementById('dispenser-activation-tank-liters');
+  if(tankLitersInput)tankLitersInput.value='';
   const employeeSelect=document.getElementById('dispenser-activation-employee');
   if(employeeSelect)employeeSelect.innerHTML='<option value="">Select attendant</option>'+((window.employeeRecords||[]).filter(e=>e.active&&e.role==='attendant').map(e=>`<option value="${e.id}">${h(e.name)} — ID ${h(e.operator_id)}</option>`).join(''));
   const list=document.getElementById('dispenser-nozzle-activation-list');
@@ -1799,8 +1803,9 @@ async function _confirmDispenserActivation(){
   const employeeSelect=document.getElementById('dispenser-activation-employee');
   const employeeId=employeeSelect?.value||'';
   const attendantName=employeeSelect?.selectedOptions?.[0]?.textContent||'Selected attendant';
-  const tankLitersInput=document.getElementById('dispenser-activation-tank-liters');
-  const openingTankMm=Number(document.getElementById('dispenser-activation-tank-dip')?.value),openingTankLiters=tankLitersFromDip(tank,openingTankMm);
+  const tank= (window.tankRecords||[]).find(x=>String(x.id)===String(d.tank_id));
+  const openingTankMm=Number(document.getElementById('dispenser-activation-tank-dip')?.value);
+  const openingTankLiters=tankLitersFromDip(tank,openingTankMm);
   const selected=[];
   ids.forEach((nozzleId,i)=>{
     const box=document.getElementById('nozzle-activation-input-'+i);
