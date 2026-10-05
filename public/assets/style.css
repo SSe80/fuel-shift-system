@@ -3665,3 +3665,17 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .daily-report-page .daily-dsr-history-actions{flex-wrap:wrap}
   .daily-report-page .daily-dsr-history-actions button{flex:1}
 }
+
+
+/* DSR history preview */
+.daily-report-page .daily-dsr-empty{display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;padding:20px 12px}
+.daily-report-page .daily-dsr-empty>div{color:#667085;font-size:11px}
+.daily-report-page .daily-dsr-empty small{max-width:360px;color:#98a2b3;font-size:9px;line-height:1.4}
+.daily-report-page .daily-dsr-preview-btn{min-height:34px;padding:0 12px;border:1px solid #1264d8;border-radius:9px;background:#fff;color:#1264d8;font-size:10px;font-weight:850;cursor:pointer}
+.daily-report-page .daily-dsr-preview-btn:hover{background:#f4f8ff}
+.daily-report-page .daily-dsr-status-preview{flex:none;padding:4px 7px;border-radius:999px;background:#eff6ff;color:#1264d8;border:1px solid #cfe0ff;font-size:8px;font-weight:900;text-transform:uppercase}
+.daily-report-page .daily-dsr-preview-card{border-color:#cfe0ff;box-shadow:0 3px 12px rgba(18,100,216,.06)}
+@media(max-width:600px){
+ .daily-report-page .daily-dsr-empty{padding:16px 10px}
+ .daily-report-page .daily-dsr-preview-btn{width:100%;max-width:250px}
+}
