@@ -2430,7 +2430,10 @@ def daily_report():
     total_a=sum(float(x.get("amount") or 0) for x in sales_rows)
     fuel_amount=sum(float(x.get("amount") or 0) for x in fuel_sale_rows)
     other_amount=total_a-fuel_amount
-    total_p=sum(float(x.get("quantity_liters") or 0) for x in purchase_rows)
+    # DSR purchase volume is the physical volume actually discharged in
+    # distinct discharge operations, not the ordered/document quantity.
+    # This keeps partial purchases and multi-operation purchases correct.
+    total_p=0.0
 
     by_product={}
     for x in fuel_sale_rows:
