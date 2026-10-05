@@ -2494,7 +2494,42 @@ def daily_report():
                 "sales_amount":float(sale.get("amount") or 0)
             })
 
+    # Re-derive nozzle meter boundaries from chronologically ordered shifts.
+    # This keeps the DSR true to the first shift opening and last shift closing
+    # even if the underlying shift query order changes.
     for stat in nozzle_stats.values():
+        nid=str(stat.get("nozzle_id") or "")
+        ordered_shifts=sorted(
+            nozzle_shift_rows.get(nid,[]),
+            key=lambda z:str(z.get("start_time") or "")
+        )
+        if ordered_shifts:
+            first_shift=ordered_shifts[0]
+            last_shift=ordered_shifts[-1]
+            first_sid=str(first_shift.get("id") or "")
+            last_sid=str(last_shift.get("id") or "")
+            first_readings=shift_reading_map.get(first_sid,[])
+            last_readings=shift_reading_map.get(last_sid,[])
+            first_rr=next((r for r in first_readings if str(r.get("nozzle_id") or "")==nid and r.get("opening_reading") is not None),None)
+            last_rr=next((r for r in reversed(last_readings) if str(r.get("nozzle_id") or "")==nid and r.get("closing_reading") is not None),None)
+            first_h=handover_by_shift_id.get(first_sid) or {}
+            last_h=handover_by_shift_id.get(last_sid) or {}
+            first_open={str((v or {}).get("nozzle_id") or ""):v for v in _json_list(first_h.get("nozzle_opening_readings"))}
+            last_close={str((v or {}).get("nozzle_id") or ""):v for v in _json_list(last_h.get("nozzle_closing_readings"))}
+            code=str(stat.get("nozzle_code") or "")
+            if first_rr:
+                stat["opening_reading"]=float(first_rr.get("opening_reading"))
+                stat["opening_shift_id"]=first_sid
+            elif first_open.get(code,{}).get("opening_reading") is not None:
+                stat["opening_reading"]=float(first_open[code]["opening_reading"])
+                stat["opening_shift_id"]=first_sid
+            if last_rr:
+                stat["closing_reading"]=float(last_rr.get("closing_reading"))
+                stat["closing_shift_id"]=last_sid
+            elif last_close.get(code,{}).get("closing_reading") is not None:
+                stat["closing_reading"]=float(last_close[code]["closing_reading"])
+                stat["closing_shift_id"]=last_sid
+
         stat["attendant_shifts"].sort(key=lambda z:str(z.get("started_at") or ""))
         delta=None
         if stat.get("opening_reading") is not None and stat.get("closing_reading") is not None:
