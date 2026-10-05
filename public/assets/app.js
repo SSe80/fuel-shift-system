@@ -2934,7 +2934,7 @@ async function loadDailyReport(){
     ['report-summary','report-dispensers','report-tanks','report-sales-summary','report-shifts','report-performance'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
   }
 }
-async async function loadDailyReportRevisions(){
+async function loadDailyReportRevisions(){
   const section=document.getElementById('daily-report-revisions');
   const list=document.getElementById('daily-report-revisions-list');
   const date=document.getElementById('report-date')?.value;
@@ -2956,11 +2956,8 @@ async async function loadDailyReportRevisions(){
 async function regenerateDailyReport(){
   const date=document.getElementById('report-date')?.value;
   if(!date){toast('Select a DSR date first');return;}
+  if(!confirm('Correct/regenerate this DSR? The current saved version will be archived first and shown in Revision History. Historical DSRs created before the confirmation workflow are also supported.'))return;
   try{
-    const rows=await api('/api/reports/daily/confirmations');
-    const item=(Array.isArray(rows)?rows:[]).find(x=>String(x.date)===String(date));
-    if(!item||item.status!=='confirmed'){toast('Only a confirmed DSR can be regenerated.');return;}
-    if(!confirm('Regenerate this DSR? The current saved version will be archived first and shown in Revision History.'))return;
     await api('/api/reports/daily',{method:'POST',body:JSON.stringify({date,revision_reason:'Explicit DSR correction / regeneration'})});
     toast('DSR regenerated. Previous version archived.');
     await loadDailyReportRevisions();
@@ -2969,7 +2966,7 @@ async function regenerateDailyReport(){
   }catch(e){toast(e.message||'DSR regeneration failed');}
 }
 
-function saveDailyReport(){
+async function saveDailyReport(){
   try{
     const dateValue=document.getElementById('report-date').value;
     if(!dateValue){toast('Select a report date');return;}
