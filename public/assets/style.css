@@ -3588,3 +3588,80 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 }
 .admin-sales-page .admin-full-history-dsr-cards{display:grid;gap:9px;margin-top:9px}
 .admin-sales-page .admin-full-history-dsr-cards[hidden]{display:none}
+
+
+/* DSR mobile refinement — layout only */
+.daily-report-page,
+.daily-report-page .daily-report-wrap{max-width:100%;overflow-x:hidden}
+.daily-report-page button,
+.daily-report-page a{-webkit-tap-highlight-color:transparent}
+.daily-report-page .daily-report-date-top,
+.daily-report-page .daily-report-date-stats,
+.daily-report-page .daily-dsr-history-extra,
+.daily-report-page .daily-dsr-history-actions{min-width:0}
+.daily-report-page .daily-history-title,
+.daily-report-page .daily-report-date-top>div{min-width:0}
+.daily-report-page .daily-dsr-history-actions button{min-height:32px;display:inline-flex;align-items:center;justify-content:center}
+
+@media(max-width:600px){
+  .daily-report-page .daily-report-header{gap:8px}
+  .daily-report-page .daily-report-header h1{font-size:21px;line-height:1.12}
+  .daily-report-page .daily-report-header .muted{font-size:10px}
+  .daily-report-page .daily-back{min-height:34px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center}
+
+  .daily-report-page .daily-section-head{gap:8px}
+  .daily-report-page .daily-section-head h2{font-size:14px}
+  .daily-report-page .daily-section-head p{font-size:9px;line-height:1.35}
+
+  .daily-report-page .daily-report-date-top{padding:11px 11px 8px;gap:8px}
+  .daily-report-page .daily-history-title b{font-size:13px}
+  .daily-report-page .daily-history-title small{font-size:8px}
+  .daily-report-page .daily-dsr-status-confirmed{font-size:7px;padding:4px 6px}
+  .daily-report-page .daily-report-date-stats{grid-template-columns:minmax(0,1.15fr) minmax(0,1.15fr) minmax(54px,.7fr);gap:5px;padding:0 11px 8px}
+  .daily-report-page .daily-report-date-stats>div{padding:7px 7px;border-radius:8px}
+  .daily-report-page .daily-report-date-stats small{font-size:7px;margin-bottom:3px}
+  .daily-report-page .daily-report-date-stats strong{font-size:9px}
+  .daily-report-page .daily-dsr-history-extra{gap:5px;padding:0 11px 8px}
+  .daily-report-page .daily-dsr-history-extra>div{padding:6px 7px}
+  .daily-report-page .daily-dsr-history-actions{padding:7px 9px;gap:6px}
+  .daily-report-page .daily-dsr-history-actions button{font-size:9px;min-height:32px;padding:5px 6px}
+  
+  .daily-report-page .daily-report-details{margin-top:10px}
+  .daily-report-page .daily-detail-head{gap:8px}
+  .daily-report-page .daily-detail-head .muted{font-size:9px}
+  .daily-report-page .daily-detail-actions{gap:5px;flex:0 0 auto}
+  .daily-report-page .daily-detail-actions button{min-width:0;min-height:36px;padding:0 9px;white-space:nowrap}
+  .daily-report-page .daily-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .daily-report-page .daily-stat{min-width:0}
+  .daily-report-page .daily-stat b{font-size:14px}
+  .daily-report-page .daily-stat.primary-stat b{font-size:20px}
+
+  .daily-report-page .dsr-dispenser-meta,
+  .daily-report-page .dsr-reading-grid,
+  .daily-report-page .dsr-tank-grid,
+  .daily-report-page .dsr-shift-grid{gap:5px}
+  .daily-report-page .dsr-dispenser-meta>div{min-width:0;padding:7px}
+  .daily-report-page .dsr-dispenser-meta b{font-size:10px;overflow-wrap:anywhere}
+  .daily-report-page .dsr-reading-grid>div,
+  .daily-report-page .dsr-tank-grid>div,
+  .daily-report-page .dsr-shift-grid>div{min-width:0}
+  .daily-report-page .dsr-nozzle-performance>div,
+  .daily-report-page .dsr-tank-performance>div{padding:7px 8px}
+  .daily-report-page .dsr-nozzle-performance strong,
+  .daily-report-page .dsr-tank-performance strong{font-size:10px;overflow-wrap:anywhere}
+  .daily-report-page .dsr-sales-summary{min-width:0;overflow-wrap:anywhere}
+}
+
+@media(max-width:380px){
+  .daily-report-page .daily-detail-head{align-items:center}
+  .daily-report-page .daily-detail-head h2{font-size:15px}
+  .daily-report-page .daily-detail-head .daily-kicker{font-size:7px}
+  .daily-report-page .daily-detail-head .muted{display:none}
+  .daily-report-page .daily-detail-actions button{font-size:9px;padding:0 7px}
+  .daily-report-page .daily-report-date-stats{grid-template-columns:1fr 1fr}
+  .daily-report-page .daily-report-date-stats>div:last-child{grid-column:1/-1}
+  .daily-report-page .daily-summary-grid{grid-template-columns:1fr}
+  .daily-report-page .daily-stat.primary-stat{grid-column:auto}
+  .daily-report-page .daily-dsr-history-actions{flex-wrap:wrap}
+  .daily-report-page .daily-dsr-history-actions button{flex:1}
+}
