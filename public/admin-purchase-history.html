@@ -53,6 +53,68 @@
 .purchase-detail-actions{padding:10px 14px 14px;background:#fff;border-top:1px solid #e4e7ec}.purchase-detail-actions button{width:100%;min-height:42px;border-radius:11px}
 @media(max-width:560px){.purchase-detail-card{width:calc(100% - 12px);max-height:94vh}.purchase-detail-content{max-height:74vh;padding:10px 9px 3px}.purchase-detail-hero{padding:14px}.purchase-detail-product h4{font-size:18px}.purchase-detail-summary-grid strong{font-size:14px}.purchase-detail-section{padding:11px 11px}.purchase-detail-event-grid{grid-template-columns:1fr}.purchase-detail-event-title{align-items:flex-start}}
 
+.purchase-history-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.purchase-history-card-actions button,.purchase-history-partial-actions button{width:100%;min-height:40px;padding:0 12px;border-radius:9px;font-size:13px;font-weight:800}
+.purchase-history-partial-footer{margin-top:10px}
+.purchase-history-partial-stats{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px;color:#667085}
+.purchase-history-partial-stats span{display:inline-flex;gap:3px;align-items:center}
+.purchase-history-partial-stats b{color:#101828}
+.purchase-history-partial-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.tank-stock-alert{display:inline-flex!important;align-items:center;justify-content:center;gap:5px}.tank-stock-recorded{opacity:.7!important;background:#ecfdf3!important;color:#027a48!important;border:1px solid #abefc6!important}
+.tank-stock-alert::first-letter{font-size:14px}.tank-stock-history-alert-card{border:1.5px solid #f04438!important;box-shadow:0 0 0 3px rgba(240,68,56,.08),0 8px 24px rgba(16,24,40,.08)!important;animation:tankStockAlertPulse 2.2s ease-in-out infinite}@keyframes tankStockAlertPulse{0%,100%{box-shadow:0 0 0 3px rgba(240,68,56,.08),0 8px 24px rgba(16,24,40,.08)}50%{box-shadow:0 0 0 5px rgba(240,68,56,.14),0 10px 28px rgba(16,24,40,.1)}}
+.tank-stock-card{width:min(470px,calc(100% - 24px))}
+.tank-stock-info{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0;padding:11px;border:1px solid #e4e7ec;border-radius:13px;background:#f8fafc}
+.tank-stock-info span{display:block;font-size:10px;color:#667085}.tank-stock-info strong{display:block;margin-top:3px;font-size:12px;color:#101828;overflow-wrap:anywhere}
+.tank-stock-field{margin-top:12px;padding:12px;border:1px solid #e4e7ec;border-radius:13px;background:#fff}
+.tank-stock-field label{display:block;margin-bottom:6px;font-size:13px;font-weight:700;color:#344054}.tank-stock-field input{min-height:46px}.tank-stock-field small{display:block;margin-top:6px;font-size:11px;line-height:1.4;color:#667085}
+.purchase-discharge-pending-card,.purchase-history-partial-card,.purchase-history-full-card{padding:11px;border-radius:15px;border:1px solid #e4e7ec;background:#fff;box-shadow:0 2px 8px rgba(16,24,40,.06);margin-bottom:9px}
+.purchase-discharge-pending-head,.purchase-history-partial-head,.purchase-history-full-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.purchase-discharge-pending-head small,.purchase-history-partial-head small,.purchase-history-full-head small{display:block;margin-top:4px;font-size:11px;color:#667085}
+.purchase-discharge-remaining{display:flex;justify-content:space-between;align-items:center;margin:10px 0;padding:9px 10px;border-radius:12px;background:#f8fafc}
+.purchase-discharge-remaining span,.purchase-history-partial-event span,.purchase-history-full-main span{font-size:11px;color:#667085}
+.purchase-discharge-remaining strong{font-size:20px;color:#2563eb}
+.purchase-discharge-pending-info{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:#667085}
+.purchase-discharge-pending-info b{display:block;color:#101828;margin-top:3px}
+.purchase-discharge-pending-actions{display:flex;gap:8px;margin-top:16px;padding-top:2px}
+.purchase-discharge-pending-actions button{flex:1;min-height:40px;padding:0 14px;font-size:13px;border-radius:9px}
+.purchase-history-partial-card{border-left:4px solid #f59e0b}
+.purchase-history-partial-badge,.purchase-history-full-badge{font-size:10px;font-weight:800;padding:5px 8px;border-radius:999px;background:#fff7ed;color:#b54708}
+.purchase-history-full-badge{background:#ecfdf3;color:#027a48}
+.purchase-history-alert-icon{display:flex;align-items:center;justify-content:center;width:22px;height:22px;flex:0 0 22px;margin:0 0 4px auto;border-radius:50%;background:#fef3f2;border:1px solid #fecdca;color:#d92d20;font-size:13px;line-height:1}.purchase-history-status-alert{display:flex;flex-direction:column;align-items:flex-end;gap:0}
+.purchase-history-partial-event{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:10px;margin:12px 0;padding:9px 10px;border-radius:11px;background:#f8fafc}
+.purchase-history-partial-event strong,.purchase-history-full-main strong{display:block;margin-top:3px;font-size:13px;color:#101828}
+.purchase-history-partial-footer{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px;color:#667085}
+.purchase-history-partial-footer button{margin-left:auto}
+.purchase-history-full-card{border-left:4px solid #12b76a}
+.purchase-history-full-main{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:12px;margin:11px 0}
+.purchase-history-details-btn{width:100%}
+@media(max-width:560px){.purchase-history-partial-event{grid-template-columns:1fr 1fr}.purchase-history-partial-event>div:nth-child(3){grid-column:2}.purchase-history-partial-event>div:nth-child(4){grid-column:1/-1}.purchase-history-full-main{grid-template-columns:1fr 1fr}.purchase-history-full-main>div:last-child{grid-column:1/-1}}
+/* Compact purchase detail card */
+.purchase-detail-card{width:min(560px,calc(100% - 20px));max-height:92vh;border-radius:16px}
+.purchase-detail-card .top{padding:12px 14px 9px;gap:8px}
+.purchase-detail-card .top .section-kicker{font-size:9px;letter-spacing:.08em}
+.purchase-detail-card .top h3{font-size:20px;line-height:1.15;margin:2px 0 0}
+.purchase-detail-card .modal-close{width:32px;height:32px;font-size:20px}
+.purchase-detail-content{max-height:63vh;padding:8px 12px 10px}
+.purchase-detail-section{padding:11px 13px;margin-bottom:9px;border-radius:11px}
+.purchase-detail-section h4,.purchase-detail-section .section-title{font-size:13px;margin:0 0 7px}
+.purchase-detail-row{padding:6px 0;font-size:13px;line-height:1.35;min-height:0}
+.purchase-detail-row span{font-size:11px}
+.purchase-detail-row strong{font-size:13px}
+.purchase-detail-content .purchase-detail-hero{padding:12px 13px!important;margin-bottom:9px!important}
+.purchase-detail-content .purchase-detail-hero h4{font-size:17px}
+.purchase-detail-content .purchase-detail-hero p{font-size:11px}
+.purchase-detail-content .purchase-detail-compartments{gap:7px;margin-top:7px}
+.purchase-detail-content .purchase-detail-compartment{padding:7px 8px;font-size:11px}
+.purchase-detail-actions{grid-template-columns:1.25fr 1fr;gap:7px;padding:8px 12px 10px}
+.purchase-detail-actions button{min-height:41px;height:41px;border-radius:10px;font-size:12px}
+@media(max-width:600px){
+ .purchase-detail-card{width:calc(100% - 20px);max-height:92vh}
+ .purchase-detail-content{max-height:66vh;padding:7px 9px 9px}
+ .purchase-detail-section{padding:7px 9px;margin-bottom:6px}
+ .purchase-detail-row{padding:3px 0}
+ .purchase-detail-actions{padding:7px 9px 9px}
+}
 </style></head>
 <body class="admin-purchases-page" data-app-page="adminPurchaseHistory"><main class="wrap">
 <header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchase History</h1><p class="muted">All purchases with completed tank stock recording.</p></div><a class="purchase-back" href="admin-purchases.html">← Purchases</a></header>
