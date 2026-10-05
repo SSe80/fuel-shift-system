@@ -3286,7 +3286,10 @@ def daily_report():
             # responsible shift so shift-level reconciliation uses the same
             # accounting basis as the tank-level equation.
             shift_adjustment=sum(
-                float(op.get("stock_adjustment_liters") or 0)
+                (
+                    float(op.get("pre_discharge_stock_adjustment_liters") or 0)
+                    + float(op.get("post_discharge_stock_adjustment_liters") or 0)
+                )
                 for op in discharge_operations
                 if op.get("shift_attribution_status")=="inside_shift"
                 and str(op.get("shift_id") or "")==sid
