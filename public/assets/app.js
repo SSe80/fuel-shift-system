@@ -2483,135 +2483,223 @@ function downloadDailyReportPdf(){
   const d=window.currentDailyReportDate||document.getElementById('report-date')?.value;
   if(!r){toast('Open a DSR detail page first.');return;}
 
-  const escPdf=s=>String(s??'').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  // The PDF uses standard Helvetica fonts. Convert common UTF-8 punctuation
+  // to safe WinAnsi/ASCII equivalents so characters such as •, →, − and
+  // mojibake never appear in the downloaded report.
+  const pdfSafe=s=>String(s??'')
+    .replace(/â¢|â€¢|•/g,' - ')
+    .replace(/â|–|—/g,'-')
+    .replace(/â|→/g,'->')
+    .replace(/â|−/g,'-')
+    .replace(/Â/g,'')
+    .replace(/â|“/g,'"').replace(/â|”/g,'"')
+    .replace(/â|’/g,"'")
+    .replace(/Ã©|é/g,'e').replace(/Ã¨|è/g,'e').replace(/Ã|à/g,'a')
+    .replace(/[^\x00-\xFF]/g,'?');
+
+  const escPdf=s=>pdfSafe(s).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
   const num=v=>Number.isFinite(Number(v))?Number(v):0;
+  const pct=v=>Number.isFinite(Number(v))?Number(v).toFixed(1)+'%':'-';
   const fmtL=v=>liters(num(v))+' L';
   const fmtM=v=>money(num(v));
-  const perf=r.dsr_performance||{}, summary=r.summary||{};
-  const pages=[], W=595, H=842, margin=40, contentW=W-margin*2;
-  let page=[], y=H-margin;
-
-  const newPage=()=>{page=[];y=H-margin;pages.push(page);};
-  const line=(x1,y1,x2,y2)=>page.push('0.75 w 0.82 0.86 0.92 RG '+x1+' '+y1+' m '+x2+' '+y2+' l S');
-  const rect=(x,y,w,h,fill='0.97 0.98 1')=>{
-    page.push(fill+' rg '+x+' '+y+' '+w+' '+h+' re f');
-    page.push('0.75 w 0.82 0.86 0.92 RG '+x+' '+y+' '+w+' '+h+' re S');
+  const signedL=v=>(num(v)>=0?'+':'')+fmtL(v);
+  const perf=r.dsr_performance||{}, summary=r.summary||{}, sales=r.dsr_sales_summary||{};
+  const dispensers=Array.isArray(r.dsr_dispenser_details)?r.dsr_dispenser_details:[];
+  const tanks=Array.isArray(r.dsr_tank_details)?r.dsr_tank_details:[];
+  const shifts=Array.isArray(r.shift_summary)?r.shift_summary:[];
+  const methods=Array.isArray(sales.by_type)?sales.by_type:[];
+  const products=Array.isArray(sales.by_product)?sales.by_product:[];
+  const W=595,H=842,margin=38,contentW=W-margin*2;
+  const pages=[]; let page=[],y=H-50,pageNo=0;
+  const newPage=()=>{if(page.length)pages.push(page);page=[];y=H-50;pageNo++;};
+  const finish=()=>{if(page.length)pages.push(page);};
+  const color=(r,g,b)=>`${r} ${g} ${b}`;
+  const line=(yy)=>page.push('0.6 w 0.84 0.87 0.91 RG '+margin+' '+yy+' m '+(W-margin)+' '+yy+' l S');
+  const rect=(x,yy,w,h,fill='0.97 0.98 1')=>{
+    page.push(fill+' rg '+x+' '+yy+' '+w+' '+h+' re f');
+    page.push('0.72 w 0.82 0.86 0.91 RG '+x+' '+yy+' '+w+' '+h+' re S');
   };
-  const text=(x,yy,s,size=9,bold=false)=>{
-    page.push('BT /'+(bold?'F2':'F1')+' '+size+' Tf 0.15 0.20 0.28 rg '+x+' '+yy+' Td ('+escPdf(s)+') Tj ET');
+  const text=(x,yy,s,size=8,bold=false,fill='0.12 0.17 0.23')=>{
+    page.push('BT /'+(bold?'F2':'F1')+' '+size+' Tf '+fill+' rg '+x+' '+yy+' Td ('+escPdf(s)+') Tj ET');
   };
-  const wrapped=(x,yy,s,maxChars=92,size=8.5,leading=12)=>{
-    const words=String(s??'').split(/\s+/), rows=[]; let row='';
+  const wrapped=(x,yy,s,maxChars=88,size=8,leading=10,bold=false)=>{
+    const words=pdfSafe(s).split(/\s+/),rows=[];let row='';
     words.forEach(w=>{const t=row?row+' '+w:w;if(t.length>maxChars){if(row)rows.push(row);row=w;}else row=t;});
     if(row)rows.push(row);
-    rows.forEach((row,i)=>text(x,yy-i*leading,row,size,false));
+    rows.forEach((row,i)=>text(x,yy-i*leading,row,size,bold));
     return rows.length*leading;
   };
-  const ensure=h=>{if(y-h<55){newPage();}};
-  const section=(title)=>{
-    ensure(34); y-=10; text(margin,y,title.toUpperCase(),11,true); y-=7; line(margin,y,W-margin,y); y-=16;
+  const ensure=h=>{if(y-h<62)newPage();};
+  const header=()=>{
+    text(margin,y,'DAILY SALES REPORT',20,true);y-=20;
+    text(margin,y,'STATION DAILY RECONCILIATION',7,true,'0.07 0.39 0.82');y-=13;
+    text(margin,y,'DSR - '+dailyReportIdLabel(d),9,false,'0.38 0.43 0.50');
+    text(W-margin-80,y,r.report_ready?'CONFIRMED':'PENDING',7,true,r.report_ready?'0.05 0.48 0.28':'0.58 0.40 0.02');
+    y-=12;line(y);y-=18;
   };
-  const kv=(label,value)=>{
-    ensure(28); text(margin,y,label,8,false); text(margin+150,y,String(value),9,true); y-=18;
+  const footer=()=>{
+    text(margin,25,'DSR - '+dailyReportIdLabel(d),6,false,'0.48 0.52 0.58');
+    text(W-margin-70,25,'Page '+pageNo,6,false,'0.48 0.52 0.58');
+  };
+  const section=title=>{
+    ensure(30);y-=4;text(margin,y,title.toUpperCase(),10,true,'0.13 0.20 0.29');y-=7;line(y);y-=14;
+  };
+  const kv=(label,value,x=margin,valueX=185)=>{
+    ensure(18);text(x,y,label,7.5,false,'0.40 0.45 0.51');text(valueX,y,value,8,true);y-=16;
+  };
+  const tableHeader=(cols,widths)=>{
+    const h=20;ensure(h+4);rect(margin,y-h,contentW,h,'0.10 0.25 0.40');
+    let x=margin+8;cols.forEach((c,i)=>{text(x,y-13,c,6.5,true,'1 1 1');x+=widths[i];});y-=h+4;
   };
 
-  newPage();
-  text(margin,y,'DAILY SALES REPORT',22,true); y-=24;
-  text(margin,y,'DSR · '+dailyReportIdLabel(d),11,false); y-=18;
-  text(margin,y,r.report_ready?'CONFIRMED':'RECONCILIATION REPORT',8,true); y-=16;
-  line(margin,y,W-margin,y); y-=24;
+  newPage();header();
 
-  const metrics=[
-    ['Fuel sold',fmtL(perf.total_sales_liters??summary.sales_liters)],
-    ['Total sales',fmtM(perf.total_sales_amount??summary.sales_amount)],
-    ['Shifts',num(perf.shift_count)],
-    ['Dispensers',num(perf.dispenser_count)],
-    ['Tanks',num(perf.tank_count)]
+  // Executive KPIs
+  const kpis=[
+    ['FUEL SOLD',fmtL(perf.total_sales_liters??summary.sales_liters),'0.90 0.96 1.00'],
+    ['TOTAL SALES',fmtM(perf.total_sales_amount??summary.sales_amount),'0.95 0.97 1.00'],
+    ['SHIFTS',String(num(perf.shift_count)),'0.96 0.98 0.99'],
+    ['DISPENSERS',String(num(perf.dispenser_count)),'0.96 0.98 0.99'],
+    ['TANKS',String(num(perf.tank_count)),'0.96 0.98 0.99']
   ];
-  const mw=(contentW-16)/2;
-  metrics.forEach((m,i)=>{
-    const col=i%2,row=Math.floor(i/2), x=margin+col*(mw+16), yy=y-row*58;
-    rect(x,yy-38,mw,44,i===0?'0.93 0.97 1':'0.97 0.98 1');
-    text(x+12,yy-10,m[0],8,false); text(x+12,yy-27,String(m[1]),14,true);
+  const kw=(contentW-12)/2;
+  kpis.forEach((k,i)=>{
+    const row=Math.floor(i/2),col=i%2,xx=margin+col*(kw+12),yy=y-row*54;
+    rect(xx,yy-40,kw,44,k[2]);text(xx+10,yy-12,k[0],6.5,true,'0.39 0.45 0.52');text(xx+10,yy-30,k[1],13,true,'0.08 0.38 0.76');
   });
-  y-=Math.ceil(metrics.length/2)*58+8;
+  y-=Math.ceil(kpis.length/2)*54+6;
 
-  section('Reconciliation summary');
-  kv('Report date',dailyReportIdLabel(d));
-  kv('Fuel sold',fmtL(perf.total_sales_liters??summary.sales_liters));
-  kv('Total sales',fmtM(perf.total_sales_amount??summary.sales_amount));
-  kv('Attendants',num(perf.attendant_count));
-  kv('Nozzles',num(perf.nozzle_count));
+  // Reconciliation health / statistics
+  section('Reconciliation overview');
+  const avgNozzle=num(perf.average_nozzle_reconciliation_pct);
+  const meterDiff=num(perf.sales_amount_difference);
+  const tankDiff=num(perf.tank_difference_liters);
+  const avgL=num(perf.average_liters_per_shift);
+  const avgSales=num(perf.average_sales_per_shift);
+  const calculatedSales=num(perf.calculated_sales_amount);
+  const stats=[
+    ['Avg. liters / shift',fmtL(avgL)],
+    ['Avg. sales / shift',fmtM(avgSales)],
+    ['Meter-calculated sales',fmtM(calculatedSales)],
+    ['Recorded vs meter',fmtM(meterDiff)],
+    ['Avg. nozzle reconciliation',pct(avgNozzle)],
+    ['Total tank difference',signedL(tankDiff)]
+  ];
+  stats.forEach((s,i)=>{
+    const col=i%2,row=Math.floor(i/2),xx=margin+col*(contentW/2),yy=y-row*27;
+    text(xx,yy,s[0],7,false,'0.43 0.48 0.54');text(xx+135,yy,s[1],8,true);
+  });
+  y-=Math.ceil(stats.length/2)*27+4;
 
-  section('Dispenser & nozzle performance');
-  (r.dsr_dispenser_details||[]).forEach(disp=>{
-    ensure(72);
-    text(margin,y,String(disp.dispenser||disp.name||'Dispenser'),12,true); y-=16;
-    text(margin,y,fmtL(disp.sales_liters)+'  ·  '+fmtM(disp.sales_amount)+'  ·  '+num(disp.shift_count)+' shift(s)',8,false); y-=15;
-    (disp.nozzles||[]).forEach(n=>{
-      ensure(62);
-      rect(margin,y-45,contentW,52,'0.98 0.99 1');
-      text(margin+10,y-10,'NOZZLE '+num(n.nozzle_number)+' · '+String(n.nozzle_code||'Nozzle'),9,true);
-      text(margin+10,y-26,'Opening '+reading(n.opening_reading)+'   Closing '+reading(n.closing_reading),8,false);
-      text(margin+300,y-26,'Sold '+fmtL(n.sales_liters),8,false);
-      text(margin+10,y-39,'Meter '+fmtL(n.meter_delta_liters)+'   Difference '+fmtL(n.meter_difference_liters),8,false);
-      text(margin+300,y-39,'Reconciliation '+(n.meter_reconciliation_pct==null?'—':Number(n.meter_reconciliation_pct).toFixed(1)+'%'),8,false);
-      y-=62;
+  // Contribution statistics
+  section('Performance statistics');
+  const topDisp=[...dispensers].sort((a,b)=>num(b.sales_liters)-num(a.sales_liters))[0];
+  const topProduct=[...products].sort((a,b)=>num(b.amount)-num(a.amount))[0];
+  const statRows=[
+    ['Top dispenser',topDisp?.dispenser||'-',topDisp?fmtL(topDisp.sales_liters):'-'],
+    ['Top product',topProduct?.product||'-',topProduct?fmtL(topProduct.liters):'-'],
+    ['Average nozzle reconciliation',String(pct(avgNozzle)),''],
+    ['Nozzle count',String(num(perf.nozzle_count)),''],
+    ['Attendants',String(num(perf.attendant_count)),'']
+  ];
+  statRows.forEach(row=>{ensure(20);text(margin,y,row[0],7.5,false);text(margin+170,y,pdfSafe(row[1]),8,true);text(margin+430,y,row[2],8,true);y-=16;});
+
+  // Dispenser / nozzle table
+  section('Dispenser and nozzle performance');
+  tableHeader(['DISPENSER / NOZZLE','OPENING','CLOSING','SOLD','METER','RECON.'],[145,65,65,65,65,55]);
+  dispensers.forEach(disp=>{
+    (disp.nozzles||[]).forEach((n,idx)=>{
+      ensure(34);
+      const yy=y;
+      text(margin+8,yy,pdfSafe((disp.dispenser||'Dispenser')+' / '+(n.nozzle_code||'Nozzle '+num(n.nozzle_number))),7.2,true);
+      text(margin+153,yy,reading(n.opening_reading),7.2);
+      text(margin+218,yy,reading(n.closing_reading),7.2);
+      text(margin+283,yy,fmtL(n.sales_liters),7.2);
+      text(margin+348,yy,fmtL(n.meter_delta_liters),7.2);
+      text(margin+413,yy,pct(n.meter_reconciliation_pct),7.2,true);
+      y-=17;
     });
-    y-=4;
   });
 
+  // Tank table
   section('Tank reconciliation');
-  (r.dsr_tank_details||[]).forEach(t=>{
-    ensure(86);
-    const diff=num(t.difference_liters);
-    rect(margin,y-68,contentW,76,Math.abs(diff)<0.001?'0.96 0.99 0.97':'1 0.97 0.97');
-    text(margin+10,y-12,String(t.tank||'Tank')+' · '+String(t.product||''),11,true);
-    text(margin+10,y-29,'Opening '+fmtL(t.opening_stock_liters)+'   Purchases +'+fmtL(t.purchase_discharged_liters),8,false);
-    text(margin+10,y-44,'Sold −'+fmtL(t.sales_liters)+'   Expected '+fmtL(t.expected_closing_liters),8,false);
-    text(margin+10,y-59,'Recorded '+fmtL(t.closing_stock_liters)+'   Difference '+(diff>=0?'+':'')+fmtL(diff),8,true);
-    y-=86;
+  tableHeader(['TANK / PRODUCT','OPENING','PURCHASES','SOLD','EXPECTED','RECORDED'],[150,68,68,65,70,65]);
+  tanks.forEach(t=>{
+    ensure(35);
+    text(margin+8,y,pdfSafe((t.tank||'Tank')+' / '+(t.product||'')),7.2,true);
+    text(margin+158,y,fmtL(t.opening_stock_liters),7.2);
+    text(margin+226,y,'+'+fmtL(t.purchase_discharged_liters),7.2);
+    text(margin+294,y,fmtL(t.sales_liters),7.2);
+    text(margin+359,y,fmtL(t.expected_closing_liters),7.2);
+    text(margin+429,y,fmtL(t.closing_stock_liters),7.2,true);
+    y-=17;
+    text(margin+8,y,'Difference '+signedL(t.difference_liters)+'  |  Variance '+pct(t.variance_pct)+'  |  Reconciliation '+pct(t.reconciliation_pct),6.8,false,'0.40 0.45 0.51');
+    y-=14;
   });
 
-  section('Sales summary');
-  const methods=r.dsr_sales_summary||r.sales_by_method||{};
-  Object.entries(methods).forEach(([k,v])=>{ensure(24);text(margin,y,String(k),9,false);text(margin+330,y,fmtM(v),9,true);y-=18;});
+  // Sales statistics
+  section('Sales statistics');
+  if(products.length){
+    text(margin,y,'BY PRODUCT',7,true,'0.07 0.39 0.82');y-=13;
+    products.forEach(x=>{ensure(18);text(margin,y,pdfSafe(x.product||'Product'),7.5);text(margin+245,y,fmtL(x.liters),7.5);text(margin+350,y,fmtM(x.amount),7.5,true);text(margin+470,y,pct(x.percentage),7.5,true);y-=15;});
+  }
+  if(methods.length){
+    y-=4;text(margin,y,'BY SALES METHOD',7,true,'0.07 0.39 0.82');y-=13;
+    methods.forEach(x=>{ensure(18);text(margin,y,pdfSafe(x.type||'Method'),7.5);text(margin+350,y,fmtM(x.amount),7.5,true);text(margin+470,y,pct(x.percentage),7.5,true);y-=15;});
+  }
+  ensure(30);y-=3;line(y);y-=14;
+  kv('Sales total',fmtM(sales.total_amount??perf.total_sales_amount));
+  kv('Liters total',fmtL(sales.total_liters??perf.total_sales_liters));
 
+  // Shift summary
   section('Shift summary');
-  (r.shift_summary||[]).forEach(s=>{
+  shifts.forEach((s,i)=>{
     ensure(55);
-    const label=(s.attendant||s.employee_name||'Shift')+' · '+dailyReportTime(s.started_at||s.start_time)+' → '+dailyReportTime(s.ended_at||s.end_time);
-    wrapped(margin,y,label,90,8,11); y-=13;
-    text(margin,y,'Sold '+fmtL(s.sales_liters||s.total_sales_liters)+'   Sales '+fmtM(s.sales_amount||s.total_sales_amount),8,false); y-=18;
+    rect(margin,y-42,contentW,48,'0.97 0.98 0.99');
+    text(margin+10,y-11,'SHIFT '+(i+1)+' - '+pdfSafe(s.attendant||s.employee_name||'Unknown'),8.5,true);
+    text(margin+10,y-25,pdfSafe((s.dispenser||'-')+' / '+(s.product||'')),7.2,false,'0.40 0.45 0.51');
+    text(margin+10,y-37,'Start '+dailyReportTime(s.started_at||s.start_time)+'  End '+dailyReportTime(s.ended_at||s.end_time),7.2);
+    text(margin+310,y-25,'Sold '+fmtL(s.sales_liters||s.total_sales_liters),7.2,true);
+    text(margin+310,y-37,'Sales '+fmtM(s.sales_amount||s.total_sales_amount),7.2,true);
+    y-=58;
   });
 
+  // Final summary
   section('Final daily performance');
-  kv('Status',r.report_ready?'Confirmed':'Pending');
-  kv('Fuel sold',fmtL(perf.total_sales_liters??summary.sales_liters));
-  kv('Total sales',fmtM(perf.total_sales_amount??summary.sales_amount));
-  kv('Shifts',num(perf.shift_count));
-  kv('Dispensers',num(perf.dispenser_count));
+  const finalRows=[
+    ['Report status',r.report_ready?'CONFIRMED':'PENDING'],
+    ['Fuel sold',fmtL(perf.total_sales_liters)],
+    ['Total sales',fmtM(perf.total_sales_amount)],
+    ['Calculated sales',fmtM(perf.calculated_sales_amount)],
+    ['Sales amount difference',fmtM(perf.sales_amount_difference)],
+    ['Average nozzle reconciliation',pct(perf.average_nozzle_reconciliation_pct)],
+    ['Tank difference',signedL(perf.tank_difference_liters)],
+    ['Shifts / attendants',num(perf.shift_count)+' / '+num(perf.attendant_count)],
+    ['Dispensers / nozzles',num(perf.dispenser_count)+' / '+num(perf.nozzle_count)]
+  ];
+  finalRows.forEach(row=>kv(row[0],row[1]));
+
+  finish();pages.forEach((p,i)=>{page=p;pageNo=i+1;footer();});
 
   const objects=[];
   const add=s=>{objects.push(s);return objects.length;};
-  const font1=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
-  const font2=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
-  const contentIds=[];
-  pages.forEach(p=>contentIds.push(add('<< /Length '+p.join('\n').length+' >>\nstream\n'+p.join('\n')+'\nendstream')));
+  const font1=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  const font2=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  const contentIds=pages.map(p=>add('<< /Length '+p.join('\n').length+' >>\nstream\n'+p.join('\n')+'\nendstream'));
   const pagesId=add('<< /Type /Pages /Kids [] /Count 0 >>');
-  const pageIds=[];
-  pages.forEach((_,i)=>pageIds.push(add('')));
+  const pageIds=pages.map(()=>add(''));
   const catalogId=add('<< /Type /Catalog /Pages '+pagesId+' 0 R >>');
   objects[pagesId-1]='<< /Type /Pages /Kids ['+pageIds.map(id=>id+' 0 R').join(' ')+'] /Count '+pageIds.length+' >>';
-  pageIds.forEach((id,i)=>{
-    objects[id-1]='<< /Type /Page /Parent '+pagesId+' 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 '+font1+' 0 R /F2 '+font2+' 0 R >> >> /Contents '+contentIds[i]+' 0 R >>';
-  });
+  pageIds.forEach((id,i)=>objects[id-1]='<< /Type /Page /Parent '+pagesId+' 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 '+font1+' 0 R /F2 '+font2+' 0 R >> >> /Contents '+contentIds[i]+' 0 R >>');
+
   let pdf='%PDF-1.4\n';
-  const offsets=[0]; objects.forEach((obj,i)=>{offsets[i+1]=pdf.length;pdf+=(i+1)+' 0 obj\n'+obj+'\nendobj\n';});
+  const offsets=[0];
+  objects.forEach((obj,i)=>{offsets[i+1]=pdf.length;pdf+=(i+1)+' 0 obj\n'+obj+'\nendobj\n';});
   const xref=pdf.length;
   pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
   for(let i=1;i<offsets.length;i++)pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
   pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root '+catalogId+' 0 R >>\nstartxref\n'+xref+'\n%%EOF';
+
   const blob=new Blob([pdf],{type:'application/pdf'});
   const url=URL.createObjectURL(blob),link=document.createElement('a');
   link.href=url;link.download='DSR-'+String(d||'report').replace(/[^A-Za-z0-9_-]/g,'_')+'.pdf';
@@ -2619,6 +2707,7 @@ function downloadDailyReportPdf(){
   setTimeout(()=>URL.revokeObjectURL(url),1500);
   toast('DSR PDF downloaded');
 }
+
 async function loadDailyReport(){
   const details=document.getElementById('daily-report-details');
   if(details)details.hidden=false;
