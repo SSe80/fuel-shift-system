@@ -2854,6 +2854,7 @@ def daily_report():
             return {
                 "shift_id":sh.get("id"),
                 "shift_employee_id":sh.get("employee_id"),
+                "shift_employee_name":(employee_map.get(str(sh.get("employee_id"))) or {}).get("name") or "Unknown",
                 "shift_nozzle_id":sh.get("nozzle_id"),
                 "shift_started_at":sh.get("start_time"),
                 "shift_ended_at":sh.get("end_time"),
