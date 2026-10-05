@@ -2029,10 +2029,12 @@ def daily_report_confirmations():
     auth=require_admin()
     if auth:return auth
     today=(datetime.now(timezone.utc)+timedelta(hours=3)).date(); start=today-timedelta(days=3650)
-    ss,shifts=sb("shifts",params={"start_time":"gte."+start.isoformat()+"T00:00:00+03:00","start_time":"lt."+(today+timedelta(days=1)).isoformat()+"T00:00:00+03:00","select":"id,start_time,end_time","order":"start_time.asc","limit":"10000"})
+    ss,shifts=sb("shifts",params={"start_time":"gte."+start.isoformat()+"T00:00:00+03:00","select":"id,start_time,end_time","order":"start_time.asc","limit":"10000"})
     if ss!=200:return jsonify({"error":shifts}),ss
-    es,existing=sb("daily_report_confirmations",params={"report_date":"gte."+start.isoformat(),"report_date":"lte."+today.isoformat(),"select":"id,report_date,status,confirmed_at,confirmed_by","order":"report_date.desc","limit":"5000"})
+    shifts=[x for x in shifts if _local_date_from_iso(x.get("start_time")) and _local_date_from_iso(x.get("start_time"))<=today]
+    es,existing=sb("daily_report_confirmations",params={"report_date":"gte."+start.isoformat(),"select":"id,report_date,status,confirmed_at,confirmed_by","order":"report_date.desc","limit":"5000"})
     if es!=200:return jsonify({"error":existing}),es
+    existing=[x for x in existing if str(x.get("report_date") or "")[:10]<=today.isoformat()]
     existing={str(x["report_date"]):x for x in existing}; grouped={}
     for x in shifts:
         d=_local_date_from_iso(x.get("start_time"))
