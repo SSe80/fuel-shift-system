@@ -1638,21 +1638,6 @@ async function _saveTankEdit(event){
     await loadSettingsData();
   }catch(e){throw e;}
 }
-async function saveTankCalibration(event){
-  if(event)event.preventDefault();
-  const id=document.getElementById('edit-tank-id').value;
-  const mm=Number(document.getElementById('edit-tank-calibration-mm').value);
-  const litersValue=Number(document.getElementById('edit-tank-calibration-liters').value);
-  const tank=settingsRecord(window.tankRecords,id);
-  if(!tank||!Number.isFinite(mm)||mm<=0||!Number.isFinite(litersValue)||litersValue<0){toast('Enter valid calibration mm and liters.');return;}
-  if(litersValue>Number(tank.capacity_liters||0)){toast('Calibration liters cannot exceed tank capacity.');return;}
-  const details='<p><b>Tank:</b> '+h(tank.tank_code||id)+'</p><p><b>Calibration:</b> '+h(liters(mm))+' mm = '+h(liters(litersValue))+' L</p>';
-  showSettingsConfirmation('Review Tank Calibration',details,async()=>{
-    await api('/api/tanks/'+id+'/calibration',{method:'PATCH',body:JSON.stringify({calibration_mm:mm,calibration_liters:litersValue})});
-    closeTankEdit();
-    await loadSettingsData();
-  },'Tank calibration saved successfully','<p><b>'+h(tank.tank_code||id)+'</b> calibration was saved.</p>'+details);
-}
 function convertTankDip(id,input){
   const t=(window.tankRecords||[]).find(x=>String(x.id)===String(id)); if(!t)return;
   const mm=Number(input?.value),output=document.getElementById('tank-dip-liters-'+id); if(!output)return;
@@ -1662,16 +1647,7 @@ function convertTankDip(id,input){
   const value=mm*refLiters/refMm;
   output.textContent=value>Number(t.capacity_liters||0)?'Over capacity':liters(value)+' L';
 }
-async function applyTankDip(id){
-  const input=document.getElementById('tank-dip-mm-'+id); if(!input)return;
-  const mm=Number(input.value);
-  if(!Number.isFinite(mm)||mm<0){toast('Enter a valid dip reading in mm.');return;}
-  const t=(window.tankRecords||[]).find(x=>String(x.id)===String(id));
-  if(!t||!Number(t.calibration_mm)||!Number.isFinite(Number(t.calibration_liters))){toast('Set the tank calibration reference first.');return;}
-  const value=mm*Number(t.calibration_liters)/Number(t.calibration_mm);
-  if(value>Number(t.capacity_liters||0)){toast('The converted liters exceed tank capacity.');return;}
-  try{await api('/api/tanks/'+id+'/dip',{method:'PATCH',body:JSON.stringify({mm})});await loadSettingsData();toast('Tank reading updated.');}catch(e){throw e;}
-}
+
 function toggleTank(id,active){ if(active){ deactivateTank(id); } else { openTankActivation(id); } }
 async function _deactivateTank(id){try{await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){throw e;}}
 function openTankActivation(id){
