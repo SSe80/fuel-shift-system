@@ -1197,8 +1197,7 @@ def admin_deactivate_shift(shift_id):
     status,current=sb("shifts",params={
         "id":"eq."+shift_id,
         "status":"eq.active",
-        "select":"id,nozzle_id"
-    })
+        "select":"id,nozzle_id"    })
     if status!=200:return jsonify({"error":current}),status
     if not current:return jsonify({"error":"Active shift not found"}),404
     shift=current[0]
@@ -2128,7 +2127,7 @@ def daily_report():
     purchases_status,purchase_rows=sb("purchases",params={
         "purchase_date":"gte."+day_start,
         "purchase_date":"lt."+day_end,
-        "select":"id,product,quantity_liters,supplier,invoice_number,tank_id,purchase_date,status",
+        "select":"id,product,quantity_liters,supplier,invoice_number,tank_id,purchase_date,status,discharged_quantity_liters,discharge_history",
         "order":"purchase_date.asc","limit":"5000"
     })
     if sales_status!=200:return jsonify({"error":sales_rows}),sales_status
@@ -2397,8 +2396,7 @@ def daily_report():
 
     def _shift_nozzle_refs(shift):
         sid=str(shift.get("id") or "")
-        refs=[]
-        seen=set()
+        refs=[]        seen=set()
         for rr in shift_reading_map.get(sid,[]):
             nid=str(rr.get("nozzle_id") or "")
             if nid and nid not in seen:
