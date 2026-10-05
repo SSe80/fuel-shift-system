@@ -1262,7 +1262,20 @@ async function loadSettingsData(){
     tankGroupMap.get(groupKey).items.push(t);
   });
   const groupedTanks=tankGroups.flatMap((group,groupIndex)=>group.items.map((t,itemIndex)=>({t,groupIndex,itemIndex,groupKey:group.key})));
-  document.getElementById('tanks').innerHTML=groupedTanks.length?groupedTanks.map(({t,groupIndex,itemIndex,groupKey})=>`${itemIndex===0?`<div class="settings-product-group-label"><span class="settings-product-group-color" style="background:${h(colorForProduct(t.product))}"></span>${h(codeForProduct(t.product))}</div>`:''}<div class="card settings-item-card ${t.active!==false?'settings-active-card':''} ${itemIndex===0&&groupIndex>0?'tank-group-start':''}" data-tank-product-group="${h(groupKey)}" data-settings-key="tanks" data-settings-id="${t.id}" onclick="toggleSettingsItem(event,this)"><div class="top"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">⋮</button><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><div class="settings-card-details"><div><span>Capacity:</span> <b>${liters(t.capacity_liters)} L</b></div><div><span>Status:</span> <b>${t.active===false?'Inactive':'Active'}</b></div><div><span>Opening liters:</span> <b>${t.opening_stock_liters==null?'Not recorded':liters(t.opening_stock_liters)+' L'}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
+  document.getElementById('tanks').innerHTML=groupedTanks.length?groupedTanks.map(({t,groupIndex,itemIndex,groupKey})=>`
+${itemIndex===0?`<div class="settings-product-group-label"><span class="settings-product-group-color" style="background:${h(colorForProduct(t.product))}"></span>${h(codeForProduct(t.product))}</div>`:''}
+<div class="card settings-item-card ${t.active!==false?'settings-active-card':''} ${itemIndex===0&&groupIndex>0?'tank-group-start':''}" data-tank-product-group="${h(groupKey)}" data-settings-key="tanks" data-settings-id="${t.id}" onclick="toggleSettingsItem(event,this)">
+  <div class="top"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">⋮</button><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><div class="settings-card-details"><div><span>Capacity:</span> <b>${liters(t.capacity_liters)} L</b></div><div><span>Status:</span> <b>${t.active===false?'Inactive':'Active'}</b></div><div><span>Opening liters:</span> <b>${t.opening_stock_liters==null?'Not recorded':liters(t.opening_stock_liters)+' L'}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeTank('${t.id}')">Remove</button></div></div>
+  <div onclick="event.stopPropagation()" style="margin:12px 0 2px;padding:10px 12px;border-top:1px solid rgba(127,127,127,.2)">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">Tank calibration</div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
+      <label style="margin:0;font-size:12px"><span class="muted">Dip reading (mm)</span><input id="tank-dip-mm-${t.id}" type="number" min="0" step="0.001" inputmode="decimal" value="${t.current_mm??''}" placeholder="Enter mm" oninput="convertTankDip('${t.id}',this)" style="width:100%;box-sizing:border-box"></label>
+      <div style="min-width:110px"><span class="muted" style="display:block;font-size:12px">Converted liters</span><b id="tank-dip-liters-${t.id}" style="font-size:16px">${(Number.isFinite(Number(t.current_mm))&&Number.isFinite(Number(t.calibration_mm))&&Number(t.calibration_mm)>0&&Number.isFinite(Number(t.calibration_liters)))?liters(Number(t.current_mm)*Number(t.calibration_liters)/Number(t.calibration_mm))+' L':'—'}</b></div>
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:7px">${t.calibration_mm&&t.calibration_liters?'Reference: '+liters(t.calibration_mm)+' mm = '+liters(t.calibration_liters)+' L':'No calibration reference set — use Edit to set one.'}</div>
+    <button type="button" class="primary" style="margin-top:8px;width:100%" onclick="applyTankDip('${t.id}')">Save tank reading</button>
+  </div>
+</div>`).join(''):'<p class="muted">No tanks.</p>';
   window.tankRecords=tanks;
   const dispenserGroups=[];
   const dispenserGroupMap=new Map();
@@ -1608,6 +1621,10 @@ function openTankEdit(id){
   const productKey=String(t.product||'').toLowerCase();
   document.getElementById('edit-tank-id').value=t.id;
   document.getElementById('edit-tank-capacity').value=t.capacity_liters||'';
+  const calMm=document.getElementById('edit-tank-calibration-mm');
+  const calLiters=document.getElementById('edit-tank-calibration-liters');
+  if(calMm)calMm.value=t.calibration_mm??'';
+  if(calLiters)calLiters.value=t.calibration_liters??'';
   const modal=document.getElementById('tank-edit-modal');
   modal.classList.add('open');
   modal.setAttribute('aria-hidden','false');
@@ -1629,6 +1646,39 @@ async function _saveTankEdit(event){
     closeTankEdit();
     await loadSettingsData();
   }catch(e){throw e;}
+}
+async function saveTankCalibration(event){
+  if(event)event.preventDefault();
+  const id=document.getElementById('edit-tank-id').value;
+  const mm=Number(document.getElementById('edit-tank-calibration-mm').value);
+  const litersValue=Number(document.getElementById('edit-tank-calibration-liters').value);
+  const tank=settingsRecord(window.tankRecords,id);
+  if(!tank||!Number.isFinite(mm)||mm<=0||!Number.isFinite(litersValue)||litersValue<0){toast('Enter valid calibration mm and liters.');return;}
+  if(litersValue>Number(tank.capacity_liters||0)){toast('Calibration liters cannot exceed tank capacity.');return;}
+  const details='<p><b>Tank:</b> '+h(tank.tank_code||id)+'</p><p><b>Calibration:</b> '+h(liters(mm))+' mm = '+h(liters(litersValue))+' L</p>';
+  showSettingsConfirmation('Review Tank Calibration',details,async()=>{
+    await api('/api/tanks/'+id+'/calibration',{method:'PATCH',body:JSON.stringify({calibration_mm:mm,calibration_liters:litersValue})});
+    await loadSettingsData();
+  },'Tank calibration saved successfully','<p><b>'+h(tank.tank_code||id)+'</b> calibration was saved.</p>'+details);
+}
+function convertTankDip(id,input){
+  const t=(window.tankRecords||[]).find(x=>String(x.id)===String(id)); if(!t)return;
+  const mm=Number(input?.value),output=document.getElementById('tank-dip-liters-'+id); if(!output)return;
+  if(!Number.isFinite(mm)||mm<0){output.textContent='—';return;}
+  const refMm=Number(t.calibration_mm),refLiters=Number(t.calibration_liters);
+  if(!Number.isFinite(refMm)||refMm<=0||!Number.isFinite(refLiters)){output.textContent='Set calibration first';return;}
+  const value=mm*refLiters/refMm;
+  output.textContent=value>Number(t.capacity_liters||0)?'Over capacity':liters(value)+' L';
+}
+async function applyTankDip(id){
+  const input=document.getElementById('tank-dip-mm-'+id); if(!input)return;
+  const mm=Number(input.value);
+  if(!Number.isFinite(mm)||mm<0){toast('Enter a valid dip reading in mm.');return;}
+  const t=(window.tankRecords||[]).find(x=>String(x.id)===String(id));
+  if(!t||!Number(t.calibration_mm)||!Number.isFinite(Number(t.calibration_liters))){toast('Set the tank calibration reference first.');return;}
+  const value=mm*Number(t.calibration_liters)/Number(t.calibration_mm);
+  if(value>Number(t.capacity_liters||0)){toast('The converted liters exceed tank capacity.');return;}
+  try{await api('/api/tanks/'+id+'/dip',{method:'PATCH',body:JSON.stringify({mm})});await loadSettingsData();toast('Tank reading updated.');}catch(e){throw e;}
 }
 function toggleTank(id,active){ if(active){ deactivateTank(id); } else { openTankActivation(id); } }
 async function _deactivateTank(id){try{await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){throw e;}}
