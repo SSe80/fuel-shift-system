@@ -2149,7 +2149,43 @@ function dailyReportVarianceClass(value){
   const n=Number(value||0);
   return Math.abs(n)<0.0001?'ok':(n>0?'positive':'negative');
 }
+async function loadDailyReportDates(){
+  const el=document.getElementById('daily-report-date-cards');
+  if(!el)return;
+  try{
+    const end=new Date();
+    const dates=[];
+    for(let i=0;i<31;i++){
+      const d=new Date(end);
+      d.setDate(end.getDate()-i);
+      dates.push(d.toISOString().slice(0,10));
+    }
+    const results=await Promise.all(dates.map(async d=>{
+      try{
+        const r=await api('/api/reports/daily?date='+encodeURIComponent(d));
+        return {date:d,ready:Boolean(r.report_ready),summary:r.summary||{},completion:r.completion||{}};
+      }catch(e){return null;}
+    }));
+    const cards=results.filter(Boolean).filter(x=>Number(x.completion?.total_shifts||0)>0).map(x=>{
+      const s=x.summary;
+      return '<button type="button" class="daily-report-date-card '+(x.ready?'is-ready':'is-pending')+'" onclick="selectDailyReportDate(\''+x.date+'\')">'+
+        '<div class="daily-report-date-top"><b>'+h(dailyReportDateLabel(x.date))+'</b><span>'+ (x.ready?'Final':'Waiting') +'</span></div>'+
+        '<div class="daily-report-date-stats"><div><small>Fuel sold</small><strong>'+liters(s.sales_liters)+' L</strong></div><div><small>Sales</small><strong>'+money(s.sales_amount)+'</strong></div><div><small>Shifts</small><strong>'+Number(s.completed_shifts||0)+'</strong></div></div>'+
+      '</button>';
+    }).join('');
+    el.innerHTML=cards||'<div class="daily-empty">No daily sales reports found for the recent dates.</div>';
+  }catch(e){
+    el.innerHTML='<div class="daily-empty">Could not load report dates.</div>';
+  }
+}
+function selectDailyReportDate(date){
+  const input=document.getElementById('report-date');
+  if(input){input.value=date;loadDailyReport();}
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
 async function loadDailyReport(){
+  loadDailyReportDates();
   const status=document.getElementById('report-status');
   try{
     await window.stationCurrencyReady;
