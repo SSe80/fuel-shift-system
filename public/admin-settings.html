@@ -92,9 +92,10 @@
         <small class="muted">Enter the whole amount and cents separately.</small>
       </div>
       <div id="tank-activation-stock" class="form" style="display:none">
-        <label>Opening stock reading (liters)
-          <input id="tank-opening-stock" type="number" min="0" step="0.01" placeholder="Enter opening stock liters" inputmode="decimal">
+        <label>Opening tank dip (mm)
+          <input id="tank-opening-stock" type="number" min="0" step="0.1" placeholder="Enter opening dip in mm" inputmode="decimal" oninput="updateTankOpeningDip(this.value)">
         </label>
+        <div id="tank-opening-stock-equivalent" class="muted">Enter a dip to calculate liters.</div>
         <small class="muted">The tank can only be activated when its product is active.</small>
       </div>
       <input id="activation-target-id" type="hidden"><input id="activation-target-type" type="hidden">
@@ -206,7 +207,7 @@
         <p id="dispenser-activate-message">Select the Attendant and enter the opening readings. This creates a pending shift assignment; the selected Attendant must confirm it with their PIN on the Attendant Dashboard.</p>
         <div id="dispenser-nozzle-activation-list" class="form"></div>
         <div class="form">
-          <label id="dispenser-activation-tank-label">Tank activation reading (liters)<input id="dispenser-activation-tank-liters" type="number" min="0" step="0.01" placeholder="Tank activation reading" inputmode="decimal" readonly required></label><small class="muted">Automatically taken from the connected tank activation reading.</small>
+          <label id="dispenser-activation-tank-label">Tank activation dip (mm)<input id="dispenser-activation-tank-dip" type="number" min="0" step="0.1" placeholder="Enter tank activation dip" inputmode="decimal" required oninput="updateDispenserActivationDip(this.value)"></label><div id="dispenser-activation-tank-equivalent" class="muted">Enter a dip to calculate liters.</div><input id="dispenser-activation-tank-liters" type="hidden"><small class="muted">The liter equivalent is calculated from the connected tank calibration.</small>
           <label>Attendant<select id="dispenser-activation-employee" required><option value="">Select attendant</option></select></label>
         </div>
         <div id="dispenser-activation-review" style="margin-top:10px"></div>
