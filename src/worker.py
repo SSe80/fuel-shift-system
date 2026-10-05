@@ -2962,6 +2962,9 @@ def daily_report():
         purchased_l=float(purchase_by_tank.get(tid,0))
         stock_adjustment_l=float(purchase_adjustment_by_tank.get(tid,0))
         discharge_operations=discharge_operations_by_tank.get(tid,[])
+        purchase_ids=sorted(set(str(x.get("purchase_id")) for x in discharge_operations if x.get("purchase_id")))
+        purchase_operation_count=len(discharge_operations)
+        purchase_count=len(purchase_ids)
         discharge_inside_shift_liters=sum(
             float(x.get("discharged_liters") or 0)
             for x in discharge_operations
@@ -2997,12 +3000,16 @@ def daily_report():
             if abs(gap)>0.0001:
                 continuity_gap_count+=1
                 opening_adjustment_l+=gap
-        # Do not fold the later tank-stock recording into the stock equation:
-        # the recording may happen after sales/other movement. The immediate
-        # discharge amount is already represented by purchase_discharged_liters.
-        expected=opening+opening_adjustment_l+purchased_l-sales_l
+        # Authoritative tank equation:
+        # opening + discharged purchase + documented adjustments - nozzle sales = closing.
+        # Each discharge operation contributes its delivered quantity once. Multiple
+        # operations for the same purchase are intentionally summed by operation,
+        # while purchase_count/purchase_ids identify the purchase only once.
+        # The adjustment captures a genuine physical/documented variance and must
+        # remain visible rather than being absorbed into the purchase total.
+        expected=opening+opening_adjustment_l+purchased_l+stock_adjustment_l-nozzle_sales_l
         diff=expected-closing
-        basis=opening+opening_adjustment_l+purchased_l
+        basis=opening+opening_adjustment_l+purchased_l+stock_adjustment_l
         shift_reconciliation=[]
         running_adjustment=0.0
         for idx,(sh,h) in enumerate(rows):
@@ -3049,7 +3056,11 @@ def daily_report():
             "opening_stock_liters":opening,
             "closing_stock_liters":closing,
             "purchase_discharged_liters":purchased_l,
+            "purchase_count":purchase_count,
+            "purchase_operation_count":purchase_operation_count,
+            "purchase_ids":purchase_ids,
             "documented_stock_adjustment_liters":stock_adjustment_l,
+            "nozzle_sales_liters":nozzle_sales_l,
             "discharge_operation_count":len(discharge_operations),
             "discharge_operations":discharge_operations,
             "discharge_inside_shift_liters":discharge_inside_shift_liters,
