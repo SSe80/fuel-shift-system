@@ -2,7 +2,18 @@
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Purchase History</title><link rel="stylesheet" href="assets/style.css">
 <style>
-.purchase-full-history-list{display:grid;gap:12px}.purchase-history-tools{align-items:center!important;padding:6px;background:#f8fafc;border:1px solid #e6ebf1;border-radius:14px}.purchase-history-tools input,.purchase-history-tools select,.purchase-history-tools button{min-height:42px;border-radius:11px!important}.purchase-history-tools input{flex:1 1 240px;min-width:160px;padding:0 13px;border:1px solid #d0d5dd;background:#fff;font-size:13px;outline:none;box-shadow:0 1px 2px rgba(16,24,40,.03)}.purchase-history-tools input:focus{border-color:#84adff;box-shadow:0 0 0 3px rgba(37,99,235,.10)}.purchase-history-tools select{padding:0 34px 0 12px;border:1px solid #d0d5dd;background:#fff;color:#344054;font-size:12px;font-weight:700}.purchase-history-tools button{padding:0 15px;border:1px solid #d0d5dd;background:#fff;color:#344054;font-size:12px;font-weight:800;cursor:pointer}.purchase-history-tools button:hover{background:#f2f4f7;border-color:#98a2b3}@media(max-width:560px){.purchase-history-tools{display:grid!important;grid-template-columns:1fr 1fr}.purchase-history-tools input{grid-column:1/-1;width:100%;box-sizing:border-box}.purchase-history-tools select,.purchase-history-tools button{width:100%;box-sizing:border-box}}
+.purchase-full-history-list{display:grid;gap:12px}
+.purchase-full-history-month-group{margin:0 0 16px;border:1px solid #4b83bd;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 2px 8px #17202a0a}
+.purchase-full-history-month-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;margin:0;border:0;border-bottom:1px solid #e5eaf0;background:#f7f9fb;color:inherit;text-align:left;cursor:pointer}
+.purchase-full-history-month-head:hover{background:#f3f6f9}
+.purchase-full-history-month-title{display:flex;align-items:baseline;gap:8px;min-width:0}
+.purchase-full-history-month-title .section-kicker{margin:0;color:#667085;font-size:9px}
+.purchase-full-history-month-title strong{font-size:16px;line-height:1.2;letter-spacing:.01em;color:#2563a8}
+.purchase-full-history-month-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.purchase-full-history-month-right small{color:#7b8794;font-size:10px}
+.purchase-full-history-month-toggle{width:25px;height:25px;display:grid;place-items:center;border-radius:7px;background:#e9eef4;color:#526273;font-size:16px;font-weight:800;line-height:1}
+.purchase-full-history-month-body{padding:10px 12px 2px}
+.purchase-full-history-month-body[hidden]{display:none}.purchase-history-tools{align-items:center!important;padding:6px;background:#f8fafc;border:1px solid #e6ebf1;border-radius:14px}.purchase-history-tools input,.purchase-history-tools select,.purchase-history-tools button{min-height:42px;border-radius:11px!important}.purchase-history-tools input{flex:1 1 240px;min-width:160px;padding:0 13px;border:1px solid #d0d5dd;background:#fff;font-size:13px;outline:none;box-shadow:0 1px 2px rgba(16,24,40,.03)}.purchase-history-tools input:focus{border-color:#84adff;box-shadow:0 0 0 3px rgba(37,99,235,.10)}.purchase-history-tools select{padding:0 34px 0 12px;border:1px solid #d0d5dd;background:#fff;color:#344054;font-size:12px;font-weight:700}.purchase-history-tools button{padding:0 15px;border:1px solid #d0d5dd;background:#fff;color:#344054;font-size:12px;font-weight:800;cursor:pointer}.purchase-history-tools button:hover{background:#f2f4f7;border-color:#98a2b3}@media(max-width:560px){.purchase-history-tools{display:grid!important;grid-template-columns:1fr 1fr}.purchase-history-tools input{grid-column:1/-1;width:100%;box-sizing:border-box}.purchase-history-tools select,.purchase-history-tools button{width:100%;box-sizing:border-box}}
 .purchase-full-history-card{padding:0!important;overflow:hidden;border-left:4px solid #12b76a!important}
 .purchase-full-history-head{width:100%;min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px 12px 17px;border:0;background:#fff;color:#17202a;text-align:left;cursor:pointer}
 .purchase-full-history-title{min-width:0;display:flex;align-items:center;gap:9px}
@@ -51,16 +62,49 @@ window.toggleFullPurchaseHistoryCard=function(id){
  const open=card.classList.toggle('expanded'); const body=card.querySelector('.purchase-full-history-body'); const toggle=card.querySelector('.purchase-full-history-toggle'); const head=card.querySelector('.purchase-full-history-head');
  if(body)body.hidden=!open;if(head)head.setAttribute('aria-expanded',open?'true':'false');if(toggle)toggle.textContent=open?'⌃':'⌄';
 };
+window.toggleFullPurchaseHistoryMonth=function(monthKey){
+ const group=document.querySelector('.purchase-full-history-month-group[data-month-key="'+CSS.escape(String(monthKey))+'"]');if(!group)return;
+ const body=group.querySelector('.purchase-full-history-month-body'),head=group.querySelector('.purchase-full-history-month-head'),toggle=group.querySelector('.purchase-full-history-month-toggle');
+ const open=group.classList.toggle('expanded');
+ if(body)body.hidden=!open;if(head)head.setAttribute('aria-expanded',open?'true':'false');if(toggle)toggle.textContent=open?'⌃':'⌄';
+};
+window.toggleFullPurchaseHistoryCard=function(id){
+ const card=document.querySelector('.purchase-full-history-card[data-id="'+CSS.escape(String(id))+'"]'); if(!card)return;
+ const open=card.classList.toggle('expanded'); const body=card.querySelector('.purchase-full-history-body'); const toggle=card.querySelector('.purchase-full-history-toggle'); const head=card.querySelector('.purchase-full-history-head');
+ if(body)body.hidden=!open;if(head)head.setAttribute('aria-expanded',open?'true':'false');if(toggle)toggle.textContent=open?'⌃':'⌄';
+};
 window.renderFullPurchaseHistory=function(){
  const box=document.getElementById('full-purchase-history-list');if(!box)return;
  const rows=records.filter(matches);
  if(!rows.length){box.innerHTML='<div class="purchase-empty">No tank stock recorded purchases found.</div>';return;}
- box.innerHTML=rows.map(p=>{
+ const monthGroups={};
+ rows.forEach(p=>{
+  const raw=p.purchase_date||p.created_at||p.discharged_at;
+  const d=raw?new Date(raw):null;
+  const monthKey=d&&!Number.isNaN(d.getTime())
+   ?new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit'}).format(d)
+   :'unknown';
+  (monthGroups[monthKey]||(monthGroups[monthKey]=[])).push(p);
+ });
+ const monthKeys=Object.keys(monthGroups).sort((a,b)=>b.localeCompare(a));
+ const renderPurchase=p=>{
   const product=p.product||p.product_code||'—',invoice=p.invoice_number?('Invoice #'+p.invoice_number):'Purchase — No Invoice';
   const purchaseDate=p.purchase_date||p.created_at; const discharged=p.discharged_at;
   const comps=Array.isArray(p.compartment_liters)?p.compartment_liters:[]; const delivered=comps.reduce((s,v)=>s+Number(v||0),0);
   const history=Array.isArray(p.discharge_history)?p.discharge_history:[]; const tanks=[...new Set(history.map(e=>e?.tank_code||e?.tank_id).filter(Boolean))].join(', ')||'—';
   return '<article class="purchase-card purchase-full-history-card" data-id="'+esc(p.id)+'"><button type="button" class="purchase-full-history-head" onclick="toggleFullPurchaseHistoryCard(this.dataset.id)" data-id="'+esc(p.id)+'" aria-expanded="false"><span class="purchase-full-history-title"><span class="dot"></span><span><strong>'+esc(invoice)+'</strong><small>'+esc(product)+' · '+esc(purchaseDate?new Date(purchaseDate).toLocaleString():'—')+'</small></span></span><span class="purchase-full-history-right"><span class="badge">✓ RECORDED</span><span class="purchase-full-history-toggle">⌄</span></span></button><div class="purchase-full-history-body" hidden><div class="purchase-full-history-grid"><div><span>Delivered quantity</span><strong>'+esc(delivered.toLocaleString())+' L</strong></div><div><span>Invoice</span><strong>'+esc(p.invoice_number||'—')+'</strong></div><div><span>Purchase date</span><strong>'+esc(purchaseDate?new Date(purchaseDate).toLocaleString():'—')+'</strong></div><div><span>Discharge date</span><strong>'+esc(discharged?new Date(discharged).toLocaleString():'—')+'</strong></div><div><span>Tank</span><strong>'+esc(tanks)+'</strong></div><div><span>Driver</span><strong>'+esc(p.driver_name||'—')+'</strong></div></div></div></article>';
+ };
+ box.innerHTML=monthKeys.map(monthKey=>{
+  const monthDate=new Date(monthKey==='unknown'?'invalid':monthKey+'-01T00:00:00');
+  const monthLabel=Number.isNaN(monthDate.getTime())?(monthKey==='unknown'?'Unknown date':monthKey):monthDate.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  const groupRows=monthGroups[monthKey];
+  return '<section class="purchase-full-history-month-group" data-month-key="'+esc(monthKey)+'">'+
+   '<button type="button" class="purchase-full-history-month-head" onclick="toggleFullPurchaseHistoryMonth(\''+esc(monthKey)+'\')" aria-expanded="false">'+
+    '<span class="purchase-full-history-month-title"><span class="section-kicker">MONTH</span><strong>'+esc(monthLabel)+'</strong></span>'+
+    '<span class="purchase-full-history-month-right"><small>'+groupRows.length+' purchase'+(groupRows.length===1?'':'s')+'</small><span class="purchase-full-history-month-toggle">⌄</span></span>'+
+   '</button>'+
+   '<div class="purchase-full-history-month-body" hidden>'+groupRows.map(renderPurchase).join('')+'</div>'+
+  '</section>';
  }).join('');
 };
 window.loadFullPurchaseHistory=async function(){
