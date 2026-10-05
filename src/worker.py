@@ -2217,7 +2217,13 @@ def daily_report():
     if all_tank_status!=200:return jsonify({"error":all_tank_rows}),all_tank_status
     if purchases_status!=200:return jsonify({"error":purchase_rows}),purchases_status
 
-    handover_by_shift={str(x.get("shift_id")):x for x in handover_rows if x.get("shift_id")}
+    handovers_by_shift={}
+    for handover in handover_rows:
+        sid=str(handover.get("shift_id") or "")
+        if sid:
+            handovers_by_shift.setdefault(sid,[]).append(handover)
+    duplicate_handover_shifts=[sid for sid,rows in handovers_by_shift.items() if len(rows)>1]
+    handover_by_shift={sid:rows[0] for sid,rows in handovers_by_shift.items() if len(rows)==1}
     readings_by_shift={}
     for row in nozzle_reading_rows:
         readings_by_shift.setdefault(str(row.get("shift_id")),[]).append(row)
@@ -2232,7 +2238,11 @@ def daily_report():
         if h and h.get("sales_status")!="confirmed":
             unconfirmed_shifts.append({"shift_id":sid,"sales_status":h.get("sales_status") or "not_recorded"})
 
-    all_handover_recorded=(len(day_shifts)>0 and len(handover_by_shift)==len(day_shifts)) if day_shifts else False
+    all_handover_recorded=(
+        bool(day_shifts)
+        and not duplicate_handover_shifts
+        and len(handover_by_shift)==len(day_shifts)
+    ) if day_shifts else False
     all_sales_recorded=(
         all(
             bool(handover_by_shift.get(str(x.get("id"))))
@@ -2240,6 +2250,7 @@ def daily_report():
             and bool((handover_by_shift.get(str(x.get("id"))) or {}).get("sales_submitted_at"))
             for x in day_shifts
         )
+        and not duplicate_handover_shifts
         if day_shifts else False
     )
     report_ready=bool(day_shifts and len(incomplete_shifts)==0 and all_handover_recorded and all_sales_recorded)
