@@ -3032,3 +3032,155 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .daily-report-page .daily-summary-grid{grid-template-columns:1fr 1fr}
   .daily-report-page .daily-stat.primary-stat{grid-column:1/-1}
 }
+
+
+/* DSR v2 — stronger hierarchy, compact information architecture */
+.daily-report-page .daily-section{position:relative}
+.daily-report-page .daily-section-head{align-items:flex-start}
+.daily-report-page .daily-section-head>div:first-child{min-width:0}
+.daily-report-page .daily-section-head h2{font-weight:850;color:#111827}
+.daily-report-page .daily-section-head p{max-width:640px}
+
+/* Confirmation cards: make the date the hero, not the labels */
+.daily-report-page .daily-confirm-card{position:relative}
+.daily-report-page .daily-confirm-head{min-height:68px}
+.daily-report-page .daily-confirm-head h3{font-size:21px;font-weight:900}
+.daily-report-page .daily-confirm-head .pending-sale-badge{margin-top:1px}
+.daily-report-page .daily-confirm-summary{grid-template-columns:1.15fr .85fr}
+.daily-report-page .daily-confirm-summary>div:first-child{background:#f3f7fd;border-color:#d5e2f2}
+.daily-report-page .daily-confirm-summary>div:first-child strong{font-size:20px;color:#125fca}
+.daily-report-page .daily-confirm-methods .admin-sale-check-row{
+  min-height:54px;padding:9px 11px;gap:10px
+}
+.daily-report-page .daily-confirm-methods .admin-sale-check-row span{min-width:0}
+.daily-report-page .daily-confirm-methods .admin-sale-check-row strong:last-child{
+  font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap
+}
+.daily-report-page .daily-confirm-actions button{font-size:12px;letter-spacing:.01em}
+
+/* History: cleaner dashboard-like rows */
+.daily-report-page .daily-history-section .daily-report-date-card{box-shadow:none}
+.daily-report-page .daily-history-section .daily-report-date-card:hover{transform:none;box-shadow:0 5px 16px rgba(20,35,50,.07)}
+.daily-report-page .daily-report-date-stats{background:#fff}
+.daily-report-page .daily-report-date-stats strong{font-size:14px}
+.daily-report-page .daily-report-date-stats>div:first-child strong{color:#125fca;font-size:15px}
+.daily-report-page .daily-dsr-history-foot{font-size:10px}
+
+/* Detail summary */
+.daily-report-page .daily-summary-grid{grid-template-columns:repeat(4,1fr);gap:8px}
+.daily-report-page .daily-stat{min-height:78px;padding:12px}
+.daily-report-page .daily-stat.primary-stat{grid-column:span 2;min-height:88px}
+.daily-report-page .daily-stat.primary-stat b{font-size:25px;color:#125fca}
+.daily-report-page .daily-stat b{font-size:17px;font-variant-numeric:tabular-nums}
+.daily-report-page .daily-stat span{font-size:9px;text-transform:uppercase;letter-spacing:.06em}
+
+/* Detailed DSR content — consistent card system */
+.daily-report-page .dsr-dispenser-list,
+.daily-report-page .dsr-tank-list,
+.daily-report-page .dsr-shift-list{display:grid;gap:12px}
+.daily-report-page .dsr-dispenser-card,
+.daily-report-page .dsr-tank-card,
+.daily-report-page .dsr-shift-card{
+  margin:0;border:1px solid #dfe5ec!important;border-radius:15px!important;
+  background:#fff!important;box-shadow:0 4px 15px rgba(20,35,50,.045)!important;
+  overflow:hidden;
+}
+.daily-report-page .dsr-dispenser-head,
+.daily-report-page .dsr-tank-head,
+.daily-report-page .dsr-shift-head{
+  padding:14px 15px!important;background:#f8fafc!important;
+  border-bottom:1px solid #e7ecf1!important;
+}
+.daily-report-page .dsr-dispenser-head h3,
+.daily-report-page .dsr-tank-head h3,
+.daily-report-page .dsr-shift-head h3{
+  margin:2px 0!important;font-size:17px!important;font-weight:850!important;color:#17202a!important;
+}
+.daily-report-page .dsr-dispenser-head p,
+.daily-report-page .dsr-tank-head p,
+.daily-report-page .dsr-shift-head p{margin:3px 0 0!important;font-size:11px!important;color:#778391!important}
+.daily-report-page .dsr-dispenser-total b{font-size:18px!important;color:#125fca}
+.daily-report-page .dsr-dispenser-total span{font-size:11px!important;font-weight:750}
+.daily-report-page .dsr-reading-grid,
+.daily-report-page .dsr-tank-grid,
+.daily-report-page .dsr-shift-grid{
+  padding:11px 14px!important;gap:7px!important;
+}
+.daily-report-page .dsr-reading-grid>div,
+.daily-report-page .dsr-tank-grid>div,
+.daily-report-page .dsr-shift-grid>div{
+  padding:9px 10px!important;border:1px solid #e7ebf0!important;border-radius:10px!important;
+  background:#fafbfc!important;
+}
+.daily-report-page .dsr-reading-grid span,
+.daily-report-page .dsr-tank-grid span,
+.daily-report-page .dsr-shift-grid span{font-size:9px!important;text-transform:uppercase;letter-spacing:.045em;color:#818b97!important}
+.daily-report-page .dsr-reading-grid b,
+.daily-report-page .dsr-tank-grid b,
+.daily-report-page .dsr-shift-grid b{font-size:13px!important;margin-top:3px;display:block;font-variant-numeric:tabular-nums}
+.daily-report-page .dsr-nozzle-card{
+  margin:0 14px 10px!important;border:1px solid #e2e7ed!important;border-radius:12px!important;
+  box-shadow:none!important;background:#fff!important;overflow:hidden;
+}
+.daily-report-page .dsr-nozzle-head{padding:11px 12px!important;background:#fbfcfe!important;border-bottom:1px solid #edf1f4!important}
+.daily-report-page .dsr-nozzle-head h4{font-size:14px!important;margin:2px 0!important}
+.daily-report-page .dsr-nozzle-head p{font-size:10px!important;margin:0!important;color:#1264d8!important;font-weight:750}
+.daily-report-page .dsr-percent{font-size:10px!important;font-weight:850!important;color:#667085!important}
+.daily-report-page .dsr-nozzle-performance,
+.daily-report-page .dsr-tank-performance{margin:0 14px 10px!important;border:1px solid #e7ebf0!important;border-radius:10px!important;background:#f8fafc!important}
+.daily-report-page .dsr-attendants{padding:0 14px 12px!important}
+.daily-report-page .dsr-subhead{
+  padding:9px 0!important;font-size:10px!important;font-weight:900!important;
+  letter-spacing:.08em!important;text-transform:uppercase!important;color:#697586!important;
+}
+.daily-report-page .dsr-attendant-shift{
+  display:grid!important;grid-template-columns:1fr auto;gap:3px 10px!important;
+  padding:8px 0!important;border-top:1px solid #edf1f4!important;
+}
+.daily-report-page .dsr-attendant-shift span{font-size:11px!important;font-weight:800}
+.daily-report-page .dsr-attendant-shift small{font-size:9px!important;color:#87919d}
+.daily-report-page .dsr-attendant-shift strong{grid-column:1/-1;font-size:11px!important;color:#125fca}
+
+/* Sales + performance */
+.daily-report-page .dsr-sales-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.daily-report-page .dsr-sales-column,
+.daily-report-page .dsr-performance-block{
+  padding:12px 13px;border:1px solid #e1e7ed;border-radius:12px;background:#fff;
+}
+.daily-report-page .dsr-sales-row{
+  display:grid!important;grid-template-columns:1fr auto auto!important;align-items:center;
+  gap:10px!important;padding:9px 0!important;border-top:1px solid #edf1f4!important;
+}
+.daily-report-page .dsr-sales-row div{min-width:0}
+.daily-report-page .dsr-sales-row b{font-size:11px!important}
+.daily-report-page .dsr-sales-row small{display:block;font-size:9px!important;color:#87919d!important}
+.daily-report-page .dsr-sales-row strong{font-size:11px!important}
+.daily-report-page .dsr-sales-row>span{font-size:10px!important;font-weight:850;color:#1264d8}
+.daily-report-page .dsr-sales-total{
+  grid-column:1/-1;display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;
+  padding:12px 13px;border-radius:12px;background:#f3f7fd;border:1px solid #d3e0ef;
+}
+.daily-report-page .dsr-sales-total span{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:#667085}
+.daily-report-page .dsr-sales-total strong{font-size:15px;color:#125fca}
+.daily-report-page .dsr-performance-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.daily-report-page .dsr-performance-metric{
+  display:flex!important;align-items:center;justify-content:space-between;gap:10px;
+  padding:8px 0!important;border-top:1px solid #edf1f4!important;
+}
+.daily-report-page .dsr-performance-metric span{font-size:10px!important;color:#667085}
+.daily-report-page .dsr-performance-metric b{font-size:11px!important;font-variant-numeric:tabular-nums}
+.daily-report-page .dsr-performance-block:first-child{grid-column:1/-1}
+
+/* mobile */
+@media(max-width:600px){
+  .daily-report-page .daily-report-header{display:block}
+  .daily-report-page .daily-back{margin-top:10px}
+  .daily-report-page .daily-confirm-summary{grid-template-columns:1fr 1fr}
+  .daily-report-page .daily-summary-grid{grid-template-columns:1fr 1fr}
+  .daily-report-page .daily-stat.primary-stat{grid-column:1/-1}
+  .daily-report-page .dsr-sales-summary,
+  .daily-report-page .dsr-performance-grid{grid-template-columns:1fr}
+  .daily-report-page .dsr-performance-block:first-child{grid-column:auto}
+  .daily-report-page .daily-report-date-top b{font-size:15px}
+  .daily-report-page .daily-confirm-head h3{font-size:18px}
+}
