@@ -2743,3 +2743,76 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .dsr-shift-readings{grid-template-columns:1fr}
   .dsr-sales-total{align-items:flex-start;flex-wrap:wrap}
 }
+
+/* Admin Sales — clearer pending confirmation card frames */
+.admin-sales-page .admin-sale-confirm-card{
+  position:relative;
+  padding:18px;
+  border:2px solid #cfd7df;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 5px 16px rgba(20,35,50,.055);
+}
+.admin-sales-page .admin-sale-confirm-card::before{
+  content:"";
+  position:absolute;
+  inset:6px;
+  border:1px solid #edf1f4;
+  border-radius:11px;
+  pointer-events:none;
+}
+.admin-sales-page .admin-sale-confirm-card > *{
+  position:relative;
+}
+.admin-sales-page .admin-sale-confirm-card .top{
+  padding-bottom:14px;
+  margin-bottom:14px;
+  border-bottom:1px solid #e3e8ed;
+}
+.admin-sales-page .admin-sale-context{
+  gap:10px;
+  margin:0 0 13px;
+}
+.admin-sales-page .admin-sale-context>div{
+  min-width:0;
+  padding:11px 12px;
+  border:1px solid #d9e0e6;
+  border-radius:11px;
+  background:#f9fafb;
+}
+.admin-sales-page .admin-sale-review-strip{
+  border:1px solid #d9e0e6;
+  border-radius:11px;
+  background:#f7f9fb;
+  padding:10px 12px;
+  margin-bottom:13px;
+}
+.admin-sales-page .admin-sale-check-section{
+  padding:12px;
+  border:1px solid #d9e0e6;
+  border-radius:12px;
+  background:#fbfcfd;
+}
+.admin-sales-page .admin-sale-check-section .takeover-detail-heading{
+  margin-bottom:7px;
+}
+.admin-sales-page .admin-sale-check-row{
+  border-color:#d5dde4;
+  background:#fff;
+}
+.admin-sales-page .admin-sale-check-row:hover{
+  border-color:#b8c3cd;
+  background:#f9fbfc;
+}
+.admin-sales-page .admin-sale-total{
+  border:1px solid #d9e0e6;
+  background:#f6f8fa;
+}
+.admin-sales-page .admin-sale-actions{
+  padding-top:2px;
+}
+@media(max-width:560px){
+  .admin-sales-page .admin-sale-confirm-card{padding:15px}
+  .admin-sales-page .admin-sale-confirm-card::before{inset:5px}
+  .admin-sales-page .admin-sale-context{grid-template-columns:1fr}
+}
