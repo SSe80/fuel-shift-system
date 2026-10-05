@@ -2934,7 +2934,42 @@ async function loadDailyReport(){
     ['report-summary','report-dispensers','report-tanks','report-sales-summary','report-shifts','report-performance'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
   }
 }
-async function saveDailyReport(){
+async async function loadDailyReportRevisions(){
+  const section=document.getElementById('daily-report-revisions');
+  const list=document.getElementById('daily-report-revisions-list');
+  const date=document.getElementById('report-date')?.value;
+  if(!section||!list||!date)return;
+  section.hidden=false;
+  list.innerHTML='<div class="daily-empty">Loading previous DSR versions…</div>';
+  try{
+    const rows=await api('/api/reports/daily/revisions?date='+encodeURIComponent(date));
+    if(!Array.isArray(rows)||!rows.length){
+      list.innerHTML='<div class="daily-empty">No previous version has been archived for this DSR.</div>';
+      return;
+    }
+    list.innerHTML=rows.map(r=>{
+      const snap=r.report_snapshot||{};
+      return '<article class="daily-revision-card"><div class="daily-revision-head"><div><span class="daily-card-kicker">ARCHIVED VERSION</span><h3>Revision '+h(r.revision_no)+'</h3><small>'+h(r.archived_at?new Date(r.archived_at).toLocaleString():'—')+'</small></div><span class="daily-dsr-status-preview">Archived</span></div><div class="daily-revision-grid"><div><span>Fuel sold</span><strong>'+liters(snap.total_sales_liters||0)+' L</strong></div><div><span>Total sales</span><strong>'+money(snap.total_sales_amount||0)+'</strong></div><div><span>Purchase contribution</span><strong>'+liters(snap.total_purchases_liters||0)+' L</strong></div><div><span>Reason</span><strong>'+h(r.revision_reason||'DSR regenerated')+'</strong></div></div></article>';
+    }).join('');
+  }catch(e){list.innerHTML='<div class="daily-empty">Could not load revision history: '+h(e.message||'Request failed')+'</div>';}
+}
+async function regenerateDailyReport(){
+  const date=document.getElementById('report-date')?.value;
+  if(!date){toast('Select a DSR date first');return;}
+  try{
+    const rows=await api('/api/reports/daily/confirmations');
+    const item=(Array.isArray(rows)?rows:[]).find(x=>String(x.date)===String(date));
+    if(!item||item.status!=='confirmed'){toast('Only a confirmed DSR can be regenerated.');return;}
+    if(!confirm('Regenerate this DSR? The current saved version will be archived first and shown in Revision History.'))return;
+    await api('/api/reports/daily',{method:'POST',body:JSON.stringify({date,revision_reason:'Explicit DSR correction / regeneration'})});
+    toast('DSR regenerated. Previous version archived.');
+    await loadDailyReportRevisions();
+    await loadDailyReport();
+    await loadDailyReportConfirmations();
+  }catch(e){toast(e.message||'DSR regeneration failed');}
+}
+
+function saveDailyReport(){
   try{
     const dateValue=document.getElementById('report-date').value;
     if(!dateValue){toast('Select a report date');return;}
