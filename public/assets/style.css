@@ -2574,3 +2574,25 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 .daily-report-date-stats small{display:block;font-size:.68rem;opacity:.65}
 .daily-report-date-stats strong{display:block;margin-top:3px;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:600px){.daily-report-date-cards{grid-template-columns:1fr 1fr}.daily-report-date-stats{grid-template-columns:1fr}.daily-report-date-stats div:not(:first-child){display:flex;justify-content:space-between;gap:8px}.daily-report-date-stats div:not(:first-child) strong{margin-top:0}}
+
+/* Daily report final confirmation */
+.daily-report-pending-confirmations{display:grid;gap:14px}
+.daily-confirm-card{padding:18px;border-radius:18px;border:1px solid rgba(245,158,11,.35);background:linear-gradient(180deg,rgba(245,158,11,.08),rgba(255,255,255,.02))}
+.daily-confirm-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.daily-confirm-head h3{margin:3px 0 4px}
+.daily-confirm-head p{margin:0}
+.daily-confirm-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:15px}
+.daily-confirm-summary>div,.daily-confirm-method{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.04)}
+.daily-confirm-summary span,.daily-confirm-method span{font-size:.78rem;color:var(--muted,#8f98a8)}
+.daily-confirm-summary strong{font-size:1.08rem}
+.daily-confirm-methods{margin-top:12px}
+.daily-confirm-label{font-size:.76rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px}
+.daily-confirm-method{margin-top:6px}
+.daily-confirm-note{margin-top:12px;padding:10px 12px;border-radius:10px;font-size:.82rem;background:rgba(34,197,94,.08)}
+.daily-confirm-note.is-blocked{background:rgba(245,158,11,.09)}
+.daily-confirm-actions{margin-top:14px;display:flex;justify-content:flex-end;gap:8px}
+@media(max-width:600px){
+  .daily-confirm-summary{grid-template-columns:1fr}
+  .daily-confirm-actions{display:grid;grid-template-columns:1fr}
+  .daily-confirm-actions button{width:100%}
+}
