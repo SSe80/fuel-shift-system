@@ -2406,6 +2406,7 @@ def daily_report():
     station_methods={}
     station_l=0
     station_a=0
+    calculated_station_a=sum(float(z.get("calculated_sales_amount") or z.get("sales_amount") or 0) for z in shift_summary)
     for dispenser in dispenser_summary:
         station_l += float(dispenser.get("sales_liters") or 0)
         station_a += float(dispenser.get("sales_amount") or 0)
@@ -2721,6 +2722,8 @@ def daily_report():
     dsr_performance={
         "total_sales_liters":station_l,
         "total_sales_amount":station_a,
+        "calculated_sales_amount":calculated_station_a,
+        "sales_amount_difference":station_a-calculated_station_a,
         "dispenser_count":len(dispenser_details),
         "nozzle_count":len(nozzle_stats),
         "tank_count":len(tank_details),
