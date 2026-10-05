@@ -2264,25 +2264,14 @@ def daily_report():
     # Keep the meter-derived amount separately so the DSR can reconcile both
     # values without silently substituting one for the other.
     takeover_sale_amount_by_shift={}
-    for trow in handover_rows:
-        tid=str(trow.get("id") or "")
-        sid=str(trow.get("shift_id") or "")
-        if not tid or not sid:
-            continue
-        takeover_sale_amount_by_shift[sid]=sum(
-            float(v.get("amount") or 0)
-            for v in (sale_rows if False else [])
-        )
-    if handover_rows:
-        takeover_ids=[str(x.get("id")) for x in handover_rows if x.get("id")]
-        if takeover_ids:
-            tsa,tsr=sb("shift_takeover_sales",params={"takeover_id":"in.("+",".join(takeover_ids)+")","select":"takeover_id,amount","limit":"10000"})
-            if tsa==200:
-                for row in tsr:
-                    tid=str(row.get("takeover_id") or "")
-                    sid=next((str(t.get("shift_id")) for t in handover_rows if str(t.get("id"))==tid),None)
-                    if sid:
-                        takeover_sale_amount_by_shift[sid]=takeover_sale_amount_by_shift.get(sid,0)+float(row.get("amount") or 0)
+    takeover_shift_map={str(t.get("id")):str(t.get("shift_id")) for t in handover_rows if t.get("id") and t.get("shift_id")}
+    if takeover_shift_map:
+        tsa,tsr=sb("shift_takeover_sales",params={"takeover_id":"in.("+",".join(takeover_shift_map.keys())+")","select":"takeover_id,amount","limit":"10000"})
+        if tsa==200:
+            for row in tsr:
+                sid=takeover_shift_map.get(str(row.get("takeover_id") or ""))
+                if sid:
+                    takeover_sale_amount_by_shift[sid]=takeover_sale_amount_by_shift.get(sid,0)+float(row.get("amount") or 0)
 
     def sales_methods_for_shift(shift_id):
         methods={}
