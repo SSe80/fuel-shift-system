@@ -154,6 +154,11 @@
         <div class="top"><h3>Edit Fuel Tank</h3><button type="button" class="modal-close" onclick="closeTankEdit()" aria-label="Close">×</button></div>
         <input id="edit-tank-id" type="hidden">
         <label>Tank size (liters)<input id="edit-tank-capacity" type="number" min="1" step="0.01" required></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <label>Calibration mm<input id="edit-tank-calibration-mm" type="number" min="0.001" step="0.001" placeholder="Reference mm" inputmode="decimal"></label>
+          <label>Calibration liters<input id="edit-tank-calibration-liters" type="number" min="0" step="0.001" placeholder="Reference liters" inputmode="decimal"></label>
+        </div>
+        <small class="muted">Example: if 1,000 mm corresponds to 10,000 L, enter 1,000 mm and 10,000 L. The tank then converts any dip reading using this reference.</small>
         <div class="row">
           <button type="submit" class="primary">Save Changes</button>
           <button type="button" onclick="closeTankEdit()">Cancel</button>
