@@ -2633,3 +2633,11 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 .daily-confirm-card[data-dsr-id]{
   scroll-margin-top:16px;
 }
+
+/* DSR detail header */
+.daily-detail-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 12px;padding:16px 18px;border:1px solid #dfe7ef;border-radius:18px;background:#fff;box-shadow:0 6px 22px #17202a0b}
+.daily-detail-head h2{margin:0;font-size:21px;letter-spacing:-.025em}
+.daily-detail-head p{margin:4px 0 0;font-size:12px}
+.daily-detail-close{min-height:38px;padding:8px 13px;border:1px solid #d8e0e8;border-radius:10px;background:#f8fafc;color:#344054;font-weight:800;cursor:pointer}
+.daily-detail-close:hover{background:#eef3f8}
+@media(max-width:500px){.daily-detail-head{padding:14px}.daily-detail-head h2{font-size:18px}.daily-detail-close{min-height:36px;padding:7px 10px}}
