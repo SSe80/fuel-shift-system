@@ -1987,6 +1987,16 @@ def _daily_confirmation_snapshot(report_date):
     ids=[str(x["id"]) for x in shifts if x.get("id")]; filt="in.("+",".join(ids)+")"
     hs,takeovers=sb("shift_takeovers",params={"shift_id":filt,"select":"id,shift_id,total_sales_liters,total_sales_amount,sales_status,sales_submitted_at","limit":"5000"})
     if hs!=200:return None,{"error":takeovers},hs
+    # DSR dispenser count must be based on the physical dispenser hierarchy,
+    # not on distinct shift nozzle IDs. The newer dispenser_nozzles table is
+    # authoritative for dispenser membership.
+    rs,reading_rows=sb("shift_nozzle_readings",params={"shift_id":filt,"select":"shift_id,nozzle_id","limit":"10000"})
+    if rs!=200:return None,{"error":reading_rows},rs
+    reading_nozzle_ids={str(x.get("nozzle_id")) for x in reading_rows if x.get("nozzle_id")}
+    dn_ids="in.("+",".join(reading_nozzle_ids)+")" if reading_nozzle_ids else "in.(00000000-0000-0000-0000-000000000000)"
+    ds,dispenser_nozzles=sb("dispenser_nozzles",params={"id":dn_ids,"select":"id,dispenser_id","limit":"10000"})
+    if ds!=200:return None,{"error":dispenser_nozzles},ds
+    dispenser_ids={str(x.get("dispenser_id")) for x in dispenser_nozzles if x.get("dispenser_id")}
     tids=[str(x["id"]) for x in takeovers if x.get("id")]; sale_rows=[]
     if tids:
         ts,sale_rows=sb("shift_takeover_sales",params={"takeover_id":"in.("+",".join(tids)+")","select":"id,takeover_id,sale_type_id,amount","limit":"10000"})
@@ -2012,7 +2022,6 @@ def _daily_confirmation_snapshot(report_date):
     ) and len(takeovers)==len(shifts)
     dsr_ready=bool(all_complete and all_handover_recorded and all_sales_recorded)
     sales_ready=all(str(x.get("sales_status") or "confirmed")=="confirmed" for x in takeovers) if takeovers else False
-    dispenser_ids={str(x.get("nozzle_id")) for x in shifts if x.get("nozzle_id")}
     return {"date":report_date.isoformat(),"shift_count":len(shifts),"completed_shift_count":sum(1 for x in shifts if x.get("end_time")),"dispenser_count":len(dispenser_ids),"all_shifts_complete":all_complete,"all_handover_recorded":all_handover_recorded,"all_sales_recorded":all_sales_recorded,"sales_confirmation_ready":sales_ready,"can_confirm":dsr_ready,"status":"pending" if dsr_ready else None,"total_sales_liters":sum(float(x.get("total_sales_liters") or 0) for x in takeovers),"total_sales_amount":sum(methods.values()),"sales_by_method":methods},None,200
 
 @app.get("/api/reports/daily/confirmations")
@@ -2608,8 +2617,19 @@ def daily_report():
                 if tid:
                     purchase_by_tank[tid]=purchase_by_tank.get(tid,0)+float(p.get("discharged_quantity_liters") or p.get("quantity_liters") or 0)
 
+    # Only include tanks that actually participate in this DSR through a
+    # shift, a nozzle, or a purchase/discharge recorded for this report date.
+    relevant_tank_ids=set(tank_shift_rows.keys()) | set(purchase_by_tank.keys())
+    relevant_tank_ids.update(
+        str(x.get("tank_id"))
+        for x in nozzle_stats.values()
+        if x.get("tank_id")
+    )
+
     tank_details=[]
     for tid,tank in tank_all_by_id.items():
+        if str(tid) not in relevant_tank_ids:
+            continue
         rows=sorted(tank_shift_rows.get(tid,[]),key=lambda z:str(z[0].get("start_time") or ""))
         first_h=rows[0][1] if rows else {}
         last_h=rows[-1][1] if rows else {}
