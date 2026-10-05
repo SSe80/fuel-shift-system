@@ -2821,8 +2821,11 @@ async function loadDailyReport(){
       const diff=Number(t.difference_liters||0), diffClass=Math.abs(diff)<0.001?'ok':(diff>0?'positive':'negative');
       const shiftRows=(t.shift_reconciliation||[]).map((s,idx)=>{
         const sd=Number(s.difference_liters||0), sc=Math.abs(sd)<0.001?'ok':(sd>0?'positive':'negative');
-        const adj=Number(s.continuity_adjustment_liters||0);
-        return '<div class="dsr-tank-shift-row"><div><b>Shift '+(idx+1)+'</b><small>'+h(dailyReportTime(s.started_at))+' → '+h(dailyReportTime(s.ended_at))+'</small></div><span>Opening<br><strong>'+liters(s.opening_liters)+' L</strong></span><span>Sold<br><strong>−'+liters(s.sales_liters)+' L</strong></span><span>Nozzle<br><strong>'+liters(s.nozzle_sales_liters||0)+' L</strong></span><span>Expected<br><strong>'+liters(s.expected_closing_liters)+' L</strong></span><span>Closing<br><strong>'+liters(s.closing_liters)+' L</strong></span><span class="'+sc+'">Diff<br><strong>'+(sd>=0?'+':'')+liters(sd)+' L</strong></span>'+(Math.abs(adj)>0.0001?'<em>Continuity adjustment '+(adj>=0?'+':'')+liters(adj)+' L</em>':'')+'</div>';
+        const adj=Number(s.documented_stock_adjustment_liters||0);
+        const continuity=Number(s.continuity_adjustment_liters||0);
+        const purchase=Number(s.purchase_liters||0);
+        const adjustmentTotal=adj+continuity;
+        return '<div class="dsr-tank-shift-row"><div><b>Shift '+(idx+1)+'</b><small>'+h(dailyReportTime(s.started_at))+' → '+h(dailyReportTime(s.ended_at))+'</small></div><span>Opening<br><strong>'+liters(s.opening_liters)+' L</strong></span><span>Purchase<br><strong>+'+liters(purchase)+' L</strong></span><span>Adjustment<br><strong>'+(adjustmentTotal>=0?'+':'')+liters(adjustmentTotal)+' L</strong></span><span>Sales<br><strong>−'+liters(s.nozzle_sales_liters||0)+' L</strong></span><span>Expected<br><strong>'+liters(s.expected_closing_liters)+' L</strong></span><span>Closing<br><strong>'+liters(s.closing_liters)+' L</strong></span><span class="'+sc+'">Diff<br><strong>'+(sd>=0?'+':'')+liters(sd)+' L</strong></span></div>';
       }).join('');
       const dischargeRows=(t.discharge_operations||[]).map((op,idx)=>{
         const adj=Number(op.stock_adjustment_liters||0);
