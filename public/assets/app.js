@@ -764,8 +764,11 @@ function filterAdminSales(){
       });
       pendingBox.innerHTML=Object.keys(groups).map(dsrId=>
         '<section class="admin-pending-dsr-group" data-dsr-id="'+h(dsrId)+'">'+
-          '<div class="admin-pending-dsr-head"><div><span class="section-kicker">DSR</span><strong>'+h(dsrId)+'</strong><small>'+groups[dsrId].length+' pending sale confirmation'+(groups[dsrId].length===1?'':'s')+'</small></div><span class="admin-pending-dsr-count">'+groups[dsrId].length+'</span></div>'+
-          '<div class="admin-pending-dsr-cards">'+groups[dsrId].map(renderAdminPendingSaleCard).join('')+'</div>'+
+          '<button type="button" class="admin-pending-dsr-head" onclick="toggleAdminPendingDsrGroup(\''+h(dsrId)+'\')" aria-expanded="false">'+
+            '<span class="admin-pending-dsr-title"><span class="section-kicker">DSR</span><strong>'+h(dsrId)+'</strong></span>'+
+            '<span class="admin-pending-dsr-right"><small>'+groups[dsrId].length+' pending sale'+(groups[dsrId].length===1?'':'s')+'</small><span class="admin-pending-dsr-toggle" aria-hidden="true">⌄</span></span>'+
+          '</button>'+
+          '<div class="admin-pending-dsr-cards" hidden>'+groups[dsrId].map(renderAdminPendingSaleCard).join('')+'</div>'+
         '</section>'
       ).join('');
     }
@@ -777,6 +780,19 @@ function filterAdminSales(){
     }
   }
   bindAdminSaleChecks();
+}
+function toggleAdminPendingDsrGroup(dsrId){
+  const groups=document.querySelectorAll('.admin-pending-dsr-group');
+  let group=null;
+  groups.forEach(el=>{if(String(el.getAttribute('data-dsr-id'))===String(dsrId))group=el;});
+  if(!group)return;
+  const cards=group.querySelector('.admin-pending-dsr-cards');
+  const head=group.querySelector('.admin-pending-dsr-head');
+  const toggle=group.querySelector('.admin-pending-dsr-toggle');
+  const expanded=group.classList.toggle('expanded');
+  if(cards)cards.hidden=!expanded;
+  if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
+  if(toggle)toggle.textContent=expanded?'⌃':'⌄';
 }
 function renderAdminPendingSaleCard(item){
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],dispenser=item.dispenser?.name||'Dispenser',shift=item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||''));
