@@ -766,7 +766,7 @@ function filterAdminSales(){
 }
 function renderAdminPendingSaleCard(item){
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],dispenser=item.dispenser?.name||'Dispenser',shift=item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||''));
-  const dsrId=t.shift_started_at?dailyReportDateLabel(t.shift_started_at.slice(0,10))+' DSR':'DSR';
+  const dsrId=dailyReportIdFromTimestamp(t.shift_started_at);
   const submitted=sales.reduce((sum,x)=>sum+Number(x.amount||0),0),calculated=Number(t.total_sales_amount||0),variance=submitted-calculated;
   const checked=sales.map(s=>'<label class="admin-sale-check-row"><input type="checkbox" class="admin-sale-check" data-sale-id="'+h(s.id)+'"><span><strong>'+h(s.sale_type_name||'Sale')+'</strong><small>'+(s.sale_type_description?h(s.sale_type_description)+' • ':'')+'Amount: '+money(s.amount)+(s.reason?' • Reason: '+h(s.reason):'')+'</small></span></label>').join('');
   return '<article class="card admin-sale-confirm-card" data-takeover-id="'+h(t.id)+'" data-dsr-id="'+h(dsrId)+'"><div class="top"><div><span class="section-kicker">SALE CONFIRMATION</span><h3>'+h(dispenser)+'</h3><p class="muted">'+h(shift)+'</p><span class="daily-sales-id">'+h(dsrId)+'</span></div><span class="pending-sale-badge">Pending</span></div>'+
