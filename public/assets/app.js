@@ -2761,9 +2761,11 @@ async function loadDailyReport(){
 
     const dispenserHtml=dispenserDetails.map(disp=>{
       const nozzles=(disp.nozzles||[]).map(n=>{
-        const attendants=(n.attendant_shifts||[]).map(z=>
-          '<div class="dsr-attendant-shift"><span>'+h(z.attendant||'Unknown')+'</span><small>'+h(dailyReportTime(z.started_at))+' → '+h(dailyReportTime(z.ended_at))+'</small><strong>'+liters(z.sales_liters)+' L · '+money(z.sales_amount)+'</strong></div>'
-        ).join('');
+        const attendants=(n.attendant_shifts||[]).map(z=>{
+          const meter=z.meter_delta_liters==null?'Boundary':liters(z.meter_delta_liters)+' L';
+          const meterDiff=z.meter_difference_liters==null?'':(' · '+(Number(z.meter_difference_liters)>=0?'+':'')+liters(z.meter_difference_liters)+' L');
+          return '<div class="dsr-attendant-shift"><span>'+h(z.attendant||'Unknown')+'</span><small>'+h(dailyReportTime(z.started_at))+' → '+h(dailyReportTime(z.ended_at))+'</small><strong>'+liters(z.sales_liters)+' L · '+money(z.sales_amount)+'</strong><em>Meter '+h(meter)+h(meterDiff)+'</em></div>';
+        }).join('');
         const meterPct=n.meter_reconciliation_pct==null?'—':Number(n.meter_reconciliation_pct).toFixed(1)+'%';
         const meterDiff=n.meter_difference_liters==null?'—':(Number(n.meter_difference_liters)>=0?'+':'')+liters(n.meter_difference_liters)+' L';
         return '<article class="dsr-nozzle-card">'+
