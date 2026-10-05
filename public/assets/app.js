@@ -2383,11 +2383,21 @@ function renderDailyPendingConfirmationCard(item){
   if(!item.all_handover_recorded){
     if(Array.isArray(item.duplicate_handover_shifts)&&item.duplicate_handover_shifts.length){
       missing.push(item.duplicate_handover_shifts.length+' shift(s) have duplicate handover records');
+    }else if(Array.isArray(item.missing_handover_shifts)&&item.missing_handover_shifts.length){
+      missing.push(item.missing_handover_shifts.length+' shift(s) still need a handover');
     }else{
       missing.push('Handover completion is still pending');
     }
   }
-  if(!item.all_sales_recorded)missing.push('Sales recording is still pending');
+  if(!item.all_sales_recorded){
+    if(Array.isArray(item.missing_sales_shifts)&&item.missing_sales_shifts.length){
+      missing.push(item.missing_sales_shifts.length+' shift(s) have no recorded sales');
+    }else if(Array.isArray(item.unsubmitted_sales_shifts)&&item.unsubmitted_sales_shifts.length){
+      missing.push(item.unsubmitted_sales_shifts.length+' shift(s) have sales not submitted');
+    }else{
+      missing.push('Sales recording is still pending');
+    }
+  }
   const readiness=waiting
     ?'<div class="daily-dsr-readiness"><div class="daily-confirm-label">Completion required</div>'+missing.map(x=>'<div class="daily-dsr-readiness-row"><span>•</span><strong>'+h(x)+'</strong></div>').join('')+'</div>'
     :'';
