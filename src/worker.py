@@ -2012,7 +2012,8 @@ def _daily_confirmation_snapshot(report_date):
     ) and len(takeovers)==len(shifts)
     dsr_ready=bool(all_complete and all_handover_recorded and all_sales_recorded)
     sales_ready=all(str(x.get("sales_status") or "confirmed")=="confirmed" for x in takeovers) if takeovers else False
-    return {"date":report_date.isoformat(),"shift_count":len(shifts),"completed_shift_count":sum(1 for x in shifts if x.get("end_time")),"all_shifts_complete":all_complete,"all_handover_recorded":all_handover_recorded,"all_sales_recorded":all_sales_recorded,"sales_confirmation_ready":sales_ready,"can_confirm":dsr_ready,"status":"pending" if dsr_ready else None,"total_sales_liters":sum(float(x.get("total_sales_liters") or 0) for x in takeovers),"total_sales_amount":sum(methods.values()),"sales_by_method":methods},None,200
+    dispenser_ids={str(x.get("nozzle_id")) for x in shifts if x.get("nozzle_id")}
+    return {"date":report_date.isoformat(),"shift_count":len(shifts),"completed_shift_count":sum(1 for x in shifts if x.get("end_time")),"dispenser_count":len(dispenser_ids),"all_shifts_complete":all_complete,"all_handover_recorded":all_handover_recorded,"all_sales_recorded":all_sales_recorded,"sales_confirmation_ready":sales_ready,"can_confirm":dsr_ready,"status":"pending" if dsr_ready else None,"total_sales_liters":sum(float(x.get("total_sales_liters") or 0) for x in takeovers),"total_sales_amount":sum(methods.values()),"sales_by_method":methods},None,200
 
 @app.get("/api/reports/daily/confirmations")
 def daily_report_confirmations():
@@ -2639,6 +2640,11 @@ def daily_report():
             "percentage":(float(val.get("liters") or 0)/station_l*100.0) if station_l else 0
         })
     tank_diff_total=sum(float(x.get("difference_liters") or 0) for x in tank_details)
+    avg_liters_per_shift=(station_l/len(shift_summary)) if shift_summary else 0
+    avg_sales_per_shift=(station_a/len(shift_summary)) if shift_summary else 0
+    for disp in dispenser_details:
+        disp["average_liters_per_shift"]=(float(disp.get("sales_liters") or 0)/max(1,int(disp.get("shift_count") or 0)))
+        disp["average_sales_per_shift"]=(float(disp.get("sales_amount") or 0)/max(1,int(disp.get("shift_count") or 0)))
     dsr_performance={
         "total_sales_liters":station_l,
         "total_sales_amount":station_a,
@@ -2647,11 +2653,22 @@ def daily_report():
         "tank_count":len(tank_details),
         "shift_count":len(shift_summary),
         "attendant_count":len({str(x.get("employee_id")) for x in day_shifts if x.get("employee_id")}),
+        "average_liters_per_shift":avg_liters_per_shift,
+        "average_sales_per_shift":avg_sales_per_shift,
         "tank_difference_liters":tank_diff_total,
         "average_nozzle_reconciliation_pct":(
             sum(float(x.get("meter_reconciliation_pct")) for x in nozzle_stats.values() if x.get("meter_reconciliation_pct") is not None)/
             max(1,len([x for x in nozzle_stats.values() if x.get("meter_reconciliation_pct") is not None]))
-        ) if nozzle_stats else 0
+        ) if nozzle_stats else 0,
+        "dispenser_contribution":[
+            {"dispenser":x.get("dispenser"),"sales_liters":float(x.get("sales_liters") or 0),"percentage":float(x.get("sales_share_pct") or 0)}
+            for x in dispenser_details
+        ],
+        "sales_method_performance":sales_type_rows,
+        "tank_reconciliation":[
+            {"tank":x.get("tank"),"difference_liters":float(x.get("difference_liters") or 0),"reconciliation_pct":float(x.get("reconciliation_pct") or 0)}
+            for x in tank_details
+        ]
     }
 
     return jsonify({
