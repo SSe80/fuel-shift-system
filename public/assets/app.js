@@ -2181,28 +2181,43 @@ async function loadDailyReportConfirmations(){
     const cards=await api('/api/reports/daily/confirmations');
     const rows=Array.isArray(cards)?cards:[];
     const pending=rows.filter(x=>x.status==='pending');
+    const history=rows.filter(x=>x.status==='confirmed');
+
     if(pendingEl){
-      pendingEl.innerHTML=pending.length?pending.map(renderDailyPendingConfirmationCard).join(''):'<div class="daily-empty">No daily sales are waiting for confirmation.</div>';
+      pendingEl.innerHTML=pending.length
+        ? pending.map(renderDailyPendingConfirmationCard).join('')
+        : '<div class="daily-empty">No daily sales are waiting for confirmation.</div>';
       bindDailyDsrChecks();
     }
+
     const dateEl=document.getElementById('daily-report-date-cards');
     if(dateEl){
-      dateEl.innerHTML=rows.length?rows.map(x=>{
-        const confirmed=x.status==='confirmed';
-        const waiting=x.status==='waiting';
-        const state=confirmed?'Confirmed':(waiting?'Waiting':'Pending confirmation');
-        const methodTotal=Number(x.total_sales_amount||0);
-        return '<button type="button" class="daily-report-date-card '+(confirmed?'is-ready':'is-pending')+'" onclick="selectDailyReportDate(\''+x.date+'\')">'+
-          '<div class="daily-report-date-top"><b>'+h(dailyReportIdLabel(x.date))+'</b><span>'+h(state)+'</span></div>'+
-          '<div class="daily-report-date-stats"><div><small>Fuel sold</small><strong>'+liters(x.total_sales_liters)+' L</strong></div><div><small>Sales</small><strong>'+money(methodTotal)+'</strong></div><div><small>Shifts</small><strong>'+Number(x.shift_count||0)+'</strong></div></div>'+
-        '</button>';
-      }).join(''):'<div class="daily-empty">No completed daily reports found.</div>';
+      dateEl.innerHTML=history.length
+        ? history.map(renderDailyHistoryCard).join('')
+        : '<div class="daily-empty">No confirmed DSR history yet.</div>';
     }
     return rows;
   }catch(e){
     if(pendingEl)pendingEl.innerHTML='<div class="daily-empty">Could not load pending daily confirmations.</div>';
+    const dateEl=document.getElementById('daily-report-date-cards');
+    if(dateEl)dateEl.innerHTML='<div class="daily-empty">Could not load DSR history.</div>';
     return [];
   }
+}
+function renderDailyHistoryCard(item){
+  const confirmedAt=item.confirmed_at ? dailyReportTime(item.confirmed_at) : 'Confirmed';
+  return '<button type="button" class="daily-report-date-card daily-dsr-history-card is-ready" onclick="selectDailyReportDate(\''+item.date+'\')">'+
+    '<div class="daily-report-date-top">'+
+      '<div><span class="daily-card-kicker">DSR HISTORY</span><b>'+h(dailyReportIdLabel(item.date))+'</b></div>'+
+      '<span class="daily-dsr-status-confirmed">Confirmed</span>'+
+    '</div>'+
+    '<div class="daily-report-date-stats">'+
+      '<div><small>Fuel sold</small><strong>'+liters(item.total_sales_liters)+' L</strong></div>'+
+      '<div><small>Total sales</small><strong>'+money(item.total_sales_amount)+'</strong></div>'+
+      '<div><small>Shifts</small><strong>'+Number(item.shift_count||0)+'</strong></div>'+
+    '</div>'+
+    '<div class="daily-dsr-history-foot"><span>Confirmed '+h(confirmedAt)+'</span><span>View report →</span></div>'+
+  '</button>';
 }
 function renderDailyPendingConfirmationCard(item){
   const methods=Object.entries(item.sales_by_method||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([method,amount])=>
