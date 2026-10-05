@@ -1931,6 +1931,7 @@ async function openDashboardHandover(shiftId){
       nozzle_ids:nozzleIds,
       tank_id:nozzle?.tank_id||'',
       tank_code:tank?.tank_code||nozzle?.tank_id||'Not connected',
+      tank:tank||null,
       to_employee_id:'',
       closing_reading:null,
       closing_nozzle_readings:[],
