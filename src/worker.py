@@ -3019,8 +3019,9 @@ def daily_report():
         history=_json_list(p.get("discharge_history"))
         used_history=False
         for op_index,op in enumerate(history):
-            dt=_local_date_from_iso(op.get("discharge_datetime"))
-            if not dt or dt!=report_day:
+            # A discharge belongs to this DSR by the shift interval, not by
+            # calendar date. This is essential for shifts crossing midnight.
+            if not _discharge_belongs_to_dsr_shift(op.get("discharge_datetime")):
                 continue
             tid=str(op.get("tank_id") or "")
             if not tid:
@@ -3076,7 +3077,7 @@ def daily_report():
         # positive discharged quantity can be used. Never infer a discharge
         # from purchase_date alone.
         if not used_history and p.get("discharged_at") and float(p.get("discharged_quantity_liters") or 0)>0:
-            if _local_date_from_iso(p.get("discharged_at"))==report_day:
+            if _discharge_belongs_to_dsr_shift(p.get("discharged_at")):
                 tid=str(p.get("tank_id") or "")
                 if tid:
                     discharged=float(p.get("discharged_quantity_liters") or 0)
