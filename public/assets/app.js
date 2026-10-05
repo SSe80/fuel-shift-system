@@ -2268,69 +2268,57 @@ async function loadDailyReport(){
     ]);
     const productCodes=Object.fromEntries((products||[]).map(p=>[String(p.name||'').toLowerCase(),p.code_name||p.name]));
     const codeForProduct=p=>productCodes[String(p||'').toLowerCase()]||p||'Unknown';
-    const s=r.summary||{};
-    const perf=r.dsr_performance||{};
+    const s=r.summary||{}, perf=r.dsr_performance||{};
     const dispenserDetails=Array.isArray(r.dsr_dispenser_details)?r.dsr_dispenser_details:[];
     const tankDetails=Array.isArray(r.dsr_tank_details)?r.dsr_tank_details:[];
     const salesSummary=r.dsr_sales_summary||{};
+    const shifts=Array.isArray(r.shift_summary)?r.shift_summary:[];
     const ready=Boolean(r.report_ready);
 
     document.getElementById('report-subtitle').textContent=dailyReportDateLabel(d);
     const detailTitle=document.getElementById('daily-detail-title');
     const detailSubtitle=document.getElementById('daily-detail-subtitle');
     if(detailTitle)detailTitle.textContent=dailyReportIdLabel(d)+' · Detail';
-    if(detailSubtitle)detailSubtitle.textContent=ready?'Confirmed daily reconciliation':'Daily reconciliation';
+    if(detailSubtitle)detailSubtitle.textContent=ready?'CONFIRMED DSR · Daily reconciliation':'Daily reconciliation';
     if(status)status.textContent=ready
       ?'Confirmed report — all completed shifts and sales confirmations are included.'
       :'Report waiting — '+Number(r.completion?.incomplete_shift_count||0)+' shift(s) incomplete or '+Number(r.completion?.unconfirmed_shift_count||0)+' shift(s) not fully confirmed.';
 
     document.getElementById('report-summary').innerHTML=
       '<div class="daily-stat primary-stat"><span>Total fuel sold</span><b>'+liters(perf.total_sales_liters||s.sales_liters)+' L</b><small>All dispensers</small></div>'+
-      '<div class="daily-stat"><span>Total sales</span><b>'+money(perf.total_sales_amount||s.sales_amount)+'</b><small>All confirmed sales</small></div>'+
+      '<div class="daily-stat"><span>Total sales</span><b>'+money(perf.total_sales_amount||s.sales_amount)+'</b><small>Station total</small></div>'+
+      '<div class="daily-stat"><span>Shifts</span><b>'+Number(perf.shift_count||0)+'</b><small>'+Number(perf.attendant_count||0)+' attendants</small></div>'+
       '<div class="daily-stat"><span>Dispensers</span><b>'+Number(perf.dispenser_count||0)+'</b><small>'+Number(perf.nozzle_count||0)+' nozzles</small></div>'+
-      '<div class="daily-stat"><span>Tanks</span><b>'+Number(perf.tank_count||0)+'</b><small>'+Number(perf.shift_count||0)+' shifts</small></div>';
+      '<div class="daily-stat"><span>Tanks</span><b>'+Number(perf.tank_count||0)+'</b><small>Reconciliation</small></div>';
 
     const dispenserHtml=dispenserDetails.map(disp=>{
       const nozzles=(disp.nozzles||[]).map(n=>{
         const attendants=(n.attendant_shifts||[]).map(z=>
-          '<div class="dsr-attendant-shift"><span>'+h(z.attendant||'Unknown')+'</span><small>'+h(dailyReportTime(z.started_at))+' → '+h(dailyReportTime(z.ended_at))+'</small><strong>'+liters(z.sales_liters)+' L</strong></div>'
+          '<div class="dsr-attendant-shift"><span>'+h(z.attendant||'Unknown')+'</span><small>'+h(dailyReportTime(z.started_at))+' → '+h(dailyReportTime(z.ended_at))+'</small><strong>'+liters(z.sales_liters)+' L · '+money(z.sales_amount)+'</strong></div>'
         ).join('');
         const meterPct=n.meter_reconciliation_pct==null?'—':Number(n.meter_reconciliation_pct).toFixed(1)+'%';
         const meterDiff=n.meter_difference_liters==null?'—':(Number(n.meter_difference_liters)>=0?'+':'')+liters(n.meter_difference_liters)+' L';
         return '<article class="dsr-nozzle-card">'+
           '<div class="dsr-nozzle-head"><div><span class="daily-card-kicker">NOZZLE '+Number(n.nozzle_number||0)+'</span><h4>'+h(n.nozzle_code||'Nozzle')+'</h4><p>'+h(codeForProduct(n.product))+'</p></div><span class="dsr-percent">'+Number(n.sales_share_pct||0).toFixed(1)+'% of dispenser</span></div>'+
-          '<div class="dsr-reading-grid">'+
-            '<div><span>Opening reading</span><b>'+reading(n.opening_reading)+'</b><small>First shift</small></div>'+
-            '<div><span>Closing reading</span><b>'+reading(n.closing_reading)+'</b><small>Last shift</small></div>'+
-            '<div><span>Liters sold</span><b>'+liters(n.sales_liters)+' L</b></div>'+
-            '<div><span>Sales amount</span><b>'+money(n.sales_amount)+'</b></div>'+
-          '</div>'+
+          '<div class="dsr-reading-grid"><div><span>Opening reading</span><b>'+reading(n.opening_reading)+'</b><small>First applicable shift</small></div><div><span>Closing reading</span><b>'+reading(n.closing_reading)+'</b><small>Last applicable shift</small></div><div><span>Liters sold</span><b>'+liters(n.sales_liters)+' L</b></div><div><span>Sales amount</span><b>'+money(n.sales_amount)+'</b></div></div>'+
           '<div class="dsr-nozzle-performance"><div><span>Meter reconciliation</span><strong>'+meterPct+'</strong></div><div><span>Meter difference</span><strong>'+meterDiff+'</strong></div><div><span>Sales share</span><strong>'+Number(n.sales_share_pct||0).toFixed(1)+'%</strong></div></div>'+
           '<div class="dsr-attendants"><div class="dsr-subhead">Attendant shifts</div>'+(attendants||'<div class="daily-empty">No attendant shift records.</div>')+'</div>'+
         '</article>';
       }).join('');
       return '<article class="dsr-dispenser-card">'+
         '<div class="dsr-dispenser-head"><div><span class="daily-card-kicker">DISPENSER</span><h3>'+h(disp.dispenser||'—')+'</h3><p>'+Number(disp.shift_count||0)+' shift(s) · '+Number(disp.attendant_count||0)+' attendant(s)</p></div><div class="dsr-dispenser-total"><b>'+liters(disp.sales_liters)+' L</b><span>'+money(disp.sales_amount)+'</span><small>'+Number(disp.sales_share_pct||0).toFixed(1)+'% of station</small></div></div>'+
-        '<div class="dsr-dispenser-meta"><div><span>Product</span><b>'+h(codeForProduct(disp.nozzles?.[0]?.product||'Unknown'))+'</b></div><div><span>Shift span</span><b>'+h(dailyReportTime(disp.first_shift_started_at))+' → '+h(dailyReportTime(disp.last_shift_ended_at))+'</b></div><div><span>Nozzles</span><b>'+Number((disp.nozzles||[]).length)+'</b></div></div>'+
+        '<div class="dsr-dispenser-meta"><div><span>Product</span><b>'+h(codeForProduct(disp.nozzles?.[0]?.product||'Unknown'))+'</b></div><div><span>Average / shift</span><b>'+liters(disp.average_liters_per_shift)+' L</b></div><div><span>Average sales / shift</span><b>'+money(disp.average_sales_per_shift)+'</b></div><div><span>Nozzles</span><b>'+Number((disp.nozzles||[]).length)+'</b></div></div>'+
         '<div class="dsr-nozzles"><div class="dsr-subhead">Nozzle performance</div>'+(nozzles||'<div class="daily-empty">No nozzle records for this dispenser.</div>')+'</div>'+
       '</article>';
     }).join('');
     document.getElementById('report-dispensers').innerHTML=dispenserHtml||'<div class="daily-empty">No dispenser activity recorded for this date.</div>';
 
     const tankHtml=tankDetails.map(t=>{
-      const diff=Number(t.difference_liters||0);
-      const diffClass=Math.abs(diff)<0.001?'ok':(diff>0?'positive':'negative');
+      const diff=Number(t.difference_liters||0), diffClass=Math.abs(diff)<0.001?'ok':(diff>0?'positive':'negative');
       return '<article class="dsr-tank-card">'+
         '<div class="dsr-tank-head"><div><span class="daily-card-kicker">TANK</span><h3>'+h(t.tank||'—')+'</h3><p>'+h(codeForProduct(t.product))+' · '+Number(t.shift_count||0)+' shift(s)</p></div><span class="dsr-tank-status '+diffClass+'">'+(Math.abs(diff)<0.001?'Reconciled':'Variance')+'</span></div>'+
-        '<div class="dsr-tank-grid">'+
-          '<div><span>Opening stock</span><b>'+liters(t.opening_stock_liters)+' L</b><small>First shift</small></div>'+
-          '<div><span>Purchase discharged</span><b>+'+liters(t.purchase_discharged_liters)+' L</b></div>'+
-          '<div><span>Sales</span><b>−'+liters(t.sales_liters)+' L</b></div>'+
-          '<div><span>Closing stock</span><b>'+liters(t.closing_stock_liters)+' L</b><small>Last shift</small></div>'+
-          '<div><span>Expected closing</span><b>'+liters(t.expected_closing_liters)+' L</b></div>'+
-          '<div><span>Difference</span><b class="'+(diffClass==='ok'?'':diffClass)+'">'+(diff>=0?'+':'')+liters(diff)+' L</b></div>'+
-        '</div>'+
-        '<div class="dsr-tank-performance"><div><span>Variance %</span><strong>'+Number(t.variance_pct||0).toFixed(2)+'%</strong></div><div><span>Reconciliation</span><strong>'+Number(t.reconciliation_pct||0).toFixed(1)+'%</strong></div><div><span>Capacity</span><strong>'+liters(t.capacity_liters)+' L</strong></div></div>'+
+        '<div class="dsr-tank-grid"><div><span>Opening stock</span><b>'+liters(t.opening_stock_liters)+' L</b><small>First applicable shift</small></div><div><span>Purchases discharged</span><b>+'+liters(t.purchase_discharged_liters)+' L</b></div><div><span>Fuel sold</span><b>−'+liters(t.sales_liters)+' L</b></div><div><span>Expected closing</span><b>'+liters(t.expected_closing_liters)+' L</b></div><div><span>Recorded closing</span><b>'+liters(t.closing_stock_liters)+' L</b><small>Last applicable shift</small></div><div><span>Difference</span><b class="'+(diffClass==='ok'?'':diffClass)+'">'+(diff>=0?'+':'')+liters(diff)+' L</b></div></div>'+
+        '<div class="dsr-tank-performance"><div><span>Variance</span><strong>'+Number(t.variance_pct||0).toFixed(2)+'%</strong></div><div><span>Reconciliation</span><strong>'+Number(t.reconciliation_pct||0).toFixed(1)+'%</strong></div><div><span>Capacity</span><strong>'+liters(t.capacity_liters)+' L</strong></div></div>'+
       '</article>';
     }).join('');
     document.getElementById('report-tanks').innerHTML=tankHtml||'<div class="daily-empty">No tanks configured.</div>';
@@ -2339,15 +2327,36 @@ async function loadDailyReport(){
       '<div class="dsr-sales-row"><div><b>'+h(codeForProduct(x.product))+'</b><small>'+liters(x.liters)+' L</small></div><strong>'+money(x.amount)+'</strong><span>'+Number(x.percentage||0).toFixed(1)+'%</span></div>'
     ).join('');
     const typeRows=(salesSummary.by_type||[]).map(x=>
-      '<div class="dsr-sales-row"><div><b>'+h(x.type)+'</b><small>Sale type</small></div><strong>'+money(x.amount)+'</strong><span>'+Number(x.percentage||0).toFixed(1)+'%</span></div>'
+      '<div class="dsr-sales-row"><div><b>'+h(x.type)+'</b><small>Payment / sale method</small></div><strong>'+money(x.amount)+'</strong><span>'+Number(x.percentage||0).toFixed(1)+'%</span></div>'
     ).join('');
     document.getElementById('report-sales-summary').innerHTML=
-      '<div class="dsr-sales-column"><div class="dsr-subhead">Sales by product</div>'+(productRows||'<div class="daily-empty">No product sales.</div>')+'</div>'+
-      '<div class="dsr-sales-column"><div class="dsr-subhead">Sales by type</div>'+(typeRows||'<div class="daily-empty">No sale types recorded.</div>')+'</div>';
+      '<div class="dsr-sales-column"><div class="dsr-subhead">Fuel sales by product</div>'+(productRows||'<div class="daily-empty">No product sales.</div>')+'</div>'+
+      '<div class="dsr-sales-column"><div class="dsr-subhead">Sales methods</div>'+(typeRows||'<div class="daily-empty">No sale methods recorded.</div>')+'</div>'+
+      '<div class="dsr-sales-total"><span>Total</span><strong>'+money(salesSummary.total_amount)+'</strong><strong>'+liters(salesSummary.total_liters)+' L</strong></div>';
 
+    const shiftRows=shifts.map((x,i)=>{
+      const opening=(x.opening_readings||[]).map(v=>'Nozzle '+h(v.nozzle_id||'—')+': '+reading(v.reading)).join(' · ')||'—';
+      const closing=(x.closing_readings||[]).map(v=>'Nozzle '+h(v.nozzle_id||'—')+': '+reading(v.reading)).join(' · ')||'—';
+      return '<article class="dsr-shift-card"><div class="dsr-shift-head"><div><span class="daily-card-kicker">SHIFT '+(i+1)+'</span><h3>'+h(x.attendant||'Unknown')+'</h3><p>'+h(x.dispenser||'—')+' · '+h(codeForProduct(x.product))+' · '+h(dailyReportIdLabel(d))+'</p></div><span class="dsr-dsr-status '+(x.sales_status==='confirmed'?'confirmed':'pending')+'">'+h(x.sales_status||'pending')+'</span></div>'+
+        '<div class="dsr-shift-grid"><div><span>Start</span><b>'+h(dailyReportTime(x.started_at))+'</b></div><div><span>End</span><b>'+h(dailyReportTime(x.ended_at))+'</b></div><div><span>Liters sold</span><b>'+liters(x.sales_liters)+' L</b></div><div><span>Sales amount</span><b>'+money(x.sales_amount)+'</b></div><div><span>Tank opening</span><b>'+liters(x.tank_opening_liters)+' L</b></div><div><span>Tank closing</span><b>'+liters(x.tank_closing_liters)+' L</b></div></div>'+
+        '<div class="dsr-shift-readings"><div><span>Opening readings</span><b>'+opening+'</b></div><div><span>Closing readings</span><b>'+closing+'</b></div></div></article>';
+    }).join('');
+    document.getElementById('report-shifts').innerHTML=shiftRows||'<div class="daily-empty">No shifts recorded for this DSR.</div>';
+
+    const contributionRows=(perf.dispenser_contribution||[]).map(x=>
+      '<div class="dsr-performance-metric"><span>'+h(x.dispenser||'Dispenser')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>'
+    ).join('');
+    const methodPerf=(perf.sales_method_performance||salesSummary.by_type||[]).map(x=>
+      '<div class="dsr-performance-metric"><span>'+h(x.type||'Sale method')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>'
+    ).join('');
+    const tankPerf=(perf.tank_reconciliation||[]).map(x=>
+      '<div class="dsr-performance-metric"><span>'+h(x.tank||'Tank')+'</span><b>'+Number(x.reconciliation_pct||0).toFixed(1)+'%</b></div>'
+    ).join('');
     const perfRows=[
       ['Fuel sold',liters(perf.total_sales_liters)+' L'],
       ['Sales amount',money(perf.total_sales_amount)],
+      ['Average liters / shift',liters(perf.average_liters_per_shift)+' L'],
+      ['Average sales / shift',money(perf.average_sales_per_shift)],
       ['Dispensers',Number(perf.dispenser_count||0)],
       ['Nozzles',Number(perf.nozzle_count||0)],
       ['Tanks',Number(perf.tank_count||0)],
@@ -2356,13 +2365,16 @@ async function loadDailyReport(){
       ['Tank difference',(Number(perf.tank_difference_liters||0)>=0?'+':'')+liters(perf.tank_difference_liters||0)+' L'],
       ['Avg. nozzle reconciliation',Number(perf.average_nozzle_reconciliation_pct||0).toFixed(1)+'%']
     ].map(x=>'<div class="dsr-performance-metric"><span>'+h(x[0])+'</span><b>'+h(x[1])+'</b></div>').join('');
-    document.getElementById('report-performance').innerHTML=perfRows;
+    document.getElementById('report-performance').innerHTML=
+      '<div class="dsr-performance-block"><div class="dsr-subhead">Station performance</div>'+perfRows+'</div>'+
+      '<div class="dsr-performance-block"><div class="dsr-subhead">Dispenser contribution</div>'+(contributionRows||'<div class="daily-empty">No dispenser contribution data.</div>')+'</div>'+
+      '<div class="dsr-performance-block"><div class="dsr-subhead">Sales method performance</div>'+(methodPerf||'<div class="daily-empty">No sales method data.</div>')+'</div>'+
+      '<div class="dsr-performance-block"><div class="dsr-subhead">Tank reconciliation</div>'+(tankPerf||'<div class="daily-empty">No tank reconciliation data.</div>')+'</div>';
 
     if(status)status.textContent='';
   }catch(e){
     if(status)status.textContent=e.message||'Unable to load the daily report.';
-    const ids=['report-summary','report-dispensers','report-tanks','report-sales-summary','report-performance'];
-    ids.forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
+    ['report-summary','report-dispensers','report-tanks','report-sales-summary','report-shifts','report-performance'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
   }
 }
 async function saveDailyReport(){
