@@ -777,9 +777,10 @@ function renderAdminPendingSaleCard(item){
 }
 function renderAdminHistorySaleCard(item){
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],from=item.from_employee?.name||'Attendant',to=item.to_employee?.name||'Attendant',dispenser=item.dispenser?.name||'Dispenser';
-  return '<article class="card compact-confirmed-sale-card admin-history-sale-card admin-history-sale-minimized" data-takeover-id="'+h(t.id)+'">'+
+  const dsrId=t.shift_started_at?dailyReportIdLabel(t.shift_started_at.slice(0,10)):'DSR';
+  return '<article class="card compact-confirmed-sale-card admin-history-sale-card admin-history-sale-minimized" data-takeover-id="'+h(t.id)+'" data-dsr-id="'+h(dsrId)+'">'+
     '<button type="button" class="admin-history-sale-head" onclick="toggleAdminHistorySaleCard(this.dataset.id)" data-id="'+h(t.id)+'" aria-expanded="false">'+
-      '<span class="admin-history-sale-title"><span class="section-kicker">SALES CONFIRMED</span><strong>'+h(dispenser)+'</strong><small>'+h(from)+' → '+h(to)+'</small></span>'+
+      '<span class="admin-history-sale-title"><span class="section-kicker">SALES CONFIRMED</span><strong>'+h(dispenser)+'</strong><small>'+h(from)+' → '+h(to)+'</small><small class="daily-sales-id">'+h(dsrId)+'</small></span>'+
       '<span class="admin-history-sale-right"><span class="badge">Confirmed</span><span class="admin-history-sale-toggle" aria-hidden="true">⌄</span></span>'+
     '</button>'+
     '<div class="admin-history-sale-body" hidden>'+
