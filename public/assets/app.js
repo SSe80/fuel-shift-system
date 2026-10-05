@@ -1080,7 +1080,7 @@ function downloadPurchaseDetailPdf(){
 window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
 
 function openAdminSaleHistoryDetails(id){
-  const historySource=adminSalesHistoryData?.history||adminSalesData?.history||[];
+  const historySource=(typeof adminSalesHistoryData!=='undefined'&&Array.isArray(adminSalesHistoryData.history)?adminSalesHistoryData.history:((typeof adminSalesData!=='undefined'&&Array.isArray(adminSalesData.history))?adminSalesData.history:[]));
   const item=historySource.find(x=>String(x.takeover?.id)===String(id));
   if(!item)return;
   const t=item.takeover||{};
