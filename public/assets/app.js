@@ -1641,9 +1641,41 @@ function convertTankDip(id,input){
   const t=(window.tankRecords||[]).find(x=>String(x.id)===String(id)); if(!t)return;
   const mm=Number(input?.value),output=document.getElementById('tank-dip-liters-'+id); if(!output)return;
   if(!Number.isFinite(mm)||mm<0){output.textContent='—';return;}
-  const refMm=Number(t.calibration_mm),refLiters=Number(t.calibration_liters);
-  if(!Number.isFinite(refMm)||refMm<=0||!Number.isFinite(refLiters)){output.textContent='Set calibration first';return;}
-  const value=mm*refLiters/refMm;
+
+  // Prefer the complete calibration curve. Values between measured points are
+  // linearly interpolated; this is the same rule used by the tank API.
+  const points=Array.isArray(t.calibration_points)
+    ? t.calibration_points
+      .map(p=>({height_mm:Number(p?.height_mm),liters:Number(p?.liters)}))
+      .filter(p=>Number.isFinite(p.height_mm)&&Number.isFinite(p.liters)&&p.height_mm>=0&&p.liters>=0)
+      .sort((a,b)=>a.height_mm-b.height_mm)
+    : [];
+
+  let value=null;
+  if(points.length>=2){
+    if(mm<=points[0].height_mm){
+      value=points[0].liters;
+    }else if(mm>=points[points.length-1].height_mm){
+      value=points[points.length-1].liters;
+    }else{
+      for(let i=1;i<points.length;i++){
+        const a=points[i-1],b=points[i];
+        if(mm<=b.height_mm){
+          const ratio=(mm-a.height_mm)/(b.height_mm-a.height_mm);
+          value=a.liters+(b.liters-a.liters)*ratio;
+          break;
+        }
+      }
+    }
+  }else{
+    // Legacy tanks may still have a single calibration reference.
+    const refMm=Number(t.calibration_mm),refLiters=Number(t.calibration_liters);
+    if(Number.isFinite(refMm)&&refMm>0&&Number.isFinite(refLiters)){
+      value=mm*refLiters/refMm;
+    }
+  }
+
+  if(!Number.isFinite(value)){output.textContent='Set calibration first';return;}
   output.textContent=value>Number(t.capacity_liters||0)?'Over capacity':liters(value)+' L';
 }
 
