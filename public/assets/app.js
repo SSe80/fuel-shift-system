@@ -3044,7 +3044,7 @@ async function toggleAdminFullHistoryDsrGroup(dsrId){
   if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
   if(toggle)toggle.textContent=expanded?'⌃':'⌄';
 }
-function adminSalesHistory(){
+async function adminSalesHistory(){
   try{
     const me=await currentUser();
     if(me.role!=='admin')return location.href='admin-login.html';
