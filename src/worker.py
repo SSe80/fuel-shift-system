@@ -2075,15 +2075,57 @@ def confirm_daily_report(report_date):
         return jsonify({"error":"Daily DSR cannot be confirmed until every shift started on this date has ended.","report_ready":False}),409
     if not snap.get("all_handover_recorded") or not snap.get("all_sales_recorded"):
         return jsonify({"error":"Daily DSR is not ready: every completed shift must finish handover and record its sale first.","report_ready":False}),409
-    # This is the single approval point. The database function atomically
-    # confirms every pending takeover sale for this report date, inserts the
-    # corresponding confirmed sales records, and generates the final report.
+
+    # A confirmed DSR is terminal. If another click/request reaches this
+    # endpoint after confirmation, do not run the confirmation workflow again.
+    # The database RPC is also idempotent for concurrent requests, but this
+    # guard keeps the normal repeat-click path side-effect free.
+    cs,existing=sb("daily_report_confirmations",params={
+        "report_date":"eq."+report_date,
+        "status":"eq.confirmed",
+        "select":"id,report_date,status,confirmed_at,confirmed_by",
+        "limit":"1"
+    })
+    if cs!=200:return jsonify({"error":existing}),cs
+    if existing:
+        return jsonify({
+            "confirmed":True,
+            "already_confirmed":True,
+            "report_date":report_date,
+            "confirmed_at":existing[0].get("confirmed_at"),
+            "confirmed_by":existing[0].get("confirmed_by")
+        }),200
+
+    # The database function is the atomic approval point. It locks each
+    # takeover while confirming its pending sale rows, so concurrent DSR
+    # confirmation requests cannot duplicate the underlying confirmed sales.
     gs,generated=rpc("confirm_daily_report_sales",{"p_report_date":report_date,"p_admin_id":session["employee_id"]})
     if gs>=400:return jsonify(generated),gs
+
+    # Re-read the authoritative post-confirmation snapshot. Do not persist
+    # the pre-confirmation totals because the RPC may have changed takeover
+    # statuses/confirmed sales before the DSR record is finalized.
+    final_snap,final_err,final_status=_daily_confirmation_snapshot(report_day)
+    if final_err:return jsonify(final_err),final_status
     now=datetime.now(timezone.utc).isoformat()
-    us,updated=sb("daily_report_confirmations",method="PATCH",params={"report_date":"eq."+report_date},body={"total_sales_liters":snap["total_sales_liters"],"total_sales_amount":snap["total_sales_amount"],"sales_by_method":snap["sales_by_method"],"shift_count":snap["shift_count"],"status":"confirmed","confirmed_at":now,"confirmed_by":session["employee_id"],"updated_at":now},prefer="return=representation")
+    us,updated=sb("daily_report_confirmations",method="PATCH",params={"report_date":"eq."+report_date},body={
+        "total_sales_liters":final_snap["total_sales_liters"],
+        "total_sales_amount":final_snap["total_sales_amount"],
+        "sales_by_method":final_snap["sales_by_method"],
+        "shift_count":final_snap["shift_count"],
+        "status":"confirmed",
+        "confirmed_at":now,
+        "confirmed_by":session["employee_id"],
+        "updated_at":now
+    },prefer="return=representation")
     if us>=400:return jsonify(updated),us
-    return jsonify({"confirmed":True,"report_date":report_date,"takeovers_confirmed":generated.get("takeovers_confirmed",0) if isinstance(generated,dict) else 0,"report":generated.get("report") if isinstance(generated,dict) else generated}),200
+    return jsonify({
+        "confirmed":True,
+        "already_confirmed":False,
+        "report_date":report_date,
+        "takeovers_confirmed":generated.get("takeovers_confirmed",0) if isinstance(generated,dict) else 0,
+        "report":generated.get("report") if isinstance(generated,dict) else generated
+    }),200
 
 @app.get("/api/reports/daily")
 def daily_report():
