@@ -2380,7 +2380,13 @@ function renderDailyPendingConfirmationCard(item){
     :'';
   const missing=[];
   if(!item.all_shifts_complete)missing.push('Shift completion is still pending');
-  if(!item.all_handover_recorded)missing.push('Handover completion is still pending');
+  if(!item.all_handover_recorded){
+    if(Array.isArray(item.duplicate_handover_shifts)&&item.duplicate_handover_shifts.length){
+      missing.push(item.duplicate_handover_shifts.length+' shift(s) have duplicate handover records');
+    }else{
+      missing.push('Handover completion is still pending');
+    }
+  }
   if(!item.all_sales_recorded)missing.push('Sales recording is still pending');
   const readiness=waiting
     ?'<div class="daily-dsr-readiness"><div class="daily-confirm-label">Completion required</div>'+missing.map(x=>'<div class="daily-dsr-readiness-row"><span>•</span><strong>'+h(x)+'</strong></div>').join('')+'</div>'
