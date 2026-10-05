@@ -2781,7 +2781,7 @@ def daily_report():
 
     dispenser_details.sort(key=lambda z:str(z.get("dispenser") or ""))
 
-    # Tank detail: first shift opening, last shift closing, discharged
+    # Tank <-> nozzle reconciliation. Roll up authoritative handover nozzle sales by physical tank.\n    # Never join raw sales rows to nozzle rows here because that can multiply totals.\n    tank_nozzle_sales_by_shift={}\n    for sh in day_shifts:\n        sid=str(sh.get("id") or "")\n        hrow=handover_by_shift_id.get(sid) or {}\n        for sale in _json_list(hrow.get("nozzle_sales_liters")):\n            code=str((sale or {}).get("nozzle_id") or "")\n            dn=dn_by_code.get(code) or {}\n            tid=str(dn.get("tank_id") or hrow.get("tank_id") or "")\n            if not tid:\n                continue\n            tank_nozzle_sales_by_shift.setdefault(tid,{})\n            tank_nozzle_sales_by_shift[tid][sid]=tank_nozzle_sales_by_shift[tid].get(sid,0.0)+float((sale or {}).get("liters_sold") or 0)\n\n    # Tank detail: first shift opening, last shift closing, discharged
     # purchases, sales and stock difference for each tank.
     tank_shift_rows={}
     for sh in day_shifts:
@@ -2825,6 +2825,8 @@ def daily_report():
         opening=float(first_h.get("tank_opening_liters") or 0) if rows else float(tank.get("opening_stock_liters") or 0)
         closing=float(last_h.get("tank_closing_liters") or 0) if rows else float(tank.get("current_liters") or 0)
         sales_l=float(sum(float(z[1].get("total_sales_liters") or 0) for z in rows))
+        nozzle_sales_l=float(sum(float((tank_nozzle_sales_by_shift.get(tid) or {}).get(str(z[0].get("id") or "")) or 0) for z in rows))
+        nozzle_sales_difference_l=sales_l-nozzle_sales_l
         purchased_l=float(purchase_by_tank.get(tid,0))
         # For multiple shifts on the same tank, the next shift should normally
         # open at the previous shift's closing stock. Any difference is an
@@ -2848,6 +2850,8 @@ def daily_report():
             shift_open=float(h.get("tank_opening_liters") or 0)
             shift_close=float(h.get("tank_closing_liters") or 0)
             shift_sales=float(h.get("tank_sales_liters") or h.get("total_sales_liters") or 0)
+            shift_nozzle_sales=float((tank_nozzle_sales_by_shift.get(tid) or {}).get(sid) or 0)
+            shift_nozzle_difference=shift_sales-shift_nozzle_sales
             shift_purchase=0.0
             # Purchases are assigned at tank/day level; do not duplicate the
             # same discharge into every shift. The tank-level reconciliation
@@ -2867,6 +2871,9 @@ def daily_report():
                 "opening_liters":shift_open,
                 "closing_liters":shift_close,
                 "sales_liters":shift_sales,
+                "nozzle_sales_liters":shift_nozzle_sales,
+                "nozzle_sales_difference_liters":shift_nozzle_difference,
+                "nozzle_reconciliation_pct":(shift_nozzle_sales/shift_sales*100.0) if shift_sales else (100.0 if shift_nozzle_sales == 0 else 0.0),
                 "purchase_liters":shift_purchase,
                 "continuity_adjustment_liters":continuity_adjustment,
                 "expected_closing_liters":shift_expected,
@@ -2885,6 +2892,9 @@ def daily_report():
             "opening_adjustment_liters":opening_adjustment_l,
             "continuity_gap_count":continuity_gap_count,
             "sales_liters":sales_l,
+            "nozzle_sales_liters":nozzle_sales_l,
+            "nozzle_sales_difference_liters":nozzle_sales_difference_l,
+            "nozzle_reconciliation_pct":(nozzle_sales_l/sales_l*100.0) if sales_l else (100.0 if nozzle_sales_l == 0 else 0.0),
             "expected_closing_liters":expected,
             "difference_liters":diff,
             "variance_pct":(diff/basis*100.0) if basis else 0,
