@@ -2266,19 +2266,23 @@ async function loadDailyReportConfirmations(){
 }
 function renderDailyHistoryCard(item){
   const confirmedAt=item.confirmed_at ? dailyReportTime(item.confirmed_at) : 'Confirmed';
-  return '<button type="button" class="daily-report-date-card daily-dsr-history-card is-ready" onclick="selectDailyReportDate(\''+item.date+'\')">'+
+  const dateLabel=dailyReportIdLabel(item.date);
+  return '<article class="daily-report-date-card daily-dsr-history-card is-ready" data-dsr-date="'+h(item.date)+'">'+
     '<div class="daily-report-date-top">'+
-      '<div><span class="daily-card-kicker">DSR HISTORY</span><b>'+h(dailyReportIdLabel(item.date))+'</b></div>'+
+      '<div class="daily-history-title"><span class="daily-card-kicker">DSR HISTORY</span><b>'+h(dateLabel)+'</b><small>Confirmed '+h(confirmedAt)+'</small></div>'+
       '<span class="daily-dsr-status-confirmed">Confirmed</span>'+
     '</div>'+
     '<div class="daily-report-date-stats">'+
       '<div><small>Fuel sold</small><strong>'+liters(item.total_sales_liters)+' L</strong></div>'+
       '<div><small>Total sales</small><strong>'+money(item.total_sales_amount)+'</strong></div>'+
       '<div><small>Shifts</small><strong>'+Number(item.shift_count||0)+'</strong></div>'+
-      '<div><small>Dispensers</small><strong>'+Number(item.dispenser_count||0)+'</strong></div>'+
     '</div>'+
-    '<div class="daily-dsr-history-foot"><span>Confirmed '+h(confirmedAt)+'</span><span>View report →</span></div>'+
-  '</button>';
+    '<div class="daily-dsr-history-extra">'+
+      '<div><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div>'+
+      '<div><span>DSR date</span><strong>'+h(dateLabel)+'</strong></div>'+
+    '</div>'+
+    '<div class="daily-dsr-history-actions"><button type="button" class="daily-dsr-expand" onclick="toggleDailyHistoryCard(event,this)">Details <span>⌄</span></button><button type="button" class="daily-dsr-view" onclick="selectDailyReportDate(\''+item.date+'\')">View full report →</button></div>'+
+  '</article>';
 }
 function renderDailyPendingConfirmationCard(item){
   const waiting=item.status==='waiting';
@@ -2321,15 +2325,54 @@ async function loadDailyReportDates(){
   return loadDailyReportConfirmations();
 }
 
+function toggleDailyHistoryCard(event,button){
+  if(event)event.stopPropagation();
+  const card=button&&button.closest('.daily-dsr-history-card');
+  if(!card)return;
+  card.classList.toggle('is-expanded');
+  const expanded=card.classList.contains('is-expanded');
+  button.innerHTML=expanded?'Less <span>⌃</span>':'Details <span>⌄</span>';
+}
+function closeDailyReportDetail(){
+  const details=document.getElementById('daily-report-details');
+  if(details)details.hidden=true;
+  document.body.classList.remove('daily-detail-open');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 function selectDailyReportDate(date){
   const input=document.getElementById('report-date');
   if(input)input.value=date;
   const details=document.getElementById('daily-report-details');
   if(details)details.hidden=false;
+  document.body.classList.add('daily-detail-open');
   loadDailyReport();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+function downloadDailyReportPdf(){
+  const r=window.currentDailyReportData;
+  const d=window.currentDailyReportDate||document.getElementById('report-date')?.value;
+  if(!r){toast('Open a DSR detail page first.');return;}
+  const clean=v=>String(v==null?'':v).replace(/[^ -~]/g,'?');
+  const wrap=(v,w)=>{const out=[],words=clean(v).split(/\\s+/);let line='';words.forEach(word=>{if(!word)return;const n=line?line+' '+word:word;if(n.length>w){if(line)out.push(line);line=word;}else line=n;});if(line)out.push(line);return out.length?out:[''];};
+  const p=r.dsr_performance||{}, s=r.summary||{};
+  const lines=['DAILY SALES REPORT - DSR DETAIL','','DSR date: '+clean(dailyReportIdLabel(d)),'Status: '+(r.report_ready?'Confirmed':'Pending'),'','SUMMARY','----------------------------------------',
+    'Fuel sold: '+clean(liters(p.total_sales_liters||s.sales_liters))+' L',
+    'Total sales: '+clean(money(p.total_sales_amount||s.sales_amount)),
+    'Shifts: '+clean(p.shift_count||0),'Dispensers: '+clean(p.dispenser_count||0),'Nozzles: '+clean(p.nozzle_count||0),'Tanks: '+clean(p.tank_count||0),''];
+  (r.dsr_dispenser_details||[]).forEach(x=>{lines.push('DISPENSER: '+clean(x.dispenser_name||x.name||'Dispenser'),'----------------------------------------');(x.nozzles||[]).forEach(n=>lines.push(clean(n.nozzle_name||n.name||'Nozzle')+' | Opening '+clean(n.opening_reading)+' | Closing '+clean(n.closing_reading)+' | Meter delta '+clean(n.meter_delta_liters)+' L | Sold '+clean(n.sales_liters)+' L | Difference '+clean(n.meter_difference_liters)+' L'));lines.push('');});
+  (r.dsr_tank_details||[]).forEach(x=>lines.push('TANK: '+clean(x.tank_name||x.name||'Tank')+' | Opening '+clean(x.opening_liters)+' L | Purchases '+clean(x.purchase_discharged_liters)+' L | Sold '+clean(x.sales_liters)+' L | Expected closing '+clean(x.expected_closing_liters)+' L | Recorded closing '+clean(x.closing_liters)+' L | Difference '+clean(x.difference_liters)+' L'));
+  lines.push('','SALES SUMMARY','----------------------------------------');
+  Object.entries(r.dsr_sales_summary?.by_method||r.dsr_sales_summary?.sales_by_method||{}).forEach(([k,v])=>lines.push(clean(k)+': '+clean(money(v))));
+  lines.push('','FINAL PERFORMANCE','----------------------------------------','Recorded sales: '+clean(money(p.total_sales_amount||0)),'Meter-calculated sales: '+clean(money(p.calculated_sales_amount||0)),'Recorded - meter: '+clean(money(p.sales_amount_difference||0)));
+  const pageLines=lines.flatMap(x=>wrap(x,88)), pages=[]; for(let i=0;i<pageLines.length;i+=46)pages.push(pageLines.slice(i,i+46));
+  const objects=[{id:1,body:'<< /Type /Catalog /Pages 2 0 R >>'}],kids=[],offsets=[];let next=4;
+  pages.forEach(pl=>{const pid=next++,cid=next++;kids.push(pid+' 0 R');const cmds=pl.map((line,i)=>(i?'0 -15 Td\\n':'')+'('+clean(line).replace(/\\/g,'\\\\').replace(/\\(/g,'\\\\(').replace(/\\)/g,'\\\\)')+') Tj').join('\\n');const stream='BT\\n/F1 10 Tf\\n42 760 Td\\n'+cmds+'\\nET';objects.push({id:pid,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents '+cid+' 0 R >>'},{id:cid,body:'<< /Length '+stream.length+' >>\\nstream\\n'+stream+'\\nendstream'});});
+  objects.push({id:2,body:'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+kids.length+' >>'},{id:3,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'});objects.sort((a,b)=>a.id-b.id);
+  let pdf='%PDF-1.4\\n';objects.forEach(o=>{offsets[o.id]=pdf.length;pdf+=o.id+' 0 obj\\n'+o.body+'\\nendobj\\n';});const xo=pdf.length;pdf+='xref\\n0 '+(objects.length+1)+'\\n0000000000 65535 f \\n';for(let i=1;i<=objects.length;i++)pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \\n';pdf+='trailer\\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\\nstartxref\\n'+xo+'\\n%%EOF';
+  const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'})),link=document.createElement('a');link.href=url;link.download='DSR-'+String(d||'report').replace(/[^A-Za-z0-9_-]/g,'_')+'.pdf';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('DSR PDF downloaded');
+}
+window.downloadDailyReportPdf=downloadDailyReportPdf;
 async function loadDailyReport(){
   const details=document.getElementById('daily-report-details');
   if(details)details.hidden=false;
@@ -2350,6 +2393,8 @@ async function loadDailyReport(){
     const salesSummary=r.dsr_sales_summary||{};
     const shifts=Array.isArray(r.shift_summary)?r.shift_summary:[];
     const ready=Boolean(r.report_ready);
+    window.currentDailyReportData=r;
+    window.currentDailyReportDate=d;
 
     document.getElementById('report-subtitle').textContent=dailyReportDateLabel(d);
     const detailTitle=document.getElementById('daily-detail-title');
