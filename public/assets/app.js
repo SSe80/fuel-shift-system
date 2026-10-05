@@ -2438,7 +2438,7 @@ async function loadDailyReport(){
         return '<article class="dsr-nozzle-card">'+
           '<div class="dsr-nozzle-head"><div><span class="daily-card-kicker">NOZZLE '+Number(n.nozzle_number||0)+'</span><h4>'+h(n.nozzle_code||'Nozzle')+'</h4><p>'+h(codeForProduct(n.product))+'</p></div><span class="dsr-percent">'+Number(n.sales_share_pct||0).toFixed(1)+'% of dispenser</span></div>'+
           '<div class="dsr-reading-grid"><div><span>Opening reading</span><b>'+reading(n.opening_reading)+'</b><small>First applicable shift</small></div><div><span>Closing reading</span><b>'+reading(n.closing_reading)+'</b><small>Last applicable shift</small></div><div><span>Liters sold</span><b>'+liters(n.sales_liters)+' L</b></div><div><span>Sales amount</span><b>'+money(n.sales_amount)+'</b></div></div>'+
-          '<div class="dsr-nozzle-performance"><div><span>Meter delta</span><strong>'+liters(n.meter_delta_liters)+' L</strong></div><div><span>Meter difference</span><strong>'+meterDiff+'</strong></div><div><span>Meter reconciliation</span><strong>'+meterPct+'</strong></div></div>'+
+          '<div class="dsr-nozzle-performance"><div><span>Meter delta</span><strong>'+liters(n.meter_delta_liters)+' L</strong><small>Sum of valid shift segments</small></div><div><span>Meter difference</span><strong>'+meterDiff+'</strong><small>Sold − meter</small></div><div><span>Meter reconciliation</span><strong>'+meterPct+'</strong><small>'+(Number((n.meter_segments||[]).length)||0)+' meter segment(s)</small></div></div>'+
           '<div class="dsr-attendants"><div class="dsr-subhead">Attendant shifts</div>'+(attendants||'<div class="daily-empty">No attendant shift records.</div>')+'</div>'+
         '</article>';
       }).join('');
