@@ -754,7 +754,21 @@ function filterAdminSales(){
   const allHistoryRows=(adminSalesData.history||[]).filter(adminSalesMatches);
   const historyRows=allHistoryRows.slice(0,3);
   if(pendingBox){
-    pendingBox.innerHTML=pendingRows.length?pendingRows.map(renderAdminPendingSaleCard).join(''):'<div class="card admin-sales-empty"><div class="empty-icon">✓</div><strong>No pending sales confirmations</strong><p class="muted">All submitted shift sales have been reviewed.</p></div>';
+    if(!pendingRows.length){
+      pendingBox.innerHTML='<div class="card admin-sales-empty"><div class="empty-icon">✓</div><strong>No pending sales confirmations</strong><p class="muted">All submitted shift sales have been reviewed.</p></div>';
+    }else{
+      const groups={};
+      pendingRows.forEach(item=>{
+        const dsrId=dailyReportIdFromTimestamp(item.takeover?.shift_started_at);
+        (groups[dsrId]||(groups[dsrId]=[])).push(item);
+      });
+      pendingBox.innerHTML=Object.keys(groups).map(dsrId=>
+        '<section class="admin-pending-dsr-group" data-dsr-id="'+h(dsrId)+'">'+
+          '<div class="admin-pending-dsr-head"><div><span class="section-kicker">DSR</span><strong>'+h(dsrId)+'</strong><small>'+groups[dsrId].length+' pending sale confirmation'+(groups[dsrId].length===1?'':'s')+'</small></div><span class="admin-pending-dsr-count">'+groups[dsrId].length+'</span></div>'+
+          '<div class="admin-pending-dsr-cards">'+groups[dsrId].map(renderAdminPendingSaleCard).join('')+'</div>'+
+        '</section>'
+      ).join('');
+    }
   }
   if(historyBox){
     historyBox.innerHTML=historyRows.length?historyRows.map(renderAdminHistorySaleCard).join(''):'<div class="card admin-sales-empty"><div class="empty-icon">—</div><strong>No confirmed sales history</strong><p class="muted">Confirmed sales will appear here after admin review.</p></div>';
@@ -769,11 +783,30 @@ function renderAdminPendingSaleCard(item){
   const dsrId=dailyReportIdFromTimestamp(t.shift_started_at);
   const submitted=sales.reduce((sum,x)=>sum+Number(x.amount||0),0),calculated=Number(t.total_sales_amount||0),variance=submitted-calculated;
   const checked=sales.map(s=>'<label class="admin-sale-check-row"><input type="checkbox" class="admin-sale-check" data-sale-id="'+h(s.id)+'"><span><strong>'+h(s.sale_type_name||'Sale')+'</strong><small>'+(s.sale_type_description?h(s.sale_type_description)+' • ':'')+'Amount: '+money(s.amount)+(s.reason?' • Reason: '+h(s.reason):'')+'</small></span></label>').join('');
-  return '<article class="card admin-sale-confirm-card" data-takeover-id="'+h(t.id)+'" data-dsr-id="'+h(dsrId)+'"><div class="top"><div><span class="section-kicker">SALE CONFIRMATION</span><h3>'+h(dispenser)+'</h3><p class="muted">'+h(shift)+'</p><span class="daily-sales-id">'+h(dsrId)+'</span></div><span class="pending-sale-badge">Pending</span></div>'+
-    '<div class="admin-sale-context"><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Calculated amount</span><strong>'+money(calculated)+'</strong></div></div>'+
-    '<div class="admin-sale-review-strip"><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(Math.abs(variance)<0.005?'match':'difference')+'">'+(Math.abs(variance)<0.005?'Amount matches':'Amount difference')+' <b>'+money(Math.abs(variance))+'</b></span></div>'+
-    '<div class="admin-sale-check-section"><div class="takeover-detail-heading">Sales to check <small>Check every entry before confirming</small></div>'+checked+'</div>'+
-    '<div class="admin-sale-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="row admin-sale-actions"><button type="button" onclick="cancelAdminSaleConfirmation(\''+t.id+'\')">Cancel</button><button type="button" class="primary" disabled data-confirm-sales="'+h(t.id)+'" onclick="confirmAdminSaleConfirmation(\''+t.id+'\')">Confirm sales</button></div></article>';
+  return '<article class="card admin-sale-confirm-card admin-pending-sale-minimized" data-takeover-id="'+h(t.id)+'" data-dsr-id="'+h(dsrId)+'">'+
+    '<button type="button" class="admin-pending-sale-head" onclick="toggleAdminPendingSaleCard(\''+h(t.id)+'\')" aria-expanded="false">'+
+      '<span class="admin-pending-sale-title"><span class="section-kicker">SALE CONFIRMATION</span><strong>'+h(dispenser)+'</strong><small>'+h(shift)+'</small></span>'+
+      '<span class="admin-pending-sale-right"><span class="pending-sale-badge">Pending</span><span class="admin-pending-sale-toggle" aria-hidden="true">⌄</span></span>'+
+    '</button>'+
+    '<div class="admin-pending-sale-body" hidden>'+
+      '<div class="admin-sale-context"><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Calculated amount</span><strong>'+money(calculated)+'</strong></div></div>'+
+      '<div class="admin-sale-review-strip"><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(Math.abs(variance)<0.005?'match':'difference')+'">'+(Math.abs(variance)<0.005?'Amount matches':'Amount difference')+' <b>'+money(Math.abs(variance))+'</b></span></div>'+
+      '<div class="admin-sale-check-section"><div class="takeover-detail-heading">Sales to check <small>Check every entry before confirming</small></div>'+checked+'</div>'+
+      '<div class="admin-sale-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="row admin-sale-actions"><button type="button" onclick="cancelAdminSaleConfirmation(\''+t.id+'\')">Cancel</button><button type="button" class="primary" disabled data-confirm-sales="'+h(t.id)+'" onclick="confirmAdminSaleConfirmation(\''+t.id+'\')">Confirm sales</button></div>'+
+    '</div></article>';
+}
+function toggleAdminPendingSaleCard(id){
+  const cards=document.querySelectorAll('.admin-pending-sale-minimized');
+  let card=null;
+  cards.forEach(el=>{if(String(el.getAttribute('data-takeover-id'))===String(id))card=el;});
+  if(!card)return;
+  const expanded=card.classList.toggle('expanded');
+  const body=card.querySelector('.admin-pending-sale-body');
+  const toggle=card.querySelector('.admin-pending-sale-toggle');
+  const head=card.querySelector('.admin-pending-sale-head');
+  if(body)body.hidden=!expanded;
+  if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
+  if(toggle)toggle.textContent=expanded?'⌃':'⌄';
 }
 function renderAdminHistorySaleCard(item){
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],from=item.from_employee?.name||'Attendant',to=item.to_employee?.name||'Attendant',dispenser=item.dispenser?.name||'Dispenser';
