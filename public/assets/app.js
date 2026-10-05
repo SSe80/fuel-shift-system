@@ -2987,21 +2987,28 @@ async function deactivateUser(id){
   showSettingsConfirmation('Review User Deactivation',details,()=>_deactivateUser(id),
     'User deactivated successfully','<p>The user is now inactive.</p>'+details);
 }
-async function saveTankEdit(event){
+function saveTankEdit(event){
   event.preventDefault();
-  const id=document.getElementById('edit-tank-id').value;
-  const old=settingsRecord(window.tankRecords,id);
-  if(!old)throw new Error('Tank record could not be found. Please reload the page and try again.');
-  const cap=document.getElementById('edit-tank-capacity').value;
-  const mmRaw=(document.getElementById('edit-tank-calibration-mm')?.value||'').trim();
-  const litersRaw=(document.getElementById('edit-tank-calibration-liters')?.value||'').trim();
-  if((mmRaw&&!litersRaw)||(!mmRaw&&litersRaw)){
-    toast('Enter both calibration mm and calibration liters, or leave both blank.');
-    return;
+  try{
+    const id=document.getElementById('edit-tank-id')?.value||'';
+    const old=settingsRecord(window.tankRecords,id);
+    if(!old || !old.id){
+      toast('Tank record could not be found. Please reload the page and try again.');
+      return;
+    }
+    const cap=document.getElementById('edit-tank-capacity')?.value||'';
+    const mmRaw=(document.getElementById('edit-tank-calibration-mm')?.value||'').trim();
+    const litersRaw=(document.getElementById('edit-tank-calibration-liters')?.value||'').trim();
+    if((mmRaw&&!litersRaw)||(!mmRaw&&litersRaw)){
+      toast('Enter both calibration mm and calibration liters, or leave both blank.');
+      return;
+    }
+    const details='<p><b>Tank:</b> '+h(old.tank_code||id)+'</p>'+settingsDiff('Capacity',liters(old.capacity_liters),liters(cap),'L')+
+      ((mmRaw&&litersRaw)?'<p><b>Calibration:</b> '+h(mmRaw)+' mm = '+h(litersRaw)+' L</p>':'<p><b>Calibration:</b> Unchanged</p>');
+    showSettingsConfirmation('Review Tank Update',details,()=>_saveTankEdit(),'Tank updated successfully','<p><b>'+h(old.tank_code||id)+'</b> was updated successfully.</p>'+details);
+  }catch(e){
+    toast(e?.message||'Unable to prepare tank update.');
   }
-  const details='<p><b>Tank:</b> '+h(old.tank_code||id)+'</p>'+settingsDiff('Capacity',liters(old.capacity_liters),liters(cap),'L')+
-    ((mmRaw&&litersRaw)?'<p><b>Calibration:</b> '+h(mmRaw)+' mm = '+h(litersRaw)+' L</p>':'<p><b>Calibration:</b> Unchanged</p>');
-  showSettingsConfirmation('Review Tank Update',details,()=>_saveTankEdit(),'Tank updated successfully','<p><b>'+h(old.tank_code||id)+'</b> was updated successfully.</p>'+details);
 }
 async function deactivateTank(id){
   const t=settingsRecord(window.tankRecords,id);
