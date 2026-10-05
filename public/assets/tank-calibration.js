@@ -125,10 +125,15 @@
   function verifyTankCalibrationDip(value){
     const result=document.getElementById('edit-tank-calibration-test-result');
     const input=Number(value);
-    const points=Array.isArray(window.pendingTankCalibration)?window.pendingTankCalibration:[];
+    let points=Array.isArray(window.pendingTankCalibration)?window.pendingTankCalibration:[];
+    if(!points.length){
+      const id=document.getElementById('edit-tank-id')?.value;
+      const tank=(window.tankRecords||[]).find(x=>String(x.id)===String(id));
+      points=Array.isArray(tank?.calibration_points)?tank.calibration_points:[];
+    }
     if(!result) return;
     if(!Number.isFinite(input)||input<0){ result.textContent='Enter a valid dip in mm.'; return; }
-    if(points.length<2){ result.textContent='Upload a calibration CSV first.'; return; }
+    if(points.length<2){ result.textContent='No calibration points are available for this tank.'; return; }
     const litersValue=calibrationValueAt(points,input);
     result.textContent=Number.isFinite(litersValue)
       ? input.toLocaleString()+' mm ≈ '+formatCalibrationLiters(litersValue)
