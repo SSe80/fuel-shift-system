@@ -3511,9 +3511,18 @@ def generate_report():
         return jsonify({"error":"Daily report is not ready: every completed shift must finish handover before the DSR can be generated.","report_ready":False}),409
     if any(str(x.get("sales_status") or "")!="confirmed" or not x.get("sales_submitted_at") for x in day_handovers):
         return jsonify({"error":"Daily report is not ready: every shift sale must be recorded and individually confirmed or confirmed through the DSR.","report_ready":False}),409
+    # A normal first-time DSR still requires final admin confirmation.
+    # Historical DSRs created before the confirmation table existed are allowed
+    # to be explicitly corrected only when a saved report already exists and
+    # the caller supplies a revision reason. Never create a synthetic
+    # confirmation record just to unlock regeneration.
     cs,confirmation=sb("daily_report_confirmations",params={"report_date":"eq."+report_date,"status":"eq.confirmed","select":"id","limit":"1"})
     if cs!=200:return jsonify({"error":confirmation}),cs
-    if not confirmation:
+    existing_status,existing_rows=sb("daily_reports",params={"report_date":"eq."+report_date,"select":"id","limit":"1"})
+    if existing_status!=200:return jsonify({"error":existing_rows}),existing_status
+    is_explicit_revision=bool(str(data.get("revision_reason") or "").strip())
+    is_legacy_saved_report=bool(existing_rows) and is_explicit_revision and not confirmation
+    if not confirmation and not is_legacy_saved_report:
         return jsonify({"error":"Daily report requires final admin confirmation before it can be generated.","report_ready":False}),409
     status,result=rpc("generate_daily_report",{"p_report_date":report_date,"p_generated_by":session["employee_id"]})
     if status>=400:return jsonify(result),status
