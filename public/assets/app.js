@@ -2208,12 +2208,16 @@ async function loadDailyReportDates(){
 
 function selectDailyReportDate(date){
   const input=document.getElementById('report-date');
-  if(input){input.value=date;loadDailyReport();}
+  if(input)input.value=date;
+  const details=document.getElementById('daily-report-details');
+  if(details)details.hidden=false;
+  loadDailyReport();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
 async function loadDailyReport(){
-  loadDailyReportConfirmations();
+  const details=document.getElementById('daily-report-details');
+  if(details)details.hidden=false;
   const status=document.getElementById('report-status');
   try{
     await window.stationCurrencyReady;
