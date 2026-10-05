@@ -24,41 +24,29 @@
   </section>
 
   <div id="daily-report-details" class="daily-report-details" hidden>
-  <div class="daily-detail-head"><div><span class="daily-kicker">DSR DETAIL</span><h2 id="daily-detail-title">Daily Sales Report</h2><p id="daily-detail-subtitle" class="muted">Complete daily reconciliation</p></div><button type="button" class="daily-detail-close" onclick="document.getElementById('daily-report-details').hidden=true;window.scrollTo({top:0,behavior:'smooth'})">Close</button></div>
-  <div id="report-status" class="muted daily-status"></div>
-  <section id="report-summary" class="daily-summary-grid"></section>
+    <div class="daily-detail-head"><div><span class="daily-kicker">DSR DETAIL</span><h2 id="daily-detail-title">Daily Sales Report · Detail</h2><p id="daily-detail-subtitle" class="muted">Confirmed daily reconciliation</p></div><button type="button" class="daily-detail-close" onclick="closeDailyReportDetails()">Close</button></div>
+    <div id="report-status" class="muted daily-status"></div>
+    <section id="report-summary" class="daily-summary-grid"></section>
 
-  <section class="daily-section">
-    <div class="daily-section-head"><div><span class="daily-kicker">FUEL SALES</span><h2>Sales by product</h2></div></div>
-    <div class="daily-table-wrap"><table class="table daily-table"><thead><tr><th>Product</th><th>Liters</th></tr></thead><tbody id="report-table"></tbody></table></div>
-  </section>
+    <section class="daily-section">
+      <div class="daily-section-head"><div><span class="daily-kicker">DISPENSER PERFORMANCE</span><h2>Dispenser performance</h2><p class="muted">Each dispenser is shown separately. Every nozzle uses the first available shift opening and last available shift closing for that report day.</p></div></div>
+      <div id="report-dispensers" class="dsr-dispenser-list"></div>
+    </section>
 
-  <section class="daily-two-col">
-    <div class="daily-section">
-      <div class="daily-section-head"><div><span class="daily-kicker">RECORDED SALES</span><h2>Sales by type</h2></div></div>
-      <div id="report-payments" class="daily-list"></div>
-    </div>
-    <div class="daily-section">
-      <div class="daily-section-head"><div><span class="daily-kicker">PURCHASES</span><h2>Fuel received</h2></div></div>
-      <div class="daily-table-wrap"><table class="table daily-table"><thead><tr><th>Product</th><th>Liters</th><th>Tank</th></tr></thead><tbody id="report-purchases"></tbody></table></div>
-    </div>
-  </section>
+    <section class="daily-section">
+      <div class="daily-section-head"><div><span class="daily-kicker">TANK RECONCILIATION</span><h2>Tank performance</h2><p class="muted">Opening and closing stock come from the first and last shift inputs. Purchases are based on fuel discharged into each tank during the report day.</p></div></div>
+      <div id="report-tanks" class="dsr-tank-list"></div>
+    </section>
 
-  <section class="daily-section">
-    <div class="daily-section-head"><div><span class="daily-kicker">INDIVIDUAL SHIFTS</span><h2>Shift-by-shift sales</h2><p class="muted">Every shift that started on this date is listed separately, including multiple shifts on the same dispenser.</p></div></div>
-    <div id="report-shifts" class="daily-shift-list"></div>
-  </section>
+    <section class="daily-section">
+      <div class="daily-section-head"><div><span class="daily-kicker">SALES SUMMARY</span><h2>All sales</h2><p class="muted">The complete daily sales total, including every configured sale type and product contribution.</p></div></div>
+      <div id="report-sales-summary" class="dsr-sales-summary"></div>
+    </section>
 
-  <section class="daily-section">
-    <div class="daily-section-head"><div><span class="daily-kicker">COMBINED DISPENSER REPORT</span><h2>Dispenser totals</h2><p class="muted">For each dispenser, the first shift supplies the opening meter and tank stock; the last shift supplies the closing meter and tank stock. All shifts in between are combined.</p></div></div>
-    <div id="report-combined" class="daily-shift-list"></div>
-  </section>
-
-  <section class="daily-section daily-station-section">
-    <div class="daily-section-head"><div><span class="daily-kicker">FINAL DAILY TOTAL</span><h2>Entire station</h2><p class="muted">All dispenser totals combined. Sales methods use the configured Admin Settings sale types, such as Card, Cash or Transfer.</p></div></div>
-    <div id="report-station-total"></div>
-  </section>
-
+    <section class="daily-section daily-station-section">
+      <div class="daily-section-head"><div><span class="daily-kicker">FINAL PERFORMANCE</span><h2>DSR performance</h2></div></div>
+      <div id="report-performance" class="dsr-performance-grid"></div>
+    </section>
   </div>
 
   <div id="toast" class="toast"></div>
