@@ -3085,9 +3085,9 @@ function filterAdminSalesHistoryPage(){
     return '<section class="admin-full-history-month-group" data-month-key="'+h(monthKey)+'">'+
       '<button type="button" class="admin-full-history-month-head" onclick="toggleAdminFullHistoryMonth(\''+h(monthKey)+'\')" aria-expanded="false">'+
         '<span class="admin-full-history-month-title"><span class="section-kicker">MONTH</span><strong>'+h(monthLabel)+'</strong></span>'+
-        '<span class="admin-full-history-month-right"><small>'+dsrKeys.length+' DSR'+(dsrKeys.length===1?'':'s')+'</small><span class="admin-full-history-month-toggle" aria-hidden="true">⌃</span></span>'+
+        '<span class="admin-full-history-month-right"><small>'+dsrKeys.length+' DSR'+(dsrKeys.length===1?'':'s')+'</small><span class="admin-full-history-month-toggle" aria-hidden="true">⌄</span></span>'+
       '</button>'+
-      '<div class="admin-full-history-month-body">'+
+      '<div class="admin-full-history-month-body" hidden>'+
         dsrKeys.map(dsrId=>
           '<section class="admin-full-history-dsr-group" data-dsr-id="'+h(dsrId)+'">'+
             '<button type="button" class="admin-full-history-dsr-head" onclick="toggleAdminFullHistoryDsrGroup(\''+h(dsrId)+'\')" aria-expanded="false">'+
