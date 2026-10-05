@@ -1927,6 +1927,83 @@ def cancel_handover(handover_id):
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),200
 
+def _local_date_from_iso(value):
+    if not value: return None
+    try:
+        dt=datetime.fromisoformat(str(value).replace("Z","+00:00"))
+        if dt.tzinfo is None: dt=dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone(timedelta(hours=3))).date()
+    except Exception: return None
+
+def _daily_confirmation_snapshot(report_date):
+    next_day=report_date+timedelta(days=1)
+    ds=report_date.isoformat()+"T00:00:00+03:00"; de=next_day.isoformat()+"T00:00:00+03:00"
+    ss,shifts=sb("shifts",params={"start_time":"gte."+ds,"start_time":"lt."+de,"select":"id,start_time,end_time","order":"start_time.asc","limit":"5000"})
+    if ss!=200:return None,{"error":shifts},ss
+    if not shifts:return {"date":report_date.isoformat(),"shift_count":0,"completed_shift_count":0,"all_shifts_complete":False,"sales_confirmation_ready":False,"can_confirm":False,"status":None,"total_sales_liters":0,"total_sales_amount":0,"sales_by_method":{}},None,200
+    ids=[str(x["id"]) for x in shifts if x.get("id")]; filt="in.("+",".join(ids)+")"
+    hs,takeovers=sb("shift_takeovers",params={"shift_id":filt,"select":"id,shift_id,total_sales_liters,total_sales_amount,sales_status","limit":"5000"})
+    if hs!=200:return None,{"error":takeovers},hs
+    tids=[str(x["id"]) for x in takeovers if x.get("id")]; sale_rows=[]
+    if tids:
+        ts,sale_rows=sb("shift_takeover_sales",params={"takeover_id":"in.("+",".join(tids)+")","select":"id,takeover_id,sale_type_id,amount","limit":"10000"})
+        if ts!=200:return None,{"error":sale_rows},ts
+    st,types=sb("sale_types",params={"select":"id,name","limit":"500"}); type_map={str(x["id"]):str(x.get("name") or "Other") for x in types} if st==200 else {}
+    methods={}
+    for x in sale_rows:
+        m=type_map.get(str(x.get("sale_type_id") or "")) or "Other"; methods[m]=methods.get(m,0)+float(x.get("amount") or 0)
+    all_complete=all(x.get("end_time") for x in shifts)
+    sales_ready=all(str(x.get("sales_status") or "confirmed")=="confirmed" for x in takeovers)
+    return {"date":report_date.isoformat(),"shift_count":len(shifts),"completed_shift_count":sum(1 for x in shifts if x.get("end_time")),"all_shifts_complete":all_complete,"sales_confirmation_ready":sales_ready,"can_confirm":bool(all_complete and sales_ready),"status":"pending" if all_complete else None,"total_sales_liters":sum(float(x.get("total_sales_liters") or 0) for x in takeovers),"total_sales_amount":sum(methods.values()),"sales_by_method":methods},None,200
+
+@app.get("/api/reports/daily/confirmations")
+def daily_report_confirmations():
+    auth=require_admin()
+    if auth:return auth
+    today=(datetime.now(timezone.utc)+timedelta(hours=3)).date(); start=today-timedelta(days=30)
+    ss,shifts=sb("shifts",params={"start_time":"gte."+start.isoformat()+"T00:00:00+03:00","start_time":"lt."+(today+timedelta(days=1)).isoformat()+"T00:00:00+03:00","select":"id,start_time,end_time","order":"start_time.asc","limit":"10000"})
+    if ss!=200:return jsonify({"error":shifts}),ss
+    es,existing=sb("daily_report_confirmations",params={"report_date":"gte."+start.isoformat(),"report_date":"lte."+today.isoformat(),"select":"id,report_date,status,confirmed_at,confirmed_by","order":"report_date.desc","limit":"100"})
+    if es!=200:return jsonify({"error":existing}),es
+    existing={str(x["report_date"]):x for x in existing}; grouped={}
+    for x in shifts:
+        d=_local_date_from_iso(x.get("start_time"))
+        if d:grouped.setdefault(d,[]).append(x)
+    cards=[]
+    for d,day_shifts in sorted(grouped.items(),reverse=True):
+        if not all(x.get("end_time") for x in day_shifts):continue
+        snap,err,status=_daily_confirmation_snapshot(d)
+        if err:return jsonify(err),status
+        row=existing.get(d.isoformat())
+        if row and row.get("status")=="confirmed":
+            snap["status"]="confirmed"; snap["confirmed_at"]=row.get("confirmed_at"); snap["confirmed_by"]=row.get("confirmed_by")
+        else:
+            us,ur=sb("daily_report_confirmations",method="POST",params={"on_conflict":"report_date"},body={"report_date":d.isoformat(),"total_sales_liters":snap["total_sales_liters"],"total_sales_amount":snap["total_sales_amount"],"sales_by_method":snap["sales_by_method"],"shift_count":snap["shift_count"],"status":"pending"},prefer="resolution=merge-duplicates,return=representation")
+            if us>=400:return jsonify({"error":ur}),us
+            snap["status"]="pending"
+            row=(ur[0] if isinstance(ur,list) and ur else row)
+        snap["id"]=(row or {}).get("id")
+        cards.append(snap)
+    return jsonify(cards),200
+
+@app.post("/api/reports/daily/confirmations/<report_date>/confirm")
+def confirm_daily_report(report_date):
+    auth=require_admin()
+    if auth:return auth
+    try: report_day=date.fromisoformat(report_date)
+    except ValueError:return jsonify({"error":"Invalid date"}),400
+    snap,err,status=_daily_confirmation_snapshot(report_day)
+    if err:return jsonify(err),status
+    if snap["shift_count"]==0:return jsonify({"error":"No shifts started on this date"}),404
+    if not snap["all_shifts_complete"]:return jsonify({"error":"Daily report cannot be confirmed until every shift started on this date has ended.","report_ready":False}),409
+    if not snap["sales_confirmation_ready"]:return jsonify({"error":"Confirm all individual shift sales first, then confirm the combined daily report.","report_ready":False}),409
+    gs,generated=rpc("generate_daily_report",{"p_report_date":report_date,"p_generated_by":session["employee_id"]})
+    if gs>=400:return jsonify(generated),gs
+    now=datetime.now(timezone.utc).isoformat()
+    us,updated=sb("daily_report_confirmations",method="PATCH",params={"report_date":"eq."+report_date},body={"total_sales_liters":snap["total_sales_liters"],"total_sales_amount":snap["total_sales_amount"],"sales_by_method":snap["sales_by_method"],"shift_count":snap["shift_count"],"status":"confirmed","confirmed_at":now,"confirmed_by":session["employee_id"],"updated_at":now},prefer="return=representation")
+    if us>=400:return jsonify(updated),us
+    return jsonify(updated[0] if isinstance(updated,list) and updated else generated),200
+
 @app.get("/api/reports/daily")
 def daily_report():
     auth=require_admin()
