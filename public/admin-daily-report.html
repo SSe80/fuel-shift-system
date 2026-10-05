@@ -1,7 +1,7 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Daily Sales Report</title><link rel="stylesheet" href="assets/style.css"></head>
-<body class="daily-report-page" onload="document.getElementById('report-date').value=new Date().toISOString().slice(0,10);loadDailyReport()">
+<body class="daily-report-page" onload="document.getElementById('report-date').value=new Date().toISOString().slice(0,10);loadDailyReportConfirmations()">
 <main class="wrap daily-report-wrap">
   <div class="daily-report-header">
     <div><span class="daily-eyebrow">ADMIN REPORT</span><h1>Daily Sales Report</h1><p id="report-subtitle" class="muted">All sales from shifts that started on the selected day. The report becomes final when every shift is complete.</p></div>
@@ -23,6 +23,7 @@
     <div id="daily-report-date-cards" class="daily-report-date-cards"></div>
   </section>
 
+  <div id="daily-report-details" class="daily-report-details" hidden>
   <div id="report-status" class="muted daily-status"></div>
   <section id="report-summary" class="daily-summary-grid"></section>
 
@@ -57,6 +58,8 @@
     <div id="report-station-total"></div>
   </section>
 
+  </div>
+
   <div id="toast" class="toast"></div>
 </main>
-<script src="assets/app.js?v=20261005-02"></script></body></html>
+<script src="assets/app.js?v=20261005-03"></script></body></html>
