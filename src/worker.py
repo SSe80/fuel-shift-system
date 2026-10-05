@@ -1197,8 +1197,7 @@ def admin_deactivate_shift(shift_id):
     status,current=sb("shifts",params={
         "id":"eq."+shift_id,
         "status":"eq.active",
-        "select":"id,nozzle_id"    })
-    if status!=200:return jsonify({"error":current}),status
+        "select":"id,nozzle_id"    })    if status!=200:return jsonify({"error":current}),status
     if not current:return jsonify({"error":"Active shift not found"}),404
     shift=current[0]
     now=datetime.now(timezone.utc).isoformat()
@@ -2397,8 +2396,7 @@ def daily_report():
     def _shift_nozzle_refs(shift):
         sid=str(shift.get("id") or "")
         refs=[]        seen=set()
-        for rr in shift_reading_map.get(sid,[]):
-            nid=str(rr.get("nozzle_id") or "")
+        for rr in shift_reading_map.get(sid,[]):            nid=str(rr.get("nozzle_id") or "")
             if nid and nid not in seen:
                 refs.append(dn_by_id.get(nid) or {})
                 seen.add(nid)
@@ -2461,7 +2459,7 @@ def daily_report():
             reading_rows=[r for r in shift_reading_map.get(sid,[]) if str(r.get("nozzle_id") or "")==nid]
             if reading_rows:
                 rr=reading_rows[-1]
-                if rr.get("opening_reading") is not None:
+                if rr.get("opening_reading") is not None and stat["opening_reading"] is None:
                     stat["opening_reading"]=float(rr.get("opening_reading"))
                     stat["opening_shift_id"]=sid
                 if rr.get("closing_reading") is not None:
