@@ -2273,16 +2273,24 @@ def daily_report():
     # Keep the meter-derived amount separately so the DSR can reconcile both
     # values without silently substituting one for the other.
     takeover_sale_amount_by_shift={}
+    takeover_sale_methods_by_shift={}
     takeover_shift_map={str(t.get("id")):str(t.get("shift_id")) for t in handover_rows if t.get("id") and t.get("shift_id")}
     if takeover_shift_map:
-        tsa,tsr=sb("shift_takeover_sales",params={"takeover_id":"in.("+",".join(takeover_shift_map.keys())+")","select":"takeover_id,amount","limit":"10000"})
+        tsa,tsr=sb("shift_takeover_sales",params={"takeover_id":"in.("+",".join(takeover_shift_map.keys())+")","select":"takeover_id,sale_type_id,amount","limit":"10000"})
         if tsa==200:
             for row in tsr:
                 sid=takeover_shift_map.get(str(row.get("takeover_id") or ""))
                 if sid:
-                    takeover_sale_amount_by_shift[sid]=takeover_sale_amount_by_shift.get(sid,0)+float(row.get("amount") or 0)
+                    amount=float(row.get("amount") or 0)
+                    takeover_sale_amount_by_shift[sid]=takeover_sale_amount_by_shift.get(sid,0)+amount
+                    method=sale_type_map.get(str(row.get("sale_type_id") or "")) or "Other"
+                    methods=takeover_sale_methods_by_shift.setdefault(sid,{})
+                    methods[method]=methods.get(method,0)+amount
 
     def sales_methods_for_shift(shift_id):
+        recorded=takeover_sale_methods_by_shift.get(str(shift_id))
+        if recorded:
+            return dict(recorded)
         methods={}
         for sale in sales_by_shift.get(str(shift_id),[]):
             method=sale_type_map.get(str(sale.get("sale_type_id") or "")) or str(sale.get("payment_method") or "other")
