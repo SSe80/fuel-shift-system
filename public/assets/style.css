@@ -3771,3 +3771,17 @@ body.daily-preview-open{overflow:hidden}
   .daily-preview-paper-meta span+span{border-left:0;border-top:1px solid #dfe5ec;margin-top:8px;padding:8px 0 0}
   .daily-preview-paper-summary{grid-template-columns:1fr 1fr}
 }
+
+
+/* Live percentage block inside DSR report paper */
+.daily-preview-live-performance{width:100%}
+.daily-preview-live-pct-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.daily-preview-live-pct{border:1px solid #e0e6ed;border-radius:11px;background:#fbfcfe;padding:14px}
+.daily-preview-live-pct h4{margin:0 0 9px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#667085}
+.daily-preview-live-pct>div{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #edf1f5;font-size:12px;color:#475467}
+.daily-preview-live-pct>div:first-of-type{border-top:0;padding-top:0}
+.daily-preview-live-pct b{font-size:13px;color:#1264d8;white-space:nowrap}
+.daily-preview-live-pct p{margin:0;color:#98a2b3;font-size:11px}
+@media(max-width:600px){
+  .daily-preview-live-pct-grid{grid-template-columns:1fr}
+}
