@@ -2399,8 +2399,10 @@ def daily_report():
 
     def _shift_nozzle_refs(shift):
         sid=str(shift.get("id") or "")
-        refs=[]        seen=set()
-        for rr in shift_reading_map.get(sid,[]):            nid=str(rr.get("nozzle_id") or "")
+        refs=[]
+        seen=set()
+        for rr in shift_reading_map.get(sid,[]):
+            nid=str(rr.get("nozzle_id") or "")
             if nid and nid not in seen:
                 refs.append(dn_by_id.get(nid) or {})
                 seen.add(nid)
