@@ -1198,7 +1198,9 @@ def admin_deactivate_shift(shift_id):
     status,current=sb("shifts",params={
         "id":"eq."+shift_id,
         "status":"eq.active",
-        "select":"id,nozzle_id"    })    if status!=200:return jsonify({"error":current}),status
+        "select":"id,nozzle_id"
+    })
+    if status!=200:return jsonify({"error":current}),status
     if not current:return jsonify({"error":"Active shift not found"}),404
     shift=current[0]
     now=datetime.now(timezone.utc).isoformat()
