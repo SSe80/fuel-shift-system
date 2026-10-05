@@ -1658,6 +1658,7 @@ async function saveTankCalibration(event){
   const details='<p><b>Tank:</b> '+h(tank.tank_code||id)+'</p><p><b>Calibration:</b> '+h(liters(mm))+' mm = '+h(liters(litersValue))+' L</p>';
   showSettingsConfirmation('Review Tank Calibration',details,async()=>{
     await api('/api/tanks/'+id+'/calibration',{method:'PATCH',body:JSON.stringify({calibration_mm:mm,calibration_liters:litersValue})});
+    closeTankEdit();
     await loadSettingsData();
   },'Tank calibration saved successfully','<p><b>'+h(tank.tank_code||id)+'</b> calibration was saved.</p>'+details);
 }
