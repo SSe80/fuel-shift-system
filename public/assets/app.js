@@ -904,7 +904,7 @@ function createStyledReportPdf(report){
   const clean=v=>String(v==null?'':v).replace(/[^ -~]/g,'?');
   const esc=v=>clean(v).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
   const wrap=(value,maxChars)=>{
-    const words=clean(value).split(/\\s+/),out=[];let line='';
+    const words=clean(value).split(/\s+/),out=[];let line='';
     words.forEach(word=>{
       if(!word)return;
       const next=line?line+' '+word:word;
@@ -1008,15 +1008,15 @@ function createStyledReportPdf(report){
     commands.push(rgb(...[148,163,184])+' rg\nBT\n/F1 7 Tf\n1 0 0 1 '+M+' 25 Tm\n('+esc('Fuel Station Management • '+report.title)+') Tj\nET\n');
     commands.push(rgb(...[148,163,184])+' rg\nBT\n/F1 7 Tf\n1 0 0 1 '+(W-80)+' 25 Tm\n('+esc('Page '+(pi+1)+' / '+pages.length)+') Tj\nET\n');
     const stream=commands.join('');
-    objects.push({id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+contentId+' 0 R >>'},{id:contentId,body:'<< /Length '+stream.length+' >>\\nstream\\n'+stream+'\\nendstream'});
+    objects.push({id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+contentId+' 0 R >>'},{id:contentId,body:'<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream'});
   });
   objects.push({id:2,body:'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+pages.length+' >>'},{id:3,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'},{id:4,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'});
   objects.sort((a,b)=>a.id-b.id);
-  let pdf='%PDF-1.4\\n';const offsets=[];
-  objects.forEach(o=>{offsets[o.id]=pdf.length;pdf+=o.id+' 0 obj\\n'+o.body+'\\nendobj\\n';});
-  const xref=pdf.length;pdf+='xref\\n0 '+(objects.length+1)+'\\n0000000000 65535 f \\n';
-  for(let i=1;i<=objects.length;i++)pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \\n';
-  pdf+='trailer\\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\\nstartxref\\n'+xref+'\\n%%EOF';
+  let pdf='%PDF-1.4\n';const offsets=[];
+  objects.forEach(o=>{offsets[o.id]=pdf.length;pdf+=o.id+' 0 obj\n'+o.body+'\nendobj\n';});
+  const xref=pdf.length;pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
+  for(let i=1;i<=objects.length;i++)pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \n';
+  pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF';
   return new Blob([pdf],{type:'application/pdf'});
 }
 function downloadAdminSaleHistoryDetails(id){
