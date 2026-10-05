@@ -133,7 +133,18 @@ revoke execute on function public.generate_daily_report(date, uuid) from public,
 grant execute on function public.generate_daily_report(date, uuid, text) to service_role;
 grant execute on function public.generate_daily_report(date, uuid) to service_role;
 
--- The revision-aware function has a default revision reason for compatibility,
--- but the old two-argument wrapper creates an ambiguous PostgREST overload.
--- Remove that wrapper; callers use the three-argument function explicitly.
-drop function if exists public.generate_daily_report(date,uuid);
+-- Keep a compatibility wrapper for older Worker deployments.
+-- The 3-argument function has no default, so these overloads are not ambiguous.
+create or replace function public.generate_daily_report(p_report_date date,p_generated_by uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $function$
+begin
+  return public.generate_daily_report(p_report_date,p_generated_by,null::text);
+end;
+$function$;
+
+revoke execute on function public.generate_daily_report(date,uuid) from public,anon,authenticated;
+grant execute on function public.generate_daily_report(date,uuid) to service_role;
