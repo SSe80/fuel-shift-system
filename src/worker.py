@@ -2408,6 +2408,15 @@ def daily_report():
         recorded_shift_a=takeover_sale_amount_by_shift.get(sid)
         shift_a=float(recorded_shift_a) if recorded_shift_a is not None else calculated_shift_a
         shift_readings=readings_by_shift.get(sid,[])
+        complete_meter_rows=[
+            r for r in shift_readings
+            if r.get("opening_reading") is not None and r.get("closing_reading") is not None
+        ]
+        shift_meter_delta=sum(
+            float(r.get("closing_reading") or 0)-float(r.get("opening_reading") or 0)
+            for r in complete_meter_rows
+        )
+        shift_meter_reconciles=bool(complete_meter_rows) and abs(shift_meter_delta-shift_l) <= 0.05
         shift_summary.append({
             "shift_id":x.get("id"),
             "dispenser_id":x.get("nozzle_id"),
@@ -2420,6 +2429,10 @@ def daily_report():
             "started_at":x.get("start_time"),
             "ended_at":x.get("end_time"),
             "sales_liters":shift_l,
+            "meter_delta_liters":shift_meter_delta if complete_meter_rows else None,
+            "meter_difference_liters":(shift_l-shift_meter_delta) if complete_meter_rows else None,
+            "meter_reconciliation_pct":((shift_l/shift_meter_delta)*100) if complete_meter_rows and shift_meter_delta else None,
+            "meter_reconciliation_status":("reconciled" if shift_meter_reconciles else "variance") if complete_meter_rows else "boundary",
             "sales_amount":shift_a,
             "calculated_sales_amount":calculated_shift_a,
             "sales_amount_difference":shift_a-calculated_shift_a if recorded_shift_a is not None else 0,
