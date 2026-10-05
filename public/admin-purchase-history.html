@@ -2,218 +2,64 @@
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Purchase History</title><link rel="stylesheet" href="assets/style.css">
 <style>
-.purchase-full-history-list{display:grid;gap:12px}
-.purchase-full-history-month-group{margin:0 0 16px;border:1px solid #4b83bd;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 2px 8px #17202a0a}
-.purchase-full-history-month-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;margin:0;border:0;border-bottom:1px solid #e5eaf0;background:#f7f9fb;color:inherit;text-align:left;cursor:pointer}
-.purchase-full-history-month-head:hover{background:#f3f6f9}
-.purchase-full-history-month-title{display:flex;align-items:baseline;gap:8px;min-width:0}
-.purchase-full-history-month-title .section-kicker{margin:0;color:#667085;font-size:9px}
-.purchase-full-history-month-title strong{font-size:16px;line-height:1.2;letter-spacing:.01em;color:#2563a8}
-.purchase-full-history-month-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
-.purchase-full-history-month-right small{color:#7b8794;font-size:10px}
-.purchase-full-history-month-toggle{width:25px;height:25px;display:grid;place-items:center;border-radius:7px;background:#e9eef4;color:#526273;font-size:16px;font-weight:800;line-height:1}
-.purchase-full-history-month-body{display:grid;gap:12px;padding:12px 12px 14px}
-.purchase-full-history-month-body[hidden]{display:none}.purchase-history-tools{align-items:center!important;padding:6px;background:#f8fafc;border:1px solid #e6ebf1;border-radius:14px}.purchase-history-tools input,.purchase-history-tools select,.purchase-history-tools button{min-height:42px;border-radius:11px!important}.purchase-history-tools input{flex:1 1 240px;min-width:160px;padding:0 13px;border:1px solid #d0d5dd;background:#fff;font-size:13px;outline:none;box-shadow:0 1px 2px rgba(16,24,40,.03)}.purchase-history-tools input:focus{border-color:#84adff;box-shadow:0 0 0 3px rgba(37,99,235,.10)}.purchase-history-tools select{padding:0 34px 0 12px;border:1px solid #d0d5dd;background:#fff;color:#344054;font-size:12px;font-weight:700}.purchase-history-tools button{padding:0 15px;border:1px solid #d0d5dd;background:#fff;color:#344054;font-size:12px;font-weight:800;cursor:pointer}.purchase-history-tools button:hover{background:#f2f4f7;border-color:#98a2b3}@media(max-width:560px){.purchase-history-tools{display:grid!important;grid-template-columns:1fr 1fr}.purchase-history-tools input{grid-column:1/-1;width:100%;box-sizing:border-box}.purchase-history-tools select,.purchase-history-tools button{width:100%;box-sizing:border-box}}
-.purchase-full-history-card{
-  padding:0!important;
-  overflow:hidden;
-  border:1px solid #d9e1e8!important;
-  border-left:3px solid #4b83bd!important;
-  border-radius:14px!important;
-  background:#fff;
-  box-shadow:0 2px 8px rgba(16,24,40,.05);
-  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
-}
-.purchase-full-history-card:hover{
-  border-color:#b9c8d6!important;
-  box-shadow:0 5px 16px rgba(16,24,40,.08);
-}
-.purchase-full-history-card.expanded{
-  border-color:#a9bdcf!important;
-  box-shadow:0 6px 20px rgba(16,24,40,.09);
-}
-.purchase-full-history-head{
-  width:100%;
-  min-height:76px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:13px 13px 13px 15px;
-  border:0;
-  background:linear-gradient(180deg,#fff 0%,#fbfcfd 100%);
-  color:#17202a;
-  text-align:left;
-  cursor:pointer;
-}
-.purchase-full-history-title{
-  min-width:0;
-  display:flex;
-  align-items:center;
-  gap:11px;
-}
-.purchase-full-history-title .dot{
-  width:10px;
-  height:10px;
-  flex:0 0 10px;
-  border-radius:50%;
-  background:#4b83bd;
-  box-shadow:0 0 0 4px #edf4fa;
-}
-.purchase-full-history-title>span:last-child{
-  min-width:0;
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-}
-.purchase-full-history-title strong{
-  font-size:14px;
-  line-height:1.2;
-  font-weight:800;
-  color:#17202a;
-  overflow-wrap:anywhere;
-}
-.purchase-full-history-title small{
-  font-size:10.5px;
-  line-height:1.3;
-  color:#667085;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.purchase-full-history-right{
-  display:flex;
-  align-items:center;
-  gap:7px;
-  flex:0 0 auto;
-}
-.purchase-full-history-right .badge{
-  padding:5px 8px;
-  border:1px solid #b7e4ca;
-  border-radius:999px;
-  background:#f0fdf4;
-  color:#087443;
-  font-size:9px;
-  font-weight:800;
-  letter-spacing:.03em;
-}
-.purchase-full-history-toggle{
-  width:29px;
-  height:29px;
-  display:grid;
-  place-items:center;
-  border:1px solid #d6dfe7;
-  border-radius:9px;
-  background:#f3f6f9;
-  color:#526273;
-  font-size:16px;
-  font-weight:800;
-}
-.purchase-full-history-head:hover .purchase-full-history-toggle{
-  background:#eaf0f5;
-}
-.purchase-full-history-body{
-  padding:0 13px 13px;
-  border-top:1px solid #e9eef3;
-  background:#fff;
-}
-.purchase-full-history-actions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:8px;
-  margin-top:11px;
-  padding-top:10px;
-  border-top:1px solid #edf1f4;
-}
-.purchase-full-history-actions button{
-  min-height:36px;
-  padding:0 12px;
-  border:1px solid #d5dde5;
-  border-radius:9px;
-  background:#fff;
-  color:#344054;
-  font-size:11px;
-  font-weight:800;
-  cursor:pointer;
-}
-.purchase-full-history-actions button:hover{background:#f7f9fb;border-color:#aebdca}
-.purchase-full-history-actions .primary{
-  border-color:#4b83bd;
-  background:#4b83bd;
-  color:#fff;
-}
-.purchase-full-history-actions .primary:hover{background:#3e73a7;border-color:#3e73a7}
-.purchase-full-history-card + .purchase-full-history-card{margin-top:0}
-.purchase-full-history-body[hidden]{display:none}
-.purchase-full-history-grid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:8px;
-  margin-top:11px;
-}
-.purchase-full-history-grid>div{
-  min-width:0;
-  padding:10px 11px;
-  border:1px solid #e8edf2;
-  border-radius:10px;
-  background:#f8fafc;
-}
-.purchase-full-history-grid span{
-  display:block;
-  font-size:9px;
-  line-height:1.2;
-  color:#7b8794;
-  text-transform:uppercase;
-  letter-spacing:.04em;
-}
-.purchase-full-history-grid strong{
-  display:block;
-  margin-top:4px;
-  font-size:12.5px;
-  line-height:1.3;
-  color:#101828;
-  overflow-wrap:anywhere;
-}
+/* Purchase History — recorded tank-stock cards minimized like Settings sub-cards */
+.purchase-history-recorded-minimized{overflow:hidden;border:1px solid #e4e9ef!important;border-radius:14px!important;background:#fff!important;box-shadow:0 2px 8px rgba(16,24,40,.045)!important;transition:box-shadow .18s ease,border-color .18s ease}
+.purchase-history-recorded-minimized.expanded{border-color:#cfd9e4!important;box-shadow:0 5px 16px rgba(16,24,40,.07)!important}
+.purchase-history-recorded-head{width:100%;min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px 12px 17px;border:0;background:#fff;color:#17202a;text-align:left;cursor:pointer}
+.purchase-history-recorded-head:hover{background:#fafbfd}
+.purchase-history-recorded-title{min-width:0;display:flex;align-items:center;gap:9px}
+.purchase-history-recorded-title .purchase-product-color{width:9px;height:9px;flex:0 0 9px;border-radius:50%;box-shadow:0 0 0 1px rgba(16,24,40,.12)}
+.purchase-history-recorded-title>span:last-child{min-width:0;display:flex;flex-direction:column;gap:3px}
+.purchase-history-recorded-title strong{font-size:14px;line-height:1.2;font-weight:800;color:#17202a;overflow-wrap:anywhere}
+.purchase-history-recorded-title small{font-size:10px;line-height:1.25;color:#8a949e;overflow-wrap:anywhere}
+.purchase-history-recorded-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.purchase-history-recorded-right .purchase-history-full-badge{margin:0;background:#ecfdf3;color:#027a48;border:1px solid #abefc6}
+.purchase-history-recorded-toggle{width:27px;height:27px;display:grid;place-items:center;border:1px solid #dce3ea;border-radius:8px;background:#f8fafc;color:#667085;font-size:16px;font-weight:800;line-height:1}
+.purchase-history-recorded-body{padding:0 14px 13px;border-top:1px solid #edf1f4;animation:purchaseHistoryRecordedOpen .18s ease}
+.purchase-history-recorded-body[hidden]{display:none}
+.purchase-history-recorded-body .purchase-history-full-main{margin-top:10px}
+.purchase-history-recorded-body .purchase-history-card-actions{margin-top:10px}
+@keyframes purchaseHistoryRecordedOpen{from{opacity:.35;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:560px){
-  .purchase-full-history-head{min-height:70px;padding:12px 11px 12px 13px;gap:8px}
-  .purchase-full-history-title{gap:9px}
-  .purchase-full-history-title strong{font-size:13px}
-  .purchase-full-history-title small{font-size:10px}
-  .purchase-full-history-right{gap:5px}
-  .purchase-full-history-right .badge{padding:4px 6px;font-size:8px}
-  .purchase-full-history-toggle{width:27px;height:27px}
-  .purchase-full-history-grid{grid-template-columns:1fr 1fr}
-  .purchase-full-history-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-  .purchase-full-history-actions button{width:100%;padding:0 8px}
+.purchase-history-recorded-head{min-height:64px;padding:11px 11px 11px 14px}
+.purchase-history-recorded-title strong{font-size:13px}
+.purchase-history-recorded-title small{font-size:9px}
+.purchase-history-recorded-right{gap:6px}
+.purchase-history-recorded-right .purchase-history-full-badge{font-size:9px;padding:4px 7px}
+.purchase-history-recorded-toggle{width:25px;height:25px;font-size:15px}
 }
-.purchase-history-detail-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(15,23,42,.48);backdrop-filter:blur(3px)}
-.purchase-history-detail-card{width:min(620px,100%);max-height:min(88vh,760px);overflow:auto;border:1px solid #d7e0e8;border-radius:18px;background:#fff;box-shadow:0 20px 55px rgba(15,23,42,.22)}
-.purchase-history-detail-head{position:sticky;top:0;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:17px 18px;border-bottom:1px solid #e8edf2;background:#fff}
-.purchase-history-detail-head strong{display:block;font-size:18px;line-height:1.2;color:#17202a}
-.purchase-history-detail-head small{display:block;margin-top:4px;color:#667085;font-size:11px}
-.purchase-history-detail-close{width:34px;height:34px;flex:0 0 34px;border:1px solid #d6dfe7;border-radius:9px;background:#f5f7fa;color:#526273;font-size:18px;font-weight:800;cursor:pointer}
-.purchase-history-detail-body{padding:15px 18px 18px}
-.purchase-history-detail-section{margin-bottom:13px;padding:12px;border:1px solid #e6ebf0;border-radius:12px;background:#fbfcfd}
-.purchase-history-detail-section:last-child{margin-bottom:0}
-.purchase-history-detail-section h4{margin:0 0 9px;color:#2563a8;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
-.purchase-history-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.purchase-history-detail-grid>div{min-width:0;padding:9px 10px;border:1px solid #e8edf2;border-radius:9px;background:#fff}
-.purchase-history-detail-grid span{display:block;color:#7b8794;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
-.purchase-history-detail-grid strong{display:block;margin-top:4px;color:#17202a;font-size:12px;line-height:1.3;overflow-wrap:anywhere}
-.purchase-history-detail-list{display:grid;gap:7px}
-.purchase-history-detail-list>div{display:flex;justify-content:space-between;gap:12px;padding:8px 9px;border-bottom:1px solid #edf1f4;font-size:11px}
-.purchase-history-detail-list>div:last-child{border-bottom:0}
-.purchase-history-detail-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:13px}
-.purchase-history-detail-actions button{min-height:38px;padding:0 13px;border:1px solid #d5dde5;border-radius:9px;background:#fff;color:#344054;font-size:11px;font-weight:800;cursor:pointer}
-.purchase-history-detail-actions .primary{border-color:#4b83bd;background:#4b83bd;color:#fff}
-@media(max-width:560px){.purchase-history-detail-overlay{padding:10px}.purchase-history-detail-card{max-height:92vh;border-radius:15px}.purchase-history-detail-head{padding:14px}.purchase-history-detail-body{padding:12px 14px 15px}.purchase-history-detail-grid{grid-template-columns:1fr}.purchase-history-detail-actions{display:grid;grid-template-columns:1fr 1fr}.purchase-history-detail-actions button{width:100%}}</style></head>
+
+.purchase-history-show-more-wrap{display:flex;justify-content:center;margin:12px 0 2px}
+.purchase-history-show-more{min-width:168px;min-height:42px!important;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px!important;border-radius:12px!important;font-size:12px;font-weight:800;letter-spacing:.01em;text-decoration:none;box-shadow:0 3px 10px rgba(37,99,235,.14);transition:transform .16s ease,box-shadow .16s ease,background .16s ease}.purchase-history-show-more::after{content:"→";font-size:16px;line-height:1;transition:transform .16s ease}.purchase-history-show-more:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(37,99,235,.18)}.purchase-history-show-more:hover::after{transform:translateX(2px)}.purchase-history-show-more:active{transform:translateY(0)}.purchase-history-stock-group.recorded{padding-top:2px}.purchase-history-stock-group.recorded .purchase-history-stock-group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 2px 10px;border-bottom:1px solid #e8edf2;margin-bottom:10px}.purchase-history-stock-group.recorded .purchase-history-stock-group-head span{font-size:15px;font-weight:850;letter-spacing:-.01em;color:#17202a}.purchase-history-stock-group.recorded .purchase-history-stock-group-head strong{min-width:28px;height:24px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#ecfdf3;color:#027a48;border:1px solid #abefc6;font-size:10px}.purchase-history-recorded-minimized{box-shadow:0 3px 12px rgba(16,24,40,.055)!important}.purchase-history-recorded-head{min-height:72px;padding:13px 14px 13px 17px}.purchase-history-recorded-head:active{background:#f8fafc}.purchase-history-recorded-toggle{transition:transform .18s ease,background .18s ease}.purchase-history-recorded-minimized.expanded .purchase-history-recorded-toggle{background:#eef4ff;color:#2563eb;border-color:#c7d7fe}.purchase-history-recorded-body{background:#fcfdff}@media(max-width:560px){.purchase-history-show-more{width:100%;min-width:0}.purchase-history-stock-group.recorded .purchase-history-stock-group-head{padding-top:2px}.purchase-history-recorded-head{min-height:68px}}
+
+/* Purchase history detail — polished card layout */
+.purchase-detail-card{width:min(620px,calc(100% - 20px));max-height:92vh;border-radius:20px;overflow:hidden;background:#f8fafc}
+.purchase-detail-card>.top{padding:16px 18px 12px;background:#fff;border-bottom:1px solid #e4e7ec}
+.purchase-detail-content{max-height:70vh;overflow-y:auto;padding:12px 14px 4px;scrollbar-width:thin}
+.purchase-detail-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:16px;border:1px solid #e0e7ef;border-radius:16px;background:#fff;box-shadow:0 4px 14px rgba(16,24,40,.05);margin-bottom:10px}
+.purchase-detail-kicker{display:block;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#98a2b3;margin-bottom:5px}
+.purchase-detail-product{display:flex;align-items:center;gap:8px}.purchase-detail-product-dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 2px rgba(16,24,40,.08);flex:0 0 10px}.purchase-detail-product h4{margin:0;font-size:20px;line-height:1.2;color:#101828}.purchase-detail-hero p{margin:5px 0 0;font-size:11px;color:#667085}
+.purchase-detail-status-badge,.purchase-detail-delivery-status{display:inline-flex;align-items:center;justify-content:center;padding:6px 9px;border-radius:999px;font-size:9px;font-weight:850;text-transform:uppercase;white-space:nowrap}
+.purchase-detail-status-badge.success,.purchase-detail-delivery-status{background:#ecfdf3;color:#027a48;border:1px solid #abefc6}.purchase-detail-status-badge.pending{background:#fff7ed;color:#b54708;border:1px solid #fedf89}
+.purchase-detail-section{border:1px solid #e1e7ee;border-radius:14px;padding:12px 13px;margin-bottom:9px;background:#fff;box-shadow:0 2px 7px rgba(16,24,40,.035)}
+.purchase-detail-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:3px}.purchase-detail-section-head h4{margin:0;color:#101828;font-size:14px}.purchase-detail-section-head>span:not(.purchase-detail-delivery-status){padding:3px 7px;border-radius:999px;background:#f2f4f7;color:#667085;font-size:9px;font-weight:800}
+.purchase-detail-summary{padding:0;overflow:hidden}.purchase-detail-summary-grid{display:grid;grid-template-columns:1fr 1fr}.purchase-detail-summary-grid>div{padding:12px;border-bottom:1px solid #edf0f4}.purchase-detail-summary-grid>div:nth-child(odd){border-right:1px solid #edf0f4}.purchase-detail-summary-grid>div:nth-last-child(-n+2){border-bottom:0}.purchase-detail-summary-grid span,.purchase-detail-event-grid span{display:block;font-size:10px;color:#667085}.purchase-detail-summary-grid strong{display:block;margin-top:3px;font-size:15px;color:#101828}
+.purchase-detail-row{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid #f0f2f5;font-size:12px}.purchase-detail-row:last-child{border-bottom:0}.purchase-detail-row span{color:#667085}.purchase-detail-row strong{color:#101828;text-align:right;overflow-wrap:anywhere}
+.purchase-detail-compartments{margin-top:8px;padding-top:8px;border-top:1px solid #edf0f4}.purchase-detail-compartments h5{margin:0 0 3px;font-size:11px;color:#475467}.purchase-detail-compartment{display:flex;justify-content:space-between;padding:6px 0;font-size:11px}.purchase-detail-compartment span{color:#667085}.purchase-detail-compartment b{color:#101828}
+.purchase-detail-tank-card{margin-top:7px;padding:10px;border:1px solid #e4e7ec;border-radius:11px;background:#f8fafc}.purchase-detail-tank-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:3px}.purchase-detail-tank-head>div{display:flex;align-items:center;gap:7px}.purchase-detail-tank-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}.purchase-detail-tank-head strong{font-size:12px;color:#101828}.purchase-detail-tank-head>span{padding:3px 7px;border-radius:999px;background:#eaf2ff;color:#2563eb;font-size:8px;font-weight:800;text-transform:uppercase}.purchase-detail-tank-card .purchase-detail-row{padding:6px 0}
+.purchase-detail-discharge-event{margin-top:8px;padding:11px;border:1px solid #e4e7ec;border-radius:12px;background:#f8fafc}.purchase-detail-event-title{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px}.purchase-detail-event-title>div{min-width:0}.purchase-detail-event-number{display:block;font-size:8px;font-weight:800;letter-spacing:.07em;color:#98a2b3}.purchase-detail-event-title strong{display:block;margin-top:2px;font-size:12px;color:#101828}.purchase-detail-stock-alert,.purchase-detail-stock-ok{display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:999px;font-size:8px;font-weight:850;white-space:nowrap}.purchase-detail-stock-alert{background:#fef3f2;color:#d92d20;border:1px solid #fecdca}.purchase-detail-stock-ok{background:#ecfdf3;color:#027a48;border:1px solid #abefc6}
+.purchase-detail-event-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.purchase-detail-event-grid>div{padding:7px 0;border-top:1px solid #edf0f4}.purchase-detail-event-grid strong{display:block;margin-top:2px;font-size:11px;color:#101828;overflow-wrap:anywhere}
+.purchase-detail-remark{margin:2px 0 8px;padding:13px;border:1px solid #dfe5ec;border-radius:14px;background:#fff;box-shadow:0 2px 7px rgba(16,24,40,.035)}.purchase-detail-remark-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}.purchase-detail-remark-head h4{margin:0;font-size:14px;color:#101828}.purchase-detail-remark-head>span{padding:4px 8px;border-radius:999px;background:#f2f4f7;color:#667085;font-size:8px;font-weight:800;text-transform:uppercase}.purchase-detail-remark p{margin:0;padding:10px 11px;border-radius:10px;background:#f8fafc;font-size:11px;line-height:1.5;color:#475467;white-space:pre-wrap;overflow-wrap:anywhere}
+.purchase-detail-actions{padding:10px 14px 14px;background:#fff;border-top:1px solid #e4e7ec}.purchase-detail-actions button{width:100%;min-height:42px;border-radius:11px}
+@media(max-width:560px){.purchase-detail-card{width:calc(100% - 12px);max-height:94vh}.purchase-detail-content{max-height:74vh;padding:10px 9px 3px}.purchase-detail-hero{padding:14px}.purchase-detail-product h4{font-size:18px}.purchase-detail-summary-grid strong{font-size:14px}.purchase-detail-section{padding:11px 11px}.purchase-detail-event-grid{grid-template-columns:1fr}.purchase-detail-event-title{align-items:flex-start}}
+
+</style></head>
 <body class="admin-purchases-page" data-app-page="adminPurchaseHistory"><main class="wrap">
 <header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchase History</h1><p class="muted">All purchases with completed tank stock recording.</p></div><a class="purchase-back" href="admin-purchases.html">← Purchases</a></header>
 <section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">PURCHASES</span><h2>Purchase History</h2><p class="muted">Complete recorded purchase history.</p></div><span class="admin-sales-section-count" id="purchase-history-count">0 recorded</span></div>
 <div class="purchase-history-tools" style="display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap"><input id="purchase-history-search" type="search" placeholder="Search invoice or product…" oninput="renderFullPurchaseHistory()"><select id="purchase-history-period" onchange="renderFullPurchaseHistory()"><option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select><button type="button" onclick="loadFullPurchaseHistory()">↻ Refresh</button></div>
 <div id="purchase-history-status" class="page-status"></div><div id="full-purchase-history-list" class="purchase-full-history-list"></div></section>
-</main>
+<div id="purchase-detail-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="closePurchaseDetail()"></div><div class="modal-card purchase-detail-card"><div class="top"><div><span class="section-kicker">PURCHASE DETAILS</span><h3>Purchase Details</h3></div><button type="button" class="modal-close" onclick="closePurchaseDetail()">×</button></div><div id="purchase-detail-content" class="purchase-detail-content"></div><div class="purchase-detail-actions" id="purchase-detail-actions"><button type="button" class="purchase-detail-download" onclick="downloadPurchaseDetailPdf()">Download PDF</button><button type="button" onclick="closePurchaseDetail()">Close</button></div></div></div></main>
 <script src="assets/app.js?v=20261005-03"></script>
 <script>
 (function(){
@@ -233,67 +79,116 @@ function matches(p){
  }
  return true;
 }
-window.toggleFullPurchaseHistoryCard=function(id){
- const card=document.querySelector('.purchase-full-history-card[data-id="'+CSS.escape(String(id))+'"]'); if(!card)return;
- const open=card.classList.toggle('expanded'); const body=card.querySelector('.purchase-full-history-body'); const toggle=card.querySelector('.purchase-full-history-toggle'); const head=card.querySelector('.purchase-full-history-head');
- if(body)body.hidden=!open;if(head)head.setAttribute('aria-expanded',open?'true':'false');if(toggle)toggle.textContent=open?'⌃':'⌄';
+let purchaseDetailData=records;
+let purchaseDetailTanks=[];
+let purchaseProducts=[];
+let purchaseShifts=[];
+let purchaseEmployees=[];
+const purchaseH=esc;
+const purchaseLiters=v=>Number(v||0).toLocaleString(undefined,{maximumFractionDigits:2});
+window.closePurchaseDetail=function(){const m=document.getElementById('purchase-detail-modal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}};
+  window.openPurchaseDetail=function(purchaseId){
+    window.currentPurchaseDetailId=purchaseId;
+    const p=purchaseDetailData?.find(x=>String(x.id)===String(purchaseId)); if(!p)return;
+    window.currentPurchaseDetailData=p;
+    window.currentPurchaseDetailTanks=purchaseDetailTanks||[];
+    const tank=purchaseDetailTanks?.find(x=>String(x.id)===String(p.tank_id));
+    const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||tank?.product||'').toLowerCase());
+    const productCode=productRecord?.code_name||p.product||'—';
+    const productColor=productRecord?.color||'#2563eb';
+    const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
+    const dischargedIndexes=Array.isArray(p.discharged_compartment_indexes)?p.discharged_compartment_indexes:[];
+    const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
+    const tankStockRecorded=history.length>0&&history.every(e=>e?.tank_stock_recorded===true);
+    const ordered=Number(p.ordered_quantity_liters||0);
+    const total=compartments.reduce((sum,v)=>sum+Number(v||0),0);
+    const discharged=Number(p.discharged_quantity_liters||0);
+    const remaining=Math.max(total-discharged,0);
+    const difference=total-ordered===0?'Matches order':total-ordered>0?'Over by '+purchaseLiters(total-ordered)+' L':'Short by '+purchaseLiters(Math.abs(total-ordered))+' L';
+    const statusText=String(p.status||'').replaceAll('_',' ');
+    const rows=items=>items.map(([label,value])=>'<div class="purchase-detail-row"><span>'+purchaseH(label)+'</span><strong>'+purchaseH(value)+'</strong></div>').join('');
+    const compartmentRows=compartments.map((v,i)=>'<div class="purchase-detail-compartment"><span>Compartment '+(i+1)+' · '+(dischargedIndexes.includes(i+1)?'Discharged':'Undischarged')+'</span><b>'+purchaseLiters(v)+' L</b></div>').join('');
+    const detailActions=document.getElementById('purchase-detail-actions');
+    if(detailActions){detailActions.querySelector('.purchase-detail-download').style.display=tankStockRecorded?'':'none';}
+    const eventRows=history.map((e,i)=>{
+      const before=Number(e.tank_liters_before), qty=Number(e.discharged_quantity_liters||0), recorded=Number(e.tank_stock_recorded_liters);
+      const hasBefore=Number.isFinite(before), hasRecorded=Number.isFinite(recorded), expectedAfter=hasBefore?before+qty:null;
+      const diff=hasBefore&&hasRecorded?recorded-expectedAfter:null;
+      const tolerance=Number.isFinite(qty)?Math.max(5,qty*0.01):5;
+      const differenceHigh=Number.isFinite(diff)&&Math.abs(diff)>tolerance;
+      const recordedOk=e.tank_stock_recorded===true&&!differenceHigh;
+      const stockStatus=e.tank_stock_recorded===true?(differenceHigh?'Difference high':'Stock reconciled'):'Tank stock not recorded';
+      const stockClass=recordedOk?'purchase-detail-stock-ok':'purchase-detail-stock-alert';
+      const tankId=String(e.tank_id||'');
+      const tankRecord=purchaseDetailTanks?.find(t=>String(t.id)===tankId);
+      const direct=Array.isArray(tankRecord?.active_shifts)?tankRecord.active_shifts:[];
+      const matching=direct.length?direct:purchaseShifts.filter(s=>Array.isArray(s.nozzle_readings)&&s.nozzle_readings.some(n=>String(n.tank_id)===tankId));
+      const attendants=[...new Map(matching.map(s=>{
+        const name=s.employee_name||purchaseEmployees.find(emp=>String(emp.id)===String(s.employee_id))?.name||'Assigned attendant';
+        return [String(s.employee_id||name),name];
+      })).values()];
+      const attendantText=attendants.length?attendants.join(', '):'No shift attendant recorded';
+      return '<article class="purchase-detail-discharge-event"><div class="purchase-detail-event-title"><div><span class="purchase-detail-event-number">DISCHARGE '+(i+1)+'</span><strong>'+purchaseH(e.tank_code||tankRecord?.tank_code||'Tank')+'</strong></div><span class="'+stockClass+'">'+(recordedOk?'✓ ':'⚠ ')+stockStatus+'</span></div><div class="purchase-detail-event-grid">'+
+        '<div><span>Date & time</span><strong>'+purchaseH(e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—')+'</strong></div>'+
+        '<div><span>Shift attendant(s)</span><strong>'+purchaseH(attendantText)+'</strong></div>'+
+        '<div><span>Compartments</span><strong>'+purchaseH(Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'C'+x).join(', '):'—')+'</strong></div>'+
+        '<div><span>Quantity discharged</span><strong>'+purchaseH(purchaseLiters(qty))+' L</strong></div>'+
+        '<div><span>Tank stock before</span><strong>'+purchaseH(hasBefore?purchaseLiters(before)+' L':'—')+'</strong></div>'+
+        '<div><span>Expected closing</span><strong>'+purchaseH(Number.isFinite(expectedAfter)?purchaseLiters(expectedAfter)+' L':'—')+'</strong></div>'+
+        '<div><span>Recorded closing</span><strong>'+purchaseH(hasRecorded?purchaseLiters(recorded)+' L':'Not recorded')+'</strong></div>'+
+        '<div><span>Stock difference</span><strong>'+purchaseH(Number.isFinite(diff)?(diff>0?'+':'')+purchaseLiters(diff)+' L':'—')+'</strong></div>'+
+      '</div></article>';
+    }).join('');
+    const tankEntries=[];
+    const addTankEntry=(tankId,tankCode)=>{
+      const key=String(tankId||tankCode||''); if(!key)return;
+      if(!tankEntries.some(x=>x.key===key))tankEntries.push({key,tankId:String(tankId||''),tankCode:tankCode||'—'});
+    };
+    addTankEntry(tank?.id,tank?.tank_code);
+    history.forEach(e=>addTankEntry(e?.tank_id,e?.tank_code));
+    const tankSections=tankEntries.map(entry=>{
+      return '<article class="purchase-detail-tank-card"><div class="purchase-detail-tank-head"><div><span class="purchase-detail-tank-dot" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(entry.tankCode)+'</strong></div><span>Tank</span></div><div class="purchase-detail-row"><span>Discharge operations</span><strong>'+history.filter(e=>String(e?.tank_id||'')===String(entry.tankId)).length+'</strong></div></article>';
+    }).join('');
+    const purchaseRemark=[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||'';
+    const el=document.getElementById('purchase-detail-content');
+    if(el)el.innerHTML=
+      '<div class="purchase-detail-hero">'+
+        '<div><span class="purchase-detail-kicker">PURCHASE</span><div class="purchase-detail-product"><span class="purchase-detail-product-dot" style="background:'+purchaseH(productColor)+'"></span><h4>'+purchaseH(p.invoice_number?('Invoice #'+p.invoice_number):'Purchase — No Invoice')+'</h4></div><p>'+purchaseH(productCode)+'</p></div>'+
+        '<div class="purchase-detail-status-badge '+(String(p.status||'').toLowerCase()==='discharged'?'success':'pending')+'">'+purchaseH(statusText||'Purchase')+'</div>'+
+      '</div>'+
+      '<section class="purchase-detail-section purchase-detail-summary"><div class="purchase-detail-summary-grid">'+
+        '<div><span>Delivered quantity</span><strong>'+purchaseH(purchaseLiters(total))+' L</strong></div>'+
+        '<div><span>Discharged quantity</span><strong>'+purchaseH(purchaseLiters(discharged))+' L</strong></div>'+
+        '<div><span>Undischarged quantity</span><strong>'+purchaseH(purchaseLiters(remaining))+' L</strong></div>'+
+        '<div><span>Purchase date</span><strong>'+purchaseH(p.purchase_date?new Date(p.purchase_date).toLocaleString():'—')+'</strong></div>'+
+      '</div></section>'+
+      '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Order</h4></div>'+rows([['Product',productCode],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L'],['Difference',difference]])+'</section>'+
+      '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Truck & Driver</h4></div>'+rows([['Driver name',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],['Plate number',p.plate_number||'—'],['Compartments',String(p.truck_compartments||'—')]])+(compartments.length?'<div class="purchase-detail-compartments"><h5>Compartment quantities</h5>'+compartmentRows+'</div>':'')+'</section>'+
+      (tankSections?'<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Tanks</h4><span>'+tankEntries.length+' tank'+(tankEntries.length===1?'':'s')+'</span></div>'+tankSections+'</section>':'')+
+      '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Delivery</h4><span class="purchase-detail-delivery-status">'+purchaseH(statusText||'—')+'</span></div>'+rows([['Delivered quantity',purchaseLiters(total)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Undischarged quantity',purchaseLiters(remaining)+' L'],['Difference',difference],['Fully discharged at',p.discharged_at?new Date(p.discharged_at).toLocaleString():'Not yet']])+'</section>'+
+      (history.length?'<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Discharge History</h4><span>'+history.length+' operation'+(history.length===1?'':'s')+'</span></div>'+eventRows+'</section>':'')+
+      '<section class="purchase-detail-remark"><div class="purchase-detail-remark-head"><div><span class="purchase-detail-kicker">FINAL NOTE</span><h4>Purchase Remark</h4></div><span>Optional</span></div><p>'+purchaseH(purchaseRemark||'No remark added for this purchase.')+'</p></section>';
+    const m=document.getElementById('purchase-detail-modal');if(m){m.classList.add('open');m.setAttribute('aria-hidden','false');}
+  };
+
+window.togglePurchaseHistoryRecordedCard=function(id){
+ const cards=document.querySelectorAll('.purchase-history-recorded-minimized');
+ let card=null;
+ cards.forEach(el=>{if(String(el.getAttribute('data-id'))===String(id))card=el;});
+ if(!card)return;
+ const expanded=card.classList.toggle('expanded');
+ const body=card.querySelector('.purchase-history-recorded-body');
+ const toggle=card.querySelector('.purchase-history-recorded-toggle');
+ const head=card.querySelector('.purchase-history-recorded-head');
+ if(body)body.hidden=!expanded;
+ if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
+ if(toggle)toggle.textContent=expanded?'⌃':'⌄';
 };
 window.downloadFullPurchaseHistoryPdf=function(id){
- const p=records.find(x=>String(x.id)===String(id));
- if(!p){return;}
+ const p=records.find(x=>String(x.id)===String(id));if(!p)return;
  window.currentPurchaseDetailId=id;
  window.currentPurchaseDetailData=p;
- if(typeof window.downloadPurchaseDetailPdf==='function'){
-  window.downloadPurchaseDetailPdf();
- }else{
-  if(typeof toast==='function')toast('Purchase PDF is not available.');
- }
-};
-window.toggleFullPurchaseHistoryMonth=function(monthKey){
- const group=document.querySelector('.purchase-full-history-month-group[data-month-key="'+CSS.escape(String(monthKey))+'"]');if(!group)return;
- const body=group.querySelector('.purchase-full-history-month-body'),head=group.querySelector('.purchase-full-history-month-head'),toggle=group.querySelector('.purchase-full-history-month-toggle');
- const open=group.classList.toggle('expanded');
- if(body)body.hidden=!open;if(head)head.setAttribute('aria-expanded',open?'true':'false');if(toggle)toggle.textContent=open?'⌃':'⌄';
-};
-window.toggleFullPurchaseHistoryCard=function(id){
- const card=document.querySelector('.purchase-full-history-card[data-id="'+CSS.escape(String(id))+'"]'); if(!card)return;
- const open=card.classList.toggle('expanded'); const body=card.querySelector('.purchase-full-history-body'); const toggle=card.querySelector('.purchase-full-history-toggle'); const head=card.querySelector('.purchase-full-history-head');
- if(body)body.hidden=!open;if(head)head.setAttribute('aria-expanded',open?'true':'false');if(toggle)toggle.textContent=open?'⌃':'⌄';
-};
-window.closeFullPurchaseHistoryDetail=function(){
- const el=document.getElementById('purchase-history-detail-overlay');if(el)el.remove();
-};
-window.openFullPurchaseHistoryDetail=function(id){
- const p=records.find(x=>String(x.id)===String(id));if(!p)return;
- const product=p.product||p.product_code||'—';
- const purchaseDate=p.purchase_date||p.created_at;
- const comps=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
- const delivered=comps.reduce((s,v)=>s+Number(v||0),0);
- const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
- const tanks=[...new Set(history.map(e=>e?.tank_code||e?.tank_id).filter(Boolean))].join(', ')||'—';
- const escHtml=esc;
- const discharge=history.length?history.map((e,i)=>'<div><span>Discharge '+(i+1)+'</span><strong>'+escHtml(e.discharge_datetime||e.discharged_at||e.created_at||'—')+' · '+Number(e.quantity_liters||e.discharged_quantity_liters||0).toLocaleString()+' L · '+escHtml(e.tank_code||e.tank_id||'—')+'</strong></div>').join(''):'<div><span>Discharge history</span><strong>None recorded</strong></div>';
- const overlay=document.createElement('div');
- overlay.id='purchase-history-detail-overlay';
- overlay.className='purchase-history-detail-overlay';
- overlay.innerHTML='<div class="purchase-history-detail-card" role="dialog" aria-modal="true" aria-label="Purchase details">'+
-  '<div class="purchase-history-detail-head"><div><strong>'+escHtml(p.invoice_number?'Invoice #'+p.invoice_number:'Purchase — No Invoice')+'</strong><small>'+escHtml(product)+' · '+escHtml(purchaseDate?new Date(purchaseDate).toLocaleString():'—')+'</small></div><button type="button" class="purchase-history-detail-close" onclick="closeFullPurchaseHistoryDetail()" aria-label="Close">×</button></div>'+
-  '<div class="purchase-history-detail-body">'+
-   '<section class="purchase-history-detail-section"><h4>Purchase Summary</h4><div class="purchase-history-detail-grid">'+
-    '<div><span>Product</span><strong>'+escHtml(product)+'</strong></div><div><span>Invoice</span><strong>'+escHtml(p.invoice_number||'—')+'</strong></div>'+
-    '<div><span>Delivered quantity</span><strong>'+delivered.toLocaleString()+' L</strong></div><div><span>Purchase date</span><strong>'+escHtml(purchaseDate?new Date(purchaseDate).toLocaleString():'—')+'</strong></div>'+
-    '<div><span>Discharge date</span><strong>'+escHtml(p.discharged_at?new Date(p.discharged_at).toLocaleString():'—')+'</strong></div><div><span>Status</span><strong>'+escHtml(p.status||'RECORDED')+'</strong></div>'+
-   '</div></section>'+
-   '<section class="purchase-history-detail-section"><h4>Truck & Driver</h4><div class="purchase-history-detail-grid">'+
-    '<div><span>Driver</span><strong>'+escHtml(p.driver_name||'—')+'</strong></div><div><span>Phone</span><strong>'+escHtml(p.driver_phone||'—')+'</strong></div>'+
-    '<div><span>Plate</span><strong>'+escHtml(p.plate_number||p.truck_plate||'—')+'</strong></div><div><span>Compartments</span><strong>'+escHtml(p.truck_compartments||comps.length||'—')+'</strong></div>'+
-   '</div></section>'+
-   '<section class="purchase-history-detail-section"><h4>Tank Information</h4><div class="purchase-history-detail-grid"><div><span>Tank</span><strong>'+escHtml(tanks)+'</strong></div><div><span>Operations</span><strong>'+history.length+'</strong></div></div></section>'+
-   '<section class="purchase-history-detail-section"><h4>Discharge History</h4><div class="purchase-history-detail-list">'+discharge+'</div></section>'+
-   '<div class="purchase-history-detail-actions"><button type="button" onclick="closeFullPurchaseHistoryDetail()">Close</button><button type="button" class="primary" onclick="downloadFullPurchaseHistoryPdf(\''+escHtml(p.id)+'\')">Download PDF</button></div>'+
-  '</div></div>';
- overlay.addEventListener('click',e=>{if(e.target===overlay)closeFullPurchaseHistoryDetail();});
- document.body.appendChild(overlay);
+ if(typeof window.downloadPurchaseDetailPdf==='function')window.downloadPurchaseDetailPdf();
 };
 window.renderFullPurchaseHistory=function(){
  const box=document.getElementById('full-purchase-history-list');if(!box)return;
@@ -310,23 +205,13 @@ window.renderFullPurchaseHistory=function(){
  });
  const monthKeys=Object.keys(monthGroups).sort((a,b)=>b.localeCompare(a));
  const renderPurchase=p=>{
-  const product=p.product||p.product_code||'—',invoice=p.invoice_number?('Invoice #'+p.invoice_number):'Purchase — No Invoice';
-  const purchaseDate=p.purchase_date||p.created_at; const discharged=p.discharged_at;
-  const comps=Array.isArray(p.compartment_liters)?p.compartment_liters:[]; const delivered=comps.reduce((s,v)=>s+Number(v||0),0);
-  const history=Array.isArray(p.discharge_history)?p.discharge_history:[]; const tanks=[...new Set(history.map(e=>e?.tank_code||e?.tank_id).filter(Boolean))].join(', ')||'—';
-  return '<article class="purchase-card purchase-full-history-card" data-id="'+esc(p.id)+'">'+
-   '<button type="button" class="purchase-full-history-head" onclick="toggleFullPurchaseHistoryCard(this.dataset.id)" data-id="'+esc(p.id)+'" aria-expanded="false">'+
-    '<span class="purchase-full-history-title"><span class="dot"></span><span><strong>'+esc(invoice)+'</strong><small>'+esc(product)+' · '+esc(purchaseDate?new Date(purchaseDate).toLocaleString():'—')+'</small></span></span>'+
-    '<span class="purchase-full-history-right"><span class="badge">✓ RECORDED</span><span class="purchase-full-history-toggle">⌄</span></span>'+
-   '</button>'+
-   '<div class="purchase-full-history-body" hidden>'+
-    '<div class="purchase-full-history-grid"><div><span>Delivered quantity</span><strong>'+esc(delivered.toLocaleString())+' L</strong></div><div><span>Invoice</span><strong>'+esc(p.invoice_number||'—')+'</strong></div><div><span>Purchase date</span><strong>'+esc(purchaseDate?new Date(purchaseDate).toLocaleString():'—')+'</strong></div><div><span>Discharge date</span><strong>'+esc(discharged?new Date(discharged).toLocaleString():'—')+'</strong></div><div><span>Tank</span><strong>'+esc(tanks)+'</strong></div><div><span>Driver</span><strong>'+esc(p.driver_name||'—')+'</strong></div></div>'+
-    '<div class="purchase-full-history-actions">'+
-      '<button type="button" onclick="openFullPurchaseHistoryDetail(\''+esc(p.id)+'\')">View details</button>'+
-      '<button type="button" class="primary" onclick="downloadFullPurchaseHistoryPdf(\''+esc(p.id)+'\')">Download PDF</button>'+
-    '</div>'+
-   '</div>'+
-  '</article>';
+  const productRecord=purchaseProducts.find(x=>String(x.name||'').toLowerCase()===String(p.product||'').toLowerCase());
+  const productCode=productRecord?.code_name||p.product||'—';
+  const productColor=productRecord?.color||'#2563eb';
+  const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
+  const total=compartments.reduce((sum,v)=>sum+Number(v||0),0);
+  const datePurchase=p.purchase_date?new Date(p.purchase_date).toLocaleString():'—';
+  return '<article class="purchase-card purchase-history-full-card purchase-history-recorded-minimized" data-id="'+purchaseH(p.id)+'"><button type="button" class="purchase-history-recorded-head" onclick="togglePurchaseHistoryRecordedCard(this.dataset.id)" data-id="'+purchaseH(p.id)+'" aria-expanded="false"><span class="purchase-history-recorded-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><span><strong>'+purchaseH(p.invoice_number?('Invoice #'+p.invoice_number):'Purchase — No Invoice')+'</strong><small>'+purchaseH(productCode)+' · '+purchaseH(datePurchase)+'</small></span></span><span class="purchase-history-recorded-right"><span class="purchase-history-full-badge">✓ RECORDED</span><span class="purchase-history-recorded-toggle" aria-hidden="true">⌄</span></span></button><div class="purchase-history-recorded-body" hidden><div class="purchase-history-full-main"><div><span>Delivered quantity</span><strong>'+purchaseH(purchaseLiters(total))+' L</strong></div><div><span>Invoice</span><strong>'+purchaseH(p.invoice_number||'—')+'</strong></div><div><span>Fully discharged</span><strong>'+purchaseH(p.discharged_at?new Date(p.discharged_at).toLocaleString():'—')+'</strong></div></div><div class="purchase-history-card-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button><button type="button" disabled class="tank-stock-recorded">✓ Tank Stock Recorded</button></div></div></article>';
  };
  box.innerHTML=monthKeys.map(monthKey=>{
   const monthDate=new Date(monthKey==='unknown'?'invalid':monthKey+'-01T00:00:00');
@@ -346,10 +231,14 @@ window.loadFullPurchaseHistory=async function(){
  try{
   if(status)status.textContent='Loading purchase history…';
   const me=await currentUser();if(me.role!=='admin')return location.href='admin-login.html';
-  const rows=await api('/api/purchases?status=discharged');
+  const [rows,productsData,tanksData,shiftsData,employeesData]=await Promise.all([api('/api/purchases?status=discharged'),api('/api/products'),api('/api/tanks'),api('/api/shifts'),api('/api/employees')]);
+  purchaseProducts=Array.isArray(productsData)?productsData:[];
+  purchaseDetailTanks=Array.isArray(tanksData)?tanksData:[];
+  purchaseShifts=Array.isArray(shiftsData)?shiftsData:[];
+  purchaseEmployees=Array.isArray(employeesData)?employeesData:[];
   records=(Array.isArray(rows)?rows:[]).filter(p=>{const h=Array.isArray(p.discharge_history)?p.discharge_history:[];return h.length>0&&h.every(e=>e?.tank_stock_recorded===true);});
   const count=document.getElementById('purchase-history-count');if(count)count.textContent=records.length+' recorded';
-  renderFullPurchaseHistory();if(status)status.textContent='';
+  purchaseDetailData=records;renderFullPurchaseHistory();if(status)status.textContent='';
  }catch(e){if(status)status.textContent=e.message||'Unable to load purchase history.';}
 };
 window.addEventListener('DOMContentLoaded',loadFullPurchaseHistory);
