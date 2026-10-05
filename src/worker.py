@@ -568,7 +568,7 @@ def tanks():
     if auth: return auth
 
     status, rows = sb("tanks", params={
-        "select":"id,tank_code,product,product_id,capacity_liters,current_mm,current_liters,opening_stock_liters,active,updated_at",
+        "select":"id,tank_code,product,product_id,capacity_liters,current_mm,current_liters,opening_stock_liters,calibration_mm,calibration_liters,active,updated_at",
         "order":"tank_code.asc"
     })
     if status != 200:
@@ -676,6 +676,76 @@ def create_tank():
     },prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),201
+
+@app.patch("/api/tanks/<tank_id>/calibration")
+def update_tank_calibration(tank_id):
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    try:
+        calibration_mm=float(data.get("calibration_mm"))
+        calibration_liters=float(data.get("calibration_liters"))
+    except (TypeError,ValueError):
+        return jsonify({"error":"Enter valid calibration millimeters and liters"}),400
+    if calibration_mm <= 0 or calibration_liters < 0:
+        return jsonify({"error":"Calibration millimeters must be greater than zero and liters cannot be negative"}),400
+
+    ts,rows=sb("tanks",params={"id":"eq."+tank_id,"select":"id,tank_code,capacity_liters","limit":"1"})
+    if ts!=200:return jsonify(rows),ts
+    if not rows:return jsonify({"error":"Tank not found"}),404
+    tank=rows[0]
+    capacity=float(tank.get("capacity_liters") or 0)
+    if calibration_liters > capacity:
+        return jsonify({"error":"Calibration liters cannot exceed tank capacity"}),400
+
+    status,result=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body={
+        "calibration_mm":calibration_mm,
+        "calibration_liters":calibration_liters,
+        "updated_at":datetime.now(timezone.utc).isoformat()
+    },prefer="return=representation")
+    if status>=400:return jsonify(result),status
+    return jsonify(result[0] if isinstance(result,list) and result else result),200
+
+
+@app.patch("/api/tanks/<tank_id>/dip")
+def update_tank_dip(tank_id):
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    try:
+        dip_mm=float(data.get("mm"))
+    except (TypeError,ValueError):
+        return jsonify({"error":"Enter a valid dip reading in millimeters"}),400
+    if dip_mm < 0:
+        return jsonify({"error":"Dip reading cannot be negative"}),400
+
+    ts,rows=sb("tanks",params={"id":"eq."+tank_id,"select":"id,tank_code,capacity_liters,calibration_mm,calibration_liters","limit":"1"})
+    if ts!=200:return jsonify(rows),ts
+    if not rows:return jsonify({"error":"Tank not found"}),404
+    tank=rows[0]
+    ref_mm=tank.get("calibration_mm")
+    ref_liters=tank.get("calibration_liters")
+    if ref_mm is None or ref_liters is None or float(ref_mm)<=0:
+        return jsonify({"error":"This tank has no calibration reference. Save a calibration reference first."}),409
+    liters_value=dip_mm*float(ref_liters)/float(ref_mm)
+    capacity=float(tank.get("capacity_liters") or 0)
+    if liters_value > capacity:
+        return jsonify({"error":"The converted liters exceed tank capacity. Check the dip reading or calibration reference."}),400
+
+    now=datetime.now(timezone.utc).isoformat()
+    status,result=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body={
+        "current_mm":dip_mm,
+        "current_liters":liters_value,
+        "updated_at":now
+    },prefer="return=representation")
+    if status>=400:return jsonify(result),status
+    return jsonify({
+        "ok":True,
+        "tank":result[0] if isinstance(result,list) and result else result,
+        "mm":dip_mm,
+        "liters":liters_value
+    }),200
+
 
 @app.patch("/api/tanks/<tank_id>/stock")
 def update_tank_stock(tank_id):
