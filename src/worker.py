@@ -3174,10 +3174,17 @@ def daily_report():
             shift_sales=float(h.get("tank_sales_liters") or h.get("total_sales_liters") or 0)
             shift_nozzle_sales=float((tank_nozzle_sales_by_shift.get(tid) or {}).get(sid) or 0)
             shift_nozzle_difference=shift_sales-shift_nozzle_sales
-            shift_purchase=0.0
-            # Purchases are assigned at tank/day level; do not duplicate the
-            # same discharge into every shift. The tank-level reconciliation
-            # remains authoritative for purchase movement.
+            # Attribute each distinct discharge operation to the shift
+            # containing its discharge timestamp. A purchase can have multiple
+            # legitimate operations: count the purchase entity once at tank
+            # level, but include every distinct operation in its responsible
+            # shift reconciliation.
+            shift_purchase=sum(
+                float(op.get("discharged_liters") or 0)
+                for op in discharge_operations
+                if op.get("shift_attribution_status")=="inside_shift"
+                and str(op.get("shift_id") or "")==sid
+            )
             continuity_adjustment=0.0
             if idx>0:
                 prev_close=float(rows[idx-1][1].get("tank_closing_liters") or 0)
