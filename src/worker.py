@@ -2899,9 +2899,12 @@ def daily_report():
             if abs(gap)>0.0001:
                 continuity_gap_count+=1
                 opening_adjustment_l+=gap
-        expected=opening+opening_adjustment_l+purchased_l+stock_adjustment_l-sales_l
+        # Do not fold the later tank-stock recording into the stock equation:
+        # the recording may happen after sales/other movement. The immediate
+        # discharge amount is already represented by purchase_discharged_liters.
+        expected=opening+opening_adjustment_l+purchased_l-sales_l
         diff=expected-closing
-        basis=opening+opening_adjustment_l+purchased_l+stock_adjustment_l
+        basis=opening+opening_adjustment_l+purchased_l
         shift_reconciliation=[]
         running_adjustment=0.0
         for idx,(sh,h) in enumerate(rows):
