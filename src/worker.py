@@ -3443,3 +3443,11 @@ def daily_report():
         "shift_summary":shift_summary,
         "dispenser_summary":dispenser_summary,
         "station_summary":station_summary,
+        "tank_details":tank_details,
+        "performance":dsr_performance,
+        "dsr_performance":dsr_performance,
+        "total_purchase_discharged_liters":total_p,
+        "total_sales_liters":station_l,
+        "total_sales_amount":station_a
+    })
+
