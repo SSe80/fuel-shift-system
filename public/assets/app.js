@@ -2324,6 +2324,14 @@ async function previewDailyReport(){
     const sourceStatus=document.getElementById('report-status');
     const sourceSections=details.querySelectorAll(':scope > section');
 
+    const livePerf=r.dsr_performance||{};
+    const pctRows=[
+      ['Dispenser contribution',(livePerf.dispenser_contribution||[]).map(x=>'<div><span>'+h(x.dispenser||'Dispenser')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>').join('')],
+      ['Sales method performance',(livePerf.sales_method_performance||[]).map(x=>'<div><span>'+h(x.type||'Sale method')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>').join('')],
+      ['Tank reconciliation',(livePerf.tank_reconciliation||[]).map(x=>'<div><span>'+h(x.tank||'Tank')+'</span><b>'+Number(x.reconciliation_pct||0).toFixed(1)+'%</b></div>').join('')],
+      ['Nozzle reconciliation','<div><span>Average nozzle reconciliation</span><b>'+Number(livePerf.average_nozzle_reconciliation_pct||0).toFixed(1)+'%</b></div>']
+    ].map(x=>'<div class="daily-preview-live-pct"><h4>'+h(x[0])+'</h4>'+(x[1]||'<p>No percentage data recorded.</p>')+'</div>').join('');
+
     paper.innerHTML=
       '<div class="daily-preview-paper-head">'+
         '<div><span class="daily-preview-paper-kicker">STATION DAILY RECONCILIATION</span>'+
@@ -2335,10 +2343,11 @@ async function previewDailyReport(){
         '<span>Report date <b>'+h(dailyReportIdLabel(date))+'</b></span>'+
         '<span>Status <b>Preview · not confirmed</b></span>'+
       '</div>'+
-      '<div class="daily-preview-paper-status">'+h(sourceStatus?.textContent||'Reconciliation report')+'</div>'+
+      '<div class="daily-preview-paper-status">Live report data · calculations are read from the selected DSR date.</div>'+
       '<div class="daily-preview-paper-summary">'+(sourceSummary?.innerHTML||'')+'</div>'+
+      '<section class="daily-preview-paper-section"><div class="daily-preview-live-performance"><div class="daily-preview-live-pct-grid">'+pctRows+'</div></div></section>'+
       Array.from(sourceSections).map(section=>'<section class="daily-preview-paper-section">'+section.innerHTML+'</section>').join('')+
-      '<div class="daily-preview-paper-foot"><span>DSR design preview</span><span>'+h(new Date().toLocaleDateString())+'</span></div>';
+      '<div class="daily-preview-paper-foot"><span>DSR design preview · live data</span><span>'+h(dailyReportIdLabel(date))+'</span></div>';
 
     details.hidden=true;
     document.body.classList.remove('daily-detail-open');
@@ -2689,9 +2698,14 @@ async function loadDailyReport(){
       '<div class="dsr-sales-column"><div class="dsr-subhead">Sales methods</div>'+(typeRows||'<div class="daily-empty">No sale methods recorded.</div>')+'</div>'+
       '<div class="dsr-sales-total"><span>Total</span><strong>'+money(salesSummary.total_amount)+'</strong><strong>'+liters(salesSummary.total_liters)+' L</strong></div>';
 
+    const nozzleLabels={};
+    dispenserDetails.forEach(disp=>(disp.nozzles||[]).forEach(n=>{
+      if(n.nozzle_id)nozzleLabels[String(n.nozzle_id)]=n.nozzle_code||('Nozzle '+Number(n.nozzle_number||0));
+    }));
     const shiftRows=shifts.map((x,i)=>{
-      const opening=(x.opening_readings||[]).map(v=>'Nozzle '+h(v.nozzle_id||'—')+': '+reading(v.reading)).join(' · ')||'—';
-      const closing=(x.closing_readings||[]).map(v=>'Nozzle '+h(v.nozzle_id||'—')+': '+reading(v.reading)).join(' · ')||'—';
+      const nozzleLabel=v=>nozzleLabels[String(v.nozzle_id||'')]||v.nozzle_code||('Nozzle '+String(v.nozzle_id||'—').slice(0,8));
+      const opening=(x.opening_readings||[]).map(v=>nozzleLabel(v)+': '+reading(v.reading)).join(' · ')||'—';
+      const closing=(x.closing_readings||[]).map(v=>nozzleLabel(v)+': '+reading(v.reading)).join(' · ')||'—';
       return '<article class="dsr-shift-card"><div class="dsr-shift-head"><div><span class="daily-card-kicker">SHIFT '+(i+1)+'</span><h3>'+h(x.attendant||'Unknown')+'</h3><p>'+h(x.dispenser||'—')+' · '+h(codeForProduct(x.product))+' · '+h(dailyReportIdLabel(d))+'</p></div><span class="dsr-dsr-status '+(x.sales_status==='confirmed'?'confirmed':'pending')+'">'+h(x.sales_status||'pending')+'</span></div>'+
         '<div class="dsr-shift-grid"><div><span>Start</span><b>'+h(dailyReportTime(x.started_at))+'</b></div><div><span>End</span><b>'+h(dailyReportTime(x.ended_at))+'</b></div><div><span>Liters sold</span><b>'+liters(x.sales_liters)+' L</b></div><div><span>Sales amount</span><b>'+money(x.sales_amount)+'</b></div><div><span>Tank opening</span><b>'+liters(x.tank_opening_liters)+' L</b></div><div><span>Tank closing</span><b>'+liters(x.tank_closing_liters)+' L</b></div></div>'+
         '<div class="dsr-shift-readings"><div><span>Opening readings</span><b>'+opening+'</b></div><div><span>Closing readings</span><b>'+closing+'</b></div></div></article>';
