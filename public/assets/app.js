@@ -2223,7 +2223,7 @@ function renderDailyPendingConfirmationCard(item){
     '<label class="admin-sale-check-row daily-dsr-method-row"><input type="checkbox" class="daily-dsr-method-check"><span><strong>'+h(method)+'</strong><small>Combined sales for '+h(dailyReportIdLabel(item.date))+'</small></span><strong>'+money(amount)+'</strong></label>'
   ).join('');
   return '<article class="card daily-confirm-card" data-report-date="'+h(item.date)+'" data-dsr-id="'+h(dailyReportIdLabel(item.date))+'">'+
-    '<div class="daily-confirm-head"><div><span class="section-kicker">PENDING DSR CONFIRMATION</span><h3>'+h(dailyReportIdLabel(item.date))+'</h3><p class="muted">'+Number(item.shift_count||0)+' completed shift(s) • Handover and sales recorded</p></div><span class="pending-sale-badge">Pending</span></div>'+
+    '<div class="daily-confirm-head"><div><span class="section-kicker">PENDING DSR CONFIRMATION</span><h3>'+h(dailyReportIdLabel(item.date))+'</h3><p class="muted">'+Number(item.dispenser_count||0)+' dispenser(s) • '+Number(item.shift_count||0)+' completed shift(s) • Handover and sales recorded</p></div><span class="pending-sale-badge">Pending</span></div>'+
     '<div class="daily-confirm-summary"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div></div>'+
     '<div class="daily-confirm-methods"><div class="daily-confirm-label">Combined sales by method</div>'+(methods||'<div class="daily-empty">No recorded sale methods.</div>')+'</div>'+
     '<div class="daily-confirm-note">Check each combined sale method before confirming. This confirmation will automatically confirm the linked individual shift sales on the Sales page.</div>'+
