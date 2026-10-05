@@ -3471,6 +3471,20 @@ def daily_report():
         "total_sales_amount":station_a
     })
 
+@app.get("/api/reports/daily/revisions")
+def daily_report_revisions():
+    auth=require_admin()
+    if auth:return auth
+    report_date=request.args.get("date") or date.today().isoformat()
+    status,rows=sb("daily_report_revisions",params={
+        "report_date":"eq."+report_date,
+        "select":"id,report_date,revision_no,revision_reason,archived_by,archived_at,report_snapshot",
+        "order":"revision_no.desc",
+        "limit":"100"
+    })
+    if status!=200:return jsonify({"error":rows}),status
+    return jsonify(rows or [])
+
 @app.post("/api/reports/daily")
 def generate_report():
     auth=require_admin()
