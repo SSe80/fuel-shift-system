@@ -1997,7 +1997,8 @@ def _daily_confirmation_snapshot(report_date):
         m=type_map.get(str(x.get("sale_type_id") or "")) or "Other"; methods[m]=methods.get(m,0)+float(x.get("amount") or 0)
     all_complete=all(x.get("end_time") for x in shifts)
     takeover_by_shift={str(x.get("shift_id")):x for x in takeovers if x.get("shift_id")}
-    sale_count_by_takeover={}    for row in sale_rows:
+    sale_count_by_takeover={}
+    for row in sale_rows:
         key=str(row.get("takeover_id") or "")
         sale_count_by_takeover[key]=sale_count_by_takeover.get(key,0)+1
     # A DSR is created only after every shift has completed its handover AND
