@@ -2846,6 +2846,15 @@ async function loadDailyReport(){
     const tankPerf=(perf.tank_reconciliation||[]).map(x=>
       '<div class="dsr-performance-metric"><span>'+h(x.tank||'Tank')+'</span><b>'+Number(x.reconciliation_pct||0).toFixed(1)+'%</b></div>'
     ).join('');
+    const attribution=perf.discharge_attribution||{};
+    const auditBlock='<div class="dsr-performance-block dsr-discharge-audit-block"><div class="dsr-subhead">Discharge attribution audit</div><p class="dsr-audit-note">Timestamp-to-shift matching only. This audit does not change station-wide DSR purchase or reconciliation totals.</p><div class="dsr-discharge-audit-grid">'+
+      '<div><span>Total operations</span><b>'+Number(attribution.operation_count||0)+'</b></div>'+
+      '<div class="ok"><span>Inside active shift</span><b>'+Number(attribution.inside_shift_count||0)+'</b></div>'+
+      '<div class="negative"><span>Outside active shift</span><b>'+Number(attribution.outside_shift_count||0)+'</b></div>'+
+      '<div class="warning"><span>Overlapping shifts</span><b>'+Number(attribution.ambiguous_overlap_count||0)+'</b></div>'+
+      '<div class="warning"><span>Invalid timestamp</span><b>'+Number(attribution.invalid_timestamp_count||0)+'</b></div></div>'+
+      '<div class="dsr-discharge-audit-liters"><span>Outside-shift volume</span><b>'+liters(attribution.outside_shift_liters||0)+' L</b><span>Overlap volume</span><b>'+liters(attribution.ambiguous_overlap_liters||0)+' L</b></div></div>';
+
     const perfRows=[
       ['Fuel sold',liters(perf.total_sales_liters)+' L'],
       ['Sales amount',money(perf.total_sales_amount)],
@@ -2865,7 +2874,7 @@ async function loadDailyReport(){
       '<div class="dsr-performance-block"><div class="dsr-subhead">Station performance</div>'+perfRows+'</div>'+
       '<div class="dsr-performance-block"><div class="dsr-subhead">Dispenser contribution</div>'+(contributionRows||'<div class="daily-empty">No dispenser contribution data.</div>')+'</div>'+
       '<div class="dsr-performance-block"><div class="dsr-subhead">Sales method performance</div>'+(methodPerf||'<div class="daily-empty">No sales method data.</div>')+'</div>'+
-      '<div class="dsr-performance-block"><div class="dsr-subhead">Tank reconciliation</div>'+(tankPerf||'<div class="daily-empty">No tank reconciliation data.</div>')+'</div>';
+      '<div class="dsr-performance-block"><div class="dsr-subhead">Tank reconciliation</div>'+(tankPerf||'<div class="daily-empty">No tank reconciliation data.</div>')+'</div>'+auditBlock;
 
     if(status)status.textContent='';
   }catch(e){
