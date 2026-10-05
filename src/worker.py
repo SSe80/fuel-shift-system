@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, session
 from workers import wsgi
-import os, base64, hmac, secrets
+import os, base64, hmac, secrets, hashlib, json
 from datetime import datetime, timezone, date, timedelta
 from pyodide.ffi import run_sync, to_js
 from js import crypto, Uint8Array, Object
@@ -799,7 +799,11 @@ def update_tank_stock(tank_id):
             return jsonify({"error":"The tank stock was saved, but the remark could not be updated.","details":mr}),500
         return jsonify({"ok":True,"event_index":event_index,"remark":remark}),200
 
-    previous=float(tank.get("current_liters") or 0)
+    # Reconcile the physical reading against this discharge operation's
+    # expected post-discharge stock, not against whatever the tank happens to
+    # contain now. A later discharge must never be overwritten by recording an
+    # older operation's stock.
+    previous=float(event.get("tank_liters_after") if event.get("tank_liters_after") is not None else tank.get("current_liters") or 0)
     delta=stock-previous
     now=datetime.now(timezone.utc).isoformat()
     event["tank_stock_recorded"]=True
@@ -809,9 +813,23 @@ def update_tank_stock(tank_id):
     event["tank_stock_remark"]=remark
     history[event_index]=event
 
-    body={"current_liters":stock,"updated_at":now}
-    status,result=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body=body,prefer="return=representation")
-    if status>=400:return jsonify(result),status
+    # Only move the tank's live balance when this operation is still the
+    # latest recorded tank movement. If newer movements exist, this reading
+    # remains an audit adjustment for the older operation.
+    event_time=_parse_aware_dt(event.get("discharge_datetime")) if "_parse_aware_dt" in globals() else None
+    latest_status,latest_rows=sb("tank_movements",params={
+        "select":"id,created_at",
+        "tank_id":"eq."+tank_id,
+        "created_at":"gt."+str(event.get("discharge_datetime") or ""),
+        "order":"created_at.desc","limit":"1"
+    }) if event_time else (200,[])
+    has_newer_movement=latest_status==200 and bool(latest_rows)
+    if not has_newer_movement:
+        body={"current_liters":stock,"updated_at":now}
+        status,result=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body=body,prefer="return=representation")
+        if status>=400:return jsonify(result),status
+    else:
+        result=tank
 
     ms,mr=sb("purchases",method="PATCH",params={"id":"eq."+purchase_id},body={"discharge_history":history},prefer="return=representation")
     if ms>=400:
@@ -2964,6 +2982,7 @@ def daily_report():
             "shift_attribution_status":"outside_shift"
         }
 
+    seen_discharge_operations=set()
     for p in purchase_rows:
         history=_json_list(p.get("discharge_history"))
         used_history=False
@@ -2975,6 +2994,25 @@ def daily_report():
             if not tid:
                 continue
             discharged=float(op.get("discharged_quantity_liters") or sum(float(v or 0) for v in _json_list(op.get("compartment_liters"))))
+            # Prefer a persisted operation id. For legacy rows, use a stable
+            # transaction fingerprint so the same operation represented twice
+            # cannot increase the DSR purchase contribution twice.
+            operation_id=str(op.get("operation_id") or "").strip()
+            if operation_id:
+                operation_key="id:"+operation_id
+            else:
+                fingerprint={
+                    "purchase_id":str(p.get("id") or ""),
+                    "tank_id":tid,
+                    "discharge_datetime":str(op.get("discharge_datetime") or ""),
+                    "discharged_liters":round(discharged,6),
+                    "compartment_indexes":op.get("compartment_indexes") or [],
+                    "compartment_liters":op.get("compartment_liters") or []
+                }
+                operation_key="fp:"+hashlib.sha256(json.dumps(fingerprint,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+            if operation_key in seen_discharge_operations:
+                continue
+            seen_discharge_operations.add(operation_key)
             purchase_by_tank[tid]=purchase_by_tank.get(tid,0.0)+discharged
 
             before=op.get("tank_liters_before")
