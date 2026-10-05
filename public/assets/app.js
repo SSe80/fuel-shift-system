@@ -2149,35 +2149,62 @@ function dailyReportVarianceClass(value){
   const n=Number(value||0);
   return Math.abs(n)<0.0001?'ok':(n>0?'positive':'negative');
 }
-async function loadDailyReportDates(){
-  const el=document.getElementById('daily-report-date-cards');
-  if(!el)return;
+async function loadDailyReportConfirmations(){
+  const pendingEl=document.getElementById('daily-report-pending-confirmations');
   try{
-    const end=new Date();
-    const dates=[];
-    for(let i=0;i<31;i++){
-      const d=new Date(end);
-      d.setDate(end.getDate()-i);
-      dates.push(d.toISOString().slice(0,10));
+    const cards=await api('/api/reports/daily/confirmations');
+    const rows=Array.isArray(cards)?cards:[];
+    const pending=rows.filter(x=>x.status==='pending');
+    if(pendingEl){
+      pendingEl.innerHTML=pending.length?pending.map(renderDailyPendingConfirmationCard).join(''):'<div class="daily-empty">No daily sales are waiting for confirmation.</div>';
     }
-    const results=await Promise.all(dates.map(async d=>{
-      try{
-        const r=await api('/api/reports/daily?date='+encodeURIComponent(d));
-        return {date:d,ready:Boolean(r.report_ready),summary:r.summary||{},completion:r.completion||{}};
-      }catch(e){return null;}
-    }));
-    const cards=results.filter(Boolean).filter(x=>Number(x.completion?.total_shifts||0)>0).map(x=>{
-      const s=x.summary;
-      return '<button type="button" class="daily-report-date-card '+(x.ready?'is-ready':'is-pending')+'" onclick="selectDailyReportDate(\''+x.date+'\')">'+
-        '<div class="daily-report-date-top"><b>'+h(dailyReportDateLabel(x.date))+'</b><span>'+ (x.ready?'Final':'Waiting') +'</span></div>'+
-        '<div class="daily-report-date-stats"><div><small>Fuel sold</small><strong>'+liters(s.sales_liters)+' L</strong></div><div><small>Sales</small><strong>'+money(s.sales_amount)+'</strong></div><div><small>Shifts</small><strong>'+Number(s.completed_shifts||0)+'</strong></div></div>'+
-      '</button>';
-    }).join('');
-    el.innerHTML=cards||'<div class="daily-empty">No daily sales reports found for the recent dates.</div>';
+    const dateEl=document.getElementById('daily-report-date-cards');
+    if(dateEl){
+      dateEl.innerHTML=rows.length?rows.map(x=>{
+        const confirmed=x.status==='confirmed';
+        const state=confirmed?'Confirmed':'Pending confirmation';
+        const methodTotal=Number(x.total_sales_amount||0);
+        return '<button type="button" class="daily-report-date-card '+(confirmed?'is-ready':'is-pending')+'" onclick="selectDailyReportDate(\''+x.date+'\')">'+
+          '<div class="daily-report-date-top"><b>'+h(dailyReportDateLabel(x.date))+'</b><span>'+h(state)+'</span></div>'+
+          '<div class="daily-report-date-stats"><div><small>Fuel sold</small><strong>'+liters(x.total_sales_liters)+' L</strong></div><div><small>Sales</small><strong>'+money(methodTotal)+'</strong></div><div><small>Shifts</small><strong>'+Number(x.shift_count||0)+'</strong></div></div>'+
+        '</button>';
+      }).join(''):'<div class="daily-empty">No completed daily reports found.</div>';
+    }
+    return rows;
   }catch(e){
-    el.innerHTML='<div class="daily-empty">Could not load report dates.</div>';
+    if(pendingEl)pendingEl.innerHTML='<div class="daily-empty">Could not load pending daily confirmations.</div>';
+    return [];
   }
 }
+function renderDailyPendingConfirmationCard(item){
+  const methods=Object.entries(item.sales_by_method||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([method,amount])=>
+    '<div class="daily-confirm-method"><span>'+h(method)+'</span><strong>'+money(amount)+'</strong></div>'
+  ).join('');
+  const blocked=!item.can_confirm;
+  const note=blocked?'Confirm all individual shift sales first before confirming this daily total.':'All shifts are complete and the combined daily sales are ready for final confirmation.';
+  return '<article class="card daily-confirm-card" data-report-date="'+h(item.date)+'">'+
+    '<div class="daily-confirm-head"><div><span class="section-kicker">DAILY SALES CONFIRMATION</span><h3>'+h(dailyReportDateLabel(item.date))+'</h3><p class="muted">'+Number(item.shift_count||0)+' completed shift(s)</p></div><span class="pending-sale-badge">Pending</span></div>'+
+    '<div class="daily-confirm-summary"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div></div>'+
+    '<div class="daily-confirm-methods"><div class="daily-confirm-label">Combined sales by method</div>'+(methods||'<div class="daily-empty">No recorded sale methods.</div>')+'</div>'+
+    '<div class="daily-confirm-note '+(blocked?'is-blocked':'')+'">'+h(note)+'</div>'+
+    '<div class="row daily-confirm-actions"><button type="button" onclick="selectDailyReportDate(\''+item.date+'\')">Review report</button><button type="button" class="primary" '+(blocked?'disabled':'')+' onclick="confirmDailyReport(\''+item.date+'\')">Confirm daily sales</button></div>'+
+  '</article>';
+}
+async function confirmDailyReport(reportDate){
+  try{
+    if(!reportDate)return;
+    await api('/api/reports/daily/confirmations/'+encodeURIComponent(reportDate)+'/confirm',{method:'POST',body:'{}'});
+    toast('Daily sales confirmed and report finalized');
+    await loadDailyReportConfirmations();
+    const input=document.getElementById('report-date');
+    if(input)input.value=reportDate;
+    await loadDailyReport();
+  }catch(e){toast(e.message);}
+}
+async function loadDailyReportDates(){
+  return loadDailyReportConfirmations();
+}
+
 function selectDailyReportDate(date){
   const input=document.getElementById('report-date');
   if(input){input.value=date;loadDailyReport();}
@@ -2185,7 +2212,7 @@ function selectDailyReportDate(date){
 }
 
 async function loadDailyReport(){
-  loadDailyReportDates();
+  loadDailyReportConfirmations();
   const status=document.getElementById('report-status');
   try{
     await window.stationCurrencyReady;
