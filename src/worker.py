@@ -2415,7 +2415,7 @@ def daily_report():
         for sh in discharge_attribution_shifts:
             started=_parse_aware_dt_for_report(sh.get("start_time"))
             ended=_parse_aware_dt_for_report(sh.get("end_time"))
-            if started and started <= dt and (ended is None or dt < ended):
+            if started and (started.astimezone(timezone.utc).date() == dt.astimezone(timezone.utc).date()) and started <= dt and (ended is None or dt < ended):
                 return True
         return False
 
@@ -3060,7 +3060,7 @@ def daily_report():
                 continue
             # Half-open interval [start, end) prevents a discharge exactly at
             # a handover boundary from being attributed to both shifts.
-            if started <= dt and (ended is None or dt < ended):
+            if (started.astimezone(timezone.utc).date() == dt.astimezone(timezone.utc).date()) and started <= dt and (ended is None or dt < ended):
                 matches.append(sh)
         if len(matches)==1:
             sh=matches[0]
