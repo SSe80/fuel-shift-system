@@ -2162,7 +2162,8 @@ async function loadDailyReportConfirmations(){
     if(dateEl){
       dateEl.innerHTML=rows.length?rows.map(x=>{
         const confirmed=x.status==='confirmed';
-        const state=confirmed?'Confirmed':'Pending confirmation';
+        const waiting=x.status==='waiting';
+        const state=confirmed?'Confirmed':(waiting?'Waiting':'Pending confirmation');
         const methodTotal=Number(x.total_sales_amount||0);
         return '<button type="button" class="daily-report-date-card '+(confirmed?'is-ready':'is-pending')+'" onclick="selectDailyReportDate(\''+x.date+'\')">'+
           '<div class="daily-report-date-top"><b>'+h(dailyReportDateLabel(x.date))+'</b><span>'+h(state)+'</span></div>'+
