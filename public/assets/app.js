@@ -777,7 +777,7 @@ function renderAdminPendingSaleCard(item){
 }
 function renderAdminHistorySaleCard(item){
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],from=item.from_employee?.name||'Attendant',to=item.to_employee?.name||'Attendant',dispenser=item.dispenser?.name||'Dispenser';
-  const dsrId=t.shift_started_at?dailyReportIdLabel(t.shift_started_at.slice(0,10)):'DSR';
+  const dsrId=dailyReportIdFromTimestamp(t.shift_started_at);
   return '<article class="card compact-confirmed-sale-card admin-history-sale-card admin-history-sale-minimized" data-takeover-id="'+h(t.id)+'" data-dsr-id="'+h(dsrId)+'">'+
     '<button type="button" class="admin-history-sale-head" onclick="toggleAdminHistorySaleCard(this.dataset.id)" data-id="'+h(t.id)+'" aria-expanded="false">'+
       '<span class="admin-history-sale-title"><span class="section-kicker">SALES CONFIRMED</span><strong>'+h(dispenser)+'</strong><small>'+h(from)+' → '+h(to)+'</small><small class="daily-sales-id">'+h(dsrId)+'</small></span>'+
@@ -2146,6 +2146,13 @@ function dailyReportIdLabel(value){
   if(!value)return 'DSR';
   const d=new Date(value+'T00:00:00');
   return Number.isNaN(d.getTime())?String(value)+' DSR':d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' DSR';
+}
+function dailyReportIdFromTimestamp(value){
+  if(!value)return 'DSR';
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return dailyReportIdLabel(String(value).slice(0,10));
+  const localDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+  return dailyReportIdLabel(localDate);
 }
 function updateDailyDsrConfirmButton(card){
   if(!card)return;
