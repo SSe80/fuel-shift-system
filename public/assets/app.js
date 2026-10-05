@@ -2914,9 +2914,35 @@ function filterAdminSalesHistoryPage(){
     box.innerHTML='<div class="card admin-sales-empty"><div class="empty-icon">—</div><strong>No sales history found</strong><p class="muted">Try a different search or date filter.</p></div>';
     return;
   }
-  box.innerHTML=rows.map(renderAdminHistorySaleCard).join('');
+  const groups={};
+  rows.forEach(item=>{
+    const dsrId=dailyReportIdFromTimestamp(item.takeover?.shift_started_at);
+    (groups[dsrId]||(groups[dsrId]=[])).push(item);
+  });
+  box.innerHTML=Object.keys(groups).map(dsrId=>
+    '<section class="admin-full-history-dsr-group" data-dsr-id="'+h(dsrId)+'">'+
+      '<button type="button" class="admin-full-history-dsr-head" onclick="toggleAdminFullHistoryDsrGroup(\''+h(dsrId)+'\')" aria-expanded="false">'+
+        '<span class="admin-full-history-dsr-title"><span class="section-kicker">DSR</span><strong>'+h(dsrId)+'</strong></span>'+
+        '<span class="admin-full-history-dsr-right"><small>'+groups[dsrId].length+' confirmed sale'+(groups[dsrId].length===1?'':'s')+'</small><span class="admin-full-history-dsr-toggle" aria-hidden="true">⌄</span></span>'+
+      '</button>'+
+      '<div class="admin-full-history-dsr-cards" hidden>'+groups[dsrId].map(renderAdminHistorySaleCard).join('')+'</div>'+
+    '</section>'
+  ).join('');
 }
-async function adminSalesHistory(){
+async function toggleAdminFullHistoryDsrGroup(dsrId){
+  const groups=document.querySelectorAll('.admin-full-history-dsr-group');
+  let group=null;
+  groups.forEach(el=>{if(String(el.getAttribute('data-dsr-id'))===String(dsrId))group=el;});
+  if(!group)return;
+  const cards=group.querySelector('.admin-full-history-dsr-cards');
+  const head=group.querySelector('.admin-full-history-dsr-head');
+  const toggle=group.querySelector('.admin-full-history-dsr-toggle');
+  const expanded=group.classList.toggle('expanded');
+  if(cards)cards.hidden=!expanded;
+  if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
+  if(toggle)toggle.textContent=expanded?'⌃':'⌄';
+}
+function adminSalesHistory(){
   try{
     const me=await currentUser();
     if(me.role!=='admin')return location.href='admin-login.html';
