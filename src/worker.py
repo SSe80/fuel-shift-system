@@ -1954,7 +1954,7 @@ def _daily_confirmation_snapshot(report_date):
         m=type_map.get(str(x.get("sale_type_id") or "")) or "Other"; methods[m]=methods.get(m,0)+float(x.get("amount") or 0)
     all_complete=all(x.get("end_time") for x in shifts)
     sales_ready=all(str(x.get("sales_status") or "confirmed")=="confirmed" for x in takeovers)
-    return {"date":report_date.isoformat(),"shift_count":len(shifts),"completed_shift_count":sum(1 for x in shifts if x.get("end_time")),"all_shifts_complete":all_complete,"sales_confirmation_ready":sales_ready,"can_confirm":bool(all_complete and sales_ready),"status":"pending" if all_complete else None,"total_sales_liters":sum(float(x.get("total_sales_liters") or 0) for x in takeovers),"total_sales_amount":sum(methods.values()),"sales_by_method":methods},None,200
+    return {"date":report_date.isoformat(),"shift_count":len(shifts),"completed_shift_count":sum(1 for x in shifts if x.get("end_time")),"all_shifts_complete":all_complete,"sales_confirmation_ready":sales_ready,"can_confirm":bool(all_complete),"status":"pending" if all_complete else None,"total_sales_liters":sum(float(x.get("total_sales_liters") or 0) for x in takeovers),"total_sales_amount":sum(methods.values()),"sales_by_method":methods},None,200
 
 @app.get("/api/reports/daily/confirmations")
 def daily_report_confirmations():
@@ -2000,13 +2000,15 @@ def confirm_daily_report(report_date):
     if err:return jsonify(err),status
     if snap["shift_count"]==0:return jsonify({"error":"No shifts started on this date"}),404
     if not snap["all_shifts_complete"]:return jsonify({"error":"Daily report cannot be confirmed until every shift started on this date has ended.","report_ready":False}),409
-    if not snap["sales_confirmation_ready"]:return jsonify({"error":"Confirm all individual shift sales first, then confirm the combined daily report.","report_ready":False}),409
-    gs,generated=rpc("generate_daily_report",{"p_report_date":report_date,"p_generated_by":session["employee_id"]})
+    # This is the single approval point. The database function atomically
+    # confirms every pending takeover sale for this report date, inserts the
+    # corresponding confirmed sales records, and generates the final report.
+    gs,generated=rpc("confirm_daily_report_sales",{"p_report_date":report_date,"p_admin_id":session["employee_id"]})
     if gs>=400:return jsonify(generated),gs
     now=datetime.now(timezone.utc).isoformat()
     us,updated=sb("daily_report_confirmations",method="PATCH",params={"report_date":"eq."+report_date},body={"total_sales_liters":snap["total_sales_liters"],"total_sales_amount":snap["total_sales_amount"],"sales_by_method":snap["sales_by_method"],"shift_count":snap["shift_count"],"status":"confirmed","confirmed_at":now,"confirmed_by":session["employee_id"],"updated_at":now},prefer="return=representation")
     if us>=400:return jsonify(updated),us
-    return jsonify(updated[0] if isinstance(updated,list) and updated else generated),200
+    return jsonify({"confirmed":True,"report_date":report_date,"takeovers_confirmed":generated.get("takeovers_confirmed",0) if isinstance(generated,dict) else 0,"report":generated.get("report") if isinstance(generated,dict) else generated}),200
 
 @app.get("/api/reports/daily")
 def daily_report():
