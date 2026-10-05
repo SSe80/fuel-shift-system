@@ -2580,13 +2580,43 @@ def daily_report():
                 stat["closing_shift_id"]=last_sid
 
         stat["attendant_shifts"].sort(key=lambda z:str(z.get("started_at") or ""))
-        delta=None
-        if stat.get("opening_reading") is not None and stat.get("closing_reading") is not None:
-            delta=float(stat["closing_reading"])-float(stat["opening_reading"])
+
+        # A physical nozzle can have multiple shifts in one DSR, and the meter
+        # can legitimately be reset/replaced between shifts. Never calculate
+        # the day's meter delta as last_closing - first_opening because that
+        # crosses reset boundaries and can produce a false reconciliation gap.
+        # Sum each valid shift segment independently instead.
+        meter_segments=[]
+        for z in ordered_shifts:
+            sid=str(z.get("id") or "")
+            readings=shift_reading_map.get(sid,[])
+            rr=next((r for r in readings if str(r.get("nozzle_id") or "")==nid
+                     and r.get("opening_reading") is not None
+                     and r.get("closing_reading") is not None),None)
+            if not rr:
+                h=handover_by_shift_id.get(sid) or {}
+                code=str(stat.get("nozzle_code") or "")
+                ho={str((v or {}).get("nozzle_id") or ""):v for v in _json_list(h.get("nozzle_opening_readings"))}
+                hc={str((v or {}).get("nozzle_id") or ""):v for v in _json_list(h.get("nozzle_closing_readings"))}
+                ov=ho.get(code,{}).get("opening_reading")
+                cv=hc.get(code,{}).get("closing_reading")
+                if ov is not None and cv is not None:
+                    rr={"opening_reading":ov,"closing_reading":cv}
+            if rr:
+                ov=float(rr.get("opening_reading"))
+                cv=float(rr.get("closing_reading"))
+                segment_delta=cv-ov
+                meter_segments.append({
+                    "shift_id":sid,
+                    "opening_reading":ov,
+                    "closing_reading":cv,
+                    "meter_delta_liters":segment_delta
+                })
+        delta=sum(float(x.get("meter_delta_liters") or 0) for x in meter_segments) if meter_segments else None
+        stat["meter_segments"]=meter_segments
         stat["meter_delta_liters"]=delta
         stat["meter_difference_liters"]=(float(stat["sales_liters"])-delta) if delta is not None else None
         stat["meter_reconciliation_pct"]=(float(stat["sales_liters"])/delta*100.0) if delta and delta>0 else None
-        stat["meter_delta_liters"]=delta
 
     # Build dispenser -> nozzle hierarchy. A dispenser card contains every
     # configured nozzle that participated in the selected report day.
