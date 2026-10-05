@@ -816,7 +816,13 @@ def update_tank_stock(tank_id):
     # Only move the tank's live balance when this operation is still the
     # latest recorded tank movement. If newer movements exist, this reading
     # remains an audit adjustment for the older operation.
-    event_time=_parse_aware_dt(event.get("discharge_datetime")) if "_parse_aware_dt" in globals() else None
+    try:
+        event_time=datetime.fromisoformat(str(event.get("discharge_datetime") or "").replace("Z","+00:00"))
+        if event_time.tzinfo is None:
+            event_time=event_time.replace(tzinfo=timezone.utc)
+        event_time=event_time.astimezone(timezone.utc)
+    except Exception:
+        event_time=None
     latest_status,latest_rows=sb("tank_movements",params={
         "select":"id,created_at",
         "tank_id":"eq."+tank_id,
