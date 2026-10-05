@@ -3461,3 +3461,89 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
  .daily-report-page .daily-detail-actions button{width:100%}.daily-report-page .daily-detail-head{padding:11px 12px}
  .daily-report-page .daily-report-details{padding:10px}.daily-report-page .daily-detail-head{margin:-10px -10px 12px}
 }
+
+
+/* DSR v3 — dedicated detail-page presentation */
+.daily-report-page .daily-report-details{
+  margin-top:18px;
+  padding:0;
+  border:1px solid #d7e0ea;
+  border-radius:18px;
+  background:#f2f5f8;
+  box-shadow:0 12px 34px rgba(16,24,40,.08);
+  overflow:hidden;
+}
+.daily-report-page .daily-detail-head{
+  position:sticky;
+  top:0;
+  margin:0;
+  padding:16px 18px;
+  min-height:70px;
+  background:rgba(255,255,255,.97);
+  border-bottom:1px solid #dfe6ee;
+  box-shadow:0 2px 10px rgba(16,24,40,.04);
+}
+.daily-report-page .daily-detail-head h2{margin:2px 0 0;font-size:20px;font-weight:900;letter-spacing:-.02em;color:#111827}
+.daily-report-page .daily-detail-head .daily-kicker{margin:0;color:#1264d8;font-size:9px;font-weight:900;letter-spacing:.12em}
+.daily-report-page .daily-detail-head .muted{margin:4px 0 0;font-size:10px}
+.daily-report-page .daily-detail-actions button{min-height:38px;padding:0 13px;font-size:11px;border-radius:10px}
+.daily-report-page .daily-detail-download{box-shadow:0 4px 12px rgba(18,100,216,.18)}
+.daily-report-page .daily-report-details>.daily-status,
+.daily-report-page .daily-report-details>#report-summary{margin-left:18px;margin-right:18px}
+.daily-report-page .daily-report-details>.daily-status{margin-top:14px}
+.daily-report-page .daily-summary-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:12px;margin-bottom:16px}
+.daily-report-page .daily-stat{min-width:0;min-height:86px;padding:13px 12px;border-color:#dfe6ee;border-radius:12px;box-shadow:0 3px 10px rgba(16,24,40,.035)}
+.daily-report-page .daily-stat.primary-stat{grid-column:span 2}
+.daily-report-page .daily-stat b{font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.daily-report-page .daily-stat.primary-stat b{font-size:24px}
+.daily-report-page .daily-report-details>.daily-section{
+  margin:0 18px 12px;
+  padding:15px;
+  border:1px solid #dfe6ee;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 3px 12px rgba(16,24,40,.035);
+}
+.daily-report-page .daily-report-details>.daily-section:last-child{margin-bottom:18px}
+.daily-report-page .daily-report-details .daily-section-head{padding-bottom:10px;margin-bottom:11px;border-bottom:1px solid #edf1f4}
+.daily-report-page .daily-report-details .daily-section-head h2{font-size:16px;margin:0;font-weight:900}
+.daily-report-page .daily-report-details .daily-section-head p{margin:3px 0 0;max-width:760px;line-height:1.45}
+.daily-report-page .daily-report-details .daily-kicker{font-size:8px;color:#1264d8;letter-spacing:.1em}
+.daily-report-page .dsr-dispenser-head,.daily-report-page .dsr-tank-head,.daily-report-page .dsr-shift-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.daily-report-page .dsr-dispenser-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:10px 14px}
+.daily-report-page .dsr-dispenser-meta>div{padding:8px 9px;border:1px solid #e7ebf0;border-radius:9px;background:#fafbfc}
+.daily-report-page .dsr-dispenser-meta span{display:block;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#87919d}
+.daily-report-page .dsr-dispenser-meta b{display:block;margin-top:3px;font-size:11px;font-variant-numeric:tabular-nums}
+.daily-report-page .dsr-nozzles{padding-top:1px}
+.daily-report-page .dsr-reading-grid{grid-template-columns:repeat(4,1fr)}
+.daily-report-page .dsr-tank-grid{grid-template-columns:repeat(3,1fr)}
+.daily-report-page .dsr-shift-grid{grid-template-columns:repeat(3,1fr)}
+.daily-report-page .dsr-tank-performance,.daily-report-page .dsr-nozzle-performance{display:grid;grid-template-columns:repeat(3,1fr);padding:0}
+.daily-report-page .dsr-tank-performance>div,.daily-report-page .dsr-nozzle-performance>div{padding:8px 10px;border-right:1px solid #e7ebf0}
+.daily-report-page .dsr-tank-performance>div:last-child,.daily-report-page .dsr-nozzle-performance>div:last-child{border-right:0}
+.daily-report-page .dsr-tank-performance span,.daily-report-page .dsr-nozzle-performance span{display:block;font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:#87919d}
+.daily-report-page .dsr-tank-performance strong,.daily-report-page .dsr-nozzle-performance strong{display:block;margin-top:2px;font-size:11px;font-variant-numeric:tabular-nums}
+.daily-report-page .dsr-sales-total{box-shadow:0 3px 10px rgba(18,100,216,.05)}
+.daily-report-page .dsr-performance-grid{gap:9px}
+@media(max-width:760px){
+  .daily-report-page .daily-summary-grid{grid-template-columns:repeat(2,1fr)}
+  .daily-report-page .daily-stat.primary-stat{grid-column:1/-1}
+  .daily-report-page .dsr-dispenser-meta{grid-template-columns:repeat(2,1fr)}
+  .daily-report-page .dsr-reading-grid,.daily-report-page .dsr-tank-grid,.daily-report-page .dsr-shift-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .daily-report-page .daily-report-details{margin-top:12px;border-radius:14px}
+  .daily-report-page .daily-detail-head{padding:12px;min-height:64px}
+  .daily-report-page .daily-detail-head h2{font-size:17px}
+  .daily-report-page .daily-detail-actions{flex-direction:row}
+  .daily-report-page .daily-detail-actions button{min-height:34px;padding:0 9px;font-size:10px}
+  .daily-report-page .daily-report-details>.daily-status,.daily-report-page .daily-report-details>#report-summary{margin-left:10px;margin-right:10px}
+  .daily-report-page .daily-report-details>.daily-section{margin-left:10px;margin-right:10px;padding:11px;border-radius:12px}
+  .daily-report-page .daily-summary-grid{gap:7px;margin-top:10px}
+  .daily-report-page .daily-stat{min-height:72px;padding:10px}
+  .daily-report-page .daily-stat.primary-stat b{font-size:20px}
+  .daily-report-page .dsr-dispenser-meta,.daily-report-page .dsr-reading-grid,.daily-report-page .dsr-tank-grid,.daily-report-page .dsr-shift-grid{grid-template-columns:1fr 1fr}
+  .daily-report-page .dsr-nozzle-performance,.daily-report-page .dsr-tank-performance{grid-template-columns:1fr}
+  .daily-report-page .dsr-nozzle-performance>div,.daily-report-page .dsr-tank-performance>div{border-right:0;border-bottom:1px solid #e7ebf0}
+  .daily-report-page .dsr-nozzle-performance>div:last-child,.daily-report-page .dsr-tank-performance>div:last-child{border-bottom:0}
+}
