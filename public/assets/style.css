@@ -3547,3 +3547,24 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .daily-report-page .dsr-nozzle-performance>div,.daily-report-page .dsr-tank-performance>div{border-right:0;border-bottom:1px solid #e7ebf0}
   .daily-report-page .dsr-nozzle-performance>div:last-child,.daily-report-page .dsr-tank-performance>div:last-child{border-bottom:0}
 }
+
+
+/* Sales history — compact DSR sections, collapsed by default */
+.admin-sales-page .admin-history-dsr-group{margin:0 0 14px}
+.admin-sales-page .admin-history-dsr-head{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:8px 0 9px;margin:0;border:0;border-bottom:1px solid #cfd7df;
+  border-radius:0;background:transparent;color:inherit;text-align:left;cursor:pointer;
+}
+.admin-sales-page .admin-history-dsr-head:hover{background:transparent}
+.admin-sales-page .admin-history-dsr-title{display:flex;align-items:baseline;gap:7px;min-width:0}
+.admin-sales-page .admin-history-dsr-head .section-kicker{margin:0;color:#667085;font-size:9px}
+.admin-sales-page .admin-history-dsr-head strong{display:block;font-size:14px;letter-spacing:.01em}
+.admin-sales-page .admin-history-dsr-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.admin-sales-page .admin-history-dsr-right small{color:#7b8794;font-size:10px}
+.admin-sales-page .admin-history-dsr-toggle{
+  width:24px;height:24px;display:grid;place-items:center;border-radius:7px;
+  background:#eef3f8;color:#526273;font-size:16px;font-weight:800;line-height:1;
+}
+.admin-sales-page .admin-history-dsr-cards{display:grid;gap:9px;margin-top:9px}
+.admin-sales-page .admin-history-dsr-cards[hidden]{display:none}
