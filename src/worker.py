@@ -847,8 +847,8 @@ def update_tank(tank_id):
     if auth:return auth
     data=request.get_json(silent=True) or {}
 
-    if "tank_order" in data or "capacity_liters" in data or "active" in data:
-        ts, rows = sb("tanks", params={"id":"eq."+tank_id,"select":"id,tank_code,product,capacity_liters,current_liters"})
+    if "tank_order" in data or "capacity_liters" in data or "active" in data or "calibration_mm" in data or "calibration_liters" in data:
+        ts, rows = sb("tanks", params={"id":"eq."+tank_id,"select":"id,tank_code,product,capacity_liters,current_liters,calibration_mm,calibration_liters"})
         if ts != 200 or not rows:
             return jsonify({"error":"Tank not found"}),404
         tank = rows[0]
@@ -861,6 +861,24 @@ def update_tank(tank_id):
             if float(tank.get("current_liters") or 0) > capacity:
                 return jsonify({"error":"Tank size cannot be below current inventory"}),400
             body["capacity_liters"] = capacity
+
+        if "calibration_mm" in data or "calibration_liters" in data:
+            if "calibration_mm" not in data or "calibration_liters" not in data:
+                return jsonify({"error":"Enter both calibration mm and calibration liters"}),400
+            try:
+                calibration_mm = float(data["calibration_mm"])
+                calibration_liters = float(data["calibration_liters"])
+            except (TypeError,ValueError):
+                return jsonify({"error":"Enter valid calibration millimeters and liters"}),400
+            if calibration_mm <= 0:
+                return jsonify({"error":"Calibration mm must be greater than zero"}),400
+            if calibration_liters < 0:
+                return jsonify({"error":"Calibration liters cannot be negative"}),400
+            effective_capacity = float(data.get("capacity_liters", tank.get("capacity_liters") or 0))
+            if calibration_liters > effective_capacity:
+                return jsonify({"error":"Calibration liters cannot exceed tank capacity"}),400
+            body["calibration_mm"] = calibration_mm
+            body["calibration_liters"] = calibration_liters
 
         if "active" in data:
             requested_active = bool(data["active"])
