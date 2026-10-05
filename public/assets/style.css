@@ -3572,7 +3572,7 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 /* Full Sales History — compact DSR sections */
 .admin-sales-page .admin-sales-page .admin-full-history-month-group{
   margin:0 0 16px;
-  border:2px solid #c6d0da;
+  border:1px solid #4b83bd;
   border-radius:12px;
   background:#fff;
   overflow:hidden;
