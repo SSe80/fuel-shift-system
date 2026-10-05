@@ -2085,7 +2085,8 @@ def confirm_sale_confirmation(takeover_id):
                     # newly moved DSR history card remains fully functional.
                     rpc("generate_daily_report",{
                         "p_report_date":report_day.isoformat(),
-                        "p_generated_by":session["employee_id"]
+                        "p_generated_by":session["employee_id"],
+                        "p_revision_reason":None
                     })
 
     return jsonify(result),200
