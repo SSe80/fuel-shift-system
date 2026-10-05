@@ -54,6 +54,35 @@
         cols=[cols.slice(0,-1).join(''),cols[cols.length-1]];
       }
 
+      // Some spreadsheet exports concatenate the two values and then apply
+      // thousands separators to the combined number. For example:
+      //   115,1000 -> 1,151,000
+      //   1378,25000 -> 137,825,000
+      // Recover that boundary from the calibration pattern: height is a
+      // small 2-4 digit value and liters are whole 500-L increments.
+      if(cols.length===1){
+        const compact=String(cols[0]).replace(/[,\s]/g,'');
+        if(/^\\d+$/.test(compact)){
+          const candidates=[];
+          for(let digits=2;digits<=4;digits++){
+            if(compact.length<=digits) continue;
+            const first=Number(compact.slice(0,digits));
+            const second=Number(compact.slice(digits));
+            if(first>=0 && first<=10000 && second>=500 && second%500===0){
+              candidates.push([String(first),String(second)]);
+            }
+          }
+          if(candidates.length){
+            const previous=rows.length?Number(rows[rows.length-1].height_mm):null;
+            let chosen=candidates.find(pair=>previous!==null && Number(pair[0])>previous);
+            if(!chosen) chosen=candidates[0];
+            cols=orientation==='liters_height'
+              ? [chosen[1],chosen[0]]
+              : chosen;
+          }
+        }
+      }
+
       if(cols.length!==2){
         throw new Error(
           'CSV row '+(i+1)+' has '+cols.length+
