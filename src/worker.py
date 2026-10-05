@@ -1989,7 +1989,9 @@ def daily_report_confirmations():
         snap,err,status=_daily_confirmation_snapshot(d)
         if err:return jsonify(err),status
         row=existing.get(d.isoformat())
-        if not snap["all_shifts_complete"]:
+        if not snap["all_shifts_complete"] or not snap.get("all_handover_recorded") or not snap.get("all_sales_recorded"):
+            # Keep the date out of Pending DSR until every shift has ended,
+            # completed handover, and submitted its sale.
             snap["status"]="waiting"
             snap["id"]=(row or {}).get("id")
             cards.append(snap)
@@ -2014,7 +2016,10 @@ def confirm_daily_report(report_date):
     snap,err,status=_daily_confirmation_snapshot(report_day)
     if err:return jsonify(err),status
     if snap["shift_count"]==0:return jsonify({"error":"No shifts started on this date"}),404
-    if not snap["all_shifts_complete"]:return jsonify({"error":"Daily report cannot be confirmed until every shift started on this date has ended.","report_ready":False}),409
+    if not snap["all_shifts_complete"]:
+        return jsonify({"error":"Daily DSR cannot be confirmed until every shift started on this date has ended.","report_ready":False}),409
+    if not snap.get("all_handover_recorded") or not snap.get("all_sales_recorded"):
+        return jsonify({"error":"Daily DSR is not ready: every completed shift must finish handover and record its sale first.","report_ready":False}),409
     # This is the single approval point. The database function atomically
     # confirms every pending takeover sale for this report date, inserts the
     # corresponding confirmed sales records, and generates the final report.
