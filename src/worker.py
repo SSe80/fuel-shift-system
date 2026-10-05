@@ -1981,7 +1981,7 @@ def _local_date_from_iso(value):
 def _daily_confirmation_snapshot(report_date):
     next_day=report_date+timedelta(days=1)
     ds=report_date.isoformat()+"T00:00:00+03:00"; de=next_day.isoformat()+"T00:00:00+03:00"
-    ss,shifts=sb("shifts",params={"start_time":"gte."+ds,"start_time":"lt."+de,"select":"id,start_time,end_time","order":"start_time.asc","limit":"5000"})
+    ss,shifts=sb("shifts",params={"and":"(start_time.gte."+ds+",start_time.lt."+de+")","select":"id,start_time,end_time","order":"start_time.asc","limit":"5000"})
     if ss!=200:return None,{"error":shifts},ss
     if not shifts:return {"date":report_date.isoformat(),"shift_count":0,"completed_shift_count":0,"all_shifts_complete":False,"sales_confirmation_ready":False,"can_confirm":False,"status":None,"total_sales_liters":0,"total_sales_amount":0,"sales_by_method":{}},None,200
     ids=[str(x["id"]) for x in shifts if x.get("id")]; filt="in.("+",".join(ids)+")"
@@ -2102,8 +2102,7 @@ def daily_report():
     day_end=next_day+"T00:00:00+03:00"
 
     shift_status,day_shifts=sb("shifts",params={
-        "start_time":"gte."+day_start,
-        "start_time":"lt."+day_end,
+        "and":"(start_time.gte."+day_start+",start_time.lt."+day_end+")",
         "select":"id,employee_id,nozzle_id,start_time,end_time,opening_reading,closing_reading,opening_liters,closing_liters,status,opening_tank_liters",
         "order":"start_time.asc","limit":"5000"
     })
@@ -2260,6 +2259,31 @@ def daily_report():
     for row in sales_rows:
         sales_by_shift.setdefault(str(row.get("shift_id")),[]).append(row)
 
+    # Recorded shift-sale amounts come from the payment-method entries attached
+    # to each takeover. These are the amounts the admin actually confirms.
+    # Keep the meter-derived amount separately so the DSR can reconcile both
+    # values without silently substituting one for the other.
+    takeover_sale_amount_by_shift={}
+    for trow in handover_rows:
+        tid=str(trow.get("id") or "")
+        sid=str(trow.get("shift_id") or "")
+        if not tid or not sid:
+            continue
+        takeover_sale_amount_by_shift[sid]=sum(
+            float(v.get("amount") or 0)
+            for v in (sale_rows if False else [])
+        )
+    if handover_rows:
+        takeover_ids=[str(x.get("id")) for x in handover_rows if x.get("id")]
+        if takeover_ids:
+            tsa,tsr=sb("shift_takeover_sales",params={"takeover_id":"in.("+",".join(takeover_ids)+")","select":"takeover_id,amount","limit":"10000"})
+            if tsa==200:
+                for row in tsr:
+                    tid=str(row.get("takeover_id") or "")
+                    sid=next((str(t.get("shift_id")) for t in handover_rows if str(t.get("id"))==tid),None)
+                    if sid:
+                        takeover_sale_amount_by_shift[sid]=takeover_sale_amount_by_shift.get(sid,0)+float(row.get("amount") or 0)
+
     def sales_methods_for_shift(shift_id):
         methods={}
         for sale in sales_by_shift.get(str(shift_id),[]):
@@ -2278,7 +2302,9 @@ def daily_report():
         tank=tank_map.get(str(dispenser.get("tank_id") or h.get("tank_id"))) or {}
         direct_l=sum(float(v.get("quantity_liters") or 0) for v in sales_by_shift.get(sid,[]) if float(v.get("quantity_liters") or 0)>0)
         shift_l=float(h.get("total_sales_liters") or direct_l)
-        shift_a=float(h.get("total_sales_amount") or sum(float(v.get("amount") or 0) for v in sales_by_shift.get(sid,[])))
+        calculated_shift_a=float(h.get("total_sales_amount") or sum(float(v.get("amount") or 0) for v in sales_by_shift.get(sid,[])))
+        recorded_shift_a=takeover_sale_amount_by_shift.get(sid)
+        shift_a=float(recorded_shift_a) if recorded_shift_a is not None else calculated_shift_a
         shift_readings=readings_by_shift.get(sid,[])
         shift_summary.append({
             "shift_id":x.get("id"),
@@ -2293,6 +2319,8 @@ def daily_report():
             "ended_at":x.get("end_time"),
             "sales_liters":shift_l,
             "sales_amount":shift_a,
+            "calculated_sales_amount":calculated_shift_a,
+            "sales_amount_difference":shift_a-calculated_shift_a if recorded_shift_a is not None else 0,
             "tank_opening_liters":float(h.get("tank_opening_liters") or x.get("opening_tank_liters") or 0),
             "tank_closing_liters":float(h.get("tank_closing_liters") or x.get("closing_liters") or 0),
             "tank_purchases_liters":float(h.get("tank_purchases_liters") or 0),
@@ -2559,6 +2587,7 @@ def daily_report():
         stat["meter_delta_liters"]=delta
         stat["meter_difference_liters"]=(float(stat["sales_liters"])-delta) if delta is not None else None
         stat["meter_reconciliation_pct"]=(float(stat["sales_liters"])/delta*100.0) if delta and delta>0 else None
+        stat["meter_delta_liters"]=delta
 
     # Build dispenser -> nozzle hierarchy. A dispenser card contains every
     # configured nozzle that participated in the selected report day.
@@ -2747,7 +2776,7 @@ def generate_report():
     day_start=report_date+"T00:00:00+03:00"
     day_end=(report_day+timedelta(days=1)).isoformat()+"T00:00:00+03:00"
     ss,day_shifts=sb("shifts",params={
-        "start_time":"gte."+day_start,"start_time":"lt."+day_end,
+        "and":"(start_time.gte."+day_start+",start_time.lt."+day_end+")",
         "select":"id,end_time","limit":"5000"
     })
     if ss!=200:return jsonify({"error":day_shifts}),ss
