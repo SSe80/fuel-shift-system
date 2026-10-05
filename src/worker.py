@@ -2456,6 +2456,18 @@ def daily_report():
             "sales_by_method":sales_methods_for_shift(sid)
         })
 
+    # Rebuild station payment totals from the same authoritative source used
+    # by each shift: confirmed takeover sale entries when available, otherwise
+    # direct sales for shifts without a takeover. This prevents payment totals
+    # from diverging from the DSR station sales amount.
+    payment_methods={}
+    sales_by_type={}
+    for z in shift_summary:
+        for method,amount in (z.get("sales_by_method") or {}).items():
+            val=float(amount or 0)
+            payment_methods[method]=payment_methods.get(method,0)+val
+            sales_by_type[method]=sales_by_type.get(method,0)+val
+
     # Combined dispenser/day reconciliation:
     # first shift = opening boundary; last shift = closing boundary.
     # Sales are the sum of every individual shift belonging to that dispenser.
