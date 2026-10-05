@@ -12,7 +12,7 @@
 .purchase-full-history-month-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 .purchase-full-history-month-right small{color:#7b8794;font-size:10px}
 .purchase-full-history-month-toggle{width:25px;height:25px;display:grid;place-items:center;border-radius:7px;background:#e9eef4;color:#526273;font-size:16px;font-weight:800;line-height:1}
-.purchase-full-history-month-body{padding:10px 12px 2px}
+.purchase-full-history-month-body{display:grid;gap:12px;padding:12px 12px 14px}
 .purchase-full-history-month-body[hidden]{display:none}.purchase-history-tools{align-items:center!important;padding:6px;background:#f8fafc;border:1px solid #e6ebf1;border-radius:14px}.purchase-history-tools input,.purchase-history-tools select,.purchase-history-tools button{min-height:42px;border-radius:11px!important}.purchase-history-tools input{flex:1 1 240px;min-width:160px;padding:0 13px;border:1px solid #d0d5dd;background:#fff;font-size:13px;outline:none;box-shadow:0 1px 2px rgba(16,24,40,.03)}.purchase-history-tools input:focus{border-color:#84adff;box-shadow:0 0 0 3px rgba(37,99,235,.10)}.purchase-history-tools select{padding:0 34px 0 12px;border:1px solid #d0d5dd;background:#fff;color:#344054;font-size:12px;font-weight:700}.purchase-history-tools button{padding:0 15px;border:1px solid #d0d5dd;background:#fff;color:#344054;font-size:12px;font-weight:800;cursor:pointer}.purchase-history-tools button:hover{background:#f2f4f7;border-color:#98a2b3}@media(max-width:560px){.purchase-history-tools{display:grid!important;grid-template-columns:1fr 1fr}.purchase-history-tools input{grid-column:1/-1;width:100%;box-sizing:border-box}.purchase-history-tools select,.purchase-history-tools button{width:100%;box-sizing:border-box}}
 .purchase-full-history-card{
   padding:0!important;
@@ -117,6 +117,34 @@
   border-top:1px solid #e9eef3;
   background:#fff;
 }
+.purchase-full-history-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:11px;
+  padding-top:10px;
+  border-top:1px solid #edf1f4;
+}
+.purchase-full-history-actions button{
+  min-height:36px;
+  padding:0 12px;
+  border:1px solid #d5dde5;
+  border-radius:9px;
+  background:#fff;
+  color:#344054;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+.purchase-full-history-actions button:hover{background:#f7f9fb;border-color:#aebdca}
+.purchase-full-history-actions .primary{
+  border-color:#4b83bd;
+  background:#4b83bd;
+  color:#fff;
+}
+.purchase-full-history-actions .primary:hover{background:#3e73a7;border-color:#3e73a7}
+.purchase-full-history-card + .purchase-full-history-card{margin-top:0}
 .purchase-full-history-body[hidden]{display:none}
 .purchase-full-history-grid{
   display:grid;
@@ -156,6 +184,8 @@
   .purchase-full-history-right .badge{padding:4px 6px;font-size:8px}
   .purchase-full-history-toggle{width:27px;height:27px}
   .purchase-full-history-grid{grid-template-columns:1fr 1fr}
+  .purchase-full-history-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .purchase-full-history-actions button{width:100%;padding:0 8px}
 }
 </style></head>
 <body class="admin-purchases-page" data-app-page="adminPurchaseHistory"><main class="wrap">
@@ -188,6 +218,17 @@ window.toggleFullPurchaseHistoryCard=function(id){
  const open=card.classList.toggle('expanded'); const body=card.querySelector('.purchase-full-history-body'); const toggle=card.querySelector('.purchase-full-history-toggle'); const head=card.querySelector('.purchase-full-history-head');
  if(body)body.hidden=!open;if(head)head.setAttribute('aria-expanded',open?'true':'false');if(toggle)toggle.textContent=open?'⌃':'⌄';
 };
+window.downloadFullPurchaseHistoryPdf=function(id){
+ const p=records.find(x=>String(x.id)===String(id));
+ if(!p){return;}
+ window.currentPurchaseDetailId=id;
+ window.currentPurchaseDetailData=p;
+ if(typeof window.downloadPurchaseDetailPdf==='function'){
+  window.downloadPurchaseDetailPdf();
+ }else{
+  if(typeof toast==='function')toast('Purchase PDF is not available.');
+ }
+};
 window.toggleFullPurchaseHistoryMonth=function(monthKey){
  const group=document.querySelector('.purchase-full-history-month-group[data-month-key="'+CSS.escape(String(monthKey))+'"]');if(!group)return;
  const body=group.querySelector('.purchase-full-history-month-body'),head=group.querySelector('.purchase-full-history-month-head'),toggle=group.querySelector('.purchase-full-history-month-toggle');
@@ -218,7 +259,19 @@ window.renderFullPurchaseHistory=function(){
   const purchaseDate=p.purchase_date||p.created_at; const discharged=p.discharged_at;
   const comps=Array.isArray(p.compartment_liters)?p.compartment_liters:[]; const delivered=comps.reduce((s,v)=>s+Number(v||0),0);
   const history=Array.isArray(p.discharge_history)?p.discharge_history:[]; const tanks=[...new Set(history.map(e=>e?.tank_code||e?.tank_id).filter(Boolean))].join(', ')||'—';
-  return '<article class="purchase-card purchase-full-history-card" data-id="'+esc(p.id)+'"><button type="button" class="purchase-full-history-head" onclick="toggleFullPurchaseHistoryCard(this.dataset.id)" data-id="'+esc(p.id)+'" aria-expanded="false"><span class="purchase-full-history-title"><span class="dot"></span><span><strong>'+esc(invoice)+'</strong><small>'+esc(product)+' · '+esc(purchaseDate?new Date(purchaseDate).toLocaleString():'—')+'</small></span></span><span class="purchase-full-history-right"><span class="badge">✓ RECORDED</span><span class="purchase-full-history-toggle">⌄</span></span></button><div class="purchase-full-history-body" hidden><div class="purchase-full-history-grid"><div><span>Delivered quantity</span><strong>'+esc(delivered.toLocaleString())+' L</strong></div><div><span>Invoice</span><strong>'+esc(p.invoice_number||'—')+'</strong></div><div><span>Purchase date</span><strong>'+esc(purchaseDate?new Date(purchaseDate).toLocaleString():'—')+'</strong></div><div><span>Discharge date</span><strong>'+esc(discharged?new Date(discharged).toLocaleString():'—')+'</strong></div><div><span>Tank</span><strong>'+esc(tanks)+'</strong></div><div><span>Driver</span><strong>'+esc(p.driver_name||'—')+'</strong></div></div></div></article>';
+  return '<article class="purchase-card purchase-full-history-card" data-id="'+esc(p.id)+'">'+
+   '<button type="button" class="purchase-full-history-head" onclick="toggleFullPurchaseHistoryCard(this.dataset.id)" data-id="'+esc(p.id)+'" aria-expanded="false">'+
+    '<span class="purchase-full-history-title"><span class="dot"></span><span><strong>'+esc(invoice)+'</strong><small>'+esc(product)+' · '+esc(purchaseDate?new Date(purchaseDate).toLocaleString():'—')+'</small></span></span>'+
+    '<span class="purchase-full-history-right"><span class="badge">✓ RECORDED</span><span class="purchase-full-history-toggle">⌄</span></span>'+
+   '</button>'+
+   '<div class="purchase-full-history-body" hidden>'+
+    '<div class="purchase-full-history-grid"><div><span>Delivered quantity</span><strong>'+esc(delivered.toLocaleString())+' L</strong></div><div><span>Invoice</span><strong>'+esc(p.invoice_number||'—')+'</strong></div><div><span>Purchase date</span><strong>'+esc(purchaseDate?new Date(purchaseDate).toLocaleString():'—')+'</strong></div><div><span>Discharge date</span><strong>'+esc(discharged?new Date(discharged).toLocaleString():'—')+'</strong></div><div><span>Tank</span><strong>'+esc(tanks)+'</strong></div><div><span>Driver</span><strong>'+esc(p.driver_name||'—')+'</strong></div></div>'+
+    '<div class="purchase-full-history-actions">'+
+      '<button type="button" onclick="toggleFullPurchaseHistoryCard(\''+esc(p.id)+'\')">Collapse</button>'+
+      '<button type="button" class="primary" onclick="downloadFullPurchaseHistoryPdf(\''+esc(p.id)+'\')">Download PDF</button>'+
+    '</div>'+
+   '</div>'+
+  '</article>';
  };
  box.innerHTML=monthKeys.map(monthKey=>{
   const monthDate=new Date(monthKey==='unknown'?'invalid':monthKey+'-01T00:00:00');
