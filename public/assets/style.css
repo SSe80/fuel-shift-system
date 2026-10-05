@@ -2817,9 +2817,9 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .admin-sales-page .admin-sale-context{grid-template-columns:1fr}
 }
 
-/* Pending sales cards — simple border and white info boxes */
+/* Pending sales cards — visible outer border and white info boxes */
 .admin-sales-page .admin-sale-confirm-card{
-  border:2px solid #cfd7df;
+  border:3px solid #9aa8b5;
   box-shadow:none;
 }
 .admin-sales-page .admin-sale-confirm-card::before{
