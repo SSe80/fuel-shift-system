@@ -2156,12 +2156,26 @@ function dailyReportIdFromTimestamp(value){
 function updateDailyDsrConfirmButton(card){
   if(!card)return;
   const checks=Array.from(card.querySelectorAll('.daily-dsr-method-check'));
+  const selectAll=card.querySelector('.daily-dsr-select-all');
   const button=card.querySelector('[data-confirm-dsr]');
-  if(button)button.disabled=checks.length===0||checks.some(x=>!x.checked);
+  const ready=checks.length>0&&checks.every(x=>x.checked);
+  if(selectAll){
+    selectAll.checked=ready;
+    selectAll.indeterminate=checks.some(x=>x.checked)&&!ready;
+  }
+  if(button)button.disabled=checks.length===0||!ready;
 }
 function bindDailyDsrChecks(){
   document.querySelectorAll('.daily-confirm-card').forEach(card=>{
-    card.querySelectorAll('.daily-dsr-method-check').forEach(check=>check.addEventListener('change',()=>updateDailyDsrConfirmButton(card)));
+    const checks=Array.from(card.querySelectorAll('.daily-dsr-method-check'));
+    checks.forEach(check=>check.addEventListener('change',()=>updateDailyDsrConfirmButton(card)));
+    const selectAll=card.querySelector('.daily-dsr-select-all');
+    if(selectAll){
+      selectAll.addEventListener('change',()=>{
+        checks.forEach(check=>{ if(!check.disabled)check.checked=selectAll.checked; });
+        updateDailyDsrConfirmButton(card);
+      });
+    }
     updateDailyDsrConfirmButton(card);
   });
 }
