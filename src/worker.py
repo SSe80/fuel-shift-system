@@ -2044,7 +2044,7 @@ def daily_report():
     })
     handover_status,handover_rows=sb("shift_takeovers",params={
         "shift_id":shift_id_filter,
-        "select":"id,shift_id,from_employee_id,to_employee_id,shift_started_at,shift_ended_at,total_sales_liters,total_sales_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_purchases_liters,tank_sales_liters,tank_variance_liters,tank_variance_pct,sales_status,sales_submitted_at,sales_confirmed_at,status",
+        "select":"id,shift_id,from_employee_id,to_employee_id,shift_started_at,shift_ended_at,total_sales_liters,total_sales_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_sales_liters,tank_variance_liters,tank_variance_pct,sales_status,sales_submitted_at,sales_confirmed_at,status",
         "order":"shift_ended_at.asc","limit":"5000"
     })
     nozzle_reading_status,nozzle_reading_rows=sb("shift_nozzle_readings",params={
