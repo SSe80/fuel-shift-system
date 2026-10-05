@@ -3085,6 +3085,31 @@ def daily_report():
             "percentage":(float(val.get("liters") or 0)/station_l*100.0) if station_l else 0
         })
     tank_diff_total=sum(float(x.get("difference_liters") or 0) for x in tank_details)
+    # Discharge attribution is an audit layer only. These totals describe
+    # timestamp/shift matching and must never alter the station-wide DSR
+    # purchase ledger or tank reconciliation totals.
+    discharge_audit_operations=sum(int(x.get("discharge_operation_count") or 0) for x in tank_details)
+    discharge_audit_inside=sum(int(x.get("discharge_operation_count") or 0) for x in tank_details if False)
+    discharge_audit_inside=sum(
+        1 for tank in tank_details
+        for op in (tank.get("discharge_operations") or [])
+        if op.get("shift_attribution_status")=="inside_shift"
+    )
+    discharge_audit_outside=sum(
+        1 for tank in tank_details
+        for op in (tank.get("discharge_operations") or [])
+        if op.get("shift_attribution_status")=="outside_shift"
+    )
+    discharge_audit_ambiguous=sum(
+        1 for tank in tank_details
+        for op in (tank.get("discharge_operations") or [])
+        if op.get("shift_attribution_status")=="ambiguous_overlap"
+    )
+    discharge_audit_invalid=sum(
+        1 for tank in tank_details
+        for op in (tank.get("discharge_operations") or [])
+        if op.get("shift_attribution_status")=="invalid_timestamp"
+    )
     avg_liters_per_shift=(station_l/len(shift_summary)) if shift_summary else 0
     avg_sales_per_shift=(station_a/len(shift_summary)) if shift_summary else 0
     for disp in dispenser_details:
@@ -3103,6 +3128,16 @@ def daily_report():
         "average_liters_per_shift":avg_liters_per_shift,
         "average_sales_per_shift":avg_sales_per_shift,
         "tank_difference_liters":tank_diff_total,
+        "discharge_attribution":{
+            "operation_count":discharge_audit_operations,
+            "inside_shift_count":discharge_audit_inside,
+            "outside_shift_count":discharge_audit_outside,
+            "ambiguous_overlap_count":discharge_audit_ambiguous,
+            "invalid_timestamp_count":discharge_audit_invalid,
+            "outside_shift_liters":sum(float(x.get("discharge_outside_shift_liters") or 0) for x in tank_details),
+            "ambiguous_overlap_liters":sum(float(x.get("discharge_ambiguous_shift_liters") or 0) for x in tank_details),
+            "audit_only":True
+        },
         "average_nozzle_reconciliation_pct":(
             sum(float(x.get("meter_reconciliation_pct")) for x in nozzle_stats.values() if x.get("meter_reconciliation_pct") is not None)/
             max(1,len([x for x in nozzle_stats.values() if x.get("meter_reconciliation_pct") is not None]))
