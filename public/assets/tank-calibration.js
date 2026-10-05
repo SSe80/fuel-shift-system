@@ -4,35 +4,68 @@
   function parseCalibrationCsv(text){
     const rows=[];
     const lines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/);
+    let orientation='height_liters';
+
     for(let i=0;i<lines.length;i++){
       const raw=lines[i].trim();
       if(!raw) continue;
-      const cols=raw.split(/[,;\t]/).map(x=>x.trim().replace(/^"|"$/g,''));
-      if(i===0 && /height/i.test(cols[0]) && /liter/i.test(cols[1])) continue;
-      if(cols.length<2) throw new Error('CSV row '+(i+1)+' must contain height_mm and liters.');
 
-      // Accept normal CSV (height,liter) and also values such as "1,000,500"
-      // when the comma is a thousands separator rather than a column separator.
-      let heightText, litersText;
-      if(cols.length===2){
-        heightText=cols[0]; litersText=cols[1];
-      }else if(cols.length===3 && /^\\d+$/.test(cols[0]) && /^\\d+$/.test(cols[1]) && /^\\d+$/.test(cols[2])){
-        // Ambiguous 3-column CSV: prefer the documented height_mm,liters format.
-        // A row like 1000,500 must never be silently interpreted as height 1.
-        heightText=cols[0]; litersText=cols.slice(1).join('');
-      }else{
-        throw new Error('CSV row '+(i+1)+' has '+cols.length+' columns. Use height_mm,liters (for example 70,500).');
+      const cols=raw.split(/[,;\t]/).map(x=>x.trim().replace(/^"|"$/g,''));
+
+      // Detect the column order from the header. This also supports the
+      // user's source format: Liters,Height mm.
+      if(/height/i.test(raw) && /liter/i.test(raw)){
+        const heightIndex=cols.findIndex(x=>/height/i.test(x));
+        const litersIndex=cols.findIndex(x=>/liter/i.test(x));
+        if(heightIndex>=0 && litersIndex>=0){
+          orientation=heightIndex<litersIndex?'height_liters':'liters_height';
+        }
+        continue;
       }
-      const height=Number(heightText.replace(/,/g,''));
-      const liters=Number(litersText.replace(/,/g,''));
-      if(!Number.isFinite(height)||!Number.isFinite(liters)) throw new Error('CSV row '+(i+1)+' contains an invalid number.');
+
+      let heightText, litersText;
+
+      if(cols.length===2){
+        heightText=cols[0];
+        litersText=cols[1];
+        if(orientation==='liters_height'){
+          heightText=cols[1];
+          litersText=cols[0];
+        }
+      }else if(cols.length===3 && cols.every(x=>/^\d+(?:\.\d+)?$/.test(x))){
+        // Common exported format when thousands separators are present:
+        // 1,000,115  => 1000 liters, 115 mm
+        const first=cols[0]+cols[1];
+        const second=cols[2];
+        if(orientation==='liters_height'){
+          litersText=first;
+          heightText=second;
+        }else{
+          heightText=first;
+          litersText=second;
+        }
+      }else{
+        throw new Error('CSV row '+(i+1)+' has '+cols.length+' columns. Use height_mm,liters (for example 70,500), or upload the original Liters,Height mm CSV.');
+      }
+
+      const height=Number(String(heightText).replace(/,/g,''));
+      const liters=Number(String(litersText).replace(/,/g,''));
+      if(!Number.isFinite(height)||!Number.isFinite(liters)){
+        throw new Error('CSV row '+(i+1)+' contains an invalid number.');
+      }
       if(height<0||liters<0) throw new Error('CSV row '+(i+1)+' cannot contain negative values.');
       rows.push({height_mm:height,liters:liters});
     }
-    rows.sort((a,b)=>a.height_mm-b.height_mm);
+
     if(rows.length<2) throw new Error('CSV must contain at least two calibration points.');
+
     for(let i=1;i<rows.length;i++){
-      if(rows[i].height_mm===rows[i-1].height_mm) throw new Error('Duplicate calibration height: '+rows[i].height_mm+' mm (CSV rows '+(rows.findIndex(x=>x===rows[i-1])+1)+' and '+(rows.findIndex(x=>x===rows[i])+1)+'). Check that height_mm values are unique.');
+      if(rows[i].height_mm<=rows[i-1].height_mm){
+        if(rows[i].height_mm===rows[i-1].height_mm){
+          throw new Error('Duplicate calibration height: '+rows[i].height_mm+' mm (CSV rows '+(i+1)+' and '+(i+2)+').');
+        }
+        throw new Error('Calibration heights must be strictly increasing. CSV row '+(i+2)+' has '+rows[i].height_mm+' mm after '+rows[i-1].height_mm+' mm.');
+      }
     }
     return rows;
   }
