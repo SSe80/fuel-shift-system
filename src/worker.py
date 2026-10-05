@@ -997,7 +997,8 @@ def update_nozzle(nozzle_id):
         body["tank_id"]=new_tank_id
     if "tank_order" in data:
         try: order=int(data["tank_order"])
-        except (TypeError,ValueError): return jsonify({"error":"Invalid dispenser order"}),400        if order<1:return jsonify({"error":"Dispenser order must be 1 or greater"}),400
+        except (TypeError,ValueError): return jsonify({"error":"Invalid dispenser order"}),400
+        if order<1:return jsonify({"error":"Dispenser order must be 1 or greater"}),400
         code_product=new_product
         ps,pr=sb("products",params={"name":"eq."+code_product,"select":"name,code_name","limit":"1"})
         if ps!=200 or not pr:return jsonify({"error":"Product not found"}),404
