@@ -2415,6 +2415,8 @@ async function loadDailyReport(){
     const perfRows=[
       ['Fuel sold',liters(perf.total_sales_liters)+' L'],
       ['Sales amount',money(perf.total_sales_amount)],
+      ['Meter-calculated sales',money(perf.calculated_sales_amount||0)],
+      ['Recorded − meter',money(perf.sales_amount_difference||0)],
       ['Average liters / shift',liters(perf.average_liters_per_shift)+' L'],
       ['Average sales / shift',money(perf.average_sales_per_shift)],
       ['Dispensers',Number(perf.dispenser_count||0)],
