@@ -2295,7 +2295,6 @@ async function loadDailyReportConfirmations(){
   }
 }
 async function previewDailyReport(){
-  const dateEl=document.getElementById('daily-report-date-cards');
   try{
     const rows=await api('/api/reports/daily/confirmations');
     const list=Array.isArray(rows)?rows:[];
@@ -2306,25 +2305,58 @@ async function previewDailyReport(){
       toast('No DSR data is available for preview yet.');
       return;
     }
+
     const date=available[0].date;
-    const r=await api('/api/reports/daily?date='+encodeURIComponent(date));
-    const s=r.summary||{}, p=r.dsr_performance||{};
-    const item={
-      date,
-      confirmed_at:null,
-      total_sales_liters:p.total_sales_liters||s.sales_liters||available[0].total_sales_liters||0,
-      total_sales_amount:p.total_sales_amount||s.sales_amount||available[0].total_sales_amount||0,
-      shift_count:Array.isArray(r.shift_summary)?r.shift_summary.length:Number(s.shift_count||available[0].shift_count||0),
-      dispenser_count:Array.isArray(r.dsr_dispenser_details)?r.dsr_dispenser_details.length:Number(s.dispenser_count||available[0].dispenser_count||0)
-    };
-    if(dateEl)dateEl.innerHTML=renderDailyPreviewHistoryCard(item);
     const input=document.getElementById('report-date');
     if(input)input.value=date;
-    window.scrollTo({top:0,behavior:'smooth'});
+
+    // Reuse the authoritative DSR detail renderer, then move its populated
+    // sections into a dedicated report-paper modal. Nothing is confirmed or
+    // written to the DSR history by preview mode.
+    await loadDailyReport();
+
+    const details=document.getElementById('daily-report-details');
+    const modal=document.getElementById('daily-dsr-preview-modal');
+    const paper=document.getElementById('daily-dsr-preview-paper');
+    if(!details || !modal || !paper)throw new Error('DSR preview layout is unavailable');
+
+    const sourceSummary=document.getElementById('report-summary');
+    const sourceStatus=document.getElementById('report-status');
+    const sourceSections=details.querySelectorAll(':scope > section');
+
+    paper.innerHTML=
+      '<div class="daily-preview-paper-head">'+
+        '<div><span class="daily-preview-paper-kicker">STATION DAILY RECONCILIATION</span>'+
+        '<h2>Daily Sales Report</h2>'+
+        '<p>'+h(dailyReportIdLabel(date))+'</p></div>'+
+        '<span class="daily-preview-paper-badge">DESIGN PREVIEW</span>'+
+      '</div>'+
+      '<div class="daily-preview-paper-meta">'+
+        '<span>Report date <b>'+h(dailyReportIdLabel(date))+'</b></span>'+
+        '<span>Status <b>Preview · not confirmed</b></span>'+
+      '</div>'+
+      '<div class="daily-preview-paper-status">'+h(sourceStatus?.textContent||'Reconciliation report')+'</div>'+
+      '<div class="daily-preview-paper-summary">'+(sourceSummary?.innerHTML||'')+'</div>'+
+      Array.from(sourceSections).map(section=>'<section class="daily-preview-paper-section">'+section.innerHTML+'</section>').join('')+
+      '<div class="daily-preview-paper-foot"><span>DSR design preview</span><span>'+h(new Date().toLocaleDateString())+'</span></div>';
+
+    details.hidden=true;
+    document.body.classList.remove('daily-detail-open');
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+    document.body.classList.add('daily-preview-open');
   }catch(e){
     console.error('DSR preview failed',e);
     toast('Could not load DSR preview: '+String(e.message||'Request failed'));
   }
+}
+function closeDailyDsrPreview(){
+  const modal=document.getElementById('daily-dsr-preview-modal');
+  if(modal){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+  }
+  document.body.classList.remove('daily-preview-open');
 }
 function renderDailyPreviewHistoryCard(item){
   const dateLabel=dailyReportIdLabel(item.date);
@@ -2421,6 +2453,9 @@ function closeDailyReportDetail(){
   document.body.classList.remove('daily-detail-open');
   window.scrollTo({top:0,behavior:'smooth'});
 }
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape')closeDailyDsrPreview();
+});
 function selectDailyReportDate(date){
   const input=document.getElementById('report-date');
   if(input)input.value=date;
