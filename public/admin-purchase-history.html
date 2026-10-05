@@ -147,7 +147,16 @@
   color:#101828;
   overflow-wrap:anywhere;
 }
-@media(max-width:560px){.purchase-full-history-grid{grid-template-columns:1fr 1fr}.purchase-full-history-title strong{font-size:13px}}
+@media(max-width:560px){
+  .purchase-full-history-head{min-height:70px;padding:12px 11px 12px 13px;gap:8px}
+  .purchase-full-history-title{gap:9px}
+  .purchase-full-history-title strong{font-size:13px}
+  .purchase-full-history-title small{font-size:10px}
+  .purchase-full-history-right{gap:5px}
+  .purchase-full-history-right .badge{padding:4px 6px;font-size:8px}
+  .purchase-full-history-toggle{width:27px;height:27px}
+  .purchase-full-history-grid{grid-template-columns:1fr 1fr}
+}
 </style></head>
 <body class="admin-purchases-page" data-app-page="adminPurchaseHistory"><main class="wrap">
 <header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchase History</h1><p class="muted">All purchases with completed tank stock recording.</p></div><a class="purchase-back" href="admin-purchases.html">← Purchases</a></header>
