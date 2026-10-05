@@ -1197,8 +1197,7 @@
 .admin-settings-page .settings-item-card .dispenser-main-body{
   display:none;
 }
-.admin-settings-page .settings-item-card.expanded .dispenser-main-body{
-  display:block;
+.admin-settings-page .settings-item-card.expanded .dispenser-main-body{  display:block;
 }
 .admin-settings-page .settings-item-card .dispenser-card-actions{
   margin-top:0;
@@ -2397,8 +2396,7 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 .daily-two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .daily-list{display:grid;gap:7px}
 .daily-list-row{display:flex;justify-content:space-between;align-items:center;padding:12px 13px;border:1px solid #edf1f5;border-radius:11px;background:#f8fafc}
-.daily-list-row span{font-size:13px;color:#475467}
-.daily-list-row b{font-size:13px}
+.daily-list-row span{font-size:13px;color:#475467}.daily-list-row b{font-size:13px}
 .daily-shift-list{display:grid;gap:9px}
 .daily-shift-card{padding:14px;border:1px solid #e6ebf1;border-radius:14px;background:#fbfcfe}
 .daily-shift-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding-bottom:11px;border-bottom:1px solid #edf1f5}
@@ -2641,3 +2639,70 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 .daily-detail-close{min-height:38px;padding:8px 13px;border:1px solid #d8e0e8;border-radius:10px;background:#f8fafc;color:#344054;font-weight:800;cursor:pointer}
 .daily-detail-close:hover{background:#eef3f8}
 @media(max-width:500px){.daily-detail-head{padding:14px}.daily-detail-head h2{font-size:18px}.daily-detail-close{min-height:36px;padding:7px 10px}}
+
+/* DSR Detail — dispenser, nozzle, tank and performance sections */
+.dsr-dispenser-list,.dsr-tank-list{display:grid;gap:14px}
+.dsr-dispenser-card,.dsr-tank-card{border:1px solid #e2e8f0;border-radius:17px;background:#fbfcfe;overflow:hidden}
+.dsr-dispenser-head,.dsr-tank-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:16px;border-bottom:1px solid #e8edf2;background:#fff}
+.dsr-dispenser-head h3,.dsr-tank-head h3{margin:2px 0 3px;font-size:17px;letter-spacing:-.02em}
+.dsr-dispenser-head p,.dsr-tank-head p{margin:0;color:#667085;font-size:11px}
+.dsr-dispenser-total{text-align:right;display:flex;flex-direction:column;gap:2px}
+.dsr-dispenser-total b{font-size:20px;letter-spacing:-.02em}
+.dsr-dispenser-total span{font-size:12px;color:#475467}
+.dsr-dispenser-total small{font-size:10px;color:#667085}
+.dsr-dispenser-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#e8edf2;border-bottom:1px solid #e8edf2}
+.dsr-dispenser-meta>div{padding:11px 13px;background:#fff}
+.dsr-dispenser-meta span,.dsr-reading-grid span,.dsr-nozzle-performance span,.dsr-tank-grid span,.dsr-tank-performance span,.dsr-performance-metric span{display:block;color:#7b8794;font-size:10px;font-weight:750}
+.dsr-dispenser-meta b{display:block;margin-top:4px;font-size:12px;color:#344054}
+.dsr-nozzles{padding:14px}
+.dsr-subhead{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:850;color:#667085;margin-bottom:8px}
+.dsr-nozzle-card{padding:13px;border:1px solid #e4eaf0;border-radius:14px;background:#fff;margin-top:9px}
+.dsr-nozzle-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.dsr-nozzle-head h4{margin:2px 0 2px;font-size:14px}
+.dsr-nozzle-head p{margin:0;color:#667085;font-size:10px}
+.dsr-percent,.dsr-tank-status{padding:5px 8px;border-radius:999px;background:#eef5ff;color:#1264d8;font-size:10px;font-weight:850;white-space:nowrap}
+.dsr-reading-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:11px}
+.dsr-reading-grid>div,.dsr-tank-grid>div{padding:10px;border-radius:10px;background:#f5f8fb}
+.dsr-reading-grid b,.dsr-tank-grid b{display:block;margin-top:4px;font-size:13px;overflow-wrap:anywhere}
+.dsr-reading-grid small{display:block;margin-top:3px;color:#98a2b3;font-size:9px}
+.dsr-nozzle-performance,.dsr-tank-performance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px}
+.dsr-nozzle-performance>div,.dsr-tank-performance>div{padding:9px 10px;border:1px solid #edf1f5;border-radius:10px;background:#fbfcfe}
+.dsr-nozzle-performance strong,.dsr-tank-performance strong{display:block;margin-top:3px;font-size:12px}
+.dsr-attendants{margin-top:11px;padding-top:10px;border-top:1px solid #edf1f5}
+.dsr-attendant-shift{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:11px}
+.dsr-attendant-shift:last-child{border-bottom:0}
+.dsr-attendant-shift small{color:#667085}
+.dsr-attendant-shift strong{font-size:11px}
+.dsr-tank-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+.dsr-tank-status.ok{background:#ecfdf3;color:#15803d}.dsr-tank-status.positive{background:#fff7e8;color:#a15c00}.dsr-tank-status.negative{background:#fff1f3;color:#b42318}
+.dsr-tank-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:13px}
+.dsr-tank-grid b.positive{color:#a15c00}.dsr-tank-grid b.negative{color:#b42318}
+.dsr-tank-grid small{display:block;margin-top:3px;color:#98a2b3;font-size:9px}
+.dsr-sales-summary{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.dsr-sales-column{padding:13px;border:1px solid #e5eaf0;border-radius:14px;background:#fbfcfe}
+.dsr-sales-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #e9eef3}
+.dsr-sales-row:last-child{border-bottom:0}
+.dsr-sales-row b{font-size:12px}
+.dsr-sales-row small{display:block;margin-top:2px;color:#667085;font-size:9px}
+.dsr-sales-row>strong{font-size:12px}
+.dsr-sales-row>span{min-width:50px;text-align:right;font-size:10px;font-weight:850;color:#1264d8}
+.dsr-performance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.dsr-performance-metric{padding:13px;border:1px solid #e4eaf0;border-radius:13px;background:#fbfcfe}
+.dsr-performance-metric b{display:block;margin-top:5px;font-size:16px;letter-spacing:-.01em}
+@media(max-width:760px){
+  .dsr-reading-grid{grid-template-columns:1fr 1fr}
+  .dsr-tank-list,.dsr-sales-summary{grid-template-columns:1fr}
+  .dsr-performance-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:500px){
+  .dsr-dispenser-head,.dsr-tank-head{padding:14px}
+  .dsr-dispenser-total b{font-size:17px}
+  .dsr-dispenser-meta{grid-template-columns:1fr 1fr}
+  .dsr-dispenser-meta>div:last-child{grid-column:1/-1}
+  .dsr-nozzle-head{flex-direction:column}
+  .dsr-nozzle-performance,.dsr-tank-performance{grid-template-columns:1fr}
+  .dsr-tank-grid{grid-template-columns:1fr 1fr}
+  .dsr-attendant-shift{grid-template-columns:1fr auto}
+  .dsr-attendant-shift strong{grid-column:2}
+  .dsr-performance-grid{grid-template-columns:1fr 1fr}
+}
