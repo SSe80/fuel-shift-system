@@ -3829,3 +3829,18 @@ body.daily-preview-open{overflow:hidden}
 .dsr-discharge-shift.warning{color:#9a6700}
 .dsr-discharge-shift.negative{color:#b42318}
 .dsr-discharge-attribution-note{margin-top:8px;padding:8px 10px;border-radius:9px;background:rgba(180,35,24,.06);border:1px solid rgba(180,35,24,.14);font-size:11px;font-weight:600;line-height:1.4}
+
+/* DSR discharge attribution audit summary */
+.dsr-discharge-audit-block{grid-column:1/-1}
+.dsr-audit-note{margin:0 0 12px;color:#7b8490;font-size:11px;line-height:1.45}
+.dsr-discharge-audit-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.dsr-discharge-audit-grid>div{padding:10px 11px;border:1px solid #e5e8ec;border-radius:9px;background:#fafbfc}
+.dsr-discharge-audit-grid span{display:block;font-size:10px;color:#7b8490;margin-bottom:4px}
+.dsr-discharge-audit-grid b{font-size:17px;color:#26313b}
+.dsr-discharge-audit-grid .ok b{color:#18794e}
+.dsr-discharge-audit-grid .negative b{color:#b42318}
+.dsr-discharge-audit-grid .warning b{color:#9a6700}
+.dsr-discharge-audit-liters{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:10px;padding-top:9px;border-top:1px solid #edf0f2;font-size:11px}
+.dsr-discharge-audit-liters span{color:#7b8490}
+.dsr-discharge-audit-liters b{color:#26313b}
+@media(max-width:760px){.dsr-discharge-audit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
