@@ -3795,6 +3795,17 @@ body.daily-preview-open{overflow:hidden}
 
 /* DSR tank shift reconciliation */
 .dsr-tank-shifts{margin-top:14px;border-top:1px solid #e7ebf0;padding-top:12px}
+.dsr-tank-discharge-row{display:grid;grid-template-columns:1.35fr repeat(5,minmax(82px,1fr));gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid #edf0f3;font-size:12px}
+.dsr-tank-discharge-row:last-child{border-bottom:0}
+.dsr-tank-discharge-row>div{display:flex;flex-direction:column;gap:3px}
+.dsr-tank-discharge-row small{font-size:10px;color:#7b8490}
+.dsr-tank-discharge-row span{display:flex;flex-direction:column;gap:2px;color:#7b8490}
+.dsr-tank-discharge-row span strong{color:#1d2733;font-size:12px}
+.dsr-tank-discharge-row span:first-of-type strong{color:#18794e}
+@media(max-width:700px){
+  .dsr-tank-discharge-row{grid-template-columns:1fr 1fr 1fr}
+  .dsr-tank-discharge-row>div{grid-column:1/-1}
+}
 .dsr-tank-shift-row{position:relative;display:grid;grid-template-columns:1.35fr repeat(5,minmax(78px,1fr));gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid #edf0f3;font-size:12px}
 .dsr-tank-shift-row:last-child{border-bottom:0}
 .dsr-tank-shift-row>div{display:flex;flex-direction:column;gap:3px}
