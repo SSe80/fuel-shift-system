@@ -3194,7 +3194,10 @@ def daily_report():
                 prev_close=float(rows[idx-1][1].get("tank_closing_liters") or 0)
                 continuity_adjustment=shift_open-prev_close
                 running_adjustment+=continuity_adjustment
-            shift_expected=shift_open+continuity_adjustment+shift_purchase-shift_sales
+            # Use authoritative nozzle sales in the stock equation.
+            # Tank-reported sales remain visible separately as a reconciliation
+            # check and must not replace the physical nozzle-sales ledger.
+            shift_expected=shift_open+continuity_adjustment+shift_purchase-shift_nozzle_sales
             shift_diff=shift_expected-shift_close
             shift_basis=shift_open+continuity_adjustment+shift_purchase
             shift_reconciliation.append({
