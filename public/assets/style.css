@@ -2601,3 +2601,27 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 /* DSR main page: keep the detailed report closed until a DSR card is selected. */
 .daily-report-details[hidden]{display:none!important}
 .daily-report-details{margin-top:18px}
+
+
+.daily-sales-id{
+  display:inline-flex;
+  margin-top:6px;
+  padding:4px 9px;
+  border-radius:999px;
+  background:var(--surface-soft,#eef2f6);
+  color:var(--text-muted,#667085);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.02em;
+}
+.daily-dsr-method-row{
+  align-items:center;
+  margin-bottom:8px;
+}
+.daily-dsr-method-row > strong:last-child{
+  margin-left:auto;
+  white-space:nowrap;
+}
+.daily-confirm-card[data-dsr-id]{
+  scroll-margin-top:16px;
+}
