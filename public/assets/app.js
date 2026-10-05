@@ -2176,30 +2176,28 @@ function dailyReportVarianceClass(value){
 }
 async function loadDailyReportConfirmations(){
   const pendingEl=document.getElementById('daily-report-pending-confirmations');
+  const dateEl=document.getElementById('daily-report-date-cards');
   try{
     const cards=await api('/api/reports/daily/confirmations');
     const rows=Array.isArray(cards)?cards:[];
-    const pending=rows.filter(x=>x.status==='pending');
+    const active=rows.filter(x=>x.status==='pending'||x.status==='waiting');
     const history=rows.filter(x=>x.status==='confirmed');
-
     if(pendingEl){
-      pendingEl.innerHTML=pending.length
-        ? pending.map(renderDailyPendingConfirmationCard).join('')
-        : '<div class="daily-empty">No daily sales are waiting for confirmation.</div>';
+      pendingEl.innerHTML=active.length
+        ?active.map(renderDailyPendingConfirmationCard).join('')
+        :'<div class="daily-empty">No DSRs are currently waiting for completion or confirmation.</div>';
       bindDailyDsrChecks();
     }
-
-    const dateEl=document.getElementById('daily-report-date-cards');
     if(dateEl){
       dateEl.innerHTML=history.length
-        ? history.map(renderDailyHistoryCard).join('')
-        : '<div class="daily-empty">No confirmed DSR history yet.</div>';
+        ?history.map(renderDailyHistoryCard).join('')
+        :'<div class="daily-empty">No confirmed DSR history yet.</div>';
     }
     return rows;
   }catch(e){
-    if(pendingEl)pendingEl.innerHTML='<div class="daily-empty">Could not load pending daily confirmations.</div>';
-    const dateEl=document.getElementById('daily-report-date-cards');
-    if(dateEl)dateEl.innerHTML='<div class="daily-empty">Could not load DSR history.</div>';
+    console.error('DSR confirmation load failed',e);
+    if(pendingEl)pendingEl.innerHTML='<div class="daily-empty">Could not load DSR cards: '+h(e.message||'Unknown error')+'</div>';
+    if(dateEl)dateEl.innerHTML='<div class="daily-empty">Could not load DSR history: '+h(e.message||'Unknown error')+'</div>';
     return [];
   }
 }
@@ -2220,15 +2218,24 @@ function renderDailyHistoryCard(item){
   '</button>';
 }
 function renderDailyPendingConfirmationCard(item){
+  const waiting=item.status==='waiting';
   const methods=Object.entries(item.sales_by_method||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([method,amount])=>
-    '<label class="admin-sale-check-row daily-dsr-method-row"><input type="checkbox" class="daily-dsr-method-check"><span><strong>'+h(method)+'</strong><small>Combined sales for '+h(dailyReportIdLabel(item.date))+'</small></span><strong>'+money(amount)+'</strong></label>'
+    '<label class="admin-sale-check-row daily-dsr-method-row"><input type="checkbox" class="daily-dsr-method-check" '+(waiting?'disabled':'')+'><span><strong>'+h(method)+'</strong><small>Combined sales for '+h(dailyReportIdLabel(item.date))+'</small></span><strong>'+money(amount)+'</strong></label>'
   ).join('');
-  return '<article class="card daily-confirm-card" data-report-date="'+h(item.date)+'" data-dsr-id="'+h(dailyReportIdLabel(item.date))+'">'+
-    '<div class="daily-confirm-head"><div><span class="section-kicker">PENDING DSR CONFIRMATION</span><h3>'+h(dailyReportIdLabel(item.date))+'</h3><p class="muted">'+Number(item.dispenser_count||0)+' dispenser(s) • '+Number(item.shift_count||0)+' completed shift(s) • Handover and sales recorded</p></div><span class="pending-sale-badge">Pending</span></div>'+
+  const missing=[];
+  if(!item.all_shifts_complete)missing.push('Some shifts are still active');
+  if(!item.all_handover_recorded)missing.push('Handover is incomplete');
+  if(!item.all_sales_recorded)missing.push('Sales have not been recorded for every shift');
+  const readiness=waiting
+    ?'<div class="daily-dsr-readiness"><div class="daily-confirm-label">Waiting for completion</div>'+missing.map(x=>'<div class="daily-dsr-readiness-row"><span>•</span><strong>'+h(x)+'</strong></div>').join('')+'</div>'
+    :'';
+  return '<article class="card daily-confirm-card '+(waiting?'is-waiting':'')+'" data-report-date="'+h(item.date)+'" data-dsr-id="'+h(dailyReportIdLabel(item.date))+'">'+
+    '<div class="daily-confirm-head"><div><span class="section-kicker">'+(waiting?'DSR WAITING':'PENDING DSR CONFIRMATION')+'</span><h3>'+h(dailyReportIdLabel(item.date))+'</h3><p class="muted">'+Number(item.dispenser_count||0)+' dispenser(s) • '+Number(item.shift_count||0)+' shift(s)</p></div><span class="pending-sale-badge">'+(waiting?'Waiting':'Pending')+'</span></div>'+
     '<div class="daily-confirm-summary"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div></div>'+
-    '<div class="daily-confirm-methods"><div class="daily-confirm-label">Combined sales by method</div>'+(methods||'<div class="daily-empty">No recorded sale methods.</div>')+'</div>'+
-    '<div class="daily-confirm-note">Check each combined sale method before confirming. This confirmation will automatically confirm the linked individual shift sales on the Sales page.</div>'+
-    '<div class="row daily-confirm-actions"><button type="button" onclick="selectDailyReportDate(\''+item.date+'\')">Review DSR</button><button type="button" class="primary" disabled data-confirm-dsr="'+h(item.date)+'" onclick="confirmDailyReport(\''+item.date+'\')">Confirm DSR</button></div>'+
+    readiness+
+    '<div class="daily-confirm-methods"><div class="daily-confirm-label">Combined sales by method</div>'+(methods||'<div class="daily-empty">'+(waiting?'Sales will appear here after they are recorded.':'No recorded sale methods.')+'</div>')+'</div>'+
+    '<div class="daily-confirm-note">'+(waiting?'This DSR cannot be confirmed until every shift has ended, handover is complete, and sales have been recorded.':'Check each combined sale method before confirming. This confirmation will automatically confirm the linked individual shift sales on the Sales page.')+'</div>'+
+    '<div class="row daily-confirm-actions"><button type="button" '+(waiting?'disabled':'')+' onclick="selectDailyReportDate(\''+item.date+'\')">Review DSR</button><button type="button" class="primary" '+(waiting?'disabled ':'')+'disabled data-confirm-dsr="'+h(item.date)+'" onclick="confirmDailyReport(\''+item.date+'\')">Confirm DSR</button></div>'+
   '</article>';
 }
 async function confirmDailyReport(reportDate){
