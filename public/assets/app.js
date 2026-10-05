@@ -2284,7 +2284,7 @@ async function loadDailyReportConfirmations(){
     if(dateEl){
       dateEl.innerHTML=history.length
         ?history.map(renderDailyHistoryCard).join('')
-        :'<div class="daily-empty">No confirmed DSR history yet.</div>';
+        :'<div class="daily-empty daily-dsr-empty"><div>No confirmed DSR history yet.</div><button type="button" class="daily-dsr-preview-btn" onclick="previewDailyReport()">Preview current DSR design</button><small>This preview uses current report data only and does not confirm or change the DSR.</small></div>';
     }
     return rows;
   }catch(e){
@@ -2293,6 +2293,46 @@ async function loadDailyReportConfirmations(){
     if(dateEl)dateEl.innerHTML='<div class="daily-empty">Could not load DSR history: '+h(e.message||'Unknown error')+'</div>';
     return [];
   }
+}
+async function previewDailyReport(){
+  const date=document.getElementById('report-date')?.value||new Date().toISOString().slice(0,10);
+  const dateEl=document.getElementById('daily-report-date-cards');
+  try{
+    const r=await api('/api/reports/daily?date='+encodeURIComponent(date));
+    const s=r.summary||{}, p=r.dsr_performance||{};
+    const item={
+      date,
+      confirmed_at:null,
+      total_sales_liters:p.total_sales_liters||s.sales_liters||0,
+      total_sales_amount:p.total_sales_amount||s.sales_amount||0,
+      shift_count:Array.isArray(r.shift_summary)?r.shift_summary.length:Number(s.shift_count||0),
+      dispenser_count:Array.isArray(r.dsr_dispenser_details)?r.dsr_dispenser_details.length:Number(s.dispenser_count||0)
+    };
+    if(dateEl)dateEl.innerHTML=renderDailyPreviewHistoryCard(item);
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(e){
+    console.error('DSR preview failed',e);
+    toast('Could not load the current DSR preview.');
+  }
+}
+function renderDailyPreviewHistoryCard(item){
+  const dateLabel=dailyReportIdLabel(item.date);
+  return '<article class="daily-report-date-card daily-dsr-history-card is-ready daily-dsr-preview-card" data-dsr-date="'+h(item.date)+'">'+
+    '<div class="daily-report-date-top">'+
+      '<div class="daily-history-title"><span class="daily-card-kicker">DSR PREVIEW</span><b>'+h(dateLabel)+'</b><small>Design preview · not confirmed</small></div>'+
+      '<span class="daily-dsr-status-preview">Preview</span>'+
+    '</div>'+
+    '<div class="daily-report-date-stats">'+
+      '<div><small>Fuel sold</small><strong>'+liters(item.total_sales_liters)+' L</strong></div>'+
+      '<div><small>Total sales</small><strong>'+money(item.total_sales_amount)+'</strong></div>'+
+      '<div><small>Shifts</small><strong>'+Number(item.shift_count||0)+'</strong></div>'+
+    '</div>'+
+    '<div class="daily-dsr-history-extra">'+
+      '<div><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div>'+
+      '<div><span>DSR date</span><strong>'+h(dateLabel)+'</strong></div>'+
+    '</div>'+
+    '<div class="daily-dsr-history-actions"><button type="button" class="daily-dsr-expand" aria-expanded="false" onclick="toggleDailyHistoryCard(event,this)">Details <span>⌄</span></button><button type="button" class="daily-dsr-view" onclick="selectDailyReportDate(\''+item.date+'\')">View full report <span>→</span></button></div>'+
+  '</article>';
 }
 function renderDailyHistoryCard(item){
   const confirmedAt=item.confirmed_at ? dailyReportTime(item.confirmed_at) : 'Confirmed';
