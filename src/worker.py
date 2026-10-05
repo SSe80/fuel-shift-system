@@ -3451,3 +3451,47 @@ def daily_report():
         "total_sales_amount":station_a
     })
 
+@app.post("/api/reports/daily")
+def generate_report():
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    report_date=data.get("date") or date.today().isoformat()
+    try: report_day=date.fromisoformat(report_date)
+    except ValueError:return jsonify({"error":"Invalid date"}),400
+    day_start=report_date+"T00:00:00+03:00"
+    day_end=(report_day+timedelta(days=1)).isoformat()+"T00:00:00+03:00"
+    ss,day_shifts=sb("shifts",params={
+        "and":"(start_time.gte."+day_start+",start_time.lt."+day_end+")",
+        "select":"id,end_time","limit":"5000"
+    })
+    if ss!=200:return jsonify({"error":day_shifts}),ss
+    shift_ids=[str(x.get("id")) for x in day_shifts if x.get("id")]
+    if any(not x.get("end_time") for x in day_shifts):
+        return jsonify({"error":"Daily report is not ready: all shifts that started on this date must be completed first.","report_ready":False,"total_shifts":len(day_shifts),"completed_shifts":sum(1 for x in day_shifts if x.get("end_time"))}),409
+    filt="in.("+",".join(shift_ids)+")" if shift_ids else "in.(00000000-0000-0000-0000-000000000000)"
+    hs,day_handovers=sb("shift_takeovers",params={"shift_id":filt,"select":"shift_id,sales_status,sales_submitted_at","limit":"5000"})
+    if hs!=200:return jsonify({"error":day_handovers}),hs
+    handover_by_shift={str(x.get("shift_id")):x for x in day_handovers if x.get("shift_id")}
+    if len(handover_by_shift)!=len(day_shifts):
+        return jsonify({"error":"Daily report is not ready: every completed shift must finish handover before the DSR can be generated.","report_ready":False}),409
+    if any(str(x.get("sales_status") or "")!="confirmed" or not x.get("sales_submitted_at") for x in day_handovers):
+        return jsonify({"error":"Daily report is not ready: every shift sale must be recorded and individually confirmed or confirmed through the DSR.","report_ready":False}),409
+    cs,confirmation=sb("daily_report_confirmations",params={"report_date":"eq."+report_date,"status":"eq.confirmed","select":"id","limit":"1"})
+    if cs!=200:return jsonify({"error":confirmation}),cs
+    if not confirmation:
+        return jsonify({"error":"Daily report requires final admin confirmation before it can be generated.","report_ready":False}),409
+    status,result=rpc("generate_daily_report",{"p_report_date":report_date,"p_generated_by":session["employee_id"]})
+    if status>=400:return jsonify(result),status
+    return jsonify(result),201
+
+@app.route("/", defaults={"path":""})
+@app.route("/<path:path>")
+def frontend(path=""):
+    assets=request.environ["workers.env"].ASSETS
+    from pyodide.ffi import run_sync
+    from flask import Response
+    r=run_sync(assets.fetch("https://assets.local/"+path))
+    return Response(run_sync(r.bytes()),status=r.status,headers=r.headers)
+
+Default=wsgi.entrypoint(app)
