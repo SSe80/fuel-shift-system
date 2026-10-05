@@ -2220,21 +2220,21 @@ function renderDailyHistoryCard(item){
 function renderDailyPendingConfirmationCard(item){
   const waiting=item.status==='waiting';
   const methods=Object.entries(item.sales_by_method||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([method,amount])=>
-    '<label class="admin-sale-check-row daily-dsr-method-row"><input type="checkbox" class="daily-dsr-method-check" '+(waiting?'disabled':'')+'><span><strong>'+h(method)+'</strong><small>Combined sales for '+h(dailyReportIdLabel(item.date))+'</small></span><strong>'+money(amount)+'</strong></label>'
+    '<label class="admin-sale-check-row daily-dsr-method-row"><input type="checkbox" class="daily-dsr-method-check" '+(waiting?'disabled':'')+'><span><strong>'+h(method)+'</strong><small>Recorded sales for '+h(dailyReportIdLabel(item.date))+'</small></span><strong>'+money(amount)+'</strong></label>'
   ).join('');
   const missing=[];
-  if(!item.all_shifts_complete)missing.push('Some shifts are still active');
-  if(!item.all_handover_recorded)missing.push('Handover is incomplete');
-  if(!item.all_sales_recorded)missing.push('Sales have not been recorded for every shift');
+  if(!item.all_shifts_complete)missing.push('Shift completion is still pending');
+  if(!item.all_handover_recorded)missing.push('Handover completion is still pending');
+  if(!item.all_sales_recorded)missing.push('Sales recording is still pending');
   const readiness=waiting
-    ?'<div class="daily-dsr-readiness"><div class="daily-confirm-label">Waiting for completion</div>'+missing.map(x=>'<div class="daily-dsr-readiness-row"><span>•</span><strong>'+h(x)+'</strong></div>').join('')+'</div>'
+    ?'<div class="daily-dsr-readiness"><div class="daily-confirm-label">Completion required</div>'+missing.map(x=>'<div class="daily-dsr-readiness-row"><span>•</span><strong>'+h(x)+'</strong></div>').join('')+'</div>'
     :'';
   return '<article class="card daily-confirm-card '+(waiting?'is-waiting':'')+'" data-report-date="'+h(item.date)+'" data-dsr-id="'+h(dailyReportIdLabel(item.date))+'">'+
-    '<div class="daily-confirm-head"><div><span class="section-kicker">'+(waiting?'DSR WAITING':'PENDING DSR CONFIRMATION')+'</span><h3>'+h(dailyReportIdLabel(item.date))+'</h3><p class="muted">'+Number(item.dispenser_count||0)+' dispenser(s) • '+Number(item.shift_count||0)+' shift(s)</p></div><span class="pending-sale-badge">'+(waiting?'Waiting':'Pending')+'</span></div>'+
+    '<div class="daily-confirm-head"><div><span class="section-kicker">'+(waiting?'DSR NOT READY':'DSR READY FOR CONFIRMATION')+'</span><h3>'+h(dailyReportIdLabel(item.date))+'</h3><p class="muted">'+Number(item.dispenser_count||0)+' dispenser(s) • '+Number(item.shift_count||0)+' shift(s)</p></div><span class="pending-sale-badge">'+(waiting?'Waiting':'Pending')+'</span></div>'+
     '<div class="daily-confirm-summary"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div></div>'+
     readiness+
-    '<div class="daily-confirm-methods"><div class="daily-confirm-label">Combined sales by method</div>'+(methods||'<div class="daily-empty">'+(waiting?'Sales will appear here after they are recorded.':'No recorded sale methods.')+'</div>')+'</div>'+
-    '<div class="daily-confirm-note">'+(waiting?'This DSR cannot be confirmed until every shift has ended, handover is complete, and sales have been recorded.':'Check each combined sale method before confirming. This confirmation will automatically confirm the linked individual shift sales on the Sales page.')+'</div>'+
+    '<div class="daily-confirm-methods"><div class="daily-confirm-label">Sales awaiting confirmation</div>'+(methods||'<div class="daily-empty">'+(waiting?'Sales will appear here after they are recorded.':'No recorded sale methods.')+'</div>')+'</div>'+
+    '<div class="daily-confirm-note">'+(waiting?'This report is not ready yet. Complete all shifts, record the required handovers, and finish sales recording before confirmation.':'Review each recorded sales method, then confirm the DSR. Confirmation finalizes the linked shift sales for this report date.')+'</div>'+
     '<div class="row daily-confirm-actions"><button type="button" '+(waiting?'disabled':'')+' onclick="selectDailyReportDate(\''+item.date+'\')">Review DSR</button><button type="button" class="primary" '+(waiting?'disabled ':'')+'disabled data-confirm-dsr="'+h(item.date)+'" onclick="confirmDailyReport(\''+item.date+'\')">Confirm DSR</button></div>'+
   '</article>';
 }
