@@ -2214,6 +2214,7 @@ function renderDailyHistoryCard(item){
       '<div><small>Fuel sold</small><strong>'+liters(item.total_sales_liters)+' L</strong></div>'+
       '<div><small>Total sales</small><strong>'+money(item.total_sales_amount)+'</strong></div>'+
       '<div><small>Shifts</small><strong>'+Number(item.shift_count||0)+'</strong></div>'+
+      '<div><small>Dispensers</small><strong>'+Number(item.dispenser_count||0)+'</strong></div>'+
     '</div>'+
     '<div class="daily-dsr-history-foot"><span>Confirmed '+h(confirmedAt)+'</span><span>View report →</span></div>'+
   '</button>';
