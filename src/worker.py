@@ -932,8 +932,8 @@ def update_tank(tank_id):
     if auth:return auth
     data=request.get_json(silent=True) or {}
 
-    if "tank_order" in data or "capacity_liters" in data or "active" in data or "calibration_mm" in data or "calibration_liters" in data:
-        ts, rows = sb("tanks", params={"id":"eq."+tank_id,"select":"id,tank_code,product,capacity_liters,current_liters,calibration_mm,calibration_liters"})
+    if "tank_order" in data or "capacity_liters" in data or "active" in data or "calibration_mm" in data or "calibration_liters" in data or "calibration_points" in data:
+        ts, rows = sb("tanks", params={"id":"eq."+tank_id,"select":"id,tank_code,product,capacity_liters,current_liters,calibration_mm,calibration_liters,calibration_points"})
         if ts != 200 or not rows:
             return jsonify({"error":"Tank not found"}),404
         tank = rows[0]
@@ -947,23 +947,41 @@ def update_tank(tank_id):
                 return jsonify({"error":"Tank size cannot be below current inventory"}),400
             body["capacity_liters"] = capacity
 
-        if "calibration_mm" in data or "calibration_liters" in data:
+        if "calibration_points" in data:
+            points=data.get("calibration_points")
+            if not isinstance(points,list) or len(points)<2:
+                return jsonify({"error":"Calibration must contain at least two points"}),400
+            clean=[]
+            last_height=None
+            for point in points:
+                try:
+                    height=float(point.get("height_mm")); liters_value=float(point.get("liters"))
+                except (TypeError,ValueError,AttributeError):
+                    return jsonify({"error":"Each calibration point must contain numeric height_mm and liters"}),400
+                if height<0 or liters_value<0:
+                    return jsonify({"error":"Calibration height and liters cannot be negative"}),400
+                if last_height is not None and height<=last_height:
+                    return jsonify({"error":"Calibration heights must be strictly increasing"}),400
+                clean.append({"height_mm":height,"liters":liters_value}); last_height=height
+            effective_capacity=float(data.get("capacity_liters",tank.get("capacity_liters") or 0))
+            if clean[-1]["liters"]>effective_capacity:
+                return jsonify({"error":"Calibration liters cannot exceed tank capacity"}),400
+            body["calibration_points"]=clean
+            body["calibration_mm"]=clean[-1]["height_mm"]
+            body["calibration_liters"]=clean[-1]["liters"]
+        elif "calibration_mm" in data or "calibration_liters" in data:
             if "calibration_mm" not in data or "calibration_liters" not in data:
                 return jsonify({"error":"Enter both calibration mm and calibration liters"}),400
             try:
-                calibration_mm = float(data["calibration_mm"])
-                calibration_liters = float(data["calibration_liters"])
+                calibration_mm=float(data["calibration_mm"]); calibration_liters=float(data["calibration_liters"])
             except (TypeError,ValueError):
                 return jsonify({"error":"Enter valid calibration millimeters and liters"}),400
-            if calibration_mm <= 0:
-                return jsonify({"error":"Calibration mm must be greater than zero"}),400
-            if calibration_liters < 0:
-                return jsonify({"error":"Calibration liters cannot be negative"}),400
-            effective_capacity = float(data.get("capacity_liters", tank.get("capacity_liters") or 0))
-            if calibration_liters > effective_capacity:
+            if calibration_mm<=0 or calibration_liters<0:
+                return jsonify({"error":"Calibration values are invalid"}),400
+            effective_capacity=float(data.get("capacity_liters",tank.get("capacity_liters") or 0))
+            if calibration_liters>effective_capacity:
                 return jsonify({"error":"Calibration liters cannot exceed tank capacity"}),400
-            body["calibration_mm"] = calibration_mm
-            body["calibration_liters"] = calibration_liters
+            body["calibration_mm"]=calibration_mm; body["calibration_liters"]=calibration_liters
 
         if "active" in data:
             requested_active = bool(data["active"])
@@ -3425,64 +3443,3 @@ def daily_report():
         "shift_summary":shift_summary,
         "dispenser_summary":dispenser_summary,
         "station_summary":station_summary,
-        "dsr_dispenser_details":dispenser_details,
-        "dsr_tank_details":tank_details,
-        "dsr_sales_summary":{
-            "by_type":sales_type_rows,
-            "by_product":product_rows,
-            "total_amount":total_sales_amount,
-            "total_liters":station_l
-        },
-        "dsr_performance":dsr_performance,
-        "tanks_by_id":tank_map,
-        "summary":{
-            "sales_liters":total_l,"sales_amount":total_a,"fuel_sales_amount":fuel_amount,"other_sales_amount":other_amount,
-            "purchases_liters":total_p,"by_product":by_product,"payment_methods":payment_methods,"sales_by_type":sales_by_type,
-            "completed_shifts":len(day_shifts)-len(incomplete_shifts)
-        }
-    })
-
-@app.post("/api/reports/daily")
-def generate_report():
-    auth=require_admin()
-    if auth:return auth
-    data=request.get_json(silent=True) or {}
-    report_date=data.get("date") or date.today().isoformat()
-    try: report_day=date.fromisoformat(report_date)
-    except ValueError:return jsonify({"error":"Invalid date"}),400
-    day_start=report_date+"T00:00:00+03:00"
-    day_end=(report_day+timedelta(days=1)).isoformat()+"T00:00:00+03:00"
-    ss,day_shifts=sb("shifts",params={
-        "and":"(start_time.gte."+day_start+",start_time.lt."+day_end+")",
-        "select":"id,end_time","limit":"5000"
-    })
-    if ss!=200:return jsonify({"error":day_shifts}),ss
-    shift_ids=[str(x.get("id")) for x in day_shifts if x.get("id")]
-    if any(not x.get("end_time") for x in day_shifts):
-        return jsonify({"error":"Daily report is not ready: all shifts that started on this date must be completed first.","report_ready":False,"total_shifts":len(day_shifts),"completed_shifts":sum(1 for x in day_shifts if x.get("end_time"))}),409
-    filt="in.("+",".join(shift_ids)+")" if shift_ids else "in.(00000000-0000-0000-0000-000000000000)"
-    hs,day_handovers=sb("shift_takeovers",params={"shift_id":filt,"select":"shift_id,sales_status,sales_submitted_at","limit":"5000"})
-    if hs!=200:return jsonify({"error":day_handovers}),hs
-    handover_by_shift={str(x.get("shift_id")):x for x in day_handovers if x.get("shift_id")}
-    if len(handover_by_shift)!=len(day_shifts):
-        return jsonify({"error":"Daily report is not ready: every completed shift must finish handover before the DSR can be generated.","report_ready":False}),409
-    if any(str(x.get("sales_status") or "")!="confirmed" or not x.get("sales_submitted_at") for x in day_handovers):
-        return jsonify({"error":"Daily report is not ready: every shift sale must be recorded and individually confirmed or confirmed through the DSR.","report_ready":False}),409
-    cs,confirmation=sb("daily_report_confirmations",params={"report_date":"eq."+report_date,"status":"eq.confirmed","select":"id","limit":"1"})
-    if cs!=200:return jsonify({"error":confirmation}),cs
-    if not confirmation:
-        return jsonify({"error":"Daily report requires final admin confirmation before it can be generated.","report_ready":False}),409
-    status,result=rpc("generate_daily_report",{"p_report_date":report_date,"p_generated_by":session["employee_id"]})
-    if status>=400:return jsonify(result),status
-    return jsonify(result),201
-
-@app.route("/", defaults={"path":""})
-@app.route("/<path:path>")
-def frontend(path=""):
-    assets=request.environ["workers.env"].ASSETS
-    from pyodide.ffi import run_sync
-    from flask import Response
-    r=run_sync(assets.fetch("https://assets.local/"+path))
-    return Response(run_sync(r.bytes()),status=r.status,headers=r.headers)
-
-Default=wsgi.entrypoint(app)
