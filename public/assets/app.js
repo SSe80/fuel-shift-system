@@ -1081,7 +1081,7 @@ window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
 
 function openAdminSaleHistoryDetails(id){
   const historySource=(typeof adminSalesHistoryData!=='undefined'&&Array.isArray(adminSalesHistoryData.history)?adminSalesHistoryData.history:((typeof adminSalesData!=='undefined'&&Array.isArray(adminSalesData.history))?adminSalesData.history:[]));
-  const item=historySource.find(x=>String(x.takeover?.id)===String(id));
+  const item=historySource.find(x=>String((x.takeover||{}).id)===String(id));
   if(!item)return;
   const t=item.takeover||{};
   const sales=Array.isArray(item.sales)?item.sales:[];
@@ -1097,7 +1097,7 @@ function openAdminSaleHistoryDetails(id){
   }).join('');
   const content=[
     '<div class="history-detail-overview">',
-      '<div class="history-detail-main"><span class="section-kicker">CONFIRMED SALES</span><h4>'+h(item.dispenser?.name||'Dispenser')+'</h4><p>'+h(item.from_employee?.name||'—')+' <span>→</span> '+h(item.to_employee?.name||'—')+'</p></div>',
+      '<div class="history-detail-main"><span class="section-kicker">CONFIRMED SALES</span><h4>'+h((item.dispenser||{}).name||'Dispenser')+'</h4><p>'+h((item.from_employee||{}).name||'—')+' <span>→</span> '+h((item.to_employee||{}).name||'—')+'</p></div>',
       '<div class="history-detail-amount"><span>Total</span><strong>'+money(total)+'</strong><small>'+liters(t.total_sales_liters)+' L</small></div>',
     '</div>',
     '<div class="history-detail-section">',
@@ -3291,7 +3291,7 @@ async function toggleAdminFullHistoryDsrGroup(dsrId){
   if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
   if(toggle)toggle.textContent=expanded?'⌃':'⌄';
 }
-async async function adminSalesHistory(){
+async function adminSalesHistory(){
   try{
     const me=await currentUser();
     if(me.role!=='admin')return location.href='admin-login.html';
