@@ -3570,7 +3570,34 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 .admin-sales-page .admin-history-dsr-cards[hidden]{display:none}
 
 /* Full Sales History — compact DSR sections */
+.admin-sales-page .admin-sales-page .admin-full-history-month-group{
+  margin:0 0 16px;
+  border:1px solid #d7dee6;
+  border-radius:12px;
+  background:#fff;
+  overflow:hidden;
+  box-shadow:0 2px 8px #17202a0a;
+}
+.admin-sales-page .admin-full-history-month-head{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 14px;margin:0;border:0;border-bottom:1px solid #e5eaf0;
+  background:#f7f9fb;color:inherit;text-align:left;cursor:pointer;
+}
+.admin-sales-page .admin-full-history-month-head:hover{background:#f3f6f9}
+.admin-sales-page .admin-full-history-month-title{display:flex;align-items:baseline;gap:8px;min-width:0}
+.admin-sales-page .admin-full-history-month-head .section-kicker{margin:0;color:#667085;font-size:9px}
+.admin-sales-page .admin-full-history-month-head strong{font-size:15px;line-height:1.2;letter-spacing:.01em}
+.admin-sales-page .admin-full-history-month-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.admin-sales-page .admin-full-history-month-right small{color:#7b8794;font-size:10px}
+.admin-sales-page .admin-full-history-month-toggle{
+  width:25px;height:25px;display:grid;place-items:center;border-radius:7px;
+  background:#e9eef4;color:#526273;font-size:16px;font-weight:800;line-height:1;
+}
+.admin-sales-page .admin-full-history-month-body{padding:10px 12px 2px}
+.admin-sales-page .admin-full-history-month-body[hidden]{display:none}
+
 .admin-sales-page .admin-full-history-dsr-group{margin:0 0 14px}
+
 .admin-sales-page .admin-full-history-dsr-head{
   width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:8px 0 9px;margin:0;border:0;border-bottom:1px solid #cfd7df;
