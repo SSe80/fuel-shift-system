@@ -1630,9 +1630,19 @@ function closeTankEdit(){
 async function _saveTankEdit(event){
   event.preventDefault();
   const id=document.getElementById('edit-tank-id').value;
+  const capacity=Number(document.getElementById('edit-tank-capacity').value);
+  const mmRaw=document.getElementById('edit-tank-calibration-mm')?.value.trim()||'';
+  const litersRaw=document.getElementById('edit-tank-calibration-liters')?.value.trim()||'';
+  if((mmRaw && !litersRaw)||(!mmRaw && litersRaw)){
+    throw new Error('Enter both calibration mm and calibration liters, or leave both blank.');
+  }
   try{
     await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({
-      capacity_liters:Number(document.getElementById('edit-tank-capacity').value)
+      capacity_liters:capacity,
+      ...(mmRaw && litersRaw ? {
+        calibration_mm:Number(mmRaw),
+        calibration_liters:Number(litersRaw)
+      } : {})
     })});
     closeTankEdit();
     await loadSettingsData();
