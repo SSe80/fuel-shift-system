@@ -1953,8 +1953,21 @@ def _daily_confirmation_snapshot(report_date):
     for x in sale_rows:
         m=type_map.get(str(x.get("sale_type_id") or "")) or "Other"; methods[m]=methods.get(m,0)+float(x.get("amount") or 0)
     all_complete=all(x.get("end_time") for x in shifts)
-    sales_ready=all(str(x.get("sales_status") or "confirmed")=="confirmed" for x in takeovers)
-    return {"date":report_date.isoformat(),"shift_count":len(shifts),"completed_shift_count":sum(1 for x in shifts if x.get("end_time")),"all_shifts_complete":all_complete,"sales_confirmation_ready":sales_ready,"can_confirm":bool(all_complete),"status":"pending" if all_complete else None,"total_sales_liters":sum(float(x.get("total_sales_liters") or 0) for x in takeovers),"total_sales_amount":sum(methods.values()),"sales_by_method":methods},None,200
+    takeover_by_shift={str(x.get("shift_id")):x for x in takeovers if x.get("shift_id")}
+    sale_count_by_takeover={}
+    for row in sale_rows:
+        key=str(row.get("takeover_id") or "")
+        sale_count_by_takeover[key]=sale_count_by_takeover.get(key,0)+1
+    # A DSR is created only after every shift has completed its handover AND
+    # has actually recorded at least one sale entry.
+    all_handover_recorded=all(str(x.get("id")) in takeover_by_shift for x in shifts)
+    all_sales_recorded=all(
+        sale_count_by_takeover.get(str(t.get("id")),0)>0
+        for t in takeovers
+    ) and len(takeovers)==len(shifts)
+    dsr_ready=bool(all_complete and all_handover_recorded and all_sales_recorded)
+    sales_ready=all(str(x.get("sales_status") or "confirmed")=="confirmed" for x in takeovers) if takeovers else False
+    return {"date":report_date.isoformat(),"shift_count":len(shifts),"completed_shift_count":sum(1 for x in shifts if x.get("end_time")),"all_shifts_complete":all_complete,"all_handover_recorded":all_handover_recorded,"all_sales_recorded":all_sales_recorded,"sales_confirmation_ready":sales_ready,"can_confirm":dsr_ready,"status":"pending" if dsr_ready else None,"total_sales_liters":sum(float(x.get("total_sales_liters") or 0) for x in takeovers),"total_sales_amount":sum(methods.values()),"sales_by_method":methods},None,200
 
 @app.get("/api/reports/daily/confirmations")
 def daily_report_confirmations():
