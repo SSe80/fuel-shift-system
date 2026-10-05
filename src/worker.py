@@ -3128,14 +3128,22 @@ def daily_report():
             recorded=op.get("tank_stock_recorded_liters")
             stock_adjustment=None
             if before is not None and recorded is not None:
-                # Derive the documented stock adjustment from the physical
-                # before-stock, delivered liters and recorded post-stock.
+                # Post-discharge physical variance:
+                # recorded closing - physical before - delivered.
                 stock_adjustment=float(recorded)-float(before)-discharged
+
+            # The discharge RPC also records the difference between the
+            # physical tank reading supplied immediately before discharge and
+            # the system balance. This is a genuine pre-discharge variance and
+            # must remain visible in the DSR equation instead of being hidden
+            # inside the purchase quantity.
+            pre_discharge_adjustment=float(op.get("system_before_adjustment_liters") or 0)
 
             if discharge_attribution.get("shift_attribution_status")=="inside_shift":
                 purchase_by_tank[tid]=purchase_by_tank.get(tid,0.0)+discharged
-                if stock_adjustment is not None:
-                    purchase_adjustment_by_tank[tid]=purchase_adjustment_by_tank.get(tid,0.0)+stock_adjustment
+                total_operation_adjustment=(pre_discharge_adjustment + (stock_adjustment or 0))
+                if abs(total_operation_adjustment)>0.000001:
+                    purchase_adjustment_by_tank[tid]=purchase_adjustment_by_tank.get(tid,0.0)+total_operation_adjustment
 
             discharge_operations_by_tank.setdefault(tid,[]).append({
                 "purchase_id":p.get("id"),
@@ -3147,7 +3155,9 @@ def daily_report():
                 "tank_liters_before":float(before) if before is not None else None,
                 "tank_liters_after":float(op.get("tank_liters_after")) if op.get("tank_liters_after") is not None else None,
                 "tank_stock_recorded_liters":float(recorded) if recorded is not None else None,
-                "stock_adjustment_liters":stock_adjustment,
+                "pre_discharge_stock_adjustment_liters":pre_discharge_adjustment,
+                "post_discharge_stock_adjustment_liters":stock_adjustment,
+                "stock_adjustment_liters":(pre_discharge_adjustment + (stock_adjustment or 0)),
                 "compartment_indexes":op.get("compartment_indexes") or [],
             })
             used_history=True
@@ -3319,6 +3329,8 @@ def daily_report():
             "purchase_operation_count":purchase_operation_count,
             "purchase_ids":purchase_ids,
             "documented_stock_adjustment_liters":stock_adjustment_l,
+            "pre_discharge_stock_adjustment_liters":sum(float(x.get("pre_discharge_stock_adjustment_liters") or 0) for x in discharge_operations if x.get("shift_attribution_status")=="inside_shift"),
+            "post_discharge_stock_adjustment_liters":sum(float(x.get("post_discharge_stock_adjustment_liters") or 0) for x in discharge_operations if x.get("shift_attribution_status")=="inside_shift"),
             "nozzle_sales_liters":nozzle_sales_l,
             "discharge_operation_count":len(discharge_operations),
             "discharge_operations":discharge_operations,
