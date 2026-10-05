@@ -3083,7 +3083,7 @@ function filterAdminSalesHistoryPage(){
     const dsrGroups=monthGroups[monthKey];
     const dsrKeys=Object.keys(dsrGroups).sort((a,b)=>b.localeCompare(a));
     return '<section class="admin-full-history-month-group" data-month-key="'+h(monthKey)+'">'+
-      '<button type="button" class="admin-full-history-month-head" onclick="toggleAdminFullHistoryMonth(\''+h(monthKey)+'\')" aria-expanded="true">'+
+      '<button type="button" class="admin-full-history-month-head" onclick="toggleAdminFullHistoryMonth(\''+h(monthKey)+'\')" aria-expanded="false">'+
         '<span class="admin-full-history-month-title"><span class="section-kicker">MONTH</span><strong>'+h(monthLabel)+'</strong></span>'+
         '<span class="admin-full-history-month-right"><small>'+dsrKeys.length+' DSR'+(dsrKeys.length===1?'':'s')+'</small><span class="admin-full-history-month-toggle" aria-hidden="true">⌃</span></span>'+
       '</button>'+
