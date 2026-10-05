@@ -2182,7 +2182,7 @@ function renderDailyPendingConfirmationCard(item){
     '<div class="daily-confirm-method"><span>'+h(method)+'</span><strong>'+money(amount)+'</strong></div>'
   ).join('');
   const blocked=!item.can_confirm;
-  const note=blocked?'Confirm all individual shift sales first before confirming this daily total.':'All shifts are complete and the combined daily sales are ready for final confirmation.';
+  const note=blocked?'This date is still waiting for one or more shifts to end.':'All shifts are complete. Confirming this combined daily total will automatically confirm every linked shift sale on the Sales page.';
   return '<article class="card daily-confirm-card" data-report-date="'+h(item.date)+'">'+
     '<div class="daily-confirm-head"><div><span class="section-kicker">DAILY SALES CONFIRMATION</span><h3>'+h(dailyReportDateLabel(item.date))+'</h3><p class="muted">'+Number(item.shift_count||0)+' completed shift(s)</p></div><span class="pending-sale-badge">Pending</span></div>'+
     '<div class="daily-confirm-summary"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div></div>'+
