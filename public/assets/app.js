@@ -3106,7 +3106,11 @@ function filterAdminSalesHistoryPage(){
   const monthGroups={};
   rows.forEach(item=>{
     const dsrId=dailyReportIdFromTimestamp(item.takeover?.shift_started_at);
-    const monthKey=String(dsrId).slice(0,7);
+    const rawDate=item.takeover?.shift_started_at;
+    const date=new Date(rawDate);
+    const monthKey=Number.isNaN(date.getTime())
+      ?String(dsrId).replace(/\s+DSR$/,'').slice(0,7)
+      :new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit'}).format(date);
     (monthGroups[monthKey]||(monthGroups[monthKey]={}))[dsrId]||(monthGroups[monthKey][dsrId]=[]);
     monthGroups[monthKey][dsrId].push(item);
   });
