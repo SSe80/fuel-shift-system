@@ -774,7 +774,24 @@ function filterAdminSales(){
     }
   }
   if(historyBox){
-    historyBox.innerHTML=historyRows.length?historyRows.map(renderAdminHistorySaleCard).join(''):'<div class="card admin-sales-empty"><div class="empty-icon">—</div><strong>No confirmed sales history</strong><p class="muted">Confirmed sales will appear here after admin review.</p></div>';
+    if(!historyRows.length){
+      historyBox.innerHTML='<div class="card admin-sales-empty"><div class="empty-icon">—</div><strong>No confirmed sales history</strong><p class="muted">Confirmed sales will appear here after admin review.</p></div>';
+    }else{
+      const historyGroups={};
+      historyRows.forEach(item=>{
+        const dsrId=dailyReportIdFromTimestamp(item.takeover?.shift_started_at);
+        (historyGroups[dsrId]||(historyGroups[dsrId]=[])).push(item);
+      });
+      historyBox.innerHTML=Object.keys(historyGroups).map(dsrId=>
+        '<section class="admin-history-dsr-group" data-dsr-id="'+h(dsrId)+'">'+
+          '<button type="button" class="admin-history-dsr-head" onclick="toggleAdminHistoryDsrGroup(\''+h(dsrId)+'\')" aria-expanded="false">'+
+            '<span class="admin-history-dsr-title"><span class="section-kicker">DSR</span><strong>'+h(dsrId)+'</strong></span>'+
+            '<span class="admin-history-dsr-right"><small>'+historyGroups[dsrId].length+' confirmed sale'+(historyGroups[dsrId].length===1?'':'s')+'</small><span class="admin-history-dsr-toggle" aria-hidden="true">⌄</span></span>'+
+          '</button>'+
+          '<div class="admin-history-dsr-cards" hidden>'+historyGroups[dsrId].map(renderAdminHistorySaleCard).join('')+'</div>'+
+        '</section>'
+      ).join('');
+    }
     if(allHistoryRows.length>3){
       historyBox.innerHTML+='<div class="sales-history-show-more-wrap"><a class="btn primary sales-history-show-more" href="admin-sales-history.html">Show more</a></div>';
     }
@@ -821,6 +838,19 @@ function toggleAdminPendingSaleCard(id){
   const toggle=card.querySelector('.admin-pending-sale-toggle');
   const head=card.querySelector('.admin-pending-sale-head');
   if(body)body.hidden=!expanded;
+  if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
+  if(toggle)toggle.textContent=expanded?'⌃':'⌄';
+}
+function toggleAdminHistoryDsrGroup(dsrId){
+  const groups=document.querySelectorAll('.admin-history-dsr-group');
+  let group=null;
+  groups.forEach(el=>{if(String(el.getAttribute('data-dsr-id'))===String(dsrId))group=el;});
+  if(!group)return;
+  const cards=group.querySelector('.admin-history-dsr-cards');
+  const head=group.querySelector('.admin-history-dsr-head');
+  const toggle=group.querySelector('.admin-history-dsr-toggle');
+  const expanded=group.classList.toggle('expanded');
+  if(cards)cards.hidden=!expanded;
   if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
   if(toggle)toggle.textContent=expanded?'⌃':'⌄';
 }
