@@ -1627,7 +1627,7 @@ function closeTankEdit(){
   modal.setAttribute('aria-hidden','true');
   document.getElementById('tank-edit-form').reset();
 }
-async function _saveTankEdit(event){
+async async function _saveTankEdit(event){
   event.preventDefault();
   const id=document.getElementById('edit-tank-id').value;
   const capacity=Number(document.getElementById('edit-tank-capacity').value);
