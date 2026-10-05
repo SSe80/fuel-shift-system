@@ -10,8 +10,21 @@
       const cols=raw.split(/[,;\t]/).map(x=>x.trim().replace(/^"|"$/g,''));
       if(i===0 && /height/i.test(cols[0]) && /liter/i.test(cols[1])) continue;
       if(cols.length<2) throw new Error('CSV row '+(i+1)+' must contain height_mm and liters.');
-      const height=Number(cols[0].replace(/,/g,''));
-      const liters=Number(cols[1].replace(/,/g,''));
+
+      // Accept normal CSV (height,liter) and also values such as "1,000,500"
+      // when the comma is a thousands separator rather than a column separator.
+      let heightText, litersText;
+      if(cols.length===2){
+        heightText=cols[0]; litersText=cols[1];
+      }else if(cols.length===3 && /^\\d+$/.test(cols[0]) && /^\\d+$/.test(cols[1]) && /^\\d+$/.test(cols[2])){
+        // Ambiguous 3-column CSV: prefer the documented height_mm,liters format.
+        // A row like 1000,500 must never be silently interpreted as height 1.
+        heightText=cols[0]; litersText=cols.slice(1).join('');
+      }else{
+        throw new Error('CSV row '+(i+1)+' has '+cols.length+' columns. Use height_mm,liters (for example 70,500).');
+      }
+      const height=Number(heightText.replace(/,/g,''));
+      const liters=Number(litersText.replace(/,/g,''));
       if(!Number.isFinite(height)||!Number.isFinite(liters)) throw new Error('CSV row '+(i+1)+' contains an invalid number.');
       if(height<0||liters<0) throw new Error('CSV row '+(i+1)+' cannot contain negative values.');
       rows.push({height_mm:height,liters:liters});
@@ -19,7 +32,7 @@
     rows.sort((a,b)=>a.height_mm-b.height_mm);
     if(rows.length<2) throw new Error('CSV must contain at least two calibration points.');
     for(let i=1;i<rows.length;i++){
-      if(rows[i].height_mm===rows[i-1].height_mm) throw new Error('Duplicate calibration height: '+rows[i].height_mm+' mm.');
+      if(rows[i].height_mm===rows[i-1].height_mm) throw new Error('Duplicate calibration height: '+rows[i].height_mm+' mm (CSV rows '+(rows.findIndex(x=>x===rows[i-1])+1)+' and '+(rows.findIndex(x=>x===rows[i])+1)+'). Check that height_mm values are unique.');
     }
     return rows;
   }
