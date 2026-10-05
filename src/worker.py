@@ -2406,6 +2406,12 @@ def daily_report():
             if nid and nid not in seen:
                 refs.append(dn_by_id.get(nid) or {})
                 seen.add(nid)
+        # The shift's primary nozzle is authoritative when present.
+        primary_id=str(shift.get("nozzle_id") or "")
+        if primary_id and primary_id not in seen:
+            dn=dn_by_id.get(primary_id)
+            if dn:
+                refs.append(dn); seen.add(primary_id)
         for item in _json_list(shift.get("activation_nozzles")):
             code=str((item or {}).get("nozzle_id") or "")
             dn=dn_by_code.get(code)
