@@ -1942,7 +1942,7 @@ def _daily_confirmation_snapshot(report_date):
     if ss!=200:return None,{"error":shifts},ss
     if not shifts:return {"date":report_date.isoformat(),"shift_count":0,"completed_shift_count":0,"all_shifts_complete":False,"sales_confirmation_ready":False,"can_confirm":False,"status":None,"total_sales_liters":0,"total_sales_amount":0,"sales_by_method":{}},None,200
     ids=[str(x["id"]) for x in shifts if x.get("id")]; filt="in.("+",".join(ids)+")"
-    hs,takeovers=sb("shift_takeovers",params={"shift_id":filt,"select":"id,shift_id,total_sales_liters,total_sales_amount,sales_status","limit":"5000"})
+    hs,takeovers=sb("shift_takeovers",params={"shift_id":filt,"select":"id,shift_id,total_sales_liters,total_sales_amount,sales_status,sales_submitted_at","limit":"5000"})
     if hs!=200:return None,{"error":takeovers},hs
     tids=[str(x["id"]) for x in takeovers if x.get("id")]; sale_rows=[]
     if tids:
@@ -1963,6 +1963,8 @@ def _daily_confirmation_snapshot(report_date):
     all_handover_recorded=all(str(x.get("id")) in takeover_by_shift for x in shifts)
     all_sales_recorded=all(
         sale_count_by_takeover.get(str(t.get("id")),0)>0
+        and str(t.get("sales_status") or "") in ("pending_admin","confirmed")
+        and bool(t.get("sales_submitted_at"))
         for t in takeovers
     ) and len(takeovers)==len(shifts)
     dsr_ready=bool(all_complete and all_handover_recorded and all_sales_recorded)
