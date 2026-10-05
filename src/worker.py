@@ -2666,9 +2666,21 @@ def daily_report():
         closing=float(last_h.get("tank_closing_liters") or 0) if rows else float(tank.get("current_liters") or 0)
         sales_l=float(sum(float(z[1].get("total_sales_liters") or 0) for z in rows))
         purchased_l=float(purchase_by_tank.get(tid,0))
-        expected=opening+purchased_l-sales_l
+        # For multiple shifts on the same tank, the next shift should normally
+        # open at the previous shift's closing stock. Any difference is an
+        # explicit stock adjustment/gap; do not silently hide it in the DSR.
+        opening_adjustment_l=0.0
+        continuity_gap_count=0
+        for prev_pair,next_pair in zip(rows,rows[1:]):
+            prev_close=float(prev_pair[1].get("tank_closing_liters") or 0)
+            next_open=float(next_pair[1].get("tank_opening_liters") or 0)
+            gap=next_open-prev_close
+            if abs(gap)>0.0001:
+                continuity_gap_count+=1
+                opening_adjustment_l+=gap
+        expected=opening+opening_adjustment_l+purchased_l-sales_l
         diff=expected-closing
-        basis=opening+purchased_l
+        basis=opening+opening_adjustment_l+purchased_l
         tank_details.append({
             "tank_id":tid,
             "tank":tank.get("tank_code") or "—",
@@ -2677,6 +2689,8 @@ def daily_report():
             "opening_stock_liters":opening,
             "closing_stock_liters":closing,
             "purchase_discharged_liters":purchased_l,
+            "opening_adjustment_liters":opening_adjustment_l,
+            "continuity_gap_count":continuity_gap_count,
             "sales_liters":sales_l,
             "expected_closing_liters":expected,
             "difference_liters":diff,
