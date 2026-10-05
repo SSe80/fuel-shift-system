@@ -1637,47 +1637,13 @@ async function _saveTankEdit(){
   closeTankEdit();
   await loadSettingsData();
 }
-function convertTankDip(id,input){
-  const t=(window.tankRecords||[]).find(x=>String(x.id)===String(id)); if(!t)return;
-  const mm=Number(input?.value),output=document.getElementById('tank-dip-liters-'+id); if(!output)return;
-  if(!Number.isFinite(mm)||mm<0){output.textContent='—';return;}
+function tankLitersFromDip(t,mm){const v=Number(mm);if(!t||!Number.isFinite(v)||v<0)return null;const p=Array.isArray(t.calibration_points)?t.calibration_points.map(x=>({height_mm:Number(x?.height_mm),liters:Number(x?.liters)})).filter(x=>Number.isFinite(x.height_mm)&&Number.isFinite(x.liters)&&x.height_mm>=0&&x.liters>=0).sort((a,b)=>a.height_mm-b.height_mm):[];if(p.length>=2){if(v<=p[0].height_mm)return p[0].liters;if(v>=p[p.length-1].height_mm)return p[p.length-1].liters;for(let i=1;i<p.length;i++){const a=p[i-1],b=p[i];if(v<=b.height_mm)return a.liters+(b.liters-a.liters)*(v-a.height_mm)/(b.height_mm-a.height_mm);}}const rm=Number(t.calibration_mm),rl=Number(t.calibration_liters);return Number.isFinite(rm)&&rm>0&&Number.isFinite(rl)?v*rl/rm:null;}
+function setTankDipEquivalent(t,mm,id){const o=document.getElementById(id);if(!o)return null;const v=tankLitersFromDip(t,mm);o.textContent=v===null?'Set calibration first':v>Number(t?.capacity_liters||0)?'Over capacity':liters(v)+' L';return v;}
+function convertTankDip(id,input){const t=(window.tankRecords||[]).find(x=>String(x.id)===String(id));setTankDipEquivalent(t,Number(input?.value),'tank-dip-liters-'+id);}
 
-  // Prefer the complete calibration curve. Values between measured points are
-  // linearly interpolated; this is the same rule used by the tank API.
-  const points=Array.isArray(t.calibration_points)
-    ? t.calibration_points
-      .map(p=>({height_mm:Number(p?.height_mm),liters:Number(p?.liters)}))
-      .filter(p=>Number.isFinite(p.height_mm)&&Number.isFinite(p.liters)&&p.height_mm>=0&&p.liters>=0)
-      .sort((a,b)=>a.height_mm-b.height_mm)
-    : [];
-
-  let value=null;
-  if(points.length>=2){
-    if(mm<=points[0].height_mm){
-      value=points[0].liters;
-    }else if(mm>=points[points.length-1].height_mm){
-      value=points[points.length-1].liters;
-    }else{
-      for(let i=1;i<points.length;i++){
-        const a=points[i-1],b=points[i];
-        if(mm<=b.height_mm){
-          const ratio=(mm-a.height_mm)/(b.height_mm-a.height_mm);
-          value=a.liters+(b.liters-a.liters)*ratio;
-          break;
-        }
-      }
-    }
-  }else{
-    // Legacy tanks may still have a single calibration reference.
-    const refMm=Number(t.calibration_mm),refLiters=Number(t.calibration_liters);
-    if(Number.isFinite(refMm)&&refMm>0&&Number.isFinite(refLiters)){
-      value=mm*refLiters/refMm;
-    }
-  }
-
-  if(!Number.isFinite(value)){output.textContent='Set calibration first';return;}
-  output.textContent=value>Number(t.capacity_liters||0)?'Over capacity':liters(value)+' L';
-}
+function updateTankOpeningDip(value){const id=document.getElementById('activation-target-id')?.value;const tank=(window.tankRecords||[]).find(x=>String(x.id)===String(id));setTankDipEquivalent(tank,Number(value),'tank-opening-stock-equivalent');}
+function updateDispenserActivationDip(value){const id=document.getElementById('dispenser-activation-tank-dip')?.dataset.tankId;const tank=(window.tankRecords||[]).find(x=>String(x.id)===String(id));setTankDipEquivalent(tank,Number(value),'dispenser-activation-tank-equivalent');}
+function updateHandoverClosingDip(value){setTankDipEquivalent(window.handoverDraft?.tank,Number(value),'handover-closing-equivalent');}
 
 function toggleTank(id,active){ if(active){ deactivateTank(id); } else { openTankActivation(id); } }
 async function _deactivateTank(id){try{await api('/api/tanks/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}catch(e){throw e;}}
@@ -1690,7 +1656,7 @@ function openTankActivation(id){
   document.getElementById('activation-target-title').textContent='Activate Fuel Tank?';
   const priceBox=document.getElementById('product-activation-price'); if(priceBox)priceBox.style.display='none';
   const stockBox=document.getElementById('tank-activation-stock'); if(stockBox)stockBox.style.display='block';
-  const stockInput=document.getElementById('tank-opening-stock'); if(stockInput)stockInput.value='';
+  const stockInput=document.getElementById('tank-opening-stock'); if(stockInput)stockInput.value=''; const stockEq=document.getElementById('tank-opening-stock-equivalent'); if(stockEq)stockEq.textContent='Enter a dip to calculate liters.';
   document.getElementById('activation-target-message').innerHTML='<b>'+h(t.tank_code)+'</b> — '+h(product?.code_name||t.product)+'<br><span class="muted">Tank capacity: '+h(liters(t.capacity_liters))+' L • Product: '+(product?.active?'Active':'Inactive')+'</span>';
   openGenericActivationModal();
 }
@@ -1834,7 +1800,7 @@ async function _confirmDispenserActivation(){
   const employeeId=employeeSelect?.value||'';
   const attendantName=employeeSelect?.selectedOptions?.[0]?.textContent||'Selected attendant';
   const tankLitersInput=document.getElementById('dispenser-activation-tank-liters');
-  const openingTankLiters=tankLitersInput?.value.trim()!==''?Number(tankLitersInput.value):NaN;
+  const openingTankMm=Number(document.getElementById('dispenser-activation-tank-dip')?.value),openingTankLiters=tankLitersFromDip(tank,openingTankMm);
   const selected=[];
   ids.forEach((nozzleId,i)=>{
     const box=document.getElementById('nozzle-activation-input-'+i);
@@ -1845,7 +1811,7 @@ async function _confirmDispenserActivation(){
   const review=document.getElementById('dispenser-activation-review');
   const confirmation=document.getElementById('dispenser-attendant-confirmation');
   if(!Number.isFinite(openingTankLiters)||openingTankLiters<0){
-    error.textContent='Enter the tank opening liters.';
+    error.textContent='Enter a valid tank opening dip and ensure calibration is set.';
     error.style.display='block'; return false;
   }
   if(!employeeId){
@@ -2016,7 +1982,7 @@ async function openDashboardHandover(shiftId){
 }
 async function loadHandover(){
   try{
-    const me=await currentUser(),[shifts,employees,nozzles]=await Promise.all([api('/api/shifts'),api('/api/handover-receivers').catch(()=>[]),api('/api/nozzles')]);
+    const me=await currentUser(),[shifts,employees,nozzles,tanks]=await Promise.all([api('/api/shifts'),api('/api/handover-receivers').catch(()=>[]),api('/api/nozzles'),api('/api/tanks').catch(()=>[])]);
     const active=shifts.filter(s=>s.status==='active'&&String(s.employee_id)===String(me.id));
     const requested=new URLSearchParams(location.search).get('shift_id');
     const selected=active.find(s=>s.id===requested)||active[0];
@@ -2024,7 +1990,7 @@ async function loadHandover(){
       document.getElementById('handover-status').textContent='No active shift available for handover.';
       return;
     }
-    window.handoverDraft={shift_id:selected.id,to_employee_id:'',closing_reading:null,closing_liters:null};
+    const selectedNozzle=nozzles.find(n=>String(n.id)===String(selected.nozzle_id));const handoverTank=tanks.find(t=>String(t.id)===String(selectedNozzle?.tank_id||''));window.handoverDraft={shift_id:selected.id,to_employee_id:'',closing_reading:null,closing_liters:null,tank:handoverTank,nozzle_ids:selected.nozzle_ids||selectedNozzle?.nozzle_ids||[]};
     document.getElementById('handover-status').textContent='Review the closing readings and receiving attendant.';
     const receiving=employees.filter(e=>String(e.id)!==String(me.id));
     document.getElementById('handover-to-employee').innerHTML='<option value="">Select receiving attendant</option>'+
@@ -2053,7 +2019,7 @@ function continueHandover(event){
     const value=Number(document.getElementById('handover-nozzle-reading-'+i)?.value);
     return {nozzle_id:id,reading:value};
   });
-  const closingLiters=Number(document.getElementById('handover-closing-liters').value);
+  const closingMm=Number(document.getElementById('handover-closing-dip').value),closingLiters=tankLitersFromDip(window.handoverDraft?.tank,closingMm);
   if(!to){toast('Select a receiving attendant');return;}
   if(!closingNozzleReadings.length||closingNozzleReadings.some(x=>!Number.isFinite(x.reading)||x.reading<0)){toast('Enter a valid closing reading for every dispenser nozzle');return;}
   const normalizedOpenings=Array.isArray(window.handoverDraft?.nozzle_readings)?window.handoverDraft.nozzle_readings:[];
@@ -2068,9 +2034,9 @@ function continueHandover(event){
       return;
     }
   }
-  if(!Number.isFinite(closingLiters)||closingLiters<0){toast('Enter valid tank closing liters');return;}
+  if(!Number.isFinite(closingLiters)||closingLiters<0){toast('Enter a valid tank closing dip and ensure calibration is set.');return;}
   const primaryReading=closingNozzleReadings[0].reading;
-  window.handoverDraft={...window.handoverDraft,to_employee_id:to,closing_reading:primaryReading,closing_nozzle_readings:closingNozzleReadings,closing_liters:closingLiters};
+  window.handoverDraft={...window.handoverDraft,to_employee_id:to,closing_reading:primaryReading,closing_nozzle_readings:closingNozzleReadings,closing_liters:closingLiters,closing_mm:closingMm};
   const employeeSelect=document.getElementById('handover-to-employee');
   const employeeName=employeeSelect?.selectedOptions?.[0]?.textContent||to;
   const reviewNozzles=closingNozzleReadings.map((x,i)=>
@@ -2080,7 +2046,7 @@ function continueHandover(event){
     '<div class="handover-review-summary">'+
       '<div class="handover-review-main"><span>Receiving attendant</span><strong>'+h(employeeName)+'</strong></div>'+
       '<div class="handover-review-section"><div class="handover-review-section-title">Closing meter readings</div>'+reviewNozzles+'</div>'+
-      '<div class="handover-review-main"><span>Tank closing liters</span><strong>'+closingLiters.toLocaleString(undefined,{maximumFractionDigits:2})+' L</strong></div>'+
+      '<div class="handover-review-main"><span>Tank closing dip</span><strong>'+Number(closingMm).toLocaleString(undefined,{maximumFractionDigits:1})+' mm</strong></div><div class="handover-review-main"><span>Liter equivalent</span><strong>'+closingLiters.toLocaleString(undefined,{maximumFractionDigits:2})+' L</strong></div>'+
     '</div>';
   closeHandoverModal('handover-input-modal');
   const review=document.getElementById('handover-review-modal');
@@ -2109,13 +2075,14 @@ async function confirmHandoverSubmission(){
 }
 async function loadPendingHandovers(){
   try{
-    const [hs,emps]=await Promise.all([api('/api/handovers'),api('/api/users').catch(()=>[])]);
+    const [hs,emps,tanks]=await Promise.all([api('/api/handovers'),api('/api/users').catch(()=>[]),api('/api/tanks').catch(()=>[])]);
     const names=Object.fromEntries(emps.map(e=>[e.id,e.name]));
-    const pending=hs.filter(x=>x.status==='pending');
-    document.getElementById('pending-list').innerHTML=pending.length?pending.map(x=>`<div class="card"><h3>Handover ${h(x.id.slice(0,8))}</h3><p>From: <b>${h(names[x.from_employee_id]||x.from_employee_id)}</b><br>To: <b>${h(names[x.to_employee_id]||x.to_employee_id)}</b></p><p>Closing meter: ${liters(x.closing_reading)} • Tank: ${liters(x.closing_liters)} L</p><form class="form" onsubmit="confirmHandover(event,'${x.id}')"><input id="confirm-reading-${x.id}" type="number" min="0" step="0.01" placeholder="Opening meter" required><input id="confirm-mm-${x.id}" type="number" min="0" step="0.01" placeholder="Tank opening dip (mm)" required><input id="confirm-liters-${x.id}" type="number" min="0" step="0.01" placeholder="Tank opening liters" required><button class="primary">Confirm & Start Shift</button></form></div>`).join(''):'<div class="card"><p>No pending handovers.</p></div>';
+    const pending=hs.filter(x=>x.status==='pending');window.pendingHandoverTanks=Object.fromEntries(tanks.map(t=>[String(t.id),t]));
+    document.getElementById('pending-list').innerHTML=pending.length?pending.map(x=>`<div class="card"><h3>Handover ${h(x.id.slice(0,8))}</h3><p>From: <b>${h(names[x.from_employee_id]||x.from_employee_id)}</b><br>To: <b>${h(names[x.to_employee_id]||x.to_employee_id)}</b></p><p>Closing meter: ${liters(x.closing_reading)} • Tank: ${liters(x.closing_liters)} L</p><form class="form" onsubmit="confirmHandover(event,'${x.id}')"><input id="confirm-reading-${x.id}" type="number" min="0" step="0.01" placeholder="Opening meter" required><input id="confirm-mm-${x.id}" type="number" min="0" step="0.1" placeholder="Tank opening dip (mm)" oninput="updatePendingHandoverDip(&quot;${x.id}&quot;,this.value)" required><div id="confirm-liters-${x.id}" class="muted">Enter a dip to see liters.</div><button class="primary">Confirm & Start Shift</button></form></div>`).join(''):'<div class="card"><p>No pending handovers.</p></div>';
   }catch(e){document.getElementById('pending-list').textContent=e.message;}
 }
-async function confirmHandover(e,id){e.preventDefault();try{await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('confirm-reading-'+id).value),opening_mm:Number(document.getElementById('confirm-mm-'+id).value),opening_liters:Number(document.getElementById('confirm-liters-'+id).value),pin:document.getElementById('confirm-pin-'+id).value})});toast('Handover confirmed');setTimeout(()=>location.href='attendant-dashboard.html',700);}catch(x){toast(x.message);}}
+function updatePendingHandoverDip(id,value){setTankDipEquivalent(window.pendingHandoverTanks?.[String(id)],Number(value),'confirm-liters-'+id);}
+async function confirmHandover(e,id){e.preventDefault();try{const mm=Number(document.getElementById('confirm-mm-'+id).value),tank=window.pendingHandoverTanks?.[String(id)],litersValue=tankLitersFromDip(tank,mm);if(!Number.isFinite(litersValue)){toast('Enter a valid tank opening dip and ensure calibration is set.');return;}await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({opening_reading:Number(document.getElementById('confirm-reading-'+id).value),opening_mm:mm,opening_liters:litersValue,pin:document.getElementById('confirm-pin-'+id).value})});toast('Handover confirmed');setTimeout(()=>location.href='attendant-dashboard.html',700);}catch(x){toast(x.message);}}
 
 async function loadPurchases(){
   const statusEl=document.getElementById('purchase-status');
