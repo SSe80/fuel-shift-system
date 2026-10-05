@@ -2295,24 +2295,35 @@ async function loadDailyReportConfirmations(){
   }
 }
 async function previewDailyReport(){
-  const date=document.getElementById('report-date')?.value||new Date().toISOString().slice(0,10);
   const dateEl=document.getElementById('daily-report-date-cards');
   try{
+    const rows=await api('/api/reports/daily/confirmations');
+    const list=Array.isArray(rows)?rows:[];
+    const available=list
+      .filter(x=>x && x.date)
+      .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    if(!available.length){
+      toast('No DSR data is available for preview yet.');
+      return;
+    }
+    const date=available[0].date;
     const r=await api('/api/reports/daily?date='+encodeURIComponent(date));
     const s=r.summary||{}, p=r.dsr_performance||{};
     const item={
       date,
       confirmed_at:null,
-      total_sales_liters:p.total_sales_liters||s.sales_liters||0,
-      total_sales_amount:p.total_sales_amount||s.sales_amount||0,
-      shift_count:Array.isArray(r.shift_summary)?r.shift_summary.length:Number(s.shift_count||0),
-      dispenser_count:Array.isArray(r.dsr_dispenser_details)?r.dsr_dispenser_details.length:Number(s.dispenser_count||0)
+      total_sales_liters:p.total_sales_liters||s.sales_liters||available[0].total_sales_liters||0,
+      total_sales_amount:p.total_sales_amount||s.sales_amount||available[0].total_sales_amount||0,
+      shift_count:Array.isArray(r.shift_summary)?r.shift_summary.length:Number(s.shift_count||available[0].shift_count||0),
+      dispenser_count:Array.isArray(r.dsr_dispenser_details)?r.dsr_dispenser_details.length:Number(s.dispenser_count||available[0].dispenser_count||0)
     };
     if(dateEl)dateEl.innerHTML=renderDailyPreviewHistoryCard(item);
+    const input=document.getElementById('report-date');
+    if(input)input.value=date;
     window.scrollTo({top:0,behavior:'smooth'});
   }catch(e){
     console.error('DSR preview failed',e);
-    toast('Could not load the current DSR preview.');
+    toast('Could not load DSR preview: '+String(e.message||'Request failed'));
   }
 }
 function renderDailyPreviewHistoryCard(item){
