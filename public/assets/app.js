@@ -2077,7 +2077,7 @@ async function loadPendingHandovers(){
   try{
     const [hs,emps,tanks]=await Promise.all([api('/api/handovers'),api('/api/users').catch(()=>[]),api('/api/tanks').catch(()=>[])]);
     const names=Object.fromEntries(emps.map(e=>[e.id,e.name]));
-    const pending=hs.filter(x=>x.status==='pending');window.pendingHandoverTanks=Object.fromEntries(tanks.map(t=>[String(t.id),t]));
+    const pending=hs.filter(x=>x.status==='pending');window.pendingHandoverTanks=Object.fromEntries(pending.map(x=>[String(x.id),tanks.find(t=>String(t.id)===String(x.source_tank_id))]).filter(x=>x[1]));
     document.getElementById('pending-list').innerHTML=pending.length?pending.map(x=>`<div class="card"><h3>Handover ${h(x.id.slice(0,8))}</h3><p>From: <b>${h(names[x.from_employee_id]||x.from_employee_id)}</b><br>To: <b>${h(names[x.to_employee_id]||x.to_employee_id)}</b></p><p>Closing meter: ${liters(x.closing_reading)} • Tank: ${liters(x.closing_liters)} L</p><form class="form" onsubmit="confirmHandover(event,'${x.id}')"><input id="confirm-reading-${x.id}" type="number" min="0" step="0.01" placeholder="Opening meter" required><input id="confirm-mm-${x.id}" type="number" min="0" step="0.1" placeholder="Tank opening dip (mm)" oninput="updatePendingHandoverDip(&quot;${x.id}&quot;,this.value)" required><div id="confirm-liters-${x.id}" class="muted">Enter a dip to see liters.</div><button class="primary">Confirm & Start Shift</button></form></div>`).join(''):'<div class="card"><p>No pending handovers.</p></div>';
   }catch(e){document.getElementById('pending-list').textContent=e.message;}
 }
