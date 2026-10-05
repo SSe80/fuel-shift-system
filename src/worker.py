@@ -568,7 +568,7 @@ def tanks():
     if auth: return auth
 
     status, rows = sb("tanks", params={
-        "select":"id,tank_code,product,product_id,capacity_liters,current_mm,current_liters,opening_stock_liters,calibration_mm,calibration_liters,active,updated_at",
+        "select":"id,tank_code,product,product_id,capacity_liters,current_mm,current_liters,opening_stock_liters,calibration_mm,calibration_liters,calibration_points,active,updated_at",
         "order":"tank_code.asc"
     })
     if status != 200:
