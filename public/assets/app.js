@@ -2679,8 +2679,14 @@ async function loadDailyReport(){
       api('/api/reports/daily?date='+encodeURIComponent(d)),
       api('/api/products')
     ]);
-    const productCodes=Object.fromEntries((products||[]).map(p=>[String(p.name||'').toLowerCase(),p.code_name||p.name]));
-    const codeForProduct=p=>productCodes[String(p||'').toLowerCase()]||p||'Unknown';
+    const productInfo=Object.fromEntries((products||[]).map(p=>[String(p.name||'').toLowerCase(),{
+      code:p.code_name||p.name||'Unknown',
+      name:p.name||'Unknown',
+      color:p.color||''
+    }]));
+    const productFor=p=>productInfo[String(p||'').toLowerCase()]||{code:p||'Unknown',name:p||'Unknown',color:''};
+    const codeForProduct=p=>productFor(p).code;
+    window.currentDsrProductInfo=productInfo;
     const s=r.summary||{}, perf=r.dsr_performance||{};
     const dispenserDetails=Array.isArray(r.dsr_dispenser_details)?r.dsr_dispenser_details:[];
     const tankDetails=Array.isArray(r.dsr_tank_details)?r.dsr_tank_details:[];
@@ -2714,7 +2720,7 @@ async function loadDailyReport(){
         const meterPct=n.meter_reconciliation_pct==null?'—':Number(n.meter_reconciliation_pct).toFixed(1)+'%';
         const meterDiff=n.meter_difference_liters==null?'—':(Number(n.meter_difference_liters)>=0?'+':'')+liters(n.meter_difference_liters)+' L';
         return '<article class="dsr-nozzle-card">'+
-          '<div class="dsr-nozzle-head"><div><span class="daily-card-kicker">NOZZLE '+Number(n.nozzle_number||0)+'</span><h4>'+h(n.nozzle_code||'Nozzle')+'</h4><p>'+h(codeForProduct(n.product))+'</p></div><span class="dsr-percent">'+Number(n.sales_share_pct||0).toFixed(1)+'% of dispenser</span></div>'+
+          '<div class="dsr-nozzle-head"><div><span class="daily-card-kicker">NOZZLE '+Number(n.nozzle_number||0)+'</span><h4>'+h(n.nozzle_code||'Nozzle')+'</h4><p><i class="dsr-product-dot" style="'+(productFor(n.product).color?'background:'+h(productFor(n.product).color)+';':'')+'"></i>'+h(codeForProduct(n.product))+'</p></div><span class="dsr-percent">'+Number(n.sales_share_pct||0).toFixed(1)+'% of dispenser</span></div>'+
           '<div class="dsr-reading-grid"><div><span>Opening reading</span><b>'+reading(n.opening_reading)+'</b><small>First applicable shift</small></div><div><span>Closing reading</span><b>'+reading(n.closing_reading)+'</b><small>Last applicable shift</small></div><div><span>Liters sold</span><b>'+liters(n.sales_liters)+' L</b></div><div><span>Sales amount</span><b>'+money(n.sales_amount)+'</b></div></div>'+
           '<div class="dsr-nozzle-performance"><div><span>Meter delta</span><strong>'+liters(n.meter_delta_liters)+' L</strong><small>Sum of valid shift segments</small></div><div><span>Meter difference</span><strong>'+meterDiff+'</strong><small>Sold − meter</small></div><div><span>Meter reconciliation</span><strong>'+meterPct+'</strong><small>'+(Number((n.meter_segments||[]).length)||0)+' meter segment(s)</small></div></div>'+
           '<div class="dsr-attendants"><div class="dsr-subhead">Attendant shifts</div>'+(attendants||'<div class="daily-empty">No attendant shift records.</div>')+'</div>'+
@@ -2722,7 +2728,7 @@ async function loadDailyReport(){
       }).join('');
       return '<article class="dsr-dispenser-card">'+
         '<div class="dsr-dispenser-head"><div><span class="daily-card-kicker">DISPENSER</span><h3>'+h(disp.dispenser||'—')+'</h3><p>'+Number(disp.shift_count||0)+' shift(s) · '+Number(disp.attendant_count||0)+' attendant(s)</p></div><div class="dsr-dispenser-total"><b>'+liters(disp.sales_liters)+' L</b><span>'+money(disp.sales_amount)+'</span><small>'+Number(disp.sales_share_pct||0).toFixed(1)+'% of station</small></div></div>'+
-        '<div class="dsr-dispenser-meta"><div><span>Product</span><b>'+h(codeForProduct(disp.nozzles?.[0]?.product||'Unknown'))+'</b></div><div><span>Average / shift</span><b>'+liters(disp.average_liters_per_shift)+' L</b></div><div><span>Average sales / shift</span><b>'+money(disp.average_sales_per_shift)+'</b></div><div><span>Nozzles</span><b>'+Number((disp.nozzles||[]).length)+'</b></div></div>'+
+        '<div class="dsr-dispenser-meta"><div><span>Product</span><b><i class="dsr-product-dot" style="'+(productFor(disp.nozzles?.[0]?.product||'').color?'background:'+h(productFor(disp.nozzles?.[0]?.product||'').color)+';':'')+'"></i>'+h(codeForProduct(disp.nozzles?.[0]?.product||'Unknown'))+'</b></div><div><span>Average / shift</span><b>'+liters(disp.average_liters_per_shift)+' L</b></div><div><span>Average sales / shift</span><b>'+money(disp.average_sales_per_shift)+'</b></div><div><span>Nozzles</span><b>'+Number((disp.nozzles||[]).length)+'</b></div></div>'+
         '<div class="dsr-nozzles"><div class="dsr-subhead">Nozzle performance</div>'+(nozzles||'<div class="daily-empty">No nozzle records for this dispenser.</div>')+'</div>'+
       '</article>';
     }).join('');
@@ -2731,7 +2737,7 @@ async function loadDailyReport(){
     const tankHtml=tankDetails.map(t=>{
       const diff=Number(t.difference_liters||0), diffClass=Math.abs(diff)<0.001?'ok':(diff>0?'positive':'negative');
       return '<article class="dsr-tank-card">'+
-        '<div class="dsr-tank-head"><div><span class="daily-card-kicker">TANK</span><h3>'+h(t.tank||'—')+'</h3><p>'+h(codeForProduct(t.product))+' · '+Number(t.shift_count||0)+' shift(s)</p></div><span class="dsr-tank-status '+diffClass+'">'+(Math.abs(diff)<0.001?'Reconciled':'Variance')+'</span></div>'+
+        '<div class="dsr-tank-head"><div><span class="daily-card-kicker">TANK</span><h3>'+h(t.tank||'—')+'</h3><p><i class="dsr-product-dot" style="'+(productFor(t.product).color?'background:'+h(productFor(t.product).color)+';':'')+'"></i>'+h(codeForProduct(t.product))+' · '+Number(t.shift_count||0)+' shift(s)</p></div><span class="dsr-tank-status '+diffClass+'">'+(Math.abs(diff)<0.001?'Reconciled':'Variance')+'</span></div>'+
         '<div class="dsr-tank-grid"><div><span>Opening stock</span><b>'+liters(t.opening_stock_liters)+' L</b><small>First applicable shift</small></div><div><span>Purchases discharged</span><b>+'+liters(t.purchase_discharged_liters)+' L</b></div><div><span>Fuel sold</span><b>−'+liters(t.sales_liters)+' L</b></div><div><span>Expected closing</span><b>'+liters(t.expected_closing_liters)+' L</b></div><div><span>Recorded closing</span><b>'+liters(t.closing_stock_liters)+' L</b><small>Last applicable shift</small></div><div><span>Difference</span><b class="'+(diffClass==='ok'?'':diffClass)+'">'+(diff>=0?'+':'')+liters(diff)+' L</b></div></div>'+
         '<div class="dsr-tank-performance"><div><span>Variance</span><strong>'+Number(t.variance_pct||0).toFixed(2)+'%</strong></div><div><span>Reconciliation</span><strong>'+Number(t.reconciliation_pct||0).toFixed(1)+'%</strong></div><div><span>Capacity</span><strong>'+liters(t.capacity_liters)+' L</strong></div></div>'+
       '</article>';
