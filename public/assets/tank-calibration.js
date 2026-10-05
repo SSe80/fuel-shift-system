@@ -48,10 +48,31 @@
         continue;
       }
 
-      // Unquoted thousands-separated values become multiple numeric fields.
-      // Example: 1,000,115 = 1000 liters + 115 mm.
+      // Some exports turn a row such as "115,1000" into
+      // "1,151,000". Reconstruct the original two values before the
+      // generic CSV column handling below.
       if(cols.length>2 && cols.every(numeric)){
-        cols=[cols.slice(0,-1).join(''),cols[cols.length-1]];
+        const compact=cols.join('');
+        const candidates=[];
+        for(let digits=2;digits<=4;digits++){
+          if(compact.length<=digits) continue;
+          const first=Number(compact.slice(0,digits));
+          const second=Number(compact.slice(digits));
+          if(first>=0 && first<=10000 && second>=500 && second%500===0){
+            candidates.push([String(first),String(second)]);
+          }
+        }
+        if(candidates.length){
+          const previous=rows.length?Number(rows[rows.length-1].height_mm):null;
+          let chosen=candidates.find(pair=>{
+            const height=orientation==='liters_height'?Number(pair[1]):Number(pair[0]);
+            return previous===null || height>previous;
+          });
+          if(!chosen) chosen=candidates[0];
+          cols=orientation==='liters_height'
+            ? [chosen[1],chosen[0]]
+            : chosen;
+        }
       }
 
       // Some spreadsheet exports concatenate the two values and then apply
@@ -62,7 +83,7 @@
       // small 2-4 digit value and liters are whole 500-L increments.
       if(cols.length===1){
         const compact=String(cols[0]).replace(/[,\s]/g,'');
-        if(/^\\d+$/.test(compact)){
+        if(/^\d+$/.test(compact)){
           const candidates=[];
           for(let digits=2;digits<=4;digits++){
             if(compact.length<=digits) continue;
