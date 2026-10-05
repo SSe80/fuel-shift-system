@@ -6,34 +6,42 @@
     const lines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/);
     let orientation='height_liters';
 
+    const numeric = value => /^[-+]?\d+(?:\.\d+)?$/.test(String(value).trim());
+    const cleanNumberText = value => String(value ?? '')
+      .trim()
+      .replace(/^["']|["']$/g,'')
+      .replace(/\s/g,'')
+      .replace(/,/g,'');
+
     for(let i=0;i<lines.length;i++){
       const raw=lines[i].trim();
       if(!raw) continue;
 
-      // Parse the two-column calibration file without treating thousands
-      // separators inside numeric values as CSV delimiters.
-      let cols;
       const delimiter = raw.includes(';') ? ';' : raw.includes('\t') ? '\t' : ',';
-      if(delimiter === ','){
-        const m=raw.match(/^\s*(?:"([^"]*)"|([^,]+))\s*,\s*(?:"([^"]*)"|([^,]+))\s*$/);
-        if(m) cols=[m[1]??m[2],m[3]??m[4]].map(x=>String(x).trim());
-        else{
-          const parts=raw.split(',');
-          if(parts.length>2){
-            // For the documented source format "Liters,Height mm",
-            // values such as 1,000,115 mean 1000 liters and 115 mm.
-            const numeric=parts.map(x=>x.trim());
-            if(numeric.every(x=>/^\d+(?:\.\d+)?$/.test(x))){
-              cols=[numeric.slice(0,-1).join(''),numeric[numeric.length-1]];
-            }else cols=numeric;
-          }else cols=raw.split(',').map(x=>x.trim());
-        }
+      let cols;
+
+      if(delimiter !== ','){
+        cols=raw.split(delimiter).map(x=>x.trim().replace(/^["']|["']$/g,''));
       }else{
-        cols=raw.split(delimiter).map(x=>x.trim().replace(/^"|"$/g,''));
+        // First try normal CSV quoting. This handles files such as:
+        // 1,000,115   and   "1,000",115
+        const parts=raw.split(',');
+        if(parts.length===1){
+          cols=[raw.trim().replace(/^["']|["']$/g,'')];
+        }else{
+          const unquoted=parts.map(x=>x.trim().replace(/^["']|["']$/g,''));
+          // When commas are thousands separators, all fields are numeric.
+          // In Liters,Height mm format the last numeric token is height and
+          // every preceding token belongs to the liters value.
+          if(unquoted.length>2 && unquoted.every(numeric)){
+            cols=[unquoted.slice(0,-1).join(''),unquoted[unquoted.length-1]];
+          }else{
+            cols=unquoted;
+          }
+        }
       }
 
-      // Detect the column order from the header. This also supports the
-      // user's source format: Liters,Height mm.
+      // Detect the column order from the header.
       if(/height/i.test(raw) && /liter/i.test(raw)){
         const heightIndex=cols.findIndex(x=>/height/i.test(x));
         const litersIndex=cols.findIndex(x=>/liter/i.test(x));
@@ -43,37 +51,25 @@
         continue;
       }
 
-      let heightText, litersText;
-
-      if(cols.length===2){
-        heightText=cols[0];
-        litersText=cols[1];
-        if(orientation==='liters_height'){
-          heightText=cols[1];
-          litersText=cols[0];
-        }
-      }else if(cols.length===3 && cols.every(x=>/^\d+(?:\.\d+)?$/.test(x))){
-        // Common exported format when thousands separators are present:
-        // 1,000,115  => 1000 liters, 115 mm
-        const first=cols[0]+cols[1];
-        const second=cols[2];
-        if(orientation==='liters_height'){
-          litersText=first;
-          heightText=second;
-        }else{
-          heightText=first;
-          litersText=second;
-        }
-      }else{
-        throw new Error('CSV row '+(i+1)+' has '+cols.length+' columns. Use height_mm,liters (for example 70,500), or upload the original Liters,Height mm CSV.');
+      if(cols.length!==2){
+        throw new Error('CSV row '+(i+1)+' has '+cols.length+' columns. Use height_mm,liters or the original Liters,Height mm format.');
       }
 
-      const height=Number(String(heightText).replace(/,/g,''));
-      const liters=Number(String(litersText).replace(/,/g,''));
+      let heightText=cols[0];
+      let litersText=cols[1];
+      if(orientation==='liters_height'){
+        heightText=cols[1];
+        litersText=cols[0];
+      }
+
+      const height=Number(cleanNumberText(heightText));
+      const liters=Number(cleanNumberText(litersText));
+
       if(!Number.isFinite(height)||!Number.isFinite(liters)){
-        throw new Error('CSV row '+(i+1)+' contains an invalid number.');
+        throw new Error('CSV row '+(i+1)+' contains an invalid number. Check that the row contains numeric liters and height values.');
       }
       if(height<0||liters<0) throw new Error('CSV row '+(i+1)+' cannot contain negative values.');
+
       rows.push({height_mm:height,liters:liters});
     }
 
@@ -93,13 +89,25 @@
   function calibrationFileChanged(input){
     const status=document.getElementById('edit-tank-calibration-status');
     const file=input&&input.files&&input.files[0];
-    if(!file){ window.pendingTankCalibration=null; if(status) status.textContent='No new calibration file selected.'; return; }
+    if(!file){
+      window.pendingTankCalibration=null;
+      if(status) status.textContent='No new calibration file selected.';
+      return;
+    }
     const reader=new FileReader();
     reader.onload=function(){
       try{
         const points=parseCalibrationCsv(reader.result);
         window.pendingTankCalibration=points;
-        if(status) status.textContent=points.length+' calibration points loaded from '+file.name+'.';
+
+        const first=points[0], last=points[points.length-1];
+        const test=points.find(p=>Number(p.height_mm)===1600);
+        let message=points.length+' calibration points loaded from '+file.name+'.';
+        if(test) message+=' 1600 mm = '+Number(test.liters).toLocaleString()+' L.';
+        else if(first && last) message+=' Range: '+Number(first.height_mm).toLocaleString()+'–'+Number(last.height_mm).toLocaleString()+' mm.';
+        if(status) status.textContent=message;
+
+        if(typeof updateCalibrationVerification==='function') updateCalibrationVerification(points);
       }catch(e){
         window.pendingTankCalibration=null;
         input.value='';
@@ -139,7 +147,12 @@
     if(count) count.textContent=Array.isArray(points)&&points.length
       ? points.length+' calibration points loaded. The full curve will be used for dip conversion.'
       : 'No calibration loaded.';
-    if(result) result.textContent='Enter a dip to verify the calibration.';
+    if(result){
+      const test=Array.isArray(points)?points.find(p=>Number(p.height_mm)===1600):null;
+      result.textContent=test
+        ? '1,600 mm = '+formatCalibrationLiters(test.liters)+' (calibration point)'
+        : 'Enter a dip to verify the calibration.';
+    }
   }
 
   function verifyTankCalibrationDip(value){
@@ -161,7 +174,6 @@
   }
 
   window.verifyTankCalibrationDip=verifyTankCalibrationDip;
-
   window.calibrationFileChanged=calibrationFileChanged;
   window.parseTankCalibrationCsv=parseCalibrationCsv;
 
@@ -193,6 +205,7 @@
       const last=points[points.length-1];
       if(last.liters>cap) throw new Error('Calibration liters cannot exceed tank capacity.');
     }
+
     const details='<p><b>Tank:</b> '+h(old.tank_code||id)+'</p>'+
       settingsDiff('Capacity',liters(old.capacity_liters),liters(cap),'L')+
       (Array.isArray(points)?'<p><b>Calibration:</b> '+points.length+' points will be imported from the CSV.</p>':'<p><b>Calibration:</b> Unchanged</p>');
