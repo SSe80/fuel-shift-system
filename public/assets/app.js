@@ -1266,16 +1266,7 @@ async function loadSettingsData(){
 ${itemIndex===0?`<div class="settings-product-group-label"><span class="settings-product-group-color" style="background:${h(colorForProduct(t.product))}"></span>${h(codeForProduct(t.product))}</div>`:''}
 <div class="card settings-item-card ${t.active!==false?'settings-active-card':''} ${itemIndex===0&&groupIndex>0?'tank-group-start':''}" data-tank-product-group="${h(groupKey)}" data-settings-key="tanks" data-settings-id="${t.id}" onclick="toggleSettingsItem(event,this)">
   <div class="top"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">⋮</button><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><div class="settings-card-details"><div><span>Capacity:</span> <b>${liters(t.capacity_liters)} L</b></div><div><span>Status:</span> <b>${t.active===false?'Inactive':'Active'}</b></div><div><span>Opening liters:</span> <b>${t.opening_stock_liters==null?'Not recorded':liters(t.opening_stock_liters)+' L'}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeTank('${t.id}')">Remove</button></div></div>
-  <div onclick="event.stopPropagation()" style="margin:12px 0 2px;padding:10px 12px;border-top:1px solid rgba(127,127,127,.2)">
-    <div style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">Tank calibration</div>
-    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
-      <label style="margin:0;font-size:12px"><span class="muted">Dip reading (mm)</span><input id="tank-dip-mm-${t.id}" type="number" min="0" step="0.001" inputmode="decimal" value="${t.current_mm??''}" placeholder="Enter mm" oninput="convertTankDip('${t.id}',this)" style="width:100%;box-sizing:border-box"></label>
-      <div style="min-width:110px"><span class="muted" style="display:block;font-size:12px">Converted liters</span><b id="tank-dip-liters-${t.id}" style="font-size:16px">${(Number.isFinite(Number(t.current_mm))&&Number.isFinite(Number(t.calibration_mm))&&Number(t.calibration_mm)>0&&Number.isFinite(Number(t.calibration_liters)))?liters(Number(t.current_mm)*Number(t.calibration_liters)/Number(t.calibration_mm))+' L':'—'}</b></div>
-    </div>
-    <div class="muted" style="font-size:11px;margin-top:7px">${t.calibration_mm&&t.calibration_liters?'Reference: '+liters(t.calibration_mm)+' mm = '+liters(t.calibration_liters)+' L':'No calibration reference set — use Edit to set one.'}</div>
-    <button type="button" class="primary" style="margin-top:8px;width:100%" onclick="applyTankDip('${t.id}')">Save tank reading</button>
-  </div>
-</div>`).join(''):'<p class="muted">No tanks.</p>';
+  :'<p class="muted">No tanks.</p>';
   window.tankRecords=tanks;
   const dispenserGroups=[];
   const dispenserGroupMap=new Map();
