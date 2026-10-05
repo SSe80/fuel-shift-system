@@ -132,3 +132,8 @@ revoke execute on function public.generate_daily_report(date, uuid, text) from p
 revoke execute on function public.generate_daily_report(date, uuid) from public, anon, authenticated;
 grant execute on function public.generate_daily_report(date, uuid, text) to service_role;
 grant execute on function public.generate_daily_report(date, uuid) to service_role;
+
+-- The revision-aware function has a default revision reason for compatibility,
+-- but the old two-argument wrapper creates an ambiguous PostgREST overload.
+-- Remove that wrapper; callers use the three-argument function explicitly.
+drop function if exists public.generate_daily_report(date,uuid);
