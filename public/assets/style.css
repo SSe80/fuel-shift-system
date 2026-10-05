@@ -3821,3 +3821,11 @@ body.daily-preview-open{overflow:hidden}
   .dsr-tank-shift-row>div{grid-column:1/-1}
   .dsr-tank-shift-row em{grid-column:1/-1}
 }
+
+
+/* DSR discharge shift attribution */
+.dsr-discharge-shift{display:block;margin-top:3px;font-size:10px;line-height:1.35;font-weight:700}
+.dsr-discharge-shift.ok{color:#18794e}
+.dsr-discharge-shift.warning{color:#9a6700}
+.dsr-discharge-shift.negative{color:#b42318}
+.dsr-discharge-attribution-note{margin-top:8px;padding:8px 10px;border-radius:9px;background:rgba(180,35,24,.06);border:1px solid rgba(180,35,24,.14);font-size:11px;font-weight:600;line-height:1.4}
