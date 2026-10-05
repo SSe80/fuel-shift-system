@@ -2761,9 +2761,9 @@ async function loadDailyReport(){
     const codeForProduct=p=>productFor(p).code;
     window.currentDsrProductInfo=productInfo;
     const s=r.summary||{}, perf=r.dsr_performance||{};
-    const dispenserDetails=Array.isArray(r.dsr_dispenser_details)?r.dsr_dispenser_details:[];
-    const tankDetails=Array.isArray(r.dsr_tank_details)?r.dsr_tank_details:[];
-    const salesSummary=r.dsr_sales_summary||{};
+    const dispenserDetails=Array.isArray(r.dsr_dispenser_details)?r.dsr_dispenser_details:(Array.isArray(r.dispenser_summary)?r.dispenser_summary:[]);
+    const tankDetails=Array.isArray(r.dsr_tank_details)?r.dsr_tank_details:(Array.isArray(r.tank_details)?r.tank_details:[]);
+    const salesSummary=r.dsr_sales_summary||{by_product:Array.isArray(r.sales_summary?.by_product)?r.sales_summary.by_product:[],by_type:Array.isArray(r.sales_summary?.by_type)?r.sales_summary.by_type:[],total_amount:Number(r.total_sales_amount||0),total_liters:Number(r.total_sales_liters||0)};
     const shifts=Array.isArray(r.shift_summary)?r.shift_summary:[];
     const ready=Boolean(r.report_ready);
     window.currentDailyReportData=r;
