@@ -2223,13 +2223,24 @@ def daily_report():
         "select":"id,tank_code,product,capacity_liters,active,opening_stock_liters,current_liters",
         "order":"tank_code.asc","limit":"1000"
     })
-    purchases_status,purchase_rows=sb("purchases",params={
-        "purchase_date":"gte."+day_start,
-        "purchase_date":"lt."+day_end,
-        "select":"id,product,quantity_liters,supplier,invoice_number,tank_id,purchase_date,status,discharged_quantity_liters,discharge_history",
+    # Fetch purchase records broadly enough to catch a purchase created on
+    # an earlier day but discharged during this DSR date. The actual DSR
+    # purchase contribution is filtered below by purchase date OR discharge
+    # operation date.
+    purchases_status,purchase_source_rows=sb("purchases",params={
+        "select":"id,product,quantity_liters,supplier,invoice_number,tank_id,purchase_date,discharged_at,status,discharged_quantity_liters,discharge_history",
         "order":"purchase_date.asc","limit":"5000"
     })
-    if sales_status!=200:return jsonify({"error":sales_rows}),sales_status
+    if purchases_status!=200:return jsonify({"error":purchase_source_rows}),purchases_status
+    purchase_rows=[]
+    for p in purchase_source_rows:
+        purchase_date_local=_local_date_from_iso(p.get("purchase_date"))
+        has_dsr_discharge=any(
+            _local_date_from_iso(op.get("discharge_datetime"))==report_day
+            for op in _json_list(p.get("discharge_history"))
+        )
+        if purchase_date_local==report_day or has_dsr_discharge:
+            purchase_rows.append(p)
     if handover_status!=200:return jsonify({"error":handover_rows}),handover_status
     if nozzle_reading_status!=200:return jsonify({"error":nozzle_reading_rows}),nozzle_reading_status
     if dispenser_nozzle_status!=200:return jsonify({"error":dispenser_nozzle_rows}),dispenser_nozzle_status
