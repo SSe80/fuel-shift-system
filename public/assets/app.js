@@ -2797,7 +2797,7 @@ async function loadDailyReport(){
         const attributionLabel=attribution==='inside_shift'?'Inside shift':(attribution==='ambiguous_overlap'?'Overlapping shifts':'Outside shift');
         const attributionClass=attribution==='inside_shift'?'ok':(attribution==='ambiguous_overlap'?'warning':'negative');
         const shiftText=op.shift_id
-          ? 'Shift '+h(String(op.shift_id).slice(0,8))+' · '+h(dailyReportTime(op.shift_started_at))+' → '+h(dailyReportTime(op.shift_ended_at))
+          ? h(op.shift_employee_name||'Unknown attendant')+' · Shift '+h(String(op.shift_id).slice(0,8))+' · '+h(dailyReportTime(op.shift_started_at))+' → '+h(dailyReportTime(op.shift_ended_at))
           : (attribution==='ambiguous_overlap'?'Multiple matching shifts':'No active shift matched');
         return '<div class="dsr-tank-discharge-row"><div><b>Discharge '+(idx+1)+'</b><small>'+h(dailyReportTime(op.discharge_datetime))+'</small><small class="dsr-discharge-shift '+attributionClass+'">'+attributionLabel+' · '+shiftText+'</small></div><span>Delivered<br><strong>+'+liters(op.discharged_liters||0)+' L</strong></span><span>Before<br><strong>'+liters(op.tank_liters_before||0)+' L</strong></span><span>Recorded<br><strong>'+liters(op.tank_stock_recorded_liters||0)+' L</strong></span><span>Adjustment<br><strong>'+(adj>=0?'+':'')+liters(adj)+' L</strong></span><span>Compartments<br><strong>'+h((op.compartment_indexes||[]).map(x=>Number(x)+1).join(', ')||'—')+'</strong></span></div>';
       }).join('');
