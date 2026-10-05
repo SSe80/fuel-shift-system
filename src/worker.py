@@ -2305,6 +2305,41 @@ def daily_report():
     })
     if shift_status!=200:return jsonify({"error":day_shifts}),shift_status
 
+    # Discharge attribution must use every shift that overlaps the report
+    # window, not only shifts that started on the report date. This is important
+    # for long-running shifts that cross midnight: a discharge on Oct 5 can still
+    # belong to the DSR identified by a shift that started on Oct 3.
+    discharge_shift_status,discharge_attribution_shifts=sb("shifts",params={
+        "start_time":"lt."+day_end,
+        "or":"(end_time.gte."+day_start+",end_time.is.null)",
+        "select":"id,employee_id,nozzle_id,start_time,end_time,status",
+        "order":"start_time.asc","limit":"5000"
+    })
+    if discharge_shift_status!=200:
+        return jsonify({"error":discharge_attribution_shifts}),discharge_shift_status
+
+    def _parse_aware_dt_for_report(value):
+        if not value:
+            return None
+        try:
+            parsed=datetime.fromisoformat(str(value).replace("Z","+00:00"))
+            if parsed.tzinfo is None:
+                parsed=parsed.replace(tzinfo=timezone.utc)
+            return parsed.astimezone(timezone.utc)
+        except Exception:
+            return None
+
+    def _discharge_belongs_to_dsr_shift(value):
+        dt=_parse_aware_dt_for_report(value)
+        if not dt:
+            return False
+        for sh in discharge_attribution_shifts:
+            started=_parse_aware_dt_for_report(sh.get("start_time"))
+            ended=_parse_aware_dt_for_report(sh.get("end_time"))
+            if started and started <= dt and (ended is None or dt < ended):
+                return True
+        return False
+
     shift_ids=[str(x.get("id")) for x in day_shifts if x.get("id")]
     shift_id_filter="in.("+",".join(shift_ids)+")" if shift_ids else "in.(00000000-0000-0000-0000-000000000000)"
 
@@ -2345,28 +2380,6 @@ def daily_report():
     })
     if purchases_status!=200:return jsonify({"error":purchase_source_rows}),purchases_status
     purchase_rows=[]
-    def _discharge_belongs_to_dsr_shift(value):
-        dt=_parse_aware_dt_for_report(value)
-        if not dt:
-            return False
-        for sh in day_shifts:
-            started=_parse_aware_dt_for_report(sh.get("start_time"))
-            ended=_parse_aware_dt_for_report(sh.get("end_time"))
-            if started and started <= dt and (ended is None or dt < ended):
-                return True
-        return False
-
-    def _parse_aware_dt_for_report(value):
-        if not value:
-            return None
-        try:
-            parsed=datetime.fromisoformat(str(value).replace("Z","+00:00"))
-            if parsed.tzinfo is None:
-                parsed=parsed.replace(tzinfo=timezone.utc)
-            return parsed.astimezone(timezone.utc)
-        except Exception:
-            return None
-
     for p in purchase_source_rows:
         purchase_date_local=_local_date_from_iso(p.get("purchase_date"))
         has_dsr_discharge=any(
@@ -2946,27 +2959,10 @@ def daily_report():
 
     # Discharge operations are attributed by their actual timestamp, not by
     # purchase.shift_id (which may be null for multi-operation purchases).
-    # Use shifts that overlap the DSR day, including a shift that started on a
-    # previous day and continued into this day.
-    discharge_shift_status,discharge_attribution_shifts=sb("shifts",params={
-        "start_time":"lt."+day_end,
-        "or":"(end_time.gte."+day_start+",end_time.is.null)",
-        "select":"id,employee_id,nozzle_id,start_time,end_time,status",
-        "order":"start_time.asc","limit":"5000"
-    })
-    if discharge_shift_status!=200:
-        return jsonify({"error":discharge_attribution_shifts}),discharge_shift_status
-
+    # The overlapping shift windows were loaded before purchase filtering so
+    # cross-midnight purchases are included in the correct DSR.
     def _parse_aware_dt(value):
-        if not value:
-            return None
-        try:
-            dt=datetime.fromisoformat(str(value).replace("Z","+00:00"))
-            if dt.tzinfo is None:
-                dt=dt.replace(tzinfo=timezone.utc)
-            return dt.astimezone(timezone.utc)
-        except Exception:
-            return None
+        return _parse_aware_dt_for_report(value)
 
     def _attribute_discharge_to_shift(discharge_datetime):
         dt=_parse_aware_dt(discharge_datetime)
