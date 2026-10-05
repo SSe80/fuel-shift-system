@@ -3706,3 +3706,68 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
  .daily-report-page .daily-dsr-empty{padding:16px 10px}
  .daily-report-page .daily-dsr-preview-btn{width:100%;max-width:250px}
 }
+
+
+/* DSR report-paper preview modal */
+.daily-dsr-preview-modal{position:fixed;inset:0;z-index:1200;display:none;align-items:center;justify-content:center;padding:14px}
+.daily-dsr-preview-modal.open{display:flex}
+.daily-dsr-preview-backdrop{position:absolute;inset:0;background:#101828cc;backdrop-filter:blur(5px)}
+.daily-dsr-preview-dialog{position:relative;z-index:1;width:min(1080px,100%);height:min(94vh,900px);display:flex;flex-direction:column;background:#e9eef4;border:1px solid #cfd8e3;border-radius:18px;box-shadow:0 28px 90px #00000045;overflow:hidden}
+.daily-dsr-preview-toolbar{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;background:#fff;border-bottom:1px solid #dce3eb}
+.daily-dsr-preview-toolbar h2{margin:2px 0 0;font-size:18px;letter-spacing:-.02em;color:#17202a}
+.daily-dsr-preview-toolbar .daily-kicker{font-size:10px;color:#1264d8;font-weight:800;letter-spacing:.12em}
+.daily-dsr-preview-toolbar-actions{display:flex;align-items:center;gap:8px}
+.daily-dsr-preview-toolbar-actions button{min-height:40px;padding:9px 13px;border:1px solid #d4dde7;border-radius:10px;background:#f7f9fb;color:#344054;font-size:13px;font-weight:800}
+.daily-dsr-preview-toolbar-actions button:first-child{background:#1264d8;border-color:#1264d8;color:#fff}
+.daily-dsr-preview-close{width:40px;padding:0!important;font-size:25px!important;line-height:1}
+.daily-dsr-preview-paper{flex:1;overflow:auto;padding:30px 22px 44px}
+.daily-preview-paper-head,.daily-preview-paper-meta,.daily-preview-paper-status,.daily-preview-paper-summary,.daily-preview-paper-section,.daily-preview-paper-foot{width:min(860px,100%);margin-left:auto;margin-right:auto}
+.daily-preview-paper-head{background:#fff;padding:30px 34px 24px;border:1px solid #d8e0e8;border-bottom:0;border-radius:4px 4px 0 0;display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.daily-preview-paper-kicker{display:block;font-size:10px;letter-spacing:.14em;font-weight:900;color:#1264d8;margin-bottom:7px}
+.daily-preview-paper-head h2{margin:0;font-size:28px;letter-spacing:-.035em;color:#16202c}
+.daily-preview-paper-head p{margin:7px 0 0;color:#667085;font-size:14px;font-weight:650}
+.daily-preview-paper-badge{padding:7px 10px;border-radius:999px;background:#fff4d6;color:#8a5a00;border:1px solid #f1df9c;font-size:10px;font-weight:900;letter-spacing:.08em;white-space:nowrap}
+.daily-preview-paper-meta{display:flex;gap:0;background:#f8fafc;border-left:1px solid #d8e0e8;border-right:1px solid #d8e0e8;border-bottom:1px solid #d8e0e8;padding:12px 34px}
+.daily-preview-paper-meta span{flex:1;color:#667085;font-size:11px}
+.daily-preview-paper-meta span+span{border-left:1px solid #dfe5ec;padding-left:22px}
+.daily-preview-paper-meta b{display:block;color:#17202a;font-size:12px;margin-top:3px}
+.daily-preview-paper-status{background:#fff;border-left:1px solid #d8e0e8;border-right:1px solid #d8e0e8;padding:12px 34px;color:#667085;font-size:12px}
+.daily-preview-paper-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;background:#fff;border-left:1px solid #d8e0e8;border-right:1px solid #d8e0e8;padding:0 34px 26px}
+.daily-preview-paper-summary .daily-stat{min-width:0;padding:14px 13px;border:1px solid #e0e6ed;border-radius:10px;background:#fbfcfe}
+.daily-preview-paper-summary .daily-stat span{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#718096;font-weight:800}
+.daily-preview-paper-summary .daily-stat b{display:block;margin-top:5px;font-size:16px;line-height:1.15;color:#17202a;overflow-wrap:anywhere}
+.daily-preview-paper-summary .daily-stat small{display:block;margin-top:4px;color:#98a2b3;font-size:9px}
+.daily-preview-paper-section{background:#fff;border:1px solid #d8e0e8;border-top:0;padding:24px 34px}
+.daily-preview-paper-section .daily-section-head{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #edf1f5}
+.daily-preview-paper-section .daily-section-head h2{font-size:17px}
+.daily-preview-paper-section .daily-section-head p{font-size:11px}
+.daily-preview-paper-section .daily-section-head .daily-kicker{font-size:9px}
+.daily-preview-paper-section .daily-section{margin:0;padding:0;border:0;box-shadow:none}
+.daily-preview-paper-section .dsr-dispenser-list,.daily-preview-paper-section .dsr-tank-list,.daily-preview-paper-section .dsr-shift-list{display:grid;gap:10px}
+.daily-preview-paper-section .dsr-dispenser-card,.daily-preview-paper-section .dsr-tank-card,.daily-preview-paper-section .dsr-shift-card{box-shadow:none}
+.daily-preview-paper-section .daily-empty{font-size:12px}
+.daily-preview-paper-section:last-of-type{border-radius:0 0 4px 4px}
+.daily-preview-paper-foot{display:flex;justify-content:space-between;padding:14px 4px 0;color:#98a2b3;font-size:10px}
+.daily-preview-paper-section .dsr-performance-grid{gap:10px}
+body.daily-preview-open{overflow:hidden}
+@media(max-width:800px){
+  .daily-dsr-preview-modal{padding:0}
+  .daily-dsr-preview-dialog{width:100%;height:100%;border-radius:0;border:0}
+  .daily-dsr-preview-paper{padding:14px 8px 30px}
+  .daily-preview-paper-head{padding:22px 18px 18px}
+  .daily-preview-paper-head h2{font-size:23px}
+  .daily-preview-paper-meta,.daily-preview-paper-status{padding-left:18px;padding-right:18px}
+  .daily-preview-paper-summary{grid-template-columns:repeat(2,minmax(0,1fr));padding-left:18px;padding-right:18px}
+  .daily-preview-paper-section{padding:18px}
+}
+@media(max-width:480px){
+  .daily-dsr-preview-toolbar{padding:10px 12px}
+  .daily-dsr-preview-toolbar h2{font-size:16px}
+  .daily-dsr-preview-toolbar-actions button:first-child{font-size:11px;padding:8px 9px}
+  .daily-preview-paper-head{display:block}
+  .daily-preview-paper-badge{display:inline-flex;margin-top:12px}
+  .daily-preview-paper-meta{display:block}
+  .daily-preview-paper-meta span{display:block}
+  .daily-preview-paper-meta span+span{border-left:0;border-top:1px solid #dfe5ec;margin-top:8px;padding:8px 0 0}
+  .daily-preview-paper-summary{grid-template-columns:1fr 1fr}
+}
