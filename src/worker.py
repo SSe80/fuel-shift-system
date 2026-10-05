@@ -2157,7 +2157,17 @@ def daily_report():
         if h and h.get("sales_status")!="confirmed":
             unconfirmed_shifts.append({"shift_id":sid,"sales_status":h.get("sales_status") or "not_recorded"})
 
-    report_ready=(len(incomplete_shifts)==0 and len(unconfirmed_shifts)==0)
+    all_handover_recorded=(len(day_shifts)>0 and len(handover_by_shift)==len(day_shifts)) if day_shifts else False
+    all_sales_recorded=(
+        all(
+            bool(handover_by_shift.get(str(x.get("id"))))
+            and str((handover_by_shift.get(str(x.get("id"))) or {}).get("sales_status") or "")=="confirmed"
+            and bool((handover_by_shift.get(str(x.get("id"))) or {}).get("sales_submitted_at"))
+            for x in day_shifts
+        )
+        if day_shifts else False
+    )
+    report_ready=bool(day_shifts and len(incomplete_shifts)==0 and all_handover_recorded and all_sales_recorded)
 
     takeover_shift_ids=set(handover_by_shift)
     fuel_sale_rows=[x for x in sales_rows if float(x.get("quantity_liters") or 0)>0]
@@ -2723,11 +2733,13 @@ def generate_report():
     if any(not x.get("end_time") for x in day_shifts):
         return jsonify({"error":"Daily report is not ready: all shifts that started on this date must be completed first.","report_ready":False,"total_shifts":len(day_shifts),"completed_shifts":sum(1 for x in day_shifts if x.get("end_time"))}),409
     filt="in.("+",".join(shift_ids)+")" if shift_ids else "in.(00000000-0000-0000-0000-000000000000)"
-    hs,day_handovers=sb("shift_takeovers",params={"shift_id":filt,"select":"shift_id,sales_status","limit":"5000"})
+    hs,day_handovers=sb("shift_takeovers",params={"shift_id":filt,"select":"shift_id,sales_status,sales_submitted_at","limit":"5000"})
     if hs!=200:return jsonify({"error":day_handovers}),hs
-    unconfirmed=[x for x in day_handovers if x.get("sales_status") not in ("confirmed",None)]
-    if unconfirmed:
-        return jsonify({"error":"Daily report is not ready: sales confirmation is still pending for one or more completed shifts.","report_ready":False,"unconfirmed_shifts":len(unconfirmed)}),409
+    handover_by_shift={str(x.get("shift_id")):x for x in day_handovers if x.get("shift_id")}
+    if len(handover_by_shift)!=len(day_shifts):
+        return jsonify({"error":"Daily report is not ready: every completed shift must finish handover before the DSR can be generated.","report_ready":False}),409
+    if any(str(x.get("sales_status") or "")!="confirmed" or not x.get("sales_submitted_at") for x in day_handovers):
+        return jsonify({"error":"Daily report is not ready: every shift sale must be recorded and individually confirmed or confirmed through the DSR.","report_ready":False}),409
     cs,confirmation=sb("daily_report_confirmations",params={"report_date":"eq."+report_date,"status":"eq.confirmed","select":"id","limit":"1"})
     if cs!=200:return jsonify({"error":confirmation}),cs
     if not confirmation:
