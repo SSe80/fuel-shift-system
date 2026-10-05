@@ -1733,8 +1733,11 @@ async function _confirmGenericActivation(){
     if(type==='tank'){
       const stockInput=document.getElementById('tank-opening-stock');
       const stock=stockInput?.value.trim()!==''?Number(stockInput.value):NaN;
-      if(!Number.isFinite(stock)||stock<0){toast('Enter a valid opening stock reading in liters');return false;}
-      body.opening_stock_liters=stock;
+      const tank=(window.tankRecords||[]).find(x=>String(x.id)===String(id));
+      const stockLiters=tankLitersFromDip(tank,stock);
+      if(!Number.isFinite(stock)||stock<0||stockLiters===null){toast('Enter a valid opening dip and ensure calibration is set.');return false;}
+      body.opening_stock_liters=stockLiters;
+      body.opening_stock_mm=stock;
     }
     await api(path,{method:'PATCH',body:JSON.stringify(body)});
     closeGenericActivation();await loadSettingsData();
