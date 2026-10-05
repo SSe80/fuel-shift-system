@@ -2566,6 +2566,14 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
 .daily-report-date-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
 .daily-report-date-card.is-ready{border-color:rgba(44,160,80,.45)}
 .daily-report-date-card.is-pending{border-color:rgba(220,160,40,.45)}
+.daily-card-kicker{display:block;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;font-weight:800;opacity:.58;margin-bottom:4px}
+.daily-dsr-history-card{padding:16px}
+.daily-dsr-history-card .daily-report-date-top>div{min-width:0}
+.daily-dsr-history-card .daily-report-date-top b{display:block;font-size:1.02rem;letter-spacing:.01em}
+.daily-dsr-status-confirmed{font-size:.68rem!important;font-weight:800!important;padding:5px 8px!important;border-radius:999px;background:rgba(34,197,94,.12)!important;color:inherit}
+.daily-dsr-history-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:13px;padding-top:10px;border-top:1px solid var(--border,#ddd);font-size:.7rem;opacity:.7}
+.daily-dsr-history-foot span:last-child{font-weight:800;opacity:1}
+
 .daily-report-date-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .daily-report-date-top b{font-size:1rem}
 .daily-report-date-top span{font-size:.7rem;font-weight:700;padding:4px 7px;border-radius:999px;background:var(--accent-soft,#f3f6ff)}
