@@ -2281,7 +2281,7 @@ function renderDailyHistoryCard(item){
       '<div><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div>'+
       '<div><span>DSR date</span><strong>'+h(dateLabel)+'</strong></div>'+
     '</div>'+
-    '<div class="daily-dsr-history-actions"><button type="button" class="daily-dsr-expand" onclick="toggleDailyHistoryCard(event,this)">Details <span>⌄</span></button><button type="button" class="daily-dsr-view" onclick="selectDailyReportDate(\''+item.date+'\')">View full report →</button></div>'+
+    '<div class="daily-dsr-history-actions"><button type="button" class="daily-dsr-expand" aria-expanded="false" onclick="toggleDailyHistoryCard(event,this)">Details <span>⌄</span></button><button type="button" class="daily-dsr-view" onclick="selectDailyReportDate(\''+item.date+'\')">View full report <span>→</span></button></div>'+
   '</article>';
 }
 function renderDailyPendingConfirmationCard(item){
@@ -2331,6 +2331,7 @@ function toggleDailyHistoryCard(event,button){
   if(!card)return;
   card.classList.toggle('is-expanded');
   const expanded=card.classList.contains('is-expanded');
+  button.setAttribute('aria-expanded',String(expanded));
   button.innerHTML=expanded?'Less <span>⌃</span>':'Details <span>⌄</span>';
 }
 function closeDailyReportDetail(){
