@@ -1838,6 +1838,49 @@ def confirm_sale_confirmation(takeover_id):
         "p_checked_sale_ids":checked
     })
     if status>=400:return jsonify(result),status
+
+    # If this individual confirmation completes every shift that started on
+    # the same Addis Ababa report date, promote that DSR directly to history.
+    # This preserves the two admin confirmation paths: individual sales or
+    # the combined DSR card.
+    ts,takeover=sb("shift_takeovers",params={
+        "id":"eq."+takeover_id,
+        "select":"id,shift_id,sales_status",
+        "limit":"1"
+    })
+    if ts==200 and takeover:
+        shift_id=takeover[0].get("shift_id")
+        ss,shift_rows=sb("shifts",params={
+            "id":"eq."+str(shift_id),
+            "select":"id,start_time",
+            "limit":"1"
+        })
+        if ss==200 and shift_rows and shift_rows[0].get("start_time"):
+            report_day=_local_date_from_iso(shift_rows[0].get("start_time"))
+            if report_day:
+                snap,serr,sstatus=_daily_confirmation_snapshot(report_day)
+                if not serr and snap.get("all_shifts_complete") and snap.get("all_handover_recorded") and snap.get("all_sales_recorded") and snap.get("sales_confirmation_ready"):
+                    now=datetime.now(timezone.utc).isoformat()
+                    ps,pr=sb("daily_report_confirmations",method="POST",params={"on_conflict":"report_date"},body={
+                        "report_date":report_day.isoformat(),
+                        "total_sales_liters":snap["total_sales_liters"],
+                        "total_sales_amount":snap["total_sales_amount"],
+                        "sales_by_method":snap["sales_by_method"],
+                        "shift_count":snap["shift_count"],
+                        "status":"confirmed",
+                        "confirmed_at":now,
+                        "confirmed_by":session["employee_id"],
+                        "updated_at":now
+                    },prefer="resolution=merge-duplicates,return=representation")
+                    if ps>=400:
+                        return jsonify({"error":pr}),ps
+                    # Generate/update the finalized report so selecting the
+                    # newly moved DSR history card remains fully functional.
+                    rpc("generate_daily_report",{
+                        "p_report_date":report_day.isoformat(),
+                        "p_generated_by":session["employee_id"]
+                    })
+
     return jsonify(result),200
 
 @app.post("/api/sales/confirmations/<takeover_id>/cancel")
