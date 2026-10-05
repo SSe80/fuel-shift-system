@@ -2442,20 +2442,12 @@ function downloadDailyReportPdf(){
   const d=window.currentDailyReportDate||document.getElementById('report-date')?.value;
   if(!r){toast('Open a DSR detail page first.');return;}
 
-  // The PDF uses standard Helvetica fonts. Convert common UTF-8 punctuation
-  // to safe WinAnsi/ASCII equivalents so characters such as •, →, − and
-  // mojibake never appear in the downloaded report.
   const pdfSafe=s=>String(s??'')
     .replace(/â¢|â€¢|•/g,' - ')
-    .replace(/â|–|—/g,'-')
-    .replace(/â|→/g,'->')
-    .replace(/â|−/g,'-')
-    .replace(/Â/g,'')
-    .replace(/â|“/g,'"').replace(/â|”/g,'"')
-    .replace(/â|’/g,"'")
-    .replace(/Ã©|é/g,'e').replace(/Ã¨|è/g,'e').replace(/Ã|à/g,'a')
-    .replace(/[^\x00-\xFF]/g,'?');
-
+    .replace(/â|–|—/g,'-').replace(/â|→/g,'->').replace(/â|−/g,'-')
+    .replace(/Â/g,'').replace(/â|“/g,'"').replace(/â|”/g,'"')
+    .replace(/â|’/g,"'").replace(/Ã©|é/g,'e').replace(/Ã¨|è/g,'e')
+    .replace(/Ã|à/g,'a').replace(/[^\x00-\xFF]/g,'?');
   const escPdf=s=>pdfSafe(s).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
   const num=v=>Number.isFinite(Number(v))?Number(v):0;
   const pct=v=>Number.isFinite(Number(v))?Number(v).toFixed(1)+'%':'-';
@@ -2475,52 +2467,58 @@ function downloadDailyReportPdf(){
     if(!m)return null;
     return [parseInt(m[0].slice(0,2),16)/255,parseInt(m[0].slice(2,4),16)/255,parseInt(m[0].slice(4,6),16)/255];
   };
+
   const W=595,H=842,margin=38,contentW=W-margin*2;
-  const pages=[]; let page=[],y=H-50,pageNo=0;
-  const newPage=()=>{if(page.length)pages.push(page);page=[];y=H-50;pageNo++;};
+  const pages=[];let page=[],y=H-48,pageNo=0;
+  const newPage=()=>{if(page.length)pages.push(page);page=[];y=H-48;pageNo++;};
   const finish=()=>{if(page.length)pages.push(page);};
-  const color=(r,g,b)=>`${r} ${g} ${b}`;
-  const line=(yy)=>page.push('0.6 w 0.84 0.87 0.91 RG '+margin+' '+yy+' m '+(W-margin)+' '+yy+' l S');
+  const line=yy=>page.push('0.6 w 0.84 0.87 0.91 RG '+margin+' '+yy+' m '+(W-margin)+' '+yy+' l S');
   const rect=(x,yy,w,h,fill='0.97 0.98 1')=>{
     page.push(fill+' rg '+x+' '+yy+' '+w+' '+h+' re f');
-    page.push('0.72 w 0.82 0.86 0.91 RG '+x+' '+yy+' '+w+' '+h+' re S');
+    page.push('0.65 w 0.82 0.86 0.91 RG '+x+' '+yy+' '+w+' '+h+' re S');
   };
   const text=(x,yy,s,size=8,bold=false,fill='0.12 0.17 0.23')=>{
     page.push('BT /'+(bold?'F2':'F1')+' '+size+' Tf '+fill+' rg '+x+' '+yy+' Td ('+escPdf(s)+') Tj ET');
   };
-  const wrapped=(x,yy,s,maxChars=88,size=8,leading=10,bold=false)=>{
-    const words=pdfSafe(s).split(/\s+/),rows=[];let row='';
-    words.forEach(w=>{const t=row?row+' '+w:w;if(t.length>maxChars){if(row)rows.push(row);row=w;}else row=t;});
-    if(row)rows.push(row);
-    rows.forEach((row,i)=>text(x,yy-i*leading,row,size,bold));
-    return rows.length*leading;
-  };
   const ensure=h=>{if(y-h<62)newPage();};
-  const header=()=>{
-    text(margin,y,'DAILY SALES REPORT',20,true);y-=20;
-    text(margin,y,'STATION DAILY RECONCILIATION',7,true,'0.07 0.39 0.82');y-=13;
-    text(margin,y,'DSR - '+dailyReportIdLabel(d),9,false,'0.38 0.43 0.50');
-    text(W-margin-80,y,r.report_ready?'CONFIRMED':'PENDING',7,true,r.report_ready?'0.05 0.48 0.28':'0.58 0.40 0.02');
-    y-=12;line(y);y-=18;
-  };
   const footer=()=>{
+    line(39);
     text(margin,25,'DSR - '+dailyReportIdLabel(d),6,false,'0.48 0.52 0.58');
-    text(W-margin-70,25,'Page '+pageNo,6,false,'0.48 0.52 0.58');
+    text(W-margin-48,25,'Page '+pageNo,6,false,'0.48 0.52 0.58');
+  };
+  const header=(continued=false)=>{
+    text(margin,y,continued?'DAILY SALES REPORT - CONTINUED':'DAILY SALES REPORT',20,true);
+    y-=19;
+    text(margin,y,'STATION DAILY RECONCILIATION',7,true,'0.07 0.39 0.82');
+    if(!continued){
+      y-=13;
+      text(margin,y,'DSR - '+dailyReportIdLabel(d),9,false,'0.38 0.43 0.50');
+      const status=r.report_ready?'CONFIRMED':'PENDING';
+      text(W-margin-(status.length*4.1),y,status,7,true,r.report_ready?'0.05 0.48 0.28':'0.58 0.40 0.02');
+    }
+    y-=12;line(y);y-=16;
   };
   const section=title=>{
-    ensure(30);y-=4;text(margin,y,title.toUpperCase(),10,true,'0.13 0.20 0.29');y-=7;line(y);y-=14;
+    ensure(31);y-=2;text(margin,y,title.toUpperCase(),10,true,'0.13 0.20 0.29');y-=7;line(y);y-=13;
   };
-  const kv=(label,value,x=margin,valueX=185)=>{
-    ensure(18);text(x,y,label,7.5,false,'0.40 0.45 0.51');text(valueX,y,value,8,true);y-=16;
+  const kv=(label,value)=>{
+    ensure(18);text(margin,y,label,7.5,false,'0.40 0.45 0.51');text(margin+178,y,value,8,true);y-=16;
   };
   const tableHeader=(cols,widths)=>{
-    const h=20;ensure(h+4);rect(margin,y-h,contentW,h,'0.10 0.25 0.40');
-    let x=margin+8;cols.forEach((c,i)=>{text(x,y-13,c,6.5,true,'1 1 1');x+=widths[i];});y-=h+4;
+    const h=20;ensure(h+34);
+    rect(margin,y-h,contentW,h,'0.10 0.25 0.40');
+    let x=margin+8;
+    cols.forEach((c,i)=>{text(x,y-13,c,6.3,true,'1 1 1');x+=widths[i];});
+    y-=h+7;
+  };
+  const colorDot=(x,yy,hex,size=7)=>{
+    const rgb=hexRgb(hex);
+    if(rgb)page.push(rgb[0]+' '+rgb[1]+' '+rgb[2]+' rg '+x+' '+(yy-size/2)+' '+size+' '+size+' re f');
   };
 
+  // PAGE 1: overview + core reconciliation
   newPage();header();
 
-  // Executive KPIs
   const kpis=[
     ['FUEL SOLD',fmtL(perf.total_sales_liters??summary.sales_liters),'0.90 0.96 1.00'],
     ['TOTAL SALES',fmtM(perf.total_sales_amount??summary.sales_amount),'0.95 0.97 1.00'],
@@ -2530,12 +2528,13 @@ function downloadDailyReportPdf(){
   ];
   const kw=(contentW-12)/2;
   kpis.forEach((k,i)=>{
-    const row=Math.floor(i/2),col=i%2,xx=margin+col*(kw+12),yy=y-row*54;
-    rect(xx,yy-40,kw,44,k[2]);text(xx+10,yy-12,k[0],6.5,true,'0.39 0.45 0.52');text(xx+10,yy-30,k[1],13,true,'0.08 0.38 0.76');
+    const row=Math.floor(i/2),col=i%2,xx=margin+col*(kw+12),yy=y-row*50;
+    rect(xx,yy-37,kw,41,k[2]);
+    text(xx+10,yy-11,k[0],6.5,true,'0.39 0.45 0.52');
+    text(xx+10,yy-29,k[1],13,true,'0.08 0.38 0.76');
   });
-  y-=Math.ceil(kpis.length/2)*54+6;
+  y-=Math.ceil(kpis.length/2)*50+3;
 
-  // Reconciliation health / statistics
   section('Reconciliation overview');
   const avgNozzle=num(perf.average_nozzle_reconciliation_pct);
   const meterDiff=num(perf.sales_amount_difference);
@@ -2543,112 +2542,113 @@ function downloadDailyReportPdf(){
   const avgL=num(perf.average_liters_per_shift);
   const avgSales=num(perf.average_sales_per_shift);
   const calculatedSales=num(perf.calculated_sales_amount);
-  const stats=[
-    ['Avg. liters / shift',fmtL(avgL)],
-    ['Avg. sales / shift',fmtM(avgSales)],
-    ['Meter-calculated sales',fmtM(calculatedSales)],
-    ['Recorded vs meter',fmtM(meterDiff)],
-    ['Avg. nozzle reconciliation',pct(avgNozzle)],
-    ['Total tank difference',signedL(tankDiff)]
-  ];
-  stats.forEach((s,i)=>{
-    const col=i%2,row=Math.floor(i/2),xx=margin+col*(contentW/2),yy=y-row*27;
-    text(xx,yy,s[0],7,false,'0.43 0.48 0.54');text(xx+135,yy,s[1],8,true);
+  [
+    ['Avg. liters / shift',fmtL(avgL)],['Avg. sales / shift',fmtM(avgSales)],
+    ['Meter-calculated sales',fmtM(calculatedSales)],['Recorded vs meter',fmtM(meterDiff)],
+    ['Avg. nozzle reconciliation',pct(avgNozzle)],['Total tank difference',signedL(tankDiff)]
+  ].forEach((s,i)=>{
+    const col=i%2,row=Math.floor(i/2),xx=margin+col*(contentW/2),yy=y-row*26;
+    text(xx,yy,s[0],7,false,'0.43 0.48 0.54');text(xx+136,yy,s[1],8,true);
   });
-  y-=Math.ceil(stats.length/2)*27+4;
+  y-=78;
 
-  // Contribution statistics
   section('Performance statistics');
   const topDisp=[...dispensers].sort((a,b)=>num(b.sales_liters)-num(a.sales_liters))[0];
   const topProduct=[...products].sort((a,b)=>num(b.amount)-num(a.amount))[0];
-  const statRows=[
+  [
     ['Top dispenser',topDisp?.dispenser||'-',topDisp?fmtL(topDisp.sales_liters):'-'],
     ['Top product',topProduct?.product||'-',topProduct?fmtL(topProduct.liters):'-'],
-    ['Average nozzle reconciliation',String(pct(avgNozzle)),''],
+    ['Average nozzle reconciliation',pct(avgNozzle),''],
     ['Nozzle count',String(num(perf.nozzle_count)),''],
     ['Attendants',String(num(perf.attendant_count)),'']
-  ];
-  statRows.forEach(row=>{ensure(20);text(margin,y,row[0],7.5,false);text(margin+170,y,pdfSafe(row[1]),8,true);text(margin+430,y,row[2],8,true);y-=16;});
+  ].forEach(row=>{
+    ensure(17);text(margin,y,row[0],7.5,false,'0.40 0.45 0.51');text(margin+170,y,pdfSafe(row[1]),8,true);text(margin+430,y,row[2],8,true);y-=16;
+  });
 
-  // Dispenser / nozzle table
   section('Dispenser and nozzle performance');
   tableHeader(['DISPENSER / NOZZLE','OPENING','CLOSING','SOLD','METER','RECON.'],[145,65,65,65,65,55]);
   dispensers.forEach(disp=>{
-    (disp.nozzles||[]).forEach((n,idx)=>{
-      ensure(34);
-      const yy=y;
-      const pc=productFor(n.product);
-      const rgb=hexRgb(pc.color);
-      if(rgb)page.push(rgb[0]+' '+rgb[1]+' '+rgb[2]+' rg '+(margin+8)+' '+(yy-2)+' 7 7 re f');
-      text(margin+19,yy,pdfSafe((disp.dispenser||'Dispenser')+' / '+(n.nozzle_code||'Nozzle '+num(n.nozzle_number))),7.2,true);
-      if(pc.code)text(margin+19,yy-9,pdfSafe(pc.code),5.8,false,'0.38 0.43 0.50');
-      text(margin+153,yy,reading(n.opening_reading),7.2);
-      text(margin+218,yy,reading(n.closing_reading),7.2);
-      text(margin+283,yy,fmtL(n.sales_liters),7.2);
-      text(margin+348,yy,fmtL(n.meter_delta_liters),7.2);
-      text(margin+413,yy,pct(n.meter_reconciliation_pct),7.2,true);
-      y-=17;
+    (disp.nozzles||[]).forEach(n=>{
+      ensure(30);
+      const yy=y,pc=productFor(n.product);
+      colorDot(margin+8,yy-4,pc.color,7);
+      const nozzleLabel=n.nozzle_code&&String(n.nozzle_code).toLowerCase()!==String(disp.dispenser||'').toLowerCase()
+        ? n.nozzle_code : 'N'+(n.nozzle_number||1);
+      text(margin+19,yy,pdfSafe((disp.dispenser||'Dispenser')+' / '+nozzleLabel),7.1,true);
+      text(margin+19,yy-10,pdfSafe(pc.code||pc.name||'Unknown'),5.9,false,'0.38 0.43 0.50');
+      text(margin+153,yy,reading(n.opening_reading),7.1);
+      text(margin+218,yy,reading(n.closing_reading),7.1);
+      text(margin+283,yy,fmtL(n.sales_liters),7.1);
+      text(margin+348,yy,fmtL(n.meter_delta_liters),7.1);
+      text(margin+413,yy,pct(n.meter_reconciliation_pct),7.1,true);
+      y-=27;
     });
   });
 
-  // Tank table
   section('Tank reconciliation');
   tableHeader(['TANK / PRODUCT','OPENING','PURCHASES','SOLD','EXPECTED','RECORDED'],[150,68,68,65,70,65]);
   tanks.forEach(t=>{
-    ensure(35);
-    const pc=productFor(t.product),rgb=hexRgb(pc.color);
-    if(rgb)page.push(rgb[0]+' '+rgb[1]+' '+rgb[2]+' rg '+(margin+8)+' '+(y-2)+' 7 7 re f');
-    text(margin+19,y,pdfSafe((t.tank||'Tank')+' / '+(pc.code||t.product||'')),7.2,true);
-    text(margin+19,y-9,pdfSafe(pc.name||''),5.8,false,'0.38 0.43 0.50');
-    text(margin+158,y,fmtL(t.opening_stock_liters),7.2);
-    text(margin+226,y,'+'+fmtL(t.purchase_discharged_liters),7.2);
-    text(margin+294,y,fmtL(t.sales_liters),7.2);
-    text(margin+359,y,fmtL(t.expected_closing_liters),7.2);
-    text(margin+429,y,fmtL(t.closing_stock_liters),7.2,true);
-    y-=17;
-    text(margin+8,y,'Difference '+signedL(t.difference_liters)+'  |  Variance '+pct(t.variance_pct)+'  |  Reconciliation '+pct(t.reconciliation_pct),6.8,false,'0.40 0.45 0.51');
-    y-=14;
+    ensure(42);
+    const yy=y,pc=productFor(t.product);
+    colorDot(margin+8,yy-4,pc.color,7);
+    text(margin+19,yy,pdfSafe((t.tank||'Tank')+' / '+(pc.code||t.product||'')),7.1,true);
+    text(margin+19,yy-10,pdfSafe(pc.name||''),5.9,false,'0.38 0.43 0.50');
+    text(margin+158,yy,fmtL(t.opening_stock_liters),7.1);
+    text(margin+226,yy,'+'+fmtL(t.purchase_discharged_liters),7.1);
+    text(margin+294,yy,fmtL(t.sales_liters),7.1);
+    text(margin+359,yy,fmtL(t.expected_closing_liters),7.1);
+    text(margin+429,yy,fmtL(t.closing_stock_liters),7.1,true);
+    text(margin+19,yy-22,'Difference '+signedL(t.difference_liters)+'  |  Variance '+pct(t.variance_pct)+'  |  Reconciliation '+pct(t.reconciliation_pct),6.6,false,'0.40 0.45 0.51');
+    y-=35;
   });
 
-  // Sales statistics
+  // PAGE 2: sales, shifts, final performance
+  newPage();header(true);
   section('Sales statistics');
   if(products.length){
     text(margin,y,'BY PRODUCT',7,true,'0.07 0.39 0.82');y-=13;
     products.forEach(x=>{
       ensure(18);
-      const pc=productFor(x.product),rgb=hexRgb(pc.color);
-      if(rgb)page.push(rgb[0]+' '+rgb[1]+' '+rgb[2]+' rg '+margin+' '+(y-2)+' 7 7 re f');
-      text(margin+12,y,pdfSafe(pc.code||x.product||'Product'),7.5);
+      const pc=productFor(x.product);
+      colorDot(margin+3,y-3,pc.color,7);
+      text(margin+14,y,pdfSafe(pc.code||x.product||'Product'),7.5);
       text(margin+245,y,fmtL(x.liters),7.5);
       text(margin+350,y,fmtM(x.amount),7.5,true);
       text(margin+470,y,pct(x.percentage),7.5,true);
-      y-=15;
+      y-=16;
     });
+  }else{
+    text(margin,y,'No product sales recorded for this DSR.',7.5,false,'0.45 0.50 0.56');y-=17;
   }
+  y-=3;
   if(methods.length){
-    y-=4;text(margin,y,'BY SALES METHOD',7,true,'0.07 0.39 0.82');y-=13;
-    methods.forEach(x=>{ensure(18);text(margin,y,pdfSafe(x.type||'Method'),7.5);text(margin+350,y,fmtM(x.amount),7.5,true);text(margin+470,y,pct(x.percentage),7.5,true);y-=15;});
+    text(margin,y,'BY SALES METHOD',7,true,'0.07 0.39 0.82');y-=13;
+    methods.forEach(x=>{
+      ensure(18);text(margin,y,pdfSafe(x.type||'Method'),7.5);
+      text(margin+350,y,fmtM(x.amount),7.5,true);
+      text(margin+470,y,pct(x.percentage),7.5,true);y-=16;
+    });
+  }else{
+    text(margin,y,'No payment-method sales recorded for this DSR.',7.5,false,'0.45 0.50 0.56');y-=17;
   }
-  ensure(30);y-=3;line(y);y-=14;
+  y-=2;line(y);y-=14;
   kv('Sales total',fmtM(sales.total_amount??perf.total_sales_amount));
   kv('Liters total',fmtL(sales.total_liters??perf.total_sales_liters));
 
-  // Shift summary
   section('Shift summary');
   shifts.forEach((s,i)=>{
-    ensure(55);
-    rect(margin,y-42,contentW,48,'0.97 0.98 0.99');
-    text(margin+10,y-11,'SHIFT '+(i+1)+' - '+pdfSafe(s.attendant||s.employee_name||'Unknown'),8.5,true);
-    const pc=productFor(s.product),rgb=hexRgb(pc.color);
-    if(rgb)page.push(rgb[0]+' '+rgb[1]+' '+rgb[2]+' rg '+(margin+10)+' '+(y-27)+' 7 7 re f');
+    ensure(57);
+    rect(margin,y-48,contentW,52,'0.97 0.98 0.99');
+    text(margin+10,y-12,'SHIFT '+(i+1)+' - '+pdfSafe(s.attendant||s.employee_name||'Unknown'),8.5,true);
+    const pc=productFor(s.product);
+    colorDot(margin+10,y-27,pc.color,7);
     text(margin+20,y-25,pdfSafe((s.dispenser||'-')+' / '+(pc.code||s.product||'')),7.2,false,'0.40 0.45 0.51');
-    text(margin+10,y-37,'Start '+dailyReportTime(s.started_at||s.start_time)+'  End '+dailyReportTime(s.ended_at||s.end_time),7.2);
+    text(margin+10,y-39,'Start '+dailyReportTime(s.started_at||s.start_time)+'  End '+dailyReportTime(s.ended_at||s.end_time),7.1);
     text(margin+310,y-25,'Sold '+fmtL(s.sales_liters||s.total_sales_liters),7.2,true);
-    text(margin+310,y-37,'Sales '+fmtM(s.sales_amount||s.total_sales_amount),7.2,true);
-    y-=58;
+    text(margin+310,y-39,'Sales '+fmtM(s.sales_amount||s.total_sales_amount),7.2,true);
+    y-=62;
   });
 
-  // Final summary
   section('Final daily performance');
   const finalRows=[
     ['Report status',r.report_ready?'CONFIRMED':'PENDING'],
@@ -2661,12 +2661,19 @@ function downloadDailyReportPdf(){
     ['Shifts / attendants',num(perf.shift_count)+' / '+num(perf.attendant_count)],
     ['Dispensers / nozzles',num(perf.dispenser_count)+' / '+num(perf.nozzle_count)]
   ];
-  finalRows.forEach(row=>kv(row[0],row[1]));
+  finalRows.forEach((row,i)=>{
+    ensure(18);
+    const bg=i%2===0?'0.97 0.98 0.99':'1 1 1';
+    rect(margin,y-14,contentW,18,bg);
+    text(margin+8,y-11,row[0],7.4,false,'0.40 0.45 0.51');
+    text(margin+300,y-11,row[1],8,true);
+    y-=21;
+  });
 
-  finish();pages.forEach((p,i)=>{page=p;pageNo=i+1;footer();});
+  finish();
+  pages.forEach((p,i)=>{page=p;pageNo=i+1;footer();});
 
-  const objects=[];
-  const add=s=>{objects.push(s);return objects.length;};
+  const objects=[],add=s=>{objects.push(s);return objects.length};
   const font1=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
   const font2=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
   const contentIds=pages.map(p=>add('<< /Length '+p.join('\n').length+' >>\nstream\n'+p.join('\n')+'\nendstream'));
@@ -2676,8 +2683,7 @@ function downloadDailyReportPdf(){
   objects[pagesId-1]='<< /Type /Pages /Kids ['+pageIds.map(id=>id+' 0 R').join(' ')+'] /Count '+pageIds.length+' >>';
   pageIds.forEach((id,i)=>objects[id-1]='<< /Type /Page /Parent '+pagesId+' 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 '+font1+' 0 R /F2 '+font2+' 0 R >> >> /Contents '+contentIds[i]+' 0 R >>');
 
-  let pdf='%PDF-1.4\n';
-  const offsets=[0];
+  let pdf='%PDF-1.4\n';const offsets=[0];
   objects.forEach((obj,i)=>{offsets[i+1]=pdf.length;pdf+=(i+1)+' 0 obj\n'+obj+'\nendobj\n';});
   const xref=pdf.length;
   pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
