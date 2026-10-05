@@ -3247,6 +3247,9 @@ def daily_report():
             "shift_reconciliation":shift_reconciliation
         })
 
+    # Sum the already deduplicated physical discharge ledger once per tank.
+    total_p=sum(float(v or 0) for v in purchase_by_tank.values())
+
     sales_type_rows=[]
     total_sales_amount=float(station_a)
     for typ,amount in sorted((sales_by_type or {}).items(),key=lambda z:-float(z[1] or 0)):
