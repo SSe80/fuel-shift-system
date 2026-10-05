@@ -2596,3 +2596,8 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .daily-confirm-actions{display:grid;grid-template-columns:1fr}
   .daily-confirm-actions button{width:100%}
 }
+
+
+/* DSR main page: keep the detailed report closed until a DSR card is selected. */
+.daily-report-details[hidden]{display:none!important}
+.daily-report-details{margin-top:18px}
