@@ -1,6 +1,19 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Daily Sales Report</title><link rel="stylesheet" href="assets/style.css?v=20261005-20"></head>
+<title>Daily Sales Report</title><link rel="stylesheet" href="assets/style.css?v=20261005-20"><style>
+.daily-detail-actions{display:flex;gap:8px;flex-wrap:wrap}
+.daily-dsr-revision-btn,.daily-dsr-regenerate-btn{border:1px solid rgba(100,116,139,.28);background:rgba(255,255,255,.04);border-radius:10px;padding:9px 12px;cursor:pointer}
+.daily-dsr-regenerate-btn{font-weight:700}
+.daily-revision-card{padding:14px 16px;margin:10px 0;border:1px solid rgba(100,116,139,.22);border-radius:14px;background:rgba(148,163,184,.05)}
+.daily-revision-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.daily-revision-head h3{margin:3px 0}
+.daily-revision-head small{color:var(--muted,#64748b)}
+.daily-revision-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.daily-revision-grid>div{padding:9px 10px;border-radius:10px;background:rgba(148,163,184,.06)}
+.daily-revision-grid span{display:block;font-size:11px;opacity:.7;margin-bottom:3px}
+.daily-revision-grid strong{font-size:13px}
+@media(max-width:640px){.daily-revision-grid{grid-template-columns:1fr}.daily-detail-actions button{flex:1}}
+</style></head>
 <body class="daily-report-page" onload="document.getElementById('report-date').value=new Date().toISOString().slice(0,10);loadDailyReportConfirmations()">
 <main class="wrap daily-report-wrap">
   <div class="daily-report-header">
@@ -21,9 +34,10 @@
   </section>
 
   <div id="daily-report-details" class="daily-report-details" hidden>
-    <div class="daily-detail-head"><div><span class="daily-kicker">DSR DETAIL PAGE</span><h2 id="daily-detail-title">Daily Sales Report · Detail</h2><p id="daily-detail-subtitle" class="muted">Confirmed station-wide reconciliation</p></div><div class="daily-detail-actions"><button type="button" class="daily-detail-download" onclick="downloadDailyReportPdf()">Download PDF</button><button type="button" class="daily-detail-close" onclick="closeDailyReportDetail()">Close</button></div></div>
+    <div class="daily-detail-head"><div><span class="daily-kicker">DSR DETAIL PAGE</span><h2 id="daily-detail-title">Daily Sales Report · Detail</h2><p id="daily-detail-subtitle" class="muted">Confirmed station-wide reconciliation</p></div><div class="daily-detail-actions"><button type="button" class="daily-detail-download" onclick="downloadDailyReportPdf()">Download PDF</button><button type="button" class="daily-dsr-revision-btn" onclick="loadDailyReportRevisions()">Revision History</button><button type="button" class="daily-dsr-regenerate-btn" onclick="regenerateDailyReport()">Regenerate / Correct</button><button type="button" class="daily-detail-close" onclick="closeDailyReportDetail()">Close</button></div></div>
     <div id="report-status" class="muted daily-status"></div>
     <section id="report-summary" class="daily-summary-grid"></section>
+    <section id="daily-report-revisions" class="daily-section daily-revision-section" hidden><div class="daily-section-head"><div><span class="daily-kicker">DSR VERSION HISTORY</span><h2>Revision history</h2><p class="muted">Previous saved versions are archived before a DSR is regenerated.</p></div></div><div id="daily-report-revisions-list"></div></section>
 
     <section class="daily-section">
       <div class="daily-section-head"><div><span class="daily-kicker">DISPENSER PERFORMANCE</span><h2>Dispenser performance</h2><p class="muted">Nozzle readings, liters sold and meter reconciliation across every shift.</p></div></div>
