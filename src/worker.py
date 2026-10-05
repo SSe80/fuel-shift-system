@@ -2350,6 +2350,10 @@ def generate_report():
     unconfirmed=[x for x in day_handovers if x.get("sales_status") not in ("confirmed",None)]
     if unconfirmed:
         return jsonify({"error":"Daily report is not ready: sales confirmation is still pending for one or more completed shifts.","report_ready":False,"unconfirmed_shifts":len(unconfirmed)}),409
+    cs,confirmation=sb("daily_report_confirmations",params={"report_date":"eq."+report_date,"status":"eq.confirmed","select":"id","limit":"1"})
+    if cs!=200:return jsonify({"error":confirmation}),cs
+    if not confirmation:
+        return jsonify({"error":"Daily report requires final admin confirmation before it can be generated.","report_ready":False}),409
     status,result=rpc("generate_daily_report",{"p_report_date":report_date,"p_generated_by":session["employee_id"]})
     if status>=400:return jsonify(result),status
     return jsonify(result),201
