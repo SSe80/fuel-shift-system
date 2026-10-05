@@ -2785,10 +2785,16 @@ async function loadDailyReport(){
 
     const tankHtml=tankDetails.map(t=>{
       const diff=Number(t.difference_liters||0), diffClass=Math.abs(diff)<0.001?'ok':(diff>0?'positive':'negative');
+      const shiftRows=(t.shift_reconciliation||[]).map((s,idx)=>{
+        const sd=Number(s.difference_liters||0), sc=Math.abs(sd)<0.001?'ok':(sd>0?'positive':'negative');
+        const adj=Number(s.continuity_adjustment_liters||0);
+        return '<div class="dsr-tank-shift-row"><div><b>Shift '+(idx+1)+'</b><small>'+h(dailyReportTime(s.started_at))+' → '+h(dailyReportTime(s.ended_at))+'</small></div><span>Opening<br><strong>'+liters(s.opening_liters)+' L</strong></span><span>Sold<br><strong>−'+liters(s.sales_liters)+' L</strong></span><span>Expected<br><strong>'+liters(s.expected_closing_liters)+' L</strong></span><span>Closing<br><strong>'+liters(s.closing_liters)+' L</strong></span><span class="'+sc+'">Diff<br><strong>'+(sd>=0?'+':'')+liters(sd)+' L</strong></span>'+(Math.abs(adj)>0.0001?'<em>Continuity adjustment '+(adj>=0?'+':'')+liters(adj)+' L</em>':'')+'</div>';
+      }).join('');
       return '<article class="dsr-tank-card">'+
         '<div class="dsr-tank-head"><div><span class="daily-card-kicker">TANK</span><h3>'+h(t.tank||'—')+'</h3><p><i class="dsr-product-dot" style="'+(productFor(t.product).color?'background:'+h(productFor(t.product).color)+';':'')+'"></i>'+h(codeForProduct(t.product))+' · '+Number(t.shift_count||0)+' shift(s)</p></div><span class="dsr-tank-status '+diffClass+'">'+(Math.abs(diff)<0.001?'Reconciled':'Variance')+'</span></div>'+
         '<div class="dsr-tank-grid"><div><span>Opening stock</span><b>'+liters(t.opening_stock_liters)+' L</b><small>First applicable shift</small></div><div><span>Purchases discharged</span><b>+'+liters(t.purchase_discharged_liters)+' L</b></div><div><span>Fuel sold</span><b>−'+liters(t.sales_liters)+' L</b></div><div><span>Expected closing</span><b>'+liters(t.expected_closing_liters)+' L</b></div><div><span>Recorded closing</span><b>'+liters(t.closing_stock_liters)+' L</b><small>Last applicable shift</small></div><div><span>Difference</span><b class="'+(diffClass==='ok'?'':diffClass)+'">'+(diff>=0?'+':'')+liters(diff)+' L</b></div></div>'+
         '<div class="dsr-tank-performance"><div><span>Variance</span><strong>'+Number(t.variance_pct||0).toFixed(2)+'%</strong></div><div><span>Reconciliation</span><strong>'+Number(t.reconciliation_pct||0).toFixed(1)+'%</strong></div><div><span>Capacity</span><strong>'+liters(t.capacity_liters)+' L</strong></div></div>'+
+        (shiftRows?'<div class="dsr-tank-shifts"><div class="dsr-subhead">Shift-by-shift reconciliation</div>'+shiftRows+'</div>':'')+
       '</article>';
     }).join('');
     document.getElementById('report-tanks').innerHTML=tankHtml||'<div class="daily-empty">No tanks configured.</div>';
