@@ -94,6 +94,49 @@
     reader.readAsText(file);
   }
 
+  function formatCalibrationLiters(value){
+    if(typeof liters==='function') return liters(value)+' L';
+    return Number(value).toLocaleString(undefined,{maximumFractionDigits:2})+' L';
+  }
+
+  function calibrationValueAt(points,mm){
+    const p=points.slice().sort((a,b)=>Number(a.height_mm)-Number(b.height_mm));
+    if(mm<=Number(p[0].height_mm)) return Number(p[0].liters);
+    if(mm>=Number(p[p.length-1].height_mm)) return Number(p[p.length-1].liters);
+    for(let i=1;i<p.length;i++){
+      const a=p[i-1],b=p[i],ah=Number(a.height_mm),bh=Number(b.height_mm);
+      if(mm<=bh){
+        const ratio=(mm-ah)/(bh-ah);
+        return Number(a.liters)+(Number(b.liters)-Number(a.liters))*ratio;
+      }
+    }
+    return null;
+  }
+
+  function updateCalibrationVerification(points){
+    const count=document.getElementById('edit-tank-calibration-point-count');
+    const result=document.getElementById('edit-tank-calibration-test-result');
+    if(count) count.textContent=Array.isArray(points)&&points.length
+      ? points.length+' calibration points loaded. The full curve will be used for dip conversion.'
+      : 'No calibration loaded.';
+    if(result) result.textContent='Enter a dip to verify the calibration.';
+  }
+
+  function verifyTankCalibrationDip(value){
+    const result=document.getElementById('edit-tank-calibration-test-result');
+    const input=Number(value);
+    const points=Array.isArray(window.pendingTankCalibration)?window.pendingTankCalibration:[];
+    if(!result) return;
+    if(!Number.isFinite(input)||input<0){ result.textContent='Enter a valid dip in mm.'; return; }
+    if(points.length<2){ result.textContent='Upload a calibration CSV first.'; return; }
+    const litersValue=calibrationValueAt(points,input);
+    result.textContent=Number.isFinite(litersValue)
+      ? input.toLocaleString()+' mm ≈ '+formatCalibrationLiters(litersValue)
+      : 'Could not calculate calibration value.';
+  }
+
+  window.verifyTankCalibrationDip=verifyTankCalibrationDip;
+
   window.calibrationFileChanged=calibrationFileChanged;
   window.parseTankCalibrationCsv=parseCalibrationCsv;
 
@@ -104,9 +147,12 @@
     const input=document.getElementById('edit-tank-calibration-file');
     const status=document.getElementById('edit-tank-calibration-status');
     if(input) input.value='';
+    const test=document.getElementById('edit-tank-calibration-test-mm');
+    if(test) test.value='';
     const tank=(window.tankRecords||[]).find(x=>String(x.id)===String(id));
     const count=Array.isArray(tank&&tank.calibration_points)?tank.calibration_points.length:0;
     if(status) status.textContent=count?count+' calibration points currently stored. Upload a CSV to replace them.':'No calibration CSV stored for this tank.';
+    updateCalibrationVerification(Array.isArray(tank&&tank.calibration_points)?tank.calibration_points:[]);
   };
 
   window.saveTankEdit=async function(event){
