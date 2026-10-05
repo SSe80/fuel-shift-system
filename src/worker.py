@@ -3015,14 +3015,16 @@ def daily_report():
         history=_json_list(p.get("discharge_history"))
         used_history=False
         for op_index,op in enumerate(history):
-            # A discharge belongs to this DSR by the shift interval, not by
-            # calendar date. This is essential for shifts crossing midnight.
-            if not _discharge_belongs_to_dsr_shift(op.get("discharge_datetime")):
-                continue
+            # Attribute every recorded operation for purchases visible in
+            # this DSR. Only an operation attributed inside exactly one shift
+            # contributes to the physical purchase ledger. Outside/ambiguous/
+            # invalid operations remain visible in the audit and never alter
+            # station totals.
             tid=str(op.get("tank_id") or "")
             if not tid:
                 continue
             discharged=float(op.get("discharged_quantity_liters") or sum(float(v or 0) for v in _json_list(op.get("compartment_liters"))))
+            discharge_attribution=_attribute_discharge_to_shift(op.get("discharge_datetime"))
             # Prefer a persisted operation id. For legacy rows, use a stable
             # transaction fingerprint so the same operation represented twice
             # cannot increase the DSR purchase contribution twice.
@@ -3042,7 +3044,6 @@ def daily_report():
             if operation_key in seen_discharge_operations:
                 continue
             seen_discharge_operations.add(operation_key)
-            purchase_by_tank[tid]=purchase_by_tank.get(tid,0.0)+discharged
 
             before=op.get("tank_liters_before")
             recorded=op.get("tank_stock_recorded_liters")
@@ -3051,9 +3052,12 @@ def daily_report():
                 # Derive the documented stock adjustment from the physical
                 # before-stock, delivered liters and recorded post-stock.
                 stock_adjustment=float(recorded)-float(before)-discharged
-                purchase_adjustment_by_tank[tid]=purchase_adjustment_by_tank.get(tid,0.0)+stock_adjustment
 
-            discharge_attribution=_attribute_discharge_to_shift(op.get("discharge_datetime"))
+            if discharge_attribution.get("shift_attribution_status")=="inside_shift":
+                purchase_by_tank[tid]=purchase_by_tank.get(tid,0.0)+discharged
+                if stock_adjustment is not None:
+                    purchase_adjustment_by_tank[tid]=purchase_adjustment_by_tank.get(tid,0.0)+stock_adjustment
+
             discharge_operations_by_tank.setdefault(tid,[]).append({
                 "purchase_id":p.get("id"),
                 "operation_index":op_index,
