@@ -2829,6 +2829,39 @@ def daily_report():
         expected=opening+opening_adjustment_l+purchased_l-sales_l
         diff=expected-closing
         basis=opening+opening_adjustment_l+purchased_l
+        shift_reconciliation=[]
+        running_adjustment=0.0
+        for idx,(sh,h) in enumerate(rows):
+            sid=str(sh.get("id") or "")
+            shift_open=float(h.get("tank_opening_liters") or 0)
+            shift_close=float(h.get("tank_closing_liters") or 0)
+            shift_sales=float(h.get("tank_sales_liters") or h.get("total_sales_liters") or 0)
+            shift_purchase=0.0
+            # Purchases are assigned at tank/day level; do not duplicate the
+            # same discharge into every shift. The tank-level reconciliation
+            # remains authoritative for purchase movement.
+            continuity_adjustment=0.0
+            if idx>0:
+                prev_close=float(rows[idx-1][1].get("tank_closing_liters") or 0)
+                continuity_adjustment=shift_open-prev_close
+                running_adjustment+=continuity_adjustment
+            shift_expected=shift_open+continuity_adjustment+shift_purchase-shift_sales
+            shift_diff=shift_expected-shift_close
+            shift_basis=shift_open+continuity_adjustment+shift_purchase
+            shift_reconciliation.append({
+                "shift_id":sh.get("id"),
+                "started_at":sh.get("start_time"),
+                "ended_at":sh.get("end_time"),
+                "opening_liters":shift_open,
+                "closing_liters":shift_close,
+                "sales_liters":shift_sales,
+                "purchase_liters":shift_purchase,
+                "continuity_adjustment_liters":continuity_adjustment,
+                "expected_closing_liters":shift_expected,
+                "difference_liters":shift_diff,
+                "variance_pct":(shift_diff/shift_basis*100.0) if shift_basis else 0,
+                "reconciliation_pct":max(0.0,100.0-(abs(shift_diff)/shift_basis*100.0)) if shift_basis else 100.0
+            })
         tank_details.append({
             "tank_id":tid,
             "tank":tank.get("tank_code") or "—",
@@ -2844,7 +2877,8 @@ def daily_report():
             "difference_liters":diff,
             "variance_pct":(diff/basis*100.0) if basis else 0,
             "reconciliation_pct":max(0.0,100.0-(abs(diff)/basis*100.0)) if basis else 100.0,
-            "shift_count":len(rows)
+            "shift_count":len(rows),
+            "shift_reconciliation":shift_reconciliation
         })
 
     sales_type_rows=[]
