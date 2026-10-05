@@ -115,7 +115,49 @@
  .purchase-detail-row{padding:3px 0}
  .purchase-detail-actions{padding:7px 9px 9px}
 }
-</style></head>
+<style>
+/* Purchase History monthly groups — keep month navigation separate from purchase cards */
+.admin-purchase-history-page .purchase-full-history-month-group{
+  margin:0 0 16px;
+  border:1px solid #4b83bd;
+  border-radius:12px;
+  background:#fff;
+  overflow:hidden;
+  box-shadow:0 2px 8px #17202a0a;
+}
+.admin-purchase-history-page .purchase-full-history-month-head{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px 16px;
+  margin:0;
+  border:0;
+  border-bottom:1px solid #e5eaf0;
+  background:#f7f9fb;
+  color:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.admin-purchase-history-page .purchase-full-history-month-head:hover{background:#f3f6f9}
+.admin-purchase-history-page .purchase-full-history-month-title{display:flex;align-items:baseline;gap:8px;min-width:0}
+.admin-purchase-history-page .purchase-full-history-month-head .section-kicker{margin:0;color:#667085;font-size:9px}
+.admin-purchase-history-page .purchase-full-history-month-head strong{font-size:16px;line-height:1.2;letter-spacing:.01em;color:#2563a8}
+.admin-purchase-history-page .purchase-full-history-month-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.admin-purchase-history-page .purchase-full-history-month-right small{color:#7b8794;font-size:10px}
+.admin-purchase-history-page .purchase-full-history-month-toggle{
+  width:25px;height:25px;display:grid;place-items:center;border-radius:7px;
+  background:#e9eef4;color:#526273;font-size:16px;font-weight:800;line-height:1;
+}
+.admin-purchase-history-page .purchase-full-history-month-body{display:grid;gap:12px;padding:12px 12px 14px}
+.admin-purchase-history-page .purchase-full-history-month-body[hidden]{display:none}
+@media(max-width:560px){
+  .admin-purchase-history-page .purchase-full-history-month-head{padding:14px 13px}
+  .admin-purchase-history-page .purchase-full-history-month-head strong{font-size:15px}
+  .admin-purchase-history-page .purchase-full-history-month-body{padding:10px 9px 12px;gap:11px}
+}
+</style></style></head>
 <body class="admin-purchases-page" data-app-page="adminPurchaseHistory"><main class="wrap">
 <header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchase History</h1><p class="muted">All purchases with completed tank stock recording.</p></div><a class="purchase-back" href="admin-purchases.html">← Purchases</a></header>
 <section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">PURCHASES</span><h2>Purchase History</h2><p class="muted">Complete recorded purchase history.</p></div><span class="admin-sales-section-count" id="purchase-history-count">0 recorded</span></div>
@@ -302,6 +344,19 @@ window.loadFullPurchaseHistory=async function(){
   const count=document.getElementById('purchase-history-count');if(count)count.textContent=records.length+' recorded';
   purchaseDetailData=records;renderFullPurchaseHistory();if(status)status.textContent='';
  }catch(e){if(status)status.textContent=e.message||'Unable to load purchase history.';}
+};
+window.toggleFullPurchaseHistoryMonth=function(monthKey){
+ const groups=document.querySelectorAll('.purchase-full-history-month-group');
+ let group=null;
+ groups.forEach(el=>{if(String(el.getAttribute('data-month-key'))===String(monthKey))group=el;});
+ if(!group)return;
+ const body=group.querySelector('.purchase-full-history-month-body');
+ const head=group.querySelector('.purchase-full-history-month-head');
+ const toggle=group.querySelector('.purchase-full-history-month-toggle');
+ const expanded=group.classList.toggle('expanded');
+ if(body)body.hidden=!expanded;
+ if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
+ if(toggle)toggle.textContent=expanded?'⌃':'⌄';
 };
 window.addEventListener('DOMContentLoaded',loadFullPurchaseHistory);
 })();
