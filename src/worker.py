@@ -2204,9 +2204,18 @@ def daily_report():
         if ts==200:tank_map={str(x.get("id")):x for x in tr}
 
     for x in handover_rows:
-        p=(tank_map.get(str(x.get("tank_id"))) or {}).get("product") or "Unknown"
-        row=by_product.setdefault(p,{"liters":0,"amount":0})
-        row["liters"]+=float(x.get("total_sales_liters") or 0)
+        nozzle_sales=x.get("nozzle_sales_liters") if isinstance(x.get("nozzle_sales_liters"),list) else []
+        if nozzle_sales:
+            for sale in nozzle_sales:
+                p=sale.get("product") or (tank_map.get(str(x.get("tank_id"))) or {}).get("product") or "Unknown"
+                row=by_product.setdefault(p,{"liters":0,"amount":0})
+                row["liters"]+=float(sale.get("liters_sold") or 0)
+                row["amount"]+=float(sale.get("amount") or 0)
+        else:
+            p=(tank_map.get(str(x.get("tank_id"))) or {}).get("product") or "Unknown"
+            row=by_product.setdefault(p,{"liters":0,"amount":0})
+            row["liters"]+=float(x.get("total_sales_liters") or 0)
+            row["amount"]+=float(x.get("total_sales_amount") or 0)
 
     # Sales methods come from the configured Admin Settings sale types
     # (for example Card, Cash, Transfer). Keep payment_method as a fallback
@@ -2658,7 +2667,7 @@ def daily_report():
         sales_l=float(sum(float(z[1].get("total_sales_liters") or 0) for z in rows))
         purchased_l=float(purchase_by_tank.get(tid,0))
         expected=opening+purchased_l-sales_l
-        diff=closing-expected
+        diff=expected-closing
         basis=opening+purchased_l
         tank_details.append({
             "tank_id":tid,
