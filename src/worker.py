@@ -3280,6 +3280,7 @@ def daily_report():
                 for op in discharge_operations
                 if op.get("shift_attribution_status")=="inside_shift"
                 and str(op.get("shift_id") or "")==sid
+                and str(op.get("tank_id") or "")==tid
             )
             # Discharge-operation stock adjustments are physical/documented
             # variances tied to the operation. Attribute them to the same
@@ -3293,6 +3294,7 @@ def daily_report():
                 for op in discharge_operations
                 if op.get("shift_attribution_status")=="inside_shift"
                 and str(op.get("shift_id") or "")==sid
+                and str(op.get("tank_id") or "")==tid
             )
             continuity_adjustment=0.0
             if idx>0:
