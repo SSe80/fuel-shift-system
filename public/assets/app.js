@@ -2614,7 +2614,16 @@ function downloadDailyReportPdf(){
   section('Sales statistics');
   if(products.length){
     text(margin,y,'BY PRODUCT',7,true,'0.07 0.39 0.82');y-=13;
-    products.forEach(x=>{ensure(18);text(margin,y,pdfSafe(x.product||'Product'),7.5);text(margin+245,y,fmtL(x.liters),7.5);text(margin+350,y,fmtM(x.amount),7.5,true);text(margin+470,y,pct(x.percentage),7.5,true);y-=15;});
+    products.forEach(x=>{
+      ensure(18);
+      const pc=productFor(x.product),rgb=hexRgb(pc.color);
+      if(rgb)page.push(rgb[0]+' '+rgb[1]+' '+rgb[2]+' rg '+margin+' '+(y-2)+' 7 7 re f');
+      text(margin+12,y,pdfSafe(pc.code||x.product||'Product'),7.5);
+      text(margin+245,y,fmtL(x.liters),7.5);
+      text(margin+350,y,fmtM(x.amount),7.5,true);
+      text(margin+470,y,pct(x.percentage),7.5,true);
+      y-=15;
+    });
   }
   if(methods.length){
     y-=4;text(margin,y,'BY SALES METHOD',7,true,'0.07 0.39 0.82');y-=13;
