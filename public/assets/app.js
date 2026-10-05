@@ -3056,20 +3056,50 @@ function filterAdminSalesHistoryPage(){
     box.innerHTML='<div class="card admin-sales-empty"><div class="empty-icon">—</div><strong>No sales history found</strong><p class="muted">Try a different search or date filter.</p></div>';
     return;
   }
-  const groups={};
+
+  const monthGroups={};
   rows.forEach(item=>{
     const dsrId=dailyReportIdFromTimestamp(item.takeover?.shift_started_at);
-    (groups[dsrId]||(groups[dsrId]=[])).push(item);
+    const monthKey=String(dsrId).slice(0,7);
+    (monthGroups[monthKey]||(monthGroups[monthKey]={}))[dsrId]||(monthGroups[monthKey][dsrId]=[]);
+    monthGroups[monthKey][dsrId].push(item);
   });
-  box.innerHTML=Object.keys(groups).map(dsrId=>
-    '<section class="admin-full-history-dsr-group" data-dsr-id="'+h(dsrId)+'">'+
-      '<button type="button" class="admin-full-history-dsr-head" onclick="toggleAdminFullHistoryDsrGroup(\''+h(dsrId)+'\')" aria-expanded="false">'+
-        '<span class="admin-full-history-dsr-title"><span class="section-kicker">DSR</span><strong>'+h(dsrId)+'</strong></span>'+
-        '<span class="admin-full-history-dsr-right"><small>'+groups[dsrId].length+' confirmed sale'+(groups[dsrId].length===1?'':'s')+'</small><span class="admin-full-history-dsr-toggle" aria-hidden="true">⌄</span></span>'+
+
+  const monthKeys=Object.keys(monthGroups).sort((a,b)=>b.localeCompare(a));
+  box.innerHTML=monthKeys.map(monthKey=>{
+    const monthDate=new Date(monthKey+'-01T00:00:00');
+    const monthLabel=Number.isNaN(monthDate.getTime())?monthKey:monthDate.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+    const dsrGroups=monthGroups[monthKey];
+    const dsrKeys=Object.keys(dsrGroups).sort((a,b)=>b.localeCompare(a));
+    return '<section class="admin-full-history-month-group" data-month-key="'+h(monthKey)+'">'+
+      '<button type="button" class="admin-full-history-month-head" onclick="toggleAdminFullHistoryMonth(\''+h(monthKey)+'\')" aria-expanded="true">'+
+        '<span class="admin-full-history-month-title"><span class="section-kicker">MONTH</span><strong>'+h(monthLabel)+'</strong></span>'+
+        '<span class="admin-full-history-month-right"><small>'+dsrKeys.length+' DSR'+(dsrKeys.length===1?'':'s')+'</small><span class="admin-full-history-month-toggle" aria-hidden="true">⌃</span></span>'+
       '</button>'+
-      '<div class="admin-full-history-dsr-cards" hidden>'+groups[dsrId].map(renderAdminHistorySaleCard).join('')+'</div>'+
-    '</section>'
-  ).join('');
+      '<div class="admin-full-history-month-body">'+
+        dsrKeys.map(dsrId=>
+          '<section class="admin-full-history-dsr-group" data-dsr-id="'+h(dsrId)+'">'+
+            '<button type="button" class="admin-full-history-dsr-head" onclick="toggleAdminFullHistoryDsrGroup(\''+h(dsrId)+'\')" aria-expanded="false">'+
+              '<span class="admin-full-history-dsr-title"><span class="section-kicker">DSR</span><strong>'+h(dsrId)+'</strong></span>'+
+              '<span class="admin-full-history-dsr-right"><small>'+dsrGroups[dsrId].length+' confirmed sale'+(dsrGroups[dsrId].length===1?'':'s')+'</small><span class="admin-full-history-dsr-toggle" aria-hidden="true">⌄</span></span>'+
+            '</button>'+
+            '<div class="admin-full-history-dsr-cards" hidden>'+dsrGroups[dsrId].map(renderAdminHistorySaleCard).join('')+'</div>'+
+          '</section>'
+        ).join('')+
+      '</div>'+
+    '</section>';
+  }).join('');
+}
+function toggleAdminFullHistoryMonth(monthKey){
+  const group=document.querySelector('.admin-full-history-month-group[data-month-key="'+CSS.escape(String(monthKey))+'"]');
+  if(!group)return;
+  const body=group.querySelector('.admin-full-history-month-body');
+  const head=group.querySelector('.admin-full-history-month-head');
+  const toggle=group.querySelector('.admin-full-history-month-toggle');
+  const expanded=group.classList.toggle('expanded');
+  if(body)body.hidden=!expanded;
+  if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
+  if(toggle)toggle.textContent=expanded?'⌃':'⌄';
 }
 async function toggleAdminFullHistoryDsrGroup(dsrId){
   const groups=document.querySelectorAll('.admin-full-history-dsr-group');
