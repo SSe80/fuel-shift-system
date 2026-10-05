@@ -2233,9 +2233,14 @@ function renderDailyHistoryCard(item){
 }
 function renderDailyPendingConfirmationCard(item){
   const waiting=item.status==='waiting';
-  const methods=Object.entries(item.sales_by_method||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([method,amount])=>
-    '<label class="admin-sale-check-row daily-dsr-method-row"><input type="checkbox" class="daily-dsr-method-check" '+(waiting?'disabled':'')+'><span><strong>'+h(method)+'</strong><small>Recorded sales for '+h(dailyReportIdLabel(item.date))+'</small></span><strong>'+money(amount)+'</strong></label>'
+  const methodEntries=Object.entries(item.sales_by_method||{}).sort((a,b)=>Number(b[1])-Number(a[1]));
+  const methods=methodEntries.map(([method,amount])=>
+    '<label class="admin-sale-check-row daily-dsr-method-row"><input type="checkbox" class="daily-dsr-method-check" '+(waiting?'disabled':'')+'><span><strong>'+h(method)+'</strong><small>Recorded for '+h(dailyReportIdLabel(item.date))+'</small></span><strong>'+money(amount)+'</strong></label>'
   ).join('');
+  const methodCount=methodEntries.length;
+  const methodControls=methodCount&&!waiting
+    ?'<label class="daily-dsr-select-all-row"><input type="checkbox" class="daily-dsr-select-all"><span><strong>Select all sales</strong><small>Mark every recorded payment method as checked</small></span><em>'+methodCount+' method'+(methodCount===1?'':'s')+'</em></label>'
+    :'';
   const missing=[];
   if(!item.all_shifts_complete)missing.push('Shift completion is still pending');
   if(!item.all_handover_recorded)missing.push('Handover completion is still pending');
@@ -2247,7 +2252,7 @@ function renderDailyPendingConfirmationCard(item){
     '<div class="daily-confirm-head"><div><span class="section-kicker">'+(waiting?'DSR NOT READY':'DSR READY FOR CONFIRMATION')+'</span><h3>'+h(dailyReportIdLabel(item.date))+'</h3><p class="muted">'+Number(item.dispenser_count||0)+' dispenser(s) • '+Number(item.shift_count||0)+' shift(s)</p></div><span class="pending-sale-badge">'+(waiting?'Waiting':'Pending')+'</span></div>'+
     '<div class="daily-confirm-summary"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div></div>'+
     readiness+
-    '<div class="daily-confirm-methods"><div class="daily-confirm-label">Sales awaiting confirmation</div>'+(methods||'<div class="daily-empty">'+(waiting?'Sales will appear here after they are recorded.':'No recorded sale methods.')+'</div>')+'</div>'+
+    '<div class="daily-confirm-methods"><div class="daily-confirm-label"><span>Sales awaiting confirmation</span><small>'+(waiting?'Sales will appear after recording is complete.':methodCount+' payment method'+(methodCount===1?'':'s')+' recorded')+'</small></div>'+methodControls+(methods||'<div class="daily-empty">'+(waiting?'Sales will appear here after they are recorded.':'No recorded sale methods.')+'</div>')+'</div>'+
     '<div class="daily-confirm-note">'+(waiting?'This report is not ready yet. Complete all shifts, record the required handovers, and finish sales recording before confirmation.':'Review each recorded sales method, then confirm the DSR. Confirmation finalizes the linked shift sales for this report date.')+'</div>'+
     '<div class="row daily-confirm-actions"><button type="button" '+(waiting?'disabled':'')+' onclick="selectDailyReportDate(\''+item.date+'\')">Review DSR</button><button type="button" class="primary" '+(waiting?'disabled ':'')+'disabled data-confirm-dsr="'+h(item.date)+'" onclick="confirmDailyReport(\''+item.date+'\')">Confirm DSR</button></div>'+
   '</article>';
