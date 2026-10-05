@@ -2141,6 +2141,23 @@ function dailyReportDateLabel(value){
   const d=new Date(value+'T00:00:00');
   return Number.isNaN(d.getTime())?value:d.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 }
+function dailyReportIdLabel(value){
+  if(!value)return 'DSR';
+  const d=new Date(value+'T00:00:00');
+  return Number.isNaN(d.getTime())?String(value)+' DSR':d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' DSR';
+}
+function updateDailyDsrConfirmButton(card){
+  if(!card)return;
+  const checks=Array.from(card.querySelectorAll('.daily-dsr-method-check'));
+  const button=card.querySelector('[data-confirm-dsr]');
+  if(button)button.disabled=checks.length===0||checks.some(x=>!x.checked);
+}
+function bindDailyDsrChecks(){
+  document.querySelectorAll('.daily-confirm-card').forEach(card=>{
+    card.querySelectorAll('.daily-dsr-method-check').forEach(check=>check.addEventListener('change',()=>updateDailyDsrConfirmButton(card)));
+    updateDailyDsrConfirmButton(card);
+  });
+}
 function dailyReportTime(value){
   if(!value)return '—';
   const d=new Date(value);
@@ -2158,6 +2175,7 @@ async function loadDailyReportConfirmations(){
     const pending=rows.filter(x=>x.status==='pending');
     if(pendingEl){
       pendingEl.innerHTML=pending.length?pending.map(renderDailyPendingConfirmationCard).join(''):'<div class="daily-empty">No daily sales are waiting for confirmation.</div>';
+      bindDailyDsrChecks();
     }
     const dateEl=document.getElementById('daily-report-date-cards');
     if(dateEl){
@@ -2167,7 +2185,7 @@ async function loadDailyReportConfirmations(){
         const state=confirmed?'Confirmed':(waiting?'Waiting':'Pending confirmation');
         const methodTotal=Number(x.total_sales_amount||0);
         return '<button type="button" class="daily-report-date-card '+(confirmed?'is-ready':'is-pending')+'" onclick="selectDailyReportDate(\''+x.date+'\')">'+
-          '<div class="daily-report-date-top"><b>'+h(dailyReportDateLabel(x.date))+'</b><span>'+h(state)+'</span></div>'+
+          '<div class="daily-report-date-top"><b>'+h(dailyReportIdLabel(x.date))+'</b><span>'+h(state)+'</span></div>'+
           '<div class="daily-report-date-stats"><div><small>Fuel sold</small><strong>'+liters(x.total_sales_liters)+' L</strong></div><div><small>Sales</small><strong>'+money(methodTotal)+'</strong></div><div><small>Shifts</small><strong>'+Number(x.shift_count||0)+'</strong></div></div>'+
         '</button>';
       }).join(''):'<div class="daily-empty">No completed daily reports found.</div>';
@@ -2180,16 +2198,14 @@ async function loadDailyReportConfirmations(){
 }
 function renderDailyPendingConfirmationCard(item){
   const methods=Object.entries(item.sales_by_method||{}).sort((a,b)=>Number(b[1])-Number(a[1])).map(([method,amount])=>
-    '<div class="daily-confirm-method"><span>'+h(method)+'</span><strong>'+money(amount)+'</strong></div>'
+    '<label class="admin-sale-check-row daily-dsr-method-row"><input type="checkbox" class="daily-dsr-method-check"><span><strong>'+h(method)+'</strong><small>Combined sales for '+h(dailyReportIdLabel(item.date))+'</small></span><strong>'+money(amount)+'</strong></label>'
   ).join('');
-  const blocked=!item.can_confirm;
-  const note=blocked?'This date is still waiting for one or more shifts to end.':'All shifts are complete. Confirming this combined daily total will automatically confirm every linked shift sale on the Sales page.';
-  return '<article class="card daily-confirm-card" data-report-date="'+h(item.date)+'">'+
-    '<div class="daily-confirm-head"><div><span class="section-kicker">DAILY SALES CONFIRMATION</span><h3>'+h(dailyReportDateLabel(item.date))+'</h3><p class="muted">'+Number(item.shift_count||0)+' completed shift(s)</p></div><span class="pending-sale-badge">Pending</span></div>'+
+  return '<article class="card daily-confirm-card" data-report-date="'+h(item.date)+'" data-dsr-id="'+h(dailyReportIdLabel(item.date))+'">'+
+    '<div class="daily-confirm-head"><div><span class="section-kicker">PENDING DSR CONFIRMATION</span><h3>'+h(dailyReportIdLabel(item.date))+'</h3><p class="muted">'+Number(item.shift_count||0)+' completed shift(s) • Handover and sales recorded</p></div><span class="pending-sale-badge">Pending</span></div>'+
     '<div class="daily-confirm-summary"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div></div>'+
     '<div class="daily-confirm-methods"><div class="daily-confirm-label">Combined sales by method</div>'+(methods||'<div class="daily-empty">No recorded sale methods.</div>')+'</div>'+
-    '<div class="daily-confirm-note '+(blocked?'is-blocked':'')+'">'+h(note)+'</div>'+
-    '<div class="row daily-confirm-actions"><button type="button" onclick="selectDailyReportDate(\''+item.date+'\')">Review report</button><button type="button" class="primary" '+(blocked?'disabled':'')+' onclick="confirmDailyReport(\''+item.date+'\')">Confirm daily sales</button></div>'+
+    '<div class="daily-confirm-note">Check each combined sale method before confirming. This confirmation will automatically confirm the linked individual shift sales on the Sales page.</div>'+
+    '<div class="row daily-confirm-actions"><button type="button" onclick="selectDailyReportDate(\''+item.date+'\')">Review DSR</button><button type="button" class="primary" disabled data-confirm-dsr="'+h(item.date)+'" onclick="confirmDailyReport(\''+item.date+'\')">Confirm DSR</button></div>'+
   '</article>';
 }
 async function confirmDailyReport(reportDate){
