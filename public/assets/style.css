@@ -2816,3 +2816,15 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .admin-sales-page .admin-sale-confirm-card::before{inset:5px}
   .admin-sales-page .admin-sale-context{grid-template-columns:1fr}
 }
+
+/* Pending sales cards — simple border and white info boxes */
+.admin-sales-page .admin-sale-confirm-card{
+  border:2px solid #cfd7df;
+  box-shadow:none;
+}
+.admin-sales-page .admin-sale-confirm-card::before{
+  display:none;
+}
+.admin-sales-page .admin-sale-context>div{
+  background:#fff;
+}
