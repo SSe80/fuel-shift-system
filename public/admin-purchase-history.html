@@ -185,11 +185,40 @@
 @media(max-width:560px){.admin-purchase-history-page .purchase-full-history-month-head{min-height:56px;padding:13px 12px!important}.admin-purchase-history-page .purchase-full-history-month-head strong{font-size:15px!important}.admin-purchase-history-page .purchase-full-history-month-body{gap:11px!important;padding:10px 9px 12px!important}}
 
 
+
+/* Purchase history controls */
+.admin-purchase-history-page .purchase-history-tools{display:grid!important;grid-template-columns:minmax(0,1fr) 150px auto!important;align-items:center!important;gap:9px!important;margin:0 0 14px!important;padding:9px!important;border:1px solid #e1e7ed!important;border-radius:14px!important;background:#f8fafc!important;box-sizing:border-box!important}
+.admin-purchase-history-page .purchase-history-search-wrap{position:relative;min-width:0}
+.admin-purchase-history-page .purchase-history-search-wrap>span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#7b8794;font-size:18px;line-height:1;pointer-events:none}
+.admin-purchase-history-page .purchase-history-tools input,.admin-purchase-history-page .purchase-history-tools select,.admin-purchase-history-page .purchase-history-tools button{box-sizing:border-box!important;width:100%!important;height:42px!important;min-height:42px!important;margin:0!important;border:1px solid #d5dde5!important;border-radius:10px!important;background:#fff!important;color:#344054!important;font:inherit!important;font-size:12px!important;font-weight:600!important}
+.admin-purchase-history-page .purchase-history-tools input{padding:0 12px 0 36px!important;outline:none!important}
+.admin-purchase-history-page .purchase-history-tools input:focus{border-color:#4b83bd!important;box-shadow:0 0 0 3px rgba(75,131,189,.12)!important}
+.admin-purchase-history-page .purchase-history-tools select{padding:0 30px 0 11px!important;cursor:pointer!important}
+.admin-purchase-history-page .purchase-history-tools button{padding:0 14px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;background:#edf2f6!important;cursor:pointer!important}
+.admin-purchase-history-page .purchase-history-tools button:hover{background:#e4ebf1!important}
+/* Scroll purchase cards inside an expanded month */
+.admin-purchase-history-page .purchase-full-history-month-body{max-height:390px!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;scrollbar-width:thin!important;padding:12px!important;display:grid!important;gap:12px!important;align-content:start!important}
+.admin-purchase-history-page .purchase-full-history-month-body::-webkit-scrollbar{width:7px}
+.admin-purchase-history-page .purchase-full-history-month-body::-webkit-scrollbar-track{background:#f1f4f7;border-radius:10px}
+.admin-purchase-history-page .purchase-full-history-month-body::-webkit-scrollbar-thumb{background:#b9c6d2;border-radius:10px}
+.admin-purchase-history-page .purchase-full-history-month-body::-webkit-scrollbar-thumb:hover{background:#9eafbd}
+@media(max-width:700px){
+ .admin-purchase-history-page .purchase-history-tools{grid-template-columns:minmax(0,1fr) 135px!important}
+ .admin-purchase-history-page .purchase-history-refresh{grid-column:1 / -1!important}
+ .admin-purchase-history-page .purchase-full-history-month-body{max-height:420px!important}
+}
+@media(max-width:460px){
+ .admin-purchase-history-page .purchase-history-tools{grid-template-columns:1fr 1fr!important;gap:7px!important;padding:8px!important}
+ .admin-purchase-history-page .purchase-history-search-wrap{grid-column:1 / -1!important}
+ .admin-purchase-history-page .purchase-history-tools input,.admin-purchase-history-page .purchase-history-tools select,.admin-purchase-history-page .purchase-history-tools button{height:40px!important;min-height:40px!important}
+ .admin-purchase-history-page .purchase-history-refresh{grid-column:auto!important}
+ .admin-purchase-history-page .purchase-full-history-month-body{max-height:390px!important;padding:9px!important;gap:10px!important}
+}
 </style></head>
 <body class="admin-purchases-page admin-purchase-history-page" data-app-page="adminPurchaseHistory"><main class="wrap">
 <header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchase History</h1><p class="muted">All purchases with completed tank stock recording.</p></div><a class="purchase-back" href="admin-purchases.html">← Purchases</a></header>
 <section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">PURCHASES</span><h2>Purchase History</h2><p class="muted">Complete recorded purchase history.</p></div><span class="admin-sales-section-count" id="purchase-history-count">0 recorded</span></div>
-<div class="purchase-history-tools" style="display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap"><input id="purchase-history-search" type="search" placeholder="Search invoice or product…" oninput="renderFullPurchaseHistory()"><select id="purchase-history-period" onchange="renderFullPurchaseHistory()"><option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select><button type="button" onclick="loadFullPurchaseHistory()">↻ Refresh</button></div>
+<div class="purchase-history-tools"><div class="purchase-history-search-wrap"><span aria-hidden="true">⌕</span><input id="purchase-history-search" type="search" placeholder="Search invoice or product…" oninput="renderFullPurchaseHistory()"></div><select id="purchase-history-period" onchange="renderFullPurchaseHistory()" aria-label="Purchase history date filter"><option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select><button type="button" class="purchase-history-refresh" onclick="loadFullPurchaseHistory()">↻ <span>Refresh</span></button></div>
 <div id="purchase-history-status" class="page-status"></div><div id="full-purchase-history-list" class="purchase-full-history-list"></div></section>
 <div id="purchase-detail-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="closePurchaseDetail()"></div><div class="modal-card purchase-detail-card"><div class="top"><div><span class="section-kicker">PURCHASE DETAILS</span><h3>Purchase Details</h3></div><button type="button" class="modal-close" onclick="closePurchaseDetail()">×</button></div><div id="purchase-detail-content" class="purchase-detail-content"></div><div class="purchase-detail-actions" id="purchase-detail-actions"><button type="button" class="purchase-detail-download" onclick="downloadPurchaseDetailPdf()">Download PDF</button><button type="button" onclick="closePurchaseDetail()">Close</button></div></div></div></main>
 <script src="assets/app.js?v=20261005-03"></script>
