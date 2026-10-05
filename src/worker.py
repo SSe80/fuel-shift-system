@@ -3524,7 +3524,7 @@ def generate_report():
     is_legacy_saved_report=bool(existing_rows) and is_explicit_revision and not confirmation
     if not confirmation and not is_legacy_saved_report:
         return jsonify({"error":"Daily report requires final admin confirmation before it can be generated.","report_ready":False}),409
-    status,result=rpc("generate_daily_report",{"p_report_date":report_date,"p_generated_by":session["employee_id"]})
+    status,result=rpc("generate_daily_report",{"p_report_date":report_date,"p_generated_by":session["employee_id"],"p_revision_reason":str(data.get("revision_reason") or "").strip() or None})
     if status>=400:return jsonify(result),status
     return jsonify(result),201
 
