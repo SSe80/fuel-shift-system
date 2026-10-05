@@ -13,6 +13,11 @@
     <div class="daily-filter-actions"><button onclick="loadDailyReport()">Refresh</button><button class="primary" onclick="saveDailyReport()">Generate Report</button></div>
   </section>
 
+  <section class="daily-section daily-pending-section">
+    <div class="daily-section-head"><div><span class="daily-kicker">PENDING CONFIRMATION</span><h2>Daily sales awaiting confirmation</h2><p class="muted">When every shift started on a date has ended, all shift sale methods are combined here for one final admin confirmation.</p></div></div>
+    <div id="daily-report-pending-confirmations" class="daily-report-pending-confirmations"></div>
+  </section>
+
   <section class="daily-section daily-history-section">
     <div class="daily-section-head"><div><span class="daily-kicker">DAILY REPORT HISTORY</span><h2>Reports by date</h2><p class="muted">Each date is shown as its own card. Select a card to open its full report.</p></div></div>
     <div id="daily-report-date-cards" class="daily-report-date-cards"></div>
@@ -54,4 +59,4 @@
 
   <div id="toast" class="toast"></div>
 </main>
-<script src="assets/app.js?v=20261005-01"></script></body></html>
+<script src="assets/app.js?v=20261005-02"></script></body></html>
