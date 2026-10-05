@@ -997,8 +997,7 @@ def update_nozzle(nozzle_id):
         body["tank_id"]=new_tank_id
     if "tank_order" in data:
         try: order=int(data["tank_order"])
-        except (TypeError,ValueError): return jsonify({"error":"Invalid dispenser order"}),400
-        if order<1:return jsonify({"error":"Dispenser order must be 1 or greater"}),400
+        except (TypeError,ValueError): return jsonify({"error":"Invalid dispenser order"}),400        if order<1:return jsonify({"error":"Dispenser order must be 1 or greater"}),400
         code_product=new_product
         ps,pr=sb("products",params={"name":"eq."+code_product,"select":"name,code_name","limit":"1"})
         if ps!=200 or not pr:return jsonify({"error":"Product not found"}),404
@@ -1997,8 +1996,7 @@ def _daily_confirmation_snapshot(report_date):
         m=type_map.get(str(x.get("sale_type_id") or "")) or "Other"; methods[m]=methods.get(m,0)+float(x.get("amount") or 0)
     all_complete=all(x.get("end_time") for x in shifts)
     takeover_by_shift={str(x.get("shift_id")):x for x in takeovers if x.get("shift_id")}
-    sale_count_by_takeover={}
-    for row in sale_rows:
+    sale_count_by_takeover={}    for row in sale_rows:
         key=str(row.get("takeover_id") or "")
         sale_count_by_takeover[key]=sale_count_by_takeover.get(key,0)+1
     # A DSR is created only after every shift has completed its handover AND
@@ -2112,8 +2110,20 @@ def daily_report():
     })
     nozzle_reading_status,nozzle_reading_rows=sb("shift_nozzle_readings",params={
         "shift_id":shift_id_filter,
-        "select":"shift_id,nozzle_id,opening_reading,closing_reading,opening_liters,closing_liters,opened_at,closed_at",
+        "select":"shift_id,nozzle_id,opening_reading,closing_reading,opening_liters,closing_liters,opened_at,closed_at,created_at",
         "order":"created_at.asc","limit":"20000"
+    })
+    dispenser_nozzle_status,dispenser_nozzle_rows=sb("dispenser_nozzles",params={
+        "select":"id,dispenser_id,nozzle_number,nozzle_code,product_id,tank_id,active",
+        "order":"dispenser_id.asc,nozzle_number.asc","limit":"5000"
+    })
+    dispenser_status,dispenser_rows=sb("dispensers",params={
+        "select":"id,dispenser_code,active",
+        "order":"dispenser_code.asc","limit":"1000"
+    })
+    all_tank_status,all_tank_rows=sb("tanks",params={
+        "select":"id,tank_code,product,capacity_liters,active,opening_stock_liters,current_liters",
+        "order":"tank_code.asc","limit":"1000"
     })
     purchases_status,purchase_rows=sb("purchases",params={
         "purchase_date":"gte."+day_start,
@@ -2124,6 +2134,9 @@ def daily_report():
     if sales_status!=200:return jsonify({"error":sales_rows}),sales_status
     if handover_status!=200:return jsonify({"error":handover_rows}),handover_status
     if nozzle_reading_status!=200:return jsonify({"error":nozzle_reading_rows}),nozzle_reading_status
+    if dispenser_nozzle_status!=200:return jsonify({"error":dispenser_nozzle_rows}),dispenser_nozzle_status
+    if dispenser_status!=200:return jsonify({"error":dispenser_rows}),dispenser_status
+    if all_tank_status!=200:return jsonify({"error":all_tank_rows}),all_tank_status
     if purchases_status!=200:return jsonify({"error":purchase_rows}),purchases_status
 
     handover_by_shift={str(x.get("shift_id")):x for x in handover_rows if x.get("shift_id")}
@@ -2367,6 +2380,237 @@ def daily_report():
         ]
     }
 
+    # Detail-only reconciliation model. This is deliberately derived from
+    # the existing shift/handover/reading records so the DSR workflow itself
+    # remains unchanged.
+    dn_by_id={str(x.get("id")):x for x in dispenser_nozzle_rows if x.get("id")}
+    dn_by_code={str(x.get("nozzle_code") or ""):x for x in dispenser_nozzle_rows if x.get("nozzle_code")}
+    dispenser_by_id={str(x.get("id")):x for x in dispenser_rows if x.get("id")}
+    tank_all_by_id={str(x.get("id")):x for x in all_tank_rows if x.get("id")}
+
+    shift_reading_map={}
+    for rr in nozzle_reading_rows:
+        shift_reading_map.setdefault(str(rr.get("shift_id")),[]).append(rr)
+
+    def _json_list(value):
+        return value if isinstance(value,list) else []
+
+    def _shift_nozzle_refs(shift):
+        sid=str(shift.get("id") or "")
+        refs=[]
+        seen=set()
+        for rr in shift_reading_map.get(sid,[]):
+            nid=str(rr.get("nozzle_id") or "")
+            if nid and nid not in seen:
+                refs.append(dn_by_id.get(nid) or {})
+                seen.add(nid)
+        for item in _json_list(shift.get("activation_nozzles")):
+            code=str((item or {}).get("nozzle_id") or "")
+            dn=dn_by_code.get(code)
+            if dn and str(dn.get("id")) not in seen:
+                refs.append(dn); seen.add(str(dn.get("id")))
+        return [x for x in refs if x.get("id")]
+
+    employee_name_map=employee_map
+
+    # Per-nozzle meter boundaries and attendant participation.
+    nozzle_stats={}
+    nozzle_shift_rows={}
+    for sh in day_shifts:
+        sid=str(sh.get("id") or "")
+        started=sh.get("start_time")
+        for dn in _shift_nozzle_refs(sh):
+            nid=str(dn.get("id"))
+            nozzle_shift_rows.setdefault(nid,[]).append(sh)
+            nozzle_stats.setdefault(nid,{
+                "nozzle_id":nid,
+                "dispenser_id":str(dn.get("dispenser_id") or ""),
+                "nozzle_number":dn.get("nozzle_number"),
+                "nozzle_code":dn.get("nozzle_code") or "—",
+                "tank_id":dn.get("tank_id"),
+                "product":(tank_all_by_id.get(str(dn.get("tank_id"))) or {}).get("product") or "Unknown",
+                "sales_liters":0.0,
+                "sales_amount":0.0,
+                "opening_reading":None,
+                "closing_reading":None,
+                "opening_shift_id":None,
+                "closing_shift_id":None,
+                "attendant_shifts":[]
+            })
+
+    # The confirmed handover snapshot contains authoritative per-nozzle
+    # liters/amount and opening/closing readings for the shift.
+    handover_by_shift_id={str(x.get("shift_id")):x for x in handover_rows if x.get("shift_id")}
+    for sh in day_shifts:
+        sid=str(sh.get("id") or "")
+        hrow=handover_by_shift_id.get(sid) or {}
+        h_open={str((v or {}).get("nozzle_id") or ""):v for v in _json_list(hrow.get("nozzle_opening_readings"))}
+        h_close={str((v or {}).get("nozzle_id") or ""):v for v in _json_list(hrow.get("nozzle_closing_readings"))}
+        h_sales={str((v or {}).get("nozzle_id") or ""):v for v in _json_list(hrow.get("nozzle_sales_liters"))}
+        for dn in _shift_nozzle_refs(sh):
+            nid=str(dn.get("id")); code=str(dn.get("nozzle_code") or "")
+            stat=nozzle_stats.setdefault(nid,{
+                "nozzle_id":nid,"dispenser_id":str(dn.get("dispenser_id") or ""),
+                "nozzle_number":dn.get("nozzle_number"),"nozzle_code":code,
+                "tank_id":dn.get("tank_id"),"product":"Unknown","sales_liters":0.0,
+                "sales_amount":0.0,"opening_reading":None,"closing_reading":None,
+                "opening_shift_id":None,"closing_shift_id":None,"attendant_shifts":[]
+            })
+            sale=h_sales.get(code) or {}
+            stat["sales_liters"]+=float(sale.get("liters_sold") or 0)
+            stat["sales_amount"]+=float(sale.get("amount") or 0)
+
+            reading_rows=[r for r in shift_reading_map.get(sid,[]) if str(r.get("nozzle_id") or "")==nid]
+            if reading_rows:
+                rr=reading_rows[-1]
+                if rr.get("opening_reading") is not None:
+                    stat["opening_reading"]=float(rr.get("opening_reading"))
+                    stat["opening_shift_id"]=sid
+                if rr.get("closing_reading") is not None:
+                    stat["closing_reading"]=float(rr.get("closing_reading"))
+                    stat["closing_shift_id"]=sid
+            if stat["opening_reading"] is None and h_open.get(code,{}).get("opening_reading") is not None:
+                stat["opening_reading"]=float(h_open[code]["opening_reading"])
+                stat["opening_shift_id"]=sid
+            if h_close.get(code,{}).get("closing_reading") is not None:
+                stat["closing_reading"]=float(h_close[code]["closing_reading"])
+                stat["closing_shift_id"]=sid
+
+            emp=employee_name_map.get(str(sh.get("employee_id"))) or {}
+            stat["attendant_shifts"].append({
+                "shift_id":sid,
+                "attendant":emp.get("name") or "Unknown",
+                "started_at":sh.get("start_time"),
+                "ended_at":sh.get("end_time"),
+                "sales_liters":float(sale.get("liters_sold") or 0),
+                "sales_amount":float(sale.get("amount") or 0)
+            })
+
+    for stat in nozzle_stats.values():
+        stat["attendant_shifts"].sort(key=lambda z:str(z.get("started_at") or ""))
+        delta=None
+        if stat.get("opening_reading") is not None and stat.get("closing_reading") is not None:
+            delta=float(stat["closing_reading"])-float(stat["opening_reading"])
+        stat["meter_delta_liters"]=delta
+        stat["meter_difference_liters"]=(float(stat["sales_liters"])-delta) if delta is not None else None
+        stat["meter_reconciliation_pct"]=(float(stat["sales_liters"])/delta*100.0) if delta and delta>0 else None
+
+    # Build dispenser -> nozzle hierarchy. A dispenser card contains every
+    # configured nozzle that participated in the selected report day.
+    dispenser_detail_map={}
+    for stat in nozzle_stats.values():
+        did=str(stat.get("dispenser_id") or "")
+        if not did: continue
+        dispenser_detail_map.setdefault(did,{"dispenser_id":did,"dispenser":(dispenser_by_id.get(did) or {}).get("dispenser_code") or "—","nozzles":[],"shift_ids":set(),"attendants":set()})
+        dispenser_detail_map[did]["nozzles"].append(stat)
+        for z in stat.get("attendant_shifts") or []:
+            dispenser_detail_map[did]["shift_ids"].add(str(z.get("shift_id")))
+            dispenser_detail_map[did]["attendants"].add(str(z.get("attendant") or "Unknown"))
+
+    dispenser_details=[]
+    for did,item in dispenser_detail_map.items():
+        item["nozzles"].sort(key=lambda z:int(z.get("nozzle_number") or 999))
+        liters_total=sum(float(z.get("sales_liters") or 0) for z in item["nozzles"])
+        amount_total=sum(float(z.get("sales_amount") or 0) for z in item["nozzles"])
+        for z in item["nozzles"]:
+            z["sales_share_pct"]=(float(z.get("sales_liters") or 0)/liters_total*100.0) if liters_total else 0
+        first_start=min((str(z.get("started_at") or "") for n in item["nozzles"] for z in n.get("attendant_shifts") or []),default=None)
+        last_end=max((str(z.get("ended_at") or "") for n in item["nozzles"] for z in n.get("attendant_shifts") or []),default=None)
+        item["sales_liters"]=liters_total
+        item["sales_amount"]=amount_total
+        item["shift_count"]=len(item["shift_ids"])
+        item["attendant_count"]=len(item["attendants"])
+        item["attendants"]=sorted(item["attendants"])
+        item["first_shift_started_at"]=first_start
+        item["last_shift_ended_at"]=last_end
+        item["sales_share_pct"]=(liters_total/station_l*100.0) if station_l else 0
+        item.pop("shift_ids",None)
+        dispenser_details.append(item)
+
+    dispenser_details.sort(key=lambda z:str(z.get("dispenser") or ""))
+
+    # Tank detail: first shift opening, last shift closing, discharged
+    # purchases, sales and stock difference for each tank.
+    tank_shift_rows={}
+    for sh in day_shifts:
+        hrow=handover_by_shift_id.get(str(sh.get("id"))) or {}
+        tid=str(hrow.get("tank_id") or "")
+        if tid:
+            tank_shift_rows.setdefault(tid,[]).append((sh,hrow))
+    purchase_by_tank={}
+    for p in purchase_rows:
+        history=_json_list(p.get("discharge_history"))
+        used_history=False
+        for op in history:
+            dt=_local_date_from_iso(op.get("discharge_datetime"))
+            if dt and dt==report_day:
+                tid=str(op.get("tank_id") or p.get("tank_id") or "")
+                if tid:
+                    purchase_by_tank[tid]=purchase_by_tank.get(tid,0)+float(op.get("discharged_quantity_liters") or sum(float(v or 0) for v in _json_list(op.get("compartment_liters"))))
+                    used_history=True
+        if not used_history and p.get("status")=="discharged" and p.get("purchase_date"):
+            if _local_date_from_iso(p.get("purchase_date"))==report_day:
+                tid=str(p.get("tank_id") or "")
+                if tid:
+                    purchase_by_tank[tid]=purchase_by_tank.get(tid,0)+float(p.get("discharged_quantity_liters") or p.get("quantity_liters") or 0)
+
+    tank_details=[]
+    for tid,tank in tank_all_by_id.items():
+        rows=sorted(tank_shift_rows.get(tid,[]),key=lambda z:str(z[0].get("start_time") or ""))
+        first_h=rows[0][1] if rows else {}
+        last_h=rows[-1][1] if rows else {}
+        opening=float(first_h.get("tank_opening_liters") or 0) if rows else float(tank.get("opening_stock_liters") or 0)
+        closing=float(last_h.get("tank_closing_liters") or 0) if rows else float(tank.get("current_liters") or 0)
+        sales_l=float(sum(float(z[1].get("total_sales_liters") or 0) for z in rows))
+        purchased_l=float(purchase_by_tank.get(tid,0))
+        expected=opening+purchased_l-sales_l
+        diff=closing-expected
+        basis=opening+purchased_l
+        tank_details.append({
+            "tank_id":tid,
+            "tank":tank.get("tank_code") or "—",
+            "product":tank.get("product") or "Unknown",
+            "capacity_liters":float(tank.get("capacity_liters") or 0),
+            "opening_stock_liters":opening,
+            "closing_stock_liters":closing,
+            "purchase_discharged_liters":purchased_l,
+            "sales_liters":sales_l,
+            "expected_closing_liters":expected,
+            "difference_liters":diff,
+            "variance_pct":(diff/basis*100.0) if basis else 0,
+            "reconciliation_pct":max(0.0,100.0-(abs(diff)/basis*100.0)) if basis else 100.0,
+            "shift_count":len(rows)
+        })
+
+    sales_type_rows=[]
+    total_sales_amount=float(station_a)
+    for typ,amount in sorted((sales_by_type or {}).items(),key=lambda z:-float(z[1] or 0)):
+        val=float(amount or 0)
+        sales_type_rows.append({"type":typ,"amount":val,"percentage":(val/total_sales_amount*100.0) if total_sales_amount else 0})
+    product_rows=[]
+    for prod,val in sorted((by_product or {}).items(),key=lambda z:-float(z[1].get("liters") or 0)):
+        product_rows.append({
+            "product":prod,
+            "liters":float(val.get("liters") or 0),
+            "amount":float(val.get("amount") or 0),
+            "percentage":(float(val.get("liters") or 0)/station_l*100.0) if station_l else 0
+        })
+    tank_diff_total=sum(float(x.get("difference_liters") or 0) for x in tank_details)
+    dsr_performance={
+        "total_sales_liters":station_l,
+        "total_sales_amount":station_a,
+        "dispenser_count":len(dispenser_details),
+        "nozzle_count":len(nozzle_stats),
+        "tank_count":len(tank_details),
+        "shift_count":len(shift_summary),
+        "attendant_count":len({str(x.get("employee_id")) for x in day_shifts if x.get("employee_id")}),
+        "tank_difference_liters":tank_diff_total,
+        "average_nozzle_reconciliation_pct":(
+            sum(float(x.get("meter_reconciliation_pct")) for x in nozzle_stats.values() if x.get("meter_reconciliation_pct") is not None)/
+            max(1,len([x for x in nozzle_stats.values() if x.get("meter_reconciliation_pct") is not None]))
+        ) if nozzle_stats else 0
+    }
+
     return jsonify({
         "date":report_date,
         "report_ready":report_ready,
@@ -2383,6 +2627,15 @@ def daily_report():
         "shift_summary":shift_summary,
         "dispenser_summary":dispenser_summary,
         "station_summary":station_summary,
+        "dsr_dispenser_details":dispenser_details,
+        "dsr_tank_details":tank_details,
+        "dsr_sales_summary":{
+            "by_type":sales_type_rows,
+            "by_product":product_rows,
+            "total_amount":total_sales_amount,
+            "total_liters":station_l
+        },
+        "dsr_performance":dsr_performance,
         "tanks_by_id":tank_map,
         "summary":{
             "sales_liters":total_l,"sales_amount":total_a,"fuel_sales_amount":fuel_amount,"other_sales_amount":other_amount,
