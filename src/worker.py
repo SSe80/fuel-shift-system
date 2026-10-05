@@ -2805,6 +2805,76 @@ def daily_report():
     purchase_by_tank={}
     purchase_adjustment_by_tank={}
     discharge_operations_by_tank={}
+
+    # Discharge operations are attributed by their actual timestamp, not by
+    # purchase.shift_id (which may be null for multi-operation purchases).
+    # Use shifts that overlap the DSR day, including a shift that started on a
+    # previous day and continued into this day.
+    discharge_shift_status,discharge_attribution_shifts=sb("shifts",params={
+        "start_time":"lt."+day_end,
+        "or":"(end_time.gte."+day_start+",end_time.is.null)",
+        "select":"id,employee_id,nozzle_id,start_time,end_time,status",
+        "order":"start_time.asc","limit":"5000"
+    })
+    if discharge_shift_status!=200:
+        return jsonify({"error":discharge_attribution_shifts}),discharge_shift_status
+
+    def _parse_aware_dt(value):
+        if not value:
+            return None
+        try:
+            dt=datetime.fromisoformat(str(value).replace("Z","+00:00"))
+            if dt.tzinfo is None:
+                dt=dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(timezone.utc)
+        except Exception:
+            return None
+
+    def _attribute_discharge_to_shift(discharge_datetime):
+        dt=_parse_aware_dt(discharge_datetime)
+        if not dt:
+            return {
+                "shift_id":None,
+                "shift_started_at":None,
+                "shift_ended_at":None,
+                "shift_attribution_status":"invalid_timestamp"
+            }
+        matches=[]
+        for sh in discharge_attribution_shifts:
+            started=_parse_aware_dt(sh.get("start_time"))
+            ended=_parse_aware_dt(sh.get("end_time"))
+            if not started:
+                continue
+            # Half-open interval [start, end) prevents a discharge exactly at
+            # a handover boundary from being attributed to both shifts.
+            if started <= dt and (ended is None or dt < ended):
+                matches.append(sh)
+        if len(matches)==1:
+            sh=matches[0]
+            return {
+                "shift_id":sh.get("id"),
+                "shift_employee_id":sh.get("employee_id"),
+                "shift_nozzle_id":sh.get("nozzle_id"),
+                "shift_started_at":sh.get("start_time"),
+                "shift_ended_at":sh.get("end_time"),
+                "shift_status":sh.get("status"),
+                "shift_attribution_status":"inside_shift"
+            }
+        if len(matches)>1:
+            return {
+                "shift_id":None,
+                "shift_started_at":None,
+                "shift_ended_at":None,
+                "shift_attribution_status":"ambiguous_overlap",
+                "overlapping_shift_ids":[str(x.get("id")) for x in matches if x.get("id")]
+            }
+        return {
+            "shift_id":None,
+            "shift_started_at":None,
+            "shift_ended_at":None,
+            "shift_attribution_status":"outside_shift"
+        }
+
     for p in purchase_rows:
         history=_json_list(p.get("discharge_history"))
         used_history=False
@@ -2827,11 +2897,13 @@ def daily_report():
                 stock_adjustment=float(recorded)-float(before)-discharged
                 purchase_adjustment_by_tank[tid]=purchase_adjustment_by_tank.get(tid,0.0)+stock_adjustment
 
+            discharge_attribution=_attribute_discharge_to_shift(op.get("discharge_datetime"))
             discharge_operations_by_tank.setdefault(tid,[]).append({
                 "purchase_id":p.get("id"),
                 "operation_index":op_index,
                 "discharge_datetime":op.get("discharge_datetime"),
                 "tank_code":op.get("tank_code"),
+                **discharge_attribution,
                 "discharged_liters":discharged,
                 "tank_liters_before":float(before) if before is not None else None,
                 "tank_liters_after":float(op.get("tank_liters_after")) if op.get("tank_liters_after") is not None else None,
@@ -2850,11 +2922,13 @@ def daily_report():
                 if tid:
                     discharged=float(p.get("discharged_quantity_liters") or 0)
                     purchase_by_tank[tid]=purchase_by_tank.get(tid,0.0)+discharged
+                    discharge_attribution=_attribute_discharge_to_shift(p.get("discharged_at"))
                     discharge_operations_by_tank.setdefault(tid,[]).append({
                         "purchase_id":p.get("id"),
                         "operation_index":None,
                         "discharge_datetime":p.get("discharged_at"),
                         "tank_code":(tank_all_by_id.get(tid) or {}).get("tank_code"),
+                        **discharge_attribution,
                         "discharged_liters":discharged,
                         "tank_liters_before":None,
                         "tank_liters_after":None,
@@ -2887,6 +2961,29 @@ def daily_report():
         purchased_l=float(purchase_by_tank.get(tid,0))
         stock_adjustment_l=float(purchase_adjustment_by_tank.get(tid,0))
         discharge_operations=discharge_operations_by_tank.get(tid,[])
+        discharge_inside_shift_liters=sum(
+            float(x.get("discharged_liters") or 0)
+            for x in discharge_operations
+            if x.get("shift_attribution_status")=="inside_shift"
+        )
+        discharge_outside_shift_liters=sum(
+            float(x.get("discharged_liters") or 0)
+            for x in discharge_operations
+            if x.get("shift_attribution_status")=="outside_shift"
+        )
+        discharge_ambiguous_shift_liters=sum(
+            float(x.get("discharged_liters") or 0)
+            for x in discharge_operations
+            if x.get("shift_attribution_status")=="ambiguous_overlap"
+        )
+        discharge_outside_shift_count=sum(
+            1 for x in discharge_operations
+            if x.get("shift_attribution_status")=="outside_shift"
+        )
+        discharge_ambiguous_shift_count=sum(
+            1 for x in discharge_operations
+            if x.get("shift_attribution_status")=="ambiguous_overlap"
+        )
         # For multiple shifts on the same tank, the next shift should normally
         # open at the previous shift's closing stock. Any difference is an
         # explicit stock adjustment/gap; do not silently hide it in the DSR.
@@ -2954,6 +3051,11 @@ def daily_report():
             "documented_stock_adjustment_liters":stock_adjustment_l,
             "discharge_operation_count":len(discharge_operations),
             "discharge_operations":discharge_operations,
+            "discharge_inside_shift_liters":discharge_inside_shift_liters,
+            "discharge_outside_shift_liters":discharge_outside_shift_liters,
+            "discharge_ambiguous_shift_liters":discharge_ambiguous_shift_liters,
+            "discharge_outside_shift_count":discharge_outside_shift_count,
+            "discharge_ambiguous_shift_count":discharge_ambiguous_shift_count,
             "opening_adjustment_liters":opening_adjustment_l,
             "continuity_gap_count":continuity_gap_count,
             "sales_liters":sales_l,
