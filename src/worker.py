@@ -3482,6 +3482,14 @@ def daily_report():
         "station_summary":station_summary,
         "tank_details":tank_details,
         "performance":dsr_performance,
+        "dsr_dispenser_details":dispenser_details,
+        "dsr_tank_details":tank_details,
+        "dsr_sales_summary":{
+            "by_product":product_rows,
+            "by_type":sales_type_rows,
+            "total_liters":station_l,
+            "total_amount":station_a
+        },
         "dsr_performance":dsr_performance,
         "total_purchase_discharged_liters":total_p,
         "total_sales_liters":station_l,
