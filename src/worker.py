@@ -2789,22 +2789,68 @@ def daily_report():
         tid=str(hrow.get("tank_id") or "")
         if tid:
             tank_shift_rows.setdefault(tid,[]).append((sh,hrow))
+    # Use actual discharge operations as the DSR purchase ledger. A purchase
+    # may be discharged in multiple operations and into different tanks.
     purchase_by_tank={}
+    purchase_adjustment_by_tank={}
+    discharge_operations_by_tank={}
     for p in purchase_rows:
         history=_json_list(p.get("discharge_history"))
         used_history=False
-        for op in history:
+        for op_index,op in enumerate(history):
             dt=_local_date_from_iso(op.get("discharge_datetime"))
-            if dt and dt==report_day:
-                tid=str(op.get("tank_id") or p.get("tank_id") or "")
-                if tid:
-                    purchase_by_tank[tid]=purchase_by_tank.get(tid,0)+float(op.get("discharged_quantity_liters") or sum(float(v or 0) for v in _json_list(op.get("compartment_liters"))))
-                    used_history=True
-        if not used_history and p.get("status")=="discharged" and p.get("purchase_date"):
-            if _local_date_from_iso(p.get("purchase_date"))==report_day:
+            if not dt or dt!=report_day:
+                continue
+            tid=str(op.get("tank_id") or "")
+            if not tid:
+                continue
+            discharged=float(op.get("discharged_quantity_liters") or sum(float(v or 0) for v in _json_list(op.get("compartment_liters"))))
+            purchase_by_tank[tid]=purchase_by_tank.get(tid,0.0)+discharged
+
+            before=op.get("tank_liters_before")
+            recorded=op.get("tank_stock_recorded_liters")
+            stock_adjustment=None
+            if before is not None and recorded is not None:
+                # Derive the documented stock adjustment from the physical
+                # before-stock, delivered liters and recorded post-stock.
+                stock_adjustment=float(recorded)-float(before)-discharged
+                purchase_adjustment_by_tank[tid]=purchase_adjustment_by_tank.get(tid,0.0)+stock_adjustment
+
+            discharge_operations_by_tank.setdefault(tid,[]).append({
+                "purchase_id":p.get("id"),
+                "operation_index":op_index,
+                "discharge_datetime":op.get("discharge_datetime"),
+                "tank_code":op.get("tank_code"),
+                "discharged_liters":discharged,
+                "tank_liters_before":float(before) if before is not None else None,
+                "tank_liters_after":float(op.get("tank_liters_after")) if op.get("tank_liters_after") is not None else None,
+                "tank_stock_recorded_liters":float(recorded) if recorded is not None else None,
+                "stock_adjustment_liters":stock_adjustment,
+                "compartment_indexes":op.get("compartment_indexes") or [],
+            })
+            used_history=True
+
+        # Legacy aggregate fallback: only an explicit discharge timestamp and
+        # positive discharged quantity can be used. Never infer a discharge
+        # from purchase_date alone.
+        if not used_history and p.get("discharged_at") and float(p.get("discharged_quantity_liters") or 0)>0:
+            if _local_date_from_iso(p.get("discharged_at"))==report_day:
                 tid=str(p.get("tank_id") or "")
                 if tid:
-                    purchase_by_tank[tid]=purchase_by_tank.get(tid,0)+float(p.get("discharged_quantity_liters") or p.get("quantity_liters") or 0)
+                    discharged=float(p.get("discharged_quantity_liters") or 0)
+                    purchase_by_tank[tid]=purchase_by_tank.get(tid,0.0)+discharged
+                    discharge_operations_by_tank.setdefault(tid,[]).append({
+                        "purchase_id":p.get("id"),
+                        "operation_index":None,
+                        "discharge_datetime":p.get("discharged_at"),
+                        "tank_code":(tank_all_by_id.get(tid) or {}).get("tank_code"),
+                        "discharged_liters":discharged,
+                        "tank_liters_before":None,
+                        "tank_liters_after":None,
+                        "tank_stock_recorded_liters":None,
+                        "stock_adjustment_liters":None,
+                        "compartment_indexes":[],
+                    })
 
     # Only include tanks that actually participate in this DSR through a
     # shift, a nozzle, or a purchase/discharge recorded for this report date.
@@ -2828,6 +2874,8 @@ def daily_report():
         nozzle_sales_l=float(sum(float((tank_nozzle_sales_by_shift.get(tid) or {}).get(str(z[0].get("id") or "")) or 0) for z in rows))
         nozzle_sales_difference_l=sales_l-nozzle_sales_l
         purchased_l=float(purchase_by_tank.get(tid,0))
+        stock_adjustment_l=float(purchase_adjustment_by_tank.get(tid,0))
+        discharge_operations=discharge_operations_by_tank.get(tid,[])
         # For multiple shifts on the same tank, the next shift should normally
         # open at the previous shift's closing stock. Any difference is an
         # explicit stock adjustment/gap; do not silently hide it in the DSR.
@@ -2840,9 +2888,9 @@ def daily_report():
             if abs(gap)>0.0001:
                 continuity_gap_count+=1
                 opening_adjustment_l+=gap
-        expected=opening+opening_adjustment_l+purchased_l-sales_l
+        expected=opening+opening_adjustment_l+purchased_l+stock_adjustment_l-sales_l
         diff=expected-closing
-        basis=opening+opening_adjustment_l+purchased_l
+        basis=opening+opening_adjustment_l+purchased_l+stock_adjustment_l
         shift_reconciliation=[]
         running_adjustment=0.0
         for idx,(sh,h) in enumerate(rows):
@@ -2889,6 +2937,9 @@ def daily_report():
             "opening_stock_liters":opening,
             "closing_stock_liters":closing,
             "purchase_discharged_liters":purchased_l,
+            "documented_stock_adjustment_liters":stock_adjustment_l,
+            "discharge_operation_count":len(discharge_operations),
+            "discharge_operations":discharge_operations,
             "opening_adjustment_liters":opening_adjustment_l,
             "continuity_gap_count":continuity_gap_count,
             "sales_liters":sales_l,
