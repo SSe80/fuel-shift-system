@@ -2706,3 +2706,40 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   .dsr-attendant-shift strong{grid-column:2}
   .dsr-performance-grid{grid-template-columns:1fr 1fr}
 }
+
+/* DSR specification: individual shift audit trail and final analytical blocks */
+.dsr-dispenser-meta{grid-template-columns:repeat(4,minmax(0,1fr))}
+.dsr-shift-list{display:grid;gap:9px}
+.dsr-shift-card{border:1px solid #e2e8f0;border-radius:15px;background:#fbfcfe;overflow:hidden}
+.dsr-shift-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 15px;background:#fff;border-bottom:1px solid #e8edf2}
+.dsr-shift-head h3{margin:2px 0 3px;font-size:15px}
+.dsr-shift-head p{margin:0;color:#667085;font-size:10px}
+.dsr-dsr-status{padding:5px 8px;border-radius:999px;font-size:10px;font-weight:850;text-transform:capitalize;white-space:nowrap}
+.dsr-dsr-status.confirmed{background:#ecfdf3;color:#15803d}
+.dsr-dsr-status.pending{background:#fff7e8;color:#a15c00}
+.dsr-shift-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:#e8edf2}
+.dsr-shift-grid>div{padding:10px;background:#fff}
+.dsr-shift-grid span,.dsr-shift-readings span{display:block;color:#7b8794;font-size:10px;font-weight:750}
+.dsr-shift-grid b{display:block;margin-top:4px;font-size:12px}
+.dsr-shift-readings{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+.dsr-shift-readings>div{padding:10px;border-radius:10px;background:#f5f8fb}
+.dsr-shift-readings b{display:block;margin-top:4px;font-size:11px;font-weight:650;overflow-wrap:anywhere}
+.dsr-performance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dsr-performance-block{padding:13px;border:1px solid #e4eaf0;border-radius:14px;background:#fbfcfe}
+.dsr-performance-block .dsr-performance-metric{margin-top:7px}
+.dsr-performance-block .dsr-performance-metric:first-of-type{margin-top:0}
+.dsr-sales-total{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;align-items:center;padding:13px 15px;border-radius:14px;background:#f5f8fb;border:1px solid #e4eaf0}
+.dsr-sales-total span{font-size:11px;font-weight:800;color:#667085;text-transform:uppercase;letter-spacing:.06em}
+.dsr-sales-total strong{font-size:15px}
+@media(max-width:760px){
+  .dsr-dispenser-meta{grid-template-columns:1fr 1fr}
+  .dsr-shift-grid{grid-template-columns:1fr 1fr 1fr}
+  .dsr-performance-grid{grid-template-columns:1fr}
+}
+@media(max-width:500px){
+  .dsr-dispenser-meta>div:last-child{grid-column:auto}
+  .dsr-shift-head{padding:12px}
+  .dsr-shift-grid{grid-template-columns:1fr 1fr}
+  .dsr-shift-readings{grid-template-columns:1fr}
+  .dsr-sales-total{align-items:flex-start;flex-wrap:wrap}
+}
