@@ -154,11 +154,13 @@
         <div class="top"><h3>Edit Fuel Tank</h3><button type="button" class="modal-close" onclick="closeTankEdit()" aria-label="Close">×</button></div>
         <input id="edit-tank-id" type="hidden">
         <label>Tank size (liters)<input id="edit-tank-capacity" type="number" min="1" step="0.01" required></label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <label>Calibration mm<input id="edit-tank-calibration-mm" type="number" min="0.001" step="0.001" placeholder="Reference mm" inputmode="decimal"></label>
-          <label>Calibration liters<input id="edit-tank-calibration-liters" type="number" min="0" step="0.001" placeholder="Reference liters" inputmode="decimal"></label>
+        <div class="form" style="margin-top:4px">
+          <label>Tank calibration CSV
+            <input id="edit-tank-calibration-file" type="file" accept=".csv,text/csv" onchange="calibrationFileChanged(this)">
+          </label>
+          <small class="muted">Upload a two-column CSV: <b>height_mm,liters</b>. All measured calibration points are stored and used for interpolation.</small>
+          <small id="edit-tank-calibration-status" class="muted">No calibration CSV selected.</small>
         </div>
-        <small class="muted">Example: if 1,000 mm corresponds to 10,000 L, enter 1,000 mm and 10,000 L. The tank then converts any dip reading using this reference.</small>
         <div class="row">
           <button type="submit" class="primary">Save Changes</button>
           <button type="button" onclick="closeTankEdit()">Cancel</button>
@@ -236,6 +238,7 @@
   <div id="settings-status" class="settings-status muted"></div>
 </main>
 <script src="assets/app.js?v=20261005-05"></script>
+<script src="assets/tank-calibration.js?v=20261005-01"></script>
 <script src="assets/app-boot.js?v=20261004-02"></script><div id="station-currency-modal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" onclick="closeStationCurrencyModal()"></div>
     <form id="station-currency-form" class="modal-card form" onsubmit="saveStationCurrency(event)">
