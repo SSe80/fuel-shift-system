@@ -3189,6 +3189,16 @@ def daily_report():
                 if op.get("shift_attribution_status")=="inside_shift"
                 and str(op.get("shift_id") or "")==sid
             )
+            # Discharge-operation stock adjustments are physical/documented
+            # variances tied to the operation. Attribute them to the same
+            # responsible shift so shift-level reconciliation uses the same
+            # accounting basis as the tank-level equation.
+            shift_adjustment=sum(
+                float(op.get("stock_adjustment_liters") or 0)
+                for op in discharge_operations
+                if op.get("shift_attribution_status")=="inside_shift"
+                and str(op.get("shift_id") or "")==sid
+            )
             continuity_adjustment=0.0
             if idx>0:
                 prev_close=float(rows[idx-1][1].get("tank_closing_liters") or 0)
@@ -3197,9 +3207,9 @@ def daily_report():
             # Use authoritative nozzle sales in the stock equation.
             # Tank-reported sales remain visible separately as a reconciliation
             # check and must not replace the physical nozzle-sales ledger.
-            shift_expected=shift_open+continuity_adjustment+shift_purchase-shift_nozzle_sales
+            shift_expected=shift_open+continuity_adjustment+shift_purchase+shift_adjustment-shift_nozzle_sales
             shift_diff=shift_expected-shift_close
-            shift_basis=shift_open+continuity_adjustment+shift_purchase
+            shift_basis=shift_open+continuity_adjustment+shift_purchase+shift_adjustment
             shift_reconciliation.append({
                 "shift_id":sh.get("id"),
                 "started_at":sh.get("start_time"),
@@ -3211,6 +3221,7 @@ def daily_report():
                 "nozzle_sales_difference_liters":shift_nozzle_difference,
                 "nozzle_reconciliation_pct":(shift_nozzle_sales/shift_sales*100.0) if shift_sales else (100.0 if shift_nozzle_sales == 0 else 0.0),
                 "purchase_liters":shift_purchase,
+                "documented_stock_adjustment_liters":shift_adjustment,
                 "continuity_adjustment_liters":continuity_adjustment,
                 "expected_closing_liters":shift_expected,
                 "difference_liters":shift_diff,
@@ -3272,7 +3283,6 @@ def daily_report():
     # timestamp/shift matching and must never alter the station-wide DSR
     # purchase ledger or tank reconciliation totals.
     discharge_audit_operations=sum(int(x.get("discharge_operation_count") or 0) for x in tank_details)
-    discharge_audit_inside=sum(int(x.get("discharge_operation_count") or 0) for x in tank_details if False)
     discharge_audit_inside=sum(
         1 for tank in tank_details
         for op in (tank.get("discharge_operations") or [])
