@@ -2934,7 +2934,7 @@ async function loadDailyReport(){
     ['report-summary','report-dispensers','report-tanks','report-sales-summary','report-shifts','report-performance'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
   }
 }
-async function loadDailyReportRevisions(){
+async async function loadDailyReportRevisions(){
   const section=document.getElementById('daily-report-revisions');
   const list=document.getElementById('daily-report-revisions-list');
   const date=document.getElementById('report-date')?.value;
