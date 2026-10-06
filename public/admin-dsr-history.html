@@ -213,7 +213,7 @@ window.filterDsrHistory=function(){
 window.loadDsrHistory=function(){
  const s=document.getElementById('dsr-history-search'),p=document.getElementById('dsr-history-period');if(s)s.value='';if(p)p.value='all';
  const box=document.getElementById('daily-report-date-cards');if(box)box.innerHTML='<div class="card">Refreshing…</div>';
- return (async()=>{try{const rows=await api('/api/reports/daily/confirmations');window.dsrHistoryData=(Array.isArray(rows)?rows:[]).filter(x=>x.status==='confirmed').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''));filterDsrHistory();}catch(e){if(box)box.innerHTML='<div class="card">Could not load DSR history: '+String(e.message||e)+'</div>';}})();
+ return (async()=>{try{const rows=await api('/api/reports/daily/confirmations');window.dsrHistoryData=(Array.isArray(rows)?rows:[]).filter(x=>x.status==='confirmed').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));filterDsrHistory();}catch(e){if(box)box.innerHTML='<div class="card">Could not load DSR history: '+String(e.message||e)+'</div>';}})();
 };
 window.toggleDsrMonth=function(button){
  const section=button.closest('.dsr-history-month');if(!section)return;
