@@ -2775,7 +2775,8 @@ async function loadDailyReport(){
   if(details)details.hidden=false;
   const status=document.getElementById('report-status');
   try{
-    await window.stationCurrencyReady;
+    // Do not block DSR opening on the separate settings/currency request.
+    // The currency is already initialized with ETB and will be updated asynchronously.
     const d=document.getElementById('report-date').value||new Date().toISOString().slice(0,10);
     if(status)status.textContent='Loading report…';
     const [r,products]=await Promise.all([
