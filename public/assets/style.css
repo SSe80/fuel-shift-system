@@ -308,3 +308,105 @@ body.admin-shell>.admin-sidebar .admin-sidebar-logout b{
     font-size:11px!important;
   }
 }
+
+/* Logout confirmation — consistent in-app confirmation card */
+.logout-confirm-modal{
+  position:fixed;
+  inset:0;
+  z-index:3000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.logout-confirm-modal.open{display:flex}
+.logout-confirm-backdrop{
+  position:absolute;
+  inset:0;
+  background:#0b1220aa;
+  backdrop-filter:blur(3px);
+}
+.logout-confirm-card{
+  position:relative;
+  width:min(420px,100%);
+  padding:24px;
+  border:1px solid #dfe6ee;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 24px 70px #10182833;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:15px;
+  animation:logoutConfirmIn .16s ease-out;
+}
+.logout-confirm-icon{
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#eef3f8;
+  color:#182230;
+  font-size:22px;
+  font-weight:700;
+}
+.logout-confirm-content .section-kicker{
+  display:block;
+  margin:1px 0 3px;
+  font-size:9px;
+}
+.logout-confirm-content h2{
+  margin:0;
+  font-size:21px;
+  line-height:1.2;
+  color:#17202a;
+}
+.logout-confirm-content p{
+  margin:7px 0 0;
+  color:#687789;
+  font-size:13px;
+  line-height:1.45;
+}
+.logout-confirm-actions{
+  grid-column:1/-1;
+  display:flex;
+  justify-content:flex-end;
+  gap:9px;
+  margin-top:4px;
+}
+.logout-confirm-actions button{
+  min-height:40px;
+  padding:9px 16px;
+  border-radius:10px;
+  border:1px solid #d8e0e8;
+  font:inherit;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+.logout-cancel-button{
+  background:#fff;
+  color:#344255;
+}
+.logout-confirm-button{
+  background:#17202a;
+  color:#fff;
+  border-color:#17202a!important;
+}
+.logout-confirm-actions button:focus-visible{
+  outline:3px solid #93c5fd;
+  outline-offset:2px;
+}
+@keyframes logoutConfirmIn{
+  from{opacity:0;transform:translateY(5px) scale(.985)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media(max-width:480px){
+  .logout-confirm-modal{padding:14px}
+  .logout-confirm-card{padding:19px;border-radius:16px;gap:12px}
+  .logout-confirm-icon{width:40px;height:40px;border-radius:10px;font-size:20px}
+  .logout-confirm-content h2{font-size:19px}
+  .logout-confirm-content p{font-size:12px}
+  .logout-confirm-actions button{min-height:38px;padding:8px 14px;font-size:12px}
+}
