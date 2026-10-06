@@ -2397,6 +2397,7 @@ def confirm_daily_report(report_date):
     }),200
 
 def _daily_report_error_boundary(fn):
+    @wraps(fn)
     def wrapped(*args,**kwargs):
         try:
             return fn(*args,**kwargs)
