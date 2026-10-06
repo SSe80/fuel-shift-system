@@ -73,6 +73,16 @@
  .daily-dsr-history-card .daily-dsr-status-confirmed,.daily-dsr-history-card .daily-dsr-status-preview{font-size:9px;padding:4px 7px}
  .purchase-history-recorded-toggle{width:25px;height:25px;font-size:15px}
  .daily-dsr-history-stats{grid-template-columns:1fr 1fr;gap:6px}
+}.daily-preview-confirmed-badge{background:#ecfdf3!important;color:#027a48!important;border-color:#abefc6!important}
+.daily-preview-loading{min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#475467}
+.daily-preview-loading strong{font-size:16px;color:#17202a}
+.daily-preview-loading span{font-size:12px;color:#667085}
+.daily-dsr-preview-dialog{max-height:calc(100vh - 28px);overflow:hidden}
+.daily-dsr-preview-paper{max-height:calc(100vh - 112px);overflow-y:auto;overscroll-behavior:contain}
+body.daily-preview-open{overflow:hidden}
+@media(max-width:600px){
+ .daily-dsr-preview-dialog{max-height:100vh;height:100vh;border-radius:0}
+ .daily-dsr-preview-paper{max-height:calc(100vh - 104px)}
 }</style></head>
 <body class="daily-report-page" onload="document.getElementById('report-date').value=new Date().toISOString().slice(0,10);loadDailyReportConfirmations()">
 <main class="wrap admin-daily-report-page">
@@ -141,4 +151,4 @@
 
   <div id="toast" class="toast"></div>
 </main>
-<script src="assets/app.js?v=20261005-33"></script></body></html>
+<script src="assets/app.js?v=20261006-01"></script></body></html>
