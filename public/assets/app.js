@@ -2267,9 +2267,20 @@ async function loadDailyReportConfirmations(){
       bindDailyDsrChecks();
     }
     if(dateEl){
-      dateEl.innerHTML=history.length
-        ?history.map(renderDailyHistoryCard).join('')
-        :'<div class="daily-empty daily-dsr-empty"><div>No confirmed DSR history yet.</div><button type="button" class="daily-dsr-preview-btn" onclick="previewDailyReport()">Preview current DSR design</button><small>This preview uses current report data only and does not confirm or change the DSR.</small></div>';
+      // Paint the interactive confirmation card first. History is intentionally
+      // deferred one frame so a reload becomes responsive before the larger
+      // history DOM is built.
+      const renderHistory=()=>{
+        if(!dateEl.isConnected)return;
+        dateEl.innerHTML=history.length
+          ?history.map(renderDailyHistoryCard).join('')
+          :'<div class="daily-empty daily-dsr-empty"><div>No confirmed DSR history yet.</div><button type="button" class="daily-dsr-preview-btn" onclick="previewDailyReport()">Preview current DSR design</button><small>This preview uses current report data only and does not confirm or change the DSR.</small></div>';
+      };
+      if(typeof requestAnimationFrame==='function'){
+        requestAnimationFrame(()=>requestAnimationFrame(renderHistory));
+      }else{
+        setTimeout(renderHistory,0);
+      }
     }
     return rows;
   }catch(e){
