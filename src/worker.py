@@ -2396,7 +2396,7 @@ def daily_report():
 
     shift_status,day_shifts=sb("shifts",params={
         "and":"(start_time.gte."+day_start+",start_time.lt."+day_end+")",
-        "select":"id,employee_id,nozzle_id,start_time,end_time,opening_reading,closing_reading,opening_liters,closing_liters,status,opening_tank_liters",
+        "select":"id,employee_id,nozzle_id,start_time,end_time,opening_reading,closing_reading,opening_liters,closing_liters,status,opening_tank_liters,activation_nozzles",
         "order":"start_time.asc","limit":"5000"
     })
     if shift_status!=200:return jsonify({"error":day_shifts}),shift_status
@@ -2449,7 +2449,7 @@ def daily_report():
     })
     handover_status,handover_rows=sb("shift_takeovers",params={
         "shift_id":shift_id_filter,
-        "select":"id,shift_id,from_employee_id,to_employee_id,shift_started_at,shift_ended_at,total_sales_liters,total_sales_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_sales_liters,tank_variance_liters,tank_variance_pct,sales_status,sales_submitted_at,sales_confirmed_at",
+        "select":"id,shift_id,from_employee_id,to_employee_id,shift_started_at,shift_ended_at,total_sales_liters,total_sales_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_sales_liters,tank_purchases_liters,tank_variance_liters,tank_variance_pct,nozzle_sales_liters,nozzle_opening_readings,nozzle_closing_readings,sales_status,sales_submitted_at,sales_confirmed_at",
         "order":"shift_ended_at.asc","limit":"5000"
     })
     nozzle_reading_status,nozzle_reading_rows=sb("shift_nozzle_readings",params={
