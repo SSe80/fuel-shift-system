@@ -1281,6 +1281,65 @@ def delete_nozzle(nozzle_id):
     if not result:return jsonify({"error":"Dispenser not found"}),404
     return jsonify({"ok":True}),200
 
+@app.post("/api/nozzles/<nozzle_id>/deactivation-request")
+def request_nozzle_deactivation(nozzle_id):
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    pin=str(data.get("pin","")).strip()
+    if not pin or not pin.isdigit():return jsonify({"error":"Enter the admin PIN"}),400
+    es,er=sb("employees",params={"id":"eq."+session["employee_id"],"active":"eq.true","role":"eq.admin","select":"id,operator_id,pin_hash"})
+    if es!=200 or not er:return jsonify({"error":"Admin account not found"}),404
+    if not verify_pin(pin,er[0].get("pin_hash","")):return jsonify({"error":"Invalid admin PIN"}),401
+    status,result=rpc("request_dispenser_deactivation",{"p_nozzle_id":nozzle_id,"p_admin_id":session["employee_id"]})
+    if status>=400:return jsonify({"error":result}),status
+    return jsonify(result),201
+
+@app.get("/api/dispenser-deactivation-requests")
+def dispenser_deactivation_requests():
+    auth=require_login()
+    if auth:return auth
+    params={"status":"eq.pending","select":"id,nozzle_id,shift_id,requested_by,attendant_id,requested_at,status","order":"requested_at.asc"}
+    if session.get("role")!="admin":
+        params["attendant_id"]="eq."+session["employee_id"]
+    status,rows=sb("dispenser_deactivation_requests",params=params)
+    if status!=200:return jsonify(rows),status
+    if not rows:return jsonify([]),200
+    nozzle_ids=sorted(set(str(x["nozzle_id"]) for x in rows if x.get("nozzle_id")))
+    shift_ids=sorted(set(str(x["shift_id"]) for x in rows if x.get("shift_id")))
+    ns,nrows=sb("nozzles",params={"id":"in.("+",".join(nozzle_ids)+")","select":"id,nozzle_code,product,tank_id,nozzle_ids,nozzle_count,active"}) if nozzle_ids else (200,[])
+    ss,srows=sb("shifts",params={"id":"in.("+",".join(shift_ids)+")","select":"id,employee_id,nozzle_id,start_time,opening_tank_liters,opening_reading,status"}) if shift_ids else (200,[])
+    nozzle_map={str(x["id"]):x for x in nrows} if ns==200 else {}
+    shift_map={str(x["id"]):x for x in srows} if ss==200 else {}
+    for row in rows:
+        n=nozzle_map.get(str(row.get("nozzle_id")),{}); s=shift_map.get(str(row.get("shift_id")),{})
+        rs,readings=sb("shift_nozzle_readings",params={"shift_id":"eq."+str(row["shift_id"]),"select":"id,nozzle_id,opening_reading,opening_liters","order":"created_at.asc"})
+        row["nozzle"]=n; row["shift"]=s; row["nozzle_readings"]=readings if rs==200 else []
+    return jsonify(rows),200
+
+@app.post("/api/dispenser-deactivation-requests/<request_id>/confirm")
+def confirm_nozzle_deactivation(request_id):
+    eid=session.get("employee_id")
+    if not eid:return jsonify({"error":"Unauthorized"}),401
+    data=request.get_json(silent=True) or {}
+    pin=str(data.get("pin","")).strip()
+    if not pin or not pin.isdigit():return jsonify({"error":"Enter your attendant PIN"}),400
+    try: closing_tank_liters=float(data.get("closing_tank_liters"))
+    except (TypeError,ValueError):return jsonify({"error":"Enter a valid closing tank stock"}),400
+    readings=data.get("closing_nozzle_readings",[])
+    if not isinstance(readings,list) or not readings:return jsonify({"error":"Closing reading is required for every nozzle"}),400
+    es,er=sb("employees",params={"id":"eq."+eid,"active":"eq.true","role":"eq.attendant","select":"id,pin_hash"})
+    if es!=200 or not er:return jsonify({"error":"Attendant account not found"}),404
+    if not verify_pin(pin,er[0].get("pin_hash","")):return jsonify({"error":"Invalid attendant PIN"}),401
+    status,result=rpc("confirm_dispenser_deactivation",{
+        "p_request_id":request_id,
+        "p_attendant_id":eid,
+        "p_closing_nozzle_readings":readings,
+        "p_closing_tank_liters":closing_tank_liters
+    })
+    if status>=400:return jsonify(result),status
+    return jsonify(result),200
+
 @app.patch("/api/nozzles/<nozzle_id>")
 def update_nozzle(nozzle_id):
     auth=require_admin()
@@ -1373,6 +1432,7 @@ def update_nozzle(nozzle_id):
     # Deactivation is admin-only. Keep legacy and normalized physical-nozzle
     # states synchronized, and do not silently invalidate a pending assignment.
     if body.get("active") is False and cur.get("active") is True:
+        return jsonify({"error":"Active dispenser deactivation must be confirmed by the admin and then by the assigned attendant."}),409
         cs,cr=sb("shifts",params={"nozzle_id":"eq."+nozzle_id,"status":"assigned","select":"id","limit":"1"})
         if cs!=200:return jsonify({"error":cr}),cs
         if cr:return jsonify({"error":"This dispenser has a pending shift assignment. Cancel the assignment before deactivating it."}),409
