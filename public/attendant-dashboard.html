@@ -1144,6 +1144,94 @@ body.attendant-dashboard-page .takeover-details-modal>.row button{
     grid-template-columns:minmax(0,1fr) 112px!important;
   }
 }
+
+/* Final attendant sidebar correction: preserve original right-side position.
+   The sidebar must stay behind Record Sale/detail modals, never over them. */
+body.attendant-dashboard-page.admin-shell{
+  padding-left:0!important;
+  padding-right:246px!important;
+  box-sizing:border-box!important;
+}
+body.attendant-dashboard-page.admin-shell.admin-sidebar-collapsed{
+  padding-right:0!important;
+}
+body.attendant-dashboard-page.admin-shell>.admin-sidebar{
+  position:fixed!important;
+  z-index:900!important;
+  right:0!important;
+  left:auto!important;
+  top:0!important;
+  bottom:0!important;
+  width:246px!important;
+  height:100vh!important;
+  min-height:100dvh!important;
+  padding:20px 14px!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  background:#111827!important;
+  border-left:1px solid #253047!important;
+  border-right:0!important;
+  box-shadow:-8px 0 28px #10182812!important;
+  transform:none!important;
+}
+body.attendant-dashboard-page.admin-shell.admin-sidebar-collapsed>.admin-sidebar{
+  transform:translateX(100%)!important;
+}
+body.attendant-dashboard-page.admin-shell>.admin-sidebar-toggle{
+  z-index:1000!important;
+  right:256px!important;
+  left:auto!important;
+}
+body.attendant-dashboard-page.admin-shell.admin-sidebar-collapsed>.admin-sidebar-toggle{
+  right:14px!important;
+}
+body.attendant-dashboard-page.admin-shell>.wrap{
+  width:auto!important;
+  max-width:1000px!important;
+  margin:0 auto!important;
+  padding:18px 18px 36px!important;
+  box-sizing:border-box!important;
+}
+/* Modals/cards always render above the fixed sidebar. */
+body.attendant-dashboard-page .modal{
+  z-index:2000!important;
+}
+body.attendant-dashboard-page .modal-backdrop{
+  z-index:0!important;
+}
+body.attendant-dashboard-page .modal-card{
+  position:relative!important;
+  z-index:1!important;
+}
+@media(max-width:800px){
+  body.attendant-dashboard-page.admin-shell{
+    padding-right:0!important;
+    padding-left:0!important;
+  }
+  body.attendant-dashboard-page.admin-shell>.admin-sidebar{
+    right:0!important;
+    left:auto!important;
+    width:246px!important;
+    height:100vh!important;
+    transform:translateX(100%)!important;
+  }
+  body.attendant-dashboard-page.admin-shell.admin-sidebar-open>.admin-sidebar{
+    transform:translateX(0)!important;
+  }
+  body.attendant-dashboard-page.admin-shell>.admin-sidebar-toggle{
+    right:14px!important;
+    left:auto!important;
+    top:12px!important;
+  }
+  body.attendant-dashboard-page.admin-shell.admin-sidebar-open>.admin-sidebar-toggle{
+    right:256px!important;
+  }
+  body.attendant-dashboard-page.admin-shell>.wrap{
+    max-width:100%!important;
+    padding:58px 12px 28px!important;
+  }
+}
 </style></head><body class="attendant-page attendant-dashboard-page admin-shell" data-app-page="userDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div><div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing dip (mm)<input id="handover-closing-dip" type="number" min="0" step="0.1" placeholder="Enter tank closing dip" required oninput="updateHandoverClosingDip(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter a dip to calculate liters.</div><input id="handover-closing-liters" type="hidden"><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="takeover-sale-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closeTakeoverSaleModal()"></div>
 <div class="modal-card takeover-action-modal">
