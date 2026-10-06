@@ -1,6 +1,22 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sales History</title><link rel="stylesheet" href="assets/style.css"></head>
+<title>Sales History</title><link rel="stylesheet" href="assets/style.css"><style>
+.admin-sales-history-page .admin-full-history-month-group{margin:0 0 16px;border:1px solid #d8e1e9;border-radius:14px;background:#fff;overflow:hidden;box-shadow:0 2px 8px rgba(23,32,42,.04)}
+.admin-sales-history-page .admin-full-history-month-head,.admin-sales-history-page .admin-full-history-dsr-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border:0;background:#fff;color:#17202a;text-align:left;cursor:pointer}
+.admin-sales-history-page .admin-full-history-month-head{min-height:64px}
+.admin-sales-history-page .admin-full-history-month-head:hover,.admin-sales-history-page .admin-full-history-dsr-head:hover{background:#fafbfd}
+.admin-sales-history-page .admin-full-history-month-title,.admin-sales-history-page .admin-full-history-dsr-title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.admin-sales-history-page .admin-full-history-month-title strong{font-size:15px}
+.admin-sales-history-page .admin-full-history-month-right,.admin-sales-history-page .admin-full-history-dsr-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.admin-sales-history-page .admin-full-history-month-right small,.admin-sales-history-page .admin-full-history-dsr-right small{color:#8a949e;font-size:10px}
+.admin-sales-history-page .admin-full-history-month-toggle,.admin-sales-history-page .admin-full-history-dsr-toggle{width:27px;height:27px;display:grid;place-items:center;border:1px solid #dce3ea;border-radius:8px;background:#f8fafc;color:#667085;font-size:16px;font-weight:800}
+.admin-sales-history-page .admin-full-history-month-group.expanded>.admin-full-history-month-head .admin-full-history-month-toggle,.admin-sales-history-page .admin-full-history-dsr-group.expanded>.admin-full-history-dsr-head .admin-full-history-dsr-toggle{background:#eef4ff;color:#2563eb;border-color:#c7d7fe}
+.admin-sales-history-page .admin-full-history-month-body{max-height:430px;overflow-y:auto;padding:12px;display:grid;gap:12px;background:#fcfdff;border-top:1px solid #edf1f4}
+.admin-sales-history-page .admin-full-history-month-body[hidden],.admin-sales-history-page .admin-full-history-dsr-cards[hidden]{display:none}
+.admin-sales-history-page .admin-full-history-dsr-group{border:1px solid #d8e1e9;border-radius:11px;background:#fff;overflow:hidden}
+.admin-sales-history-page .admin-full-history-dsr-cards{max-height:330px;overflow-y:auto;padding:9px;display:grid;gap:9px;border-top:1px solid #edf1f5}
+.admin-sales-history-page .admin-full-history-dsr-cards .admin-history-sale-minimized{margin:0}
+</style></head>
 <body class="admin-shell admin-sales-page admin-sales-history-page" data-app-page="adminSalesHistory">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
 <aside class="admin-sidebar" aria-label="Admin navigation">
