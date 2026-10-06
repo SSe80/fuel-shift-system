@@ -117,6 +117,34 @@ body.daily-preview-open{overflow:hidden}
 .daily-dsr-history-card .daily-dsr-history-actions .daily-dsr-view:focus-visible{outline:3px solid rgba(75,131,189,.22);outline-offset:2px}
 @media(max-width:600px){.daily-dsr-history-card .daily-dsr-history-stats{grid-template-columns:1fr 1fr}.daily-dsr-history-card .daily-dsr-history-actions{grid-template-columns:1fr}}
 </style>
+<style>
+/* Exact DSR History card styling shared with admin-dsr-history.html */
+.dsr-history-card{overflow:hidden;border:1px solid #e4e9ef;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(16,24,40,.045);margin-top:10px}
+.dsr-history-card-head{width:100%;min-height:74px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px 13px 17px;border:0;background:#fff;color:#17202a;text-align:left;cursor:pointer}
+.dsr-history-card-head:hover{background:#fafbfd}
+.dsr-history-card-title{min-width:0;display:flex;flex-direction:column;gap:3px}
+.dsr-history-card-title strong{font-size:14px;line-height:1.2;font-weight:800;overflow-wrap:anywhere}
+.dsr-history-card-title small{font-size:10px;line-height:1.25;color:#8a949e}
+.dsr-history-card-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.dsr-history-badge{padding:4px 7px;border-radius:999px;background:#ecfdf3;color:#027a48;border:1px solid #abefc6;font-size:9px;font-weight:850;white-space:nowrap}
+.dsr-history-toggle{width:27px;height:27px;display:grid;place-items:center;border:1px solid #dce3ea;border-radius:8px;background:#f8fafc;color:#667085;font-size:16px;font-weight:800}
+.dsr-history-card.expanded{border-color:#cfd9e4;box-shadow:0 5px 16px rgba(16,24,40,.07)}
+.dsr-history-card.expanded .dsr-history-toggle{background:#eef4ff;color:#2563eb;border-color:#c7d7fe}
+.dsr-history-card-body{padding:0 14px 13px;border-top:1px solid #edf1f4;background:#fcfdff}
+.dsr-history-card-body[hidden]{display:none}
+.dsr-history-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.dsr-history-stat{padding:10px;border:1px solid #e8edf2;border-radius:10px;background:#fff;min-width:0}
+.dsr-history-stat span{display:block;font-size:9px;color:#8a949e;margin-bottom:3px}
+.dsr-history-stat strong{display:block;font-size:12px;color:#17202a;overflow-wrap:anywhere}
+.dsr-history-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.dsr-history-actions a,.dsr-history-actions button{width:100%;min-height:40px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #d5dde5;border-radius:9px;background:#fff;color:#344054;font-size:12px;font-weight:800;text-decoration:none;cursor:pointer}
+.dsr-history-actions .primary{border-color:#4b83bd;background:#4b83bd;color:#fff;box-shadow:0 4px 12px rgba(75,131,189,.18);position:relative;transition:transform .16s ease,box-shadow .16s ease,background .16s ease,border-color .16s ease}
+.dsr-history-actions .primary::after{content:'→';margin-left:6px;font-size:16px;line-height:1;transition:transform .16s ease}
+.dsr-history-actions .primary:hover{background:#3e73a7;border-color:#3e73a7;box-shadow:0 5px 14px rgba(75,131,189,.22);transform:translateY(-1px)}
+.dsr-history-actions .primary:hover::after{transform:translateX(3px)}
+.dsr-history-actions .primary:focus-visible{outline:3px solid rgba(75,131,189,.22);outline-offset:2px}
+@media(max-width:600px){.dsr-history-stats{grid-template-columns:1fr 1fr}.dsr-history-actions{grid-template-columns:1fr}}
+</style>
 </head>
 <body class="admin-shell daily-report-page" onload="document.getElementById('report-date').value=new Date().toISOString().slice(0,10);loadDailyReportConfirmations();(function(){var d=new URLSearchParams(location.search).get('date');if(d)setTimeout(function(){previewDailyReport(d)},250)})()">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
@@ -195,4 +223,4 @@ body.daily-preview-open{overflow:hidden}
 
   <div id="toast" class="toast"></div>
 </main>
-<script src="assets/app.js?v=20261006-01"></script></body></html>
+<script src="assets/app.js?v=20261006-03"></script></body></html>
