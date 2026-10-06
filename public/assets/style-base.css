@@ -2702,7 +2702,7 @@ body.attendant-dashboard-page .attendant-action-result-card{
 body.attendant-dashboard-page .attendant-action-result-card.success{
   border-color:#cce8d5!important;
 }
-body.attendant-dashboard-page .attendant-action-result-card.fail{
+body.attendant-dashboard-page .attendant-action-result-card.failed{
   border-color:#f0c4c8!important;
 }
 body.attendant-dashboard-page .attendant-action-result-card h3{
