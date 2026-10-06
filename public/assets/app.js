@@ -223,21 +223,13 @@ function editTakeoverSaleEntries(){
 function updateTakeoverSaleConfirmation(){
   const takeover=window.pendingTakeoverRecord;
   if(!takeover)return;
-  const sales=[];
+  const sales=(Array.isArray(window.pendingTakeoverSales)?window.pendingTakeoverSales:[]).filter(x=>Number(x?.amount)>0);
   let missingReason='';
-  document.querySelectorAll('#takeover-sale-type-list-confirm .takeover-sale-entry').forEach(row=>{
-    const input=row.querySelector('.takeover-sale-amount');
-    const raw=input?.value??'';
-    if(raw.trim()==='')return;
-    const amount=Number(raw);
-    if(!Number.isFinite(amount)||amount<=0)return;
-    const typeId=row.getAttribute('data-sale-type');
-    const type=(window.takeoverSaleTypes||[]).find(x=>String(x.id)===String(typeId));
-    const reason=row.querySelector('.takeover-sale-reason')?.value.trim()||'';
-    if(type?.reason_required&&!reason)missingReason=type.name;
-    sales.push({sale_type_id:typeId,name:type?.name||'Sale',amount,reason,reason_required:!!type?.reason_required});
+  sales.forEach(x=>{
+    const type=(window.takeoverSaleTypes||[]).find(t=>String(t.id)===String(x.sale_type_id));
+    if(type?.reason_required&&!String(x.reason||'').trim())missingReason=type.name;
   });
-  const total=sales.reduce((sum,x)=>sum+x.amount,0);
+  const total=sales.reduce((sum,x)=>sum+Number(x.amount||0),0);
   const calculated=Number(takeover.total_sales_amount||0);
   const difference=Math.abs(total-calculated);
   const matches=difference<=1 && sales.length>0 && !missingReason;
@@ -252,7 +244,6 @@ function updateTakeoverSaleConfirmation(){
      '<div class="takeover-sale-mismatch">Sales total must be within ETB 1.00 of the calculated amount.</div>');
   const button=document.querySelector('#takeover-sale-confirm-modal button.confirm-sale-button');
   if(button)button.disabled=!matches;
-  window.pendingTakeoverSales=sales;
 }
 function closeTakeoverSaleConfirm(){
   const modal=document.getElementById('takeover-sale-confirm-modal');
