@@ -2108,6 +2108,29 @@ def record_shift_takeover_sale(takeover_id):
     if status>=400:return jsonify(result),status
     return jsonify(result),200
 
+@app.get("/api/shift-takeovers/<takeover_id>/sale-record")
+def shift_takeover_sale_record(takeover_id):
+    auth=require_login()
+    if auth:return auth
+    status,takeovers=sb("shift_takeovers",params={"id":"eq."+takeover_id,"select":"id,from_employee_id,sales_status,sales_submitted_at,sales_confirmed_at,sales_recorded_at","limit":"1"})
+    if status!=200:return jsonify(takeovers),status
+    if not takeovers:return jsonify({"error":"Shift takeover not found"}),404
+    takeover=takeovers[0]
+    if session.get("role")!="admin" and str(takeover.get("from_employee_id"))!=str(session.get("employee_id")):
+        return jsonify({"error":"Unauthorized"}),403
+    ss,sales=sb("shift_takeover_sales",params={"takeover_id":"eq."+takeover_id,"select":"id,sale_type_id,amount,reason,recorded_by,created_at","order":"created_at.asc,id.asc"})
+    if ss!=200:return jsonify(sales),ss
+    type_ids=[str(x.get("sale_type_id")) for x in sales if x.get("sale_type_id")]
+    type_map={}
+    if type_ids:
+        ts,types=sb("sale_types",params={"id":"in.("+",".join(type_ids)+")","select":"id,name,description,reason_required"})
+        if ts==200:type_map={str(x.get("id")):x for x in types}
+    for sale in sales:
+        typ=type_map.get(str(sale.get("sale_type_id")),{})
+        sale["sale_type_name"]=typ.get("name") or "Sale"
+        sale["sale_type_description"]=typ.get("description")
+    return jsonify({"takeover":takeover,"sales":sales}),200
+
 @app.post("/api/shift-takeovers/<takeover_id>/cancel-sale")
 def cancel_shift_takeover_sale(takeover_id):
     auth=require_login()
