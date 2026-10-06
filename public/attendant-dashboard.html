@@ -1017,6 +1017,10 @@ body.attendant-dashboard-page .takeover-details-modal>.row button{
 }
 
 
+/* Keep dashboard cards in normal page flow so the navigation never overlays them. */
+body.attendant-dashboard-page>.wrap{position:relative!important;z-index:1!important}
+body.attendant-dashboard-page>.admin-sidebar{z-index:0!important}
+
 /* Record Sale dialogs: compact and above the unchanged Shift-style sidebar. */
 body.attendant-dashboard-page #takeover-sale-modal,
 body.attendant-dashboard-page #takeover-sale-confirm-modal,
