@@ -1,7 +1,17 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Sales</title><link rel="stylesheet" href="assets/style.css"></head>
-<body class="admin-sales-page" data-app-page="adminSalesConfirmations">
-<main class="wrap">
+<body class="admin-shell" class="admin-sales-page" data-app-page="adminSalesConfirmations">
+<aside class="admin-sidebar" aria-label="Admin navigation">
+  <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
+  <nav class="admin-sidebar-nav">
+    <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
+    <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
+    <a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a>
+    <a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>Daily Sales Report</b></a>
+    <a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a>
+  </nav>
+  <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
+</aside><main class="wrap">
 <header class="purchase-header"><div><span class="eyebrow">STATION CONTROL</span><h1>Sales</h1><p class="muted">Review and confirm sales submitted after shift handovers.</p></div><a class="purchase-back" href="admin-dashboard.html">← Dashboard</a></header>
 <section class="admin-sales-section sales-page-sections">
   <div id="sales-summary" class="admin-sales-summary"></div>
