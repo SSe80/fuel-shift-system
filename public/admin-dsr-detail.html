@@ -70,7 +70,72 @@ body.dsr-embedded .dsr-detail-view{height:100vh!important;min-height:0!important
  body.dsr-detail-page .dsr-detail-view{height:100%!important;min-height:0!important;overflow:hidden!important}
  body.dsr-embedded .dsr-detail-view .daily-detail-head{position:relative!important;top:auto!important;z-index:1!important;margin-top:0!important}
 }
-</style>
+<style>
+/* Final DSR detail layout: one centered card, normal header, bottom slider navigation. */
+html,body{min-height:100%;height:auto!important}
+body.dsr-detail-page{margin:0!important;padding:0!important;overflow:auto!important;background:#eef2f6!important}
+body.dsr-detail-page .dsr-detail-wrap{
+  width:100%!important;max-width:1280px!important;height:auto!important;min-height:100vh!important;
+  margin:0 auto!important;padding:28px!important;box-sizing:border-box!important;
+  display:block!important;
+}
+body.dsr-detail-page .dsr-detail-header{display:none!important}
+body.dsr-detail-page .dsr-detail-view{
+  position:relative!important;display:block!important;width:100%!important;height:auto!important;min-height:0!important;
+  max-height:none!important;margin:0!important;padding:0!important;overflow:hidden!important;
+  border:1px solid #d7e0ea!important;border-radius:20px!important;background:#f2f5f8!important;
+  box-shadow:0 16px 45px rgba(15,23,42,.12)!important;
+}
+body.dsr-detail-page .dsr-detail-view .daily-detail-head{
+  position:relative!important;top:auto!important;left:auto!important;right:auto!important;
+  z-index:2!important;margin:0!important;padding:18px 22px!important;
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  gap:16px!important;background:#fff!important;border:0!important;border-bottom:1px solid #e3e9ef!important;
+}
+body.dsr-detail-page .dsr-detail-view .daily-detail-head h2{margin:2px 0 3px!important;font-size:21px!important}
+body.dsr-detail-page .dsr-detail-view .daily-detail-head p{margin:0!important;font-size:12px!important}
+body.dsr-detail-page .dsr-detail-view .daily-detail-actions{display:flex!important;align-items:center!important;gap:8px!important;flex-shrink:0!important}
+body.dsr-detail-page .dsr-detail-view .daily-detail-actions button,
+body.dsr-detail-page .dsr-detail-view .daily-detail-close{min-height:38px!important;padding:8px 13px!important;border-radius:9px!important}
+body.dsr-detail-page .dsr-detail-view>.daily-status{
+  margin:0!important;padding:9px 22px!important;background:#f8fafc!important;border-bottom:1px solid #e8edf2!important;
+}
+body.dsr-detail-page .dsr-report-slider{
+  position:relative!important;height:auto!important;min-height:0!important;overflow:hidden!important;padding:0!important;
+}
+body.dsr-detail-page .dsr-report-track{width:300%!important;align-items:stretch!important}
+body.dsr-detail-page .dsr-report-slide{padding:0!important;min-width:33.333333%!important}
+body.dsr-detail-page .dsr-report-slide-card{
+  height:calc(100vh - 190px)!important;min-height:520px!important;
+  max-height:760px!important;padding:22px!important;box-sizing:border-box!important;
+  overflow-y:auto!important;background:#f7f9fb!important;border:0!important;border-radius:0!important;box-shadow:none!important;
+  scrollbar-width:thin!important;
+}
+body.dsr-detail-page .dsr-slide-title{
+  position:sticky!important;top:-22px!important;z-index:3!important;
+  margin:0 -22px 16px!important;padding:12px 22px 10px!important;
+  background:#f7f9fb!important;
+}
+body.dsr-detail-page .dsr-slide-nav{
+  position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;
+  height:58px!important;padding:0!important;background:#fff!important;
+  border-top:1px solid #e1e7ee!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  z-index:5!important;
+}
+body.dsr-detail-page .dsr-slide-nav button{width:36px!important;height:36px!important}
+@media(max-width:650px){
+ body.dsr-detail-page .dsr-detail-wrap{padding:8px!important;min-height:100vh!important}
+ body.dsr-detail-page .dsr-detail-view{border-radius:15px!important}
+ body.dsr-detail-page .dsr-detail-view .daily-detail-head{padding:14px!important;align-items:flex-start!important}
+ body.dsr-detail-page .dsr-detail-view .daily-detail-head h2{font-size:17px!important}
+ body.dsr-detail-page .dsr-detail-view .daily-detail-actions{gap:6px!important}
+ body.dsr-detail-page .dsr-detail-view .daily-detail-actions button,
+ body.dsr-detail-page .dsr-detail-view .daily-detail-close{min-height:34px!important;padding:6px 10px!important;font-size:11px!important}
+ body.dsr-detail-page .dsr-report-slide-card{height:calc(100vh - 170px)!important;min-height:420px!important;padding:16px!important}
+ body.dsr-detail-page .dsr-slide-title{top:-16px!important;margin:0 -16px 14px!important;padding:10px 16px 9px!important}
+ body.dsr-detail-page .dsr-slide-nav{height:52px!important}
+}
+</style></style>
 </head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
