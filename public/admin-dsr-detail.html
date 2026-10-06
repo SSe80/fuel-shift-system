@@ -243,6 +243,28 @@ body.dsr-detail-page .dsr-sales-row{
     gap:10px!important;
   }
 }
+</style><style>
+/* Flatten DSR dispenser/nozzle hierarchy into clean line sections */
+body.dsr-detail-page .dsr-dispenser-card{padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
+body.dsr-detail-page .dsr-dispenser-head{padding:12px 0!important;background:transparent!important;border-bottom:1px solid #dfe5eb!important}
+body.dsr-detail-page .dsr-dispenser-meta{gap:0!important;background:transparent!important;border-bottom:1px solid #dfe5eb!important}
+body.dsr-detail-page .dsr-dispenser-meta>div{padding:10px 8px!important;background:transparent!important;border-right:1px solid #e8edf2!important}
+body.dsr-detail-page .dsr-dispenser-meta>div:last-child{border-right:0!important}
+body.dsr-detail-page .dsr-nozzles{padding:10px 0!important}
+body.dsr-detail-page .dsr-nozzle-card{margin:0!important;padding:12px 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;border-bottom:1px solid #dfe5eb!important}
+body.dsr-detail-page .dsr-nozzle-card:last-child{border-bottom:0!important}
+body.dsr-detail-page .dsr-nozzle-head{padding:0 0 8px!important}
+body.dsr-detail-page .dsr-reading-grid{margin-top:8px!important;gap:0!important;background:#e8edf2!important;border:1px solid #e8edf2!important}
+body.dsr-detail-page .dsr-reading-grid>div{padding:10px!important;border-right:1px solid #e8edf2!important;border-radius:0!important}
+body.dsr-detail-page .dsr-nozzle-performance{gap:0!important;background:#e8edf2!important}
+body.dsr-detail-page .dsr-nozzle-performance>div{padding:9px 10px!important;border:0!important;border-right:1px solid #e8edf2!important;border-radius:0!important;background:#fff!important}
+body.dsr-detail-page .dsr-attendants{margin-top:8px!important;padding-top:8px!important}
+body.dsr-detail-page .dsr-attendant-shift{padding:8px 0!important}
+@media(max-width:650px){
+ body.dsr-detail-page .dsr-dispenser-head{padding:10px 0!important}
+ body.dsr-detail-page .dsr-nozzle-card{padding:10px 0!important}
+ body.dsr-detail-page .dsr-reading-grid>div{padding:8px!important}
+}
 </style></head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
