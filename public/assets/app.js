@@ -93,10 +93,11 @@ async function confirmSettingsAction(){
   }catch(e){toast(e.message);}
 }
 async function api(path, options={}) {
+  const role = localStorage.getItem('fuelRole') || '';
   const response = await fetch(path, {
     credentials: 'same-origin',
     ...options,
-    headers: {'Content-Type':'application/json', ...(options.headers || {})}
+    headers: {'Content-Type':'application/json', 'X-Fuel-Role': role, ...(options.headers || {})}
   });
   const text = await response.text();
   let data = null;
@@ -121,16 +122,18 @@ const reading = value => { const n=Number(value); return Number.isFinite(n) ? n.
 async function login(role) {
   const operator_id=document.getElementById('operator-id').value.trim(), pin=document.getElementById('pin').value;
   try {
-    const user=await api('/api/login',{method:'POST',body:JSON.stringify({operator_id,pin})});
-    if(role==='admin' && user.role!=='admin') throw new Error('This account is not an admin account');
-    localStorage.setItem('fuelRole',user.role);
-    location.href=user.role==='admin'?'admin-dashboard.html':'attendant-dashboard.html';
+    const endpoint=role==='admin'?'/api/admin-login':'/api/attendant-login';
+    const user=await api(endpoint,{method:'POST',body:JSON.stringify({operator_id,pin})});
+    if(user.role!==role) throw new Error('This account is not valid for the selected login');
+    localStorage.setItem('fuelRole',role);
+    location.href=role==='admin'?'admin-dashboard.html':'attendant-dashboard.html';
   } catch(e) { toast(e.message); }
 }
 async function performLogout(){
+  const role=localStorage.getItem('fuelRole')||'';
   try{await api('/api/logout',{method:'POST',body:'{}'});}catch(_){}
   localStorage.removeItem('fuelRole');
-  location.href='index.html';
+  location.href=role==='admin'?'admin-login.html':'attendant-login.html';
 }
 function closeLogoutConfirmation(){
   const modal=document.getElementById('logout-confirm-modal');
