@@ -60,9 +60,13 @@
 .dsr-history-page .dsr-history-stat{padding:10px;border:1px solid #e8edf2;border-radius:10px;background:#fff;min-width:0}
 .dsr-history-page .dsr-history-stat span{display:block;font-size:9px;color:#8a949e;margin-bottom:3px}
 .dsr-history-page .dsr-history-stat strong{display:block;font-size:12px;color:#17202a;overflow-wrap:anywhere}
-.dsr-history-page .dsr-history-actions{margin-top:10px}
-.dsr-history-page .dsr-history-actions a{width:100%;min-height:40px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 12px;border-radius:9px;text-decoration:none;font-size:12px;font-weight:800}
-.dsr-history-page .dsr-history-actions a.primary{border:1px solid #4b83bd;background:#4b83bd;color:#fff;box-shadow:0 4px 12px rgba(75,131,189,.18)}
+.dsr-history-page .dsr-history-actions{margin-top:10px;display:flex;justify-content:flex-end}
+.dsr-history-page .dsr-history-actions button.primary{width:50%;min-height:38px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 12px;border:1px solid #4b83bd;border-radius:9px;background:#4b83bd;color:#fff;box-shadow:0 3px 9px rgba(75,131,189,.16);font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.dsr-history-page .dsr-history-actions button.primary:hover{background:#3f74aa;border-color:#3f74aa}
+.dsr-history-page .dsr-history-actions button.primary:active{transform:translateY(1px)}
+@media(max-width:600px){
+ .dsr-history-page .dsr-history-actions button.primary{width:50%}
+}
 @media(max-width:600px){
  .dsr-history-page .purchase-header{padding:15px 4px 17px;align-items:flex-start}
  .dsr-history-page .purchase-header h1{font-size:28px}
