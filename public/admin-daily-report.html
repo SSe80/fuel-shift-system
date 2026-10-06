@@ -13,6 +13,30 @@
 .daily-revision-grid span{display:block;font-size:11px;opacity:.7;margin-bottom:3px}
 .daily-revision-grid strong{font-size:13px}
 @media(max-width:640px){.daily-revision-grid{grid-template-columns:1fr}.daily-detail-actions button{flex:1}}
+/* DSR page presentation — match Purchases page */
+.daily-report-page{background:linear-gradient(180deg,#f7f9fc 0%,#eef3f8 100%);color:#182230}
+.admin-daily-report-page{max-width:900px;padding:8px 0 42px}
+.admin-daily-report-page .purchase-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:18px 4px 20px}
+.admin-daily-report-page .purchase-header .eyebrow,.admin-daily-report-page .purchase-section .section-kicker{display:block;font-size:11px;letter-spacing:.12em;font-weight:800;color:#64748b;margin-bottom:6px}
+.admin-daily-report-page .purchase-header h1{margin:0;font-size:32px;line-height:1.1;letter-spacing:-.03em}
+.admin-daily-report-page .purchase-header .muted{margin:7px 0 0;font-size:14px}
+.admin-daily-report-page .purchase-back{display:inline-flex;align-items:center;padding:10px 14px;border:1px solid #d8e0e8;border-radius:12px;background:#fff;color:#334155;font-weight:750;box-shadow:0 2px 8px #17202a0a;text-decoration:none}
+.admin-daily-report-page .purchase-section{margin:0 0 18px;padding:22px;border:1px solid #e1e8f0;border-radius:20px;background:#fff;box-shadow:0 7px 26px #17202a0d}
+.admin-daily-report-page .purchase-section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #edf1f5}
+.admin-daily-report-page .purchase-section h2{margin:0;font-size:21px;letter-spacing:-.02em}
+.admin-daily-report-page .purchase-section p{margin:5px 0 0;color:#718096;font-size:13px;line-height:1.45}
+.admin-daily-report-page .purchase-section .section-kicker{color:#1264d8}
+.admin-daily-report-page .daily-report-pending-confirmations,.admin-daily-report-page .daily-report-date-cards{display:grid;gap:10px}
+@media(max-width:600px){
+ .admin-daily-report-page{padding:8px 0 32px}
+ .admin-daily-report-page .purchase-header{padding:15px 4px 17px;align-items:flex-start}
+ .admin-daily-report-page .purchase-header h1{font-size:28px}
+ .admin-daily-report-page .purchase-back{padding:9px 12px;font-size:13px}
+ .admin-daily-report-page .purchase-section{padding:17px 16px;border-radius:18px}
+ .admin-daily-report-page .purchase-section-head{gap:10px;margin-bottom:15px;padding-bottom:13px}
+ .admin-daily-report-page .purchase-section h2{font-size:20px}
+}
+
 /* DSR History — exact Purchase History recorded-card shell */
 .purchase-history-recorded-minimized{overflow:hidden;border:1px solid #e4e9ef!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 12px rgba(16,24,40,.055)!important;transition:box-shadow .18s ease,border-color .18s ease}
 .purchase-history-recorded-minimized.expanded{border-color:#cfd9e4!important;box-shadow:0 5px 16px rgba(16,24,40,.07)!important}
