@@ -3844,3 +3844,44 @@ body.daily-preview-open{overflow:hidden}
 .dsr-discharge-audit-liters span{color:#7b8490}
 .dsr-discharge-audit-liters b{color:#26313b}
 @media(max-width:760px){.dsr-discharge-audit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* DSR history cards — keep the collapsed card compact and horizontal */
+.daily-report-page .daily-dsr-history-card .purchase-history-recorded-head{
+  width:100%;min-height:68px;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:12px 14px 12px 17px;box-sizing:border-box;
+}
+.daily-report-page .daily-dsr-history-card .purchase-history-recorded-title{
+  min-width:0;display:flex;align-items:center;gap:9px;flex:1;
+}
+.daily-report-page .daily-dsr-history-card .purchase-history-recorded-title>span:last-child{
+  min-width:0;display:flex;flex-direction:column;gap:3px;
+}
+.daily-report-page .daily-dsr-history-card .purchase-history-recorded-right{
+  display:flex;align-items:center;gap:8px;flex:0 0 auto;
+}
+.daily-report-page .daily-dsr-history-card .purchase-history-recorded-body{
+  padding:10px 14px 13px;border-top:1px solid #edf1f4;background:#fcfdff;
+}
+.daily-report-page .daily-dsr-history-card .purchase-history-full-main{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0;
+}
+.daily-report-page .daily-dsr-history-card .purchase-history-full-main>div{
+  min-width:0;padding:8px 9px;border:1px solid #edf0f4;border-radius:9px;background:#fafbfc;
+}
+.daily-report-page .daily-dsr-history-card .purchase-history-full-main span{
+  display:block;color:#7a8491;font-size:8px;text-transform:uppercase;letter-spacing:.04em;font-weight:800;margin-bottom:3px;
+}
+.daily-report-page .daily-dsr-history-card .purchase-history-full-main strong{
+  display:block;color:#17202a;font-size:11px;line-height:1.15;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.daily-report-page .daily-dsr-history-card .purchase-history-card-actions{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding-top:8px;border-top:1px solid #edf0f4;
+}
+.daily-report-page .daily-dsr-history-card .purchase-history-card-actions button{
+  border:0;background:transparent;font:inherit;font-size:10px;font-weight:850;cursor:pointer;padding:5px 3px;
+}
+@media(max-width:560px){
+  .daily-report-page .daily-dsr-history-card .purchase-history-recorded-head{min-height:64px;padding:11px 11px 11px 14px}
+  .daily-report-page .daily-dsr-history-card .purchase-history-recorded-title strong{font-size:13px}
+  .daily-report-page .daily-dsr-history-card .purchase-history-full-main{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
