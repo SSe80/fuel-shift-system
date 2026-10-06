@@ -3987,8 +3987,8 @@ body.daily-preview-open{overflow:hidden}
   .admin-daily-report-page .daily-dsr-history-main strong{font-size:14px!important}
 }
 
-/* Unified admin sidebar — isolated from existing page/card layouts */
-body.admin-shell{min-height:100vh}
+/* Unified admin sidebar — layout only; preserve each page's original card/container CSS */
+body.admin-shell{padding-left:246px;box-sizing:border-box}
 body.admin-shell>.admin-sidebar{position:fixed;z-index:900;left:0;top:0;bottom:0;width:246px;box-sizing:border-box;padding:20px 14px;display:flex;flex-direction:column;background:#111827;color:#e5e7eb;border-right:1px solid #253047;box-shadow:8px 0 28px #10182812}
 .admin-sidebar-brand{display:flex;align-items:center;gap:11px;padding:5px 10px 22px}
 .admin-sidebar-mark{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:#2563eb;color:#fff;font-size:13px;font-weight:900;letter-spacing:.04em}
@@ -4002,14 +4002,13 @@ body.admin-shell>.admin-sidebar{position:fixed;z-index:900;left:0;top:0;bottom:0
 .admin-sidebar-nav a.active{background:#1d4ed8;color:#fff;box-shadow:0 4px 12px #0b4dcc33}
 .admin-sidebar-logout{margin-top:auto;cursor:pointer}
 .admin-sidebar-logout:hover{background:#1b2638;color:#fff}
-body.admin-shell>.admin-sidebar~main{margin-left:246px}
 body.admin-shell .admin-legacy-nav{display:none!important}
 @media(max-width:800px){
+  body.admin-shell{padding-left:0}
   body.admin-shell>.admin-sidebar{position:sticky;top:0;left:auto;bottom:auto;width:100%;height:auto;padding:10px 10px 8px;display:block;overflow-x:auto;white-space:nowrap;border-right:0;border-bottom:1px solid #253047;box-shadow:0 4px 16px #10182818}
   .admin-sidebar-brand{display:none}
   .admin-sidebar-nav{display:flex;gap:6px;width:max-content}
   .admin-sidebar-nav a,.admin-sidebar-logout{width:auto;min-height:42px;padding:0 12px;display:inline-flex}
   .admin-sidebar-nav a span,.admin-sidebar-logout span{width:auto}
   .admin-sidebar-logout{margin:0}
-  body.admin-shell>.admin-sidebar~main{margin-left:0}
 }
