@@ -3452,9 +3452,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const map={
     'admin-dashboard.html':'dashboard',
     'admin-purchases.html':'purchases',
-    'admin-purchase-history.html':'purchases',
     'admin-sales.html':'sales',
-    'admin-sales-history.html':'sales',
     'admin-daily-report.html':'daily-report',
         'admin-settings.html':'settings'
   };
