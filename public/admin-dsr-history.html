@@ -76,6 +76,18 @@
  .dsr-history-page .dsr-history-card-title small{font-size:9px}
  .dsr-history-page .dsr-history-stats{grid-template-columns:1fr 1fr;gap:6px}
 }
+</style><style>
+/* DSR History width/alignment fix */
+.dsr-history-page .purchase-section-head{width:100%;box-sizing:border-box}
+.dsr-history-page .admin-sales-section-count{margin-left:auto;align-self:center;white-space:nowrap}
+.dsr-history-page .daily-report-date-cards{width:100%;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.dsr-history-page .dsr-history-month{width:100%;box-sizing:border-box}
+.dsr-history-page .dsr-history-month-body{width:100%;box-sizing:border-box}
+.dsr-history-page .dsr-history-card{width:100%;box-sizing:border-box}
+@media(max-width:600px){
+ .dsr-history-page .purchase-section-head{align-items:flex-start}
+ .dsr-history-page .admin-sales-section-count{margin-left:auto}
+}
 </style></head>
 <body class="admin-shell admin-purchases-page admin-purchase-history-page dsr-history-page" data-app-page="adminDsrHistory">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
