@@ -69,7 +69,7 @@
  .dsr-history-stats{grid-template-columns:1fr 1fr}
  .dsr-history-actions{grid-template-columns:1fr}
 }
-</style></head>
+</style><style>.admin-dsr-history-page .dsr-history-header{align-items:flex-start;padding-bottom:18px}.admin-dsr-history-page .dsr-history-back{flex:0 0 auto;align-self:flex-start;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;margin-top:2px}.admin-dsr-history-page .dsr-history-section{margin-top:0}.admin-dsr-history-page .dsr-history-section-head{align-items:flex-start}.admin-dsr-history-page .dsr-history-tools{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:9px;align-items:center;margin:0 0 14px}.admin-dsr-history-page .dsr-history-search{min-width:0}.admin-dsr-history-page .dsr-history-refresh{min-height:40px}@media(max-width:600px){.admin-dsr-history-page .dsr-history-header{gap:12px}.admin-dsr-history-page .dsr-history-back{width:100%;justify-content:center}.admin-dsr-history-page .dsr-history-tools{grid-template-columns:1fr 1fr}.admin-dsr-history-page .dsr-history-search{grid-column:1/-1}.admin-dsr-history-page .dsr-history-refresh{width:100%}}</style></head>
 <body class="admin-shell daily-report-page dsr-history-page" data-app-page="adminDsrHistory">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
@@ -78,7 +78,6 @@
     <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
     <a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a>
     <a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>DSR</b></a>
-    <a href="admin-dsr-history.html" data-admin-nav="dsr-history"><span>◷</span><b>DSR History</b></a>
     <a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a>
   </nav>
   <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
@@ -86,7 +85,7 @@
 <main class="wrap admin-daily-report-page admin-dsr-history-page">
 <header class="purchase-header daily-report-header dsr-history-header">
  <div><span class="eyebrow">REPORTING</span><h1>DSR History</h1><p class="muted">Complete confirmed Daily Sales Report history.</p></div>
- <a class="purchase-back dsr-history-back" href="admin-daily-report.html">← Daily Report</a>
+ <a class="purchase-back dsr-history-back" href="admin-daily-report.html"><span aria-hidden="true">←</span> Back to Daily Report</a>
 </header>
 <section class="purchase-section daily-section daily-history-section dsr-history-section">
  <div class="purchase-section-head daily-section-head dsr-history-section-head"><div><span class="section-kicker daily-kicker">DSR HISTORY</span><h2>All confirmed reports</h2><p class="muted">Search, filter and open any confirmed DSR.</p></div><span id="dsr-history-count" class="dsr-history-count">Loading…</span></div>
