@@ -2357,7 +2357,7 @@ function renderDsrHistoryCard(item){
   const dateLabel=dailyReportIdLabel(date);
   return '<article class="dsr-history-card" data-dsr-date="'+h(date)+'">'+
     '<button type="button" class="dsr-history-card-head" onclick="toggleDsrCardFromShared(this)" aria-expanded="false"><span class="dsr-history-card-title"><strong>'+h(dateLabel)+'</strong><small>Confirmed '+h(confirmedAt)+'</small></span><span class="dsr-history-card-right"><span class="dsr-history-badge">✓ CONFIRMED</span><span class="dsr-history-toggle">⌄</span></span></button>'+
-    '<div class="dsr-history-card-body" hidden><div class="dsr-history-stats"><div class="dsr-history-stat"><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div class="dsr-history-stat"><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div><div class="dsr-history-stat"><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div class="dsr-history-stat"><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div><div class="dsr-history-actions"><a class="primary" href="admin-daily-report.html?date='+encodeURIComponent(date)+'">View Full Report</a></div></div></article>';
+    '<div class="dsr-history-card-body" hidden><div class="dsr-history-stats"><div class="dsr-history-stat"><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div class="dsr-history-stat"><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div><div class="dsr-history-stat"><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div class="dsr-history-stat"><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div><div class="dsr-history-actions"><a class="primary" href="admin-dsr-detail.html?date='+encodeURIComponent(date)+'">View Full Report</a></div></div></article>';
 }
 function toggleDsrCardFromShared(button){
   const card=button?.closest('.dsr-history-card');
@@ -2450,33 +2450,7 @@ document.addEventListener('keydown',event=>{
 });
 function openDailyHistoryReport(date){
   if(!date)return;
-  const input=document.getElementById('report-date');
-  const details=document.getElementById('daily-report-details');
-  const status=document.getElementById('report-status');
-  if(input)input.value=date;
-  if(!details){
-    toast('Could not open DSR: detail card is unavailable');
-    return;
-  }
-
-  // Use the real DSR detail card as the single viewer. This avoids the old
-  // modal/clone path, which could fail before the detail card became visible.
-  details.hidden=false;
-  document.body.classList.add('daily-detail-open');
-  if(status)status.textContent='Loading report…';
-  details.scrollIntoView({behavior:'smooth',block:'start'});
-
-  Promise.resolve().then(()=>loadDailyReport(true)).then(()=>{
-    details.hidden=false;
-    document.body.classList.add('daily-detail-open');
-    details.scrollIntoView({behavior:'smooth',block:'start'});
-  }).catch(e=>{
-    details.hidden=false;
-    document.body.classList.add('daily-detail-open');
-    if(status)status.textContent='Could not load this DSR: '+String(e.message||'Request failed');
-    console.error('DSR detail load failed',e);
-    details.scrollIntoView({behavior:'smooth',block:'start'});
-  });
+  window.location.href='admin-dsr-detail.html?date='+encodeURIComponent(date);
 }
 
 function selectDailyReportDate(date){
