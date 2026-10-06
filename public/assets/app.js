@@ -3310,12 +3310,6 @@ function filterAdminSalesHistoryPage(){
   if(isFullHistory){
     const count=document.getElementById('full-sales-history-count');
     if(count)count.textContent=rows.length+' confirmed';
-    if(!rows.length){
-      box.innerHTML='<div class="card admin-sales-empty"><div class="empty-icon">—</div><strong>No sales history found</strong><p class="muted">There are no confirmed shift sales yet.</p></div>';
-      return;
-    }
-    box.innerHTML=rows.map(renderAdminHistorySaleCard).join('');
-    return;
   }
   if(!rows.length){
     box.innerHTML='<div class="card admin-sales-empty"><div class="empty-icon">—</div><strong>No sales history found</strong><p class="muted">Try a different search or date filter.</p></div>';
