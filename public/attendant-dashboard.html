@@ -117,7 +117,200 @@ body.attendant-dashboard-page .page-heading h2{margin:0!important;font-size:19px
 body.attendant-dashboard-page .page-heading p{margin:5px 0 0!important;font-size:12px!important;color:#667085!important}
 @media(max-width:600px){body.attendant-dashboard-page>.wrap{padding:0 12px 28px!important}body.attendant-dashboard-page .purchase-header{padding:16px 0 18px!important}body.attendant-dashboard-page .purchase-header h1{font-size:27px!important}body.attendant-dashboard-page .nav{overflow-x:auto}body.attendant-dashboard-page .nav a{flex:1 0 110px!important}}
 
-/* Attendant red theme */
+/* Dashboard active readings and handover result cards */
+body.attendant-dashboard-page .active-shift-meta>div{
+  padding:15px 16px!important;
+}
+body.attendant-dashboard-page .active-shift-meta>div>span{
+  display:block!important;
+  margin-bottom:5px!important;
+  font-size:10px!important;
+  text-transform:uppercase!important;
+  letter-spacing:.06em!important;
+  font-weight:800!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .active-shift-meta>div>strong{
+  display:block!important;
+  font-size:17px!important;
+  line-height:1.25!important;
+  font-weight:850!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .active-shift-meta>div:nth-child(3){
+  grid-column:1/-1!important;
+  border-top:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page .active-shift-readings{
+  padding:0 16px 8px!important;
+}
+body.attendant-dashboard-page .active-shift-readings-head{
+  padding:12px 0 9px!important;
+}
+body.attendant-dashboard-page .active-shift-readings-head span{
+  font-size:11px!important;
+  font-weight:850!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .active-shift-readings-head small{
+  font-size:11px!important;
+  font-weight:800!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-reading{
+  min-height:58px!important;
+  padding:11px 4px!important;
+  border-top:1px solid #f0f2f5!important;
+}
+body.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-number{
+  font-size:20px!important;
+  line-height:1.15!important;
+  font-weight:850!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-code{
+  font-size:11px!important;
+  font-weight:750!important;
+  color:#8a949e!important;
+}
+body.attendant-dashboard-page .handover-nozzle-input{
+  padding:10px 0!important;
+}
+body.attendant-dashboard-page .handover-nozzle-input>span{
+  font-size:13px!important;
+  font-weight:800!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .handover-nozzle-input>.muted{
+  display:block!important;
+  margin:5px 0 7px!important;
+  font-size:15px!important;
+  line-height:1.25!important;
+  font-weight:850!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .handover-nozzle-input input{
+  min-height:44px!important;
+  font-size:15px!important;
+}
+body.attendant-dashboard-page .handover-review-row{
+  padding:12px 0!important;
+}
+body.attendant-dashboard-page .handover-review-row>span{
+  font-size:12px!important;
+  font-weight:750!important;
+}
+body.attendant-dashboard-page .handover-review-row>strong{
+  font-size:19px!important;
+  font-weight:850!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .handover-review-row small{
+  font-size:10px!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .handover-review-main strong{
+  font-size:17px!important;
+}
+body.attendant-dashboard-page .attendant-action-result-modal{
+  position:fixed!important;
+  inset:0!important;
+  z-index:5000!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:18px!important;
+  background:rgba(15,23,42,.58)!important;
+}
+body.attendant-dashboard-page .attendant-action-result-modal.open{
+  display:flex!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card{
+  width:min(430px,calc(100vw - 30px))!important;
+  box-sizing:border-box!important;
+  padding:24px 22px 20px!important;
+  border:1px solid #e1e7ef!important;
+  border-radius:20px!important;
+  background:#fff!important;
+  box-shadow:0 20px 55px rgba(16,24,40,.22)!important;
+  text-align:center!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.success{
+  border-color:#cde8d8!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.failed{
+  border-color:#f0c4c8!important;
+}
+body.attendant-dashboard-page .attendant-action-result-icon{
+  width:54px!important;
+  height:54px!important;
+  margin:0 auto 13px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:50%!important;
+  font-size:27px!important;
+  font-weight:900!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.success .attendant-action-result-icon{
+  background:#eaf8ef!important;
+  color:#18864b!important;
+  border:1px solid #cde8d8!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.failed .attendant-action-result-icon{
+  background:#fff0f1!important;
+  color:#b4232f!important;
+  border:1px solid #f0c4c8!important;
+}
+body.attendant-dashboard-page .attendant-action-result-kicker{
+  display:block!important;
+  margin-bottom:5px!important;
+  font-size:10px!important;
+  font-weight:850!important;
+  letter-spacing:.12em!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.success .attendant-action-result-kicker{
+  color:#18864b!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.failed .attendant-action-result-kicker{
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card h3{
+  margin:0!important;
+  font-size:22px!important;
+  line-height:1.2!important;
+  font-weight:850!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card p{
+  margin:9px 0 18px!important;
+  font-size:13px!important;
+  line-height:1.55!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .attendant-action-result-actions button{
+  width:100%!important;
+  min-height:44px!important;
+  border:1px solid #b4232f!important;
+  border-radius:10px!important;
+  background:#b4232f!important;
+  color:#fff!important;
+  font-size:13px!important;
+  font-weight:850!important;
+  box-shadow:0 5px 14px rgba(180,35,47,.22)!important;
+}
+body.attendant-dashboard-page .attendant-action-result-actions button:hover{
+  background:#941f29!important;
+  border-color:#941f29!important;
+}
+@media(max-width:600px){
+  body.attendant-dashboard-page .active-shift-meta>div>strong{font-size:16px!important}
+  body.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-number{font-size:19px!important}
+  body.attendant-dashboard-page .attendant-action-result-card{padding:22px 18px 18px!important}
+}
+\n/* Attendant red theme */
 body.attendant-dashboard-page .nav a.active,
 body.attendant-dashboard-page .admin-sidebar-nav a.active{
   background:#b4232f!important;
