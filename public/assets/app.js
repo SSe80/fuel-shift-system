@@ -71,7 +71,7 @@ async function api(path, options={}) {
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
   if (!response.ok) {
-    const msg = typeof data === 'object' && data ? (typeof data.error === 'string' ? data.error : JSON.stringify(data.error || data)) : String(data || 'Request failed');
+    const msg = typeof data === 'object' && data ? (typeof data.error === 'string' ? (data.message ? data.error+': '+data.message : (data.type ? data.error+' ('+data.type+')' : data.error)) : JSON.stringify(data.error || data)) : String(data || 'Request failed');
     throw new Error(msg);
   }
   return data;
