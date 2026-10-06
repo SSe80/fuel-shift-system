@@ -2892,9 +2892,6 @@ async function loadDailyReport(showDetails=false){
       });
       container.replaceChildren(frag);
     }
-    groupDsrCardsByProduct('report-dispensers','.dsr-dispenser-card');
-    groupDsrCardsByProduct('report-tanks','.dsr-tank-card');
-    groupDsrCardsByProduct('report-shifts','.dsr-shift-card');
     const tankHtml=tankDetails.map(t=>{
       const diff=Number(t.difference_liters||0), diffClass=Math.abs(diff)<0.001?'ok':(diff>0?'positive':'negative');
       const shiftRows=(t.shift_reconciliation||[]).map((s,idx)=>{
@@ -2950,6 +2947,10 @@ async function loadDailyReport(showDetails=false){
         '<div class="dsr-shift-readings"><div><span>Opening readings</span><b>'+opening+'</b></div><div><span>Closing readings</span><b>'+closing+'</b></div></div></article>';
     }).join('');
     document.getElementById('report-shifts').innerHTML=shiftRows||'<div class="daily-empty">No shifts recorded for this DSR.</div>';
+    groupDsrCardsByProduct('report-dispensers','.dsr-dispenser-card');
+    groupDsrCardsByProduct('report-tanks','.dsr-tank-card');
+    groupDsrCardsByProduct('report-shifts','.dsr-shift-card');
+
 
     const contributionRows=(perf.dispenser_contribution||[]).map(x=>
       '<div class="dsr-performance-metric"><span>'+h(x.dispenser||'Dispenser')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>'
