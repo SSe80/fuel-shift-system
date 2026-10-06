@@ -4307,3 +4307,122 @@ body.admin-shell #activity>.card .muted{
   body.admin-shell .settings-header .muted{font-size:11px}
   body.admin-shell>.wrap>.statgrid .stat b{font-size:18px}
 }
+
+
+/* Dashboard — use the same spacious, structured visual language as the Purchase page */
+body.admin-shell{
+  background:#f4f7f9;
+}
+body.admin-shell .wrap{
+  max-width:900px;
+  padding:18px 0 42px;
+}
+body.admin-shell .settings-header{
+  padding:14px 4px 22px;
+}
+body.admin-shell .settings-header .eyebrow{
+  font-size:10px;
+  color:#1264d8;
+  font-weight:800;
+}
+body.admin-shell .settings-header h1{
+  font-size:30px;
+  letter-spacing:-.03em;
+}
+body.admin-shell .settings-header .muted{
+  font-size:13px;
+  line-height:1.5;
+  color:#667085;
+}
+body.admin-shell>.wrap>.statgrid{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin:0 0 16px;
+}
+body.admin-shell>.wrap>.statgrid .stat{
+  padding:15px 16px;
+  border:1px solid #e1e6ec;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 2px 8px rgba(16,24,40,.04);
+}
+body.admin-shell>.wrap>.statgrid .stat b{
+  font-size:22px;
+}
+body.admin-shell>.wrap>.statgrid .stat span{
+  margin-top:5px;
+  font-size:11px;
+  color:#667085;
+}
+body.admin-shell>.wrap>.card{
+  margin:12px 0;
+  padding:18px;
+  border:1px solid #e1e6ec;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 2px 8px rgba(16,24,40,.035);
+}
+body.admin-shell>.wrap>.card .section-heading{
+  margin:0 0 13px;
+  padding:0 0 12px;
+  border-bottom:1px solid #edf0f3;
+}
+body.admin-shell>.wrap>.card .section-kicker{
+  color:#1264d8;
+  font-size:9px;
+  font-weight:800;
+}
+body.admin-shell>.wrap>.card h2{
+  font-size:18px;
+  font-weight:800;
+}
+body.admin-shell>.wrap>.card .statgrid{
+  gap:9px;
+}
+body.admin-shell>.wrap>.card .statgrid .stat{
+  padding:12px 13px;
+  border:1px solid #e7ebf0;
+  border-radius:11px;
+  background:#fafbfc;
+}
+body.admin-shell>.wrap>.card .statgrid .stat b{
+  font-size:16px;
+}
+body.admin-shell>.wrap>#tank-movements{
+  display:grid;
+  gap:9px;
+}
+body.admin-shell .tank-movement-group{
+  padding:13px;
+  border:1px solid #e5e9ee;
+  border-radius:12px;
+  background:#fafbfc;
+}
+body.admin-shell #activity{
+  display:grid;
+  gap:8px;
+}
+body.admin-shell #activity>.card{
+  margin:0;
+  padding:11px 13px;
+  border:1px solid #e7ebf0;
+  border-radius:11px;
+  background:#fafbfc;
+  box-shadow:none;
+}
+@media(max-width:800px){
+  body.admin-shell .wrap{padding:12px 0 30px}
+  body.admin-shell .settings-header{padding:10px 2px 18px}
+  body.admin-shell .settings-header h1{font-size:26px}
+  body.admin-shell>.wrap>.statgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  body.admin-shell>.wrap>.card{padding:15px;margin:10px 0;border-radius:14px}
+  body.admin-shell>.wrap>.card h2{font-size:16px}
+  body.admin-shell>.wrap>.card .statgrid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  body.admin-shell .wrap{padding-left:0;padding-right:0}
+  body.admin-shell .settings-header h1{font-size:24px}
+  body.admin-shell>.wrap>.statgrid .stat{padding:13px}
+  body.admin-shell>.wrap>.statgrid .stat b{font-size:19px}
+  body.admin-shell>.wrap>.card{padding:13px;border-radius:13px}
+}
