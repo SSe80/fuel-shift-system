@@ -2752,7 +2752,8 @@ async function loadDailyReport(showDetails=false){
     window.currentDailyReportData=r;
     window.currentDailyReportDate=d;
 
-    document.getElementById('report-subtitle').textContent=dailyReportDateLabel(d);
+    const reportSubtitle=document.getElementById('report-subtitle');
+    if(reportSubtitle)reportSubtitle.textContent=dailyReportDateLabel(d);
     const detailTitle=document.getElementById('daily-detail-title');
     const detailSubtitle=document.getElementById('daily-detail-subtitle');
     if(detailTitle)detailTitle.textContent=dailyReportIdLabel(d)+' · Detail';
