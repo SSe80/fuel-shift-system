@@ -186,10 +186,86 @@ body.attendant-dashboard-page .handover-nozzle-input>span{
 body.attendant-dashboard-page .handover-nozzle-input>.muted{
   display:block!important;
   margin:5px 0 7px!important;
-  font-size:15px!important;
+  font-size:16px!important;
   line-height:1.25!important;
   font-weight:850!important;
   color:#b4232f!important;
+}
+body.attendant-dashboard-page #handover-to-employee{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker{
+  position:relative!important;
+  margin-top:7px!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-button{
+  width:100%!important;
+  min-height:48px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:0 14px!important;
+  border:1px solid #d8e0e8!important;
+  border-radius:11px!important;
+  background:#fff!important;
+  color:#344054!important;
+  font-size:14px!important;
+  font-weight:750!important;
+  text-align:left!important;
+  box-sizing:border-box!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-button:focus,
+body.attendant-dashboard-page .handover-attendant-picker.open .handover-attendant-picker-button{
+  border-color:#b4232f!important;
+  box-shadow:0 0 0 3px rgba(180,35,47,.10)!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-arrow{
+  font-size:16px!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-list{
+  display:none!important;
+  position:absolute!important;
+  z-index:30!important;
+  left:0!important;
+  right:0!important;
+  top:calc(100% + 6px)!important;
+  max-height:210px!important;
+  overflow:auto!important;
+  padding:6px!important;
+  border:1px solid #e1e7ef!important;
+  border-radius:13px!important;
+  background:#fff!important;
+  box-shadow:0 14px 34px rgba(16,24,40,.16)!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker.open .handover-attendant-picker-list{
+  display:grid!important;
+  gap:3px!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-option{
+  width:100%!important;
+  min-height:43px!important;
+  padding:9px 11px!important;
+  border:0!important;
+  border-radius:9px!important;
+  background:#fff!important;
+  color:#344054!important;
+  font-size:13px!important;
+  font-weight:700!important;
+  text-align:left!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-option:hover,
+body.attendant-dashboard-page .handover-attendant-picker-option.selected{
+  background:#fff0f1!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-option.placeholder{
+  color:#98a2b3!important;
 }
 body.attendant-dashboard-page .handover-nozzle-input input{
   min-height:44px!important;
@@ -307,7 +383,7 @@ body.attendant-dashboard-page .attendant-action-result-actions button:hover{
 }
 @media(max-width:600px){
   body.attendant-dashboard-page .active-shift-meta>div>strong{font-size:16px!important}
-  body.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-number{font-size:19px!important}
+  body.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-number{font-size:17px!important}
   body.attendant-dashboard-page .attendant-action-result-card{padding:22px 18px 18px!important}
 }
 \n/* Attendant red theme */
