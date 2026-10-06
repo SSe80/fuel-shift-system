@@ -202,7 +202,7 @@ function continueTakeoverSale(){
     '<div class="takeover-sales-entry-section"><div class="takeover-sales-entry-title">Review & enter sales</div><div id="takeover-sale-type-list-confirm">'+
     ((window.takeoverSaleTypes||[]).map(s=>{
       const x=sales.find(v=>String(v.sale_type_id)===String(s.id));
-      return '<div class="takeover-sale-entry" data-sale-type="'+h(s.id)+'"><div class="takeover-sale-entry-head"><div><strong>'+h(s.name)+'</strong>'+(s.description?'<small>'+h(s.description)+'</small>':'')+'</div><input class="takeover-sale-amount" data-sale-id="'+h(s.id)+'" type="number" min="0" step="0.01" inputmode="decimal" value="'+(x?x.amount:'')+'" placeholder="0.00" oninput="updateTakeoverSaleConfirmation()"></div>'+(s.reason_required?'<label class="takeover-sale-reason-label">Reason<textarea class="takeover-sale-reason" data-reason-id="'+h(s.id)+'" rows="2" placeholder="Enter reason" oninput="updateTakeoverSaleConfirmation()">'+h(x?.reason||'')+'</textarea></label>':'')+'</div>';
+      return '<div class="takeover-sale-entry takeover-sale-review-entry" data-sale-type="'+h(s.id)+'"><div class="takeover-sale-entry-head"><div><strong>'+h(s.name)+'</strong>'+(s.description?'<small>'+h(s.description)+'</small>':'')+'</div><strong class="takeover-sale-review-value">'+(x?money(x.amount):'—')+'</strong></div>'+(s.reason_required?'<div class="takeover-sale-reason-label">Reason<div class="takeover-sale-review-reason">'+(x&&x.reason?h(x.reason):'—')+'</div></div>':'')+'</div>';
     }).join(''))+
     '</div></div><div id="takeover-sale-match-status"></div>';
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
