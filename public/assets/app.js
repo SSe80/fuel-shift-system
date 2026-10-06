@@ -1999,6 +1999,32 @@ async function openDashboardHandover(shiftId){
     select.innerHTML='<option value="">Select receiving attendant</option>'+
       receiving.map(e=>'<option value="'+h(e.id)+'">'+h(e.name)+' — ID '+h(e.operator_id)+'</option>').join('');
     if(!receiving.length)select.innerHTML='<option value="">No available receiving attendant</option>';
+    let picker=select.parentElement?.querySelector('.handover-attendant-picker');
+    if(picker)picker.remove();
+    picker=document.createElement('div');
+    picker.className='handover-attendant-picker';
+    const options=[{value:'',label:'Select receiving attendant'}].concat(receiving.map(e=>({value:String(e.id),label:String(e.name)+' — ID '+String(e.operator_id||'')})));
+    picker.innerHTML='<button type="button" class="handover-attendant-picker-button"><span class="handover-attendant-picker-label">Select receiving attendant</span><span class="handover-attendant-picker-arrow">⌄</span></button><div class="handover-attendant-picker-list">'+options.map(o=>'<button type="button" class="handover-attendant-picker-option'+(o.value?'':' placeholder')+'" data-value="'+h(o.value)+'">'+h(o.label)+'</button>').join('')+'</div>';
+    select.parentElement?.appendChild(picker);
+    select.style.position='absolute';
+    const pickerButton=picker.querySelector('.handover-attendant-picker-button');
+    const pickerLabel=picker.querySelector('.handover-attendant-picker-label');
+    pickerButton?.addEventListener('click',()=>picker.classList.toggle('open'));
+    picker.querySelectorAll('.handover-attendant-picker-option').forEach(option=>{
+      option.addEventListener('click',()=>{
+        select.value=option.dataset.value||'';
+        pickerLabel.textContent=option.textContent;
+        picker.querySelectorAll('.handover-attendant-picker-option').forEach(x=>x.classList.remove('selected'));
+        option.classList.add('selected');
+        picker.classList.remove('open');
+      });
+    });
+    document.addEventListener('click',function closeAttendantPicker(ev){
+      if(!picker.contains(ev.target)){
+        picker.classList.remove('open');
+      }
+    },{once:false});
+    if(!receiving.length)picker.querySelector('.handover-attendant-picker-button').disabled=true;
 
     const dispenser=document.getElementById('handover-dispenser');
     const dispenserTitle=document.getElementById('handover-dispenser-title');
@@ -2022,7 +2048,7 @@ async function openDashboardHandover(shiftId){
         const minAttr=opening!==null?' min="'+opening+'"':' min="0"';
         const placeholder=opening!==null?'Closing must be '+opening+' or higher':'Enter closing meter reading';
         return '<label class="handover-nozzle-input"><span>Nozzle '+(i+1)+' — '+h(id)+'</span>'+
-          '<small class="muted">Opening: '+(opening!==null?Number(opening).toLocaleString():'Not recorded')+'</small>'+
+          '<small class="muted">Opening: '+(opening!==null?String(opening):'Not recorded')+'</small>'+
           '<input id="handover-nozzle-reading-'+i+'" type="number"'+minAttr+' step="0.01" placeholder="'+placeholder+'" required></label>';
       }).join('');
     }
@@ -2093,7 +2119,7 @@ function continueHandover(event){
   const employeeSelect=document.getElementById('handover-to-employee');
   const employeeName=employeeSelect?.selectedOptions?.[0]?.textContent||to;
   const reviewNozzles=closingNozzleReadings.map((x,i)=>
-    '<div class="handover-review-row"><span>Nozzle '+(i+1)+' <small>'+h(x.nozzle_id)+'</small></span><strong>'+Number(x.reading).toFixed(2).replace(/\\.?0+$/,'')+'</strong></div>'
+    '<div class="handover-review-row"><span><b>Nozzle '+(i+1)+'</b><small>'+h(x.nozzle_id)+'</small></span><strong>'+Number(x.reading).toFixed(2).replace(/\\.?0+$/,'')+'</strong></div>'
   ).join('');
   document.getElementById('handover-review-details').innerHTML=
     '<div class="handover-review-summary">'+
