@@ -1368,7 +1368,23 @@ async function loadSettingsData(){
   window.saleTypeRecords=saleTypes;
   document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card settings-item-card ${e.active?'settings-active-card':''}" data-settings-key="employees" data-settings-id="${e.id}" onclick="toggleSettingsItem(event,this)"><div class="top"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">⋮</button><div><b>${h(e.name)}</b><div class="settings-card-details"><div><span>Operator ID:</span> <b>${h(e.operator_id)}</b></div><div><span>Phone:</span> <b>${h(e.phone)}</b></div><div><span>Role:</span> <b>${h(e.role)}</b></div><div><span>Status:</span> <b>${e.active?'Active':'Inactive'}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleUser('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button><button type="button" onclick="openUserEdit('${e.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeUser('${e.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No users.</p>';
   window.employeeRecords=employees;
-  document.getElementById('tanks').innerHTML=tanks.length?tanks.map(t=>`<div class="card settings-item-card ${t.active!==false?'settings-active-card':''}" data-settings-key="tanks" data-settings-id="${t.id}" onclick="toggleSettingsItem(event,this)"><div class="top"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">⋮</button><div><b>${h(t.tank_code)} — ${h(codeForProduct(t.product))}</b><div class="settings-card-details"><div><span>Capacity:</span> <b>${liters(t.capacity_liters)} L</b></div><div><span>Status:</span> <b>${t.active===false?'Inactive':'Active'}</b></div><div><span>Opening stock:</span> <b>${t.opening_stock_liters==null?'Not recorded':liters(t.opening_stock_liters)+' L'}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeTank('${t.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No tanks.</p>';
+  const tankGroups=[];
+  const tankGroupMap=new Map();
+  tanks.forEach(t=>{
+    const groupKey=String(t.product||'').trim().toLowerCase()||'unassigned';
+    if(!tankGroupMap.has(groupKey)){
+      const group={key:groupKey,items:[]};
+      tankGroupMap.set(groupKey,group);
+      tankGroups.push(group);
+    }
+    tankGroupMap.get(groupKey).items.push(t);
+  });
+  const groupedTanks=tankGroups.flatMap((group,groupIndex)=>group.items.map((t,itemIndex)=>({t,groupIndex,itemIndex,groupKey:group.key})));
+  document.getElementById('tanks').innerHTML=groupedTanks.length?groupedTanks.map(({t,groupIndex,itemIndex,groupKey})=>`
+    ${itemIndex===0?'<div class="settings-product-group-label '+(groupIndex>0?'settings-product-group-start':'')+'"><span class="settings-product-group-color" style="background:'+h(colorForProduct(t.product))+'"></span>'+h(codeForProduct(t.product))+'</div>':''}
+    <div class="card settings-item-card ${t.active!==false?'settings-active-card':''} ${itemIndex===0&&groupIndex>0?'settings-group-card-start':''}" data-tank-product-group="${h(groupKey)}" data-settings-key="tanks" data-settings-id="${t.id}" onclick="toggleSettingsItem(event,this)">
+      <div class="top"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">⋮</button><div><b>${h(t.tank_code)}</b><div class="settings-card-details"><div><span>Product:</span> <b><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${h(colorForProduct(t.product))};margin-right:5px;vertical-align:0"></span>${h(codeForProduct(t.product))}</b></div><div><span>Capacity:</span> <b>${liters(t.capacity_liters)} L</b></div><div><span>Status:</span> <b>${t.active===false?'Inactive':'Active'}</b></div><div><span>Opening stock:</span> <b>${t.opening_stock_liters==null?'Not recorded':liters(t.opening_stock_liters)+' L'}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleTank('${t.id}',${t.active!==false})">${t.active===false?'Activate':'Deactivate'}</button><button type="button" onclick="openTankEdit('${t.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeTank('${t.id}')">Remove</button></div></div>
+    </div>`).join(''):'<p class="muted">No tanks.</p>';
   window.tankRecords=tanks;
   const dispenserGroups=[];
   const dispenserGroupMap=new Map();
@@ -3350,7 +3366,10 @@ const updateDrag=()=>{
     if(afterActive){
       if(state.placeholder.nextElementSibling!==afterActive)state.container.insertBefore(state.placeholder,afterActive);
     }else if(state.groupKey){
-      const nextGroup=cards.find(x=>x.dataset.tankProductGroup!==state.groupKey&&x.dataset.dispenserProductGroup!==state.groupKey);
+      const nextGroup=cards.find(x=>{
+        const xGroup=x.dataset.tankProductGroup||x.dataset.dispenserProductGroup||'';
+        return xGroup!==state.groupKey;
+      });
       if(nextGroup&&state.placeholder.nextElementSibling!==nextGroup)state.container.insertBefore(state.placeholder,nextGroup);
       else if(state.container.lastElementChild!==state.placeholder)state.container.appendChild(state.placeholder);
     }else if(state.container.lastElementChild!==state.placeholder){
@@ -3371,7 +3390,8 @@ handle.addEventListener('pointerdown',e=>{
   const rect=card.getBoundingClientRect();
   const cardsAtStart=Array.from(container.querySelectorAll(':scope > .settings-item-card[data-settings-id]'));
   const cardIndex=cardsAtStart.indexOf(card);
-  const groupKey=(handle.dataset.settingsKey==='tanks'||handle.dataset.settingsKey==='dispensers')
+  const settingsKey=card.dataset.settingsKey||'';
+  const groupKey=(settingsKey==='tanks'||settingsKey==='dispensers')
     ?(card.dataset.tankProductGroup||card.dataset.dispenserProductGroup||'')
     :'';
   const sameGroupAtStart=x=>!groupKey||x.dataset.tankProductGroup===groupKey||x.dataset.dispenserProductGroup===groupKey;
