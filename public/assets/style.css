@@ -249,3 +249,62 @@ body.admin-shell.admin-sidebar-collapsed{
     font-size:10px!important;
   }
 }
+
+
+/* Admin top navigation — normal flow, slightly larger labels */
+body.admin-shell{
+  padding-top:0!important;
+}
+
+body.admin-shell>.admin-sidebar{
+  position:relative!important;
+  top:auto!important;
+  right:auto!important;
+  left:auto!important;
+  bottom:auto!important;
+  width:100%!important;
+  height:74px!important;
+}
+
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a b{
+  font-size:14px!important;
+}
+
+body.admin-shell>.admin-sidebar .admin-sidebar-logout b{
+  font-size:14px!important;
+}
+
+@media(max-width:800px){
+  body.admin-shell{
+    padding-top:0!important;
+  }
+
+  body.admin-shell>.admin-sidebar{
+    position:relative!important;
+    top:auto!important;
+    right:auto!important;
+    left:auto!important;
+    bottom:auto!important;
+    height:64px!important;
+  }
+
+  body.admin-shell>.admin-sidebar .admin-sidebar-nav a b,
+  body.admin-shell>.admin-sidebar .admin-sidebar-logout b{
+    font-size:12px!important;
+  }
+}
+
+@media(max-width:480px){
+  body.admin-shell{
+    padding-top:0!important;
+  }
+
+  body.admin-shell>.admin-sidebar{
+    height:58px!important;
+  }
+
+  body.admin-shell>.admin-sidebar .admin-sidebar-nav a b,
+  body.admin-shell>.admin-sidebar .admin-sidebar-logout b{
+    font-size:11px!important;
+  }
+}
