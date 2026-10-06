@@ -423,12 +423,25 @@ body.admin-shell>.admin-sidebar .admin-sidebar-logout b{
   text-transform:uppercase!important;
 }
 
-/* Page navigation — no movement */
-body.admin-shell>.admin-sidebar,
-body.admin-shell>.wrap{
+/* Page navigation — smooth content-only slide */
+body.admin-shell>.admin-sidebar{
   transform:none!important;
   animation:none!important;
   will-change:auto!important;
+}
+body.admin-shell>.wrap{
+  animation:adminContentSlideIn .30s cubic-bezier(.22,.61,.36,1) both;
+  will-change:transform,opacity;
+}
+@keyframes adminContentSlideIn{
+  from{opacity:0;transform:translateX(14px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  body.admin-shell>.wrap{
+    animation:none!important;
+    will-change:auto;
+  }
 }
 
 /* Logout confirmation — keep the dialog centered in the viewport */
