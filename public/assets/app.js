@@ -3306,7 +3306,7 @@ function filterAdminSalesHistoryPage(){
   const isFullHistory=document.body.classList.contains('admin-sales-history-page');
   const search=(document.getElementById('full-sales-history-search')?.value||'').trim();
   const period=document.getElementById('full-sales-history-period')?.value||'all';
-  const rows=(adminSalesHistoryData.history||[]).filter(x=>isFullHistory?true:adminSalesHistoryMatches(x,search,period));
+  const rows=(adminSalesHistoryData.history||[]).filter(x=>isFullHistory?adminSalesHistoryMatches(x,search,period):adminSalesHistoryMatches(x,search,period));
   if(isFullHistory){
     const count=document.getElementById('full-sales-history-count');
     if(count)count.textContent=rows.length+' confirmed';
