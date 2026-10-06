@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Attendant Dashboard</title><link rel="stylesheet" href="assets/style.css?v=20261006-03"><style>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Attendant Dashboard</title><link rel="stylesheet" href="assets/style.css?v=20261006-04"><style>
 /* Attendant Dashboard — use the same visual language as Admin Purchases */
 .attendant-dashboard-page{background:#f7f9fc;color:#182230}
 .attendant-dashboard-page .wrap{max-width:980px}
@@ -117,7 +117,28 @@ body.attendant-dashboard-page .page-heading h2{margin:0!important;font-size:19px
 body.attendant-dashboard-page .page-heading p{margin:5px 0 0!important;font-size:12px!important;color:#667085!important}
 @media(max-width:600px){body.attendant-dashboard-page>.wrap{padding:0 12px 28px!important}body.attendant-dashboard-page .purchase-header{padding:16px 0 18px!important}body.attendant-dashboard-page .purchase-header h1{font-size:27px!important}body.attendant-dashboard-page .nav{overflow-x:auto}body.attendant-dashboard-page .nav a{flex:1 0 110px!important}}
 
-/* Attendant red theme */\nbody.attendant-dashboard-page.admin-shell .admin-sidebar .admin-sidebar-nav a.active{background:#b4232f!important;color:#fff!important;box-shadow:0 4px 12px rgba(180,35,47,.28)!important}\nbody.attendant-dashboard-page.admin-shell .admin-sidebar .admin-sidebar-nav a:hover{background:#3a2026!important;color:#fff!important}\n\nbody.attendant-dashboard-page .settings-header .eyebrow{color:#b4232f!important}\nbody.attendant-dashboard-page .settings-header>div>p.muted{font-size:16px!important;line-height:1.5!important;color:#667085!important}\nbody.attendant-dashboard-page .settings-header>div>p.muted b{font-size:16px!important;font-weight:800!important;color:#182230!important}\n
+/* Attendant red theme */
+body.attendant-dashboard-page .nav a.active,
+body.attendant-dashboard-page .admin-sidebar-nav a.active{
+  background:#b4232f!important;
+  color:#fff!important;
+  box-shadow:0 4px 12px rgba(180,35,47,.28)!important
+}
+body.attendant-dashboard-page .nav a:hover,
+body.attendant-dashboard-page .admin-sidebar-nav a:hover{
+  background:#3a2026!important;
+  color:#fff!important
+}
+body.attendant-dashboard-page .settings-header .eyebrow,
+body.attendant-dashboard-page .purchase-header .eyebrow{
+  color:#b4232f!important
+}
+body.attendant-dashboard-page .settings-header .muted,
+body.attendant-dashboard-page .settings-header .muted b{
+  font-size:16px!important;
+  line-height:1.5!important
+}
+\nbody.attendant-dashboard-page.admin-shell .admin-sidebar .admin-sidebar-nav a.active{background:#b4232f!important;color:#fff!important;box-shadow:0 4px 12px rgba(180,35,47,.28)!important}\nbody.attendant-dashboard-page.admin-shell .admin-sidebar .admin-sidebar-nav a:hover{background:#3a2026!important;color:#fff!important}\n\nbody.attendant-dashboard-page .settings-header .eyebrow{color:#b4232f!important}\nbody.attendant-dashboard-page .settings-header>div>p.muted{font-size:16px!important;line-height:1.5!important;color:#667085!important}\nbody.attendant-dashboard-page .settings-header>div>p.muted b{font-size:16px!important;font-weight:800!important;color:#182230!important}\n
 body.attendant-dashboard-page .admin-sidebar-nav a.active{background:#b4232f!important;color:#fff!important;box-shadow:0 4px 12px rgba(180,35,47,.28)!important}
 body.attendant-dashboard-page .admin-sidebar-nav a:hover{background:#3a2026!important;color:#fff!important}
 body.attendant-dashboard-page .purchase-header .eyebrow{color:#b4232f!important}
@@ -142,4 +163,4 @@ body.attendant-dashboard-page .logout-confirm-backdrop{background:rgba(68,10,18,
 <div class="top"><div><span class="section-kicker">SHIFT HANDOVER</span><h3>Review Sale</h3></div><button type="button" class="modal-close" onclick="closeTakeoverSaleConfirm()" aria-label="Close">×</button></div>
 <div id="takeover-sale-confirm-content"></div>
 <div class="row"><button type="button" class="btn" onclick="backToTakeoverSaleEntry()">Back</button><button type="button" class="btn" onclick="editTakeoverSaleEntries()">Edit Sales</button><button type="button" class="primary confirm-sale-button" onclick="confirmTakeoverSale()" disabled>Confirm</button></div>
-</div></div><div id="takeover-details-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="closeTakeoverDetails()"></div><div class="modal-card takeover-details-modal"><div class="top"><div><span class="section-kicker">SHIFT HANDOVER</span><h3>Handover Details</h3></div><button type="button" class="modal-close" onclick="closeTakeoverDetails()" aria-label="Close">×</button></div><div id="takeover-details-content"></div><div class="row"><button type="button" class="primary" onclick="closeTakeoverDetails()">Close</button></div></div></div><div id="toast" class="toast"></div><div id="employee-status" class="page-status"></div></main><script src="assets/app.js?v=20261006-10"></script><script src="assets/app-boot.js?v=20261006-03"></script></body></html>
+</div></div><div id="takeover-details-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="closeTakeoverDetails()"></div><div class="modal-card takeover-details-modal"><div class="top"><div><span class="section-kicker">SHIFT HANDOVER</span><h3>Handover Details</h3></div><button type="button" class="modal-close" onclick="closeTakeoverDetails()" aria-label="Close">×</button></div><div id="takeover-details-content"></div><div class="row"><button type="button" class="primary" onclick="closeTakeoverDetails()">Close</button></div></div></div><div id="toast" class="toast"></div><div id="employee-status" class="page-status"></div></main><script src="assets/app.js?v=20261006-11"></script><script src="assets/app-boot.js?v=20261006-03"></script></body></html>
