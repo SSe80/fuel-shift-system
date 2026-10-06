@@ -4,25 +4,25 @@
 <link rel="stylesheet" href="assets/style.css?v=20261006-05">
 <style>
 .dsr-detail-page{background:rgba(15,23,42,.42)!important;color:#182230;min-height:100vh;overflow:hidden}
-.dsr-detail-wrap{max-width:1180px;width:100%;height:calc(100vh - 74px);box-sizing:border-box;padding:18px;margin:0 auto;display:flex;align-items:stretch;justify-content:center}
+.dsr-detail-wrap{max-width:none;width:100%;height:100vh;box-sizing:border-box;padding:0;margin:0;display:flex;align-items:stretch;justify-content:center}
 .dsr-detail-header{display:none!important;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 4px 20px}
 .dsr-detail-header h1{margin:0;font-size:32px;line-height:1.1;letter-spacing:-.03em}
 .dsr-detail-header p{margin:7px 0 0;color:#718096;font-size:14px}
 .dsr-detail-back{display:none!important;align-items:center;gap:7px;padding:10px 14px;border:1px solid #d8e0e8;border-radius:12px;background:#fff;color:#334155;font-weight:750;box-shadow:0 2px 8px #17202a0a;text-decoration:none;white-space:nowrap}
-.dsr-detail-view{display:block!important;margin:0!important;padding:0!important;border:1px solid #d7e0ea!important;border-radius:20px!important;background:#f2f5f8!important;box-shadow:0 24px 80px rgba(15,23,42,.28)!important;overflow:hidden!important;height:100%;max-height:none;overflow-y:auto}
+.dsr-detail-view{display:block!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:#f2f5f8!important;box-shadow:none!important;overflow:hidden!important;height:100vh;max-height:none;overflow-y:auto}
 .dsr-detail-view .daily-detail-head{position:sticky;top:0;z-index:4;background:#fff;border-bottom:1px solid #e1e8f0}
 .dsr-detail-view .daily-detail-actions{display:flex;gap:8px;flex-wrap:wrap}
 .dsr-detail-view .daily-detail-actions button{min-height:40px}
-.dsr-report-slider{padding:14px 16px 22px;overflow:hidden;position:relative}
+.dsr-report-slider{padding:0;overflow:hidden;position:relative;height:100%;min-height:100vh}
 .dsr-report-track{display:flex;align-items:stretch;width:300%;transition:transform .42s cubic-bezier(.22,.61,.36,1);will-change:transform;touch-action:pan-y}
 .dsr-report-slide{flex:0 0 33.333333%;width:33.333333%;min-width:33.333333%;box-sizing:border-box;padding:0 2px}
-.dsr-report-slide-card{background:#fff;border:1px solid #dfe7ef;border-radius:16px;box-shadow:0 8px 26px rgba(15,23,42,.07);padding:16px;min-height:420px;box-sizing:border-box}
+.dsr-report-slide-card{background:#fff;border:0;border-radius:0;box-shadow:none;padding:24px;min-height:calc(100vh - 58px);height:calc(100vh - 58px);box-sizing:border-box;overflow-y:auto}
 .dsr-report-slide-card .daily-section{margin:0 0 14px}
 .dsr-report-slide-card .daily-section:last-child{margin-bottom:0}
 .dsr-slide-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid #e7edf3}
 .dsr-slide-title h3{margin:0;font-size:15px;letter-spacing:-.01em}
 .dsr-slide-title span{font-size:11px;color:#7b8794;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-.dsr-slide-nav{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0 0}
+.dsr-slide-nav{position:absolute;left:0;right:0;bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0;z-index:5}
 .dsr-slide-nav button{width:34px;height:34px;border:1px solid #d8e2ec;border-radius:10px;background:#fff;color:#344054;font-weight:800;cursor:pointer}
 .dsr-slide-dots{display:flex;align-items:center;gap:6px;margin:0 4px}
 .dsr-slide-dot{width:7px;height:7px;border:0;border-radius:999px;background:#cbd5e1;padding:0;cursor:pointer}
@@ -31,8 +31,8 @@
 .dsr-slide-card .purchase-section-head h2{font-size:16px}
 .dsr-slide-card .daily-summary-grid{margin:0}
 @media(max-width:650px){
- .dsr-report-slider{padding:10px 10px 16px}
- .dsr-report-slide-card{padding:13px;border-radius:14px;min-height:0}
+ .dsr-report-slider{padding:0;height:100vh;min-height:100vh}
+ .dsr-report-slide-card{padding:16px;border-radius:0;min-height:calc(100vh - 48px);height:calc(100vh - 48px)}
  .dsr-slide-nav{padding-top:10px}
 }
 @media(max-width:650px){
@@ -49,28 +49,27 @@ body.dsr-embedded{background:#f2f5f8!important;overflow:hidden!important}
 body.dsr-embedded>.admin-sidebar,body.dsr-embedded>.admin-sidebar-toggle{display:none!important}
 body.dsr-embedded>.wrap{margin:0!important;max-width:none!important;width:100%!important;height:100vh!important;padding:0!important}
 body.dsr-embedded .dsr-detail-wrap{height:100vh!important;max-width:none!important;padding:0!important}
-body.dsr-embedded .dsr-detail-view{border:0!important;border-radius:0!important;box-shadow:none!important;width:100%!important}
+body.dsr-embedded .dsr-detail-view{border:0!important;border-radius:0!important;box-shadow:none!important;width:100%!important;height:100vh!important}
 body.dsr-embedded .daily-detail-close{display:none!important}
 body.dsr-embedded .dsr-detail-view .daily-detail-head{padding-right:16px!important}
 /* Keep the DSR detail header fixed while only the report body scrolls. */
 body.dsr-detail-page .dsr-detail-view{position:relative!important}
-body.dsr-detail-page .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important;z-index:20!important;margin-top:0!important}
-body.dsr-embedded .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important;z-index:20!important;margin-top:0!important}
+body.dsr-detail-page .dsr-detail-view .daily-detail-head{display:none!important}
+body.dsr-embedded .dsr-detail-view .daily-detail-head{display:none!important}
 </style>
 <style>
 /* DSR detail scrolling: keep the iframe/page viewport fixed and scroll the report itself. */
 html,body{height:100%!important;min-height:100%!important}
 body.dsr-detail-page{height:100vh!important;min-height:100vh!important;overflow:hidden!important}
 body.dsr-detail-page .dsr-detail-wrap{height:100vh!important;min-height:0!important;overflow:hidden!important;display:flex!important}
-body.dsr-detail-page .dsr-detail-view{flex:1 1 auto!important;min-height:0!important;height:100%!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain}
+body.dsr-detail-page .dsr-detail-view{flex:1 1 auto!important;min-height:0!important;height:100vh!important;max-height:none!important;overflow:hidden!important}
 body.dsr-embedded .dsr-detail-wrap{height:100vh!important;min-height:0!important;overflow:hidden!important}
-body.dsr-embedded .dsr-detail-view{height:100%!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important}
+body.dsr-embedded .dsr-detail-view{height:100vh!important;min-height:0!important;max-height:none!important;overflow:hidden!important}
 @media(max-width:650px){
  body.dsr-detail-page .dsr-detail-wrap{height:100vh!important;min-height:0!important;padding:0!important}
- body.dsr-detail-page .dsr-detail-view{height:100%!important;min-height:0!important;overflow-y:auto!important}
- body.dsr-embedded .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important}
+ body.dsr-detail-page .dsr-detail-view{height:100vh!important;min-height:0!important;overflow:hidden!important}
+ body.dsr-embedded .dsr-detail-view .daily-detail-head{display:none!important}
 }
-</style>
 </style>
 </head>
 <body class="admin-shell daily-report-page dsr-detail-page" onload="(function(){if(new URLSearchParams(location.search).get('embedded')==='1')document.body.classList.add('dsr-embedded');var d=new URLSearchParams(location.search).get('date');var input=document.getElementById('report-date');if(d)input.value=d;else input.value=new Date().toISOString().slice(0,10);loadDailyReport(true);})()">
