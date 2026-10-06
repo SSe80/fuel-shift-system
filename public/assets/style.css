@@ -74,3 +74,12 @@ body.admin-settings-page #employees .muted,body.admin-settings-page #products .m
  body.admin-settings-page .settings-section .section-heading{align-items:stretch;flex-direction:column;gap:12px}
  body.admin-settings-page #employees>.card,body.admin-settings-page #products>.card,body.admin-settings-page #tanks>.card,body.admin-settings-page #dispensers>.card,body.admin-settings-page #sale-types>.card{padding:14px}
 }
+/* Admin Settings — remove section expand/collapse plus/minus indicator */
+body.admin-settings-page .settings-section .settings-toggle::after,
+body.admin-settings-page .settings-section.expanded .settings-toggle::after{
+  content:none !important;
+  display:none !important;
+}
+body.admin-settings-page .settings-section .settings-toggle{
+  padding-right:0 !important;
+}
