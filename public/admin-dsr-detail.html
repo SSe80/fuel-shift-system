@@ -22,7 +22,7 @@
 .dsr-slide-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid #e7edf3}
 .dsr-slide-title h3{margin:0;font-size:15px;letter-spacing:-.01em}
 .dsr-slide-title span{font-size:11px;color:#7b8794;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-.dsr-slide-nav{position:absolute;left:0;right:0;bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0;z-index:5}
+.dsr-slide-nav{position:absolute;left:0;right:0;bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0;z-index:8}
 .dsr-slide-nav button{width:34px;height:34px;border:1px solid #d8e2ec;border-radius:10px;background:#fff;color:#344054;font-weight:800;cursor:pointer}
 .dsr-slide-dots{display:flex;align-items:center;gap:6px;margin:0 4px}
 .dsr-slide-dot{width:7px;height:7px;border:0;border-radius:999px;background:#cbd5e1;padding:0;cursor:pointer}
@@ -72,7 +72,7 @@ body.dsr-embedded .dsr-detail-view{height:100vh!important;min-height:0!important
 }
 </style>
 </head>
-<body class="admin-shell daily-report-page dsr-detail-page" onload="(function(){document.body.classList.add('dsr-detail-standalone');if(new URLSearchParams(location.search).get('embedded')==='1')document.body.classList.add('dsr-embedded');var params=new URLSearchParams(location.search);var d=params.get('date');var input=document.getElementById('report-date');if(d)input.value=d;else{d=new Date().toISOString().slice(0,10);input.value=d;params.set('date',d);history.replaceState(null,'',location.pathname+'?'+params.toString());}function boot(){if(typeof loadDailyReport==='function'){loadDailyReport(true);return;}setTimeout(boot,50);}boot();})()">
+<body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone" onload="(function(){var params=new URLSearchParams(location.search);var d=params.get('date');var input=document.getElementById('report-date');if(!d){d=new Date().toISOString().slice(0,10);params.set('date',d);history.replaceState(null,'',location.pathname+'?'+params.toString());}input.value=d;var tries=0;function boot(){tries++;if(typeof loadDailyReport==='function'){loadDailyReport(true);return;}if(tries<200)setTimeout(boot,50);}boot();})()">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
 <aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
