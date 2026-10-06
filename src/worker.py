@@ -3082,7 +3082,22 @@ def daily_report():
 
     dispenser_details.sort(key=lambda z:str(z.get("dispenser") or ""))
 
-    # Tank <-> nozzle reconciliation. Roll up authoritative handover nozzle sales by physical tank.\n    # Never join raw sales rows to nozzle rows here because that can multiply totals.\n    tank_nozzle_sales_by_shift={}\n    for sh in day_shifts:\n        sid=str(sh.get("id") or "")\n        hrow=handover_by_shift_id.get(sid) or {}\n        for sale in _json_list(hrow.get("nozzle_sales_liters")):\n            code=str((sale or {}).get("nozzle_id") or "")\n            dn=dn_by_code.get(code) or {}\n            tid=str(dn.get("tank_id") or hrow.get("tank_id") or "")\n            if not tid:\n                continue\n            tank_nozzle_sales_by_shift.setdefault(tid,{})\n            tank_nozzle_sales_by_shift[tid][sid]=tank_nozzle_sales_by_shift[tid].get(sid,0.0)+float((sale or {}).get("liters_sold") or 0)\n\n    # Tank detail: first shift opening, last shift closing, discharged
+    # Tank <-> nozzle reconciliation. Roll up authoritative handover nozzle sales by physical tank.
+    # Never join raw sales rows to nozzle rows here because that can multiply totals.
+    tank_nozzle_sales_by_shift={}
+    for sh in day_shifts:
+        sid=str(sh.get("id") or "")
+        hrow=handover_by_shift_id.get(sid) or {}
+        for sale in _json_list(hrow.get("nozzle_sales_liters")):
+            code=str((sale or {}).get("nozzle_id") or "")
+            dn=dn_by_code.get(code) or {}
+            tid=str(dn.get("tank_id") or hrow.get("tank_id") or "")
+            if not tid:
+                continue
+            tank_nozzle_sales_by_shift.setdefault(tid,{})
+            tank_nozzle_sales_by_shift[tid][sid]=tank_nozzle_sales_by_shift[tid].get(sid,0.0)+float((sale or {}).get("liters_sold") or 0)
+
+    # Tank detail: first shift opening, last shift closing, discharged
     # purchases, sales and stock difference for each tank.
     tank_shift_rows={}
     for sh in day_shifts:
