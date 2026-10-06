@@ -4,12 +4,12 @@
 <link rel="stylesheet" href="assets/style.css?v=20261006-05">
 <style>
 .dsr-detail-page{background:rgba(15,23,42,.42)!important;color:#182230;min-height:100vh;overflow:hidden}
-.dsr-detail-wrap{max-width:none;width:100%;height:100vh;box-sizing:border-box;padding:0;margin:0;display:flex;align-items:stretch;justify-content:center}
+.dsr-detail-wrap{max-width:1280px;width:100%;height:100vh;box-sizing:border-box;padding:24px;margin:0 auto;display:flex;align-items:stretch;justify-content:center}
 .dsr-detail-header{display:none!important;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 4px 20px}
 .dsr-detail-header h1{margin:0;font-size:32px;line-height:1.1;letter-spacing:-.03em}
 .dsr-detail-header p{margin:7px 0 0;color:#718096;font-size:14px}
 .dsr-detail-back{display:none!important;align-items:center;gap:7px;padding:10px 14px;border:1px solid #d8e0e8;border-radius:12px;background:#fff;color:#334155;font-weight:750;box-shadow:0 2px 8px #17202a0a;text-decoration:none;white-space:nowrap}
-.dsr-detail-view{display:block!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:#f2f5f8!important;box-shadow:none!important;overflow:hidden!important;height:100vh;max-height:none;overflow-y:auto}
+.dsr-detail-view{display:block!important;margin:0!important;padding:0!important;border:1px solid #d7e0ea!important;border-radius:20px!important;background:#f2f5f8!important;box-shadow:0 20px 60px rgba(15,23,42,.16)!important;overflow:hidden!important;height:100%;max-height:none}
 .dsr-detail-view .daily-detail-head{position:sticky;top:0;z-index:4;background:#fff;border-bottom:1px solid #e1e8f0}
 .dsr-detail-view .daily-detail-actions{display:flex;gap:8px;flex-wrap:wrap}
 .dsr-detail-view .daily-detail-actions button{min-height:40px}
@@ -39,17 +39,17 @@
  .dsr-detail-header{display:none!important}
  .dsr-detail-header h1{font-size:28px}
  .dsr-detail-back{width:100%;justify-content:center}
- .dsr-detail-wrap{height:calc(100vh - 58px);padding:8px}
+ .dsr-detail-wrap{height:100vh;padding:8px}
  .dsr-detail-view .daily-detail-head{position:static}
  .dsr-detail-view .daily-detail-actions button{flex:1}
 }
 </style>
 <style>
 body.dsr-embedded{background:#f2f5f8!important;overflow:hidden!important}
-body.dsr-embedded>.admin-sidebar,body.dsr-embedded>.admin-sidebar-toggle{display:none!important}
-body.dsr-embedded>.wrap{margin:0!important;max-width:none!important;width:100%!important;height:100vh!important;padding:0!important}
-body.dsr-embedded .dsr-detail-wrap{height:100vh!important;max-width:none!important;padding:0!important}
-body.dsr-embedded .dsr-detail-view{border:0!important;border-radius:0!important;box-shadow:none!important;width:100%!important;height:100vh!important}
+body.dsr-detail-page>.admin-sidebar,body.dsr-detail-page>.admin-sidebar-toggle,body.dsr-embedded>.admin-sidebar,body.dsr-embedded>.admin-sidebar-toggle{display:none!important}
+body.dsr-embedded>.wrap{margin:0 auto!important;max-width:1280px!important;width:100%!important;height:100vh!important;padding:24px!important}
+body.dsr-embedded .dsr-detail-wrap{height:100vh!important;max-width:1280px!important;padding:24px!important}
+body.dsr-embedded .dsr-detail-view{border:1px solid #d7e0ea!important;border-radius:20px!important;box-shadow:0 20px 60px rgba(15,23,42,.16)!important;width:100%!important;height:100%!important}
 body.dsr-embedded .daily-detail-close{display:none!important}
 body.dsr-embedded .dsr-detail-view .daily-detail-head{padding-right:16px!important}
 /* Keep the DSR detail header fixed while only the report body scrolls. */
@@ -62,12 +62,12 @@ body.dsr-embedded .dsr-detail-view .daily-detail-head{position:sticky!important;
 html,body{height:100%!important;min-height:100%!important}
 body.dsr-detail-page{height:100vh!important;min-height:100vh!important;overflow:hidden!important}
 body.dsr-detail-page .dsr-detail-wrap{height:100vh!important;min-height:0!important;overflow:hidden!important;display:flex!important}
-body.dsr-detail-page .dsr-detail-view{flex:1 1 auto!important;min-height:0!important;height:100vh!important;max-height:none!important;overflow:hidden!important}
+body.dsr-detail-page .dsr-detail-view{flex:1 1 auto!important;min-height:0!important;height:100%!important;max-height:none!important;overflow:hidden!important}
 body.dsr-embedded .dsr-detail-wrap{height:100vh!important;min-height:0!important;overflow:hidden!important}
 body.dsr-embedded .dsr-detail-view{height:100vh!important;min-height:0!important;max-height:none!important;overflow:hidden!important}
 @media(max-width:650px){
  body.dsr-detail-page .dsr-detail-wrap{height:100vh!important;min-height:0!important;padding:0!important}
- body.dsr-detail-page .dsr-detail-view{height:100vh!important;min-height:0!important;overflow:hidden!important}
+ body.dsr-detail-page .dsr-detail-view{height:100%!important;min-height:0!important;overflow:hidden!important}
  body.dsr-embedded .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important;z-index:20!important;margin-top:0!important}
 }
 </style>
