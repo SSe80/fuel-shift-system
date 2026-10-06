@@ -29,7 +29,11 @@ body.dsr-embedded>.wrap{margin:0!important;max-width:none!important;width:100%!i
 body.dsr-embedded .dsr-detail-wrap{height:100vh!important;max-width:none!important;padding:0!important}
 body.dsr-embedded .dsr-detail-view{border:0!important;border-radius:0!important;box-shadow:none!important;width:100%!important}
 body.dsr-embedded .daily-detail-close{display:none!important}
-body.dsr-embedded .dsr-detail-view .daily-detail-head{padding-right:58px}
+body.dsr-embedded .dsr-detail-view .daily-detail-head{padding-right:16px!important}
+/* Keep the DSR detail header fixed while only the report body scrolls. */
+body.dsr-detail-page .dsr-detail-view{position:relative!important}
+body.dsr-detail-page .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important;z-index:20!important;margin-top:0!important}
+body.dsr-embedded .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important;z-index:20!important;margin-top:0!important}
 <style>
 /* DSR detail scrolling: keep the iframe/page viewport fixed and scroll the report itself. */
 html,body{height:100%!important;min-height:100%!important}
