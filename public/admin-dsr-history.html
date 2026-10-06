@@ -78,15 +78,38 @@
 }
 </style><style>
 /* DSR History width/alignment fix */
-.dsr-history-page .purchase-section-head{width:100%;box-sizing:border-box}
-.dsr-history-page .admin-sales-section-count{margin-left:auto;align-self:flex-start;white-space:nowrap;margin-top:2px}
+.dsr-history-page .purchase-section-head{
+ width:100%;
+ box-sizing:border-box;
+ flex-direction:row;
+ align-items:center;
+ justify-content:space-between;
+}
+.dsr-history-page .purchase-section-head>div{
+ width:auto;
+ min-width:0;
+}
+.dsr-history-page .admin-sales-section-count{
+ margin-left:auto;
+ align-self:center;
+ flex:0 0 auto;
+ white-space:nowrap;
+ margin-top:0;
+}
 .dsr-history-page .daily-report-date-cards{width:100%;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
 .dsr-history-page .dsr-history-month{width:100%;box-sizing:border-box}
 .dsr-history-page .dsr-history-month-body{width:100%;box-sizing:border-box}
 .dsr-history-page .dsr-history-card{width:100%;box-sizing:border-box}
 @media(max-width:600px){
- .dsr-history-page .purchase-section-head{align-items:flex-start}
- .dsr-history-page .admin-sales-section-count{margin-left:auto;align-self:flex-start;margin-top:1px}
+ .dsr-history-page .purchase-section-head{
+  flex-direction:row;
+  align-items:center;
+ }
+ .dsr-history-page .admin-sales-section-count{
+  margin-left:auto;
+  align-self:center;
+  margin-top:0;
+ }
 }
 </style></head>
 <body class="admin-shell admin-purchases-page admin-purchase-history-page dsr-history-page" data-app-page="adminDsrHistory">
