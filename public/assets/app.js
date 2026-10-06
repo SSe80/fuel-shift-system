@@ -2520,11 +2520,9 @@ async function openDailyHistoryReport(date){
 function selectDailyReportDate(date){
   const input=document.getElementById('report-date');
   if(input)input.value=date;
-  const details=document.getElementById('daily-report-details');
-  if(details)details.hidden=false;
-  document.body.classList.add('daily-detail-open');
-  loadDailyReport();
-  window.scrollTo({top:0,behavior:'smooth'});
+  // DSR History always opens the full report in the dedicated modal.
+  // Do not reveal/extend the inline detail page.
+  previewDailyReport(date);
 }
 
 function downloadDailyReportPdf(){
