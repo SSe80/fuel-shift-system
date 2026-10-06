@@ -5,23 +5,111 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Fuel Shift System</title>
   <link rel="stylesheet" href="assets/style.css">
+  <style>
+    html, body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: #eef3f8;
+      color: #172033;
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    .project-page {
+      width: min(760px, calc(100% - 40px));
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    .project-card {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 56px 52px;
+      background: #ffffff;
+      border: 1px solid #dce4ee;
+      border-radius: 18px;
+      box-shadow: 0 12px 35px rgba(23, 32, 51, 0.08);
+      text-align: center;
+    }
+
+    .project-card h1 {
+      margin: 0 0 18px;
+      color: #123b66;
+      font-size: clamp(32px, 6vw, 48px);
+      line-height: 1.1;
+      font-weight: 700;
+      letter-spacing: -0.8px;
+    }
+
+    .project-card .intro {
+      margin: 0 0 24px;
+      color: #3e6f9f;
+      font-size: 20px;
+      line-height: 1.55;
+      font-weight: 500;
+    }
+
+    .project-card .description {
+      margin: 0 auto 22px;
+      max-width: 620px;
+      color: #465466;
+      font-size: 16px;
+      line-height: 1.8;
+      font-weight: 400;
+    }
+
+    .project-card .tagline {
+      margin: 0;
+      color: #718096;
+      font-size: 14px;
+      line-height: 1.6;
+      font-weight: 500;
+    }
+
+    @media (max-width: 600px) {
+      .project-page {
+        width: min(100% - 24px, 760px);
+      }
+
+      .project-card {
+        padding: 42px 24px;
+        border-radius: 15px;
+      }
+
+      .project-card h1 {
+        font-size: 32px;
+      }
+
+      .project-card .intro {
+        font-size: 18px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <main class="card center">
-    <div class="logo">⛽</div>
-    <h1>Fuel Shift System</h1>
-    <p class="muted">
-      A simple management system for fuel stations.
-    </p>
+  <main class="project-page">
+    <section class="project-card">
+      <h1>Fuel Shift System</h1>
 
-    <p>
-      Manage daily sales, purchases, fuel stock, shifts, attendants,
-      tanks and station reports in one place.
-    </p>
+      <p class="intro">
+        A simple management system for fuel stations.
+      </p>
 
-    <p class="hint">
-      Built to make fuel station operations easier, clearer and more organized.
-    </p>
+      <p class="description">
+        Manage daily sales, purchases, fuel stock, shifts, attendants,
+        tanks and station reports in one place.
+      </p>
+
+      <p class="tagline">
+        Built to make fuel station operations easier, clearer and more organized.
+      </p>
+    </section>
   </main>
 </body>
 </html>
