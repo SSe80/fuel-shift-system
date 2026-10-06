@@ -390,9 +390,14 @@ body.admin-shell>.admin-sidebar .admin-sidebar-logout b{
   color:#344255;
 }
 .logout-confirm-button{
-  background:#17202a;
-  color:#fff;
-  border-color:#17202a!important;
+  background:#1264d8!important;
+  color:#fff!important;
+  border-color:#1264d8!important;
+  box-shadow:0 5px 12px #1264d826;
+}
+.logout-confirm-button:hover{
+  background:#0f56bd!important;
+  border-color:#0f56bd!important;
 }
 .logout-confirm-actions button:focus-visible{
   outline:3px solid #93c5fd;
@@ -409,4 +414,17 @@ body.admin-shell>.admin-sidebar .admin-sidebar-logout b{
   .logout-confirm-content h2{font-size:19px}
   .logout-confirm-content p{font-size:12px}
   .logout-confirm-actions button{min-height:38px;padding:8px 14px;font-size:12px}
+}
+
+
+/* Page navigation — smooth fade between admin pages */
+body.admin-shell{
+  animation:adminPageEnter .18s ease-out both;
+}
+@keyframes adminPageEnter{
+  from{opacity:0;transform:translateY(4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  body.admin-shell{animation:none!important}
 }
