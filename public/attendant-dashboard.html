@@ -117,7 +117,215 @@ body.attendant-dashboard-page .page-heading h2{margin:0!important;font-size:19px
 body.attendant-dashboard-page .page-heading p{margin:5px 0 0!important;font-size:12px!important;color:#667085!important}
 @media(max-width:600px){body.attendant-dashboard-page>.wrap{padding:0 12px 28px!important}body.attendant-dashboard-page .purchase-header{padding:16px 0 18px!important}body.attendant-dashboard-page .purchase-header h1{font-size:27px!important}body.attendant-dashboard-page .nav{overflow-x:auto}body.attendant-dashboard-page .nav a{flex:1 0 110px!important}}
 
-/* Pending handover card refinement */
+/* Pending shift confirmation review */
+body.attendant-dashboard-page .pending-handover-actions{
+  padding:11px 14px 14px!important;
+  border-top:1px solid #f1d9dd!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-handover-actions button{
+  min-height:42px!important;
+  border-radius:10px!important;
+  font-size:12px!important;
+  font-weight:850!important;
+}
+body.attendant-dashboard-page .pending-handover-review-modal{
+  position:fixed!important;
+  inset:0!important;
+  z-index:5100!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:14px!important;
+  background:rgba(15,23,42,.58)!important;
+}
+body.attendant-dashboard-page .pending-handover-review-modal.open{
+  display:flex!important;
+}
+body.attendant-dashboard-page .pending-handover-review-backdrop{
+  position:absolute!important;
+  inset:0!important;
+}
+body.attendant-dashboard-page .pending-handover-review-card{
+  position:relative!important;
+  width:min(500px,calc(100vw - 24px))!important;
+  max-height:84vh!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+  border:1px solid #ead9dc!important;
+  border-radius:18px!important;
+  background:#fff!important;
+  box-shadow:0 22px 60px rgba(16,24,40,.25)!important;
+}
+body.attendant-dashboard-page .pending-handover-review-head{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:16px 17px 13px!important;
+  background:#fff8f8!important;
+  border-bottom:1px solid #f1d9dd!important;
+}
+body.attendant-dashboard-page .pending-handover-review-kicker{
+  display:block!important;
+  margin-bottom:4px!important;
+  font-size:10px!important;
+  font-weight:850!important;
+  letter-spacing:.12em!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .pending-handover-review-head h2{
+  margin:0!important;
+  font-size:19px!important;
+  line-height:1.2!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .pending-handover-review-head p{
+  margin:5px 0 0!important;
+  font-size:11px!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .pending-handover-review-close{
+  width:34px!important;
+  height:34px!important;
+  flex:0 0 34px!important;
+  border:1px solid #f0c4c8!important;
+  border-radius:9px!important;
+  background:#fff0f1!important;
+  color:#b4232f!important;
+  font-size:22px!important;
+  line-height:1!important;
+}
+body.attendant-dashboard-page .pending-handover-review-body{
+  overflow:auto!important;
+  padding:14px 17px!important;
+}
+body.attendant-dashboard-page .pending-handover-review-grid{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:1px!important;
+  margin-bottom:12px!important;
+  border:1px solid #e8edf2!important;
+  border-radius:11px!important;
+  overflow:hidden!important;
+}
+body.attendant-dashboard-page .pending-handover-review-grid>div{
+  padding:11px 12px!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .pending-handover-review-grid span,
+body.attendant-dashboard-page .pending-handover-review-main span{
+  display:block!important;
+  font-size:9px!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  font-weight:850!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .pending-handover-review-grid strong,
+body.attendant-dashboard-page .pending-handover-review-main strong{
+  display:block!important;
+  margin-top:4px!important;
+  font-size:15px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .pending-handover-review-section{
+  margin-bottom:12px!important;
+  border:1px solid #e8edf2!important;
+  border-radius:11px!important;
+  overflow:hidden!important;
+}
+body.attendant-dashboard-page .pending-handover-review-section-title{
+  padding:10px 12px!important;
+  background:#fbfcfe!important;
+  border-bottom:1px solid #e8edf2!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  color:#8f1d27!important;
+}
+body.attendant-dashboard-page .pending-handover-review-nozzle{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:10px 12px!important;
+  border-bottom:1px solid #f0f2f5!important;
+}
+body.attendant-dashboard-page .pending-handover-review-nozzle:last-child{
+  border-bottom:0!important;
+}
+body.attendant-dashboard-page .pending-handover-review-nozzle b{
+  display:block!important;
+  font-size:12px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .pending-handover-review-nozzle small{
+  display:block!important;
+  margin-top:3px!important;
+  font-size:10px!important;
+  font-weight:750!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .pending-handover-review-nozzle strong{
+  font-size:18px!important;
+  font-weight:850!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .pending-handover-review-main{
+  padding:11px 12px!important;
+  margin-bottom:12px!important;
+  border:1px solid #e8edf2!important;
+  border-radius:11px!important;
+}
+body.attendant-dashboard-page .pending-handover-review-pin{
+  display:block!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .pending-handover-review-pin input{
+  display:block!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  min-height:45px!important;
+  margin-top:6px!important;
+  padding:0 12px!important;
+  border:1px solid #d8e0e8!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  font-size:15px!important;
+}
+body.attendant-dashboard-page .pending-handover-review-pin input:focus{
+  outline:none!important;
+  border-color:#b4232f!important;
+  box-shadow:0 0 0 3px rgba(180,35,47,.10)!important;
+}
+body.attendant-dashboard-page .pending-handover-review-actions{
+  display:flex!important;
+  gap:8px!important;
+  padding:10px 14px 13px!important;
+  border-top:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page .pending-handover-review-actions button{
+  flex:1!important;
+  min-height:42px!important;
+  border-radius:10px!important;
+  font-size:12px!important;
+  font-weight:850!important;
+}
+body.attendant-dashboard-page .pending-handover-review-actions .primary{
+  background:#b4232f!important;
+  border-color:#b4232f!important;
+  color:#fff!important;
+  box-shadow:0 5px 12px rgba(180,35,47,.20)!important;
+}
+body.attendant-dashboard-page .pending-handover-review-actions .secondary{
+  background:#fff!important;
+  border:1px solid #e2d4d6!important;
+  color:#7f1d1d!important;
+}
+\n/* Pending handover card refinement */
 body.attendant-dashboard-page .pending-confirmation-card{
   border-color:#ead9dc!important;
   box-shadow:0 7px 22px rgba(16,24,40,.06)!important;
