@@ -2377,7 +2377,7 @@ function renderDailyHistoryCard(item){
     '</button>'+
     '<div class="purchase-history-recorded-body daily-dsr-history-body" hidden>'+
       '<div class="purchase-history-full-main"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div><div><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div><div><span>DSR date</span><strong>'+h(dateLabel)+'</strong></div></div>'+
-      '<div class="purchase-history-card-actions"><button type="button" onclick="toggleDailyHistoryCard(event,this)">Collapse</button><button type="button" class="daily-dsr-view" onclick="selectDailyReportDate(\\''+item.date+'\\')">View full report <span>→</span></button></div>'+
+      '<div class="purchase-history-card-actions"><button type="button" onclick="toggleDailyHistoryCard(event,this)">Collapse</button><button type="button" class="daily-dsr-view" onclick="selectDailyReportDate(\''+item.date+'\')">View full report <span>→</span></button></div>'+
     '</div></article>';
 }
 function renderDailyPendingConfirmationCard(item){
@@ -2443,8 +2443,8 @@ function toggleDailyHistoryCard(event,button){
   if(!card)return;
   const expanded=card.classList.toggle('expanded');
   const body=card.querySelector('.daily-dsr-history-body');
-  const toggle=card.querySelector('.daily-dsr-history-toggle');
-  const head=card.querySelector('.daily-dsr-history-head');
+  const toggle=card.querySelector('.purchase-history-recorded-toggle');
+  const head=card.querySelector('.purchase-history-recorded-head');
   if(body)body.hidden=!expanded;
   if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
   if(toggle)toggle.textContent=expanded?'⌃':'⌄';
