@@ -3965,3 +3965,24 @@ body.daily-preview-open{overflow:hidden}
   justify-self:stretch!important;
   margin:0!important;
 }
+
+/* DSR history collapsed card — larger, clean header only */
+.admin-daily-report-page .daily-dsr-history-card .daily-dsr-history-head{
+  min-height:78px!important;
+  padding:15px 17px!important;
+}
+.admin-daily-report-page .daily-dsr-history-main strong{
+  font-size:15px!important;
+}
+.admin-daily-report-page .daily-dsr-history-main small{
+  font-size:10px!important;
+}
+.admin-daily-report-page .daily-dsr-history-toggle{
+  width:29px!important;height:29px!important;flex-basis:29px!important;
+}
+@media(max-width:560px){
+  .admin-daily-report-page .daily-dsr-history-card .daily-dsr-history-head{
+    min-height:72px!important;padding:13px 13px!important;
+  }
+  .admin-daily-report-page .daily-dsr-history-main strong{font-size:14px!important}
+}
