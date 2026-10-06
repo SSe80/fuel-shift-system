@@ -2279,19 +2279,22 @@ async function loadDailyReportConfirmations(){
     return [];
   }
 }
-async function previewDailyReport(){
+async function previewDailyReport(selectedDate=null){
   try{
-    const rows=await api('/api/reports/daily/confirmations');
-    const list=Array.isArray(rows)?rows:[];
-    const available=list
-      .filter(x=>x && x.date)
-      .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-    if(!available.length){
-      toast('No DSR data is available for preview yet.');
-      return;
+    let date=selectedDate;
+    if(!date){
+      const rows=await api('/api/reports/daily/confirmations');
+      const list=Array.isArray(rows)?rows:[];
+      const available=list
+        .filter(x=>x && x.date)
+        .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+      if(!available.length){
+        toast('No DSR data is available for preview yet.');
+        return;
+      }
+      date=available[0].date;
     }
-
-    const date=available[0].date;
+    const isHistoryReport=Boolean(selectedDate);
     const input=document.getElementById('report-date');
     if(input)input.value=date;
 
@@ -2325,17 +2328,17 @@ async function previewDailyReport(){
         '<div><span class="daily-preview-paper-kicker">STATION DAILY RECONCILIATION</span>'+
         '<h2>Daily Sales Report</h2>'+
         '<p>'+h(dailyReportIdLabel(date))+'</p></div>'+
-        '<span class="daily-preview-paper-badge">DESIGN PREVIEW</span>'+
+        '<span class="daily-preview-paper-badge">'+(isHistoryReport?'CONFIRMED REPORT':'DESIGN PREVIEW')+'</span>'+
       '</div>'+
       '<div class="daily-preview-paper-meta">'+
         '<span>Report date <b>'+h(dailyReportIdLabel(date))+'</b></span>'+
-        '<span>Status <b>Preview · not confirmed</b></span>'+
+        '<span>Status <b>'+(isHistoryReport?'Confirmed':'Preview · not confirmed')+'</b></span>'+
       '</div>'+
-      '<div class="daily-preview-paper-status">Live report data · calculations are read from the selected DSR date.</div>'+
+      '<div class="daily-preview-paper-status">'+(isHistoryReport?'Confirmed station-wide reconciliation · read-only report.':'Live report data · calculations are read from the selected DSR date.')+'</div>'+
       '<div class="daily-preview-paper-summary">'+(sourceSummary?.innerHTML||'')+'</div>'+
       '<section class="daily-preview-paper-section"><div class="daily-preview-live-performance"><div class="daily-preview-live-pct-grid">'+pctRows+'</div></div></section>'+
       Array.from(sourceSections).map(section=>'<section class="daily-preview-paper-section">'+section.innerHTML+'</section>').join('')+
-      '<div class="daily-preview-paper-foot"><span>DSR design preview · live data</span><span>'+h(dailyReportIdLabel(date))+'</span></div>';
+      '<div class="daily-preview-paper-foot"><span>'+(isHistoryReport?'Confirmed DSR · read-only report':'DSR design preview · live data')+'</span><span>'+h(dailyReportIdLabel(date))+'</span></div>';
 
     details.hidden=true;
     document.body.classList.remove('daily-detail-open');
