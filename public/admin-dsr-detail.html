@@ -161,7 +161,28 @@ body.dsr-detail-page .dsr-slide-title p{
   }
 }
 </style>
-</head>
+<style>
+/* Larger report content area after removing redundant inner headings */
+body.dsr-detail-page .dsr-report-slide-card{
+  padding:22px!important;
+}
+body.dsr-detail-page .dsr-report-slide-card > .purchase-section.daily-section{
+  margin-top:0!important;
+}
+body.dsr-detail-page .dsr-report-slide-card .daily-summary-grid{
+  margin-top:0!important;
+}
+body.dsr-detail-page .dsr-report-slide-card .dsr-dispenser-list,
+body.dsr-detail-page .dsr-report-slide-card .dsr-tank-list,
+body.dsr-detail-page .dsr-report-slide-card .dsr-shift-list,
+body.dsr-detail-page .dsr-report-slide-card .dsr-sales-summary,
+body.dsr-detail-page .dsr-report-slide-card .dsr-performance-grid{
+  width:100%!important;
+}
+@media(max-width:650px){
+  body.dsr-detail-page .dsr-report-slide-card{padding:16px!important}
+}
+</style></head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
 <aside class="admin-sidebar" aria-label="Admin navigation">
@@ -190,33 +211,33 @@ body.dsr-detail-page .dsr-slide-title p{
    <article class="dsr-report-slide" aria-label="DSR dispensers">
     <div class="dsr-report-slide-card">
      <div class="dsr-slide-title"><div><h3>Dispenser</h3><p>Dispenser readings and fuel sold by nozzle.</p></div><span>1 of 5</span></div>
-     <section class="purchase-section daily-section"><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">DISPENSER</span><h2>Dispenser performance</h2><p class="muted">Nozzle readings, liters sold and meter reconciliation across every dispenser and shift.</p></div></div><div id="report-dispensers" class="dsr-dispenser-list"></div></section>
+     <section class="purchase-section daily-section"><div id="report-dispensers" class="dsr-dispenser-list"></div></section>
      <section id="daily-report-revisions" class="purchase-section daily-section daily-revision-section" hidden><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">DSR VERSION HISTORY</span><h2>Revision history</h2><p class="muted">Previous saved versions are archived before a DSR is regenerated.</p></div></div><div id="daily-report-revisions-list"></div></section>
     </div>
    </article>
    <article class="dsr-report-slide" aria-label="DSR tanks">
     <div class="dsr-report-slide-card">
      <div class="dsr-slide-title"><div><h3>Tank</h3><p>Tank movement and stock reconciliation.</p></div><span>2 of 5</span></div>
-     <section class="purchase-section daily-section"><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">TANK</span><h2>Tank performance</h2><p class="muted">Opening stock, purchases, sales and expected closing stock reconciled for each tank.</p></div></div><div id="report-tanks" class="dsr-tank-list"></div></section>
+     <section class="purchase-section daily-section"><div id="report-tanks" class="dsr-tank-list"></div></section>
     </div>
    </article>
    <article class="dsr-report-slide" aria-label="DSR shifts">
     <div class="dsr-report-slide-card">
      <div class="dsr-slide-title"><div><h3>Shift</h3><p>Individual shift readings and performance.</p></div><span>3 of 5</span></div>
-     <section class="purchase-section daily-section"><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">SHIFT</span><h2>Individual shifts</h2><p class="muted">Shift-by-shift readings, attendants, sales and tank movements.</p></div></div><div id="report-shifts" class="dsr-shift-list"></div></section>
+     <section class="purchase-section daily-section"><div id="report-shifts" class="dsr-shift-list"></div></section>
     </div>
    </article>
    <article class="dsr-report-slide" aria-label="DSR sales summary">
     <div class="dsr-report-slide-card">
      <div class="dsr-slide-title"><div><h3>Sales Summary</h3><p>Complete sales totals for the DSR.</p></div><span>4 of 5</span></div>
-     <section class="purchase-section daily-section"><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">SALES SUMMARY</span><h2>All sales</h2><p class="muted">Product and payment-method totals for the complete DSR.</p></div></div><div id="report-sales-summary" class="dsr-sales-summary"></div></section>
+     <section class="purchase-section daily-section"><div id="report-sales-summary" class="dsr-sales-summary"></div></section>
     </div>
    </article>
    <article class="dsr-report-slide" aria-label="DSR final summary and performance">
     <div class="dsr-report-slide-card">
      <div class="dsr-slide-title"><div><h3>Summary &amp; Final Performance</h3><p>Final DSR totals and reconciliation result.</p></div><span>5 of 5</span></div>
      <section id="report-summary" class="daily-summary-grid"></section>
-     <section class="purchase-section daily-section daily-station-section"><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">FINAL DSR PERFORMANCE</span><h2>Final DSR performance</h2><p class="muted">Final station totals and reconciliation indicators.</p></div></div><div id="report-performance" class="dsr-performance-grid"></div></section>
+     <section class="purchase-section daily-section daily-station-section"><div id="report-performance" class="dsr-performance-grid"></div></section>
     </div>
    </article>
   </div>
