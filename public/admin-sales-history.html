@@ -1,93 +1,10 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sales History</title><link rel="stylesheet" href="assets/style.css"><style>
-/* Full Sales History — contained scrolling at each history level */
-.admin-sales-page .admin-full-history-month-group{
-  margin:0 0 16px;
-  border:1px solid #4b83bd;
-  border-radius:12px;
-  background:#fff;
-  overflow:hidden;
-  box-shadow:0 2px 8px rgba(23,32,42,.04);
-}
-.admin-sales-page .admin-full-history-month-body{
-  max-height:430px;
-  overflow-y:auto;
-  overflow-x:hidden;
-  overscroll-behavior:contain;
-  scrollbar-width:thin;
-  padding:12px;
-  display:grid;
-  gap:12px;
-  align-content:start;
-}
-.admin-sales-page .admin-full-history-month-body[hidden]{display:none}
-.admin-sales-page .admin-full-history-month-body::-webkit-scrollbar,
-.admin-sales-page .admin-full-history-dsr-cards::-webkit-scrollbar{width:7px}
-.admin-sales-page .admin-full-history-month-body::-webkit-scrollbar-track,
-.admin-sales-page .admin-full-history-dsr-cards::-webkit-scrollbar-track{background:#f1f4f7;border-radius:10px}
-.admin-sales-page .admin-full-history-month-body::-webkit-scrollbar-thumb,
-.admin-sales-page .admin-full-history-dsr-cards::-webkit-scrollbar-thumb{background:#b9c6d2;border-radius:10px}
-.admin-sales-page .admin-full-history-dsr-group{
-  margin:0;
-  border:1px solid #d8e1e9;
-  border-radius:11px;
-  background:#fff;
-  overflow:hidden;
-}
-.admin-sales-page .admin-full-history-dsr-cards{
-  max-height:330px;
-  overflow-y:auto;
-  overflow-x:hidden;
-  overscroll-behavior:contain;
-  scrollbar-width:thin;
-  padding:9px;
-  display:grid;
-  gap:9px;
-  align-content:start;
-  border-top:1px solid #edf1f5;
-}
-.admin-sales-page .admin-full-history-dsr-cards[hidden]{display:none}
-.admin-sales-page .admin-full-history-dsr-cards .admin-history-sale-minimized{
-  margin:0;
-}
-.admin-sales-page .admin-history-sale-body{
-  max-height:260px;
-  overflow-y:auto;
-  overflow-x:hidden;
-  overscroll-behavior:contain;
-  scrollbar-width:thin;
-}
-.admin-sales-page .admin-history-sale-body::-webkit-scrollbar{width:6px}
-.admin-sales-page .admin-history-sale-body::-webkit-scrollbar-track{background:#f1f4f7;border-radius:10px}
-.admin-sales-page .admin-history-sale-body::-webkit-scrollbar-thumb{background:#c1ccd6;border-radius:10px}
-@media(max-width:620px){
-  .admin-sales-page .admin-full-history-month-body{max-height:410px;padding:10px}
-  .admin-sales-page .admin-full-history-dsr-cards{max-height:300px;padding:8px}
-  .admin-sales-page .admin-history-sale-body{max-height:240px}
-}
-@media(max-width:460px){
-  .admin-sales-page .admin-full-history-month-body{max-height:390px;padding:9px;gap:10px}
-  .admin-sales-page .admin-full-history-dsr-cards{max-height:270px;padding:7px;gap:8px}
-}
-</style><style>
-.admin-sales-history-page .history-page-header{padding-bottom:20px}
-.admin-sales-history-page .history-page-section{margin-top:0}
-.admin-sales-history-page .sales-history-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
-.admin-sales-history-page .history-section-heading{margin-bottom:0}
-.admin-sales-history-page .history-page-tools{margin-top:0}
-.admin-sales-history-page .history-page-filters{display:contents}
-.admin-sales-history-page .history-page-tools input,.admin-sales-history-page .history-page-tools select,.admin-sales-history-page .history-page-tools button{box-sizing:border-box;width:100%;height:42px;min-height:42px;border:1px solid #d5dde5;border-radius:10px;background:#fff;color:#344054;font-size:12px;font-weight:600}
-.admin-sales-history-page .history-page-tools input{padding:0 12px}
-.admin-sales-history-page .history-page-tools select{padding:0 11px}
-.admin-sales-history-page .history-page-tools button{display:flex;align-items:center;justify-content:center;gap:5px;padding:0 14px;background:#edf2f6;cursor:pointer}
-.admin-sales-history-page .history-page-tools button:hover{background:#e4ebf1}
-@media(max-width:700px){.admin-sales-history-page .history-page-tools{grid-template-columns:minmax(0,1fr) 135px}.admin-sales-history-page .history-page-tools button{grid-column:1/-1}}
-@media(max-width:460px){.admin-sales-history-page .history-page-tools{grid-template-columns:1fr 1fr;gap:7px;padding:8px}.admin-sales-history-page .history-page-tools input{grid-column:1/-1}}
-</style></head>
-<body class="admin-sales-page admin-shell" data-app-page="adminSalesHistory">
+<title>Sales History</title><link rel="stylesheet" href="assets/style.css"></head>
+<body class="admin-shell admin-sales-page admin-sales-history-page" data-app-page="adminSalesHistory">
+<button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
 <aside class="admin-sidebar" aria-label="Admin navigation">
-  <div class="admin-sidebar-brand"><strong>FUEL SHIFT</strong><small>Admin Control</small></div>
+  <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
   <nav class="admin-sidebar-nav">
     <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
     <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
@@ -97,45 +14,27 @@
   </nav>
   <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
 </aside>
-
 <main class="wrap">
-<header class="purchase-header history-page-header">
-  <div><span class="eyebrow">STATION CONTROL</span><h1>Sales History</h1><p class="muted">Complete confirmed shift sales records.</p></div>
-  <a class="purchase-back" href="admin-sales.html">← Sales</a>
-</header>
-<section class="purchase-section admin-sales-section sales-page-sections history-page-section">
-  <div class="purchase-section-head sales-history-section-head"><div><span class="section-kicker">SALES</span><h2>Sales History</h2><p class="muted">Complete confirmed sales history.</p></div><span class="admin-sales-section-count" id="full-sales-history-count-head">0 confirmed</span></div><div class="admin-sales-separated-section sales-history-section">
-    <div class="admin-sales-section-heading history-section-heading">
-      <div><span class="section-kicker">RECORDS</span><h2>All Sales History</h2><p class="muted">Search, filter, and open any confirmed shift record.</p></div>
+<header class="purchase-header"><div><span class="eyebrow">STATION CONTROL</span><h1>Sales History</h1><p class="muted">Previously confirmed shift sales.</p></div><a class="purchase-back" href="admin-sales.html">← Sales</a></header>
+<section class="admin-sales-section sales-page-sections">
+  <div class="purchase-section admin-sales-separated-section sales-history-section">
+    <div class="admin-sales-section-heading">
+      <div><span class="section-kicker">RECORDS</span><h2>Sales History</h2><p class="muted">Previously confirmed shift sales.</p></div>
       <span class="admin-sales-section-count" id="full-sales-history-count">0 confirmed</span>
-    </div>
-    <div class="purchase-history-tools history-page-tools">
-      <div class="admin-sales-filters history-page-filters">
-        <input id="full-sales-history-search" type="search" placeholder="Search dispenser, attendant, shift…" oninput="filterAdminSalesHistoryPage()">
-        <select id="full-sales-history-period" onchange="filterAdminSalesHistoryPage()" aria-label="Sales period">
-          <option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option>
-        </select>
-        <button type="button" class="purchase-history-refresh" onclick="refreshAdminSalesHistory()">↻ <span>Refresh</span></button>
-      </div>
     </div>
     <div id="full-sales-history-status" class="page-status"></div>
     <div id="full-sales-history-list" class="admin-sales-list"></div>
   </div>
 </section>
-
 <div id="admin-sale-history-details" class="modal purchase-modal" aria-hidden="true">
   <div class="modal-backdrop" onclick="closeAdminSaleHistoryDetails()"></div>
   <div class="modal-card admin-sale-review-card takeover-details-modal">
-    <div class="top">
-      <div><span class="section-kicker">SHIFT HISTORY</span><h3>Shift Details</h3><p class="muted">View the complete confirmed sales record.</p></div>
-      <div class="admin-sale-history-detail-actions">
-        <button type="button" class="secondary admin-sale-history-download" id="admin-sale-history-download" onclick="downloadAdminSaleHistoryDetails(this.dataset.takeoverId)" title="Download PDF">⇩ PDF</button>
-        <button type="button" class="modal-close" onclick="closeAdminSaleHistoryDetails()">×</button>
-      </div>
+    <div class="top"><div><span class="section-kicker">SHIFT HISTORY</span><h3>Shift Details</h3><p class="muted">View the complete confirmed sales record.</p></div>
+      <div class="admin-sale-history-detail-actions"><button type="button" class="secondary admin-sale-history-download" id="admin-sale-history-download" onclick="downloadAdminSaleHistoryDetails(this.dataset.takeoverId)" title="Download PDF">⇩ PDF</button><button type="button" class="modal-close" onclick="closeAdminSaleHistoryDetails()">×</button></div>
     </div>
     <div id="admin-sale-history-details-content"></div>
   </div>
 </div>
 </main>
-<script src="assets/app.js?v=20261006-06"></script><script src="assets/app-boot.js?v=20261005-02"></script>
+<script src="assets/app.js?v=20261006-07"></script><script src="assets/app-boot.js?v=20261005-02"></script>
 </body></html>
