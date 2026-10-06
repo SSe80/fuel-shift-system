@@ -2449,8 +2449,8 @@ function toggleDailyHistoryCard(event,button){
   if(!card)return;
   const expanded=card.classList.toggle('expanded');
   const body=card.querySelector('.daily-dsr-history-body');
-  const toggle=card.querySelector('.purchase-history-recorded-toggle');
-  const head=card.querySelector('.purchase-history-recorded-head');
+  const toggle=card.querySelector('.daily-dsr-history-toggle');
+  const head=card.querySelector('.daily-dsr-history-head');
   if(body)body.hidden=!expanded;
   if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
   if(toggle)toggle.textContent=expanded?'⌃':'⌄';
