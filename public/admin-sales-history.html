@@ -71,7 +71,19 @@
   .admin-sales-page .admin-full-history-dsr-cards{max-height:270px;padding:7px;gap:8px}
 }
 </style></head>
-<body class="admin-sales-page" data-app-page="adminSalesHistory">
+<body class="admin-sales-page admin-shell" data-app-page="adminSalesHistory">
+<aside class="admin-sidebar" aria-label="Admin navigation">
+  <div class="admin-sidebar-brand"><strong>FUEL SHIFT</strong><small>Admin Control</small></div>
+  <nav class="admin-sidebar-nav">
+    <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
+    <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
+    <a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a>
+    <a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>DSR</b></a>
+    <a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a>
+  </nav>
+  <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
+</aside>
+
 <main class="wrap">
 <header class="purchase-header">
   <div><span class="eyebrow">STATION CONTROL</span><h1>Sales History</h1><p class="muted">Complete confirmed shift sales records.</p></div>
