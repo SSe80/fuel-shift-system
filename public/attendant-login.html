@@ -1,1 +1,185 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Attendant Login</title><link rel="stylesheet" href="assets/style.css"></head><body><main class="card center"><div class="logo">⛽</div><h2>Attendant Login</h2><form id="login-form" class="form" data-role="attendant"><input id="operator-id" placeholder="Operator ID (last 6 digits)" inputmode="numeric" autocomplete="username" required><input id="pin" placeholder="PIN" type="password" inputmode="numeric" autocomplete="current-password" required><button class="primary" type="submit">Login</button></form><p class="hint">Use your Operator ID and PIN provided by the administrator.</p><a href="index.html">Back</a><div id="toast" class="toast"></div></main><script src="assets/login.js?v=20261007-03"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Attendant Login</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    :root {
+      --accent: #ef4444;
+      --accent-dark: #c92f38;
+      --bg: #18090b;
+      --card: #251013;
+      --input: #190b0e;
+      --border: #4a2026;
+      --text: #fff7f7;
+      --muted: #c6a4a8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(239,68,68,.18), transparent 38%),
+        linear-gradient(145deg, #100607 0%, var(--bg) 55%, #210b0f 100%);
+      color: var(--text);
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    .login-page {
+      min-height: 100vh;
+      width: min(100% - 32px, 460px);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-card {
+      width: 100%;
+      padding: 42px 36px 34px;
+      background: rgba(37,16,19,.96);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: 0 24px 65px rgba(0,0,0,.46);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin-bottom: 34px;
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: rgba(239,68,68,.12);
+      border: 1px solid rgba(239,68,68,.35);
+      color: var(--accent);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .brand-name {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: #e2bec2;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.15;
+      letter-spacing: -.6px;
+    }
+
+    .subtitle {
+      margin: 0 0 28px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .form {
+      display: grid;
+      gap: 14px;
+    }
+
+    input {
+      width: 100%;
+      height: 54px;
+      padding: 0 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      outline: none;
+      background: var(--input);
+      color: var(--text);
+      font: inherit;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    input::placeholder { color: #8e686d; }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(239,68,68,.14);
+    }
+
+    button {
+      width: 100%;
+      height: 54px;
+      margin-top: 4px;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: white;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(239,68,68,.23);
+      transition: transform .15s, filter .15s;
+    }
+
+    button:hover { filter: brightness(1.08); }
+    button:active { transform: translateY(1px); }
+
+    .hint {
+      margin: 22px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .back {
+      display: block;
+      margin-top: 22px;
+      color: #e99ca3;
+      font-size: 13px;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .back:hover { color: white; }
+
+    .toast { margin-top: 12px; }
+
+    @media (max-width: 520px) {
+      .login-card { padding: 34px 24px 28px; border-radius: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="login-page">
+    <section class="login-card">
+      <div class="brand">
+        <div class="brand-mark">F</div>
+        <div class="brand-name">Fuel Shift System</div>
+      </div>
+
+      <h1>Attendant sign in</h1>
+      <p class="subtitle">Sign in to manage your shift, sales and station operations.</p>
+
+      <form id="login-form" class="form" data-role="attendant">
+        <input id="operator-id" placeholder="Operator ID (last 6 digits)" inputmode="numeric" autocomplete="username" required>
+        <input id="pin" placeholder="PIN" type="password" inputmode="numeric" autocomplete="current-password" required>
+        <button type="submit">Sign in</button>
+      </form>
+
+      <p class="hint">Use your Operator ID and PIN provided by the administrator.</p>
+      <a class="back" href="index.html">← Back to project</a>
+      <div id="toast" class="toast"></div>
+    </section>
+  </main>
+
+  <script src="assets/login.js?v=20261007-03"></script>
+</body>
+</html>
