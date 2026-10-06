@@ -176,52 +176,6 @@ body.daily-preview-open{overflow:hidden}
     <div id="daily-report-date-cards" class="daily-report-date-cards"></div><div class="daily-dsr-show-more-wrap"><a class="daily-dsr-show-more" href="admin-dsr-history.html">Show more <span aria-hidden="true">→</span></a></div>
   </section>
 
-  <div id="daily-report-details" class="daily-report-details" hidden>
-    <div class="daily-detail-head"><div><span class="section-kicker daily-kicker">DSR DETAIL PAGE</span><h2 id="daily-detail-title">Daily Sales Report · Detail</h2><p id="daily-detail-subtitle" class="muted">Confirmed station-wide reconciliation</p></div><div class="daily-detail-actions"><button type="button" class="daily-detail-download" onclick="downloadDailyReportPdf()">Download PDF</button><button type="button" class="daily-dsr-revision-btn" onclick="loadDailyReportRevisions()">Revision History</button><button type="button" class="daily-dsr-regenerate-btn" onclick="regenerateDailyReport()">Regenerate / Correct</button><button type="button" class="daily-detail-close" onclick="document.getElementById('daily-report-details').hidden=true;window.scrollTo({top:0,behavior:'smooth'})" aria-label="Close full DSR detail">Close</button></div></div>
-    <div id="report-status" class="muted daily-status"></div>
-    <section id="report-summary" class="daily-summary-grid"></section>
-    <section id="daily-report-revisions" class="purchase-section daily-section daily-revision-section" hidden><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">DSR VERSION HISTORY</span><h2>Revision history</h2><p class="muted">Previous saved versions are archived before a DSR is regenerated.</p></div></div><div id="daily-report-revisions-list"></div></section>
-
-    <section class="purchase-section daily-section">
-      <div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">DISPENSER PERFORMANCE</span><h2>Dispenser performance</h2><p class="muted">Nozzle readings, liters sold and meter reconciliation across every shift.</p></div></div>
-      <div id="report-dispensers" class="dsr-dispenser-list"></div>
-    </section>
-
-    <section class="purchase-section daily-section">
-      <div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">TANK RECONCILIATION</span><h2>Tank performance</h2><p class="muted">Opening, purchases, sales and expected closing stock reconciled for each tank.</p></div></div>
-      <div id="report-tanks" class="dsr-tank-list"></div>
-    </section>
-
-    <section class="purchase-section daily-section">
-      <div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">SALES SUMMARY</span><h2>All sales</h2><p class="muted">Product and payment-method totals for the complete DSR.</p></div></div>
-      <div id="report-sales-summary" class="dsr-sales-summary"></div>
-    </section>
-
-    <section class="purchase-section daily-section">
-      <div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">INDIVIDUAL SHIFTS</span><h2>Individual shifts</h2><p class="muted">Shift-by-shift readings, attendants, sales and tank movements.</p></div></div>
-      <div id="report-shifts" class="dsr-shift-list"></div>
-    </section>
-
-    <section class="purchase-section daily-section daily-station-section">
-      <div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">FINAL DAILY PERFORMANCE</span><h2>Final DSR performance</h2><p class="muted">Final station totals and reconciliation indicators.</p></div></div>
-      <div id="report-performance" class="dsr-performance-grid"></div>
-    </section>
-  </div>
-
-  <div id="daily-dsr-preview-modal" class="daily-dsr-preview-modal" aria-hidden="true">
-    <div class="daily-dsr-preview-backdrop" onclick="closeDailyDsrPreview()"></div>
-    <div class="daily-dsr-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="daily-preview-title">
-      <div class="daily-dsr-preview-toolbar">
-        <div><span class="section-kicker daily-kicker">REPORT PREVIEW</span><h2 id="daily-preview-title">DSR Report Paper</h2></div>
-        <div class="daily-dsr-preview-toolbar-actions">
-          <button type="button" onclick="downloadDailyReportPdf()">Download PDF</button>
-          <button type="button" class="daily-dsr-preview-close" onclick="closeDailyDsrPreview()" aria-label="Close preview">×</button>
-        </div>
-      </div>
-      <div id="daily-dsr-preview-paper" class="daily-dsr-preview-paper"></div>
-    </div>
-  </div>
-
   <div id="toast" class="toast"></div>
 </main>
 <script src="assets/app.js?v=20261006-05"></script></body></html>
