@@ -16,6 +16,15 @@
 .admin-sales-history-page .admin-full-history-dsr-group{border:1px solid #d8e1e9;border-radius:11px;background:#fff;overflow:hidden}
 .admin-sales-history-page .admin-full-history-dsr-cards{max-height:330px;overflow-y:auto;padding:9px;display:grid;gap:9px;border-top:1px solid #edf1f5}
 .admin-sales-history-page .admin-full-history-dsr-cards .admin-history-sale-minimized{margin:0}
+
+.admin-sales-history-page .purchase-history-tools{display:grid!important;grid-template-columns:minmax(0,1fr) 150px auto!important;align-items:center!important;gap:9px!important;margin:0 0 14px!important;padding:9px!important;border:1px solid #e1e7ed!important;border-radius:14px!important;background:#f8fafc!important;box-sizing:border-box!important}
+.admin-sales-history-page .purchase-history-search-wrap{position:relative;min-width:0}
+.admin-sales-history-page .purchase-history-search-wrap>span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#7b8794;font-size:18px;line-height:1;pointer-events:none}
+.admin-sales-history-page .purchase-history-tools input,.admin-sales-history-page .purchase-history-tools select,.admin-sales-history-page .purchase-history-tools button{box-sizing:border-box!important;width:100%!important;height:42px!important;min-height:42px!important;margin:0!important;border:1px solid #d5dde5!important;border-radius:10px!important;background:#fff!important;color:#344054!important;font:inherit!important;font-size:12px!important;font-weight:600!important}
+.admin-sales-history-page .purchase-history-tools input{padding:0 12px 0 36px!important;outline:none!important}.admin-sales-history-page .purchase-history-tools input:focus{border-color:#4b83bd!important;box-shadow:0 0 0 3px rgba(75,131,189,.12)!important}
+.admin-sales-history-page .purchase-history-tools select{padding:0 30px 0 11px!important;cursor:pointer!important}.admin-sales-history-page .purchase-history-tools button{padding:0 14px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;background:#edf2f6!important;cursor:pointer!important}.admin-sales-history-page .purchase-history-tools button:hover{background:#e4ebf1!important}
+@media(max-width:700px){.admin-sales-history-page .purchase-history-tools{grid-template-columns:minmax(0,1fr) 135px!important}}
+@media(max-width:480px){.admin-sales-history-page .purchase-history-tools{grid-template-columns:1fr 1fr!important;gap:7px!important;padding:8px!important}.admin-sales-history-page .purchase-history-tools .purchase-history-search-wrap{grid-column:1/-1}.admin-sales-history-page .purchase-history-tools input,.admin-sales-history-page .purchase-history-tools select,.admin-sales-history-page .purchase-history-tools button{height:40px!important;min-height:40px!important}}
 </style></head>
 <body class="admin-shell admin-sales-page admin-sales-history-page" data-app-page="adminSalesHistory">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
@@ -38,7 +47,7 @@
       <div><span class="section-kicker">RECORDS</span><h2>Sales History</h2><p class="muted">Previously confirmed shift sales.</p></div>
       <span class="admin-sales-section-count" id="full-sales-history-count">0 confirmed</span>
     </div>
-    <div id="full-sales-history-status" class="page-status"></div>
+    <div class="purchase-history-tools sales-history-tools"><div class="purchase-history-search-wrap"><span aria-hidden="true">⌕</span><input id="full-sales-history-search" type="search" placeholder="Search dispenser, attendant or DSR…" oninput="filterAdminSalesHistoryPage()"></div><select id="full-sales-history-period" onchange="filterAdminSalesHistoryPage()" aria-label="Sales history date filter"><option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select><button type="button" class="purchase-history-refresh" onclick="refreshAdminSalesHistory()">↻ <span>Refresh</span></button></div>\n<div id="full-sales-history-status" class="page-status"></div>
     <div id="full-sales-history-list" class="admin-sales-list"></div>
   </div>
 </section>
