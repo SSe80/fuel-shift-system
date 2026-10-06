@@ -2955,6 +2955,7 @@ def daily_report():
     # even if the underlying shift query order changes.
     for stat in nozzle_stats.values():
         nid=str(stat.get("nozzle_id") or "")
+        ordered_shifts=[]
         ordered_shifts=sorted(
             nozzle_shift_rows.get(nid,[]),
             key=lambda z:str(z.get("start_time") or "")
@@ -2997,7 +2998,6 @@ def daily_report():
         # A configured nozzle can occasionally have no matching shift rows.
         # Keep it as a boundary-only record instead of raising an exception
         # and turning the whole DSR into HTTP 500.
-        ordered_shifts=ordered_shifts if ordered_shifts else []
         meter_segments=[]
         for z in ordered_shifts:
             sid=str(z.get("id") or "")
