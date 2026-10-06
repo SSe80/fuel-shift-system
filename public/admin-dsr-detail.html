@@ -341,6 +341,22 @@ body.dsr-detail-page .dsr-attendants{
   body.dsr-detail-page .dsr-reading-grid>div{padding:8px!important}
   body.dsr-detail-page .dsr-nozzle-performance>div{padding:7px 8px!important}
 }
+</style><style>
+/* Refine nozzle readings above performance */
+body.dsr-detail-page .dsr-reading-grid>div{
+  padding:14px 12px!important;
+}
+body.dsr-detail-page .dsr-reading-grid b{
+  font-size:15px!important;
+}
+body.dsr-detail-page .dsr-nozzle-performance{
+  margin-top:0!important;
+  border-top:0!important;
+}
+@media(max-width:650px){
+  body.dsr-detail-page .dsr-reading-grid>div{padding:11px 9px!important}
+  body.dsr-detail-page .dsr-reading-grid b{font-size:14px!important}
+}
 </style></head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
