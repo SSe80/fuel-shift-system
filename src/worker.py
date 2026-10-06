@@ -3548,7 +3548,20 @@ def daily_report_revisions():
     if status!=200:return jsonify({"error":rows}),status
     return jsonify(rows or [])
 
+def _daily_report_error_boundary(fn):
+    def wrapped(*args,**kwargs):
+        try:
+            return fn(*args,**kwargs)
+        except Exception as exc:
+            return jsonify({
+                "error":"Daily report generation failed",
+                "type":type(exc).__name__,
+                "message":str(exc)
+            }),500
+    return wrapped
+
 @app.post("/api/reports/daily")
+@_daily_report_error_boundary
 def generate_report():
     auth=require_admin()
     if auth:return auth
