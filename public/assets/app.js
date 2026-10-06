@@ -2451,79 +2451,36 @@ document.addEventListener('keydown',event=>{
 function openDailyHistoryReport(date){
   if(!date)return;
   const input=document.getElementById('report-date');
-  const modal=document.getElementById('daily-dsr-preview-modal');
-  const paper=document.getElementById('daily-dsr-preview-paper');
   const details=document.getElementById('daily-report-details');
+  const status=document.getElementById('report-status');
   if(input)input.value=date;
-  if(!modal||!paper||!details){
-    toast('Could not open DSR: report viewer is unavailable');
+  if(!details){
+    toast('Could not open DSR: detail card is unavailable');
     return;
   }
 
-  // Open the viewer synchronously and return control to the browser.
-  // Heavy report generation must never run in the click event itself.
-  paper.innerHTML='<div class="daily-preview-loading"><strong>Loading DSR…</strong><span>'+h(dailyReportIdLabel(date))+'</span></div>';
-  modal.classList.add('open');
-  modal.setAttribute('aria-hidden','false');
-  document.body.classList.add('daily-preview-open');
+  // Use the real DSR detail card as the single viewer. This avoids the old
+  // modal/clone path, which could fail before the detail card became visible.
+  details.hidden=false;
+  document.body.classList.add('daily-detail-open');
+  if(status)status.textContent='Loading report…';
+  details.scrollIntoView({behavior:'smooth',block:'start'});
 
-  const begin=()=>{
-    if(!modal.classList.contains('open'))return;
-    loadDailyReport().then(()=>{
-      if(!modal.classList.contains('open'))return;
-      const r=window.currentDailyReportData||{};
-      const sourceSummary=document.getElementById('report-summary');
-      const sourceSections=details.querySelectorAll(':scope > section');
-      const perf=r.dsr_performance||{};
-      const pctRows=[
-        ['Dispenser contribution',(perf.dispenser_contribution||[]).map(x=>'<div><span>'+h(x.dispenser||'Dispenser')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>').join('')],
-        ['Sales method performance',(perf.sales_method_performance||[]).map(x=>'<div><span>'+h(x.type||'Sale method')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>').join('')],
-        ['Tank reconciliation',(perf.tank_reconciliation||[]).map(x=>'<div><span>'+h(x.tank||'Tank')+'</span><b>'+Number(x.reconciliation_pct||0).toFixed(1)+'%</b></div>').join('')],
-        ['Nozzle reconciliation','<div><span>Average nozzle reconciliation</span><b>'+Number(perf.average_nozzle_reconciliation_pct||0).toFixed(1)+'%</b></div>']
-      ].map(x=>'<div class="daily-preview-live-pct"><h4>'+h(x[0])+'</h4>'+(x[1]||'<p>No percentage data recorded.</p>')+'</div>').join('');
-
-      paper.innerHTML=
-        '<div class="daily-preview-paper-head"><div><span class="daily-preview-paper-kicker">STATION DAILY RECONCILIATION</span><h2>Daily Sales Report</h2><p>'+h(dailyReportIdLabel(date))+'</p></div><span class="daily-preview-paper-badge daily-preview-confirmed-badge">CONFIRMED DSR</span></div>'+
-        '<div class="daily-preview-paper-meta"><span>Report date <b>'+h(dailyReportIdLabel(date))+'</b></span><span>Status <b>Confirmed · full report</b></span></div>'+
-        '<div class="daily-preview-paper-status">Authoritative DSR data · this report is read-only and does not change the saved DSR.</div>'+
-        '<section class="daily-preview-paper-section"><div class="daily-preview-live-performance"><div class="daily-preview-live-pct-grid">'+pctRows+'</div></div></section>';
-
-      if(sourceSummary){
-        const summarySection=document.createElement('section');
-        summarySection.className='daily-preview-paper-section';
-        summarySection.appendChild(sourceSummary.cloneNode(true));
-        paper.appendChild(summarySection);
-      }
-      sourceSections.forEach(section=>{
-        const wrapper=document.createElement('section');
-        wrapper.className='daily-preview-paper-section';
-        wrapper.appendChild(section.cloneNode(true));
-        paper.appendChild(wrapper);
-      });
-      const foot=document.createElement('div');
-      foot.className='daily-preview-paper-foot';
-      foot.innerHTML='<span>Confirmed DSR · read only</span><span>'+h(dailyReportIdLabel(date))+'</span>';
-      paper.appendChild(foot);
-      details.hidden=true;
-    }).catch(e=>{
-      closeDailyDsrPreview();
-      toast('Could not open DSR: '+String(e.message||'Request failed'));
-    });
-  };
-
-  // One frame is reserved exclusively for displaying the viewer/loading state.
-  if(typeof requestAnimationFrame==='function'){
-    requestAnimationFrame(()=>requestAnimationFrame(begin));
-  }else{
-    setTimeout(begin,32);
-  }
+  Promise.resolve().then(()=>loadDailyReport(true)).then(()=>{
+    details.hidden=false;
+    document.body.classList.add('daily-detail-open');
+    details.scrollIntoView({behavior:'smooth',block:'start'});
+  }).catch(e=>{
+    details.hidden=false;
+    document.body.classList.add('daily-detail-open');
+    if(status)status.textContent='Could not load this DSR: '+String(e.message||'Request failed');
+    console.error('DSR detail load failed',e);
+    details.scrollIntoView({behavior:'smooth',block:'start'});
+  });
 }
+
 function selectDailyReportDate(date){
-  const input=document.getElementById('report-date');
-  if(input)input.value=date;
-  // DSR History always opens the full report in the dedicated modal.
-  // Do not reveal/extend the inline detail page.
-  previewDailyReport(date);
+  openDailyHistoryReport(date);
 }
 
 function downloadDailyReportPdf(){
@@ -2787,11 +2744,11 @@ function downloadDailyReportPdf(){
   toast('DSR PDF downloaded');
 }
 
-async function loadDailyReport(){
+async function loadDailyReport(showDetails=false){
   const details=document.getElementById('daily-report-details');
-  // Keep the source detail container hidden while building; the visible report is the modal.
-  // This avoids forcing layout/reflow for the large source DOM during DSR opening.
-  if(details)details.hidden=true;
+  // Normal report refreshes keep the detail card hidden. Full-report navigation
+  // passes showDetails=true so the actual DSR detail card is the visible viewer.
+  if(details && !showDetails)details.hidden=true;
   const status=document.getElementById('report-status');
   try{
     // Do not block DSR opening on the separate settings/currency request.
