@@ -2489,10 +2489,26 @@ async function openDailyHistoryReport(date){
         '<span>Status <b>Confirmed · full report</b></span>'+
       '</div>'+
       '<div class="daily-preview-paper-status">Authoritative DSR data · this report is read-only and does not change the saved DSR.</div>'+
-      '<div class="daily-preview-paper-summary">'+(sourceSummary?.innerHTML||'')+'</div>'+
-      '<section class="daily-preview-paper-section"><div class="daily-preview-live-performance"><div class="daily-preview-live-pct-grid">'+pctRows+'</div></div></section>'+
-      Array.from(sourceSections).map(section=>'<section class="daily-preview-paper-section">'+section.innerHTML+'</section>').join('')+
-      '<div class="daily-preview-paper-foot"><span>Confirmed DSR · read only</span><span>'+h(dailyReportIdLabel(date))+'</span></div>';
+      '<section class="daily-preview-paper-section"><div class="daily-preview-live-performance"><div class="daily-preview-live-pct-grid">'+pctRows+'</div></div></section>';
+
+    // Clone the already-built sections rather than converting them to HTML and
+    // making the browser parse the entire report a second time.
+    if(sourceSummary){
+      const summarySection=document.createElement('section');
+      summarySection.className='daily-preview-paper-section';
+      summarySection.appendChild(sourceSummary.cloneNode(true));
+      paper.appendChild(summarySection);
+    }
+    sourceSections.forEach(section=>{
+      const wrapper=document.createElement('section');
+      wrapper.className='daily-preview-paper-section';
+      wrapper.appendChild(section.cloneNode(true));
+      paper.appendChild(wrapper);
+    });
+    const foot=document.createElement('div');
+    foot.className='daily-preview-paper-foot';
+    foot.innerHTML='<span>Confirmed DSR · read only</span><span>'+h(dailyReportIdLabel(date))+'</span>';
+    paper.appendChild(foot);
 
     details.hidden=true;
     document.body.classList.remove('daily-detail-open');
@@ -2772,7 +2788,9 @@ function downloadDailyReportPdf(){
 
 async function loadDailyReport(){
   const details=document.getElementById('daily-report-details');
-  if(details)details.hidden=false;
+  // Keep the source detail container hidden while building; the visible report is the modal.
+  // This avoids forcing layout/reflow for the large source DOM during DSR opening.
+  if(details)details.hidden=true;
   const status=document.getElementById('report-status');
   try{
     // Do not block DSR opening on the separate settings/currency request.
