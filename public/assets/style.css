@@ -4122,3 +4122,188 @@ body.admin-shell>.wrap>#activity{
   body.admin-shell>.wrap>.card{padding:12px;margin:8px 0}
   body.admin-shell>.wrap>.card h2{font-size:14px}
 }
+
+
+/* Admin Dashboard — refined minimal styling */
+body.admin-shell{
+  min-height:100vh;
+  background:#f7f8fa;
+  color:#17202a;
+}
+body.admin-shell .wrap{
+  max-width:1000px;
+  padding:18px 18px 36px;
+}
+body.admin-shell .settings-header{
+  padding:6px 2px 20px;
+}
+body.admin-shell .settings-header h1{
+  font-size:28px;
+  font-weight:800;
+  letter-spacing:-.035em;
+}
+body.admin-shell .settings-header .muted{
+  max-width:680px;
+  margin-top:6px;
+  font-size:12px;
+  line-height:1.5;
+  color:#7a8490;
+}
+body.admin-shell>.wrap>.statgrid{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+  margin:0 0 14px;
+}
+body.admin-shell>.wrap>.statgrid .stat{
+  min-width:0;
+  padding:13px 14px;
+  border:1px solid #e3e7ec;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(16,24,40,.025);
+}
+body.admin-shell>.wrap>.statgrid .stat b{
+  font-size:21px;
+  line-height:1.15;
+  letter-spacing:-.02em;
+}
+body.admin-shell>.wrap>.statgrid .stat span{
+  margin-top:4px;
+  font-size:10px;
+  color:#667085;
+}
+body.admin-shell>.wrap>.statgrid .stat small{
+  margin-top:4px;
+  font-size:9px;
+  color:#98a2b3;
+  line-height:1.35;
+}
+body.admin-shell>.wrap>.card{
+  margin:10px 0;
+  padding:15px;
+  border:1px solid #e3e7ec;
+  border-radius:13px;
+  background:#fff;
+  box-shadow:0 1px 3px rgba(16,24,40,.025);
+}
+body.admin-shell>.wrap>.card .section-heading{
+  margin:0 0 11px;
+  padding:0 0 10px;
+  border-bottom:1px solid #edf0f3;
+}
+body.admin-shell>.wrap>.card .section-kicker{
+  margin-bottom:3px;
+  color:#8a949e;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.11em;
+}
+body.admin-shell>.wrap>.card h2{
+  font-size:15px;
+  font-weight:800;
+  letter-spacing:-.02em;
+}
+body.admin-shell>.wrap>.card .statgrid{
+  gap:8px;
+  margin:0;
+}
+body.admin-shell>.wrap>.card .statgrid .stat{
+  min-width:0;
+  padding:11px 12px;
+  border:1px solid #edf0f3;
+  border-radius:10px;
+  background:#fafbfc;
+  box-shadow:none;
+}
+body.admin-shell>.wrap>.card .statgrid .stat b{
+  font-size:15px;
+}
+body.admin-shell>.wrap>.card .statgrid .stat span{
+  display:block;
+  margin-top:3px;
+  font-size:10px;
+  color:#667085;
+}
+body.admin-shell>.wrap>.card .statgrid .stat small{
+  display:block;
+  margin-top:4px;
+  font-size:9px;
+  line-height:1.4;
+  color:#8a949e;
+}
+body.admin-shell>.wrap>.card .statgrid .stat .btn{
+  width:auto;
+  margin-top:8px;
+  padding:7px 9px;
+  border-radius:8px;
+  font-size:10px;
+}
+body.admin-shell>.wrap>#tank-movements{
+  display:grid;
+  gap:8px;
+}
+body.admin-shell .tank-movement-group{
+  margin:0;
+  padding:12px;
+  border:1px solid #edf0f3;
+  border-radius:10px;
+  background:#fafbfc;
+}
+body.admin-shell .tank-movement-group-head{
+  padding-bottom:9px;
+  border-bottom:1px solid #edf0f3;
+}
+body.admin-shell .tank-movement-group h4{
+  margin:3px 0 1px;
+  font-size:13px;
+}
+body.admin-shell .tank-movement-group small{
+  font-size:9px;
+}
+body.admin-shell .tank-movement-list{
+  margin-top:2px;
+}
+body.admin-shell .tank-movement-row{
+  min-height:42px;
+  padding:7px 0;
+  border-bottom:1px solid #f0f2f4;
+}
+body.admin-shell .tank-movement-row:last-child{
+  border-bottom:0;
+}
+body.admin-shell .tank-movement-qty,
+body.admin-shell .tank-movement-balance{
+  font-size:10px;
+}
+body.admin-shell #activity{
+  display:grid;
+  gap:6px;
+}
+body.admin-shell #activity>.card{
+  margin:0;
+  padding:9px 11px;
+  border:1px solid #edf0f3;
+  border-radius:9px;
+  background:#fafbfc;
+  box-shadow:none;
+}
+body.admin-shell #activity>.card b{
+  font-size:10px;
+  line-height:1.35;
+}
+body.admin-shell #activity>.card .muted{
+  font-size:9px;
+}
+@media(max-width:800px){
+  body.admin-shell .wrap{padding:12px 12px 28px}
+  body.admin-shell>.wrap>.statgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  body.admin-shell>.wrap>.statgrid .stat{padding:11px 12px}
+  body.admin-shell>.wrap>.statgrid .stat b{font-size:19px}
+  body.admin-shell>.wrap>.card{padding:12px;margin:8px 0}
+  body.admin-shell>.wrap>.card .statgrid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  body.admin-shell .settings-header h1{font-size:24px}
+  body.admin-shell .settings-header .muted{font-size:11px}
+  body.admin-shell>.wrap>.statgrid .stat b{font-size:18px}
+}
