@@ -10,7 +10,7 @@
 .dsr-detail-header p{margin:7px 0 0;color:#718096;font-size:14px}
 .dsr-detail-back{display:none!important;align-items:center;gap:7px;padding:10px 14px;border:1px solid #d8e0e8;border-radius:12px;background:#fff;color:#334155;font-weight:750;box-shadow:0 2px 8px #17202a0a;text-decoration:none;white-space:nowrap}
 .dsr-detail-view{display:block!important;margin:0!important;padding:0!important;border:1px solid #d7e0ea!important;border-radius:20px!important;background:#f2f5f8!important;box-shadow:0 20px 60px rgba(15,23,42,.16)!important;overflow:hidden!important;height:100%;max-height:none}
-.dsr-detail-view .daily-detail-head{position:sticky;top:0;z-index:4;background:#fff;border-bottom:1px solid #e1e8f0}
+.dsr-detail-view .daily-detail-head{position:relative!important;top:auto!important;z-index:1;background:#fff;border-bottom:1px solid #e1e8f0}
 .dsr-detail-view .daily-detail-actions{display:flex;gap:8px;flex-wrap:wrap}
 .dsr-detail-view .daily-detail-actions button{min-height:40px}
 .dsr-report-slider{padding:0;overflow:hidden;position:relative;height:100%;min-height:100vh}
@@ -40,7 +40,7 @@
  .dsr-detail-header h1{font-size:28px}
  .dsr-detail-back{width:100%;justify-content:center}
  .dsr-detail-wrap{height:100vh;padding:8px}
- .dsr-detail-view .daily-detail-head{position:static}
+ .dsr-detail-view .daily-detail-head{position:relative!important;top:auto!important}
  .dsr-detail-view .daily-detail-actions button{flex:1}
 }
 </style>
@@ -54,8 +54,8 @@ body.dsr-embedded .daily-detail-close{display:none!important}
 body.dsr-embedded .dsr-detail-view .daily-detail-head{padding-right:16px!important}
 /* Keep the DSR detail header fixed while only the report body scrolls. */
 body.dsr-detail-page .dsr-detail-view{position:relative!important}
-body.dsr-detail-page .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important;z-index:20!important;margin-top:0!important}
-body.dsr-embedded .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important;z-index:20!important;margin-top:0!important}
+body.dsr-detail-page .dsr-detail-view .daily-detail-head{position:relative!important;top:auto!important;z-index:1!important;margin-top:0!important}
+body.dsr-embedded .dsr-detail-view .daily-detail-head{position:relative!important;top:auto!important;z-index:1!important;margin-top:0!important}
 </style>
 <style>
 /* DSR detail scrolling: keep the iframe/page viewport fixed and scroll the report itself. */
@@ -68,7 +68,7 @@ body.dsr-embedded .dsr-detail-view{height:100vh!important;min-height:0!important
 @media(max-width:650px){
  body.dsr-detail-page .dsr-detail-wrap{height:100vh!important;min-height:0!important;padding:0!important}
  body.dsr-detail-page .dsr-detail-view{height:100%!important;min-height:0!important;overflow:hidden!important}
- body.dsr-embedded .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important;z-index:20!important;margin-top:0!important}
+ body.dsr-embedded .dsr-detail-view .daily-detail-head{position:relative!important;top:auto!important;z-index:1!important;margin-top:0!important}
 }
 </style>
 </head>
