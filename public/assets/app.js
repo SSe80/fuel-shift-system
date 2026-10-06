@@ -285,7 +285,7 @@ async function confirmTakeoverSale(){
   }
 }
 
-function openTakeoverDetails(id){
+async function openTakeoverDetails(id){
   const takeover=(window.takeoverRecords||[]).find(x=>String(x.id)===String(id));
   if(!takeover)return;
   const shifts=window.dashboardShiftRecords||[];
@@ -298,14 +298,42 @@ function openTakeoverDetails(id){
   const tank=tanks.find(t=>String(t.id)===String(takeover.tank_id||nozzle?.tank_id));
   const opening=Array.isArray(takeover.nozzle_opening_readings)?takeover.nozzle_opening_readings:[];
   const closing=Array.isArray(takeover.nozzle_closing_readings)?takeover.nozzle_closing_readings:[];
-  const sales=Array.isArray(takeover.nozzle_sales_liters)?takeover.nozzle_sales_liters:[];
-  const rows=sales.map((s,i)=>{
+  const nozzleSales=Array.isArray(takeover.nozzle_sales_liters)?takeover.nozzle_sales_liters:[];
+  const details=document.getElementById('takeover-details-content');
+  if(details)details.innerHTML='<div class="muted" style="padding:18px;text-align:center">Loading sale record…</div>';
+  const modal=document.getElementById('takeover-details-modal');
+  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+  let recorded=[];
+  let saleMeta={};
+  try{
+    const data=await api('/api/shift-takeovers/'+id+'/sale-record');
+    recorded=Array.isArray(data?.sales)?data.sales:[];
+    saleMeta=data?.takeover||{};
+  }catch(e){
+    if(details)details.innerHTML='<p class="muted">'+h(e.message||'Unable to load sale record.')+'</p>';
+    return;
+  }
+  const rows=nozzleSales.map((s,i)=>{
     const o=opening.find(x=>String(x.nozzle_id)===String(s.nozzle_id))||opening[i]||{};
     const cl=closing.find(x=>String(x.nozzle_id)===String(s.nozzle_id))||closing[i]||{};
     return '<div class="takeover-detail-row"><div><b>Nozzle '+(i+1)+'</b><small>'+h(s.nozzle_id||o.nozzle_id||cl.nozzle_id||'')+'</small></div><span>Opening <b>'+reading(o.opening_reading??o.reading)+'</b></span><span>Closing <b>'+reading(cl.reading??cl.closing_reading)+'</b></span><span>Sold <b>'+liters(s.liters_sold)+' L</b></span><span>Price <b>'+money(s.unit_price)+'</b></span><span>Amount <b>'+money(s.amount)+'</b></span></div>';
   }).join('');
-  const details=document.getElementById('takeover-details-content');
+  const recordedRows=recorded.map(s=>
+    '<div class="takeover-recorded-sale-row"><div><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+(s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'')+(s.reason?'<em>Reason: '+h(s.reason)+'</em>':'')+'</div><strong>'+money(s.amount)+'</strong></div>'
+  ).join('');
+  const submittedAt=saleMeta.sales_submitted_at||takeover.sales_submitted_at;
+  const confirmedAt=saleMeta.sales_confirmed_at||takeover.sales_confirmed_at;
+  const recordedAt=saleMeta.sales_recorded_at||takeover.sales_recorded_at;
   if(details)details.innerHTML=
+    '<div class="takeover-recorded-sale-card">'+
+      '<div class="takeover-recorded-sale-head"><div><span class="section-kicker">RECORDED SALE</span><h4>Sale details</h4></div><span class="takeover-recorded-sale-status">'+h(String(saleMeta.sales_status||takeover.sales_status||'pending_admin').replace('_',' '))+'</span></div>'+
+      '<div class="takeover-recorded-sale-meta"><div><span>Submitted</span><strong>'+h(submittedAt?new Date(submittedAt).toLocaleString():'—')+'</strong></div><div><span>Admin confirmed</span><strong>'+h(confirmedAt?new Date(confirmedAt).toLocaleString():'Pending')+'</strong></div><div><span>Recorded by</span><strong>'+h(employee?.name||takeover.to_employee_id||'—')+'</strong></div></div>'+
+      '<div class="takeover-recorded-sale-list">'+
+        '<div class="takeover-detail-heading">Sales recorded</div>'+
+        (recordedRows||'<p class="muted">No recorded sale entries.</p>')+
+        '<div class="takeover-detail-total"><span>Recorded sales total</span><strong>'+money(recorded.reduce((sum,s)=>sum+Number(s.amount||0),0))+'</strong></div>'+
+      '</div>'+
+    '</div>'+
     '<div class="takeover-detail-summary">'+
       '<div><span>Dispenser</span><strong>'+h(nozzle?.nozzle_code||takeover.dispenser_code||'—')+'</strong></div>'+
       '<div><span>Receiving shift</span><strong>'+h(employee?.name||takeover.to_employee_id||'—')+'</strong></div>'+
@@ -318,8 +346,6 @@ function openTakeoverDetails(id){
     '</div>'+
     '<div class="takeover-detail-sales"><div class="takeover-detail-heading">Nozzle sales</div>'+(rows||'<p class="muted">No nozzle sales calculated.</p>')+'</div>'+
     '<div class="takeover-detail-total"><span>Total sales</span><strong>'+liters(takeover.total_sales_liters)+' L</strong><strong>'+money(takeover.total_sales_amount)+'</strong></div>';
-  const modal=document.getElementById('takeover-details-modal');
-  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
 }
 function closeTakeoverDetails(){
   const modal=document.getElementById('takeover-details-modal');
