@@ -3427,3 +3427,17 @@ window.adminSalesConfirmations=adminSalesConfirmations;
 window.adminSalesHistory=adminSalesHistory;
 window.adminSettings=adminSettings;
 window.userDashboard=userDashboard;
+
+// Unified admin sidebar active-state
+document.addEventListener('DOMContentLoaded',()=>{
+  const links=document.querySelectorAll('.admin-sidebar-nav a[data-admin-nav]');
+  if(!links.length)return;
+  const page=(location.pathname.split('/').pop()||'admin-dashboard.html').toLowerCase();
+  const map={'admin-dashboard.html':'dashboard','admin-purchases.html':'purchases','admin-sales.html':'sales','admin-daily-report.html':'daily-report','admin-settings.html':'settings'};
+  const active=map[page]||'';
+  links.forEach(link=>{
+    const on=link.dataset.adminNav===active;
+    link.classList.toggle('active',on);
+    if(on)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
+  });
+});
