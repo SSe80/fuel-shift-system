@@ -72,7 +72,7 @@ body.dsr-embedded .dsr-detail-view{height:100vh!important;min-height:0!important
 }
 </style>
 </head>
-<body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone" onload="(function(){var params=new URLSearchParams(location.search);var d=params.get('date');var input=document.getElementById('report-date');if(!d){d=new Date().toISOString().slice(0,10);params.set('date',d);history.replaceState(null,'',location.pathname+'?'+params.toString());}input.value=d;var tries=0;function boot(){tries++;if(typeof loadDailyReport==='function'){loadDailyReport(true);return;}if(tries<200)setTimeout(boot,50);}boot();})()">
+<body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
 <aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
@@ -166,4 +166,23 @@ body.dsr-embedded .dsr-detail-view{height:100vh!important;min-height:0!important
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
-<script src="assets/app.js?v=20261006-05"></script></body></html>
+<script src="assets/app.js?v=20261006-06"></script>
+<script>
+(function(){
+  function bootDetail(){
+    var params=new URLSearchParams(location.search);
+    var d=params.get("date")||new Date().toISOString().slice(0,10);
+    var input=document.getElementById("report-date");
+    if(input)input.value=d;
+    if(!params.get("date")){params.set("date",d);history.replaceState(null,"",location.pathname+"?"+params.toString());}
+    var sidebar=document.querySelector(".admin-sidebar");
+    var toggle=document.querySelector(".admin-sidebar-toggle");
+    if(sidebar)sidebar.style.setProperty("display","none","important");
+    if(toggle)toggle.style.setProperty("display","none","important");
+    if(typeof loadDailyReport==="function")loadDailyReport(true);
+    else setTimeout(bootDetail,50);
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bootDetail,{once:true});
+  else bootDetail();
+})();
+</script></body></html>
