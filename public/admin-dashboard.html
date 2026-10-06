@@ -3,9 +3,17 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Dashboard</title><link rel="stylesheet" href="assets/style.css"></head>
 <body class="admin-shell" data-app-page="adminDashboard">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
-<div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
-<nav class="admin-sidebar-nav"><a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a><a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a><a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a><a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>DSR</b></a><a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a></nav>
-<button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside>
+  <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
+  <nav class="admin-sidebar-nav">
+    <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
+    <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
+    <a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a>
+    <a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>DSR</b></a>
+    <a href="admin-dsr-history.html" data-admin-nav="dsr-history"><span>◷</span><b>DSR History</b></a>
+    <a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a>
+  </nav>
+  <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
+</aside>
 <main class="wrap">
 <header class="settings-header"><div><span class="eyebrow">STATION CONTROL</span><h1>Admin Dashboard</h1><p class="muted">Overview of activated products, tanks, shifts, and today's activity.</p></div></header>
 <section class="statgrid"><div class="stat"><b id="sales">0</b><span>Sales today</span><small id="sales-total">—</small></div><div class="stat"><b id="active-shifts">0</b><span>Active shifts</span></div><div class="stat"><b id="tank-count">0</b><span>Activated tanks</span></div><div class="stat"><b id="alerts">0</b><span>Low tank alerts</span></div><div class="stat"><b id="product-count">0</b><span>Activated products</span></div></section>
