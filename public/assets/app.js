@@ -2931,7 +2931,9 @@ async function loadDailyReport(showDetails=false){
         section.className='dsr-product-group';
         const title=document.createElement('div');
         title.className='dsr-product-group-title';
-        title.innerHTML='<span>Product</span><b>'+h(key)+'</b>';
+        const productInfo=productFor(key)||{};
+        const productColor=productInfo.color||'';
+        title.innerHTML='<b class="dsr-product-group-name"><i class="dsr-product-group-dot" style="'+(productColor?'background:'+h(productColor)+';':'')+'"></i>'+h(key)+'</b>';
         section.appendChild(title);
         items.forEach(card=>section.appendChild(card));
         frag.appendChild(section);
