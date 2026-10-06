@@ -93,7 +93,7 @@ async function confirmSettingsAction(){
   }catch(e){toast(e.message);}
 }
 async function api(path, options={}) {
-  const role = localStorage.getItem('fuelRole') || '';
+  const role = sessionStorage.getItem('fuelRole') || '';
   const response = await fetch(path, {
     credentials: 'same-origin',
     ...options,
@@ -125,14 +125,14 @@ async function login(role) {
     const endpoint=role==='admin'?'/api/admin-login':'/api/attendant-login';
     const user=await api(endpoint,{method:'POST',body:JSON.stringify({operator_id,pin})});
     if(user.role!==role) throw new Error('This account is not valid for the selected login');
-    localStorage.setItem('fuelRole',role);
+    sessionStorage.setItem('fuelRole',role);
     location.href=role==='admin'?'admin-dashboard.html':'attendant-dashboard.html';
   } catch(e) { toast(e.message); }
 }
 async function performLogout(){
-  const role=localStorage.getItem('fuelRole')||'';
+  const role=sessionStorage.getItem('fuelRole')||'';
   try{await api('/api/logout',{method:'POST',body:'{}'});}catch(_){}
-  localStorage.removeItem('fuelRole');
+  sessionStorage.removeItem('fuelRole');
   location.href=role==='admin'?'admin-login.html':'attendant-login.html';
 }
 function closeLogoutConfirmation(){
