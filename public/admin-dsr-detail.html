@@ -717,6 +717,132 @@ body.dsr-detail-page .dsr-slide-dot.active{
     height:32px!important;
   }
 }
+</style><style>
+/* Final compact shift, separated total, and modern navigation */
+body.dsr-detail-page .dsr-shift-card{
+  padding:4px 0!important;
+}
+body.dsr-detail-page .dsr-shift-head{
+  padding:6px 0!important;
+}
+body.dsr-detail-page .dsr-shift-grid{
+  margin:0!important;
+  border-left:0!important;
+  border-right:0!important;
+  background:#e1e7ee!important;
+}
+body.dsr-detail-page .dsr-shift-grid>div{
+  padding:9px 10px!important;
+  min-height:48px!important;
+}
+body.dsr-detail-page .dsr-shift-readings{
+  margin-top:6px!important;
+}
+body.dsr-detail-page .dsr-shift-readings>div{
+  padding:8px 0!important;
+}
+
+/* Sales total: amount and liters are separate blocks */
+body.dsr-detail-page .dsr-sales-total{
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr) minmax(0,1fr)!important;
+  gap:18px!important;
+  align-items:center!important;
+  padding:13px 0!important;
+}
+body.dsr-detail-page .dsr-sales-total>span{
+  font-size:11px!important;
+  font-weight:800!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  color:#667085!important;
+}
+body.dsr-detail-page .dsr-sales-total-amount,
+body.dsr-detail-page .dsr-sales-total-liters{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:3px!important;
+  padding-left:14px!important;
+  border-left:1px solid #d9e1ea!important;
+}
+body.dsr-detail-page .dsr-sales-total small{
+  font-size:10px!important;
+  color:#7b8794!important;
+  font-weight:750!important;
+}
+body.dsr-detail-page .dsr-sales-total strong{
+  font-size:17px!important;
+  color:#1769c2!important;
+  white-space:nowrap!important;
+}
+body.dsr-detail-page .dsr-sales-total-liters strong{
+  text-align:right!important;
+}
+
+/* Simple modern section navigation */
+body.dsr-detail-page .dsr-slide-nav{
+  height:48px!important;
+  padding:0 12px!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  gap:12px!important;
+}
+body.dsr-detail-page .dsr-slide-nav button{
+  width:30px!important;
+  height:30px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:#eef3f8!important;
+  color:#2563eb!important;
+  font-size:20px!important;
+  font-weight:700!important;
+  box-shadow:none!important;
+}
+body.dsr-detail-page .dsr-slide-dots{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:6px!important;
+  padding:0!important;
+}
+body.dsr-detail-page .dsr-slide-dot,
+body.dsr-detail-page .dsr-slide-dot.active{
+  width:6px!important;
+  height:6px!important;
+  min-width:6px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:#c5cfda!important;
+}
+body.dsr-detail-page .dsr-slide-dot.active{
+  width:20px!important;
+  min-width:20px!important;
+  border-radius:999px!important;
+  background:#2563eb!important;
+}
+@media(max-width:650px){
+  body.dsr-detail-page .dsr-shift-card{padding:2px 0!important}
+  body.dsr-detail-page .dsr-shift-head{padding:5px 0!important}
+  body.dsr-detail-page .dsr-shift-grid>div{padding:8px!important;min-height:44px!important}
+  body.dsr-detail-page .dsr-sales-total{
+    grid-template-columns:auto minmax(0,1fr) minmax(0,1fr)!important;
+    gap:8px!important;
+    padding:11px 0!important;
+  }
+  body.dsr-detail-page .dsr-sales-total-amount,
+  body.dsr-detail-page .dsr-sales-total-liters{
+    padding-left:9px!important;
+  }
+  body.dsr-detail-page .dsr-sales-total strong{font-size:14px!important}
+  body.dsr-detail-page .dsr-sales-total small{font-size:9px!important}
+  body.dsr-detail-page .dsr-slide-nav{
+    height:44px!important;
+    padding:0 8px!important;
+  }
+}
 </style></head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
