@@ -387,6 +387,7 @@ async function userDashboard(){
 
     const pendingOutgoingHandovers=handovers.filter(x=>x.status==='pending'&&String(x.from_employee_id)===String(me.id));
     const pendingIncomingHandovers=handovers.filter(x=>x.status==='pending'&&String(x.to_employee_id)===String(me.id));
+    window.dashboardPendingIncomingHandovers=pendingIncomingHandovers;
 
     const renderHandoverReadings=(x)=>{
       const rows=Array.isArray(x.closing_nozzle_readings)&&x.closing_nozzle_readings.length
@@ -428,10 +429,7 @@ async function userDashboard(){
           '<div class="pending-tank-opening"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Tank opening</span><strong>'+liters(x.closing_liters)+' <small>L</small></strong></div></div>'+
         '</div>'+
         '<div class="pending-nozzle-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Nozzle opening readings</div>'+nozzleReadings+'</div>'+
-        '<form class="form" onsubmit="confirmHandoverFromDashboard(event,&quot;'+x.id+'&quot;)">'+
-          '<input id="dashboard-handover-pin-'+x.id+'" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required>'+
-          '<div class="row"><button class="primary">Confirm Readings & Start Shift</button><button type="button" onclick="cancelPendingHandover(&quot;'+x.id+'&quot;)">Cancel Shift</button></div>'+
-        '</form>'+
+        '<div class="row pending-handover-actions"><button type="button" class="primary" onclick="openPendingHandoverReview(&quot;'+x.id+'&quot;)">Review & Confirm</button><button type="button" onclick="cancelPendingHandover(&quot;'+x.id+'&quot;)">Cancel Shift</button></div>'+
       '</div>';
     }).join('');
 
@@ -584,15 +582,63 @@ async function cancelPendingShift(id){
     await userDashboard();
   }catch(e){toast(e.message);}
 }
-async function confirmHandoverFromDashboard(event,id){
-  event.preventDefault();
-  const pin=document.getElementById('dashboard-handover-pin-'+id)?.value||'';
+function openPendingHandoverReview(id){
+  const item=(window.dashboardPendingIncomingHandovers||[]).find(x=>String(x.id)===String(id));
+  if(!item)return;
+  const shift=(window.dashboardShiftRecords||[]).find(x=>String(x.id)===String(item.shift_id))||{};
+  const nozzles=Array.isArray(item.closing_nozzle_readings)&&item.closing_nozzle_readings.length
+    ?item.closing_nozzle_readings
+    :[{nozzle_id:shift.nozzle_id||'Nozzle 1',reading:item.closing_reading}];
+  let modal=document.getElementById('pending-handover-review-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='pending-handover-review-modal';
+    modal.className='pending-handover-review-modal';
+    modal.setAttribute('aria-hidden','true');
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML='<div class="pending-handover-review-backdrop" onclick="closePendingHandoverReview()"></div>'+
+    '<div class="pending-handover-review-card" role="dialog" aria-modal="true" aria-labelledby="pending-handover-review-title">'+
+      '<div class="pending-handover-review-head"><div><span class="pending-handover-review-kicker">SHIFT CONFIRMATION</span><h2 id="pending-handover-review-title">Review Shift Confirmation</h2><p>Check the handover details before starting your shift.</p></div><button type="button" class="pending-handover-review-close" onclick="closePendingHandoverReview()" aria-label="Close">×</button></div>'+
+      '<div class="pending-handover-review-body">'+
+        '<div class="pending-handover-review-grid">'+
+          '<div><span>Dispenser</span><strong>'+h(item.source_nozzle_code||shift.nozzle_id||'Not connected')+'</strong></div>'+
+          '<div><span>Tank</span><strong>'+h(item.source_tank_code||'Not connected')+'</strong></div>'+
+        '</div>'+
+        '<div class="pending-handover-review-section"><div class="pending-handover-review-section-title">Opening meter readings</div>'+
+          nozzles.map((r,i)=>'<div class="pending-handover-review-nozzle"><div><b>Nozzle '+(i+1)+'</b><small>'+h(r.nozzle_id||'')+'</small></div><strong>'+String(r.reading??'')+'</strong></div>').join('')+
+        '</div>'+
+        '<div class="pending-handover-review-main"><span>Tank opening</span><strong>'+String(item.closing_liters??'')+' L</strong></div>'+
+        '<label class="pending-handover-review-pin">Your PIN<input id="pending-handover-review-pin-'+h(id)+'" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required></label>'+
+      '</div>'+
+      '<div class="pending-handover-review-actions"><button type="button" class="secondary" onclick="closePendingHandoverReview()">Back</button><button type="button" class="primary" onclick="confirmPendingHandoverReview(&quot;'+h(id)+'&quot;)">Confirm Shift</button></div>'+
+    '</div>';
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+  setTimeout(()=>modal.querySelector('input')?.focus(),60);
+}
+function closePendingHandoverReview(){
+  const modal=document.getElementById('pending-handover-review-modal');
+  if(!modal)return;
+  modal.classList.remove('open');modal.setAttribute('aria-hidden','true');
+}
+async function confirmPendingHandoverReview(id){
+  const pin=document.getElementById('pending-handover-review-pin-'+id)?.value||'';
+  if(!pin){
+    const input=document.getElementById('pending-handover-review-pin-'+id);
+    if(input){input.focus();input.reportValidity?.();}
+    return;
+  }
   try{
     await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({pin})});
-    showAttendantActionResult('success','Handover confirmed','The handover was confirmed and the new shift has started.',()=>userDashboard());
+    closePendingHandoverReview();
+    showAttendantActionResult('success','Shift confirmed','The handover was confirmed and your new shift has started.',()=>userDashboard());
   }catch(e){
-    showAttendantActionResult('failed','Handover confirmation failed',e.message||'The handover could not be confirmed.');
+    showAttendantActionResult('failed','Shift confirmation failed',e.message||'The shift could not be confirmed.');
   }
+}
+async function confirmHandoverFromDashboard(event,id){
+  event.preventDefault();
+  openPendingHandoverReview(id);
 }
 async function cancelPendingHandover(id){
   if(!confirm('Cancel this pending handover?'))return;
