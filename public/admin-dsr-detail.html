@@ -904,6 +904,51 @@ body.dsr-detail-page .dsr-sales-total-liters{
     font-size:17px!important;
   }
 }
+</style><style>
+/* Sales Summary totals: label left, value right */
+body.dsr-detail-page .dsr-sales-total>span{
+  display:none!important;
+}
+body.dsr-detail-page .dsr-sales-total-amount,
+body.dsr-detail-page .dsr-sales-total-liters{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  padding:13px 0!important;
+  border-bottom:1px solid #e1e7ee!important;
+}
+body.dsr-detail-page .dsr-sales-total-amount small,
+body.dsr-detail-page .dsr-sales-total-liters small{
+  font-size:13px!important;
+  font-weight:750!important;
+  color:#667085!important;
+}
+body.dsr-detail-page .dsr-sales-total-amount strong,
+body.dsr-detail-page .dsr-sales-total-liters strong{
+  font-size:18px!important;
+  font-weight:800!important;
+  color:#1264d8!important;
+  white-space:nowrap!important;
+}
+body.dsr-detail-page .dsr-sales-total-liters{
+  border-bottom:0!important;
+}
+@media(max-width:650px){
+  body.dsr-detail-page .dsr-sales-total-amount,
+  body.dsr-detail-page .dsr-sales-total-liters{
+    padding:11px 0!important;
+  }
+  body.dsr-detail-page .dsr-sales-total-amount small,
+  body.dsr-detail-page .dsr-sales-total-liters small{
+    font-size:12px!important;
+  }
+  body.dsr-detail-page .dsr-sales-total-amount strong,
+  body.dsr-detail-page .dsr-sales-total-liters strong{
+    font-size:17px!important;
+  }
+}
 </style></head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
