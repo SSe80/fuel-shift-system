@@ -94,21 +94,102 @@ def verify_pin(pin, stored):
     except Exception:
         return False
 
+ROLE_SESSION_COOKIE = {
+    "admin": "__Host-fuel_admin_session",
+    "attendant": "__Host-fuel_attendant_session"
+}
+ROLE_SESSION_MAX_AGE = 60 * 60 * 24
+
+def _session_secret_bytes():
+    return str(app.secret_key).encode("utf-8")
+
+def _make_role_token(employee_id, role):
+    payload = {
+        "employee_id": str(employee_id),
+        "role": str(role),
+        "exp": int(datetime.now(timezone.utc).timestamp()) + ROLE_SESSION_MAX_AGE,
+        "nonce": secrets.token_urlsafe(12)
+    }
+    raw = base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode()).decode().rstrip("=")
+    sig = hmac.new(_session_secret_bytes(), raw.encode(), hashlib.sha256).hexdigest()
+    return raw + "." + sig
+
+def _read_role_token(token, expected_role):
+    try:
+        raw, sig = str(token or "").rsplit(".", 1)
+        expected = hmac.new(_session_secret_bytes(), raw.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(sig, expected):
+            return None
+        payload = json.loads(base64.urlsafe_b64decode(raw + "==").decode())
+        if payload.get("role") != expected_role:
+            return None
+        if int(payload.get("exp", 0)) < int(datetime.now(timezone.utc).timestamp()):
+            return None
+        if not payload.get("employee_id"):
+            return None
+        return payload
+    except Exception:
+        return None
+
+def _requested_role():
+    role = str(request.headers.get("X-Fuel-Role", "")).strip().lower()
+    return role if role in ROLE_SESSION_COOKIE else None
+
+def _load_role_session():
+    role = _requested_role()
+    if not role:
+        session.clear()
+        session.modified = False
+        return None
+    payload = _read_role_token(request.cookies.get(ROLE_SESSION_COOKIE[role]), role)
+    session.clear()
+    if payload:
+        session["employee_id"] = payload["employee_id"]
+        session["role"] = role
+    session.modified = False
+    return payload
+
+@app.before_request
+def load_role_session():
+    if request.path.startswith("/api/") and request.path not in ("/api/admin-login", "/api/attendant-login", "/api/login"):
+        _load_role_session()
+
+@app.after_request
+def prevent_legacy_session_overlap(response):
+    # Role sessions are independent HttpOnly cookies. Do not persist Flask's
+    # old shared session cookie, which could otherwise make admin/attendant
+    # sessions overwrite each other.
+    session.modified = False
+    response.delete_cookie("__Host-fuel_shift_session", path="/")
+    return response
+
+def _set_role_cookie(response, role, employee_id):
+    response.set_cookie(
+        ROLE_SESSION_COOKIE[role],
+        _make_role_token(employee_id, role),
+        max_age=ROLE_SESSION_MAX_AGE,
+        secure=True,
+        httponly=True,
+        samesite="Lax",
+        path="/"
+    )
+
+def _clear_role_cookie(response, role):
+    response.delete_cookie(ROLE_SESSION_COOKIE[role], path="/")
+
 def require_login():
-    if not session.get("employee_id"):
+    role = _requested_role()
+    if not role or not session.get("employee_id") or session.get("role") != role:
         return jsonify({"error": "Unauthorized"}), 401
     return None
 
 def require_admin():
-    eid = session.get("employee_id")
-    if not eid:
+    if not session.get("employee_id") or session.get("role") != "admin":
         return jsonify({"error": "Unauthorized"}), 401
 
     # Refresh the role from Supabase on every protected admin request.
-    # This prevents a stale session role from incorrectly blocking an admin
-    # after their account role was changed in Settings.
     status, rows = sb("employees", params={
-        "id": "eq." + str(eid),
+        "id": "eq." + str(session.get("employee_id")),
         "select": "id,role,active",
         "limit": "1"
     })
@@ -118,7 +199,6 @@ def require_admin():
         session.clear()
         return jsonify({"error": "Unauthorized"}), 401
 
-    session.permanent = True
     session["role"] = rows[0].get("role")
     if session["role"] != "admin":
         return jsonify({"error": "Admin access required"}), 403
@@ -185,45 +265,68 @@ def diagnostics():
     ok = all(v.get("ok") for v in checks.values() if isinstance(v, dict) and "ok" in v)
     return jsonify({"ok": ok, "checks": checks})
 
-@app.post("/api/login")
-def login():
+def _role_login(role):
     data = request.get_json(silent=True) or {}
     operator_id, pin = str(data.get("operator_id", "")).strip(), str(data.get("pin", ""))
     if not operator_id or not pin:
         return jsonify({"error": "Operator ID and PIN are required"}), 400
     status, rows = sb("employees", params={
         "operator_id": "eq." + operator_id, "active": "eq.true",
+        "role": "eq." + role,
         "select": "id,name,phone,operator_id,role,pin_hash,active"
     })
     if status != 200 or not rows:
-        return jsonify({"error": "Invalid credentials"}), 401
+        return jsonify({"error": "Invalid credentials for this login"}), 401
     emp = rows[0]
     if not verify_pin(pin, emp.get("pin_hash", "")):
-        return jsonify({"error": "Invalid credentials"}), 401
-    session.clear()
-    session.permanent = True
-    session["employee_id"], session["role"] = emp["id"], emp["role"]
-    return jsonify({k: emp[k] for k in ("id","name","phone","operator_id","role")})
+        return jsonify({"error": "Invalid credentials for this login"}), 401
+    response = jsonify({k: emp[k] for k in ("id","name","phone","operator_id","role")})
+    _set_role_cookie(response, role, emp["id"])
+    response.delete_cookie("__Host-fuel_shift_session", path="/")
+    return response
+
+@app.post("/api/admin-login")
+def admin_login():
+    return _role_login("admin")
+
+@app.post("/api/attendant-login")
+def attendant_login():
+    return _role_login("attendant")
+
+@app.post("/api/login")
+def login_legacy():
+    data = request.get_json(silent=True) or {}
+    role = str(data.get("role", "")).strip().lower()
+    if role not in ROLE_SESSION_COOKIE:
+        return jsonify({"error": "A separate admin or attendant login is required"}), 400
+    return _role_login(role)
 
 @app.post("/api/logout")
 def logout():
+    role = _requested_role()
+    response = jsonify({"ok": True})
     session.clear()
-    return jsonify({"ok": True})
+    if role:
+        _clear_role_cookie(response, role)
+    return response
 
 @app.get("/api/me")
 def me():
-    if not session.get("employee_id"):
+    if not require_login():
+        pass
+    else:
         return jsonify({"authenticated": False}), 401
     status, rows = sb("employees", params={
-        "id": "eq." + session["employee_id"],
+        "id": "eq." + str(session["employee_id"]),
         "select": "id,name,phone,operator_id,role,active"
     })
     if status != 200:
         return jsonify({"error": "Unable to verify the current session"}), 503
-    if not rows or not rows[0].get("active"):
+    if not rows or not rows[0].get("active") or rows[0].get("role") != session.get("role"):
+        response = jsonify({"authenticated": False})
+        _clear_role_cookie(response, session.get("role"))
         session.clear()
-        return jsonify({"authenticated": False}), 401
-    session.permanent = True
+        return response, 401
     session["role"] = rows[0]["role"]
     return jsonify({"authenticated": True, "user": rows[0], "employee": rows[0]})
 
