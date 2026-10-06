@@ -34,6 +34,23 @@ def security_headers(response):
 def env():
     return request.environ["workers.env"]
 
+def _json_safe(value):
+    """Convert Worker/Supabase values into JSON-safe primitives."""
+    if value is None or isinstance(value,(str,int,float,bool)):
+        if isinstance(value,float) and (value != value or value in (float("inf"),float("-inf"))):
+            return None
+        return value
+    if isinstance(value,(datetime,date)):
+        return value.isoformat()
+    if isinstance(value,dict):
+        return {str(k):_json_safe(v) for k,v in value.items()}
+    if isinstance(value,(list,tuple,set)):
+        return [_json_safe(v) for v in value]
+    try:
+        return str(value)
+    except Exception:
+        return None
+
 def sb(path, method="GET", params=None, body=None, prefer=None):
     e = env()
     return sb_request(e.SUPABASE_URL, e.SUPABASE_SECRET_KEY, method, path, params, body, prefer)
@@ -3022,7 +3039,7 @@ def daily_report():
 
     dispenser_details=[]
     for did,item in dispenser_detail_map.items():
-        item["nozzles"].sort(key=lambda z:int(z.get("nozzle_number") or 999))
+        item["nozzles"].sort(key=lambda z: (float(z.get("nozzle_number")) if str(z.get("nozzle_number") or "").strip().replace(".","",1).isdigit() else 999))
         liters_total=sum(float(z.get("sales_liters") or 0) for z in item["nozzles"])
         amount_total=sum(float(z.get("sales_amount") or 0) for z in item["nozzles"])
         for z in item["nozzles"]:
@@ -3464,7 +3481,7 @@ def daily_report():
         ]
     }
 
-    return jsonify({
+    return jsonify(_json_safe({
         "date":report_date,
         "report_ready":report_ready,
         "report_status":"ready" if report_ready else "waiting_for_shifts",
@@ -3494,7 +3511,7 @@ def daily_report():
         "total_purchase_discharged_liters":total_p,
         "total_sales_liters":station_l,
         "total_sales_amount":station_a
-    })
+    }))
 
 @app.get("/api/reports/daily/revisions")
 def daily_report_revisions():
