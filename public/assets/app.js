@@ -2357,27 +2357,33 @@ function closeDailyDsrPreview(){
 }
 function renderDailyPreviewHistoryCard(item){
   const dateLabel=dailyReportIdLabel(item.date);
-  return '<article class="purchase-card purchase-history-recorded-minimized daily-dsr-history-card daily-dsr-preview-card" data-dsr-date="'+h(item.date)+'">'+
-    '<button type="button" class="purchase-history-recorded-head" onclick="toggleDailyHistoryCard(event,this)" aria-expanded="false">'+
-      '<span class="purchase-history-recorded-title"><span class="purchase-product-color"></span><span><strong>'+h(dateLabel)+'</strong><small>DSR preview · not confirmed</small></span></span>'+
-      '<span class="purchase-history-recorded-right"><span class="daily-dsr-status-preview">Preview</span><span class="purchase-history-recorded-toggle" aria-hidden="true">⌄</span></span>'+
+  return '<article class="purchase-card daily-dsr-history-card daily-dsr-preview-card" data-dsr-date="'+h(item.date)+'">'+
+    '<button type="button" class="daily-dsr-history-head" onclick="toggleDailyHistoryCard(event,this)" aria-expanded="false">'+
+      '<span class="daily-dsr-history-main"><strong>'+h(dateLabel)+'</strong><small>DSR preview · not confirmed</small></span>'+
+      '<span class="daily-dsr-history-summary"><b>'+liters(item.total_sales_liters)+' L</b><span>Fuel sold</span></span>'+
+      '<span class="daily-dsr-history-summary"><b>'+money(item.total_sales_amount)+'</b><span>Total sales</span></span>'+
+      '<span class="daily-dsr-history-summary daily-dsr-history-shifts"><b>'+Number(item.shift_count||0)+'</b><span>Shifts</span></span>'+
+      '<span class="daily-dsr-status-preview">Preview</span><span class="daily-dsr-history-toggle" aria-hidden="true">⌄</span>'+
     '</button>'+
-    '<div class="purchase-history-recorded-body daily-dsr-history-body" hidden>'+
-      '<div class="purchase-history-full-main"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div><div><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div><div><span>DSR date</span><strong>'+h(dateLabel)+'</strong></div></div>'+
-      '<div class="purchase-history-card-actions"><button type="button" onclick="toggleDailyHistoryCard(event,this)">Collapse</button><button type="button" class="daily-dsr-view" onclick="selectDailyReportDate(\''+item.date+'\')">View full report <span>→</span></button></div>'+
+    '<div class="daily-dsr-history-body" hidden>'+
+      '<div class="daily-dsr-history-details"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div><div><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div>'+
+      '<div class="daily-dsr-history-actions"><button type="button" onclick="toggleDailyHistoryCard(event,this)">Collapse</button><button type="button" class="daily-dsr-view" onclick="selectDailyReportDate(\\''+item.date+'\\')">View full report <span>→</span></button></div>'+
     '</div></article>';
 }
 function renderDailyHistoryCard(item){
   const confirmedAt=item.confirmed_at ? dailyReportTime(item.confirmed_at) : 'Confirmed';
   const dateLabel=dailyReportIdLabel(item.date);
-  return '<article class="purchase-card purchase-history-recorded-minimized daily-dsr-history-card" data-dsr-date="'+h(item.date)+'">'+
-    '<button type="button" class="purchase-history-recorded-head" onclick="toggleDailyHistoryCard(event,this)" aria-expanded="false">'+
-      '<span class="purchase-history-recorded-title"><span class="purchase-product-color"></span><span><strong>'+h(dateLabel)+'</strong><small>Confirmed '+h(confirmedAt)+'</small></span></span>'+
-      '<span class="purchase-history-recorded-right"><span class="daily-dsr-status-confirmed">Confirmed</span><span class="purchase-history-recorded-toggle" aria-hidden="true">⌄</span></span>'+
+  return '<article class="purchase-card daily-dsr-history-card" data-dsr-date="'+h(item.date)+'">'+
+    '<button type="button" class="daily-dsr-history-head" onclick="toggleDailyHistoryCard(event,this)" aria-expanded="false">'+
+      '<span class="daily-dsr-history-main"><strong>'+h(dateLabel)+'</strong><small>Confirmed '+h(confirmedAt)+'</small></span>'+
+      '<span class="daily-dsr-history-summary"><b>'+liters(item.total_sales_liters)+' L</b><span>Fuel sold</span></span>'+
+      '<span class="daily-dsr-history-summary"><b>'+money(item.total_sales_amount)+'</b><span>Total sales</span></span>'+
+      '<span class="daily-dsr-history-summary daily-dsr-history-shifts"><b>'+Number(item.shift_count||0)+'</b><span>Shifts</span></span>'+
+      '<span class="daily-dsr-status-confirmed">Confirmed</span><span class="daily-dsr-history-toggle" aria-hidden="true">⌄</span>'+
     '</button>'+
-    '<div class="purchase-history-recorded-body daily-dsr-history-body" hidden>'+
-      '<div class="purchase-history-full-main"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div><div><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div><div><span>DSR date</span><strong>'+h(dateLabel)+'</strong></div></div>'+
-      '<div class="purchase-history-card-actions"><button type="button" onclick="toggleDailyHistoryCard(event,this)">Collapse</button><button type="button" class="daily-dsr-view" onclick="selectDailyReportDate(\''+item.date+'\')">View full report <span>→</span></button></div>'+
+    '<div class="daily-dsr-history-body" hidden>'+
+      '<div class="daily-dsr-history-details"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div><div><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div>'+
+      '<div class="daily-dsr-history-actions"><button type="button" onclick="toggleDailyHistoryCard(event,this)">Collapse</button><button type="button" class="daily-dsr-view" onclick="selectDailyReportDate(\\''+item.date+'\\')">View full report <span>→</span></button></div>'+
     '</div></article>';
 }
 function renderDailyPendingConfirmationCard(item){
