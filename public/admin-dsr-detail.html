@@ -843,6 +843,67 @@ body.dsr-detail-page .dsr-slide-dot.active{
     padding:0 8px!important;
   }
 }
+</style><style>
+/* Separate Sales Summary total, amount, and liters */
+body.dsr-detail-page .dsr-sales-total{
+  display:block!important;
+  margin-top:12px!important;
+  padding:0!important;
+  border-top:1px solid #cfd8e3!important;
+  border-bottom:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+body.dsr-detail-page .dsr-sales-total>span{
+  display:block!important;
+  padding:12px 0!important;
+  border-bottom:1px solid #e1e7ee!important;
+  font-size:12px!important;
+  font-weight:800!important;
+  text-transform:uppercase!important;
+  letter-spacing:.04em!important;
+  color:#667085!important;
+}
+body.dsr-detail-page .dsr-sales-total-amount,
+body.dsr-detail-page .dsr-sales-total-liters{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:16px!important;
+  padding:13px 0!important;
+  border-bottom:1px solid #e1e7ee!important;
+}
+body.dsr-detail-page .dsr-sales-total-amount small,
+body.dsr-detail-page .dsr-sales-total-liters small{
+  display:block!important;
+  font-size:11px!important;
+  font-weight:750!important;
+  color:#667085!important;
+}
+body.dsr-detail-page .dsr-sales-total-amount strong,
+body.dsr-detail-page .dsr-sales-total-liters strong{
+  font-size:18px!important;
+  line-height:1.2!important;
+  color:#1264d8!important;
+  white-space:nowrap!important;
+}
+body.dsr-detail-page .dsr-sales-total-liters{
+  border-bottom:0!important;
+}
+@media(max-width:650px){
+  body.dsr-detail-page .dsr-sales-total>span{
+    padding:10px 0!important;
+    font-size:11px!important;
+  }
+  body.dsr-detail-page .dsr-sales-total-amount,
+  body.dsr-detail-page .dsr-sales-total-liters{
+    padding:11px 0!important;
+  }
+  body.dsr-detail-page .dsr-sales-total-amount strong,
+  body.dsr-detail-page .dsr-sales-total-liters strong{
+    font-size:17px!important;
+  }
+}
 </style></head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
