@@ -69,7 +69,21 @@
  .dsr-history-stats{grid-template-columns:1fr 1fr}
  .dsr-history-actions{grid-template-columns:1fr}
 }
-</style><style>.admin-dsr-history-page .dsr-history-header{align-items:flex-start;padding-bottom:18px}.admin-dsr-history-page .dsr-history-back{flex:0 0 auto;align-self:flex-start;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;margin-top:2px}.admin-dsr-history-page .dsr-history-section{margin-top:0}.admin-dsr-history-page .dsr-history-section-head{align-items:flex-start}.admin-dsr-history-page .dsr-history-tools{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:9px;align-items:center;margin:0 0 14px}.admin-dsr-history-page .dsr-history-search{min-width:0}.admin-dsr-history-page .dsr-history-refresh{min-height:40px}@media(max-width:600px){.admin-dsr-history-page .dsr-history-header{gap:12px}.admin-dsr-history-page .dsr-history-back{width:100%;justify-content:center}.admin-dsr-history-page .dsr-history-tools{grid-template-columns:1fr 1fr}.admin-dsr-history-page .dsr-history-search{grid-column:1/-1}.admin-dsr-history-page .dsr-history-refresh{width:100%}}</style></head>
+</style><style>.admin-dsr-history-page .dsr-history-header{align-items:flex-start;padding-bottom:18px}.admin-dsr-history-page .dsr-history-back{flex:0 0 auto;align-self:flex-start;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;margin-top:2px}.admin-dsr-history-page .dsr-history-section{margin-top:0}.admin-dsr-history-page .dsr-history-section-head{align-items:flex-start}.admin-dsr-history-page .dsr-history-tools{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:9px;align-items:center;margin:0 0 14px}.admin-dsr-history-page .dsr-history-search{min-width:0}.admin-dsr-history-page .dsr-history-refresh{min-height:40px}@media(max-width:600px){.admin-dsr-history-page .dsr-history-header{gap:12px}.admin-dsr-history-page .dsr-history-back{width:100%;justify-content:center}.admin-dsr-history-page .dsr-history-tools{grid-template-columns:1fr 1fr}.admin-dsr-history-page .dsr-history-search{grid-column:1/-1}.admin-dsr-history-page .dsr-history-refresh{width:100%}}</style><style>
+.admin-dsr-history-page .history-page-header{padding-bottom:20px}
+.admin-dsr-history-page .history-page-section{margin-top:0}
+.admin-dsr-history-page .history-section-heading{margin-bottom:14px}
+.admin-dsr-history-page .history-page-tools{margin-top:0}
+.admin-dsr-history-page .history-page-tools .dsr-history-search{position:relative;min-width:0;display:flex;align-items:center;padding:0;border:0;border-radius:0;background:transparent;height:42px}
+.admin-dsr-history-page .history-page-tools .dsr-history-search span{position:absolute;left:12px;top:50%;transform:translateY(-50%);z-index:1}
+.admin-dsr-history-page .history-page-tools .dsr-history-search input{width:100%;height:42px;box-sizing:border-box;padding:0 12px 0 36px;border:1px solid #d5dde5;border-radius:10px;background:#fff;outline:none}
+.admin-dsr-history-page .history-page-tools .dsr-history-search input:focus{border-color:#4b83bd;box-shadow:0 0 0 3px rgba(75,131,189,.12)}
+.admin-dsr-history-page .history-page-tools select{height:42px;min-height:42px;padding:0 11px;border:1px solid #d5dde5;border-radius:10px;background:#fff;color:#344054;font-size:12px;font-weight:600}
+.admin-dsr-history-page .history-page-tools .dsr-history-refresh{height:42px;min-height:42px;padding:0 14px;border:1px solid #d5dde5;border-radius:10px;background:#edf2f6;color:#344054;font-size:12px;font-weight:600}
+.admin-dsr-history-page .history-page-tools .dsr-history-refresh:hover{background:#e4ebf1}
+@media(max-width:700px){.admin-dsr-history-page .history-page-tools{grid-template-columns:minmax(0,1fr) 135px}.admin-dsr-history-page .history-page-tools .dsr-history-refresh{grid-column:1/-1}}
+@media(max-width:460px){.admin-dsr-history-page .history-page-tools{grid-template-columns:1fr 1fr;gap:7px;padding:8px}.admin-dsr-history-page .history-page-tools .dsr-history-search{grid-column:1/-1}}
+</style></head>
 <body class="admin-shell daily-report-page dsr-history-page" data-app-page="adminDsrHistory">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
@@ -83,23 +97,23 @@
   <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
 </aside>
 <main class="wrap admin-daily-report-page admin-dsr-history-page">
-<header class="purchase-header daily-report-header dsr-history-header">
+<header class="purchase-header daily-report-header dsr-history-header history-page-header">
  <div><span class="eyebrow">REPORTING</span><h1>DSR History</h1><p class="muted">Complete confirmed Daily Sales Report history.</p></div>
  <a class="purchase-back dsr-history-back" href="admin-daily-report.html"><span aria-hidden="true">←</span> Back to Daily Report</a>
 </header>
-<section class="purchase-section daily-section daily-history-section dsr-history-section">
- <div class="purchase-section-head daily-section-head dsr-history-section-head"><div><span class="section-kicker daily-kicker">DSR HISTORY</span><h2>All confirmed reports</h2><p class="muted">Search, filter and open any confirmed DSR.</p></div><span id="dsr-history-count" class="dsr-history-count">Loading…</span></div>
- <div class="dsr-history-tools">
-  <label class="dsr-history-search"><span aria-hidden="true">⌕</span><input id="dsr-history-search" type="search" placeholder="Search DSR date…" oninput="renderDsrHistory()"></label>
+<section class="purchase-section daily-section daily-history-section dsr-history-section history-page-section">
+ <div class="purchase-section-head daily-section-head dsr-history-section-head history-section-heading"><div><span class="section-kicker daily-kicker">DSR HISTORY</span><h2>All confirmed reports</h2><p class="muted">Search, filter and open any confirmed DSR.</p></div><span id="dsr-history-count" class="dsr-history-count">Loading…</span></div>
+ <div class="purchase-history-tools dsr-history-tools history-page-tools">
+  <label class="purchase-history-search-wrap dsr-history-search"><span aria-hidden="true">⌕</span><input id="dsr-history-search" type="search" placeholder="Search DSR date…" oninput="renderDsrHistory()"></label>
   <select id="dsr-history-period" onchange="renderDsrHistory()" aria-label="DSR history date filter"><option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select>
-  <button class="dsr-history-refresh" type="button" onclick="loadDsrHistory()">↻ <span>Refresh</span></button>
+  <button class="purchase-history-refresh dsr-history-refresh" type="button" onclick="loadDsrHistory()">↻ <span>Refresh</span></button>
  </div>
  <div id="dsr-history-status" class="dsr-history-status"></div>
  <div id="dsr-history-list"></div>
 </section>
 <div id="toast" class="toast"></div>
 </main>
-<script src="assets/app.js?v=20261006-05"></script>
+<script src="assets/app.js?v=20261006-06"></script>
 <script>
 (function(){
  let records=[];
