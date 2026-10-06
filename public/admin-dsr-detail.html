@@ -54,8 +54,8 @@ body.dsr-embedded .daily-detail-close{display:none!important}
 body.dsr-embedded .dsr-detail-view .daily-detail-head{padding-right:16px!important}
 /* Keep the DSR detail header fixed while only the report body scrolls. */
 body.dsr-detail-page .dsr-detail-view{position:relative!important}
-body.dsr-detail-page .dsr-detail-view .daily-detail-head{display:none!important}
-body.dsr-embedded .dsr-detail-view .daily-detail-head{display:none!important}
+body.dsr-detail-page .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important;z-index:20!important;margin-top:0!important}
+body.dsr-embedded .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important;z-index:20!important;margin-top:0!important}
 </style>
 <style>
 /* DSR detail scrolling: keep the iframe/page viewport fixed and scroll the report itself. */
@@ -68,7 +68,7 @@ body.dsr-embedded .dsr-detail-view{height:100vh!important;min-height:0!important
 @media(max-width:650px){
  body.dsr-detail-page .dsr-detail-wrap{height:100vh!important;min-height:0!important;padding:0!important}
  body.dsr-detail-page .dsr-detail-view{height:100vh!important;min-height:0!important;overflow:hidden!important}
- body.dsr-embedded .dsr-detail-view .daily-detail-head{display:none!important}
+ body.dsr-embedded .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important;z-index:20!important;margin-top:0!important}
 }
 </style>
 </head>
