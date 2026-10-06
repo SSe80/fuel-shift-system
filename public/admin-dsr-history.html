@@ -1,6 +1,19 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DSR History</title><link rel="stylesheet" href="assets/style.css?v=20261005-20"></head>
+<title>DSR History</title><link rel="stylesheet" href="assets/style.css?v=20261005-20"><style>
+.dsr-history-page .dsr-history-month{overflow:hidden;border:1px solid #e4e9ef;border-radius:14px;background:#fff;box-shadow:0 3px 12px rgba(16,24,40,.055);margin-bottom:10px}
+.dsr-history-page .dsr-history-month-head{width:100%;min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px 11px 17px;border:0;background:#fff;color:#17202a;text-align:left;cursor:pointer}
+.dsr-history-page .dsr-history-month-head:hover{background:#fafbfd}
+.dsr-history-page .dsr-history-month-title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dsr-history-page .dsr-history-month-title span{font-size:9px;letter-spacing:.1em;font-weight:800;color:#98a2b3}
+.dsr-history-page .dsr-history-month-title strong{font-size:15px;line-height:1.2}
+.dsr-history-page .dsr-history-month-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.dsr-history-page .dsr-history-month-right small{color:#8a949e;font-size:10px}
+.dsr-history-page .dsr-history-month-toggle{width:27px;height:27px;display:grid;place-items:center;border:1px solid #dce3ea;border-radius:8px;background:#f8fafc;color:#667085;font-size:16px;font-weight:800}
+.dsr-history-page .dsr-history-month.expanded .dsr-history-month-toggle{background:#eef4ff;color:#2563eb;border-color:#c7d7fe}
+.dsr-history-page .dsr-history-month-body{padding:10px;border-top:1px solid #edf1f4;background:#fcfdff}
+.dsr-history-page .dsr-history-month-body[hidden]{display:none}
+</style></head>
 <body class="admin-shell daily-report-page dsr-history-page" data-app-page="adminDsrHistory">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
 <aside class="admin-sidebar" aria-label="Admin navigation">
@@ -32,9 +45,36 @@
    const rows=await api('/api/reports/daily/confirmations');
    const confirmed=(Array.isArray(rows)?rows:[]).filter(x=>x.status==='confirmed').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
    if(!confirmed.length){box.innerHTML='<div class="card">No confirmed DSR reports found.</div>';return;}
-   box.innerHTML=confirmed.map(renderDsrHistoryCard).join('');
+   const monthGroups={};
+   confirmed.forEach(item=>{
+    const date=String(item.date||'');
+    const monthKey=/^\\d{4}-\\d{2}/.test(date)?date.slice(0,7):'unknown';
+    (monthGroups[monthKey]||(monthGroups[monthKey]=[])).push(item);
+   });
+   const monthKeys=Object.keys(monthGroups).sort((a,b)=>b.localeCompare(a));
+   box.innerHTML=monthKeys.map(monthKey=>{
+    const monthDate=new Date(monthKey+'-01T00:00:00');
+    const monthLabel=Number.isNaN(monthDate.getTime())?monthKey:monthDate.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+    const items=monthGroups[monthKey];
+    return '<section class="dsr-history-month" data-month-key="'+monthKey+'">'+
+      '<button type="button" class="dsr-history-month-head" onclick="toggleDsrMonth(this)" aria-expanded="false">'+
+       '<span class="dsr-history-month-title"><span>MONTH</span><strong>'+monthLabel+'</strong></span>'+
+       '<span class="dsr-history-month-right"><small>'+items.length+' DSR'+(items.length===1?'':'s')+'</small><span class="dsr-history-month-toggle" aria-hidden="true">⌄</span></span>'+
+      '</button>'+
+      '<div class="dsr-history-month-body" hidden>'+items.map(renderDsrHistoryCard).join('')+'</div>'+
+     '</section>';
+   }).join('');
   }catch(e){console.error(e);box.innerHTML='<div class="card">Could not load DSR history: '+String(e.message||e)+'</div>';}
  }
  window.addEventListener('load',load);
 })();
+window.toggleDsrMonth=function(button){
+ const section=button.closest('.dsr-history-month');if(!section)return;
+ const expanded=section.classList.toggle('expanded');
+ const body=section.querySelector('.dsr-history-month-body');
+ const toggle=section.querySelector('.dsr-history-month-toggle');
+ if(body)body.hidden=!expanded;
+ button.setAttribute('aria-expanded',expanded?'true':'false');
+ if(toggle)toggle.textContent=expanded?'⌃':'⌄';
+};
 </script></body></html>
