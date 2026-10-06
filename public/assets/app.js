@@ -96,7 +96,12 @@ async function login(role) {
     location.href=user.role==='admin'?'admin-dashboard.html':'attendant-dashboard.html';
   } catch(e) { toast(e.message); }
 }
-async function logout(){try{await api('/api/logout',{method:'POST',body:'{}'});}catch(_){} localStorage.removeItem('fuelRole');location.href='index.html';}
+async function logout(){
+  if(!window.confirm('Are you sure you want to log out?'))return;
+  try{await api('/api/logout',{method:'POST',body:'{}'});}catch(_){}
+  localStorage.removeItem('fuelRole');
+  location.href='index.html';
+}
 async function currentUser(){return (await api('/api/me')).user;}
 
 function openTakeoverSaleModal(id){
