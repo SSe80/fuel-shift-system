@@ -2365,7 +2365,389 @@ body[data-app-page="adminDashboard"] .tank-movement-balance strong{font-size:11p
   }
 }
 
-/* Daily Sales Report */
+/* Attendant Record Sale flow refinement */
+body.attendant-dashboard-page .takeover-action-modal{
+  width:min(540px,calc(100vw - 24px))!important;
+  max-height:86vh!important;
+  overflow:hidden!important;
+  border:1px solid #e3e8ee!important;
+  border-radius:18px!important;
+  background:#fff!important;
+  box-shadow:0 22px 60px rgba(16,24,40,.20)!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.top{
+  padding:15px 17px!important;
+  background:#fff8f8!important;
+  border-bottom:1px solid #f0dadd!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.top .section-kicker{
+  color:#b4232f!important;
+  font-size:10px!important;
+  letter-spacing:.11em!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.top h3{
+  margin:3px 0 0!important;
+  font-size:20px!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .takeover-action-modal .modal-close{
+  width:34px!important;height:34px!important;
+  border:1px solid #f0c4c8!important;
+  border-radius:9px!important;
+  background:#fff0f1!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .takeover-sale-summary{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:8px!important;
+  padding:12px 14px!important;
+}
+body.attendant-dashboard-page .takeover-sale-summary>div{
+  padding:11px 12px!important;
+  border:1px solid #e7ecf1!important;
+  border-radius:11px!important;
+  background:#fbfcfe!important;
+}
+body.attendant-dashboard-page .takeover-sale-summary span{
+  display:block!important;
+  font-size:9px!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  font-weight:850!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .takeover-sale-summary strong{
+  display:block!important;
+  margin-top:4px!important;
+  font-size:17px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .takeover-sales-entry-section{
+  padding:0 14px 12px!important;
+}
+body.attendant-dashboard-page .takeover-sales-entry-title{
+  padding:2px 2px 6px!important;
+  font-size:11px!important;
+  color:#8f1d27!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry{
+  margin-top:7px!important;
+  padding:11px!important;
+  border:1px solid #e2e8ee!important;
+  border-radius:12px!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry:focus-within{
+  border-color:#efc2c7!important;
+  box-shadow:0 0 0 3px rgba(180,35,47,.07)!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry-head{
+  grid-template-columns:minmax(0,1fr) 132px!important;
+  gap:11px!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry-head strong{
+  font-size:14px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry-head small{
+  display:block!important;
+  margin-top:3px!important;
+  font-size:10px!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .takeover-sale-amount{
+  min-height:43px!important;
+  padding:9px 10px!important;
+  border:1px solid #d6dee8!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  color:#182230!important;
+  font-size:14px!important;
+  font-weight:750!important;
+  text-align:right!important;
+}
+body.attendant-dashboard-page .takeover-sale-amount:focus{
+  outline:none!important;
+  border-color:#b4232f!important;
+  box-shadow:0 0 0 3px rgba(180,35,47,.10)!important;
+}
+body.attendant-dashboard-page .takeover-sale-reason-label{
+  display:block!important;
+  margin-top:9px!important;
+  font-size:10px!important;
+  font-weight:800!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .takeover-sale-reason{
+  min-height:64px!important;
+  margin-top:5px!important;
+  padding:9px 10px!important;
+  font-size:12px!important;
+  border-radius:10px!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row{
+  display:flex!important;
+  gap:8px!important;
+  padding:10px 14px 13px!important;
+  border-top:1px solid #edf1f4!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row button{
+  min-height:42px!important;
+  border-radius:10px!important;
+  font-size:12px!important;
+  font-weight:850!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row .primary{
+  background:#b4232f!important;
+  border-color:#b4232f!important;
+  color:#fff!important;
+  box-shadow:0 5px 13px rgba(180,35,47,.20)!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row .primary:hover{
+  background:#941f29!important;
+  border-color:#941f29!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row .btn:not(.primary){
+  background:#fff!important;
+  border-color:#e2d4d6!important;
+  color:#7f1d1d!important;
+}
+body.attendant-dashboard-page .takeover-confirm-summary{
+  background:#fff!important;
+}
+body.attendant-dashboard-page .takeover-confirm-summary>div:first-child{
+  border-color:#cfe0f7!important;
+  background:#f6f9ff!important;
+}
+body.attendant-dashboard-page .takeover-confirm-summary>div:first-child strong{
+  color:#1264d8!important;
+}
+body.attendant-dashboard-page .takeover-confirm-summary>div:last-child{
+  border-color:#f0c4c8!important;
+  background:#fff8f8!important;
+}
+body.attendant-dashboard-page .takeover-confirm-summary>div:last-child strong{
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .takeover-confirm-sales{
+  margin:8px 0 0!important;
+  border:1px solid #e5eaf0!important;
+  border-radius:12px!important;
+  overflow:hidden!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .takeover-confirm-sale-row{
+  display:flex!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  padding:10px 12px!important;
+  border-bottom:1px solid #edf1f4!important;
+  font-size:12px!important;
+}
+body.attendant-dashboard-page .takeover-confirm-sale-row strong{
+  color:#344054!important;
+}
+body.attendant-dashboard-page .takeover-confirm-total{
+  display:flex!important;
+  justify-content:space-between!important;
+  padding:12px!important;
+  background:#fff8f8!important;
+  color:#667085!important;
+  font-size:11px!important;
+  font-weight:750!important;
+}
+body.attendant-dashboard-page .takeover-confirm-total strong{
+  font-size:15px!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .takeover-confirm-check{
+  padding:9px 12px!important;
+  background:#f8fafc!important;
+  border-top:1px solid #edf1f4!important;
+  font-size:10px!important;
+}
+body.attendant-dashboard-page .takeover-sale-match,
+body.attendant-dashboard-page .takeover-sale-mismatch{
+  margin:8px 0!important;
+  padding:9px 11px!important;
+  border-radius:10px!important;
+  font-size:11px!important;
+  line-height:1.4!important;
+}
+body.attendant-dashboard-page .takeover-sale-match{
+  background:#edf9f1!important;
+  border-color:#cce8d5!important;
+  color:#187344!important;
+}
+body.attendant-dashboard-page .takeover-sale-mismatch{
+  background:#fff0f1!important;
+  border-color:#f0c4c8!important;
+  color:#a12838!important;
+}
+/* Record Sale detail card */
+body.attendant-dashboard-page .takeover-details-modal{
+  width:min(620px,calc(100vw - 24px))!important;
+  max-height:84vh!important;
+  overflow:hidden!important;
+  border:1px solid #e3e8ee!important;
+  border-radius:18px!important;
+  background:#fff!important;
+  box-shadow:0 22px 60px rgba(16,24,40,.20)!important;
+}
+body.attendant-dashboard-page #takeover-details-content{
+  max-height:calc(84vh - 116px)!important;
+  overflow:auto!important;
+  padding:13px 15px!important;
+}
+body.attendant-dashboard-page .takeover-detail-summary{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:7px!important;
+}
+body.attendant-dashboard-page .takeover-detail-summary>div{
+  padding:10px 11px!important;
+  border:1px solid #e7ecf1!important;
+  border-radius:10px!important;
+  background:#fbfcfe!important;
+}
+body.attendant-dashboard-page .takeover-detail-summary span{
+  display:block!important;
+  font-size:9px!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  font-weight:850!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .takeover-detail-summary strong{
+  display:block!important;
+  margin-top:4px!important;
+  font-size:13px!important;
+  line-height:1.3!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .takeover-detail-sales{
+  margin-top:10px!important;
+  border:1px solid #e5eaf0!important;
+  border-radius:12px!important;
+  overflow:hidden!important;
+}
+body.attendant-dashboard-page .takeover-detail-heading{
+  padding:10px 12px!important;
+  background:#fff8f8!important;
+  border-bottom:1px solid #f0dadd!important;
+  color:#8f1d27!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  text-transform:uppercase!important;
+}
+body.attendant-dashboard-page .takeover-detail-row{
+  display:grid!important;
+  grid-template-columns:minmax(110px,1.4fr) repeat(4,minmax(70px,1fr))!important;
+  gap:8px!important;
+  padding:10px 11px!important;
+  border-bottom:1px solid #edf1f4!important;
+  align-items:center!important;
+}
+body.attendant-dashboard-page .takeover-detail-row>div b{
+  display:block!important;
+  font-size:12px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .takeover-detail-row>div small{
+  display:block!important;
+  margin-top:2px!important;
+  font-size:9px!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .takeover-detail-row>span{
+  font-size:9px!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .takeover-detail-row>span b{
+  display:block!important;
+  margin-top:2px!important;
+  font-size:11px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .takeover-detail-total{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:16px!important;
+  margin-top:10px!important;
+  padding:12px!important;
+  border:1px solid #f0c4c8!important;
+  border-radius:11px!important;
+  background:#fff8f8!important;
+}
+body.attendant-dashboard-page .takeover-detail-total span{
+  margin-right:auto!important;
+  font-size:10px!important;
+  font-weight:850!important;
+  text-transform:uppercase!important;
+  color:#8f1d27!important;
+}
+body.attendant-dashboard-page .takeover-detail-total strong{
+  font-size:14px!important;
+  color:#b4232f!important;
+}
+/* Result card */
+body.attendant-dashboard-page .attendant-action-result-card{
+  width:min(430px,calc(100vw - 28px))!important;
+  padding:25px 21px 20px!important;
+  border-radius:20px!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.success{
+  border-color:#cce8d5!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.fail{
+  border-color:#f0c4c8!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card h3{
+  font-size:23px!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card p{
+  font-size:13px!important;
+  max-width:340px!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+@media(max-width:600px){
+  body.attendant-dashboard-page .takeover-sale-summary{
+    grid-template-columns:1fr!important;
+  }
+  body.attendant-dashboard-page .takeover-sale-entry-head{
+    grid-template-columns:1fr!important;
+  }
+  body.attendant-dashboard-page .takeover-sale-amount{
+    text-align:left!important;
+  }
+  body.attendant-dashboard-page .takeover-action-modal>.row{
+    position:sticky!important;
+    bottom:0!important;
+  }
+  body.attendant-dashboard-page #takeover-details-content{
+    max-height:calc(84vh - 116px)!important;
+  }
+  body.attendant-dashboard-page .takeover-detail-summary{
+    grid-template-columns:1fr 1fr!important;
+  }
+  body.attendant-dashboard-page .takeover-detail-row{
+    grid-template-columns:1fr 1fr!important;
+  }
+  body.attendant-dashboard-page .takeover-detail-row>div{
+    grid-column:1/-1!important;
+  }
+  body.attendant-dashboard-page .takeover-detail-row>span{
+    padding:5px 0!important;
+  }
+  body.attendant-dashboard-page .takeover-detail-total{
+    gap:9px!important;
+  }
+}
+\n/* Daily Sales Report */
 .daily-report-page{background:linear-gradient(180deg,#f7f9fc 0%,#eef3f8 100%);color:#182230}
 .daily-report-wrap{max-width:980px;padding:8px 0 42px}
 .daily-report-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:18px 4px 20px}
