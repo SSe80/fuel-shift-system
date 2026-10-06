@@ -467,10 +467,10 @@ async function userDashboard(){
       const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
       const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
       const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
-      return '<div class="card dashboard-purchase-card takeover shift-takeover-card">'+
-        '<div class="takeover-hero"><div class="takeover-hero-icon">↔</div><div><div class="takeover-card-title">Record Sale</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+' • Handover completed</div></div></div>'+
-        '<div class="takeover-total-grid"><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div></div>'+
-        '<div class="row takeover-sale-action"><button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button><button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button></div>'+
+      return '<div class="card dashboard-purchase-card takeover shift-takeover-card main-record-sale-card">'+
+        '<div class="main-record-sale-head"><div><span class="section-kicker">SHIFT HANDOVER</span><div class="takeover-card-title">Record Sale</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+'</div></div><span class="main-record-sale-status">Handover completed</span></div>'+
+        '<div class="main-record-sale-summary"><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div></div>'+
+        '<div class="main-record-sale-actions"><button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button><button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button></div>'+
       '</div>';
     }).join('');
     const activeForDisplay=active.filter(s=>!pendingOutgoingHandovers.some(x=>String(x.shift_id)===String(s.id)));
