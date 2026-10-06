@@ -323,15 +323,7 @@ async function openTakeoverDetails(id){
   ).join('');
   const submittedAt=saleMeta.sales_submitted_at||takeover.sales_submitted_at;
   const confirmedAt=saleMeta.sales_confirmed_at||takeover.sales_confirmed_at;
-  <style>
-.takeover-recorded-sale-meta{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:0!important;padding:0!important}
-.takeover-recorded-sale-meta>div{min-width:0;padding:11px 14px;border-right:1px solid #edf1f4}
-.takeover-recorded-sale-meta>div:last-child{border-right:0}
-.takeover-recorded-sale-meta span{display:block!important;margin:0 0 4px!important;font-size:8px!important;text-transform:uppercase;letter-spacing:.05em;color:#98a2b3;font-weight:800}
-.takeover-recorded-sale-meta strong{display:block!important;font-size:10px!important;line-height:1.35;color:#344054;white-space:normal;word-break:break-word}
-@media(max-width:600px){.takeover-recorded-sale-meta{grid-template-columns:1fr!important}.takeover-recorded-sale-meta>div{border-right:0;border-bottom:1px solid #edf1f4}.takeover-recorded-sale-meta>div:last-child{border-bottom:0}}
-</style>
-const recordedAt=saleMeta.sales_recorded_at||takeover.sales_recorded_at;
+  const recordedAt=saleMeta.sales_recorded_at||takeover.sales_recorded_at;
   if(details)details.innerHTML=
     '<div class="takeover-recorded-sale-card">'+
       '<div class="takeover-recorded-sale-head"><div><span class="section-kicker">RECORDED SALE</span><h4>Sale details</h4></div><span class="takeover-recorded-sale-status">'+h(String(saleMeta.sales_status||takeover.sales_status||'pending_admin').replace('_',' '))+'</span></div>'+
