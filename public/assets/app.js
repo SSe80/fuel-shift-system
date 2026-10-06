@@ -2294,57 +2294,10 @@ async function previewDailyReport(selectedDate=null){
       }
       date=available[0].date;
     }
-    const isHistoryReport=Boolean(selectedDate);
-    const input=document.getElementById('report-date');
-    if(input)input.value=date;
 
-    // Fetch the same authoritative report payload used by the DSR detail
-    // page. Preview mode only reads this data; it never confirms or writes it.
-    const r=await api('/api/reports/daily?date='+encodeURIComponent(date));
-
-    // Reuse the authoritative DSR detail renderer, then move its populated
-    // sections into a dedicated report-paper modal.
-    await loadDailyReport();
-
-    const details=document.getElementById('daily-report-details');
-    const modal=document.getElementById('daily-dsr-preview-modal');
-    const paper=document.getElementById('daily-dsr-preview-paper');
-    if(!details || !modal || !paper)throw new Error('DSR preview layout is unavailable');
-
-    const sourceSummary=document.getElementById('report-summary');
-    const sourceStatus=document.getElementById('report-status');
-    const sourceSections=details.querySelectorAll(':scope > section');
-
-    const livePerf=r.dsr_performance||{};
-    const pctRows=[
-      ['Dispenser contribution',(livePerf.dispenser_contribution||[]).map(x=>'<div><span>'+h(x.dispenser||'Dispenser')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>').join('')],
-      ['Sales method performance',(livePerf.sales_method_performance||[]).map(x=>'<div><span>'+h(x.type||'Sale method')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>').join('')],
-      ['Tank reconciliation',(livePerf.tank_reconciliation||[]).map(x=>'<div><span>'+h(x.tank||'Tank')+'</span><b>'+Number(x.reconciliation_pct||0).toFixed(1)+'%</b></div>').join('')],
-      ['Nozzle reconciliation','<div><span>Average nozzle reconciliation</span><b>'+Number(livePerf.average_nozzle_reconciliation_pct||0).toFixed(1)+'%</b></div>']
-    ].map(x=>'<div class="daily-preview-live-pct"><h4>'+h(x[0])+'</h4>'+(x[1]||'<p>No percentage data recorded.</p>')+'</div>').join('');
-
-    paper.innerHTML=
-      '<div class="daily-preview-paper-head">'+
-        '<div><span class="daily-preview-paper-kicker">STATION DAILY RECONCILIATION</span>'+
-        '<h2>Daily Sales Report</h2>'+
-        '<p>'+h(dailyReportIdLabel(date))+'</p></div>'+
-        '<span class="daily-preview-paper-badge">'+(isHistoryReport?'CONFIRMED REPORT':'DESIGN PREVIEW')+'</span>'+
-      '</div>'+
-      '<div class="daily-preview-paper-meta">'+
-        '<span>Report date <b>'+h(dailyReportIdLabel(date))+'</b></span>'+
-        '<span>Status <b>'+(isHistoryReport?'Confirmed':'Preview · not confirmed')+'</b></span>'+
-      '</div>'+
-      '<div class="daily-preview-paper-status">'+(isHistoryReport?'Confirmed station-wide reconciliation · read-only report.':'Live report data · calculations are read from the selected DSR date.')+'</div>'+
-      '<div class="daily-preview-paper-summary">'+(sourceSummary?.innerHTML||'')+'</div>'+
-      '<section class="daily-preview-paper-section"><div class="daily-preview-live-performance"><div class="daily-preview-live-pct-grid">'+pctRows+'</div></div></section>'+
-      Array.from(sourceSections).map(section=>'<section class="daily-preview-paper-section">'+section.innerHTML+'</section>').join('')+
-      '<div class="daily-preview-paper-foot"><span>'+(isHistoryReport?'Confirmed DSR · read-only report':'DSR design preview · live data')+'</span><span>'+h(dailyReportIdLabel(date))+'</span></div>';
-
-    details.hidden=true;
-    document.body.classList.remove('daily-detail-open');
-    modal.classList.add('open');
-    modal.setAttribute('aria-hidden','false');
-    document.body.classList.add('daily-preview-open');
+    // History reports must open the modal immediately. The modal itself
+    // shows the loading state while the authoritative DSR is fetched.
+    return openDailyHistoryReport(date);
   }catch(e){
     console.error('DSR preview failed',e);
     toast('Could not load DSR preview: '+String(e.message||'Request failed'));
