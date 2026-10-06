@@ -3,21 +3,21 @@
 <title>DSR Detail</title>
 <link rel="stylesheet" href="assets/style.css?v=20261006-05">
 <style>
-.dsr-detail-page{background:linear-gradient(180deg,#f7f9fc 0%,#eef3f8 100%);color:#182230}
-.dsr-detail-wrap{max-width:900px;padding:8px 0 42px}
-.dsr-detail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 4px 20px}
+.dsr-detail-page{background:rgba(15,23,42,.42)!important;color:#182230;min-height:100vh}
+.dsr-detail-wrap{max-width:1120px;padding:24px 18px 42px;margin:0 auto}
+.dsr-detail-header{display:none!important;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 4px 20px}
 .dsr-detail-header h1{margin:0;font-size:32px;line-height:1.1;letter-spacing:-.03em}
 .dsr-detail-header p{margin:7px 0 0;color:#718096;font-size:14px}
-.dsr-detail-back{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid #d8e0e8;border-radius:12px;background:#fff;color:#334155;font-weight:750;box-shadow:0 2px 8px #17202a0a;text-decoration:none;white-space:nowrap}
-.dsr-detail-view{display:block!important;margin:18px 0 0!important;padding:0!important;border:1px solid #d7e0ea!important;border-radius:18px!important;background:#f2f5f8!important;box-shadow:0 12px 34px rgba(16,24,40,.08)!important;overflow:hidden!important}
+.dsr-detail-back{display:none!important;align-items:center;gap:7px;padding:10px 14px;border:1px solid #d8e0e8;border-radius:12px;background:#fff;color:#334155;font-weight:750;box-shadow:0 2px 8px #17202a0a;text-decoration:none;white-space:nowrap}
+.dsr-detail-view{display:block!important;margin:0!important;padding:0!important;border:1px solid #d7e0ea!important;border-radius:20px!important;background:#f2f5f8!important;box-shadow:0 24px 80px rgba(15,23,42,.28)!important;overflow:hidden!important;max-height:calc(100vh - 150px);overflow-y:auto}
 .dsr-detail-view .daily-detail-head{position:sticky;top:0;z-index:4;background:#fff;border-bottom:1px solid #e1e8f0}
 .dsr-detail-view .daily-detail-actions{display:flex;gap:8px;flex-wrap:wrap}
 .dsr-detail-view .daily-detail-actions button{min-height:40px}
 @media(max-width:650px){
- .dsr-detail-header{padding:15px 4px 17px;gap:12px;flex-direction:column}
+ .dsr-detail-header{display:none!important}
  .dsr-detail-header h1{font-size:28px}
  .dsr-detail-back{width:100%;justify-content:center}
- .dsr-detail-wrap{padding:8px 0 32px}
+ .dsr-detail-wrap{padding:18px 8px 28px}
  .dsr-detail-view .daily-detail-head{position:static}
  .dsr-detail-view .daily-detail-actions button{flex:1}
 }
