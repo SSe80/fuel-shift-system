@@ -1189,6 +1189,54 @@ body.dsr-detail-page #report-shifts .dsr-product-group>.dsr-shift-card{
     padding:8px 0 6px!important;
   }
 }
+</style><style>
+/* Product labels must sit outside the white DSR cards */
+body.dsr-detail-page .dsr-report-slide:has(#report-dispensers) .daily-section,
+body.dsr-detail-page .dsr-report-slide:has(#report-tanks) .daily-section,
+body.dsr-detail-page .dsr-report-slide:has(#report-shifts) .daily-section{
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  padding:0!important;
+  margin:0!important;
+  overflow:visible!important;
+}
+body.dsr-detail-page #report-dispensers,
+body.dsr-detail-page #report-tanks,
+body.dsr-detail-page #report-shifts{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  padding:0!important;
+  margin:0!important;
+}
+body.dsr-detail-page .dsr-product-group{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  padding:0!important;
+  margin:0!important;
+}
+body.dsr-detail-page .dsr-product-group-title{
+  background:transparent!important;
+  border:0!important;
+  padding:10px 0 8px!important;
+  margin:0!important;
+}
+body.dsr-detail-page .dsr-product-group-title .dsr-product-group-name{
+  color:#667085!important;
+}
+body.dsr-detail-page .dsr-product-group-title .dsr-product-group-dot{
+  width:10px!important;
+  height:10px!important;
+  flex-basis:10px!important;
+}
+@media(max-width:650px){
+  body.dsr-detail-page .dsr-product-group-title{
+    padding:8px 0 7px!important;
+  }
+}
 </style></head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
