@@ -2464,6 +2464,59 @@ function closeDailyReportDetail(){
 document.addEventListener('keydown',event=>{
   if(event.key==='Escape')closeDailyDsrPreview();
 });
+async function openDailyHistoryReport(date){
+  if(!date)return;
+  try{
+    const input=document.getElementById('report-date');
+    if(input)input.value=date;
+    const modal=document.getElementById('daily-dsr-preview-modal');
+    const paper=document.getElementById('daily-dsr-preview-paper');
+    const details=document.getElementById('daily-report-details');
+    if(!modal||!paper||!details)throw new Error('DSR report modal is unavailable');
+
+    paper.innerHTML='<div class="daily-preview-loading"><strong>Loading DSR…</strong><span>'+h(dailyReportIdLabel(date))+'</span></div>';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+    document.body.classList.add('daily-preview-open');
+
+    await loadDailyReport();
+
+    const r=window.currentDailyReportData||{};
+    const sourceSummary=document.getElementById('report-summary');
+    const sourceStatus=document.getElementById('report-status');
+    const sourceSections=details.querySelectorAll(':scope > section');
+    const perf=r.dsr_performance||{};
+    const pctRows=[
+      ['Dispenser contribution',(perf.dispenser_contribution||[]).map(x=>'<div><span>'+h(x.dispenser||'Dispenser')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>').join('')],
+      ['Sales method performance',(perf.sales_method_performance||[]).map(x=>'<div><span>'+h(x.type||'Sale method')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>').join('')],
+      ['Tank reconciliation',(perf.tank_reconciliation||[]).map(x=>'<div><span>'+h(x.tank||'Tank')+'</span><b>'+Number(x.reconciliation_pct||0).toFixed(1)+'%</b></div>').join('')],
+      ['Nozzle reconciliation','<div><span>Average nozzle reconciliation</span><b>'+Number(perf.average_nozzle_reconciliation_pct||0).toFixed(1)+'%</b></div>']
+    ].map(x=>'<div class="daily-preview-live-pct"><h4>'+h(x[0])+'</h4>'+(x[1]||'<p>No percentage data recorded.</p>')+'</div>').join('');
+
+    paper.innerHTML=
+      '<div class="daily-preview-paper-head">'+
+        '<div><span class="daily-preview-paper-kicker">STATION DAILY RECONCILIATION</span>'+
+        '<h2>Daily Sales Report</h2>'+
+        '<p>'+h(dailyReportIdLabel(date))+'</p></div>'+
+        '<span class="daily-preview-paper-badge daily-preview-confirmed-badge">CONFIRMED DSR</span>'+
+      '</div>'+
+      '<div class="daily-preview-paper-meta">'+
+        '<span>Report date <b>'+h(dailyReportIdLabel(date))+'</b></span>'+
+        '<span>Status <b>Confirmed · full report</b></span>'+
+      '</div>'+
+      '<div class="daily-preview-paper-status">Authoritative DSR data · this report is read-only and does not change the saved DSR.</div>'+
+      '<div class="daily-preview-paper-summary">'+(sourceSummary?.innerHTML||'')+'</div>'+
+      '<section class="daily-preview-paper-section"><div class="daily-preview-live-performance"><div class="daily-preview-live-pct-grid">'+pctRows+'</div></div></section>'+
+      Array.from(sourceSections).map(section=>'<section class="daily-preview-paper-section">'+section.innerHTML+'</section>').join('')+
+      '<div class="daily-preview-paper-foot"><span>Confirmed DSR · read only</span><span>'+h(dailyReportIdLabel(date))+'</span></div>';
+
+    details.hidden=true;
+    document.body.classList.remove('daily-detail-open');
+  }catch(e){
+    closeDailyDsrPreview();
+    toast('Could not open DSR: '+String(e.message||'Request failed'));
+  }
+}
 function selectDailyReportDate(date){
   const input=document.getElementById('report-date');
   if(input)input.value=date;
