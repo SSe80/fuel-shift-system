@@ -2934,7 +2934,9 @@ async function loadDailyReport(showDetails=false){
         section.className='dsr-product-group';
         const title=document.createElement('div');
         title.className='dsr-product-group-title';
-        const productInfo=productFor(key)||{};
+        const rawKey=String(key||'');
+        const directInfo=productFor(rawKey)||{};
+        const productInfo=directInfo.color?directInfo:(Object.values(window.currentDsrProductInfo||{}).find(p=>String(p?.code||'').toLowerCase()===rawKey.toLowerCase()||String(p?.name||'').toLowerCase()===rawKey.toLowerCase())||directInfo);
         const productColor=productInfo.color||'';
         title.innerHTML='<b class="dsr-product-group-name"><i class="dsr-product-group-dot" style="'+(productColor?'background:'+h(productColor)+';':'')+'"></i>'+h(key)+'</b>';
         section.appendChild(title);
