@@ -36,7 +36,7 @@
       if (user.role !== role) {
         throw new Error('This account is not valid for the selected login');
       }
-      try { window.localStorage.setItem('fuelRole', role); } catch (_) {}
+      try { window.sessionStorage.setItem('fuelRole', role); } catch (_) {}
       window.location.replace(role === 'admin' ? 'admin-dashboard.html' : 'attendant-dashboard.html');
     })
     .catch(function (error) {
