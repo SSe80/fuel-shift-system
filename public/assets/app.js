@@ -2359,7 +2359,7 @@ function renderDailyPreviewHistoryCard(item){
   const dateLabel=dailyReportIdLabel(item.date);
   return '<article class="purchase-history-recorded-minimized daily-dsr-history-card daily-dsr-preview-card" data-dsr-date="'+h(item.date)+'">'+
     '<button type="button" class="purchase-history-recorded-head daily-dsr-history-head" onclick="toggleDailyHistoryCard(event,this)" aria-expanded="false">'+
-      '<span class="purchase-history-recorded-title daily-dsr-history-title"><span class="daily-dsr-history-dot"></span><span><strong>'+h(dateLabel)+'</strong><small>DSR preview · not confirmed</small></span></span>'+
+      '<span class="purchase-history-recorded-title daily-dsr-history-title"><span class="purchase-product-color daily-dsr-history-dot"></span><span><strong>'+h(dateLabel)+'</strong><small>DSR preview · not confirmed</small></span></span>'+
       '<span class="purchase-history-recorded-right"><span class="daily-dsr-status-preview">Preview</span><span class="purchase-history-recorded-toggle daily-dsr-history-toggle" aria-hidden="true">⌄</span></span>'+
     '</button>'+
     '<div class="purchase-history-recorded-body daily-dsr-history-body" hidden>'+
@@ -2372,7 +2372,7 @@ function renderDailyHistoryCard(item){
   const dateLabel=dailyReportIdLabel(item.date);
   return '<article class="purchase-history-recorded-minimized daily-dsr-history-card" data-dsr-date="'+h(item.date)+'">'+
     '<button type="button" class="purchase-history-recorded-head daily-dsr-history-head" onclick="toggleDailyHistoryCard(event,this)" aria-expanded="false">'+
-      '<span class="purchase-history-recorded-title daily-dsr-history-title"><span class="daily-dsr-history-dot"></span><span><strong>'+h(dateLabel)+'</strong><small>Confirmed '+h(confirmedAt)+'</small></span></span>'+
+      '<span class="purchase-history-recorded-title daily-dsr-history-title"><span class="purchase-product-color daily-dsr-history-dot"></span><span><strong>'+h(dateLabel)+'</strong><small>Confirmed '+h(confirmedAt)+'</small></span></span>'+
       '<span class="purchase-history-recorded-right"><span class="daily-dsr-status-confirmed">Confirmed</span><span class="purchase-history-recorded-toggle daily-dsr-history-toggle" aria-hidden="true">⌄</span></span>'+
     '</button>'+
     '<div class="purchase-history-recorded-body daily-dsr-history-body" hidden>'+
