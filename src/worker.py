@@ -2478,6 +2478,9 @@ def daily_report():
         "order":"purchase_date.asc","limit":"5000"
     })
     if purchases_status!=200:return jsonify({"error":purchase_source_rows}),purchases_status
+    def _json_list(value):
+        return value if isinstance(value,list) else []
+
     purchase_rows=[]
     for p in purchase_source_rows:
         purchase_date_local=_local_date_from_iso(p.get("purchase_date"))
@@ -2832,9 +2835,6 @@ def daily_report():
     shift_reading_map={}
     for rr in nozzle_reading_rows:
         shift_reading_map.setdefault(str(rr.get("shift_id")),[]).append(rr)
-
-    def _json_list(value):
-        return value if isinstance(value,list) else []
 
     def _shift_nozzle_refs(shift):
         sid=str(shift.get("id") or "")
