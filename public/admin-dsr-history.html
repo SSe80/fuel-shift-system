@@ -70,7 +70,19 @@
  .dsr-history-actions{grid-template-columns:1fr}
 }
 </style></head>
-<body class="dsr-history-page">
+<body class="dsr-history-page admin-shell">
+<aside class="admin-sidebar" aria-label="Admin navigation">
+  <div class="admin-sidebar-brand"><strong>FUEL SHIFT</strong><small>Admin Control</small></div>
+  <nav class="admin-sidebar-nav">
+    <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
+    <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
+    <a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a>
+    <a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>DSR</b></a>
+    <a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a>
+  </nav>
+  <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
+</aside>
+
 <main class="wrap admin-dsr-history-page">
 <header class="dsr-history-header">
  <div><span class="dsr-history-eyebrow">REPORTING</span><h1>DSR History</h1><p>Complete confirmed Daily Sales Report history.</p></div>
