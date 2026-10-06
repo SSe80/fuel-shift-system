@@ -3986,3 +3986,34 @@ body.daily-preview-open{overflow:hidden}
   }
   .admin-daily-report-page .daily-dsr-history-main strong{font-size:14px!important}
 }
+
+/* Unified admin shell + sidebar */
+body.admin-shell{min-height:100vh;padding:0;background:#f4f7f9}
+body.admin-shell>.admin-sidebar{position:fixed;z-index:900;left:0;top:0;bottom:0;width:246px;padding:20px 14px;display:flex;flex-direction:column;background:#111827;color:#e5e7eb;border-right:1px solid #253047;box-shadow:8px 0 28px #10182812}
+.admin-sidebar-brand{display:flex;align-items:center;gap:11px;padding:5px 10px 22px}
+.admin-sidebar-mark{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:#2563eb;color:#fff;font-size:13px;font-weight:900;letter-spacing:.04em}
+.admin-sidebar-brand strong{display:block;font-size:15px;line-height:1.2;color:#fff}
+.admin-sidebar-brand small{display:block;margin-top:3px;font-size:10px;color:#98a2b3;letter-spacing:.05em}
+.admin-sidebar-nav{display:grid;gap:5px}
+.admin-sidebar-nav a,.admin-sidebar-logout{width:100%;display:flex;align-items:center;gap:11px;min-height:46px;padding:0 12px;border:1px solid transparent;border-radius:11px;background:transparent;color:#aeb8c7;text-align:left;text-decoration:none;font-size:13px}
+.admin-sidebar-nav a span,.admin-sidebar-logout span{width:22px;text-align:center;font-size:17px;line-height:1}
+.admin-sidebar-nav a b,.admin-sidebar-logout b{font-weight:700}
+.admin-sidebar-nav a:hover{background:#1b2638;color:#fff}
+.admin-sidebar-nav a.active{background:#1d4ed8;color:#fff;box-shadow:0 4px 12px #0b4dcc33}
+.admin-sidebar-logout{margin-top:auto;cursor:pointer}
+.admin-sidebar-logout:hover{background:#1b2638;color:#fff}
+body.admin-shell>main{margin-left:246px;width:calc(100% - 246px);max-width:none;padding:18px 28px 42px}
+body.admin-shell>main.wrap{margin-left:246px;margin-right:0}
+body.admin-shell .admin-legacy-nav{display:none!important}
+body.admin-shell .purchase-header,body.admin-shell .settings-header{max-width:1180px;margin-left:auto;margin-right:auto}
+body.admin-shell .sales-page-sections,body.admin-shell .settings-section,body.admin-shell .purchase-section{max-width:1180px}
+body.admin-shell .admin-daily-report-page{max-width:1180px;margin-left:auto;margin-right:auto}
+@media(max-width:800px){
+  body.admin-shell>.admin-sidebar{position:sticky;top:0;left:auto;bottom:auto;width:100%;height:auto;padding:10px 10px 8px;display:block;overflow-x:auto;white-space:nowrap;border-right:0;border-bottom:1px solid #253047;box-shadow:0 4px 16px #10182818}
+  .admin-sidebar-brand{display:none}
+  .admin-sidebar-nav{display:flex;gap:6px;width:max-content}
+  .admin-sidebar-nav a,.admin-sidebar-logout{width:auto;min-height:42px;padding:0 12px;display:inline-flex}
+  .admin-sidebar-nav a span,.admin-sidebar-logout span{width:auto}
+  .admin-sidebar-logout{margin:0}
+  body.admin-shell>main,body.admin-shell>main.wrap{width:100%;margin:0;padding:14px 14px 34px}
+}
