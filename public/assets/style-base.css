@@ -4426,3 +4426,146 @@ body.admin-shell #activity>.card{
   body.admin-shell>.wrap>.statgrid .stat b{font-size:19px}
   body.admin-shell>.wrap>.card{padding:13px;border-radius:13px}
 }
+
+
+/* Dashboard and handover opening readings — larger, easier to read */
+.attendant-page .active-shift-card .active-shift-info>div:last-child strong{
+  font-size:26px!important;
+  line-height:1.05!important;
+  font-variant-numeric:tabular-nums;
+}
+.attendant-page .active-shift-card .active-shift-reading-list .pending-nozzle-number{
+  font-size:32px!important;
+  line-height:1.05!important;
+}
+.attendant-page .handover-pending-card .handover-pending-reading strong{
+  font-size:20px!important;
+  line-height:1.1!important;
+}
+.attendant-page .handover-receive-card .pending-tank-opening strong{
+  font-size:28px!important;
+}
+.attendant-page .handover-receive-card .pending-nozzle-number{
+  font-size:32px!important;
+}
+.attendant-page .handover-nozzle-input small{
+  font-size:14px!important;
+  font-weight:650!important;
+}
+.attendant-page .handover-review-row strong{
+  font-size:18px!important;
+}
+@media(max-width:600px){
+  .attendant-page .active-shift-card .active-shift-info>div:last-child strong{
+    font-size:24px!important;
+  }
+  .attendant-page .active-shift-card .active-shift-reading-list .pending-nozzle-number,
+  .attendant-page .handover-receive-card .pending-nozzle-number{
+    font-size:30px!important;
+  }
+  .attendant-page .handover-pending-card .handover-pending-reading strong{
+    font-size:19px!important;
+  }
+  .attendant-page .handover-receive-card .pending-tank-opening strong{
+    font-size:26px!important;
+  }
+}
+
+/* In-app confirmation result card */
+.attendant-action-result-modal{
+  position:fixed;
+  inset:0;
+  z-index:3200;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+.attendant-action-result-modal.open{display:flex}
+.attendant-action-result-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(20,10,14,.46);
+  backdrop-filter:blur(3px);
+}
+.attendant-action-result-card{
+  position:relative;
+  width:min(430px,100%);
+  padding:24px 22px 20px;
+  border:1px solid #f3c2c8;
+  border-radius:20px;
+  background:#fff;
+  box-shadow:0 24px 70px rgba(194,35,53,.22);
+  text-align:center;
+  animation:attendantResultIn .18s ease-out;
+}
+.attendant-action-result-icon{
+  width:58px;
+  height:58px;
+  margin:0 auto 14px;
+  display:grid;
+  place-items:center;
+  border-radius:18px;
+  font-size:30px;
+  font-weight:900;
+}
+.attendant-action-result-card.success .attendant-action-result-icon{
+  background:#e8f8ee;
+  color:#16834a;
+  border:1px solid #b9e7cb;
+}
+.attendant-action-result-card.failed .attendant-action-result-icon{
+  background:#fff0f1;
+  color:#dc2638;
+  border:1px solid #f3a0aa;
+}
+.attendant-action-result-kicker{
+  display:block;
+  margin-bottom:5px;
+  color:#b42333;
+  font-size:9px;
+  font-weight:850;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+.attendant-action-result-card h3{
+  margin:0;
+  color:#7f1721;
+  font-size:22px;
+  line-height:1.2;
+}
+.attendant-action-result-card p{
+  margin:8px auto 0;
+  max-width:350px;
+  color:#8b6268;
+  font-size:13px;
+  line-height:1.5;
+}
+.attendant-action-result-actions{
+  display:flex;
+  justify-content:center;
+  margin-top:18px;
+}
+.attendant-action-result-actions button{
+  min-width:130px;
+  min-height:40px;
+  padding:9px 16px;
+  border-radius:10px;
+  border:1px solid #b91c2d;
+  background:linear-gradient(135deg,#dc2638,#c91f32);
+  color:#fff;
+  font:inherit;
+  font-size:13px;
+  font-weight:800;
+  cursor:pointer;
+}
+@keyframes attendantResultIn{
+  from{opacity:0;transform:translateY(7px) scale(.985)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media(max-width:600px){
+  .attendant-action-result-modal{padding:14px}
+  .attendant-action-result-card{padding:22px 18px 18px;border-radius:17px}
+  .attendant-action-result-card h3{font-size:20px}
+  .attendant-action-result-card p{font-size:12px}
+}
