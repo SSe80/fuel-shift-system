@@ -949,6 +949,57 @@ body.dsr-detail-page .dsr-sales-total-liters{
     font-size:17px!important;
   }
 }
+</style><style>
+/* Force Sales Summary total rows into horizontal label/value layout */
+body.dsr-detail-page .dsr-sales-total{
+  display:block!important;
+  width:100%!important;
+  padding:0!important;
+  margin-top:12px!important;
+  border-top:1px solid #cfd8e3!important;
+  border-bottom:0!important;
+  background:transparent!important;
+  border-radius:0!important;
+}
+body.dsr-detail-page .dsr-sales-total-row{
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:16px!important;
+  width:100%!important;
+  min-height:52px!important;
+  padding:11px 0!important;
+  box-sizing:border-box!important;
+  border-bottom:1px solid #e1e7ee!important;
+}
+body.dsr-detail-page .dsr-sales-total-row span{
+  display:block!important;
+  margin:0!important;
+  font-size:13px!important;
+  font-weight:750!important;
+  color:#667085!important;
+}
+body.dsr-detail-page .dsr-sales-total-row strong{
+  display:block!important;
+  margin:0!important;
+  font-size:18px!important;
+  font-weight:800!important;
+  color:#1264d8!important;
+  text-align:right!important;
+  white-space:nowrap!important;
+}
+body.dsr-detail-page .dsr-sales-total-row:last-child{
+  border-bottom:0!important;
+}
+@media(max-width:650px){
+  body.dsr-detail-page .dsr-sales-total-row{
+    min-height:48px!important;
+    padding:10px 0!important;
+  }
+  body.dsr-detail-page .dsr-sales-total-row span{font-size:12px!important}
+  body.dsr-detail-page .dsr-sales-total-row strong{font-size:17px!important}
+}
 </style></head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
@@ -1056,7 +1107,7 @@ body.dsr-detail-page .dsr-sales-total-liters{
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
-<script src="assets/app.js?v=20261006-06"></script>
+<script src="assets/app.js?v=20261007-01"></script>
 <script>
 (function(){
   function bootDetail(){
