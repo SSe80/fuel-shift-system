@@ -2395,7 +2395,23 @@ def confirm_daily_report(report_date):
         "report":generated.get("report") if isinstance(generated,dict) else generated
     }),200
 
+def _daily_report_error_boundary(fn):
+    def wrapped(*args,**kwargs):
+        try:
+            return fn(*args,**kwargs)
+        except Exception as exc:
+            # Keep the failure actionable for authenticated admin DSR requests.
+            # The generic Worker 500 otherwise hides the actual failing field/
+            # expression and makes production diagnosis unnecessarily blind.
+            return jsonify({
+                "error":"Daily report generation failed",
+                "type":type(exc).__name__,
+                "message":str(exc)
+            }),500
+    return wrapped
+
 @app.get("/api/reports/daily")
+@_daily_report_error_boundary
 def daily_report():
     auth=require_admin()
     if auth:return auth
