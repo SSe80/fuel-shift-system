@@ -3465,6 +3465,11 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 });
 
+// DSR History is intentionally not a sidebar destination; keep it hidden even on cached/legacy markup.
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.admin-sidebar-nav a[data-admin-nav="dsr-history"], .admin-sidebar-nav a[href="admin-dsr-history.html"]').forEach(link=>link.remove());
+});
+
 // Unified admin sidebar active-state
 document.addEventListener('DOMContentLoaded',()=>{
   const links=document.querySelectorAll('.admin-sidebar-nav a[data-admin-nav]');
