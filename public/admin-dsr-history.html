@@ -13,8 +13,71 @@
 .dsr-history-page .dsr-history-month.expanded .dsr-history-month-toggle{background:#eef4ff;color:#2563eb;border-color:#c7d7fe}
 .dsr-history-page .dsr-history-month-body{padding:10px;border-top:1px solid #edf1f4;background:#fcfdff}
 .dsr-history-page .dsr-history-month-body[hidden]{display:none}
+</style><style>
+/* DSR History — match Purchase History typography, spacing and card language */
+.dsr-history-page .purchase-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:18px 4px 20px}
+.dsr-history-page .purchase-header .eyebrow,.dsr-history-page .purchase-section .section-kicker{display:block;font-size:11px;letter-spacing:.12em;font-weight:800;color:#64748b;margin-bottom:6px}
+.dsr-history-page .purchase-header h1{margin:0;font-size:32px;line-height:1.1;letter-spacing:-.03em}
+.dsr-history-page .purchase-header .muted{margin:7px 0 0;font-size:14px}
+.dsr-history-page .purchase-back{display:inline-flex;align-items:center;padding:10px 14px;border:1px solid #d8e0e8;border-radius:12px;background:#fff;color:#334155;font-weight:750;box-shadow:0 2px 8px #17202a0a;text-decoration:none}
+.dsr-history-page .purchase-section{margin:0 0 18px;padding:22px;border:1px solid #e1e8f0;border-radius:20px;background:#fff;box-shadow:0 7px 26px #17202a0d}
+.dsr-history-page .purchase-section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #edf1f5}
+.dsr-history-page .purchase-section h2{margin:0;font-size:21px;letter-spacing:-.02em}
+.dsr-history-page .purchase-section p{margin:5px 0 0;color:#718096;font-size:13px;line-height:1.45}
+.dsr-history-page .purchase-section .section-kicker{color:#1264d8}
+.dsr-history-page .daily-report-date-cards{display:grid;gap:10px}
+
+/* Month heads use the same visual language as Purchase History */
+.dsr-history-page .dsr-history-month{margin:0 0 16px;border:1px solid #4b83bd;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 2px 8px #17202a0a}
+.dsr-history-page .dsr-history-month-head{width:100%;min-height:62px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:0;border-bottom:1px solid #e5eaf0;background:#f7f9fb;color:#17202a;text-align:left;cursor:pointer}
+.dsr-history-page .dsr-history-month-head:hover{background:#f3f6f9}
+.dsr-history-page .dsr-history-month-title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dsr-history-page .dsr-history-month-title span{font-size:9px;letter-spacing:.1em;font-weight:800;color:#1264d8}
+.dsr-history-page .dsr-history-month-title strong{font-size:15px;line-height:1.2;font-weight:800}
+.dsr-history-page .dsr-history-month-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.dsr-history-page .dsr-history-month-right small{color:#667085;font-size:10px}
+.dsr-history-page .dsr-history-month-toggle{width:27px;height:27px;display:grid;place-items:center;border:1px solid #d8e0e8;border-radius:8px;background:#fff;color:#667085;font-size:16px;font-weight:800}
+.dsr-history-page .dsr-history-month.expanded .dsr-history-month-toggle{background:#eef4ff;color:#2563eb;border-color:#c7d7fe}
+.dsr-history-page .dsr-history-month-body{max-height:430px;overflow-y:auto;overflow-x:hidden;padding:12px;background:#fff;border-top:0;scrollbar-width:thin}
+.dsr-history-page .dsr-history-month-body[hidden]{display:none}
+
+/* DSR cards — same proportions, typography and interaction as Purchase History cards */
+.dsr-history-page .dsr-history-card{overflow:hidden;border:1px solid #e4e9ef;border-radius:14px;background:#fff;box-shadow:0 3px 12px rgba(16,24,40,.055);margin:0 0 10px;transition:box-shadow .18s ease,border-color .18s ease}
+.dsr-history-page .dsr-history-card:last-child{margin-bottom:0}
+.dsr-history-page .dsr-history-card.expanded{border-color:#cfd9e4;box-shadow:0 5px 16px rgba(16,24,40,.07)}
+.dsr-history-page .dsr-history-card-head{width:100%;min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px 13px 17px;border:0;background:#fff;color:#17202a;text-align:left;cursor:pointer}
+.dsr-history-page .dsr-history-card-head:hover{background:#fafbfd}
+.dsr-history-page .dsr-history-card-title{min-width:0;display:flex;flex-direction:column;gap:3px}
+.dsr-history-page .dsr-history-card-title strong{font-size:14px;line-height:1.2;font-weight:800;color:#17202a;overflow-wrap:anywhere}
+.dsr-history-page .dsr-history-card-title small{font-size:10px;line-height:1.25;color:#8a949e}
+.dsr-history-page .dsr-history-card-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.dsr-history-page .dsr-history-badge{margin:0;padding:4px 7px;border-radius:999px;background:#ecfdf3;color:#027a48;border:1px solid #abefc6;font-size:9px;font-weight:850;white-space:nowrap}
+.dsr-history-page .dsr-history-toggle{width:27px;height:27px;display:grid;place-items:center;border:1px solid #dce3ea;border-radius:8px;background:#f8fafc;color:#667085;font-size:16px;font-weight:800;line-height:1}
+.dsr-history-page .dsr-history-card.expanded .dsr-history-toggle{background:#eef4ff;color:#2563eb;border-color:#c7d7fe}
+.dsr-history-page .dsr-history-card-body{padding:0 14px 13px;border-top:1px solid #edf1f4;background:#fcfdff}
+.dsr-history-page .dsr-history-card-body[hidden]{display:none}
+.dsr-history-page .dsr-history-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.dsr-history-page .dsr-history-stat{padding:10px;border:1px solid #e8edf2;border-radius:10px;background:#fff;min-width:0}
+.dsr-history-page .dsr-history-stat span{display:block;font-size:9px;color:#8a949e;margin-bottom:3px}
+.dsr-history-page .dsr-history-stat strong{display:block;font-size:12px;color:#17202a;overflow-wrap:anywhere}
+.dsr-history-page .dsr-history-actions{margin-top:10px}
+.dsr-history-page .dsr-history-actions a{width:100%;min-height:40px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 12px;border-radius:9px;text-decoration:none;font-size:12px;font-weight:800}
+.dsr-history-page .dsr-history-actions a.primary{border:1px solid #4b83bd;background:#4b83bd;color:#fff;box-shadow:0 4px 12px rgba(75,131,189,.18)}
+@media(max-width:600px){
+ .dsr-history-page .purchase-header{padding:15px 4px 17px;align-items:flex-start}
+ .dsr-history-page .purchase-header h1{font-size:28px}
+ .dsr-history-page .purchase-back{padding:9px 12px;font-size:13px}
+ .dsr-history-page .purchase-section{padding:17px 16px;border-radius:18px}
+ .dsr-history-page .purchase-section-head{gap:10px;margin-bottom:15px;padding-bottom:13px}
+ .dsr-history-page .purchase-section h2{font-size:20px}
+ .dsr-history-page .dsr-history-month-body{max-height:360px;padding:9px}
+ .dsr-history-page .dsr-history-card-head{min-height:68px;padding:11px 11px 11px 14px}
+ .dsr-history-page .dsr-history-card-title strong{font-size:13px}
+ .dsr-history-page .dsr-history-card-title small{font-size:9px}
+ .dsr-history-page .dsr-history-stats{grid-template-columns:1fr 1fr;gap:6px}
+}
 </style></head>
-<body class="admin-shell daily-report-page dsr-history-page" data-app-page="adminDsrHistory">
+<body class="admin-shell admin-purchases-page admin-purchase-history-page dsr-history-page" data-app-page="adminDsrHistory">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
 <aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
@@ -27,10 +90,10 @@
   </nav>
   <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
 </aside>
-<main class="wrap admin-daily-report-page">
-<header class="purchase-header daily-report-header"><div><span class="eyebrow">REPORTING</span><h1>DSR History</h1><p class="muted">Each confirmed date is shown as a compact card.</p></div><a class="purchase-back" href="admin-daily-report.html">← DSR</a></header>
-<section class="purchase-section daily-section daily-history-section">
-  <div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">DSR HISTORY</span><h2>DSR history</h2><p class="muted">Each confirmed date is shown as a compact card. Expand details or open the full report.</p></div></div>
+<main class="wrap">
+<header class="purchase-header"><div><span class="eyebrow">REPORTING</span><h1>DSR History</h1><p class="muted">All confirmed daily sales reports.</p></div><a class="purchase-back" href="admin-daily-report.html">← DSR</a></header>
+<section class="purchase-section">
+  <div class="purchase-section-head"><div><span class="section-kicker">DSR</span><h2>DSR History</h2><p class="muted">Complete confirmed daily report history.</p></div><span class="admin-sales-section-count" id="dsr-history-count">0 confirmed</span></div>
   <div id="daily-report-date-cards" class="daily-report-date-cards"></div>
 </section>
 <div id="toast" class="toast"></div>
@@ -44,6 +107,7 @@
    const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
    const rows=await api('/api/reports/daily/confirmations');
    const confirmed=(Array.isArray(rows)?rows:[]).filter(x=>x.status==='confirmed').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+   const count=document.getElementById('dsr-history-count'); if(count)count.textContent=confirmed.length+' confirmed';
    if(!confirmed.length){box.innerHTML='<div class="card">No confirmed DSR reports found.</div>';return;}
    const monthGroups={};
    confirmed.forEach(item=>{
