@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request, session
 from workers import wsgi
 import os, base64, hmac, secrets, hashlib, json
 from datetime import datetime, timezone, date, timedelta
+from functools import wraps
 from pyodide.ffi import run_sync, to_js
 from js import crypto, Uint8Array, Object
 from supabase_rest import request as sb_request
@@ -3549,6 +3550,7 @@ def daily_report_revisions():
     return jsonify(rows or [])
 
 def _daily_report_error_boundary(fn):
+    @wraps(fn)
     def wrapped(*args,**kwargs):
         try:
             return fn(*args,**kwargs)
