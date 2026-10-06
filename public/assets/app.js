@@ -2448,73 +2448,74 @@ function closeDailyReportDetail(){
 document.addEventListener('keydown',event=>{
   if(event.key==='Escape')closeDailyDsrPreview();
 });
-async function openDailyHistoryReport(date){
+function openDailyHistoryReport(date){
   if(!date)return;
-  try{
-    const input=document.getElementById('report-date');
-    if(input)input.value=date;
-    const modal=document.getElementById('daily-dsr-preview-modal');
-    const paper=document.getElementById('daily-dsr-preview-paper');
-    const details=document.getElementById('daily-report-details');
-    if(!modal||!paper||!details)throw new Error('DSR report modal is unavailable');
+  const input=document.getElementById('report-date');
+  const modal=document.getElementById('daily-dsr-preview-modal');
+  const paper=document.getElementById('daily-dsr-preview-paper');
+  const details=document.getElementById('daily-report-details');
+  if(input)input.value=date;
+  if(!modal||!paper||!details){
+    toast('Could not open DSR: report viewer is unavailable');
+    return;
+  }
 
-    paper.innerHTML='<div class="daily-preview-loading"><strong>Loading DSR…</strong><span>'+h(dailyReportIdLabel(date))+'</span></div>';
-    modal.classList.add('open');
-    modal.setAttribute('aria-hidden','false');
-    document.body.classList.add('daily-preview-open');
+  // Open the viewer synchronously and return control to the browser.
+  // Heavy report generation must never run in the click event itself.
+  paper.innerHTML='<div class="daily-preview-loading"><strong>Loading DSR…</strong><span>'+h(dailyReportIdLabel(date))+'</span></div>';
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+  document.body.classList.add('daily-preview-open');
 
-    await loadDailyReport();
+  const begin=()=>{
+    if(!modal.classList.contains('open'))return;
+    loadDailyReport().then(()=>{
+      if(!modal.classList.contains('open'))return;
+      const r=window.currentDailyReportData||{};
+      const sourceSummary=document.getElementById('report-summary');
+      const sourceSections=details.querySelectorAll(':scope > section');
+      const perf=r.dsr_performance||{};
+      const pctRows=[
+        ['Dispenser contribution',(perf.dispenser_contribution||[]).map(x=>'<div><span>'+h(x.dispenser||'Dispenser')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>').join('')],
+        ['Sales method performance',(perf.sales_method_performance||[]).map(x=>'<div><span>'+h(x.type||'Sale method')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>').join('')],
+        ['Tank reconciliation',(perf.tank_reconciliation||[]).map(x=>'<div><span>'+h(x.tank||'Tank')+'</span><b>'+Number(x.reconciliation_pct||0).toFixed(1)+'%</b></div>').join('')],
+        ['Nozzle reconciliation','<div><span>Average nozzle reconciliation</span><b>'+Number(perf.average_nozzle_reconciliation_pct||0).toFixed(1)+'%</b></div>']
+      ].map(x=>'<div class="daily-preview-live-pct"><h4>'+h(x[0])+'</h4>'+(x[1]||'<p>No percentage data recorded.</p>')+'</div>').join('');
 
-    const r=window.currentDailyReportData||{};
-    const sourceSummary=document.getElementById('report-summary');
-    const sourceStatus=document.getElementById('report-status');
-    const sourceSections=details.querySelectorAll(':scope > section');
-    const perf=r.dsr_performance||{};
-    const pctRows=[
-      ['Dispenser contribution',(perf.dispenser_contribution||[]).map(x=>'<div><span>'+h(x.dispenser||'Dispenser')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>').join('')],
-      ['Sales method performance',(perf.sales_method_performance||[]).map(x=>'<div><span>'+h(x.type||'Sale method')+'</span><b>'+Number(x.percentage||0).toFixed(1)+'%</b></div>').join('')],
-      ['Tank reconciliation',(perf.tank_reconciliation||[]).map(x=>'<div><span>'+h(x.tank||'Tank')+'</span><b>'+Number(x.reconciliation_pct||0).toFixed(1)+'%</b></div>').join('')],
-      ['Nozzle reconciliation','<div><span>Average nozzle reconciliation</span><b>'+Number(perf.average_nozzle_reconciliation_pct||0).toFixed(1)+'%</b></div>']
-    ].map(x=>'<div class="daily-preview-live-pct"><h4>'+h(x[0])+'</h4>'+(x[1]||'<p>No percentage data recorded.</p>')+'</div>').join('');
+      paper.innerHTML=
+        '<div class="daily-preview-paper-head"><div><span class="daily-preview-paper-kicker">STATION DAILY RECONCILIATION</span><h2>Daily Sales Report</h2><p>'+h(dailyReportIdLabel(date))+'</p></div><span class="daily-preview-paper-badge daily-preview-confirmed-badge">CONFIRMED DSR</span></div>'+
+        '<div class="daily-preview-paper-meta"><span>Report date <b>'+h(dailyReportIdLabel(date))+'</b></span><span>Status <b>Confirmed · full report</b></span></div>'+
+        '<div class="daily-preview-paper-status">Authoritative DSR data · this report is read-only and does not change the saved DSR.</div>'+
+        '<section class="daily-preview-paper-section"><div class="daily-preview-live-performance"><div class="daily-preview-live-pct-grid">'+pctRows+'</div></div></section>';
 
-    paper.innerHTML=
-      '<div class="daily-preview-paper-head">'+
-        '<div><span class="daily-preview-paper-kicker">STATION DAILY RECONCILIATION</span>'+
-        '<h2>Daily Sales Report</h2>'+
-        '<p>'+h(dailyReportIdLabel(date))+'</p></div>'+
-        '<span class="daily-preview-paper-badge daily-preview-confirmed-badge">CONFIRMED DSR</span>'+
-      '</div>'+
-      '<div class="daily-preview-paper-meta">'+
-        '<span>Report date <b>'+h(dailyReportIdLabel(date))+'</b></span>'+
-        '<span>Status <b>Confirmed · full report</b></span>'+
-      '</div>'+
-      '<div class="daily-preview-paper-status">Authoritative DSR data · this report is read-only and does not change the saved DSR.</div>'+
-      '<section class="daily-preview-paper-section"><div class="daily-preview-live-performance"><div class="daily-preview-live-pct-grid">'+pctRows+'</div></div></section>';
-
-    // Clone the already-built sections rather than converting them to HTML and
-    // making the browser parse the entire report a second time.
-    if(sourceSummary){
-      const summarySection=document.createElement('section');
-      summarySection.className='daily-preview-paper-section';
-      summarySection.appendChild(sourceSummary.cloneNode(true));
-      paper.appendChild(summarySection);
-    }
-    sourceSections.forEach(section=>{
-      const wrapper=document.createElement('section');
-      wrapper.className='daily-preview-paper-section';
-      wrapper.appendChild(section.cloneNode(true));
-      paper.appendChild(wrapper);
+      if(sourceSummary){
+        const summarySection=document.createElement('section');
+        summarySection.className='daily-preview-paper-section';
+        summarySection.appendChild(sourceSummary.cloneNode(true));
+        paper.appendChild(summarySection);
+      }
+      sourceSections.forEach(section=>{
+        const wrapper=document.createElement('section');
+        wrapper.className='daily-preview-paper-section';
+        wrapper.appendChild(section.cloneNode(true));
+        paper.appendChild(wrapper);
+      });
+      const foot=document.createElement('div');
+      foot.className='daily-preview-paper-foot';
+      foot.innerHTML='<span>Confirmed DSR · read only</span><span>'+h(dailyReportIdLabel(date))+'</span>';
+      paper.appendChild(foot);
+      details.hidden=true;
+    }).catch(e=>{
+      closeDailyDsrPreview();
+      toast('Could not open DSR: '+String(e.message||'Request failed'));
     });
-    const foot=document.createElement('div');
-    foot.className='daily-preview-paper-foot';
-    foot.innerHTML='<span>Confirmed DSR · read only</span><span>'+h(dailyReportIdLabel(date))+'</span>';
-    paper.appendChild(foot);
+  };
 
-    details.hidden=true;
-    document.body.classList.remove('daily-detail-open');
-  }catch(e){
-    closeDailyDsrPreview();
-    toast('Could not open DSR: '+String(e.message||'Request failed'));
+  // One frame is reserved exclusively for displaying the viewer/loading state.
+  if(typeof requestAnimationFrame==='function'){
+    requestAnimationFrame(()=>requestAnimationFrame(begin));
+  }else{
+    setTimeout(begin,32);
   }
 }
 function selectDailyReportDate(date){
