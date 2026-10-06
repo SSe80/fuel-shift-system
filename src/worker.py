@@ -2737,7 +2737,7 @@ def daily_report():
             "sales_amount_difference":shift_a-calculated_shift_a if recorded_shift_a is not None else 0,
             "tank_opening_liters":float(h.get("tank_opening_liters") or x.get("opening_tank_liters") or 0),
             "tank_closing_liters":float(h.get("tank_closing_liters") or x.get("closing_liters") or 0),
-            "tank_purchases_liters":shift_purchase,
+            "tank_purchases_liters":0.0,
             "tank_sales_liters":float(h.get("tank_sales_liters") or shift_l),
             "tank_variance_liters":float(h.get("tank_variance_liters") or 0),
             "tank_variance_pct":float(h.get("tank_variance_pct") or 0),
@@ -3093,6 +3093,7 @@ def daily_report():
     # Use actual discharge operations as the DSR purchase ledger. A purchase
     # may be discharged in multiple operations and into different tanks.
     purchase_by_tank={}
+    purchase_by_shift={}
     purchase_adjustment_by_tank={}
     discharge_operations_by_tank={}
 
@@ -3201,6 +3202,9 @@ def daily_report():
 
             if discharge_attribution.get("shift_attribution_status")=="inside_shift":
                 purchase_by_tank[tid]=purchase_by_tank.get(tid,0.0)+discharged
+                attributed_shift_id=str(discharge_attribution.get("shift_id") or "")
+                if attributed_shift_id:
+                    purchase_by_shift[attributed_shift_id]=purchase_by_shift.get(attributed_shift_id,0.0)+discharged
                 total_operation_adjustment=(pre_discharge_adjustment + (stock_adjustment or 0))
                 if abs(total_operation_adjustment)>0.000001:
                     purchase_adjustment_by_tank[tid]=purchase_adjustment_by_tank.get(tid,0.0)+total_operation_adjustment
@@ -3232,6 +3236,9 @@ def daily_report():
                     discharged=float(p.get("discharged_quantity_liters") or 0)
                     purchase_by_tank[tid]=purchase_by_tank.get(tid,0.0)+discharged
                     discharge_attribution=_attribute_discharge_to_shift(p.get("discharged_at"))
+                    attributed_shift_id=str(discharge_attribution.get("shift_id") or "")
+                    if attributed_shift_id:
+                        purchase_by_shift[attributed_shift_id]=purchase_by_shift.get(attributed_shift_id,0.0)+discharged
                     discharge_operations_by_tank.setdefault(tid,[]).append({
                         "purchase_id":p.get("id"),
                         "operation_index":None,
@@ -3245,6 +3252,12 @@ def daily_report():
                         "stock_adjustment_liters":None,
                         "compartment_indexes":[],
                     })
+
+    # Attach physically discharged purchase volume to each responsible shift
+    # after discharge operations have been fully attributed.
+    for summary in shift_summary:
+        sid=str(summary.get("shift_id") or "")
+        summary["tank_purchases_liters"]=float(purchase_by_shift.get(sid,0.0))
 
     # Only include tanks that actually participate in this DSR through a
     # shift, a nozzle, or a purchase/discharge recorded for this report date.
