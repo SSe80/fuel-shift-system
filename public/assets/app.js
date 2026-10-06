@@ -3482,8 +3482,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     'admin-sales.html':'sales',
     'admin-sales-history.html':'sales',
     'admin-daily-report.html':'daily-report',
-    'admin-dsr-history.html':'dsr-history',
-    'admin-settings.html':'settings'
+        'admin-settings.html':'settings'
   };
   const active=map[page]||'';
   links.forEach(link=>{
