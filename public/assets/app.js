@@ -96,12 +96,30 @@ async function login(role) {
     location.href=user.role==='admin'?'admin-dashboard.html':'attendant-dashboard.html';
   } catch(e) { toast(e.message); }
 }
-async function logout(){
-  if(!window.confirm('Are you sure you want to log out?'))return;
+async function performLogout(){
   try{await api('/api/logout',{method:'POST',body:'{}'});}catch(_){}
   localStorage.removeItem('fuelRole');
   location.href='index.html';
 }
+function closeLogoutConfirmation(){
+  const modal=document.getElementById('logout-confirm-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+function openLogoutConfirmation(){
+  let modal=document.getElementById('logout-confirm-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='logout-confirm-modal';
+    modal.className='logout-confirm-modal';
+    modal.setAttribute('aria-hidden','true');
+    modal.innerHTML='<div class="logout-confirm-backdrop" onclick="closeLogoutConfirmation()"></div><div class="logout-confirm-card" role="dialog" aria-modal="true" aria-labelledby="logout-confirm-title"><div class="logout-confirm-icon">↪</div><div class="logout-confirm-content"><span class="section-kicker">SIGN OUT</span><h2 id="logout-confirm-title">Log out?</h2><p>Are you sure you want to log out of the Fuel Shift system?</p></div><div class="logout-confirm-actions"><button type="button" class="logout-cancel-button" onclick="closeLogoutConfirmation()">Cancel</button><button type="button" class="logout-confirm-button" onclick="performLogout()">Log out</button></div></div>';
+    document.body.appendChild(modal);
+  }
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+  setTimeout(()=>modal.querySelector('.logout-cancel-button')?.focus(),0);
+}
+async function logout(){openLogoutConfirmation();}
 async function currentUser(){return (await api('/api/me')).user;}
 
 function openTakeoverSaleModal(id){
