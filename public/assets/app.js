@@ -2370,7 +2370,7 @@ function renderDailyPreviewHistoryCard(item){
     '</button>'+
     '<div class="daily-dsr-history-body" hidden>'+
       '<div class="daily-dsr-history-details"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div><div><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div>'+
-      '<div class="daily-dsr-history-actions"><button type="button" onclick="toggleDailyHistoryCard(event,this)">Collapse</button><button type="button" class="daily-dsr-view" onclick="previewDailyReport(\\''+item.date+'\\')">View full report <span>→</span></button></div>'+
+      '<div class="daily-dsr-history-actions"><button type="button" onclick="toggleDailyHistoryCard(event,this)">Collapse</button><button type="button" class="daily-dsr-view" onclick="previewDailyReport(this.closest('.daily-dsr-history-card').dataset.dsrDate)"">View full report <span>→</span></button></div>'+
     '</div></article>';
 }
 function renderDailyHistoryCard(item){
