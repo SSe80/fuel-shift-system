@@ -141,7 +141,7 @@ body.dsr-detail-popup-open{overflow:hidden!important}
 <header class="purchase-header"><div><span class="eyebrow">REPORTING</span><h1>DSR History</h1><p class="muted">All confirmed daily sales reports.</p></div><a class="purchase-back" href="admin-daily-report.html">← DSR</a></header>
 <section class="purchase-section">
   <div class="purchase-section-head"><div><span class="section-kicker">DSR</span><h2>DSR History</h2><p class="muted">Complete confirmed daily report history.</p></div><span class="admin-sales-section-count" id="dsr-history-count">0 confirmed</span></div>
-  <div id="daily-report-date-cards" class="daily-report-date-cards"></div>
+  <div class="purchase-history-tools dsr-history-tools"><div class="purchase-history-search-wrap"><span aria-hidden="true">⌕</span><input id="dsr-history-search" type="search" placeholder="Search DSR date…" oninput="filterDsrHistory()"></div><select id="dsr-history-period" onchange="filterDsrHistory()" aria-label="DSR history date filter"><option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select><button type="button" class="purchase-history-refresh" onclick="loadDsrHistory()">↻ <span>Refresh</span></button></div>\n<div id="daily-report-date-cards" class="daily-report-date-cards"></div>
 </section>
 <div id="toast" class="toast"></div>
 </main>
@@ -153,32 +153,44 @@ body.dsr-detail-popup-open{overflow:hidden!important}
   try{
    const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
    const rows=await api('/api/reports/daily/confirmations');
-   const confirmed=(Array.isArray(rows)?rows:[]).filter(x=>x.status==='confirmed').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
-   const count=document.getElementById('dsr-history-count'); if(count)count.textContent=confirmed.length+' confirmed';
-   if(!confirmed.length){box.innerHTML='<div class="card">No confirmed DSR reports found.</div>';return;}
-   const monthGroups={};
-   confirmed.forEach(item=>{
-    const date=String(item.date||'');
-    const monthKey=/^\\d{4}-\\d{2}/.test(date)?date.slice(0,7):'unknown';
-    (monthGroups[monthKey]||(monthGroups[monthKey]=[])).push(item);
-   });
-   const monthKeys=Object.keys(monthGroups).sort((a,b)=>b.localeCompare(a));
-   box.innerHTML=monthKeys.map(monthKey=>{
-    const monthDate=new Date(monthKey+'-01T00:00:00');
-    const monthLabel=Number.isNaN(monthDate.getTime())?monthKey:monthDate.toLocaleDateString(undefined,{month:'long',year:'numeric'});
-    const items=monthGroups[monthKey];
-    return '<section class="dsr-history-month" data-month-key="'+monthKey+'">'+
-      '<button type="button" class="dsr-history-month-head" onclick="toggleDsrMonth(this)" aria-expanded="false">'+
-       '<span class="dsr-history-month-title"><span>MONTH</span><strong>'+monthLabel+'</strong></span>'+
-       '<span class="dsr-history-month-right"><small>'+items.length+' DSR'+(items.length===1?'':'s')+'</small><span class="dsr-history-month-toggle" aria-hidden="true">⌄</span></span>'+
-      '</button>'+
-      '<div class="dsr-history-month-body" hidden>'+items.map(renderDsrHistoryCard).join('')+'</div>'+
-     '</section>';
-   }).join('');
+   window.dsrHistoryData=(Array.isArray(rows)?rows:[]).filter(x=>x.status==='confirmed').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+   filterDsrHistory();
+  }catch(e){console.error(e);box.innerHTML='<div class="card">Could not load DSR history: '+String(e.message||e)+'</div>';}
+ }
   }catch(e){console.error(e);box.innerHTML='<div class="card">Could not load DSR history: '+String(e.message||e)+'</div>';}
  }
  window.addEventListener('load',load);
 })();
+window.filterDsrHistory=function(){
+ const box=document.getElementById('daily-report-date-cards'); if(!box)return;
+ const all=Array.isArray(window.dsrHistoryData)?window.dsrHistoryData:[];
+ const search=(document.getElementById('dsr-history-search')?.value||'').trim().toLowerCase();
+ const period=document.getElementById('dsr-history-period')?.value||'all';
+ const rows=all.filter(item=>{
+  const date=String(item.date||'');
+  const hay=[date,item.confirmed_at,item.dsr_id].filter(Boolean).join(' ').toLowerCase();
+  if(search&&!hay.includes(search))return false;
+  if(period!=='all'){
+   const raw=item.confirmed_at||item.date; const d=raw?new Date(raw):null;
+   if(!d||Number.isNaN(d.getTime()))return false;
+   const now=new Date();
+   if(period==='today'){if(d.toDateString()!==now.toDateString())return false;}
+   else {const days=Number(period);if(Number.isFinite(days)&&d<new Date(now.getTime()-days*86400000))return false;}
+  }
+  return true;
+ });
+ const count=document.getElementById('dsr-history-count'); if(count)count.textContent=rows.length+' confirmed';
+ if(!rows.length){box.innerHTML='<div class="card">No confirmed DSR reports found.</div>';return;}
+ const monthGroups={};
+ rows.forEach(item=>{const date=String(item.date||'');const monthKey=/^\\d{4}-\\d{2}/.test(date)?date.slice(0,7):'unknown';(monthGroups[monthKey]||(monthGroups[monthKey]=[])).push(item);});
+ const monthKeys=Object.keys(monthGroups).sort((a,b)=>b.localeCompare(a));
+ box.innerHTML=monthKeys.map(monthKey=>{const monthDate=new Date(monthKey+'-01T00:00:00');const monthLabel=Number.isNaN(monthDate.getTime())?monthKey:monthDate.toLocaleDateString(undefined,{month:'long',year:'numeric'});const items=monthGroups[monthKey];return '<section class="dsr-history-month" data-month-key="'+monthKey+'"><button type="button" class="dsr-history-month-head" onclick="toggleDsrMonth(this)" aria-expanded="false"><span class="dsr-history-month-title"><span>MONTH</span><strong>'+monthLabel+'</strong></span><span class="dsr-history-month-right"><small>'+items.length+' DSR'+(items.length===1?'':'s')+'</small><span class="dsr-history-month-toggle" aria-hidden="true">⌄</span></span></button><div class="dsr-history-month-body" hidden>'+items.map(renderDsrHistoryCard).join('')+'</div></section>';}).join('');
+};
+window.loadDsrHistory=function(){
+ const s=document.getElementById('dsr-history-search'),p=document.getElementById('dsr-history-period');if(s)s.value='';if(p)p.value='all';
+ const box=document.getElementById('daily-report-date-cards');if(box)box.innerHTML='<div class="card">Refreshing…</div>';
+ return (async()=>{try{const rows=await api('/api/reports/daily/confirmations');window.dsrHistoryData=(Array.isArray(rows)?rows:[]).filter(x=>x.status==='confirmed').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''));filterDsrHistory();}catch(e){if(box)box.innerHTML='<div class="card">Could not load DSR history: '+String(e.message||e)+'</div>';}})();
+};
 window.toggleDsrMonth=function(button){
  const section=button.closest('.dsr-history-month');if(!section)return;
  const expanded=section.classList.toggle('expanded');
