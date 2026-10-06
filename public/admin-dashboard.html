@@ -1,5 +1,19 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Dashboard</title><link rel="stylesheet" href="assets/style.css"></head><body class="admin-shell" data-app-page="adminDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
-  <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Dashboard</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="admin-shell admin-dashboard-page" data-app-page="adminDashboard">
+<button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
+
+<aside class="admin-sidebar" aria-label="Admin navigation">
+  <div class="admin-sidebar-brand">
+    <span class="admin-sidebar-mark">FS</span>
+    <div><strong>Fuel Shift</strong><small>Admin Control</small></div>
+  </div>
   <nav class="admin-sidebar-nav">
     <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
     <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
@@ -8,4 +22,107 @@
     <a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a>
   </nav>
   <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
-</aside><main class="wrap"><div class="top"><div><h2>Admin Dashboard</h2><p class="muted">Station overview</p></div><button onclick="logout()">Logout</button></div><div class="nav admin-legacy-nav"><a href="admin-dashboard.html">Dashboard</a><a href="admin-purchases.html">Purchases</a><a href="admin-sales.html">Sales</a><a href="admin-daily-report.html">Daily Report</a><a href="admin-settings.html">Settings</a></div><div class="statgrid"><div class="stat"><b id="sales">0</b><span>Sales today</span></div><div class="stat"><b id="sales-total">—</b><span>Sales amount today</span></div><div class="stat"><b id="active-shifts">0</b><span>Active shifts</span></div><div class="stat"><b id="product-count">0</b><span>Activated products</span></div><div class="stat"><b id="dispenser-count">0</b><span>Activated dispensers</span></div><div class="stat"><b id="attendant-count">0</b><span>Active attendants</span></div><div class="stat"><b id="tank-count">0</b><span>Activated tanks</span></div><div class="stat"><b id="alerts">0</b><span>Low tank alerts</span></div></div><h3 class="section-title">Activated Products</h3><div id="products" class="statgrid"></div><h3 class="section-title">Activated Dispensers</h3><div id="dispensers" class="statgrid"></div><h3 class="section-title">Active Attendants & Shifts</h3><div id="attendants" class="statgrid"></div><h3 class="section-title">Tank Inventory & Opening Stock Comparison</h3><div id="tanks" class="statgrid"></div><div id="dashboard-status" class="muted"></div><h3 class="section-title">Tank Movements & Reconciliation</h3><div id="tank-movements"></div><h3 class="section-title">Recent Station Activity</h3><div id="activity"></div></main><script src="assets/app.js?v=20261004-01"></script><script src="assets/app-boot.js?v=20261004-02"></script></body></html>
+</aside>
+
+<main class="wrap admin-dashboard-wrap">
+  <header class="admin-dashboard-hero">
+    <div class="admin-dashboard-heading">
+      <span class="admin-dashboard-eyebrow">STATION CONTROL CENTER</span>
+      <h1>Admin Dashboard</h1>
+      <p>Monitor sales, shifts, fuel inventory and station activity from one place.</p>
+    </div>
+    <div class="admin-dashboard-actions">
+      <a class="admin-dashboard-action primary" href="admin-daily-report.html"><span>▤</span> Daily Sales Report</a>
+      <a class="admin-dashboard-action" href="admin-purchases.html"><span>▣</span> Purchases</a>
+      <button type="button" class="admin-dashboard-action icon-action" onclick="adminDashboard()" aria-label="Refresh dashboard" title="Refresh dashboard">↻</button>
+    </div>
+  </header>
+
+  <section class="admin-dashboard-statusbar" aria-label="Dashboard status">
+    <div class="admin-status-live"><i></i><span>Live station overview</span></div>
+    <div id="dashboard-status" class="admin-dashboard-status-text">Loading station data…</div>
+  </section>
+
+  <section class="admin-dashboard-section admin-dashboard-kpis">
+    <div class="admin-section-head">
+      <div><span class="admin-section-kicker">TODAY</span><h2>Station at a glance</h2></div>
+      <span class="admin-section-note">Current operational snapshot</span>
+    </div>
+    <div class="statgrid admin-kpi-grid">
+      <div class="stat admin-kpi admin-kpi-sales"><span class="admin-kpi-icon">↗</span><div><b id="sales">0</b><span>Sales today</span></div></div>
+      <div class="stat admin-kpi admin-kpi-revenue"><span class="admin-kpi-icon">₿</span><div><b id="sales-total">—</b><span>Sales amount today</span></div></div>
+      <div class="stat admin-kpi"><span class="admin-kpi-icon">◷</span><div><b id="active-shifts">0</b><span>Active shifts</span></div></div>
+      <div class="stat admin-kpi"><span class="admin-kpi-icon">●</span><div><b id="product-count">0</b><span>Activated products</span></div></div>
+      <div class="stat admin-kpi"><span class="admin-kpi-icon">▣</span><div><b id="dispenser-count">0</b><span>Activated dispensers</span></div></div>
+      <div class="stat admin-kpi"><span class="admin-kpi-icon">♙</span><div><b id="attendant-count">0</b><span>Active attendants</span></div></div>
+      <div class="stat admin-kpi"><span class="admin-kpi-icon">▤</span><div><b id="tank-count">0</b><span>Activated tanks</span></div></div>
+      <div class="stat admin-kpi admin-kpi-alert"><span class="admin-kpi-icon">!</span><div><b id="alerts">0</b><span>Low tank alerts</span></div></div>
+    </div>
+  </section>
+
+  <section class="admin-dashboard-section">
+    <div class="admin-section-head">
+      <div><span class="admin-section-kicker">FUEL CONFIGURATION</span><h2>Activated products</h2></div>
+      <a href="admin-settings.html" class="admin-section-link">Manage settings <span>→</span></a>
+    </div>
+    <div id="products" class="statgrid admin-resource-grid admin-products-grid"></div>
+  </section>
+
+  <section class="admin-dashboard-section">
+    <div class="admin-section-head">
+      <div><span class="admin-section-kicker">DISPENSING</span><h2>Activated dispensers</h2></div>
+      <a href="admin-settings.html" class="admin-section-link">Manage dispensers <span>→</span></a>
+    </div>
+    <div id="dispensers" class="statgrid admin-resource-grid admin-dispensers-grid"></div>
+  </section>
+
+  <div class="admin-dashboard-two-column">
+    <section class="admin-dashboard-section">
+      <div class="admin-section-head">
+        <div><span class="admin-section-kicker">PEOPLE</span><h2>Attendants & shifts</h2></div>
+      </div>
+      <div id="attendants" class="statgrid admin-resource-grid admin-attendants-grid"></div>
+    </section>
+
+    <section class="admin-dashboard-section admin-quick-actions">
+      <div class="admin-section-head">
+        <div><span class="admin-section-kicker">QUICK ACCESS</span><h2>Management</h2></div>
+      </div>
+      <div class="admin-quick-action-list">
+        <a href="admin-dsr-history.html"><span class="qa-icon">▤</span><div><strong>DSR History</strong><small>Review completed daily reports</small></div><b>→</b></a>
+        <a href="admin-purchase-history.html"><span class="qa-icon">▣</span><div><strong>Purchase History</strong><small>Purchases, discharges and delivery records</small></div><b>→</b></a>
+        <a href="admin-sales-history.html"><span class="qa-icon">↗</span><div><strong>Sales History</strong><small>Review confirmed station sales</small></div><b>→</b></a>
+        <a href="admin-settings.html"><span class="qa-icon">⚙</span><div><strong>Station Settings</strong><small>Products, tanks, dispensers and users</small></div><b>→</b></a>
+      </div>
+    </section>
+  </div>
+
+  <section class="admin-dashboard-section admin-tank-section">
+    <div class="admin-section-head">
+      <div><span class="admin-section-kicker">INVENTORY</span><h2>Tank inventory & opening stock</h2></div>
+      <a href="admin-settings.html" class="admin-section-link">Manage tanks <span>→</span></a>
+    </div>
+    <div id="tanks" class="statgrid admin-resource-grid admin-tanks-grid"></div>
+  </section>
+
+  <section class="admin-dashboard-section admin-movements-section">
+    <div class="admin-section-head">
+      <div><span class="admin-section-kicker">RECONCILIATION</span><h2>Tank movements</h2></div>
+      <span class="admin-section-note">Opening stock, purchases, sales and adjustments</span>
+    </div>
+    <div id="tank-movements"></div>
+  </section>
+
+  <section class="admin-dashboard-section admin-activity-section">
+    <div class="admin-section-head">
+      <div><span class="admin-section-kicker">ACTIVITY</span><h2>Recent station activity</h2></div>
+      <span class="admin-section-note">Latest operational events</span>
+    </div>
+    <div id="activity"></div>
+  </section>
+</main>
+
+<script src="assets/app.js?v=20261006-01"></script>
+<script src="assets/app-boot.js?v=20261006-01"></script>
+</body>
+</html>
