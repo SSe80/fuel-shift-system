@@ -3491,7 +3491,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   const links=document.querySelectorAll('.admin-sidebar-nav a[data-admin-nav]');
   if(!links.length)return;
   const page=(location.pathname.split('/').pop()||'admin-dashboard.html').toLowerCase();
-  const map={'admin-dashboard.html':'dashboard','admin-purchases.html':'purchases','admin-sales.html':'sales','admin-daily-report.html':'daily-report','admin-settings.html':'settings'};
+  const map={
+    'admin-dashboard.html':'dashboard',
+    'admin-purchases.html':'purchases',
+    'admin-purchase-history.html':'purchases',
+    'admin-sales.html':'sales',
+    'admin-sales-history.html':'sales',
+    'admin-daily-report.html':'daily-report',
+    'admin-dsr-history.html':'daily-report',
+    'admin-settings.html':'settings'
+  };
   const active=map[page]||'';
   links.forEach(link=>{
     const on=link.dataset.adminNav===active;
