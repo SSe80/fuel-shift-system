@@ -417,14 +417,51 @@ body.admin-shell>.admin-sidebar .admin-sidebar-logout b{
 }
 
 
-/* Page navigation — smooth fade between admin pages */
-body.admin-shell{
-  animation:adminPageEnter .18s ease-out both;
+/* Admin sidebar labels — always uppercase */
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a b,
+body.admin-shell>.admin-sidebar .admin-sidebar-logout b{
+  text-transform:uppercase!important;
 }
-@keyframes adminPageEnter{
-  from{opacity:0;transform:translateY(4px)}
-  to{opacity:1;transform:translateY(0)}
+
+/* Page navigation — smooth horizontal slide */
+body.admin-shell{
+  animation:adminPageSlideIn .32s cubic-bezier(.22,.61,.36,1) both;
+  will-change:transform,opacity;
+}
+@keyframes adminPageSlideIn{
+  from{opacity:0;transform:translateX(28px)}
+  to{opacity:1;transform:translateX(0)}
 }
 @media(prefers-reduced-motion:reduce){
-  body.admin-shell{animation:none!important}
+  body.admin-shell{
+    animation:none!important;
+    will-change:auto;
+  }
+}
+
+/* Logout confirmation — keep the dialog centered in the viewport */
+.logout-confirm-modal{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100vh!important;
+  min-height:100dvh;
+  margin:0!important;
+  padding:20px!important;
+  box-sizing:border-box;
+  display:none;
+  align-items:center!important;
+  justify-content:center!important;
+}
+.logout-confirm-modal.open{
+  display:flex!important;
+}
+.logout-confirm-card{
+  margin:0!important;
+  transform:none;
+}
+@media(max-width:480px){
+  .logout-confirm-modal{
+    padding:14px!important;
+  }
 }
