@@ -84,7 +84,7 @@ body.daily-preview-open{overflow:hidden}
  .daily-dsr-preview-dialog{max-height:100vh;height:100vh;border-radius:0}
  .daily-dsr-preview-paper{max-height:calc(100vh - 104px)}
 } .daily-dsr-show-more-wrap{display:flex;justify-content:center;margin:12px 0 2px}.daily-dsr-show-more{min-width:168px;min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 18px;border:1px solid #4b83bd;border-radius:12px;background:#4b83bd;color:#fff;text-decoration:none;font-size:12px;font-weight:800;box-shadow:0 3px 10px rgba(75,131,189,.16)}.daily-dsr-show-more span{font-size:16px}.daily-dsr-show-more:hover{background:#3e73a7;border-color:#3e73a7}@media(max-width:560px){.daily-dsr-show-more{width:100%}}</style></head>
-<body class="daily-report-page" onload="document.getElementById('report-date').value=new Date().toISOString().slice(0,10);loadDailyReportConfirmations()">
+<body class="daily-report-page" onload="document.getElementById('report-date').value=new Date().toISOString().slice(0,10);loadDailyReportConfirmations();(function(){var d=new URLSearchParams(location.search).get('date');if(d)setTimeout(function(){previewDailyReport(d)},250)})()">
 <main class="wrap admin-daily-report-page">
   <header class="purchase-header daily-report-header">
     <div><span class="eyebrow">REPORTING</span><h1>Daily Sales Report</h1><p id="report-subtitle" class="muted">Daily sales summary by shift.</p></div>
