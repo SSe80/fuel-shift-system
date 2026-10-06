@@ -215,7 +215,19 @@
  .admin-purchase-history-page .purchase-full-history-month-body{max-height:390px!important;padding:9px!important;gap:10px!important}
 }
 </style></head>
-<body class="admin-purchases-page admin-purchase-history-page" data-app-page="adminPurchaseHistory"><main class="wrap">
+<body class="admin-purchases-page admin-purchase-history-page admin-shell" data-app-page="adminPurchaseHistory">
+<aside class="admin-sidebar" aria-label="Admin navigation">
+  <div class="admin-sidebar-brand"><strong>FUEL SHIFT</strong><small>Admin Control</small></div>
+  <nav class="admin-sidebar-nav">
+    <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
+    <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
+    <a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a>
+    <a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>DSR</b></a>
+    <a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a>
+  </nav>
+  <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
+</aside>
+<main class="wrap">
 <header class="purchase-header"><div><span class="eyebrow">INVENTORY CONTROL</span><h1>Purchase History</h1><p class="muted">All purchases with completed tank stock recording.</p></div><a class="purchase-back" href="admin-purchases.html">← Purchases</a></header>
 <section class="purchase-section"><div class="purchase-section-head"><div><span class="section-kicker">PURCHASES</span><h2>Purchase History</h2><p class="muted">Complete recorded purchase history.</p></div><span class="admin-sales-section-count" id="purchase-history-count">0 recorded</span></div>
 <div class="purchase-history-tools"><div class="purchase-history-search-wrap"><span aria-hidden="true">⌕</span><input id="purchase-history-search" type="search" placeholder="Search invoice or product…" oninput="renderFullPurchaseHistory()"></div><select id="purchase-history-period" onchange="renderFullPurchaseHistory()" aria-label="Purchase history date filter"><option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select><button type="button" class="purchase-history-refresh" onclick="loadFullPurchaseHistory()">↻ <span>Refresh</span></button></div>
