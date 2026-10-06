@@ -87,7 +87,37 @@ body.daily-preview-open{overflow:hidden}
 @media(max-width:600px){
  .daily-dsr-preview-dialog{max-height:100vh;height:100vh;border-radius:0}
  .daily-dsr-preview-paper{max-height:calc(100vh - 104px)}
-} .daily-dsr-show-more-wrap{display:flex;justify-content:center;margin:12px 0 2px}.daily-dsr-show-more{min-width:168px;min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 18px;border:1px solid #4b83bd;border-radius:12px;background:#4b83bd;color:#fff;text-decoration:none;font-size:12px;font-weight:800;box-shadow:0 3px 10px rgba(75,131,189,.16)}.daily-dsr-show-more span{font-size:16px}.daily-dsr-show-more:hover{background:#3e73a7;border-color:#3e73a7}@media(max-width:560px){.daily-dsr-show-more{width:100%}}</style></head>
+} .daily-dsr-show-more-wrap{display:flex;justify-content:center;margin:12px 0 2px}.daily-dsr-show-more{min-width:168px;min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 18px;border:1px solid #4b83bd;border-radius:12px;background:#4b83bd;color:#fff;text-decoration:none;font-size:12px;font-weight:800;box-shadow:0 3px 10px rgba(75,131,189,.16)}.daily-dsr-show-more span{font-size:16px}.daily-dsr-show-more:hover{background:#3e73a7;border-color:#3e73a7}@media(max-width:560px){.daily-dsr-show-more{width:100%}}</style><style>
+/* DSR history card — identical visual shell to admin-dsr-history.html */
+.daily-dsr-history-card{overflow:hidden;border:1px solid #e4e9ef!important;border-radius:14px!important;background:#fff!important;box-shadow:0 2px 8px rgba(16,24,40,.045)!important;margin-top:10px!important}
+.daily-dsr-history-card.expanded{border-color:#cfd9e4!important;box-shadow:0 5px 16px rgba(16,24,40,.07)!important}
+.daily-dsr-history-card .daily-dsr-history-head{width:100%;min-height:74px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px 13px 17px;border:0;background:#fff;color:#17202a;text-align:left;cursor:pointer}
+.daily-dsr-history-card .daily-dsr-history-head:hover{background:#fafbfd}
+.daily-dsr-history-card .daily-dsr-history-title{min-width:0;display:flex;flex-direction:column;gap:3px}
+.daily-dsr-history-card .daily-dsr-history-title strong{font-size:14px;line-height:1.2;font-weight:800;overflow-wrap:anywhere}
+.daily-dsr-history-card .daily-dsr-history-title small{font-size:10px;line-height:1.25;color:#8a949e}
+.daily-dsr-history-card .daily-dsr-history-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.daily-dsr-history-card .daily-dsr-status-confirmed,.daily-dsr-history-card .daily-dsr-status-preview{padding:4px 7px;border-radius:999px;font-size:9px;font-weight:850;white-space:nowrap}
+.daily-dsr-history-card .daily-dsr-status-confirmed{background:#ecfdf3;color:#027a48;border:1px solid #abefc6}
+.daily-dsr-history-card .daily-dsr-status-preview{background:#eff6ff;color:#1264d8;border:1px solid #cfe0ff}
+.daily-dsr-history-card .daily-dsr-history-toggle{width:27px;height:27px;display:grid;place-items:center;border:1px solid #dce3ea;border-radius:8px;background:#f8fafc;color:#667085;font-size:16px;font-weight:800;line-height:1}
+.daily-dsr-history-card.expanded .daily-dsr-history-toggle{background:#eef4ff;color:#2563eb;border-color:#c7d7fe}
+.daily-dsr-history-card .daily-dsr-history-body{padding:0 14px 13px;border-top:1px solid #edf1f4;background:#fcfdff}
+.daily-dsr-history-card .daily-dsr-history-body[hidden]{display:none}
+.daily-dsr-history-card .daily-dsr-history-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.daily-dsr-history-card .daily-dsr-history-stats>div{padding:10px;border:1px solid #e8edf2;border-radius:10px;background:#fff;min-width:0}
+.daily-dsr-history-card .daily-dsr-history-stats span{display:block;font-size:9px;color:#8a949e;margin-bottom:3px}
+.daily-dsr-history-card .daily-dsr-history-stats strong{display:block;font-size:12px;color:#17202a;overflow-wrap:anywhere}
+.daily-dsr-history-card .daily-dsr-history-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.daily-dsr-history-card .daily-dsr-history-actions button,.daily-dsr-history-card .daily-dsr-history-actions a{width:100%;min-height:40px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #d5dde5;border-radius:9px;background:#fff;color:#344054;font-size:12px;font-weight:800;text-decoration:none;cursor:pointer}
+.daily-dsr-history-card .daily-dsr-history-actions .daily-dsr-view{border-color:#4b83bd;background:#4b83bd;color:#fff;box-shadow:0 4px 12px rgba(75,131,189,.18);position:relative;overflow:hidden;transition:transform .16s ease,box-shadow .16s ease,background .16s ease,border-color .16s ease}
+.daily-dsr-history-card .daily-dsr-history-actions .daily-dsr-view span{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;font-size:16px;line-height:1;transition:transform .16s ease}
+.daily-dsr-history-card .daily-dsr-history-actions .daily-dsr-view:hover{background:#3e73a7;border-color:#3e73a7;box-shadow:0 5px 14px rgba(75,131,189,.22);transform:translateY(-1px)}
+.daily-dsr-history-card .daily-dsr-history-actions .daily-dsr-view:hover span{transform:translateX(3px)}
+.daily-dsr-history-card .daily-dsr-history-actions .daily-dsr-view:focus-visible{outline:3px solid rgba(75,131,189,.22);outline-offset:2px}
+@media(max-width:600px){.daily-dsr-history-card .daily-dsr-history-stats{grid-template-columns:1fr 1fr}.daily-dsr-history-card .daily-dsr-history-actions{grid-template-columns:1fr}}
+</style>
+</head>
 <body class="admin-shell daily-report-page" onload="document.getElementById('report-date').value=new Date().toISOString().slice(0,10);loadDailyReportConfirmations();(function(){var d=new URLSearchParams(location.search).get('date');if(d)setTimeout(function(){previewDailyReport(d)},250)})()">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
