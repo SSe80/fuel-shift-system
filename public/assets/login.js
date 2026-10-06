@@ -18,7 +18,7 @@
     if (!operator || !pin) return;
     var operator_id = operator.value.trim();
     var pinValue = pin.value;
-    fetch('/api/login', {
+    fetch(role === 'admin' ? '/api/admin-login' : '/api/attendant-login', {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -33,11 +33,11 @@
       });
     })
     .then(function (user) {
-      if (role === 'admin' && user.role !== 'admin') {
-        throw new Error('This account is not an admin account');
+      if (user.role !== role) {
+        throw new Error('This account is not valid for the selected login');
       }
-      try { window.localStorage.setItem('fuelRole', user.role); } catch (_) {}
-      window.location.replace(user.role === 'admin' ? 'admin-dashboard.html' : 'attendant-dashboard.html');
+      try { window.localStorage.setItem('fuelRole', role); } catch (_) {}
+      window.location.replace(role === 'admin' ? 'admin-dashboard.html' : 'attendant-dashboard.html');
     })
     .catch(function (error) {
       showMessage(error && error.message ? error.message : 'Login failed');
