@@ -3428,6 +3428,41 @@ window.adminSalesHistory=adminSalesHistory;
 window.adminSettings=adminSettings;
 window.userDashboard=userDashboard;
 
+// Unified admin sidebar toggle
+function toggleAdminSidebar(){
+  const body=document.body;
+  if(!body || !body.classList.contains('admin-shell'))return;
+  const mobile=window.matchMedia('(max-width:800px)').matches;
+  const open=mobile
+    ? body.classList.toggle('admin-sidebar-open')
+    : !body.classList.toggle('admin-sidebar-collapsed');
+  const btn=document.querySelector('.admin-sidebar-toggle');
+  if(btn)btn.setAttribute('aria-expanded',String(open));
+  try{localStorage.setItem('admin-sidebar-open',String(open));}catch(_){}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const body=document.body;
+  const btn=document.querySelector('.admin-sidebar-toggle');
+  if(!body||!btn||!body.classList.contains('admin-shell'))return;
+  let open=true;
+  try{open=localStorage.getItem('admin-sidebar-open')!=='false';}catch(_){}
+  if(window.matchMedia('(max-width:800px)').matches){
+    body.classList.toggle('admin-sidebar-open',open);
+    body.classList.remove('admin-sidebar-collapsed');
+  }else{
+    body.classList.toggle('admin-sidebar-collapsed',!open);
+    body.classList.remove('admin-sidebar-open');
+  }
+  btn.setAttribute('aria-expanded',String(open));
+  window.addEventListener('resize',()=>{
+    if(window.matchMedia('(max-width:800px)').matches){
+      body.classList.remove('admin-sidebar-collapsed');
+    }else{
+      body.classList.remove('admin-sidebar-open');
+    }
+  });
+});
+
 // Unified admin sidebar active-state
 document.addEventListener('DOMContentLoaded',()=>{
   const links=document.querySelectorAll('.admin-sidebar-nav a[data-admin-nav]');
