@@ -138,11 +138,7 @@
    return '<section class="dsr-history-month" data-key="'+esc(key)+'"><button type="button" class="dsr-history-month-head" onclick="toggleDsrMonth(this)" aria-expanded="false"><span class="dsr-history-month-title"><span>MONTH</span><strong>'+esc(label)+'</strong></span><span class="dsr-history-month-right"><small>'+items.length+' report'+(items.length===1?'':'s')+'</small><span class="dsr-history-month-toggle">⌄</span></span></button><div class="dsr-history-month-body" hidden>'+items.map(renderCard).join('')+'</div></section>';
   }).join('');
  };
- function renderCard(x){
-  const date=x.date||'';
-  const confirmed=x.confirmed_at?new Date(x.confirmed_at).toLocaleString():'Confirmed';
-  return '<article class="dsr-history-card" data-date="'+esc(date)+'"><button type="button" class="dsr-history-card-head" onclick="toggleDsrCard(this)" aria-expanded="false"><span class="dsr-history-card-title"><strong>'+esc(dailyReportIdLabel(date))+'</strong><small>Confirmed '+esc(confirmed)+'</small></span><span class="dsr-history-card-right"><span class="dsr-history-badge">✓ CONFIRMED</span><span class="dsr-history-toggle">⌄</span></span></button><div class="dsr-history-card-body" hidden><div class="dsr-history-stats"><div class="dsr-history-stat"><span>Fuel sold</span><strong>'+num(x.total_sales_liters)+' L</strong></div><div class="dsr-history-stat"><span>Total sales</span><strong>'+money2(x.total_sales_amount)+'</strong></div><div class="dsr-history-stat"><span>Shifts</span><strong>'+Number(x.shift_count||0)+'</strong></div><div class="dsr-history-stat"><span>Dispensers</span><strong>'+Number(x.dispenser_count||0)+'</strong></div></div><div class="dsr-history-actions"><a class="primary" href="admin-daily-report.html?date='+encodeURIComponent(date)+'">View Full Report</a></div></div></article>';
- }
+ function renderCard(x){ return renderDsrHistoryCard(x); }
  window.toggleDsrMonth=function(button){const section=button.closest('.dsr-history-month');if(!section)return;const expanded=section.classList.toggle('expanded'),body=section.querySelector('.dsr-history-month-body'),t=section.querySelector('.dsr-history-month-toggle');if(body)body.hidden=!expanded;if(button)button.setAttribute('aria-expanded',expanded?'true':'false');if(t)t.textContent=expanded?'⌃':'⌄';};
  window.toggleDsrCard=function(button){if(button)toggle(button.closest('.dsr-history-card'));};
  window.openDsrPdf=function(date){window.location.href='admin-daily-report.html?date='+encodeURIComponent(date);};
