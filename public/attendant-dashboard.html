@@ -117,7 +117,84 @@ body.attendant-dashboard-page .page-heading h2{margin:0!important;font-size:19px
 body.attendant-dashboard-page .page-heading p{margin:5px 0 0!important;font-size:12px!important;color:#667085!important}
 @media(max-width:600px){body.attendant-dashboard-page>.wrap{padding:0 12px 28px!important}body.attendant-dashboard-page .purchase-header{padding:16px 0 18px!important}body.attendant-dashboard-page .purchase-header h1{font-size:27px!important}body.attendant-dashboard-page .nav{overflow-x:auto}body.attendant-dashboard-page .nav a{flex:1 0 110px!important}}
 
-/* Dashboard active readings and handover result cards */
+/* Pending handover card refinement */
+body.attendant-dashboard-page .pending-confirmation-card{
+  border-color:#ead9dc!important;
+  box-shadow:0 7px 22px rgba(16,24,40,.06)!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card::before{
+  background:#b4232f!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-hero{
+  background:#fff8f8!important;
+  border-bottom-color:#f1d9dd!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-hero-icon{
+  background:#fff0f1!important;
+  border-color:#f0c4c8!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-card-title{
+  color:#8f1d27!important;
+  font-size:15px!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-card-subtitle{
+  color:#7f6a6d!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-info-block strong,
+body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening strong{
+  font-size:15px!important;
+  font-weight:850!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening{
+  background:#fffafa!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-heading{
+  color:#8f1d27!important;
+  border-top-color:#f1d9dd!important;
+  border-bottom-color:#f1d9dd!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-reading{
+  min-height:54px!important;
+  padding:10px 3px!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-number{
+  font-size:18px!important;
+  font-weight:850!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-code{
+  font-size:11px!important;
+  font-weight:750!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .form{
+  padding-top:2px!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .form input{
+  min-height:45px!important;
+  border-color:#e2d4d6!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .form input:focus{
+  border-color:#b4232f!important;
+  box-shadow:0 0 0 3px rgba(180,35,47,.10)!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .row button.primary{
+  background:#b4232f!important;
+  border-color:#b4232f!important;
+  color:#fff!important;
+  box-shadow:0 5px 12px rgba(180,35,47,.20)!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .row button.primary:hover{
+  background:#941f29!important;
+  border-color:#941f29!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .row button:not(.primary){
+  border:1px solid #e2d4d6!important;
+  background:#fff!important;
+  color:#7f1d1d!important;
+}
+\n/* Dashboard active readings and handover result cards */
 body.attendant-dashboard-page .active-shift-meta>div{
   padding:15px 16px!important;
 }
