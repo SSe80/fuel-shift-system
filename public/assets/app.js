@@ -2907,7 +2907,7 @@ async function loadDailyReport(showDetails=false){
     document.getElementById('report-sales-summary').innerHTML=
       '<div class="dsr-sales-column"><div class="dsr-subhead">Fuel sales by product</div>'+(productRows||'<div class="daily-empty">No product sales.</div>')+'</div>'+
       '<div class="dsr-sales-column"><div class="dsr-subhead">Sales methods</div>'+(typeRows||'<div class="daily-empty">No sale methods recorded.</div>')+'</div>'+
-      '<div class="dsr-sales-total"><span>Total</span><div class="dsr-sales-total-amount"><small>Sales amount</small><strong>'+money(salesSummary.total_amount)+'</strong></div><div class="dsr-sales-total-liters"><small>Liters sold</small><strong>'+liters(salesSummary.total_liters)+' L</strong></div></div>';
+      '<div class="dsr-sales-total"><div class="dsr-sales-total-row"><span>Sales amount</span><strong>'+money(salesSummary.total_amount)+'</strong></div><div class="dsr-sales-total-row"><span>Liters sold</span><strong>'+liters(salesSummary.total_liters)+' L</strong></div></div>';
 
     const nozzleLabels={};
     dispenserDetails.forEach(disp=>(disp.nozzles||[]).forEach(n=>{
