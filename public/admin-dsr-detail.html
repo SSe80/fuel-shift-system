@@ -1237,6 +1237,66 @@ body.dsr-detail-page .dsr-product-group-title .dsr-product-group-dot{
     padding:8px 0 7px!important;
   }
 }
+</style><style>
+/* Restore the actual Dispenser, Tank and Shift cards.
+   Product headings remain outside these cards. */
+body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card{
+  display:block!important;
+  padding:0!important;
+  margin:0 0 14px!important;
+  border:1px solid #e2e8f0!important;
+  border-radius:17px!important;
+  background:#fbfcfe!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+}
+body.dsr-detail-page .dsr-product-group>.dsr-tank-card{
+  display:block!important;
+  padding:0!important;
+  margin:0 0 14px!important;
+  border:1px solid #e2e8f0!important;
+  border-radius:17px!important;
+  background:#fbfcfe!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+}
+body.dsr-detail-page .dsr-product-group>.dsr-shift-card{
+  display:block!important;
+  padding:0!important;
+  margin:0 0 14px!important;
+  border:1px solid #e2e8f0!important;
+  border-radius:17px!important;
+  background:#fbfcfe!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+}
+body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-dispenser-head,
+body.dsr-detail-page .dsr-product-group>.dsr-tank-card .dsr-tank-head,
+body.dsr-detail-page .dsr-product-group>.dsr-shift-card .dsr-shift-head{
+  padding:14px 16px!important;
+  background:#fff!important;
+}
+body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-dispenser-meta,
+body.dsr-detail-page .dsr-product-group>.dsr-tank-card .dsr-tank-grid,
+body.dsr-detail-page .dsr-product-group>.dsr-shift-card .dsr-shift-grid{
+  margin:0!important;
+}
+body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-nozzles{
+  padding:12px 14px!important;
+}
+@media(max-width:650px){
+  body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card,
+  body.dsr-detail-page .dsr-product-group>.dsr-tank-card,
+  body.dsr-detail-page .dsr-product-group>.dsr-shift-card{
+    margin-bottom:12px!important;
+    border-radius:15px!important;
+  }
+  body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-dispenser-head,
+  body.dsr-detail-page .dsr-product-group>.dsr-tank-card .dsr-tank-head,
+  body.dsr-detail-page .dsr-product-group>.dsr-shift-card .dsr-shift-head{
+    padding:12px 13px!important;
+  }
+}
 </style></head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
