@@ -1,3 +1,34 @@
+
+function showAttendantActionResult(type,title,details,afterClose){
+  let modal=document.getElementById('attendant-action-result-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='attendant-action-result-modal';
+    modal.className='attendant-action-result-modal';
+    modal.setAttribute('aria-hidden','true');
+    modal.innerHTML='<div class="attendant-action-result-backdrop" onclick="closeAttendantActionResult()"></div><div class="attendant-action-result-card" role="dialog" aria-modal="true" aria-labelledby="attendant-action-result-title"><div id="attendant-action-result-icon" class="attendant-action-result-icon"></div><span class="attendant-action-result-kicker">CONFIRMATION</span><h3 id="attendant-action-result-title"></h3><p id="attendant-action-result-details"></p><div class="attendant-action-result-actions"><button type="button" onclick="closeAttendantActionResult()">Continue</button></div></div>';
+    document.body.appendChild(modal);
+  }
+  const card=modal.querySelector('.attendant-action-result-card');
+  const icon=modal.querySelector('#attendant-action-result-icon');
+  if(card)card.className='attendant-action-result-card '+(type==='success'?'success':'failed');
+  if(icon)icon.textContent=type==='success'?'✓':'!';
+  const titleEl=modal.querySelector('#attendant-action-result-title');
+  const detailsEl=modal.querySelector('#attendant-action-result-details');
+  if(titleEl)titleEl.textContent=title|| (type==='success'?'Completed successfully':'Action failed');
+  if(detailsEl)detailsEl.textContent=details||'';
+  modal._afterClose=typeof afterClose==='function'?afterClose:null;
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+}
+function closeAttendantActionResult(){
+  const modal=document.getElementById('attendant-action-result-modal');
+  if(!modal)return;
+  const next=modal._afterClose;
+  modal._afterClose=null;
+  modal.classList.remove('open');modal.setAttribute('aria-hidden','true');
+  if(typeof next==='function')setTimeout(next,120);
+}
+
 function showSettingsConfirmation(title,details,action,successTitle,successDetails){
   const modal=document.getElementById('settings-confirm-modal');
   if(!modal){return action();}
@@ -538,8 +569,12 @@ async function loadAttendantShiftPage(){
 async function confirmShiftAssignment(event,id){
   event.preventDefault();
   const pin=document.getElementById('assignment-pin-'+id)?.value||'';
-  try{await api('/api/shifts/'+id+'/confirm',{method:'POST',body:JSON.stringify({pin})});toast('Shift confirmed and started');await userDashboard();}
-  catch(e){toast(e.message);}
+  try{
+    await api('/api/shifts/'+id+'/confirm',{method:'POST',body:JSON.stringify({pin})});
+    showAttendantActionResult('success','Shift confirmed','The shift has been confirmed and started.',()=>userDashboard());
+  }catch(e){
+    showAttendantActionResult('failed','Shift confirmation failed',e.message||'The shift could not be confirmed.');
+  }
 }
 async function cancelPendingShift(id){
   if(!confirm('Cancel this pending shift assignment?'))return;
@@ -554,9 +589,10 @@ async function confirmHandoverFromDashboard(event,id){
   const pin=document.getElementById('dashboard-handover-pin-'+id)?.value||'';
   try{
     await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({pin})});
-    toast('Handover confirmed and shift started');
-    await userDashboard();
-  }catch(e){toast(e.message);}
+    showAttendantActionResult('success','Handover confirmed','The handover was confirmed and the new shift has started.',()=>userDashboard());
+  }catch(e){
+    showAttendantActionResult('failed','Handover confirmation failed',e.message||'The handover could not be confirmed.');
+  }
 }
 async function cancelPendingHandover(id){
   if(!confirm('Cancel this pending handover?'))return;
@@ -2086,9 +2122,10 @@ async function confirmHandoverSubmission(){
       closing_nozzle_readings:d.closing_nozzle_readings||[]
     })});
     closeHandoverModal('handover-review-modal');
-    toast('Handover submitted');
-    setTimeout(()=>userDashboard(),500);
-  }catch(e){toast(e.message);}
+    showAttendantActionResult('success','Handover submitted','The handover was sent successfully for receiving-attendant confirmation.',()=>userDashboard());
+  }catch(e){
+    showAttendantActionResult('failed','Handover submission failed',e.message||'The handover could not be submitted.');
+  }
 }
 async function loadPendingHandovers(){
   try{
