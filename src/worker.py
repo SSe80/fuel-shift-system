@@ -2466,7 +2466,7 @@ def daily_report():
     })
     handover_status,handover_rows=sb("shift_takeovers",params={
         "shift_id":shift_id_filter,
-        "select":"id,shift_id,from_employee_id,to_employee_id,shift_started_at,shift_ended_at,total_sales_liters,total_sales_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_sales_liters,tank_purchases_liters,tank_variance_liters,tank_variance_pct,nozzle_sales_liters,nozzle_opening_readings,nozzle_closing_readings,sales_status,sales_submitted_at,sales_confirmed_at",
+        "select":"id,shift_id,from_employee_id,to_employee_id,shift_started_at,shift_ended_at,total_sales_liters,total_sales_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_sales_liters,tank_variance_liters,tank_variance_pct,nozzle_sales_liters,nozzle_opening_readings,nozzle_closing_readings,sales_status,sales_submitted_at,sales_confirmed_at",
         "order":"shift_ended_at.asc","limit":"5000"
     })
     nozzle_reading_status,nozzle_reading_rows=sb("shift_nozzle_readings",params={
@@ -2719,7 +2719,7 @@ def daily_report():
             "sales_amount_difference":shift_a-calculated_shift_a if recorded_shift_a is not None else 0,
             "tank_opening_liters":float(h.get("tank_opening_liters") or x.get("opening_tank_liters") or 0),
             "tank_closing_liters":float(h.get("tank_closing_liters") or x.get("closing_liters") or 0),
-            "tank_purchases_liters":float(h.get("tank_purchases_liters") or 0),
+            "tank_purchases_liters":shift_purchase,
             "tank_sales_liters":float(h.get("tank_sales_liters") or shift_l),
             "tank_variance_liters":float(h.get("tank_variance_liters") or 0),
             "tank_variance_pct":float(h.get("tank_variance_pct") or 0),
