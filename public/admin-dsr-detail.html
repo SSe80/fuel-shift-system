@@ -13,9 +13,9 @@
 .dsr-detail-view .daily-detail-head{position:sticky;top:0;z-index:4;background:#fff;border-bottom:1px solid #e1e8f0}
 .dsr-detail-view .daily-detail-actions{display:flex;gap:8px;flex-wrap:wrap}
 .dsr-detail-view .daily-detail-actions button{min-height:40px}
-.dsr-report-slider{padding:14px 16px 22px;overflow:hidden}
-.dsr-report-track{display:flex;align-items:stretch;width:100%;transition:transform .28s ease;will-change:transform}
-.dsr-report-slide{flex:0 0 100%;min-width:100%;box-sizing:border-box;padding:0 2px}
+.dsr-report-slider{padding:14px 16px 22px;overflow:hidden;position:relative}
+.dsr-report-track{display:flex;align-items:stretch;width:300%;transition:transform .42s cubic-bezier(.22,.61,.36,1);will-change:transform;touch-action:pan-y}
+.dsr-report-slide{flex:0 0 33.333333%;width:33.333333%;min-width:33.333333%;box-sizing:border-box;padding:0 2px}
 .dsr-report-slide-card{background:#fff;border:1px solid #dfe7ef;border-radius:16px;box-shadow:0 8px 26px rgba(15,23,42,.07);padding:16px;min-height:420px;box-sizing:border-box}
 .dsr-report-slide-card .daily-section{margin:0 0 14px}
 .dsr-report-slide-card .daily-section:last-child{margin-bottom:0}
@@ -140,7 +140,7 @@ body.dsr-embedded .dsr-detail-view{height:100%!important;min-height:0!important;
  function render(){
   if(!track) return;
   index=Math.max(0,Math.min(count-1,index));
-  track.style.transform='translate3d(' + (-index*100) + '%,0,0)';
+  track.style.transform='translate3d(' + (-index*33.3333333333) + '%,0,0)';
   dots.forEach(function(dot,i){
    var active=i===index;
    dot.classList.toggle('active',active);
