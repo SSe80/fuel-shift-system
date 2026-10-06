@@ -1,8 +1,18 @@
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Settings</title><link rel="stylesheet" href="assets/style.css"></head>
-<body class="admin-settings-page" data-app-page="adminSettings">
-<main class="wrap">
+<body class="admin-shell" class="admin-settings-page" data-app-page="adminSettings">
+<aside class="admin-sidebar" aria-label="Admin navigation">
+  <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
+  <nav class="admin-sidebar-nav">
+    <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
+    <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
+    <a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a>
+    <a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>Daily Sales Report</b></a>
+    <a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a>
+  </nav>
+  <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
+</aside><main class="wrap">
   <header class="settings-header"><div><span class="eyebrow">STATION CONTROL</span><h1>Admin Settings</h1><p class="muted">Manage users, fuel products, tanks, and dispensers.</p></div><a class="settings-back" href="admin-dashboard.html">← Dashboard</a></header>
 
   <section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">ACCESS</span><h2>Users</h2><p>Manage operator accounts, roles, PINs, and access.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-user-modal')">＋ Add user</button></div>
