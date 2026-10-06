@@ -30,6 +30,20 @@ body.dsr-embedded .dsr-detail-wrap{height:100vh!important;max-width:none!importa
 body.dsr-embedded .dsr-detail-view{border:0!important;border-radius:0!important;box-shadow:none!important;width:100%!important}
 body.dsr-embedded .daily-detail-close{display:none!important}
 body.dsr-embedded .dsr-detail-view .daily-detail-head{padding-right:58px}
+<style>
+/* DSR detail scrolling: keep the iframe/page viewport fixed and scroll the report itself. */
+html,body{height:100%!important;min-height:100%!important}
+body.dsr-detail-page{height:100vh!important;min-height:100vh!important;overflow:hidden!important}
+body.dsr-detail-page .dsr-detail-wrap{height:100vh!important;min-height:0!important;overflow:hidden!important;display:flex!important}
+body.dsr-detail-page .dsr-detail-view{flex:1 1 auto!important;min-height:0!important;height:100%!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain}
+body.dsr-embedded .dsr-detail-wrap{height:100vh!important;min-height:0!important;overflow:hidden!important}
+body.dsr-embedded .dsr-detail-view{height:100%!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important}
+@media(max-width:650px){
+ body.dsr-detail-page .dsr-detail-wrap{height:100vh!important;min-height:0!important;padding:0!important}
+ body.dsr-detail-page .dsr-detail-view{height:100%!important;min-height:0!important;overflow-y:auto!important}
+ body.dsr-embedded .dsr-detail-view .daily-detail-head{position:sticky!important;top:0!important}
+}
+</style>
 </style>
 </head>
 <body class="admin-shell daily-report-page dsr-detail-page" onload="(function(){if(new URLSearchParams(location.search).get('embedded')==='1')document.body.classList.add('dsr-embedded');var d=new URLSearchParams(location.search).get('date');var input=document.getElementById('report-date');if(d)input.value=d;else input.value=new Date().toISOString().slice(0,10);loadDailyReport(true);})()">
