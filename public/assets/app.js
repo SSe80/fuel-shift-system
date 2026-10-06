@@ -1977,10 +1977,66 @@ async function _confirmDispenserActivation(){
   }catch(e){toast(e.message);}
 }
 
+let pendingDispenserDeactivationId=null;
+
+function openAdminPinConfirmation(id){
+  const d=(window.dispenserRecords||[]).find(x=>String(x.id)===String(id));
+  if(!d)return;
+  pendingDispenserDeactivationId=id;
+  let modal=document.getElementById('admin-pin-confirm-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='admin-pin-confirm-modal';
+    modal.className='modal';
+    modal.setAttribute('aria-hidden','true');
+    modal.innerHTML='<div class="modal-backdrop" onclick="closeAdminPinConfirmation()"></div><form class="modal-card form" onsubmit="confirmDispenserDeactivation(event)"><div class="top"><h3>Admin confirmation required</h3><button type="button" class="modal-close" onclick="closeAdminPinConfirmation()" aria-label="Close">×</button></div><p id="admin-pin-confirm-message">Enter the admin PIN to deactivate this active dispenser.</p><label>Admin PIN<input id="admin-pin-confirm-input" type="password" inputmode="numeric" autocomplete="current-password" minlength="4" required placeholder="Enter admin PIN"></label><p id="admin-pin-confirm-error" class="muted" style="display:none"></p><div class="row"><button type="button" onclick="closeAdminPinConfirmation()">Cancel</button><button type="submit" class="primary">Confirm deactivation</button></div></form></div>';
+    document.body.appendChild(modal);
+  }
+  const msg=document.getElementById('admin-pin-confirm-message');
+  if(msg)msg.innerHTML='Enter the <b>admin PIN</b> to deactivate <b>'+h(d.nozzle_code||'this dispenser')+'</b>.';
+  const input=document.getElementById('admin-pin-confirm-input');
+  const error=document.getElementById('admin-pin-confirm-error');
+  if(input)input.value='';
+  if(error){error.textContent='';error.style.display='none';}
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+  setTimeout(()=>input?.focus(),0);
+}
+
+function closeAdminPinConfirmation(){
+  const modal=document.getElementById('admin-pin-confirm-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  pendingDispenserDeactivationId=null;
+}
+
+async function confirmDispenserDeactivation(event){
+  event?.preventDefault();
+  const id=pendingDispenserDeactivationId;
+  const pin=document.getElementById('admin-pin-confirm-input')?.value.trim()||'';
+  const error=document.getElementById('admin-pin-confirm-error');
+  if(!id)return;
+  if(!pin){
+    if(error){error.textContent='Enter the admin PIN.';error.style.display='block';}
+    return;
+  }
+  try{
+    const me=await currentUser();
+    if(!me||me.role!=='admin')throw new Error('Only an admin can confirm dispenser deactivation.');
+    const verified=await api('/api/admin-login',{method:'POST',body:JSON.stringify({operator_id:me.operator_id,pin})});
+    if(!verified||verified.role!=='admin')throw new Error('Invalid admin PIN.');
+    await api('/api/nozzles/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({active:false})});
+    closeAdminPinConfirmation();
+    await loadSettingsData();
+    toast('Dispenser deactivated successfully');
+  }catch(e){
+    if(error){error.textContent=e.message||'Admin PIN verification failed.';error.style.display='block';}
+    else toast(e.message);
+  }
+}
+
 async function _toggleNozzle(id,active){
   if(!active){openDispenserActivation(id);return;}
-  try{await api('/api/nozzles/'+id,{method:'PATCH',body:JSON.stringify({active:false})});await loadSettingsData();}
-  catch(e){throw e;}
+  openAdminPinConfirmation(id);
 }
 async function _removeDispenser(id){
   try{await api('/api/nozzles/'+id,{method:'DELETE'});await loadSettingsData();}
