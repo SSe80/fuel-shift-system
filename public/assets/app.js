@@ -2783,6 +2783,8 @@ async function loadDailyReport(){
       api('/api/reports/daily?date='+encodeURIComponent(d)),
       api('/api/products')
     ]);
+    // Let the browser paint the already-open loading state before the heavy report build.
+    await new Promise(resolve=>requestAnimationFrame(resolve));
     const productInfo=Object.fromEntries((products||[]).map(p=>[String(p.name||'').toLowerCase(),{
       code:p.code_name||p.name||'Unknown',
       name:p.name||'Unknown',
