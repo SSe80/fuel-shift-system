@@ -135,7 +135,22 @@ body.dsr-detail-page .dsr-slide-nav button{width:36px!important;height:36px!impo
  body.dsr-detail-page .dsr-slide-title{top:-16px!important;margin:0 -16px 14px!important;padding:10px 16px 9px!important}
  body.dsr-detail-page .dsr-slide-nav{height:52px!important}
 }
-</style></style>
+</style></style><style>
+/* Larger subtitles for the five DSR detail cards */
+body.dsr-detail-page .dsr-slide-title p{
+  margin:5px 0 0!important;
+  font-size:14px!important;
+  line-height:1.45!important;
+  font-weight:500!important;
+  color:#667085!important;
+}
+@media(max-width:650px){
+  body.dsr-detail-page .dsr-slide-title p{
+    font-size:13px!important;
+    line-height:1.4!important;
+  }
+}
+</style>
 </head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
