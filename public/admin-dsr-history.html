@@ -70,7 +70,7 @@
  .dsr-history-actions{grid-template-columns:1fr}
 }
 </style></head>
-<body class="dsr-history-page admin-shell" data-app-page="adminDsrHistory">
+<body class="admin-shell daily-report-page dsr-history-page" data-app-page="adminDsrHistory">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
   <nav class="admin-sidebar-nav">
@@ -83,13 +83,13 @@
   </nav>
   <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
 </aside>
-<main class="wrap admin-dsr-history-page">
-<header class="dsr-history-header">
- <div><span class="dsr-history-eyebrow">REPORTING</span><h1>DSR History</h1><p>Complete confirmed Daily Sales Report history.</p></div>
- <a class="dsr-history-back" href="admin-daily-report.html">← Daily Report</a>
+<main class="wrap admin-daily-report-page admin-dsr-history-page">
+<header class="purchase-header daily-report-header dsr-history-header">
+ <div><span class="eyebrow">REPORTING</span><h1>DSR History</h1><p class="muted">Complete confirmed Daily Sales Report history.</p></div>
+ <a class="purchase-back dsr-history-back" href="admin-daily-report.html">← Daily Report</a>
 </header>
-<section class="dsr-history-section">
- <div class="dsr-history-section-head"><div><span class="section-kicker">DSR HISTORY</span><h2>All confirmed reports</h2><p>Search, filter and open any confirmed DSR.</p></div><span id="dsr-history-count" class="dsr-history-count">Loading…</span></div>
+<section class="purchase-section daily-section daily-history-section dsr-history-section">
+ <div class="purchase-section-head daily-section-head dsr-history-section-head"><div><span class="section-kicker daily-kicker">DSR HISTORY</span><h2>All confirmed reports</h2><p class="muted">Search, filter and open any confirmed DSR.</p></div><span id="dsr-history-count" class="dsr-history-count">Loading…</span></div>
  <div class="dsr-history-tools">
   <label class="dsr-history-search"><span aria-hidden="true">⌕</span><input id="dsr-history-search" type="search" placeholder="Search DSR date…" oninput="renderDsrHistory()"></label>
   <select id="dsr-history-period" onchange="renderDsrHistory()" aria-label="DSR history date filter"><option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select>
