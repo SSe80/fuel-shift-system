@@ -443,15 +443,22 @@ async function userDashboard(){
       const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
       const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
       const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
+      const pendingRecordedAt=t.sales_recorded_at||t.updated_at||t.created_at||'';
+      const pendingRecordedLabel=pendingRecordedAt?new Date(pendingRecordedAt).toLocaleString():'—';
       return '<div class="card dashboard-purchase-card takeover shift-takeover-card pending-takeover-sale-card">'+
-        '<div class="takeover-hero"><div class="takeover-hero-icon">◷</div><div><div class="takeover-card-title">Pending Record Sale Confirmation</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+' • Waiting for admin</div></div></div>'+
+        '<div class="pending-record-sale-head">'+
+          '<div class="pending-record-sale-title-wrap"><span class="section-kicker">RECORD SALE • PENDING</span><div class="takeover-card-title">Pending Record Sale Confirmation</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+'</div></div>'+
+          '<span class="pending-record-sale-badge">Waiting for admin</span>'+
+        '</div>'+
+        '<div class="pending-record-sale-status"><span class="pending-record-sale-status-dot"></span><div><strong>Sale submitted successfully</strong><small>Waiting for admin confirmation</small></div></div>'+
         '<div class="takeover-total-grid">'+
           '<div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div>'+
           '<div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
         '</div>'+
+        '<div class="pending-record-sale-meta"><span>Recorded</span><strong>'+h(pendingRecordedLabel)+'</strong></div>'+
         '<div class="row takeover-sale-action">'+
           '<button class="btn" type="button" onclick="cancelPendingTakeoverSale(\''+t.id+'\')">Cancel</button>'+
-          '<button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button>'+
+          '<button class="primary" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">View details</button>'+
         '</div>'+
       '</div>';
     }).join('');
