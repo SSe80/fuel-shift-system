@@ -4015,3 +4015,110 @@ body.admin-shell .admin-legacy-nav{display:none!important}
  body.admin-shell>.admin-sidebar-toggle{right:14px;left:auto;top:12px}
  body.admin-shell.admin-sidebar-open>.admin-sidebar-toggle{right:256px}
 }
+
+
+/* Admin Dashboard — minimal presentation; preserves existing dashboard DOM and JS hooks */
+body.admin-shell{
+  background:#f6f8fa;
+  color:#17202a;
+}
+body.admin-shell .wrap{
+  max-width:980px;
+  padding:10px 0 32px;
+}
+body.admin-shell .settings-header{
+  padding:10px 2px 18px;
+}
+body.admin-shell .settings-header .eyebrow{
+  font-size:9px;
+  letter-spacing:.12em;
+  margin-bottom:4px;
+  color:#7a8490;
+}
+body.admin-shell .settings-header h1{
+  margin:0;
+  font-size:26px;
+  letter-spacing:-.03em;
+}
+body.admin-shell .settings-header .muted{
+  margin:5px 0 0;
+  font-size:12px;
+  color:#7a8490;
+}
+body.admin-shell>.wrap>.statgrid{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin:0 0 12px;
+}
+body.admin-shell>.wrap>.statgrid .stat{
+  padding:12px 13px;
+  border:1px solid #e5e9ee;
+  border-radius:11px;
+  background:#fff;
+  box-shadow:none;
+}
+body.admin-shell>.wrap>.statgrid .stat b{
+  font-size:20px;
+  line-height:1.1;
+}
+body.admin-shell>.wrap>.statgrid .stat span{
+  display:block;
+  margin-top:3px;
+  font-size:10px;
+  color:#7a8490;
+}
+body.admin-shell>.wrap>.statgrid .stat small{
+  display:block;
+  margin-top:3px;
+  font-size:10px;
+  color:#98a2b3;
+}
+body.admin-shell>.wrap>.card{
+  margin:9px 0;
+  padding:14px;
+  border:1px solid #e5e9ee;
+  border-radius:12px;
+  box-shadow:none;
+}
+body.admin-shell>.wrap>.card .section-heading{
+  margin-bottom:10px;
+  padding-bottom:9px;
+  border-bottom:1px solid #edf0f3;
+}
+body.admin-shell>.wrap>.card .section-kicker{
+  margin-bottom:3px;
+  font-size:8px;
+  letter-spacing:.1em;
+  color:#8a949e;
+}
+body.admin-shell>.wrap>.card h2{
+  margin:0;
+  font-size:15px;
+  letter-spacing:-.015em;
+}
+body.admin-shell>.wrap>.card .statgrid{
+  gap:7px;
+  margin:0;
+}
+body.admin-shell>.wrap>.card .statgrid .stat{
+  padding:10px 11px;
+  border:1px solid #edf0f3;
+  border-radius:9px;
+  background:#fafbfc;
+  box-shadow:none;
+}
+body.admin-shell>.wrap>#tank-movements,
+body.admin-shell>.wrap>#activity{
+  font-size:12px;
+}
+@media(max-width:700px){
+  body.admin-shell .wrap{padding:6px 0 24px}
+  body.admin-shell .settings-header{padding:8px 2px 14px}
+  body.admin-shell .settings-header h1{font-size:23px}
+  body.admin-shell .settings-header .muted{font-size:11px;max-width:520px}
+  body.admin-shell>.wrap>.statgrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  body.admin-shell>.wrap>.card{padding:12px;margin:8px 0}
+  body.admin-shell>.wrap>.card h2{font-size:14px}
+}
