@@ -2347,28 +2347,16 @@ function closeDailyDsrPreview(){
 }
 function renderDailyPreviewHistoryCard(item){
   const dateLabel=dailyReportIdLabel(item.date);
-  return '<article class="purchase-card daily-dsr-history-card daily-dsr-preview-card" data-dsr-date="'+h(item.date)+'">'+
-    '<button type="button" class="daily-dsr-history-head" onclick="toggleDailyHistoryCard(event,this)" aria-expanded="false">'+
-      '<span class="daily-dsr-history-main"><strong>'+h(dateLabel)+'</strong><small>DSR preview · not confirmed</small></span>'+
-      '<span class="daily-dsr-status-preview">Preview</span><span class="daily-dsr-history-toggle" aria-hidden="true">⌄</span>'+
-    '</button>'+
-    '<div class="daily-dsr-history-body" hidden>'+
-      '<div class="daily-dsr-history-details"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div><div><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div>'+
-      '<div class="daily-dsr-history-actions"><button type="button" class="daily-dsr-view" onclick="previewDailyReport(this.closest(\'.daily-dsr-history-card\').dataset.dsrDate)">View full report <span>→</span></button></div>'+
-    '</div></article>';
+  return '<article class="dsr-history-card" data-dsr-date="'+h(item.date)+'">'+
+    '<button type="button" class="dsr-history-card-head" onclick="toggleDailyHistoryCard(event,this)" aria-expanded="false"><span class="dsr-history-card-title"><strong>'+h(dateLabel)+'</strong><small>DSR preview · not confirmed</small></span><span class="dsr-history-card-right"><span class="dsr-history-badge">PREVIEW</span><span class="dsr-history-toggle">⌄</span></span></button>'+
+    '<div class="dsr-history-card-body" hidden><div class="dsr-history-stats"><div class="dsr-history-stat"><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div class="dsr-history-stat"><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div><div class="dsr-history-stat"><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div class="dsr-history-stat"><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div><div class="dsr-history-actions"><button type="button" class="primary" onclick="previewDailyReport(this.closest(\'.dsr-history-card\').dataset.dsrDate)">View Full Report</button></div></div></article>';
 }
 function renderDailyHistoryCard(item){
   const confirmedAt=item.confirmed_at ? dailyReportTime(item.confirmed_at) : 'Confirmed';
   const dateLabel=dailyReportIdLabel(item.date);
-  return '<article class="purchase-card daily-dsr-history-card" data-dsr-date="'+h(item.date)+'">'+
-    '<button type="button" class="daily-dsr-history-head" onclick="toggleDailyHistoryCard(event,this)" aria-expanded="false">'+
-      '<span class="daily-dsr-history-main"><strong>'+h(dateLabel)+'</strong><small>Confirmed '+h(confirmedAt)+'</small></span>'+
-      '<span class="daily-dsr-status-confirmed">Confirmed</span><span class="daily-dsr-history-toggle" aria-hidden="true">⌄</span>'+
-    '</button>'+
-    '<div class="daily-dsr-history-body" hidden>'+
-      '<div class="daily-dsr-history-details"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div><div><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div>'+
-      '<div class="daily-dsr-history-actions"><button type="button" class="daily-dsr-view" onclick="selectDailyReportDate(this.closest(\'.daily-dsr-history-card\').dataset.dsrDate)">View full report <span>→</span></button></div>'+
-    '</div></article>';
+  return '<article class="dsr-history-card" data-dsr-date="'+h(item.date)+'">'+
+    '<button type="button" class="dsr-history-card-head" onclick="toggleDailyHistoryCard(event,this)" aria-expanded="false"><span class="dsr-history-card-title"><strong>'+h(dateLabel)+'</strong><small>Confirmed '+h(confirmedAt)+'</small></span><span class="dsr-history-card-right"><span class="dsr-history-badge">✓ CONFIRMED</span><span class="dsr-history-toggle">⌄</span></span></button>'+
+    '<div class="dsr-history-card-body" hidden><div class="dsr-history-stats"><div class="dsr-history-stat"><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div class="dsr-history-stat"><span>Total sales</span><strong>'+money(item.total_sales_amount)+'</strong></div><div class="dsr-history-stat"><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div class="dsr-history-stat"><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div><div class="dsr-history-actions"><button type="button" class="primary" onclick="selectDailyReportDate(this.closest(\'.dsr-history-card\').dataset.dsrDate)">View Full Report</button></div></div></article>';
 }
 function renderDailyPendingConfirmationCard(item){
   const waiting=item.status==='waiting';
@@ -2429,12 +2417,12 @@ async function loadDailyReportDates(){
 
 function toggleDailyHistoryCard(event,button){
   if(event)event.stopPropagation();
-  const card=button&&button.closest('.daily-dsr-history-card');
+  const card=button&&button.closest('.daily-dsr-history-card,.dsr-history-card');
   if(!card)return;
   const expanded=card.classList.toggle('expanded');
-  const body=card.querySelector('.daily-dsr-history-body');
-  const toggle=card.querySelector('.daily-dsr-history-toggle');
-  const head=card.querySelector('.daily-dsr-history-head');
+  const body=card.querySelector('.daily-dsr-history-body,.dsr-history-card-body');
+  const toggle=card.querySelector('.daily-dsr-history-toggle,.dsr-history-toggle');
+  const head=card.querySelector('.daily-dsr-history-head,.dsr-history-card-head');
   if(body)body.hidden=!expanded;
   if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
   if(toggle)toggle.textContent=expanded?'⌃':'⌄';
