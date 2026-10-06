@@ -838,6 +838,312 @@ body.attendant-dashboard-page .logout-confirm-button{background:#b4232f!importan
 body.attendant-dashboard-page .logout-confirm-button:hover{background:#941f29!important;border-color:#941f29!important}
 body.attendant-dashboard-page .logout-cancel-button{border-color:#e3c5c8!important;color:#7f1d1d!important}
 body.attendant-dashboard-page .logout-confirm-backdrop{background:rgba(68,10,18,.62)!important}
+
+/* Attendant record-sale cards — compact, clean and never covered by navigation */
+body.attendant-dashboard-page.admin-shell{
+  padding:0 0 0 248px!important;
+  box-sizing:border-box!important;
+}
+body.attendant-dashboard-page.admin-shell>.admin-sidebar{
+  position:fixed!important;
+  z-index:1200!important;
+  top:0!important;
+  left:0!important;
+  right:auto!important;
+  bottom:0!important;
+  width:232px!important;
+  height:100vh!important;
+  min-height:100dvh!important;
+  padding:18px 12px!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:14px!important;
+  background:#111827!important;
+  border:0!important;
+  border-right:1px solid #253047!important;
+  box-shadow:6px 0 22px rgba(16,24,40,.10)!important;
+}
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-brand{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  padding:4px 8px 14px!important;
+  border-bottom:1px solid #253047!important;
+}
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-nav{
+  display:grid!important;
+  gap:5px!important;
+  width:100%!important;
+  overflow:visible!important;
+}
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-nav a{
+  width:100%!important;
+  min-height:44px!important;
+  box-sizing:border-box!important;
+  justify-content:flex-start!important;
+  padding:0 12px!important;
+  gap:10px!important;
+  border-radius:10px!important;
+}
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-nav a span{
+  width:20px!important;
+  text-align:center!important;
+}
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-nav a b{
+  font-size:12px!important;
+}
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-logout{
+  width:100%!important;
+  min-height:44px!important;
+  margin-top:auto!important;
+  box-sizing:border-box!important;
+  justify-content:flex-start!important;
+  padding:0 12px!important;
+  gap:10px!important;
+}
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-logout span{
+  width:20px!important;
+  text-align:center!important;
+}
+body.attendant-dashboard-page.admin-shell>.admin-sidebar-toggle{
+  display:none!important;
+}
+body.attendant-dashboard-page.admin-shell>.wrap{
+  width:100%!important;
+  max-width:1180px!important;
+  margin:0 auto!important;
+  padding:0 22px 40px!important;
+  box-sizing:border-box!important;
+}
+
+/* Record Sale input/review/detail cards */
+body.attendant-dashboard-page .takeover-action-modal{
+  width:min(440px,calc(100vw - 32px))!important;
+  max-height:78vh!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  border-radius:15px!important;
+}
+body.attendant-dashboard-page .takeover-action-modal .top{
+  padding:12px 14px 10px!important;
+  min-height:0!important;
+}
+body.attendant-dashboard-page .takeover-action-modal .top h3{
+  font-size:16px!important;
+  line-height:1.2!important;
+}
+body.attendant-dashboard-page .takeover-action-modal .top .section-kicker{
+  margin-bottom:3px!important;
+  font-size:8px!important;
+}
+body.attendant-dashboard-page .takeover-action-modal .modal-close{
+  width:30px!important;
+  height:30px!important;
+  min-width:30px!important;
+  border-radius:8px!important;
+  font-size:19px!important;
+}
+body.attendant-dashboard-page .takeover-sale-summary,
+body.attendant-dashboard-page .takeover-confirm-summary{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:1px!important;
+  margin:0 12px 10px!important;
+  border:1px solid #e6ebf0!important;
+  border-radius:10px!important;
+  overflow:hidden!important;
+}
+body.attendant-dashboard-page .takeover-sale-summary>div,
+body.attendant-dashboard-page .takeover-confirm-summary>div{
+  padding:8px 10px!important;
+  background:#fbfcfe!important;
+}
+body.attendant-dashboard-page .takeover-sale-summary span,
+body.attendant-dashboard-page .takeover-confirm-summary span{
+  display:block!important;
+  font-size:8px!important;
+  text-transform:uppercase!important;
+  letter-spacing:.04em!important;
+  color:#98a2b3!important;
+  font-weight:800!important;
+}
+body.attendant-dashboard-page .takeover-sale-summary strong,
+body.attendant-dashboard-page .takeover-confirm-summary strong{
+  display:block!important;
+  margin-top:3px!important;
+  font-size:13px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .takeover-sales-entry-section{
+  margin:0 12px!important;
+  max-height:43vh!important;
+  overflow:auto!important;
+  border:1px solid #e6ebf0!important;
+  border-radius:10px!important;
+}
+body.attendant-dashboard-page .takeover-sales-entry-title{
+  padding:8px 10px!important;
+  border-bottom:1px solid #e6ebf0!important;
+  background:#fbfcfe!important;
+  font-size:10px!important;
+  font-weight:850!important;
+  color:#475467!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry{
+  padding:9px 10px!important;
+  border-bottom:1px solid #eef1f4!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry:last-child{border-bottom:0!important}
+body.attendant-dashboard-page .takeover-sale-entry-head{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 128px!important;
+  align-items:center!important;
+  gap:8px!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry-head strong{
+  display:block!important;
+  font-size:12px!important;
+  line-height:1.25!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry-head small{
+  display:block!important;
+  margin-top:2px!important;
+  font-size:9px!important;
+  line-height:1.3!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry input{
+  width:100%!important;
+  min-height:36px!important;
+  padding:0 9px!important;
+  box-sizing:border-box!important;
+  border:1px solid #d8e0e8!important;
+  border-radius:8px!important;
+  font-size:12px!important;
+}
+body.attendant-dashboard-page .takeover-sale-reason-label{
+  display:block!important;
+  margin-top:7px!important;
+  font-size:9px!important;
+  font-weight:800!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .takeover-sale-reason{
+  width:100%!important;
+  margin-top:4px!important;
+  padding:7px 8px!important;
+  box-sizing:border-box!important;
+  border:1px solid #d8e0e8!important;
+  border-radius:8px!important;
+  font-size:11px!important;
+  resize:vertical!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row,
+body.attendant-dashboard-page .takeover-details-modal>.row{
+  display:flex!important;
+  gap:7px!important;
+  margin:0!important;
+  padding:10px 12px 12px!important;
+  border-top:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row button,
+body.attendant-dashboard-page .takeover-details-modal>.row button{
+  flex:1 1 0!important;
+  min-width:0!important;
+  min-height:37px!important;
+  padding:0 10px!important;
+  border-radius:8px!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  box-sizing:border-box!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row button.primary{
+  background:#b4232f!important;
+  border-color:#b4232f!important;
+  color:#fff!important;
+  box-shadow:0 4px 10px rgba(180,35,47,.18)!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row button.primary:disabled{
+  background:#d0d5dd!important;
+  border-color:#d0d5dd!important;
+  color:#667085!important;
+  box-shadow:none!important;
+  cursor:not-allowed!important;
+}
+body.attendant-dashboard-page .takeover-details-modal{
+  width:min(500px,calc(100vw - 32px))!important;
+  max-height:78vh!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  border-radius:15px!important;
+}
+body.attendant-dashboard-page #takeover-details-content{
+  max-height:62vh!important;
+  overflow:auto!important;
+  padding:0 12px 4px!important;
+}
+body.attendant-dashboard-page .takeover-details-modal>.top{
+  padding:12px 14px 10px!important;
+}
+body.attendant-dashboard-page .takeover-details-modal>.row{
+  justify-content:flex-end!important;
+}
+body.attendant-dashboard-page .takeover-details-modal>.row button{
+  flex:0 0 110px!important;
+}
+
+/* Keep the sale cards comfortably inside the viewport on phones. */
+@media(max-width:800px){
+  body.attendant-dashboard-page.admin-shell{
+    padding:0!important;
+  }
+  body.attendant-dashboard-page.admin-shell>.admin-sidebar{
+    left:0!important;
+    right:auto!important;
+    top:0!important;
+    bottom:0!important;
+    width:220px!important;
+    height:100vh!important;
+    transform:translateX(-100%)!important;
+    transition:transform .2s ease!important;
+  }
+  body.attendant-dashboard-page.admin-shell:not(.admin-sidebar-collapsed)>.admin-sidebar{
+    transform:translateX(0)!important;
+  }
+  body.attendant-dashboard-page.admin-shell>.admin-sidebar-toggle{
+    display:flex!important;
+    position:fixed!important;
+    z-index:1300!important;
+    left:10px!important;
+    top:10px!important;
+    width:40px!important;
+    height:40px!important;
+    align-items:center!important;
+    justify-content:center!important;
+    border:1px solid #344054!important;
+    border-radius:9px!important;
+    background:#111827!important;
+    color:#fff!important;
+  }
+  body.attendant-dashboard-page.admin-shell>.wrap{
+    max-width:100%!important;
+    padding:58px 12px 28px!important;
+  }
+  body.attendant-dashboard-page .takeover-action-modal,
+  body.attendant-dashboard-page .takeover-details-modal{
+    width:min(440px,calc(100vw - 20px))!important;
+    max-height:84vh!important;
+  }
+  body.attendant-dashboard-page .takeover-sales-entry-section{
+    max-height:48vh!important;
+  }
+  body.attendant-dashboard-page .takeover-sale-entry-head{
+    grid-template-columns:minmax(0,1fr) 112px!important;
+  }
+}
 </style></head><body class="attendant-page attendant-dashboard-page admin-shell" data-app-page="userDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div><div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing dip (mm)<input id="handover-closing-dip" type="number" min="0" step="0.1" placeholder="Enter tank closing dip" required oninput="updateHandoverClosingDip(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter a dip to calculate liters.</div><input id="handover-closing-liters" type="hidden"><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="takeover-sale-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closeTakeoverSaleModal()"></div>
 <div class="modal-card takeover-action-modal">
