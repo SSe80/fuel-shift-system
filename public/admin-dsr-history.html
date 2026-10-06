@@ -143,7 +143,8 @@ body.dsr-detail-popup-open{overflow:hidden!important}
  .dsr-history-page .purchase-history-search-wrap{grid-column:1 / -1!important}
  .dsr-history-page .purchase-history-tools input,.dsr-history-page .purchase-history-tools select,.dsr-history-page .purchase-history-tools button{height:40px!important;min-height:40px!important}
  .dsr-history-page .purchase-history-refresh{grid-column:auto!important}
-}</style></style>
+}
+</style>
 </head>
 <body class="admin-shell admin-purchases-page admin-purchase-history-page dsr-history-page" data-app-page="adminDsrHistory">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
@@ -167,19 +168,20 @@ body.dsr-detail-popup-open{overflow:hidden!important}
 </section>
 <div id="toast" class="toast"></div>
 </main>
-<script src="assets/app.js?v=20261006-07"></script>
+<script src="assets/app.js?v=20261006-08"></script>
 <script>
 (function(){
  async function load(){
   const box=document.getElementById('daily-report-date-cards'); if(!box)return;
   try{
-   const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
+   const me=await currentUser(); if(!me || me.role!=='admin')return location.href='admin-login.html';
    const rows=await api('/api/reports/daily/confirmations');
    window.dsrHistoryData=(Array.isArray(rows)?rows:[]).filter(x=>x.status==='confirmed').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
    filterDsrHistory();
-  }catch(e){console.error(e);box.innerHTML='<div class="card">Could not load DSR history: '+String(e.message||e)+'</div>';}
- }
-  }catch(e){console.error(e);box.innerHTML='<div class="card">Could not load DSR history: '+String(e.message||e)+'</div>';}
+  }catch(e){
+   console.error(e);
+   box.innerHTML='<div class="card">Could not load DSR history: '+String(e.message||e)+'</div>';
+  }
  }
  window.addEventListener('load',load);
 })();
@@ -204,7 +206,7 @@ window.filterDsrHistory=function(){
  const count=document.getElementById('dsr-history-count'); if(count)count.textContent=rows.length+' confirmed';
  if(!rows.length){box.innerHTML='<div class="card">No confirmed DSR reports found.</div>';return;}
  const monthGroups={};
- rows.forEach(item=>{const date=String(item.date||'');const monthKey=/^\\d{4}-\\d{2}/.test(date)?date.slice(0,7):'unknown';(monthGroups[monthKey]||(monthGroups[monthKey]=[])).push(item);});
+ rows.forEach(item=>{const date=String(item.date||'');const monthKey=/^\d{4}-\d{2}/.test(date)?date.slice(0,7):'unknown';(monthGroups[monthKey]||(monthGroups[monthKey]=[])).push(item);});
  const monthKeys=Object.keys(monthGroups).sort((a,b)=>b.localeCompare(a));
  box.innerHTML=monthKeys.map(monthKey=>{const monthDate=new Date(monthKey+'-01T00:00:00');const monthLabel=Number.isNaN(monthDate.getTime())?monthKey:monthDate.toLocaleDateString(undefined,{month:'long',year:'numeric'});const items=monthGroups[monthKey];return '<section class="dsr-history-month" data-month-key="'+monthKey+'"><button type="button" class="dsr-history-month-head" onclick="toggleDsrMonth(this)" aria-expanded="false"><span class="dsr-history-month-title"><span>MONTH</span><strong>'+monthLabel+'</strong></span><span class="dsr-history-month-right"><small>'+items.length+' DSR'+(items.length===1?'':'s')+'</small><span class="dsr-history-month-toggle" aria-hidden="true">⌄</span></span></button><div class="dsr-history-month-body" hidden>'+items.map(renderDsrHistoryCard).join('')+'</div></section>';}).join('');
 };
