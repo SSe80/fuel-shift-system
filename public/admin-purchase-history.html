@@ -124,6 +124,39 @@
  .purchase-detail-actions{padding:7px 9px 9px}
 }
 <style>
+/* Purchase History section count alignment */
+.admin-purchase-history-page .purchase-section-head{
+  width:100%;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+.admin-purchase-history-page .purchase-section-head>div{
+  width:auto;
+  min-width:0;
+}
+.admin-purchase-history-page .purchase-section-head .admin-sales-section-count{
+  margin-left:auto;
+  align-self:center;
+  flex:0 0 auto;
+  white-space:nowrap;
+  margin-top:0;
+}
+@media(max-width:600px){
+  .admin-purchase-history-page .purchase-section-head{
+    flex-direction:row;
+    align-items:center;
+  }
+  .admin-purchase-history-page .purchase-section-head .admin-sales-section-count{
+    margin-left:auto;
+    align-self:center;
+    margin-top:0;
+  }
+}
+
 /* Purchase History monthly groups — keep month navigation separate from purchase cards */
 .admin-purchase-history-page .purchase-full-history-month-group{
   margin:0 0 16px;
