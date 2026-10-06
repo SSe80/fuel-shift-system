@@ -62,9 +62,13 @@
 .daily-dsr-history-stats strong{display:block;font-size:12px;color:#17202a;overflow-wrap:anywhere}
 .daily-dsr-history-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .daily-dsr-history-actions button{width:100%;min-height:40px;padding:0 12px;border-radius:9px;border:1px solid #d5dde5;background:#fff;color:#344054;font-size:12px;font-weight:800;cursor:pointer}
-.daily-dsr-history-actions .daily-dsr-view{border-color:#4b83bd;background:#4b83bd;color:#fff;box-shadow:0 3px 9px rgba(75,131,189,.14)}
-.daily-dsr-history-actions button:hover{background:#f7f9fb;border-color:#aebdca}
-.daily-dsr-history-actions .daily-dsr-view:hover{background:#3e73a7;border-color:#3e73a7}
+.daily-dsr-history-actions .daily-dsr-view{border-color:#4b83bd;background:#4b83bd;color:#fff;box-shadow:0 4px 12px rgba(75,131,189,.18);position:relative;overflow:hidden;transition:transform .16s ease,box-shadow .16s ease,background .16s ease,border-color .16s ease}
+.daily-dsr-history-actions .daily-dsr-view span{display:inline-flex;align-items:center;justify-content:center;margin-left:4px;font-size:16px;line-height:1;transition:transform .16s ease}
+.daily-dsr-history-actions .daily-dsr-view:hover{background:#3e73a7;border-color:#3e73a7;box-shadow:0 5px 14px rgba(75,131,189,.22);transform:translateY(-1px)}
+.daily-dsr-history-actions .daily-dsr-view:hover span{transform:translateX(3px)}
+.daily-dsr-history-actions .daily-dsr-view:active{transform:translateY(0);box-shadow:0 2px 6px rgba(75,131,189,.16)}
+.daily-dsr-history-actions .daily-dsr-view:focus-visible{outline:3px solid rgba(75,131,189,.22);outline-offset:2px}
+@media(max-width:560px){.daily-dsr-history-actions .daily-dsr-view{min-height:44px;font-size:12.5px}}
 @media(max-width:560px){
  .purchase-history-recorded-head{min-height:68px;padding:11px 11px 11px 14px}
  .purchase-history-recorded-title strong{font-size:13px}
