@@ -361,13 +361,71 @@ async function cancelPendingTakeoverSale(id){
   }catch(e){toast(e.message);}
 }
 
+function closeDispenserDeactivationModal(){
+  const modal=document.getElementById('dispenser-deactivation-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  window.pendingDispenserDeactivationRequest=null;
+}
+function openDispenserDeactivationConfirmation(id){
+  const req=(window.pendingDispenserDeactivationRequests||[]).find(x=>String(x.id)===String(id));
+  if(!req)return;
+  window.pendingDispenserDeactivationRequest=req;
+  let modal=document.getElementById('dispenser-deactivation-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='dispenser-deactivation-modal';
+    modal.className='modal';
+    modal.setAttribute('aria-hidden','true');
+    modal.innerHTML='<div class="modal-backdrop" onclick="closeDispenserDeactivationModal()"></div><form class="modal-card form" onsubmit="confirmDispenserDeactivationByAttendant(event)"><div class="top"><div><span class="section-kicker">DISPENSER DEACTIVATION</span><h3 id="dispenser-deactivation-title">Close active shift</h3></div><button type="button" class="modal-close" onclick="closeDispenserDeactivationModal()">×</button></div><p id="dispenser-deactivation-summary" class="muted"></p><div id="dispenser-deactivation-reading-list"></div><label>Closing tank stock (L)<input id="dispenser-deactivation-tank-stock" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Enter closing tank stock" required></label><label>Attendant PIN<input id="dispenser-deactivation-pin" type="password" inputmode="numeric" autocomplete="current-password" minlength="4" placeholder="Enter your PIN" required></label><p id="dispenser-deactivation-error" class="muted" style="display:none"></p><div class="row"><button type="button" onclick="closeDispenserDeactivationModal()">Cancel</button><button type="submit" class="primary">Confirm deactivation</button></div></form></div>';
+    document.body.appendChild(modal);
+  }
+  const n=req.nozzle||{};
+  const shift=req.shift||{};
+  const readings=Array.isArray(req.nozzle_readings)?req.nozzle_readings:[];
+  const title=document.getElementById('dispenser-deactivation-title');
+  const summary=document.getElementById('dispenser-deactivation-summary');
+  const list=document.getElementById('dispenser-deactivation-reading-list');
+  if(title)title.textContent='Close '+(n.nozzle_code||'dispenser')+' shift';
+  if(summary)summary.innerHTML='<b>Tank:</b> '+h(n.tank_id||'Connected tank')+' &nbsp; <b>Opening tank:</b> '+liters(shift.opening_tank_liters)+' L';
+  if(list)list.innerHTML=readings.map((r,i)=>'<div class="card" style="margin:0 0 8px;padding:10px"><div class="top"><strong>'+h(r.nozzle_code||r.nozzle_id||('Nozzle '+(i+1)))+'</strong><span>Opening '+reading(r.opening_reading)+'</span></div><label>Closing reading<input class="deactivation-closing-reading" data-nozzle-id="'+h(r.nozzle_id)+'" type="number" min="'+h(r.opening_reading||0)+'" step="0.01" inputmode="decimal" placeholder="Enter closing reading" required></label></div>').join('');
+  const stock=document.getElementById('dispenser-deactivation-tank-stock'); if(stock)stock.value='';
+  const pin=document.getElementById('dispenser-deactivation-pin'); if(pin)pin.value='';
+  const error=document.getElementById('dispenser-deactivation-error'); if(error){error.textContent='';error.style.display='none';}
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+  setTimeout(()=>document.querySelector('#dispenser-deactivation-modal .deactivation-closing-reading')?.focus(),0);
+}
+async function confirmDispenserDeactivationByAttendant(event){
+  event?.preventDefault();
+  const req=window.pendingDispenserDeactivationRequest;
+  if(!req)return;
+  const readings=[...document.querySelectorAll('#dispenser-deactivation-modal .deactivation-closing-reading')].map(input=>({nozzle_id:input.dataset.nozzleId,reading:Number(input.value)}));
+  if(readings.some(x=>!Number.isFinite(x.reading))){toast('Enter every closing nozzle reading.');return;}
+  const tank=Number(document.getElementById('dispenser-deactivation-tank-stock')?.value);
+  const pin=document.getElementById('dispenser-deactivation-pin')?.value.trim()||'';
+  const error=document.getElementById('dispenser-deactivation-error');
+  if(!Number.isFinite(tank)||tank<0||!pin){if(error){error.textContent='Enter the closing tank stock and your PIN.';error.style.display='block';}return;}
+  try{
+    const result=await api('/api/dispenser-deactivation-requests/'+encodeURIComponent(req.id)+'/confirm',{method:'POST',body:JSON.stringify({pin,closing_tank_liters:tank,closing_nozzle_readings:readings})});
+    closeDispenserDeactivationModal();
+    toast('Dispenser deactivated. Record Sale is now ready.');
+    await userDashboard();
+    if(result?.takeover_id){
+      const box=document.getElementById('shift');
+      if(box)box.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+  }catch(e){
+    if(error){error.textContent=e.message||'Unable to confirm deactivation.';error.style.display='block';}
+    else toast(e.message);
+  }
+}
+
 async function userDashboard(){
   try{
     await window.stationCurrencyReady;
     const me=await currentUser();
     if(me.role!=='attendant')return location.href='attendant-login.html';
     document.getElementById('name').textContent=me.name;
-    const [shifts,nozzles,products,tanks,handovers,employees,takeovers,saleTypes]=await Promise.all([
+    const [shifts,nozzles,products,tanks,handovers,employees,takeovers,saleTypes,deactivationRequests]=await Promise.all([
       api('/api/shifts').catch(()=>[]),
       api('/api/nozzles').catch(()=>[]),
       api('/api/products').catch(()=>[]),
@@ -375,7 +433,8 @@ async function userDashboard(){
       api('/api/handovers').catch(()=>[]),
       api('/api/users').catch(()=>[]),
       api('/api/shift-takeovers').catch(()=>[]),
-      api('/api/sale-types').catch(()=>[])
+      api('/api/sale-types').catch(()=>[]),
+      api('/api/dispenser-deactivation-requests').catch(()=>[])
     ]);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
@@ -464,7 +523,19 @@ async function userDashboard(){
     window.dashboardNozzleRecords=nozzles;
     window.dashboardEmployeeRecords=employees;
     window.dashboardTankRecords=tanks;
+    window.pendingDispenserDeactivationRequests=Array.isArray(deactivationRequests)?deactivationRequests:[];
 
+    const pendingDeactivationHtml=(Array.isArray(deactivationRequests)?deactivationRequests:[]).map(req=>{
+      const n=req.nozzle||{};
+      const s=req.shift||{};
+      const readings=Array.isArray(req.nozzle_readings)?req.nozzle_readings:[];
+      const readingRows=readings.map((r,i)=>'<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(r.opening_reading)+'</div><div class="pending-nozzle-code">'+h(r.nozzle_code||r.nozzle_id)+'</div></div>').join('');
+      return '<div class="card dashboard-purchase-card pending pending-confirmation-card dispenser-deactivation-attendant-card">'+
+        '<div class="pending-hero"><div class="pending-hero-icon">!</div><div><div class="pending-card-title">Pending Dispenser Deactivation</div><div class="pending-card-subtitle">'+h(n.nozzle_code||'Dispenser')+' — close your active shift to finish deactivation.</div></div></div>'+
+        '<div class="pending-shift-info"><div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n.nozzle_code||req.nozzle_id)+'</strong></div></div><div class="pending-info-divider"></div><div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Opening tank</span><strong>'+liters(s.opening_tank_liters)+' <small>L</small></strong></div></div></div>'+
+        '<div class="pending-nozzle-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Opening nozzle readings</div>'+readingRows+'</div>'+
+        '<div class="row"><button class="primary" type="button" onclick="openDispenserDeactivationConfirmation(\''+req.id+'\')">Enter Closing Readings</button></div></div>';
+    }).join('');
     const pendingTakeoverHtml=pendingTakeovers.slice(0,5).map(t=>{
       const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
       const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
@@ -523,6 +594,7 @@ async function userDashboard(){
     const wrapSection=(kicker,title,content)=>content?'<section class="dashboard-section"><div class="dashboard-section-head"><div><span class="section-kicker">'+kicker+'</span><h2>'+title+'</h2></div></div><div class="dashboard-section-cards">'+content+'</div></section>':'';
 box.innerHTML=
   wrapSection('SHIFT CONFIRMATIONS','Pending Shift Confirmations',pendingShiftHtml+pendingIncomingHtml)+
+  wrapSection('DISPENSER DEACTIVATION','Pending Deactivation',pendingDeactivationHtml)+
   wrapSection('SHIFT HANDOVER','Record Sale & Handover',takeoverHtml+pendingTakeoverHtml+pendingOutgoingHtml)+
   wrapSection('ACTIVE','Active Shifts',activeHtml);
     if(!box.innerHTML)box.innerHTML='';
@@ -1341,7 +1413,7 @@ async function _cancelAdminPendingShift(id){
   }catch(e){throw e;}
 }
 async function loadSettingsData(){
-  let [employees,tanks,dispensers,products,shifts,saleTypes,stationSettings]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts'),api('/api/sale-types'),api('/api/settings')]);
+  let [employees,tanks,dispensers,products,shifts,saleTypes,stationSettings,deactivationRequests]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts'),api('/api/sale-types'),api('/api/settings'),api('/api/dispenser-deactivation-requests').catch(()=>[])]);
   const savedOrders=stationSettings?.item_orders||{};
   products=applySavedSettingsOrder(products,'products',savedOrders);saleTypes=applySavedSettingsOrder(saleTypes,'saleTypes',savedOrders);employees=applySavedSettingsOrder(employees,'employees',savedOrders);tanks=applySavedSettingsOrder(tanks,'tanks',savedOrders);dispensers=applySavedSettingsOrder(dispensers,'dispensers',savedOrders);
   const stationCurrency=String(stationSettings?.currency||'ETB').trim();
@@ -1353,6 +1425,7 @@ async function loadSettingsData(){
   const colorForProduct=product=>productByName[String(product||'').toLowerCase()]?.color||'#98A2B3';
   const pendingHandovers=shifts.filter(x=>x.status==='assigned');
   const pendingByDispenser=Object.fromEntries(pendingHandovers.map(x=>[x.nozzle_id,x]));
+  const pendingDeactivationByDispenser=Object.fromEntries((Array.isArray(deactivationRequests)?deactivationRequests:[]).map(x=>[x.nozzle_id,x]));
   const names=Object.fromEntries(employees.map(e=>[e.id,e.name]));
   // Pending assignments are rendered in place of their dispenser card.
   // The separate pending-handover box is kept empty to avoid duplicate cards.
@@ -1431,6 +1504,21 @@ async function loadSettingsData(){
         '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle opening readings</span>'+readingText+'</div>'+
         '<p class="dispenser-note">The dispenser will remain inactive until the assigned attendant confirms the readings with their PIN.</p>'+
         '<div class="dispenser-card-actions"><button type="button" class="dispenser-danger-action" onclick="cancelAdminPendingShift(\''+pending.id+'\')">Cancel assignment</button></div>'+
+      '</div>';
+    }
+    const pendingDeactivation=pendingDeactivationByDispenser[n.id];
+    if(pendingDeactivation){
+      const requestReadings=Array.isArray(pendingDeactivation.nozzle_readings)?pendingDeactivation.nozzle_readings:[];
+      const requestReadingText=requestReadings.length
+        ?requestReadings.map((r,idx)=>'<div class="dispenser-reading-row"><span>'+h(r.nozzle_code||r.nozzle_id||('Nozzle '+(idx+1)))+'</span><b>'+reading(r.opening_reading)+'</b></div>').join('')
+        :'<span class="muted">No opening readings recorded</span>';
+      const requestShift=pendingDeactivation.shift||{};
+      const requestAttendant=names[requestShift.employee_id]||requestShift.employee_id||'Assigned attendant';
+      return (itemIndex===0?'<div class="settings-product-group-label"><span class="settings-product-group-color" style="background:'+h(colorForProduct(n.product))+'"></span>'+h(productCode)+'</div>':'')+'<div class="card settings-item-card dispenser-settings-card dispenser-pending-card '+(n.active?'dispenser-active-card settings-active-card':'')+' '+(itemIndex===0&&groupIndex>0?'dispenser-group-start':'')+'" data-dispenser-product-group="'+h(groupKey)+'" data-settings-key="dispensers" data-settings-id="'+h(n.id)+'" onclick="toggleSettingsItem(event,this)">'+
+        '<div class="dispenser-card-head"><span></span><div><span class="section-kicker">DISPENSER DEACTIVATION</span><h3>'+h(n.nozzle_code)+'</h3><span class="badge">Pending attendant confirmation</span></div><div class="dispenser-status is-active"><span></span>Pending</div></div>'+
+        '<div class="dispenser-info-grid"><div><span>Connected tank</span><b>'+h(tank?.tank_code||n.tank_id||'Not connected')+'</b></div><div><span>Assigned attendant</span><b>'+h(requestAttendant)+'</b></div><div><span>Dispenser status</span><b>Active — closing required</b></div></div>'+
+        '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Opening readings</span>'+requestReadingText+'</div>'+
+        '<p class="dispenser-note">Admin approved deactivation. The dispenser stays active until the assigned attendant enters closing nozzle readings, closing tank stock, and PIN.</p>'+
       '</div>';
     }
     return (itemIndex===0?'<div class="settings-product-group-label">'+h(productCode)+'</div>':'')+'<div class="card settings-item-card dispenser-settings-card '+(n.active?'dispenser-active-card settings-active-card':'')+' '+(itemIndex===0&&groupIndex>0?'dispenser-group-start':'')+'" data-dispenser-product-group="'+h(groupKey)+'" data-settings-key="dispensers" data-settings-id="'+h(n.id)+'" onclick="toggleSettingsItem(event,this)">'+
@@ -2024,10 +2112,10 @@ async function confirmDispenserDeactivation(event){
     if(!me||me.role!=='admin')throw new Error('Only an admin can confirm dispenser deactivation.');
     const verified=await api('/api/admin-login',{method:'POST',body:JSON.stringify({operator_id:me.operator_id,pin})});
     if(!verified||verified.role!=='admin')throw new Error('Invalid admin PIN.');
-    await api('/api/nozzles/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({active:false})});
+    await api('/api/nozzles/'+encodeURIComponent(id)+'/deactivation-request',{method:'POST',body:JSON.stringify({pin})});
     closeAdminPinConfirmation();
     await loadSettingsData();
-    toast('Dispenser deactivated successfully');
+    toast('Deactivation pending — waiting for the assigned attendant to confirm the closing readings.');
   }catch(e){
     if(error){error.textContent=e.message||'Admin PIN verification failed.';error.style.display='block';}
     else toast(e.message);
@@ -3352,10 +3440,7 @@ async function confirmDispenserActivation(){
 async function _toggleNozzleConfirmed(id){return _toggleNozzle(id,true);}
 function toggleNozzle(id,active){
   if(!active)return _toggleNozzle(id,active);
-  const d=settingsRecord(window.dispenserRecords,id);
-  const details='<p><b>Dispenser:</b> '+h(d.nozzle_code||id)+'</p>'+settingsDiff('Status','Active','Inactive');
-  showSettingsConfirmation('Review Dispenser Deactivation',details,()=>_toggleNozzleConfirmed(id),
-    'Dispenser deactivated successfully','<p>The dispenser is now inactive.</p>'+details);
+  openAdminPinConfirmation(id);
 }
 async function removeDispenser(id){
   const d=settingsRecord(window.dispenserRecords,id);
