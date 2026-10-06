@@ -383,7 +383,65 @@ body.attendant-dashboard-page .pending-shift-actions .pending-cancel-btn{
   border:1px solid #e2d4d6!important;
   color:#7f1d1d!important;
 }
-\n/* Pending handover card refinement */
+\n/* Pending shift has a distinct amber state from active */
+body.attendant-dashboard-page .pending-shift-card{
+  border-color:#f1d7a6!important;
+  box-shadow:0 7px 22px rgba(180,110,20,.08)!important;
+}
+body.attendant-dashboard-page .pending-shift-card::before{
+  background:#d88912!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-head{
+  background:#fffaf0!important;
+  border-bottom-color:#f3dfbb!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-head .section-kicker{
+  color:#b86b00!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-head h3{
+  color:#8a5200!important;
+}
+body.attendant-dashboard-page .pending-shift-badge{
+  background:#fff3d6!important;
+  color:#a85d00!important;
+  border-color:#edcf96!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-meta>div:nth-child(3){
+  border-top-color:#f3dfbb!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-readings{
+  border-top-color:#f3dfbb!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-readings-head{
+  border-bottom-color:#f3dfbb!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-readings-head span{
+  color:#8a5200!important;
+}
+body.attendant-dashboard-page .pending-shift-card .pending-nozzle-number{
+  color:#a85d00!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-reading-list .pending-nozzle-reading{
+  border-top-color:#f3dfbb!important;
+}
+body.attendant-dashboard-page .pending-shift-actions{
+  border-top-color:#f3dfbb!important;
+  background:#fffdf8!important;
+}
+body.attendant-dashboard-page .pending-shift-actions .active-handover-btn{
+  background:#d88912!important;
+  border-color:#d88912!important;
+  box-shadow:0 5px 12px rgba(180,110,20,.20)!important;
+}
+body.attendant-dashboard-page .pending-shift-actions .active-handover-btn:hover{
+  background:#b96f08!important;
+  border-color:#b96f08!important;
+}
+body.attendant-dashboard-page .pending-shift-actions .pending-cancel-btn{
+  border-color:#ead6b5!important;
+  color:#8a5200!important;
+}
+/* Pending handover card refinement */
 body.attendant-dashboard-page .pending-confirmation-card{
   border-color:#ead9dc!important;
   box-shadow:0 7px 22px rgba(16,24,40,.06)!important;
