@@ -1,0 +1,58 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DSR Detail</title>
+<link rel="stylesheet" href="assets/style.css?v=20261006-05">
+<style>
+.dsr-detail-page{background:linear-gradient(180deg,#f7f9fc 0%,#eef3f8 100%);color:#182230}
+.dsr-detail-wrap{max-width:900px;padding:8px 0 42px}
+.dsr-detail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 4px 20px}
+.dsr-detail-header h1{margin:0;font-size:32px;line-height:1.1;letter-spacing:-.03em}
+.dsr-detail-header p{margin:7px 0 0;color:#718096;font-size:14px}
+.dsr-detail-back{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid #d8e0e8;border-radius:12px;background:#fff;color:#334155;font-weight:750;box-shadow:0 2px 8px #17202a0a;text-decoration:none;white-space:nowrap}
+.dsr-detail-view{display:block!important;margin:0!important}
+.dsr-detail-view .daily-detail-head{position:sticky;top:0;z-index:4;background:#fff;border-bottom:1px solid #e1e8f0}
+.dsr-detail-view .daily-detail-actions{display:flex;gap:8px;flex-wrap:wrap}
+.dsr-detail-view .daily-detail-actions button{min-height:40px}
+@media(max-width:650px){
+ .dsr-detail-header{padding:15px 4px 17px;gap:12px;flex-direction:column}
+ .dsr-detail-header h1{font-size:28px}
+ .dsr-detail-back{width:100%;justify-content:center}
+ .dsr-detail-wrap{padding:8px 0 32px}
+ .dsr-detail-view .daily-detail-head{position:static}
+ .dsr-detail-view .daily-detail-actions button{flex:1}
+}
+</style></head>
+<body class="admin-shell daily-report-page dsr-detail-page" onload="(function(){var d=new URLSearchParams(location.search).get('date');var input=document.getElementById('report-date');if(d)input.value=d;else input.value=new Date().toISOString().slice(0,10);loadDailyReport(true);})()">
+<button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
+<aside class="admin-sidebar" aria-label="Admin navigation">
+  <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
+  <nav class="admin-sidebar-nav">
+    <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
+    <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
+    <a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a>
+    <a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>DSR</b></a>
+    <a href="admin-dsr-history.html" data-admin-nav="dsr-history"><span>◷</span><b>DSR History</b></a>
+    <a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a>
+  </nav>
+  <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
+</aside>
+<main class="wrap dsr-detail-wrap">
+<header class="dsr-detail-header">
+ <div><span class="eyebrow">REPORTING</span><h1>DSR Detail</h1><p>Complete Daily Sales Report reconciliation and performance.</p></div>
+ <a class="dsr-detail-back" href="admin-dsr-history.html"><span aria-hidden="true">←</span> Back to DSR History</a>
+</header>
+<input id="report-date" type="hidden">
+<div id="daily-report-details" class="daily-report-details dsr-detail-view">
+ <div class="daily-detail-head"><div><span class="section-kicker daily-kicker">DSR DETAIL</span><h2 id="daily-detail-title">Daily Sales Report · Detail</h2><p id="daily-detail-subtitle" class="muted">Confirmed station-wide reconciliation</p></div><div class="daily-detail-actions"><button type="button" class="daily-detail-download" onclick="downloadDailyReportPdf()">Download PDF</button><button type="button" class="daily-dsr-revision-btn" onclick="loadDailyReportRevisions()">Revision History</button><button type="button" class="daily-dsr-regenerate-btn" onclick="regenerateDailyReport()">Regenerate / Correct</button><a class="daily-detail-close" href="admin-dsr-history.html" aria-label="Back to DSR history">Back</a></div></div>
+ <div id="report-status" class="muted daily-status">Loading report…</div>
+ <section id="report-summary" class="daily-summary-grid"></section>
+ <section id="daily-report-revisions" class="purchase-section daily-section daily-revision-section" hidden><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">DSR VERSION HISTORY</span><h2>Revision history</h2><p class="muted">Previous saved versions are archived before a DSR is regenerated.</p></div></div><div id="daily-report-revisions-list"></div></section>
+ <section class="purchase-section daily-section"><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">DISPENSER PERFORMANCE</span><h2>Dispenser performance</h2><p class="muted">Nozzle readings, liters sold and meter reconciliation across every shift.</p></div></div><div id="report-dispensers" class="dsr-dispenser-list"></div></section>
+ <section class="purchase-section daily-section"><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">TANK RECONCILIATION</span><h2>Tank performance</h2><p class="muted">Opening, purchases, sales and expected closing stock reconciled for each tank.</p></div></div><div id="report-tanks" class="dsr-tank-list"></div></section>
+ <section class="purchase-section daily-section"><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">SALES SUMMARY</span><h2>All sales</h2><p class="muted">Product and payment-method totals for the complete DSR.</p></div></div><div id="report-sales-summary" class="dsr-sales-summary"></div></section>
+ <section class="purchase-section daily-section"><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">INDIVIDUAL SHIFTS</span><h2>Individual shifts</h2><p class="muted">Shift-by-shift readings, attendants, sales and tank movements.</p></div></div><div id="report-shifts" class="dsr-shift-list"></div></section>
+ <section class="purchase-section daily-section daily-station-section"><div class="purchase-section-head daily-section-head"><div><span class="section-kicker daily-kicker">FINAL DAILY PERFORMANCE</span><h2>Final DSR performance</h2><p class="muted">Final station totals and reconciliation indicators.</p></div></div><div id="report-performance" class="dsr-performance-grid"></div></section>
+</div>
+<div id="toast" class="toast"></div>
+</main>
+<script src="assets/app.js?v=20261006-05"></script></body></html>
