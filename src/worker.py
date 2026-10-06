@@ -2993,6 +2993,11 @@ def daily_report():
         # the day's meter delta as last_closing - first_opening because that
         # crosses reset boundaries and can produce a false reconciliation gap.
         # Sum each valid shift segment independently instead.
+        #
+        # A configured nozzle can occasionally have no matching shift rows.
+        # Keep it as a boundary-only record instead of raising an exception
+        # and turning the whole DSR into HTTP 500.
+        ordered_shifts=ordered_shifts if ordered_shifts else []
         meter_segments=[]
         for z in ordered_shifts:
             sid=str(z.get("id") or "")
