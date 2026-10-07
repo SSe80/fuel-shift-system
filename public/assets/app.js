@@ -900,7 +900,8 @@ async function loadAccountingReconciliation(){
 async function adminDashboard(){
   try{
     await window.stationCurrencyReady;
-    const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';\n    await loadAccountingPeriod();
+    const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
+    await loadAccountingPeriod();
     const [allTanks,sales,allShifts,allProducts,allDispensers,employees,purchases,inventory,movements]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles'),api('/api/users'),api('/api/purchases'),api('/api/inventory-summary'),api('/api/tank-movements')]);
     const products=allProducts.filter(p=>p.active===true);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
@@ -918,7 +919,8 @@ async function adminDashboard(){
     const el=id=>document.getElementById(id);
     el('sales').textContent=todaySales.length; el('sales-total').textContent=money(total);
     el('active-shifts').textContent=activeShifts.length; el('tank-count').textContent=tanks.length; el('alerts').textContent=low.length;
-    el('product-count').textContent=products.length; el('dispenser-count').textContent=dispensers.length; el('attendant-count').textContent=activeEmployees.filter(e=>e.role==='attendant').length;\n    await loadAccountingReconciliation();
+    el('product-count').textContent=products.length; el('dispenser-count').textContent=dispensers.length; el('attendant-count').textContent=activeEmployees.filter(e=>e.role==='attendant').length;
+    await loadAccountingReconciliation();
     el('products').innerHTML=products.length?products.map(p=>'<div class="stat"><b>'+h(p.code_name)+'</b><span>'+h(p.name)+'</span><small>Active • Selling price: '+money(p.selling_price)+'</small></div>').join(''):'<div class="card"><p>No activated products.</p></div>';
     el('dispensers').innerHTML=dispensers.length?dispensers.map(d=>{
       const tank=tanks.find(t=>t.id===d.tank_id);
