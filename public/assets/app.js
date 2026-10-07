@@ -3030,7 +3030,7 @@ function downloadDailyReportPdf(){
   const calculatedSales=num(perf.calculated_sales_amount);
   [
     ['Avg. liters / shift',fmtL(avgL)],['Avg. sales / shift',fmtM(avgSales)],
-    ['Meter-calculated sales',fmtM(calculatedSales)],['Recorded vs meter',fmtM(meterDiff)],
+    ['Calculated sales',fmtM(calculatedSales)],['Entered payments',perf.entered_payment_amount==null?'-':fmtM(perf.entered_payment_amount)],['Financial difference',perf.financial_difference==null?fmtM(meterDiff):fmtM(perf.financial_difference)],
     ['Avg. nozzle reconciliation',pct(avgNozzle)],['Total tank difference',signedL(tankDiff)]
   ].forEach((s,i)=>{
     const col=i%2,row=Math.floor(i/2),xx=margin+col*(contentW/2),yy=y-row*26;
@@ -3230,7 +3230,9 @@ async function loadDailyReport(showDetails=false){
 
     document.getElementById('report-summary').innerHTML=
       '<div class="daily-stat primary-stat"><span>Total fuel sold</span><b>'+liters(perf.total_sales_liters||s.sales_liters)+' L</b><small>All dispensers</small></div>'+
-      '<div class="daily-stat"><span>Total sales</span><b>'+money(perf.total_sales_amount||s.sales_amount)+'</b><small>Station total</small></div>'+
+      '<div class="daily-stat"><span>Calculated sales</span><b>'+money(perf.calculated_sales_amount ?? perf.total_sales_amount ?? s.sales_amount)+'</b><small>Meter-calculated</small></div>'+
+      '<div class="daily-stat"><span>Entered payments</span><b>'+((perf.entered_payment_amount!=null)?money(perf.entered_payment_amount):'—')+'</b><small>Confirmed payments</small></div>'+
+      '<div class="daily-stat"><span>Financial difference</span><b>'+((perf.financial_difference!=null)?money(perf.financial_difference):'—')+'</b><small>Payments − calculated</small></div>'+
       '<div class="daily-stat"><span>Shifts</span><b>'+Number(perf.shift_count||0)+'</b><small>'+Number(perf.attendant_count||0)+' attendants</small></div>'+
       '<div class="daily-stat"><span>Dispensers</span><b>'+Number(perf.dispenser_count||0)+'</b><small>'+Number(perf.nozzle_count||0)+' nozzles</small></div>'+
       '<div class="daily-stat"><span>Tanks</span><b>'+Number(perf.tank_count||0)+'</b><small>Reconciliation</small></div>';
