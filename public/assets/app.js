@@ -1396,8 +1396,26 @@ function createStyledReportPdf(report){
   return new Blob([pdf],{type:'application/pdf'});
 }
 async function downloadAdminSaleHistoryDetails(id){
-  const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
-  if(!item)return;
+  // The full Sales History page uses adminSalesHistoryData, while the main
+  // Sales page uses adminSalesData. Support both sources and fall back to the
+  // authoritative sale-record endpoint so the PDF button always has data.
+  let item=(adminSalesHistoryData.history||[]).find(x=>String(x.takeover?.id)===String(id))
+    || (adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
+  if(!item){
+    try{
+      const data=await api('/api/shift-takeovers/'+encodeURIComponent(id)+'/sale-record');
+      if(data?.takeover){
+        item={takeover:data.takeover,sales:Array.isArray(data.sales)?data.sales:[]};
+      }
+    }catch(e){
+      toast(e.message||'Unable to load the sales record for PDF.');
+      return;
+    }
+  }
+  if(!item?.takeover){
+    toast('Sales details are not available for this record.');
+    return;
+  }
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],total=Number(t.total_sales_amount||0);
   const entryTotal=sales.reduce((sum,s)=>sum+Number(s.amount||0),0);
 
