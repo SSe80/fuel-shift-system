@@ -3139,9 +3139,9 @@ function downloadDailyReportPdf(){
   const finalRows=[
     ['Report status',r.report_ready?'CONFIRMED':'PENDING'],
     ['Fuel sold',fmtL(perf.total_sales_liters)],
-    ['Total sales',fmtM(perf.total_sales_amount)],
-    ['Calculated sales',fmtM(perf.calculated_sales_amount)],
-    ['Sales amount difference',fmtM(perf.sales_amount_difference)],
+    ['Calculated sales',fmtM(perf.calculated_sales_amount ?? perf.total_sales_amount)],
+    ['Entered payments',perf.entered_payment_amount==null?'-':fmtM(perf.entered_payment_amount)],
+    ['Financial difference',perf.financial_difference==null?'-':fmtM(perf.financial_difference)],
     ['Average nozzle reconciliation',pct(perf.average_nozzle_reconciliation_pct)],
     ['Tank difference',signedL(perf.tank_difference_liters)],
     ['Shifts / attendants',num(perf.shift_count)+' / '+num(perf.attendant_count)],
