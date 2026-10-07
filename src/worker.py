@@ -2859,14 +2859,9 @@ def daily_report():
         methods[method]=methods.get(method,0)+amount
 
     def sales_methods_for_shift(shift_id):
-        recorded=payment_methods_by_shift.get(str(shift_id))
-        if recorded:
-            return dict(recorded)
-        methods={}
-        for sale in sales_by_shift.get(str(shift_id),[]):
-            method=sale_type_map.get(str(sale.get("sale_type_id") or "")) or str(sale.get("payment_method") or "other")
-            methods[method]=methods.get(method,0)+float(sale.get("amount") or 0)
-        return methods
+        # The dedicated payment ledger is the only authoritative source for
+        # entered-payment methods. Legacy sales rows are compatibility history.
+        return dict(payment_methods_by_shift.get(str(shift_id)) or {})
 
     # Individual shift results are always listed first. For a handover shift,
     # the takeover calculation is the authoritative shift sales result.
@@ -2881,7 +2876,9 @@ def daily_report():
         shift_l=float(h.get("total_sales_liters") or direct_l)
         calculated_shift_a=float(h.get("total_sales_amount") or sum(float(v.get("amount") or 0) for v in sales_by_shift.get(sid,[])))
         recorded_shift_a=payment_amount_by_shift.get(sid)
-        shift_a=float(recorded_shift_a) if recorded_shift_a is not None else calculated_shift_a
+        # Entered payments are authoritative only when a dedicated payment-ledger
+        # row exists. Never substitute calculated sales for missing payments.
+        shift_a=float(recorded_shift_a) if recorded_shift_a is not None else None
         shift_readings=readings_by_shift.get(sid,[])
         complete_meter_rows=[
             r for r in shift_readings
@@ -3009,7 +3006,9 @@ def daily_report():
     station_methods={}
     station_l=0
     station_a=0
-    calculated_station_a=sum(float(z.get("calculated_sales_amount") or z.get("sales_amount") or 0) for z in shift_summary)
+    calculated_station_a=sum(float(z.get("calculated_sales_amount") or 0) for z in shift_summary)
+    payment_shift_ids={str(x.get("shift_id")) for x in payment_rows if x.get("shift_id")}
+    all_payment_recorded=bool(day_shifts) and all(str(x.get("id")) in payment_shift_ids for x in day_shifts if x.get("id"))
     for dispenser in dispenser_summary:
         station_l += float(dispenser.get("sales_liters") or 0)
         station_a += float(dispenser.get("sales_amount") or 0)
@@ -3737,9 +3736,9 @@ def daily_report():
         "total_purchase_discharged_liters":total_p,
         "total_sales_liters":station_l,
         "total_sales_amount":station_a,
-        "entered_payment_amount":station_a,
-        "financial_difference":station_a-calculated_station_a,
-        "financial_reconciliation_status":("matched" if abs(station_a-calculated_station_a)<=1 else "variance")
+        "entered_payment_amount":station_a if all_payment_recorded else None,
+        "financial_difference":(station_a-calculated_station_a) if all_payment_recorded else None,
+        "financial_reconciliation_status":(("matched" if abs(station_a-calculated_station_a)<=1 else "variance") if all_payment_recorded else "not_available")
     }))
 
 @app.get("/api/reports/daily/revisions")
