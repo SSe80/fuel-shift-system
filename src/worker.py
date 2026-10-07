@@ -491,6 +491,36 @@ def delete_sale_type(sale_type_id):
     if status>=400:return jsonify(result),status
     return jsonify(result),200
 
+@app.get("/api/accounting/current-period")
+def accounting_current_period():
+    auth=require_admin()
+    if auth:return auth
+    ps,periods=sb("accounting_periods",params={"status":"eq.OPEN","select":"id,name,status,starts_at,ends_at,opened_by,notes,created_at,closed_at","order":"created_at.desc","limit":"1"})
+    if ps!=200:return jsonify(periods),ps
+    if not periods:return jsonify({"open":False,"period":None,"openings":[]}),200
+    period=periods[0]
+    os,openings=sb("tank_opening_snapshots",params={"accounting_period_id":"eq."+str(period["id"]),"select":"id,tank_id,physical_liters,physical_height_mm,measured_at,recorded_by,calibration_version,reason,notes","order":"created_at.asc"})
+    if os!=200:return jsonify(openings),os
+    return jsonify({"open":True,"period":period,"openings":openings}),200
+
+@app.post("/api/accounting/open-period")
+def accounting_open_period():
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    name=str(data.get("name","")).strip()
+    starts_at=str(data.get("starts_at","")).strip()
+    openings=data.get("openings")
+    notes=data.get("notes")
+    if not name:return jsonify({"error":"Accounting period name is required"}),400
+    if not starts_at:return jsonify({"error":"Accounting period start time is required"}),400
+    if not isinstance(openings,list):return jsonify({"error":"Opening measurements are required for every active tank"}),400
+    payload={"p_name":name,"p_starts_at":starts_at,"p_openings":openings,"p_opened_by":str(session.get("employee_id")) if session.get("employee_id") else None,"p_notes":str(notes).strip() if notes is not None else None}
+    try: status,result=rpc("open_control_period",payload)
+    except Exception as exc:return jsonify({"error":"Unable to open accounting period","details":str(exc)}),500
+    if status>=400:return jsonify({"error":result.get("message") if isinstance(result,dict) and result.get("message") else result}),status
+    return jsonify(result),200
+
 @app.get("/api/settings")
 def get_settings():
     auth=require_login()
