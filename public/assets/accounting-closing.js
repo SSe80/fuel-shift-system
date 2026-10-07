@@ -4,14 +4,17 @@
     const box=document.getElementById('accounting-period-summary');
     const status=document.getElementById('accounting-period-status');
     const button=document.getElementById('open-accounting-period-button');
+    const closeButton=document.getElementById('accounting-period-close-button');
     if(!box||!status||!button)return;
     try{
       const data=await api('/api/accounting/current-period');
       if(!data?.open||!data.period){
+        if(closeButton)closeButton.style.display='none';
         button.textContent='Open period';
         button.onclick=openAccountingPeriodModal;
         return;
       }
+      if(closeButton)closeButton.style.display='inline-flex';
       button.textContent='Record physical closing';
       button.onclick=openPhysicalClosingModal;
       const closeData=await api('/api/accounting/closing?period_id='+encodeURIComponent(data.period.id));
