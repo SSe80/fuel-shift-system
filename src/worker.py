@@ -1966,6 +1966,35 @@ def discharge_purchase(purchase_id):
     if status>=400:return jsonify({"error":result}),status
     return jsonify(result),200
 
+@app.get("/api/accounting/reconciliation")
+def accounting_reconciliation():
+    auth=require_admin()
+    if auth:return auth
+    ps,periods=sb("accounting_periods",params={"status":"eq.OPEN","select":"id,name,status,starts_at,ends_at,opened_by,notes","order":"created_at.desc","limit":"1"})
+    if ps!=200:return jsonify(periods),ps
+    if not periods:return jsonify({"open":False,"period":None,"tanks":[]}),200
+    period=periods[0]
+    os,openings=sb("tank_opening_snapshots",params={"accounting_period_id":"eq."+str(period["id"]),"select":"tank_id,physical_liters,physical_height_mm,measured_at,calibration_version"})
+    if os!=200:return jsonify(openings),os
+    ts,tanks=sb("tanks",params={"active":"eq.true","select":"id,tank_code,product,capacity_liters,current_liters"})
+    if ts!=200:return jsonify(tanks),ts
+    start=str(period["starts_at"])
+    ms,movements=sb("tank_movements",params={"created_at":"gte."+start,"select":"tank_id,movement_type,quantity_liters,created_at","order":"created_at.asc","limit":"10000"})
+    if ms!=200:return jsonify(movements),ms
+    opening_map={str(x["tank_id"]):x for x in openings}
+    out=[]
+    for tank in tanks:
+        tid=str(tank["id"]); opening=opening_map.get(tid)
+        totals={"purchase":0.0,"sale":0.0,"transfer_in":0.0,"transfer_out":0.0,"adjustment":0.0,"correction":0.0}
+        for m in movements:
+            if str(m.get("tank_id"))!=tid: continue
+            mt=str(m.get("movement_type") or "").lower()
+            q=float(m.get("quantity_liters") or 0)
+            if mt in totals: totals[mt]+=q
+        expected=(float(opening["physical_liters"]) if opening else 0)+totals["purchase"]-totals["sale"]+totals["transfer_in"]-totals["transfer_out"]+totals["adjustment"]+totals["correction"]
+        out.append({"tank_id":tank["id"],"tank_code":tank["tank_code"],"product":tank.get("product"),"capacity_liters":tank.get("capacity_liters"),"opening_physical_liters":opening.get("physical_liters") if opening else None,"opening_measured_at":opening.get("measured_at") if opening else None,"expected_closing_liters":expected if opening else None,"ledger_current_liters":tank.get("current_liters"),"physical_closing_liters":None,"difference_liters":None,"variance_percent":None,"status":"READY_FOR_RECONCILIATION" if opening else "MISSING_OPENING","movements":totals})
+    return jsonify({"open":True,"period":period,"tanks":out}),200
+
 @app.get("/api/inventory-summary")
 def inventory_summary():
     auth=require_admin()

@@ -470,3 +470,5 @@ body.admin-shell>.wrap{
     padding:14px!important;
   }
 }
+
+.accounting-period-summary{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.accounting-period-open-badge{font-weight:700;padding:8px 12px;border-radius:999px;border:1px solid rgba(30,136,229,.35)}.accounting-period-meta{font-size:13px;color:var(--muted,#777)}.accounting-opening-row{padding:12px 0;border-top:1px solid rgba(127,127,127,.18)}.accounting-opening-row:first-child{border-top:0}.accounting-opening-row>strong{display:block}.accounting-opening-row>small{display:block;margin:3px 0 9px;color:var(--muted,#777)}.accounting-opening-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.accounting-recon-mini{margin-top:10px;padding-top:9px;border-top:1px solid rgba(127,127,127,.2);display:grid;gap:3px}.accounting-recon-mini small{font-size:12px}@media(max-width:650px){.accounting-opening-grid{grid-template-columns:1fr}}

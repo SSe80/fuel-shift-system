@@ -878,6 +878,25 @@ async function loadAccountingPeriod(){
   }catch(e){statusEl.textContent='Unable to load accounting status'; if(summary)summary.innerHTML='<div class="muted">'+h(e.message)+'</div>';}
 }
 
+async function loadAccountingReconciliation(){
+  const box=document.getElementById('tanks'); if(!box)return;
+  try{
+    const data=await api('/api/accounting/reconciliation');
+    if(!data.open)return;
+    const byId=new Map((data.tanks||[]).map(t=>[String(t.tank_id),t]));
+    box.querySelectorAll('.stat').forEach(card=>{
+      const code=card.querySelector('span')?.textContent||'';
+      const match=(data.tanks||[]).find(t=>code.includes(String(t.tank_code)));
+      if(!match)return;
+      const block=card.querySelector('.accounting-recon-mini');
+      if(block)block.remove();
+      const el=document.createElement('div'); el.className='accounting-recon-mini';
+      el.innerHTML='<small><b>Control opening:</b> '+(match.opening_physical_liters==null?'—':liters(match.opening_physical_liters)+' L')+'</small><small><b>Expected closing:</b> '+(match.expected_closing_liters==null?'—':liters(match.expected_closing_liters)+' L')+'</small><small><b>Physical closing:</b> Not recorded</small><small class="muted">Variance is calculated only after a verified physical closing measurement.</small>';
+      card.appendChild(el);
+    });
+  }catch(e){console.warn('Accounting reconciliation unavailable',e);}
+}
+
 async function adminDashboard(){
   try{
     await window.stationCurrencyReady;
@@ -899,7 +918,7 @@ async function adminDashboard(){
     const el=id=>document.getElementById(id);
     el('sales').textContent=todaySales.length; el('sales-total').textContent=money(total);
     el('active-shifts').textContent=activeShifts.length; el('tank-count').textContent=tanks.length; el('alerts').textContent=low.length;
-    el('product-count').textContent=products.length; el('dispenser-count').textContent=dispensers.length; el('attendant-count').textContent=activeEmployees.filter(e=>e.role==='attendant').length;
+    el('product-count').textContent=products.length; el('dispenser-count').textContent=dispensers.length; el('attendant-count').textContent=activeEmployees.filter(e=>e.role==='attendant').length;\n    await loadAccountingReconciliation();
     el('products').innerHTML=products.length?products.map(p=>'<div class="stat"><b>'+h(p.code_name)+'</b><span>'+h(p.name)+'</span><small>Active • Selling price: '+money(p.selling_price)+'</small></div>').join(''):'<div class="card"><p>No activated products.</p></div>';
     el('dispensers').innerHTML=dispensers.length?dispensers.map(d=>{
       const tank=tanks.find(t=>t.id===d.tank_id);
