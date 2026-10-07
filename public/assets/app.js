@@ -828,6 +828,56 @@ async function adminDeactivateShift(id){
   }catch(e){toast(e.message);}
 }
 
+function closeAccountingPeriodModal(){
+  const modal=document.getElementById('accounting-period-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+async function openAccountingPeriodModal(){
+  const tanks=await api('/api/tanks');
+  const active=tanks.filter(t=>t.active===true);
+  let modal=document.getElementById('accounting-period-modal');
+  if(!modal){
+    modal=document.createElement('div'); modal.id='accounting-period-modal'; modal.className='modal'; modal.setAttribute('aria-hidden','true');
+    modal.innerHTML='<div class="modal-backdrop" onclick="closeAccountingPeriodModal()"></div><form class="modal-card form accounting-period-form" onsubmit="submitAccountingPeriod(event)"><div class="top"><div><span class="section-kicker">CONTROL PERIOD</span><h3>Open Accounting Period</h3></div><button type="button" class="modal-close" onclick="closeAccountingPeriodModal()">×</button></div><p class="muted">Record the verified physical opening measurement for every active tank. This does not overwrite tank ledger stock.</p><label>Period name<input id="accounting-period-name" required value="October 2026 Control Period"></label><label>Start time<input id="accounting-period-start" type="datetime-local" required></label><div id="accounting-opening-fields"></div><label>Notes<textarea id="accounting-period-notes" rows="2" placeholder="Optional opening notes"></textarea></label><div class="row"><button type="submit" class="primary">Open accounting period</button><button type="button" onclick="closeAccountingPeriodModal()">Cancel</button></div></form></div>';
+    document.body.appendChild(modal);
+  }
+  const now=new Date(); now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+  document.getElementById('accounting-period-start').value=now.toISOString().slice(0,16);
+  document.getElementById('accounting-opening-fields').innerHTML=active.map(t=>'<div class="accounting-opening-row"><strong>'+h(t.tank_code)+'</strong><small>Capacity '+liters(t.capacity_liters)+' L • '+h(t.product||'')+'</small><div class="accounting-opening-grid"><label>Physical liters<input required min="0" max="'+h(t.capacity_liters)+'" step="0.01" type="number" data-opening-tank="'+h(t.id)+'" data-opening-field="liters" placeholder="Verified liters"></label><label>Height (mm)<input min="0" step="0.01" type="number" data-opening-tank="'+h(t.id)+'" data-opening-field="height" placeholder="Optional"></label><label>Calibration version<input required maxlength="100" data-opening-tank="'+h(t.id)+'" data-opening-field="calibration" placeholder="e.g. Tank-2026-v1"></label></div></div>').join('');
+  modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+}
+async function submitAccountingPeriod(event){
+  event.preventDefault();
+  const button=event.currentTarget.querySelector('button[type="submit"]'); if(button)button.disabled=true;
+  try{
+    const groups={};
+    document.querySelectorAll('[data-opening-tank]').forEach(input=>{
+      const id=input.getAttribute('data-opening-tank'); const field=input.getAttribute('data-opening-field');
+      groups[id]=groups[id]||{tank_id:id}; groups[id][field]=input.value.trim();
+    });
+    const openings=Object.values(groups).map(x=>({tank_id:x.tank_id,physical_liters:Number(x.liters),physical_height_mm:x.height?Number(x.height):null,calibration_version:x.calibration}));
+    if(openings.some(x=>!Number.isFinite(x.physical_liters)||x.physical_liters<0||!x.calibration_version))throw new Error('Complete every active tank opening measurement.');
+    await api('/api/accounting/open-period',{method:'POST',body:JSON.stringify({name:document.getElementById('accounting-period-name').value.trim(),starts_at:new Date(document.getElementById('accounting-period-start').value).toISOString(),openings,notes:document.getElementById('accounting-period-notes').value.trim()||null})});
+    closeAccountingPeriodModal(); toast('Controlled accounting period opened'); await loadAccountingPeriod();
+  }catch(e){toast(e.message)}finally{if(button)button.disabled=false;}
+}
+async function loadAccountingPeriod(){
+  const statusEl=document.getElementById('accounting-period-status'), summary=document.getElementById('accounting-period-summary'), button=document.getElementById('open-accounting-period-button');
+  if(!statusEl)return;
+  try{
+    const data=await api('/api/accounting/current-period');
+    if(data.open){
+      statusEl.textContent='OPEN • '+(data.period?.name||'Accounting period');
+      if(button)button.disabled=true;
+      summary.innerHTML='<div class="accounting-period-open-badge">Controlled period is active</div><div class="accounting-period-meta">Started '+h(new Date(data.period.starts_at).toLocaleString())+' • '+(data.openings||[]).length+' tank openings verified</div>';
+    }else{
+      statusEl.textContent='No controlled accounting period is open.';
+      if(button)button.disabled=false;
+      summary.innerHTML='<div class="muted">Before normal stock reconciliation begins, record one verified physical opening for each active tank.</div>';
+    }
+  }catch(e){statusEl.textContent='Unable to load accounting status'; if(summary)summary.innerHTML='<div class="muted">'+h(e.message)+'</div>';}
+}
+
 async function adminDashboard(){
   try{
     await window.stationCurrencyReady;
