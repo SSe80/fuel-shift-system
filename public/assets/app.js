@@ -1379,7 +1379,7 @@ function createStyledReportPdf(report){
     if(s.table)table(s.table.headers,s.table.rows,s.table.widths);
     if(s.paragraph)paragraph(s.paragraph);
   });
-  const objects=[{id:1,body:'<< /Type /Catalog /Pages 2 0 R >>'}],kids=[];let next=4;
+  const objects=[{id:1,body:'<< /Type /Catalog /Pages 2 0 R >>'}],kids=[];let next=5;
   pages.forEach((commands,pi)=>{
     const pageId=next++,contentId=next++;kids.push(pageId+' 0 R');
     commands.push(rgb(...[148,163,184])+' rg\nBT\n/F1 7 Tf\n1 0 0 1 '+M+' 25 Tm\n('+esc('Fuel Station Management - '+report.title)+') Tj\nET\n');
