@@ -2832,23 +2832,30 @@ def daily_report():
     # to each takeover. These are the amounts the admin actually confirms.
     # Keep the meter-derived amount separately so the DSR can reconcile both
     # values without silently substituting one for the other.
-    takeover_sale_amount_by_shift={}
-    takeover_sale_methods_by_shift={}
-    takeover_shift_map={str(t.get("id")):str(t.get("shift_id")) for t in handover_rows if t.get("id") and t.get("shift_id")}
-    if takeover_shift_map:
-        tsa,tsr=sb("shift_takeover_sales",params={"takeover_id":"in.("+",".join(takeover_shift_map.keys())+")","select":"takeover_id,sale_type_id,amount","limit":"10000"})
-        if tsa==200:
-            for row in tsr:
-                sid=takeover_shift_map.get(str(row.get("takeover_id") or ""))
-                if sid:
-                    amount=float(row.get("amount") or 0)
-                    takeover_sale_amount_by_shift[sid]=takeover_sale_amount_by_shift.get(sid,0)+amount
-                    method=sale_type_map.get(str(row.get("sale_type_id") or "")) or "Other"
-                    methods=takeover_sale_methods_by_shift.setdefault(sid,{})
-                    methods[method]=methods.get(method,0)+amount
+    # Confirmed DSR financial amounts come from the dedicated payment ledger.
+    # shift_takeover_sales remains the workflow/source table for pending entries;
+    # payment_transactions is authoritative once an admin confirms them.
+    payment_amount_by_shift={}
+    payment_methods_by_shift={}
+    payment_status, payment_rows=sb("payment_transactions",params={
+        "shift_id":shift_id_filter,
+        "select":"shift_id,takeover_id,sale_type_id,amount,payment_method,confirmed_at,recorded_at",
+        "order":"recorded_at.asc","limit":"10000"
+    })
+    if payment_status!=200:
+        return jsonify({"error":payment_rows}),payment_status
+    for row in payment_rows:
+        sid=str(row.get("shift_id") or "")
+        if not sid:
+            continue
+        amount=float(row.get("amount") or 0)
+        payment_amount_by_shift[sid]=payment_amount_by_shift.get(sid,0)+amount
+        method=sale_type_map.get(str(row.get("sale_type_id") or "")) or str(row.get("payment_method") or "other")
+        methods=payment_methods_by_shift.setdefault(sid,{})
+        methods[method]=methods.get(method,0)+amount
 
     def sales_methods_for_shift(shift_id):
-        recorded=takeover_sale_methods_by_shift.get(str(shift_id))
+        recorded=payment_methods_by_shift.get(str(shift_id))
         if recorded:
             return dict(recorded)
         methods={}
@@ -2869,7 +2876,7 @@ def daily_report():
         direct_l=sum(float(v.get("quantity_liters") or 0) for v in sales_by_shift.get(sid,[]) if float(v.get("quantity_liters") or 0)>0)
         shift_l=float(h.get("total_sales_liters") or direct_l)
         calculated_shift_a=float(h.get("total_sales_amount") or sum(float(v.get("amount") or 0) for v in sales_by_shift.get(sid,[])))
-        recorded_shift_a=takeover_sale_amount_by_shift.get(sid)
+        recorded_shift_a=payment_amount_by_shift.get(sid)
         shift_a=float(recorded_shift_a) if recorded_shift_a is not None else calculated_shift_a
         shift_readings=readings_by_shift.get(sid,[])
         complete_meter_rows=[
@@ -2920,10 +2927,9 @@ def daily_report():
             "sales_by_method":sales_methods_for_shift(sid)
         })
 
-    # Rebuild station payment totals from the same authoritative source used
-    # by each shift: confirmed takeover sale entries when available, otherwise
-    # direct sales for shifts without a takeover. This prevents payment totals
-    # from diverging from the DSR station sales amount.
+    # Rebuild station payment totals from the authoritative payment ledger.
+    # Legacy sales rows remain compatibility/history data and are not used as
+    # the confirmed DSR financial source.
     payment_methods={}
     sales_by_type={}
     for z in shift_summary:
