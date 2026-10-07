@@ -314,7 +314,8 @@ async function openTakeoverDetails(id){
     if(details)details.innerHTML='<p class="muted shift-details-error">'+h(e.message||'Unable to load shift details.')+'</p>';
     return;
   }
-  const status=String(saleMeta.sales_status||takeover.sales_status||'confirmed').replace(/_/g,' ');\n  const statusLabel=status.replace(/\\b\\w/g,m=>m.toUpperCase());
+  const status=String(saleMeta.sales_status||takeover.sales_status||'confirmed').replace(/_/g,' ');
+  const statusLabel=status.replace(/\b\w/g,m=>m.toUpperCase());
   const rows=nozzleSales.map((s,i)=>{
     const o=opening.find(x=>String(x.nozzle_id)===String(s.nozzle_id))||opening[i]||{};
     const cl=closing.find(x=>String(x.nozzle_id)===String(s.nozzle_id))||closing[i]||{};
