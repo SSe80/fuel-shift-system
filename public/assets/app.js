@@ -881,7 +881,7 @@ async function loadAccountingPeriod(){
 async function adminDashboard(){
   try{
     await window.stationCurrencyReady;
-    const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
+    const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';\n    await loadAccountingPeriod();
     const [allTanks,sales,allShifts,allProducts,allDispensers,employees,purchases,inventory,movements]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles'),api('/api/users'),api('/api/purchases'),api('/api/inventory-summary'),api('/api/tank-movements')]);
     const products=allProducts.filter(p=>p.active===true);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
