@@ -2410,11 +2410,13 @@ def _local_date_from_iso(value):
     except Exception: return None
 
 def _daily_confirmation_snapshot(report_date):
+    today=(datetime.now(timezone.utc)+timedelta(hours=3)).date()
+    report_day_closed=report_date<today
     next_day=report_date+timedelta(days=1)
     ds=report_date.isoformat()+"T00:00:00+03:00"; de=next_day.isoformat()+"T00:00:00+03:00"
     ss,shifts=sb("shifts",params={"and":"(start_time.gte."+ds+",start_time.lt."+de+")","select":"id,start_time,end_time","order":"start_time.asc","limit":"5000"})
     if ss!=200:return None,{"error":shifts},ss
-    if not shifts:return {"date":report_date.isoformat(),"shift_count":0,"completed_shift_count":0,"all_shifts_complete":False,"sales_confirmation_ready":False,"can_confirm":False,"status":None,"total_sales_liters":0,"total_sales_amount":0,"sales_by_method":{}},None,200
+    if not shifts:return {"date":report_date.isoformat(),"shift_count":0,"completed_shift_count":0,"all_shifts_complete":False,"report_day_closed":report_day_closed,"sales_confirmation_ready":False,"can_confirm":False,"status":None,"total_sales_liters":0,"total_sales_amount":0,"sales_by_method":{}},None,200
     ids=[str(x["id"]) for x in shifts if x.get("id")]; filt="in.("+",".join(ids)+")"
     hs,takeovers=sb("shift_takeovers",params={"shift_id":filt,"select":"id,shift_id,total_sales_liters,total_sales_amount,sales_status,sales_submitted_at","limit":"5000"})
     if hs!=200:return None,{"error":takeovers},hs
@@ -2494,9 +2496,9 @@ def _daily_confirmation_snapshot(report_date):
         )
         and len(takeovers)==len(shifts)
     )
-    dsr_ready=bool(all_complete and all_handover_recorded and all_sales_recorded)
+    dsr_ready=bool(report_day_closed and all_complete and all_handover_recorded and all_sales_recorded)
     sales_ready=all(str(x.get("sales_status") or "confirmed")=="confirmed" for x in takeovers) if takeovers and not duplicate_handover_shifts else False
-    return {"date":report_date.isoformat(),"shift_count":len(shifts),"completed_shift_count":sum(1 for x in shifts if x.get("end_time")),"dispenser_count":len(dispenser_ids),"all_shifts_complete":all_complete,"all_handover_recorded":all_handover_recorded,"duplicate_handover_shifts":duplicate_handover_shifts,"missing_handover_shifts":missing_handover_shifts,"missing_sales_shifts":missing_sales_shifts,"unsubmitted_sales_shifts":unsubmitted_sales_shifts,"unconfirmed_sales_shifts":unconfirmed_sales_shifts,"all_sales_recorded":all_sales_recorded,"sales_confirmation_ready":sales_ready,"can_confirm":dsr_ready,"status":"pending" if dsr_ready else None,"total_sales_liters":sum(float(x.get("total_sales_liters") or 0) for x in takeovers),"total_sales_amount":sum(methods.values()),"sales_by_method":methods},None,200
+    return {"date":report_date.isoformat(),"shift_count":len(shifts),"completed_shift_count":sum(1 for x in shifts if x.get("end_time")),"dispenser_count":len(dispenser_ids),"all_shifts_complete":all_complete,"report_day_closed":report_day_closed,"all_handover_recorded":all_handover_recorded,"duplicate_handover_shifts":duplicate_handover_shifts,"missing_handover_shifts":missing_handover_shifts,"missing_sales_shifts":missing_sales_shifts,"unsubmitted_sales_shifts":unsubmitted_sales_shifts,"unconfirmed_sales_shifts":unconfirmed_sales_shifts,"all_sales_recorded":all_sales_recorded,"sales_confirmation_ready":sales_ready,"can_confirm":dsr_ready,"status":"pending" if dsr_ready else None,"total_sales_liters":sum(float(x.get("total_sales_liters") or 0) for x in takeovers),"total_sales_amount":sum(methods.values()),"sales_by_method":methods},None,200
 
 @app.get("/api/reports/daily/confirmations")
 def daily_report_confirmations():
@@ -2518,8 +2520,8 @@ def daily_report_confirmations():
         snap,err,status=_daily_confirmation_snapshot(d)
         if err:return jsonify(err),status
         row=existing.get(d.isoformat())
-        if not snap["all_shifts_complete"] or not snap.get("all_handover_recorded") or not snap.get("all_sales_recorded"):
-            # Keep the date out of Pending DSR until every shift has ended,
+        if not snap.get("report_day_closed") or not snap["all_shifts_complete"] or not snap.get("all_handover_recorded") or not snap.get("all_sales_recorded"):
+            # Keep the date waiting until the report day has ended and every shift has ended,
             # completed handover, and submitted its sale.
             snap["status"]="waiting"
             snap["id"]=(row or {}).get("id")
@@ -2545,6 +2547,9 @@ def confirm_daily_report(report_date):
     snap,err,status=_daily_confirmation_snapshot(report_day)
     if err:return jsonify(err),status
     if snap["shift_count"]==0:return jsonify({"error":"No shifts started on this date"}),404
+    today=(datetime.now(timezone.utc)+timedelta(hours=3)).date()
+    if report_day>=today:
+        return jsonify({"error":"Daily DSR cannot be confirmed until the report date has ended.","report_ready":False}),409
     if not snap["all_shifts_complete"]:
         return jsonify({"error":"Daily DSR cannot be confirmed until every shift started on this date has ended.","report_ready":False}),409
     if not snap.get("all_handover_recorded") or not snap.get("all_sales_recorded"):
