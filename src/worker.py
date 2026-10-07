@@ -2784,16 +2784,8 @@ def daily_report():
         sale_type_map={str(x.get("id")):str(x.get("name") or "Other") for x in st_rows}
     payment_methods={}
     sales_by_type={}
-    # Confirmed payment-method totals are rebuilt later from payment ledger
-    # entries plus the shift-level fallback for shifts with no payment entry.
-    # The legacy sales table is not authoritative for this breakdown.
-    for z in shift_summary:
-        for method, amount in (z.get("sales_by_method") or {}).items():
-            val=float(amount or 0)
-            payment_methods[method]=payment_methods.get(method,0)+val
-            sales_by_type[method]=sales_by_type.get(method,0)+val
-
-
+    # Station payment-method totals are rebuilt from the authoritative
+    # payment ledger after shift_summary has been constructed below.
     # Resolve dispenser/tank and employee labels once for both the individual
     # shift cards and the combined-per-dispenser reconciliation.
     dispenser_ids={str(x.get("nozzle_id")) for x in day_shifts if x.get("nozzle_id")}
