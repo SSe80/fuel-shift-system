@@ -4182,3 +4182,16 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(on)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
   });
 });
+
+// Admin Sales History: delegated View details click handler for dynamically rebuilt cards.
+document.addEventListener('click',event=>{
+  const button=event.target.closest?.('#full-sales-history-list .compact-detail-button');
+  if(!button)return;
+  event.preventDefault();
+  event.stopPropagation();
+  const card=button.closest('.admin-history-sale-card');
+  const id=card?.getAttribute('data-takeover-id');
+  if(!id){toast('This sales record could not be opened.');return;}
+  const opener=window.openAdminSaleHistoryDetails;
+  if(typeof opener==='function')opener(id);else toast('Sales details are still loading. Please try again.');
+},{capture:true});
