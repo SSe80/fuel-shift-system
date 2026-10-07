@@ -1518,7 +1518,7 @@ async function loadSettingsData(){
         '</div>'+
         '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Nozzle opening readings</span>'+readingText+'</div>'+
         '<p class="dispenser-note">The dispenser will remain inactive until the assigned attendant confirms the readings with their PIN.</p>'+
-        '<div class="dispenser-card-actions"><button type="button" class="dispenser-danger-action" onclick="cancelAdminPendingShift(\''+pending.id+'\')">Cancel assignment</button></div>'+
+        '<div class="dispenser-card-actions"><button type="button" class="dispenser-danger-action" style="width:100%;min-height:44px;padding:11px 18px;font-size:14px;" onclick="cancelAdminPendingShift(\''+pending.id+'\')">Cancel assignment</button></div>'+
       '</div>';
     }
     const pendingDeactivation=pendingDeactivationByDispenser[n.id];
