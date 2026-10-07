@@ -3738,7 +3738,10 @@ def daily_report():
         "dsr_performance":dsr_performance,
         "total_purchase_discharged_liters":total_p,
         "total_sales_liters":station_l,
-        "total_sales_amount":station_a
+        "total_sales_amount":station_a,
+        "entered_payment_amount":station_a,
+        "financial_difference":station_a-calculated_station_a,
+        "financial_reconciliation_status":("matched" if abs(station_a-calculated_station_a)<=1 else "variance")
     }))
 
 @app.get("/api/reports/daily/revisions")
