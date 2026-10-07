@@ -1690,6 +1690,15 @@ def purchase_pdf(purchase_id):
     p=rows[0]
     history=p.get("discharge_history") or []
     compartments=p.get("compartment_liters") or []
+    # PDFs always identify fuel by the configured product code, never the display name.
+    product_code=p.get("product_code") or p.get("product") or "—"
+    ps,product_rows=sb("products",params={"select":"code_name,name","limit":"500"})
+    if ps==200:
+        raw_product=str(p.get("product") or "").strip().lower()
+        for product_row in product_rows:
+            if raw_product in (str(product_row.get("code_name") or "").strip().lower(), str(product_row.get("name") or "").strip().lower()):
+                product_code=product_row.get("code_name") or product_code
+                break
     def fmt(v):
         try:
             n=float(v)
@@ -1707,7 +1716,7 @@ def purchase_pdf(purchase_id):
         "PURCHASE HISTORY",
         "",
         "Invoice: "+clean(p.get("invoice_number") or "—"),
-        "Product: "+clean(p.get("product") or "—"),
+        "Product code: "+clean(product_code),
         "Status: "+clean(str(p.get("status") or "Purchase").replace("_"," ")),
         "Purchase date: "+clean(p.get("purchase_date") or p.get("created_at") or "—"),
         "",
