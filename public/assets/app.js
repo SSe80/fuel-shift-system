@@ -288,11 +288,11 @@ async function confirmTakeoverSale(){
 async function openTakeoverDetails(id){
   const takeover=(window.takeoverRecords||[]).find(x=>String(x.id)===String(id));
   if(!takeover)return;
-  const shifts=window.dashboardShiftRecords||[];
-  const nozzles=window.dashboardNozzleRecords||[];
-  const employees=window.dashboardEmployeeRecords||[];
-  const tanks=window.dashboardTankRecords||[];
-  const products=window.dashboardProductRecords||[];
+  const shifts=Array.isArray(window.dashboardShiftRecords)?window.dashboardShiftRecords:[];
+  const nozzles=Array.isArray(window.dashboardNozzleRecords)?window.dashboardNozzleRecords:[];
+  const employees=Array.isArray(window.dashboardEmployeeRecords)?window.dashboardEmployeeRecords:[];
+  const tanks=Array.isArray(window.dashboardTankRecords)?window.dashboardTankRecords:[];
+  const products=Array.isArray(window.dashboardProductRecords)?window.dashboardProductRecords:[];
   const shift=shifts.find(s=>String(s.id)===String(takeover.shift_id));
   const nozzle=nozzles.find(n=>String(n.id)===String(shift?.nozzle_id));
   const employee=employees.find(e=>String(e.id)===String(takeover.to_employee_id));
@@ -329,7 +329,7 @@ async function openTakeoverDetails(id){
     '<div class="shift-details-hero"><div><span class="section-kicker">SHIFT DETAILS</span><h4>'+h(nozzle?.nozzle_code||takeover.dispenser_code||'Dispenser')+'</h4><p>'+h(product?.code_name||'Product code not assigned')+' · '+h(tank?.tank_code||'Tank not assigned')+'</p></div><span class="shift-details-status">'+h(statusLabel)+'</span></div>'+
     '<div class="shift-details-grid">'+
       '<div><span>Attendant</span><strong>'+h(employee?.name||takeover.to_employee_id||'—')+'</strong></div>'+
-      '<div><span>Shift ID</span><strong>'+h(String(takeover.shift_id||'—').slice(0,8))+'</strong></div>'+
+      '<div><span>Shift</span><strong>'+h(String(shift?.name||takeover.shift_name||takeover.shift_id||'—').slice(0,40))+'</strong></div>'+
       '<div><span>Started</span><strong>'+h(takeover.shift_started_at?new Date(takeover.shift_started_at).toLocaleString():'—')+'</strong></div>'+
       '<div><span>Ended</span><strong>'+h(takeover.shift_ended_at?new Date(takeover.shift_ended_at).toLocaleString():'—')+'</strong></div>'+
       '<div><span>Confirmed</span><strong>'+h(confirmedAt?new Date(confirmedAt).toLocaleString():'Pending')+'</strong></div>'+
@@ -337,7 +337,7 @@ async function openTakeoverDetails(id){
     '</div>'+
     '<div class="shift-details-section"><div class="shift-details-section-title">Tank readings</div><div class="shift-details-metrics"><div><span>Opening</span><strong>'+liters(takeover.tank_opening_liters)+' L</strong></div><div><span>Closing</span><strong>'+liters(takeover.tank_closing_liters)+' L</strong></div><div><span>Sold</span><strong>'+liters(takeover.tank_sales_liters)+' L</strong></div><div><span>Variance</span><strong>'+liters(takeover.tank_variance_liters)+' L</strong><small>'+Number(takeover.tank_variance_pct||0).toFixed(2)+'%</small></div></div></div>'+
     '<div class="shift-details-section"><div class="shift-details-section-title">Meter readings</div>'+(rows||'<p class="muted">No nozzle readings recorded.</p>')+'</div>'+
-    '<div class="shift-details-section"><div class="shift-details-section-title">Recorded sales</div>'+(recordedRows||'<p class="muted">No recorded sale entries.</p>')+'<div class="shift-details-total"><span>Sales total</span><strong>'+money(recorded.reduce((sum,s)=>sum+Number(s.amount||0),0))+'</strong></div></div>'+
+    '<div class="shift-details-section"><div class="shift-details-section-title">Sales recorded</div>'+(recordedRows||'<p class="muted">No recorded sale entries.</p>')+'<div class="shift-details-total"><span>Sales total</span><strong>'+money(recorded.reduce((sum,s)=>sum+Number(s.amount||0),0))+'</strong></div></div>'+
     '<div class="shift-details-total calculated"><span>Shift total</span><strong>'+liters(takeover.total_sales_liters)+' L</strong><strong>'+money(takeover.total_sales_amount)+'</strong></div>';
 }
 
