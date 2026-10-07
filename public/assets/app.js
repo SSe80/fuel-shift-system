@@ -529,12 +529,21 @@ async function userDashboard(){
       const n=req.nozzle||{};
       const s=req.shift||{};
       const readings=Array.isArray(req.nozzle_readings)?req.nozzle_readings:[];
-      const readingRows=readings.map((r,i)=>'<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(r.opening_reading)+'</div><div class="pending-nozzle-code">'+h(r.nozzle_code||r.nozzle_id)+'</div></div>').join('');
-      return '<div class="card dashboard-purchase-card pending pending-confirmation-card dispenser-deactivation-attendant-card">'+
-        '<div class="pending-hero"><div class="pending-hero-icon">!</div><div><div class="pending-card-title">Pending Dispenser Deactivation</div><div class="pending-card-subtitle">'+h(n.nozzle_code||'Dispenser')+' — close your active shift to finish deactivation.</div></div></div>'+
-        '<div class="pending-shift-info"><div class="pending-info-block"><span class="pending-info-icon dispenser-icon">▣</span><div><span class="pending-label">Dispenser</span><strong>'+h(n.nozzle_code||req.nozzle_id)+'</strong></div></div><div class="pending-info-divider"></div><div class="pending-info-block"><span class="pending-info-icon tank-icon">▤</span><div><span class="pending-label">Opening tank</span><strong>'+liters(s.opening_tank_liters)+' <small>L</small></strong></div></div></div>'+
-        '<div class="pending-nozzle-section"><div class="pending-nozzle-heading"><span class="pending-section-icon">⌁</span> Opening nozzle readings</div>'+readingRows+'</div>'+
-        '<div class="row"><button class="primary" type="button" onclick="openDispenserDeactivationConfirmation(\''+req.id+'\')">Enter Closing Readings</button></div></div>';
+      const validOpening=value=>{
+        const num=Number(value);
+        return Number.isFinite(num) ? reading(num) : '—';
+      };
+      const readingRows=readings.map((r,i)=>{
+        const code=h(r.nozzle_code||r.nozzle_id||('Nozzle '+(i+1)));
+        const opening=validOpening(r.opening_reading ?? r.reading ?? r.value);
+        return '<div class="pending-deactivation-reading-row"><div><span class="pending-deactivation-reading-index">Nozzle '+(i+1)+'</span><strong>'+code+'</strong></div><div class="pending-deactivation-opening"><span>Opening</span><strong>'+opening+'</strong></div></div>';
+      }).join('');
+      return '<div class="card dashboard-purchase-card pending pending-confirmation-card dispenser-deactivation-attendant-card pending-deactivation-card">'+
+        '<div class="pending-deactivation-head"><div class="pending-deactivation-head-main"><div class="pending-deactivation-kicker">ACTION REQUIRED</div><div class="pending-card-title">Dispenser deactivation pending</div><div class="pending-card-subtitle">The admin requested this dispenser to be deactivated. Complete the closing readings to finish the current shift.</div></div><span class="pending-deactivation-status">Pending</span></div>'+
+        '<div class="pending-deactivation-summary"><div><span>Dispenser</span><strong>'+h(n.nozzle_code||req.nozzle_id||'—')+'</strong></div><div><span>Opening tank</span><strong>'+liters(s.opening_tank_liters)+' L</strong></div></div>'+
+        '<div class="pending-deactivation-readings"><div class="pending-deactivation-section-title">Opening nozzle readings</div>'+readingRows+'</div>'+
+        '<div class="pending-deactivation-action"><button class="primary" type="button" onclick="openDispenserDeactivationConfirmation(\''+req.id+'\')"><span>Enter closing readings</span><span aria-hidden="true">→</span></button></div>'+
+      '</div>';
     }).join('');
     const pendingTakeoverHtml=pendingTakeovers.slice(0,5).map(t=>{
       const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
