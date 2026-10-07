@@ -1527,6 +1527,8 @@ function openAdminSaleHistoryDetails(id){
   }
 }
 function closeAdminSaleHistoryDetails(){const modal=document.getElementById('admin-sale-history-details');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}}
+window.openAdminSaleHistoryDetails=openAdminSaleHistoryDetails;
+window.closeAdminSaleHistoryDetails=closeAdminSaleHistoryDetails;
 function openAdminSaleReview(id){
   const card=document.querySelector('.admin-sale-confirm-card[data-takeover-id="'+id+'"]');
   if(!card)return;
