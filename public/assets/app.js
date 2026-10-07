@@ -62,7 +62,7 @@ function closeSettingsConfirmation(){
   const modal=document.getElementById('settings-confirm-modal');
   const pendingReorder=window.pendingSettingsReorder;
   if(pendingReorder)restorePendingSettingsOrder(pendingReorder);
-  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  if(modal){modal.classList.remove('open','takeover-details-force');modal.setAttribute('aria-hidden','true');}
   window.pendingSettingsReorder=null;
   window.pendingSettingsAction=null;
   window.pendingSettingsSuccess=null;
@@ -169,7 +169,7 @@ function openTakeoverSaleModal(id){
   if(list)list.innerHTML=window.takeoverSaleTypes.length
     ?window.takeoverSaleTypes.map(s=>'<div class="takeover-sale-entry" data-sale-type="'+h(s.id)+'"><div class="takeover-sale-entry-head"><div><strong>'+h(s.name)+'</strong>'+(s.description?'<small>'+h(s.description)+'</small>':'')+'</div><input class="takeover-sale-amount" data-sale-id="'+h(s.id)+'" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>'+(s.reason_required?'<label class="takeover-sale-reason-label">Reason<textarea class="takeover-sale-reason" data-reason-id="'+h(s.id)+'" rows="2" placeholder="Enter reason"></textarea></label>':'')+'</div>').join('')
     :'<p class="muted">No active sale types are configured.</p>';
-  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+  if(modal){modal.classList.add('open','takeover-details-force');modal.setAttribute('aria-hidden','false');}
 }
 function closeTakeoverSaleModal(){
   const modal=document.getElementById('takeover-sale-modal');
