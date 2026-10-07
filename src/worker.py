@@ -2786,11 +2786,14 @@ def daily_report():
         sale_type_map={str(x.get("id")):str(x.get("name") or "Other") for x in st_rows}
     payment_methods={}
     sales_by_type={}
-    for x in sales_rows:
-        method=sale_type_map.get(str(x.get("sale_type_id") or "")) or str(x.get("payment_method") or "other")
-        amount=float(x.get("amount") or 0)
-        payment_methods[method]=payment_methods.get(method,0)+amount
-        sales_by_type[method]=sales_by_type.get(method,0)+amount
+    # Confirmed payment-method totals are rebuilt later from payment ledger
+    # entries plus the shift-level fallback for shifts with no payment entry.
+    # The legacy sales table is not authoritative for this breakdown.
+    for z in shift_summary:
+        for method, amount in (z.get("sales_by_method") or {}).items():
+            val=float(amount or 0)
+            payment_methods[method]=payment_methods.get(method,0)+val
+            sales_by_type[method]=sales_by_type.get(method,0)+val
 
 
     # Resolve dispenser/tank and employee labels once for both the individual
@@ -2844,6 +2847,9 @@ def daily_report():
     })
     if payment_status!=200:
         return jsonify({"error":payment_rows}),payment_status
+    # Rebuild DSR payment-method totals from the same authoritative ledger.
+    # Do not aggregate legacy sales rows here: those rows can be compatibility
+    # records for confirmed takeover payments.
     for row in payment_rows:
         sid=str(row.get("shift_id") or "")
         if not sid:
