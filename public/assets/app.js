@@ -569,7 +569,8 @@ async function userDashboard(){
         '<div class="main-record-sale-actions"><button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button><button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button></div>'+
       '</div>';
     }).join('');
-    const activeForDisplay=active.filter(s=>!pendingOutgoingHandovers.some(x=>String(x.shift_id)===String(s.id)));
+    const pendingDeactivationShiftIds=new Set((Array.isArray(deactivationRequests)?deactivationRequests:[]).map(x=>String(x.shift_id)));
+    const activeForDisplay=active.filter(s=>!pendingOutgoingHandovers.some(x=>String(x.shift_id)===String(s.id))&&!pendingDeactivationShiftIds.has(String(s.id)));
     const activeHtml=activeForDisplay.map(s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
       const readings=Array.isArray(s.activation_nozzles)&&s.activation_nozzles.length
