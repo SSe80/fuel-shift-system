@@ -472,3 +472,220 @@ body.admin-shell>.wrap{
 }
 
 .accounting-period-summary{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.accounting-period-open-badge{font-weight:700;padding:8px 12px;border-radius:999px;border:1px solid rgba(30,136,229,.35)}.accounting-period-meta{font-size:13px;color:var(--muted,#777)}.accounting-opening-row{padding:12px 0;border-top:1px solid rgba(127,127,127,.18)}.accounting-opening-row:first-child{border-top:0}.accounting-opening-row>strong{display:block}.accounting-opening-row>small{display:block;margin:3px 0 9px;color:var(--muted,#777)}.accounting-opening-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.accounting-recon-mini{margin-top:10px;padding-top:9px;border-top:1px solid rgba(127,127,127,.2);display:grid;gap:3px}.accounting-recon-mini small{font-size:12px}@media(max-width:650px){.accounting-opening-grid{grid-template-columns:1fr}}
+
+/* Attendant shift history — clear, compact shift detail view. */
+body.attendant-dashboard-page .takeover-details-modal{
+  width:min(560px,calc(100vw - 24px))!important;
+  max-height:86vh!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  border-radius:16px!important;
+}
+body.attendant-dashboard-page #takeover-details-content{
+  max-height:70vh!important;
+  overflow:auto!important;
+  padding:0 12px 6px!important;
+}
+body.attendant-dashboard-page .takeover-details-modal>.top{
+  padding:13px 15px 11px!important;
+  border-bottom:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page .shift-details-loading,
+body.attendant-dashboard-page .shift-details-error{
+  padding:28px 12px!important;
+  text-align:center!important;
+}
+body.attendant-dashboard-page .shift-details-hero{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:14px 12px!important;
+  border-bottom:1px solid #edf1f4!important;
+  background:#fbfcfe!important;
+}
+body.attendant-dashboard-page .shift-details-hero h4{
+  margin:3px 0 3px!important;
+  font-size:16px!important;
+  line-height:1.2!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .shift-details-hero p{
+  margin:0!important;
+  font-size:10px!important;
+  color:#667085!important;
+  overflow-wrap:anywhere!important;
+}
+body.attendant-dashboard-page .shift-details-status{
+  flex:0 0 auto!important;
+  padding:5px 8px!important;
+  border:1px solid #b7e4cc!important;
+  border-radius:999px!important;
+  background:#f0faf4!important;
+  color:#087443!important;
+  font-size:8px!important;
+  font-weight:850!important;
+  text-transform:uppercase!important;
+}
+body.attendant-dashboard-page .shift-details-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:0!important;
+  border-bottom:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page .shift-details-grid>div{
+  min-width:0!important;
+  padding:10px 12px!important;
+  border-bottom:1px solid #f0f2f5!important;
+}
+body.attendant-dashboard-page .shift-details-grid>div:nth-child(odd){
+  border-right:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page .shift-details-grid>div:nth-last-child(-n+2){border-bottom:0!important}
+body.attendant-dashboard-page .shift-details-grid span,
+body.attendant-dashboard-page .shift-details-metrics span,
+body.attendant-dashboard-page .shift-details-reading-row span{
+  display:block!important;
+  margin-bottom:3px!important;
+  font-size:8px!important;
+  line-height:1.2!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  color:#98a2b3!important;
+  font-weight:800!important;
+}
+body.attendant-dashboard-page .shift-details-grid strong{
+  display:block!important;
+  font-size:10px!important;
+  line-height:1.35!important;
+  color:#344054!important;
+  overflow-wrap:anywhere!important;
+}
+body.attendant-dashboard-page .shift-details-section{
+  margin:10px 0!important;
+  border:1px solid #e6ebf0!important;
+  border-radius:10px!important;
+  overflow:hidden!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .shift-details-section-title{
+  padding:8px 10px!important;
+  border-bottom:1px solid #edf1f4!important;
+  background:#fbfcfe!important;
+  font-size:8px!important;
+  line-height:1.2!important;
+  text-transform:uppercase!important;
+  letter-spacing:.06em!important;
+  color:#667085!important;
+  font-weight:850!important;
+}
+body.attendant-dashboard-page .shift-details-metrics{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+}
+body.attendant-dashboard-page .shift-details-metrics>div{
+  min-width:0!important;
+  padding:9px 8px!important;
+  border-right:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page .shift-details-metrics>div:last-child{border-right:0!important}
+body.attendant-dashboard-page .shift-details-metrics strong{
+  display:block!important;
+  font-size:11px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .shift-details-metrics small{
+  display:block!important;
+  margin-top:2px!important;
+  font-size:8px!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .shift-details-reading-row{
+  display:grid!important;
+  grid-template-columns:minmax(110px,1.4fr) repeat(3,minmax(62px,1fr))!important;
+  gap:7px!important;
+  align-items:center!important;
+  padding:9px 10px!important;
+  border-bottom:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page .shift-details-reading-row:last-child{border-bottom:0!important}
+body.attendant-dashboard-page .shift-details-reading-row>div:first-child{min-width:0!important}
+body.attendant-dashboard-page .shift-details-reading-row strong{
+  display:block!important;
+  font-size:10px!important;
+  color:#344054!important;
+  overflow-wrap:anywhere!important;
+}
+body.attendant-dashboard-page .shift-details-reading-row small{
+  display:block!important;
+  margin-top:2px!important;
+  font-size:8px!important;
+  color:#98a2b3!important;
+  overflow-wrap:anywhere!important;
+}
+body.attendant-dashboard-page .shift-details-reading-row b{
+  font-size:10px!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .shift-details-sale-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:9px 10px!important;
+  border-bottom:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page .shift-details-sale-row:last-of-type{border-bottom:0!important}
+body.attendant-dashboard-page .shift-details-sale-row>div{min-width:0!important}
+body.attendant-dashboard-page .shift-details-sale-row strong{
+  display:block!important;
+  font-size:10px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .shift-details-sale-row small,
+body.attendant-dashboard-page .shift-details-sale-row em{
+  display:block!important;
+  margin-top:2px!important;
+  font-size:8px!important;
+  color:#98a2b3!important;
+  font-style:normal!important;
+}
+body.attendant-dashboard-page .shift-details-total{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:12px!important;
+  padding:9px 10px!important;
+  border-top:1px solid #edf1f4!important;
+  background:#fbfcfe!important;
+}
+body.attendant-dashboard-page .shift-details-total span{
+  margin-right:auto!important;
+  font-size:9px!important;
+  color:#667085!important;
+  font-weight:750!important;
+}
+body.attendant-dashboard-page .shift-details-total strong{
+  font-size:11px!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .shift-details-total.calculated{
+  margin:10px 0 4px!important;
+  border:1px solid #dce5ee!important;
+  border-radius:10px!important;
+  background:#f7f9fc!important;
+}
+@media(max-width:600px){
+  body.attendant-dashboard-page .takeover-details-modal{
+    width:calc(100vw - 18px)!important;
+    max-height:90vh!important;
+  }
+  body.attendant-dashboard-page #takeover-details-content{max-height:74vh!important}
+  body.attendant-dashboard-page .shift-details-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  body.attendant-dashboard-page .shift-details-metrics>div:nth-child(odd){border-bottom:1px solid #edf1f4!important}
+  body.attendant-dashboard-page .shift-details-metrics>div:nth-child(2){border-right:0!important}
+  body.attendant-dashboard-page .shift-details-reading-row{
+    grid-template-columns:minmax(100px,1.5fr) repeat(3,minmax(54px,1fr))!important;
+    gap:5px!important;
+  }
+}
