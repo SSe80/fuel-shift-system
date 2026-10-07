@@ -1639,58 +1639,12 @@ def start_shift(shift_id):
 
 @app.post("/api/shifts/<shift_id>/close")
 def close_shift(shift_id):
-    # Shift deactivation is admin-only. Attendants must use handover.
-    auth=require_admin()
-    if auth:return auth
-    eid=session.get("employee_id")
-    data=request.get_json(silent=True) or {}
-    # Attendant-panel close is intentionally immediate for now.
-    # If closing readings are supplied, keep the existing detailed close flow.
-    has_readings=any(str(data.get(k,"")).strip()!="" for k in ("closing_reading","closing_mm","closing_liters"))
-    if not has_readings:
-        status,current=sb("shifts",params={
-            "id":"eq."+shift_id,
-            "employee_id":"eq."+eid,
-            "status":"eq.active",
-            "select":"id"
-        })
-        if status!=200:return jsonify({"error":current}),status
-        if not current:return jsonify({"error":"Active shift not found"}),404
-        status,current=sb("shifts",params={
-            "id":"eq."+shift_id,
-            "employee_id":"eq."+eid,
-            "status":"eq.active",
-            "select":"id,nozzle_id"
-        })
-        if status!=200:return jsonify({"error":current}),status
-        if not current:return jsonify({"error":"Active shift not found"}),404
-        nozzle_id=current[0].get("nozzle_id")
-        status,result=sb("shifts",method="PATCH",params={"id":"eq."+shift_id},body={
-            "status":"closed",
-            "end_time":datetime.now(timezone.utc).isoformat()
-        },prefer="return=representation")
-        if status>=400:return jsonify({"error":result}),status
-        if nozzle_id:
-            ns,nr=sb("nozzles",method="PATCH",params={"id":"eq."+nozzle_id},body={"active":False},prefer="return=representation")
-            if ns>=400:return jsonify({"error":nr}),ns
-        return jsonify(result),200
-    try: reading,mm,liters=float(data.get("closing_reading",0)),float(data.get("closing_mm",0)),float(data.get("closing_liters",0))
-    except (TypeError,ValueError):return jsonify({"error":"Invalid closing readings"}),400
-    status,current=sb("shifts",params={
-        "id":"eq."+shift_id,
-        "employee_id":"eq."+eid,
-        "status":"eq.active",
-        "select":"id,nozzle_id"
-    })
-    if status!=200:return jsonify({"error":current}),status
-    if not current:return jsonify({"error":"Active shift not found"}),404
-    nozzle_id=current[0].get("nozzle_id")
-    status,result=rpc("close_shift",{"p_shift_id":shift_id,"p_employee_id":eid,"p_closing_reading":reading,"p_closing_mm":mm,"p_closing_liters":liters})
-    if status>=400:return jsonify({"error":result}),status
-    if nozzle_id:
-        ns,nr=sb("nozzles",method="PATCH",params={"id":"eq."+nozzle_id},body={"active":False},prefer="return=representation")
-        if ns>=400:return jsonify({"error":nr}),ns
-    return jsonify(result),200
+    # Legacy direct shift closing is disabled. Shift closure must go through
+    # the controlled handover/deactivation workflows so nozzle readings and
+    # tank reconciliation are recorded atomically.
+    return jsonify({
+        "error":"Direct shift closing is disabled. Use shift handover or dispenser deactivation."
+    }),410
 
 @app.get("/api/sales")
 def sales():
