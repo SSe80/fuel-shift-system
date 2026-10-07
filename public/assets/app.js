@@ -401,12 +401,10 @@ function openDispenserDeactivationConfirmation(id){
     modal.id='dispenser-deactivation-modal';
     modal.className='modal';
     modal.setAttribute('aria-hidden','true');
-    modal.innerHTML='<div class="modal-backdrop" onclick="closeDispenserDeactivationModal()"></div><form class="modal-card form" onsubmit="confirmDispenserDeactivationByAttendant(event)"><div class="top"><div><span class="section-kicker">DISPENSER DEACTIVATION</span><h3 id="dispenser-deactivation-title">Close active shift</h3></div><button type="button" class="modal-close" onclick="closeDispenserDeactivationModal()">×</button></div><p id="dispenser-deactivation-summary" class="muted"></p><div id="dispenser-deactivation-reading-list"></div><label>Closing tank stock (dip mm)<input id="dispenser-deactivation-tank-stock" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter closing dip in mm" oninput="updateDispenserDeactivationDip(this.value)" required><small id="dispenser-deactivation-tank-verification" class="muted" style="display:block;margin-top:6px">Enter a dip to verify the calibrated liters.</small></label><label>Attendant PIN<input id="dispenser-deactivation-pin" type="password" inputmode="numeric" autocomplete="current-password" minlength="4" placeholder="Enter your PIN" required></label><p id="dispenser-deactivation-error" class="muted" style="display:none"></p><div class="row"><button type="button" onclick="closeDispenserDeactivationModal()">Cancel</button><button type="submit" class="primary">Confirm deactivation</button></div></form></div>';
+    modal.innerHTML='<div class="modal-backdrop" onclick="closeDispenserDeactivationModal()"></div><form class="modal-card form" onsubmit="prepareDispenserDeactivationReview(event)"><div class="top"><div><span class="section-kicker">DISPENSER DEACTIVATION</span><h3 id="dispenser-deactivation-title">Close active shift</h3></div><button type="button" class="modal-close" onclick="closeDispenserDeactivationModal()">×</button></div><p id="dispenser-deactivation-summary" class="muted"></p><div id="dispenser-deactivation-reading-list"></div><label>Closing tank stock (dip mm)<input id="dispenser-deactivation-tank-stock" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter closing dip in mm" oninput="updateDispenserDeactivationDip(this.value)" required><small id="dispenser-deactivation-tank-verification" class="muted" style="display:block;margin-top:6px">Enter a dip to verify the calibrated liters.</small></label><label>Attendant PIN<input id="dispenser-deactivation-pin" type="password" inputmode="numeric" autocomplete="current-password" minlength="4" placeholder="Enter your PIN" required></label><p id="dispenser-deactivation-error" class="muted" style="display:none"></p><div class="row"><button type="button" onclick="closeDispenserDeactivationModal()">Cancel</button><button type="submit" class="primary">Review deactivation</button></div></form></div>';
     document.body.appendChild(modal);
   }
-  const n=req.nozzle||{};
-  const shift=req.shift||{};
-  const readings=Array.isArray(req.nozzle_readings)?req.nozzle_readings:[];
+  const n=req.nozzle||{}, shift=req.shift||{}, readings=Array.isArray(req.nozzle_readings)?req.nozzle_readings:[];
   const title=document.getElementById('dispenser-deactivation-title');
   const summary=document.getElementById('dispenser-deactivation-summary');
   const list=document.getElementById('dispenser-deactivation-reading-list');
@@ -420,33 +418,63 @@ function openDispenserDeactivationConfirmation(id){
   modal.classList.add('open');modal.setAttribute('aria-hidden','false');
   setTimeout(()=>document.querySelector('#dispenser-deactivation-modal .deactivation-closing-reading')?.focus(),0);
 }
-async function confirmDispenserDeactivationByAttendant(event){
+function closeDispenserDeactivationReview(){
+  const modal=document.getElementById('dispenser-deactivation-review-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+function prepareDispenserDeactivationReview(event){
   event?.preventDefault();
   const req=window.pendingDispenserDeactivationRequest;
   if(!req)return;
   const readings=[...document.querySelectorAll('#dispenser-deactivation-modal .deactivation-closing-reading')].map(input=>({nozzle_id:input.dataset.nozzleId,reading:Number(input.value)}));
-  if(readings.some(x=>!Number.isFinite(x.reading))){toast('Enter every closing nozzle reading.');return;}
   const dip=Number(document.getElementById('dispenser-deactivation-tank-stock')?.value);
   const tank=(window.dashboardTankRecords||[]).find(t=>String(t.id)===String(req.nozzle?.tank_id));
   const tankLiters=tankLitersFromDip(tank,dip);
   const pin=document.getElementById('dispenser-deactivation-pin')?.value.trim()||'';
   const error=document.getElementById('dispenser-deactivation-error');
+  if(readings.some(x=>!Number.isFinite(x.reading))){if(error){error.textContent='Enter every closing nozzle reading.';error.style.display='block';}return;}
   if(!Number.isFinite(dip)||dip<0||!Number.isFinite(tankLiters)){if(error){error.textContent='Enter a valid closing dip and ensure tank calibration is configured.';error.style.display='block';}return;}
   if(!pin){if(error){error.textContent='Enter your PIN.';error.style.display='block';}return;}
+  window.pendingDispenserDeactivationSubmission={readings,dip,tankLiters,pin};
+  closeDispenserDeactivationModal();
+  openDispenserDeactivationReview(req,window.pendingDispenserDeactivationSubmission);
+}
+function openDispenserDeactivationReview(req,data){
+  let modal=document.getElementById('dispenser-deactivation-review-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='dispenser-deactivation-review-modal';
+    modal.className='modal';
+    modal.setAttribute('aria-hidden','true');
+    modal.innerHTML='<div class="modal-backdrop" onclick="closeDispenserDeactivationReview()"></div><div class="modal-card" style="max-width:520px;max-height:86vh;overflow:auto"><div class="top"><div><span class="section-kicker">FINAL REVIEW</span><h3>Confirm deactivation</h3><p class="muted" style="margin:4px 0 0">Review the closing readings before permanently ending this shift.</p></div><button type="button" class="modal-close" onclick="closeDispenserDeactivationReview()">×</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0"><div class="card" style="margin:0;padding:12px"><small>Dispenser</small><strong id="deactivation-review-dispenser" style="display:block;margin-top:4px"></strong></div><div class="card" style="margin:0;padding:12px"><small>Tank</small><strong id="deactivation-review-tank" style="display:block;margin-top:4px"></strong></div></div><div class="card" style="margin:0 0 10px;padding:14px"><div class="top"><strong>Closing nozzle readings</strong><span id="deactivation-review-nozzle-count"></span></div><div id="deactivation-review-nozzles"></div></div><div class="card" style="margin:0 0 10px;padding:14px"><div class="top"><strong>Tank closing stock</strong><span id="deactivation-review-dip"></span></div><div style="font-size:20px;font-weight:700;margin-top:6px" id="deactivation-review-liters"></div><small class="muted">Calculated from the tank calibration</small></div><div class="card" style="margin:0 0 16px;padding:14px"><div class="top"><strong>Attendant authorization</strong><span>PIN verified</span></div><small class="muted">Your PIN will be used to authorize this deactivation.</small></div><div class="row"><button type="button" class="btn" onclick="closeDispenserDeactivationReview();document.getElementById('dispenser-deactivation-modal')?.classList.add('open')">Back</button><button type="button" class="primary" onclick="submitDispenserDeactivation()">Confirm deactivation</button></div></div>';
+    document.body.appendChild(modal);
+  }
+  const n=req.nozzle||{}, tank=(window.dashboardTankRecords||[]).find(t=>String(t.id)===String(n.tank_id));
+  document.getElementById('deactivation-review-dispenser').textContent=n.nozzle_code||req.nozzle_id||'Dispenser';
+  document.getElementById('deactivation-review-tank').textContent=tank?.tank_code||n.tank_id||'Connected tank';
+  document.getElementById('deactivation-review-nozzle-count').textContent=data.readings.length+' nozzle'+(data.readings.length===1?'':'s');
+  document.getElementById('deactivation-review-nozzles').innerHTML=data.readings.map((r,i)=>'<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border,#e5e7eb)"><span>Nozzle '+(i+1)+' · '+h((req.nozzle_readings||[])[i]?.nozzle_code||r.nozzle_id||'—')+'</span><strong>'+reading(r.reading)+'</strong></div>').join('');
+  document.getElementById('deactivation-review-dip').textContent=reading(data.dip)+' mm';
+  document.getElementById('deactivation-review-liters').textContent=liters(data.tankLiters)+' L';
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+}
+async function submitDispenserDeactivation(){
+  const req=window.pendingDispenserDeactivationRequest, data=window.pendingDispenserDeactivationSubmission;
+  if(!req||!data)return;
+  const modal=document.getElementById('dispenser-deactivation-review-modal');
+  const actionButton=modal?.querySelector('button.primary');
+  if(actionButton){actionButton.disabled=true;actionButton.textContent='Deactivating…';}
   try{
-    const result=await api('/api/dispenser-deactivation-requests/'+encodeURIComponent(req.id)+'/confirm',{method:'POST',body:JSON.stringify({pin,closing_tank_liters:tankLiters,closing_tank_dip_mm:dip,closing_nozzle_readings:readings})});
-    closeDispenserDeactivationModal();
-    toast('Dispenser deactivated. Record Sale is now ready.');
-    await userDashboard();
-    if(result?.takeover_id){
-      const box=document.getElementById('shift');
-      if(box)box.scrollIntoView({behavior:'smooth',block:'start'});
-    }
+    const result=await api('/api/dispenser-deactivation-requests/'+encodeURIComponent(req.id)+'/confirm',{method:'POST',body:JSON.stringify({pin:data.pin,closing_tank_liters:data.tankLiters,closing_tank_dip_mm:data.dip,closing_nozzle_readings:data.readings})});
+    closeDispenserDeactivationReview();
+    window.pendingDispenserDeactivationSubmission=null;
+    showAttendantActionResult('success','Deactivation successful',''+(req.nozzle?.nozzle_code||'Dispenser')+' has been deactivated successfully. The shift is closed and Record Sale is ready.',()=>userDashboard());
   }catch(e){
-    if(error){error.textContent=e.message||'Unable to confirm deactivation.';error.style.display='block';}
-    else toast(e.message);
+    if(actionButton){actionButton.disabled=false;actionButton.textContent='Confirm deactivation';}
+    showAttendantActionResult('failed','Deactivation failed',e.message||'The dispenser could not be deactivated. No changes were completed.');
   }
 }
+
 
 async function userDashboard(){
   try{
