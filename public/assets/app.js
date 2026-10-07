@@ -1497,17 +1497,33 @@ async function openAdminSaleHistoryDetails(id){
     if(data?.takeover)t=data.takeover;
     if(Array.isArray(data?.sales))sales=data.sales;
     saleMeta=data?.takeover||{};
-  }catch(e){
-    // Keep the history record as a fallback so the detail view still works offline/with older records.
-  }
+  }catch(e){}
 
-  const shifts=window.dashboardShiftRecords||[];
-  const nozzles=window.dashboardNozzleRecords||[];
-  const employees=window.dashboardEmployeeRecords||[];
-  const tanks=window.dashboardTankRecords||[];
-  const products=window.dashboardProductRecords||[];
+  // Admin history does not necessarily preload the same dashboard lookup
+  // collections used by the attendant shift-history view. Load the exact
+  // reference records here so historical details use the same relationships.
+  let takeovers=[],shifts=[],nozzles=[],tanks=[],products=[],employees=[];
+  try{
+    const results=await Promise.allSettled([
+      api('/api/shift-takeovers'),
+      api('/api/shifts'),
+      api('/api/nozzles'),
+      api('/api/tanks'),
+      api('/api/products'),
+      api('/api/employees')
+    ]);
+    takeovers=Array.isArray(results[0]?.value)?results[0].value:[];
+    shifts=Array.isArray(results[1]?.value)?results[1].value:[];
+    nozzles=Array.isArray(results[2]?.value)?results[2].value:[];
+    tanks=Array.isArray(results[3]?.value)?results[3].value:[];
+    products=Array.isArray(results[4]?.value)?results[4].value:[];
+    employees=Array.isArray(results[5]?.value)?results[5].value:[];
+  }catch(e){}
+
+  const fullTakeover=takeovers.find(x=>String(x.id)===String(id));
+  if(fullTakeover)t={...t,...fullTakeover};
   const shift=shifts.find(s=>String(s.id)===String(t.shift_id));
-  const nozzleId=t.nozzle_id||shift?.nozzle_id||item.dispenser?.nozzle_id;
+  const nozzleId=shift?.nozzle_id||t.nozzle_id||item.dispenser?.nozzle_id;
   const nozzle=nozzles.find(n=>String(n.id)===String(nozzleId));
   const employee=employees.find(e=>String(e.id)===String(t.to_employee_id));
   const tankId=t.tank_id||nozzle?.tank_id||item.tank?.id||item.tank_id;
@@ -1519,31 +1535,36 @@ async function openAdminSaleHistoryDetails(id){
   const closing=Array.isArray(t.nozzle_closing_readings)?t.nozzle_closing_readings:[];
   const nozzleSales=Array.isArray(t.nozzle_sales_liters)?t.nozzle_sales_liters:[];
   const ids=[];
-  [...opening,...closing,...nozzleSales].forEach(x=>{const n=x?.nozzle_id;if(n!=null&&!ids.some(v=>String(v)===String(n)))ids.push(n);});
+  [...opening,...closing,...nozzleSales].forEach(x=>{
+    const n=x?.nozzle_uuid||x?.nozzle_id;
+    if(n!=null&&!ids.some(v=>String(v)===String(n)))ids.push(n);
+  });
   if(!ids.length&&nozzleId)ids.push(nozzleId);
 
   const productCode=product?.code_name||item.product?.code_name||item.product_code||t.product_code||tank?.product_code||'—';
-  const tankCode=tank?.tank_code||item.tank?.tank_code||item.tank_code||t.tank_code||t.tank_id||'—';
+  const tankCode=tank?.tank_code||item.tank?.tank_code||item.tank_code||t.tank_code||'—';
   const dispenserCode=nozzle?.nozzle_code||item.dispenser?.nozzle_code||item.dispenser?.code||t.dispenser_code||'Dispenser';
   const attendant=employee?.name||item.to_employee?.name||t.to_employee_name||item.to_employee_id||'—';
-  const shiftName=shift?.name||item.shift?.name||t.shift_name||t.shift_id||'—';
-  const dsrId=item.dsr_id||item.dsr?.id||t.dsr_id||t.dsr?.id||dailyReportIdFromTimestamp(t.shift_started_at);
+  const shiftName=shift?.name||item.shift?.name||((item.from_employee?.name||t.from_employee_name||'')+' → '+(item.to_employee?.name||t.to_employee_name||attendant));
+  const dsrId=item.dsr_id||item.dsr?.id||t.dsr_id||t.dsr?.id||dailyReportIdFromTimestamp(t.shift_started_at||shift?.start_time);
   const submittedAt=saleMeta.sales_submitted_at||t.sales_submitted_at||initial.sales_submitted_at;
   const confirmedAt=saleMeta.sales_confirmed_at||t.sales_confirmed_at||initial.sales_confirmed_at;
+  const startedAt=t.shift_started_at||shift?.start_time;
+  const endedAt=t.shift_ended_at||shift?.end_time;
   const totalAmount=Number(t.total_sales_amount||initial.total_sales_amount||0);
   const totalLiters=Number(t.total_sales_liters||initial.total_sales_liters||0);
   const status=String(saleMeta.sales_status||t.sales_status||'confirmed').replace(/_/g,' ');
   const statusLabel=status.replace(/\b\w/g,m=>m.toUpperCase());
 
   const rows=ids.map((nid,i)=>{
-    const o=opening.find(x=>String(x.nozzle_id)===String(nid))||opening[i]||{};
-    const cl=closing.find(x=>String(x.nozzle_id)===String(nid))||closing[i]||{};
-    const s=nozzleSales.find(x=>String(x.nozzle_id)===String(nid))||nozzleSales[i]||{};
-    const nn=nozzles.find(x=>String(x.id)===String(nid));
+    const o=opening.find(x=>String(x.nozzle_uuid||x.nozzle_id)===String(nid))||opening[i]||{};
+    const cl=closing.find(x=>String(x.nozzle_uuid||x.nozzle_id)===String(nid))||closing[i]||{};
+    const s=nozzleSales.find(x=>String(x.nozzle_uuid||x.nozzle_id)===String(nid))||nozzleSales[i]||{};
+    const nn=nozzles.find(x=>String(x.id)===String(nid))||nozzle;
     const openVal=o.opening_reading??o.reading;
-    const closeVal=cl.reading??cl.closing_reading;
+    const closeVal=cl.closing_reading??cl.reading;
     const soldVal=s.liters_sold??(Number.isFinite(Number(openVal))&&Number.isFinite(Number(closeVal))?Number(closeVal)-Number(openVal):0);
-    return '<div class="history-detail-reading-row"><div><strong>'+h(nn?.nozzle_code||item.dispenser?.nozzle_code||('Nozzle '+(i+1)))+'</strong><small>'+h(productCode)+'</small></div><div><span>Opening</span><b>'+reading(openVal)+'</b></div><div><span>Closing</span><b>'+reading(closeVal)+'</b></div><div><span>Sold</span><b>'+liters(soldVal)+' L</b></div></div>';
+    return '<div class="history-detail-reading-row"><div><strong>'+h(nn?.nozzle_code||s.nozzle_id||('Nozzle '+(i+1)))+'</strong><small>'+h(productCode)+'</small></div><div><span>Opening</span><b>'+reading(openVal)+'</b></div><div><span>Closing</span><b>'+reading(closeVal)+'</b></div><div><span>Sold</span><b>'+liters(soldVal)+' L</b></div></div>';
   }).join('');
 
   const saleRows=sales.map((s,i)=>{
@@ -1562,9 +1583,9 @@ async function openAdminSaleHistoryDetails(id){
       '<div class="history-detail-section-head"><div><span class="section-kicker">SHIFT</span><h4>Shift information</h4></div></div>',
       '<div class="history-detail-info-grid">',
         '<div><span>Attendant</span><strong>'+h(attendant)+'</strong></div>',
-        '<div><span>Shift</span><strong>'+h(String(shiftName).slice(0,60))+'</strong></div>',
-        '<div><span>Started</span><strong>'+h(t.shift_started_at?new Date(t.shift_started_at).toLocaleString():'—')+'</strong></div>',
-        '<div><span>Ended</span><strong>'+h(t.shift_ended_at?new Date(t.shift_ended_at).toLocaleString():'—')+'</strong></div>',
+        '<div><span>Shift</span><strong>'+h(String(shiftName||'—').slice(0,60))+'</strong></div>',
+        '<div><span>Started</span><strong>'+h(startedAt?new Date(startedAt).toLocaleString():'—')+'</strong></div>',
+        '<div><span>Ended</span><strong>'+h(endedAt?new Date(endedAt).toLocaleString():'—')+'</strong></div>',
         '<div><span>Dispenser / Nozzle</span><strong>'+h(dispenserCode)+'</strong></div>',
         '<div><span>Tank</span><strong>'+h(tankCode)+'</strong></div>',
         '<div><span>Product</span><strong>'+h(productCode)+'</strong></div>',
