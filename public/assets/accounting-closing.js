@@ -4,14 +4,17 @@
     const box=document.getElementById('accounting-period-summary');
     const status=document.getElementById('accounting-period-status');
     const button=document.getElementById('open-accounting-period-button');
+    const closeButton=document.getElementById('accounting-period-close-button');
     if(!box||!status||!button)return;
     try{
       const data=await api('/api/accounting/current-period');
       if(!data?.open||!data.period){
+        if(closeButton)closeButton.style.display='none';
         button.textContent='Open period';
         button.onclick=openAccountingPeriodModal;
         return;
       }
+      if(closeButton)closeButton.style.display='inline-flex';
       button.textContent='Record physical closing';
       button.onclick=openPhysicalClosingModal;
       const closeData=await api('/api/accounting/closing?period_id='+encodeURIComponent(data.period.id));
@@ -76,3 +79,19 @@
   };
   document.addEventListener('DOMContentLoaded',()=>setTimeout(loadVerifiedClosings,250));
 })();
+window.closeAccountingPeriod=function(){
+  return api('/api/accounting/current-period').then(async d=>{
+    if(!d?.open||!d.period){toast('No open accounting period.');return;}
+    const r=await api('/api/accounting/closing?period_id='+encodeURIComponent(d.period.id));
+    const closings=r.closings||[];
+    const tanks=await api('/api/tanks');
+    const active=(Array.isArray(tanks)?tanks:[]).filter(t=>t.active);
+    if(closings.length!==active.length){toast('Complete verified physical closing for every active tank first.');return;}
+    if(!confirm('Close this controlled accounting period? This cannot be reopened through the normal workflow.'))return;
+    try{
+      await api('/api/accounting/close',{method:'POST',body:JSON.stringify({period_id:d.period.id})});
+      toast('Accounting period closed'); await loadVerifiedClosings();
+      if(typeof loadAccountingReconciliation==='function')await loadAccountingReconciliation();
+    }catch(e){toast(e.message||'Unable to close accounting period');}
+  });
+};
