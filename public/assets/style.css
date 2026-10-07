@@ -689,3 +689,61 @@ body.attendant-dashboard-page .shift-details-total.calculated{
     gap:5px!important;
   }
 }
+
+/* Admin sales history — complete shift details card */
+#admin-sale-history-details .takeover-details-modal{
+  width:min(620px,calc(100vw - 18px))!important;
+  max-height:90vh!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  border-radius:16px!important;
+}
+#admin-sale-history-details .modal-card>.top{padding:13px 15px 11px!important;border-bottom:1px solid #edf1f4!important}
+#admin-sale-history-details #admin-sale-history-details-content{max-height:74vh!important;overflow:auto!important;padding:0 12px 8px!important;box-sizing:border-box!important}
+#admin-sale-history-details .history-detail-overview{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:14px!important;padding:14px 12px!important;border-bottom:1px solid #edf1f4!important;background:#fbfcfe!important}
+#admin-sale-history-details .history-detail-main{min-width:0!important}
+#admin-sale-history-details .history-detail-main h4{margin:3px 0!important;font-size:16px!important;line-height:1.2!important;color:#182230!important}
+#admin-sale-history-details .history-detail-main p{margin:0!important;font-size:10px!important;color:#667085!important;overflow-wrap:anywhere!important}
+#admin-sale-history-details .history-detail-amount{text-align:right!important;flex:0 0 auto!important}
+#admin-sale-history-details .history-detail-amount>span{display:inline-block!important;padding:4px 8px!important;border:1px solid #b7e4cc!important;border-radius:999px!important;background:#f0faf4!important;color:#087443!important;font-size:8px!important;font-weight:850!important;text-transform:uppercase!important}
+#admin-sale-history-details .history-detail-amount strong{display:block!important;margin-top:6px!important;font-size:15px!important;color:#182230!important}
+#admin-sale-history-details .history-detail-amount small{display:block!important;margin-top:2px!important;font-size:9px!important;color:#667085!important}
+#admin-sale-history-details .history-detail-section{margin:10px 0!important;border:1px solid #e6ebf0!important;border-radius:10px!important;overflow:hidden!important;background:#fff!important}
+#admin-sale-history-details .history-detail-section-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;padding:8px 10px!important;border-bottom:1px solid #edf1f4!important;background:#fbfcfe!important}
+#admin-sale-history-details .history-detail-section-head h4{margin:2px 0 0!important;font-size:11px!important;color:#344054!important}
+#admin-sale-history-details .history-detail-info-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+#admin-sale-history-details .history-detail-info-grid>div{min-width:0!important;padding:9px 10px!important;border-bottom:1px solid #f0f2f5!important}
+#admin-sale-history-details .history-detail-info-grid>div:nth-child(odd){border-right:1px solid #edf1f4!important}
+#admin-sale-history-details .history-detail-info-grid>div:nth-last-child(-n+2){border-bottom:0!important}
+#admin-sale-history-details .history-detail-info-grid .wide{grid-column:1/-1!important;border-right:0!important}
+#admin-sale-history-details .history-detail-info-grid span,#admin-sale-history-details .history-detail-reading-row span{display:block!important;margin-bottom:3px!important;font-size:8px!important;line-height:1.2!important;text-transform:uppercase!important;letter-spacing:.05em!important;color:#98a2b3!important;font-weight:800!important}
+#admin-sale-history-details .history-detail-info-grid strong{display:block!important;font-size:10px!important;line-height:1.35!important;color:#344054!important;overflow-wrap:anywhere!important}
+#admin-sale-history-details .history-detail-info-grid .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px!important}
+#admin-sale-history-details .history-detail-readings{width:100%!important;overflow-x:auto!important}
+#admin-sale-history-details .history-detail-reading-row{display:grid!important;grid-template-columns:minmax(120px,1.4fr) repeat(3,minmax(65px,1fr))!important;gap:7px!important;align-items:center!important;padding:9px 10px!important;border-bottom:1px solid #edf1f4!important;min-width:400px!important}
+#admin-sale-history-details .history-detail-reading-row:last-child{border-bottom:0!important}
+#admin-sale-history-details .history-detail-reading-row strong{display:block!important;font-size:10px!important;color:#344054!important;overflow-wrap:anywhere!important}
+#admin-sale-history-details .history-detail-reading-row small{display:block!important;margin-top:2px!important;font-size:8px!important;color:#98a2b3!important}
+#admin-sale-history-details .history-detail-reading-row b{font-size:10px!important;color:#182230!important}
+#admin-sale-history-details .history-detail-count{font-size:8px!important;color:#667085!important;font-weight:800!important}
+#admin-sale-history-details .history-detail-sale{display:flex!important;align-items:center!important;gap:8px!important;padding:9px 10px!important;border-bottom:1px solid #edf1f4!important}
+#admin-sale-history-details .history-detail-sale:last-child{border-bottom:0!important}
+#admin-sale-history-details .history-detail-sale-number{display:grid!important;place-items:center!important;width:20px!important;height:20px!important;border-radius:50%!important;background:#f2f4f7!important;color:#667085!important;font-size:8px!important;font-weight:850!important;flex:0 0 auto!important}
+#admin-sale-history-details .history-detail-sale-name{min-width:0!important;flex:1!important}
+#admin-sale-history-details .history-detail-sale-name strong{display:block!important;font-size:10px!important;color:#344054!important}
+#admin-sale-history-details .history-detail-sale-name small{display:block!important;margin-top:2px!important;font-size:8px!important;color:#98a2b3!important}
+#admin-sale-history-details .history-detail-sale-value{font-size:10px!important;color:#182230!important;white-space:nowrap!important}
+#admin-sale-history-details .history-detail-total-row{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;padding:9px 10px!important;border-top:1px solid #edf1f4!important;background:#fbfcfe!important}
+#admin-sale-history-details .history-detail-total-row span{font-size:9px!important;color:#667085!important;font-weight:750!important}
+#admin-sale-history-details .history-detail-total-row strong{font-size:11px!important;color:#182230!important}
+#admin-sale-history-details .history-detail-empty{padding:16px 10px!important;text-align:center!important;font-size:9px!important;color:#98a2b3!important}
+#admin-sale-history-details .history-detail-section:last-child{margin-bottom:2px!important}
+@media(max-width:600px){
+  #admin-sale-history-details .takeover-details-modal{width:calc(100vw - 12px)!important;max-height:92vh!important}
+  #admin-sale-history-details #admin-sale-history-details-content{max-height:77vh!important;padding-left:9px!important;padding-right:9px!important}
+  #admin-sale-history-details .history-detail-overview{padding:12px 9px!important}
+  #admin-sale-history-details .history-detail-main h4{font-size:14px!important}
+  #admin-sale-history-details .history-detail-amount strong{font-size:13px!important}
+  #admin-sale-history-details .history-detail-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #admin-sale-history-details .history-detail-reading-row{grid-template-columns:minmax(105px,1.4fr) repeat(3,minmax(58px,1fr))!important;gap:5px!important}
+}
