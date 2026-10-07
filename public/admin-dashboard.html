@@ -16,7 +16,7 @@
 <main class="wrap">
 <header class="settings-header"><div><span class="eyebrow">STATION CONTROL</span><h1>Admin Dashboard</h1><p class="muted">Overview of activated products, tanks, shifts, and today's activity.</p></div></header>
 <section class="card accounting-control-card">
-  <div class="section-heading"><div><span class="section-kicker">ACCOUNTING CONTROL</span><h2>Controlled Accounting Period</h2><p id="accounting-period-status" class="muted">Checking accounting period status…</p></div><button type="button" class="primary" id="open-accounting-period-button" onclick="openAccountingPeriodModal()">Open period</button></div>
+  <div class="section-heading"><div><span class="section-kicker">ACCOUNTING CONTROL</span><h2>Controlled Accounting Period</h2><p id="accounting-period-status" class="muted">Checking accounting period status…</p></div><button type="button" class="primary" id="open-accounting-period-button" onclick="openAccountingPeriodModal()">Open period</button><button type="button" class="secondary" id="accounting-period-close-button" onclick="closeAccountingPeriod()" style="display:none">Close period</button></div>
   <div id="accounting-period-summary" class="accounting-period-summary"></div>
 </section>
 <section class="statgrid"><div class="stat"><b id="sales">0</b><span>Sales today</span><small id="sales-total">—</small></div><div class="stat"><b id="active-shifts">0</b><span>Active shifts</span></div><div class="stat"><b id="tank-count">0</b><span>Activated tanks</span></div><div class="stat"><b id="alerts">0</b><span>Low tank alerts</span></div><div class="stat"><b id="product-count">0</b><span>Activated products</span></div></section>
@@ -24,4 +24,4 @@
 <section class="card"><div class="section-heading"><div><span class="section-kicker">INVENTORY</span><h2>Tank Inventory</h2><p class="muted">Controlled-period ledger position and reconciliation status.</p></div></div><div id="tanks" class="statgrid"></div></section>
 <section class="card"><div class="section-heading"><div><span class="section-kicker">RECONCILIATION</span><h2>Tank Movements</h2></div><div id="tank-movements"></div></section>
 <section class="card"><div class="section-heading"><div><span class="section-kicker">ACTIVITY</span><h2>Recent Activity</h2></div><div id="activity"></div></section>
-</main><script src="assets/app.js?v=20261007-03"></script><script src="assets/accounting-closing.js?v=20261007-04"></script><script>document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("accounting-period-close-button");if(b)b.onclick=closeAccountingPeriod;});</script><script src="assets/app-boot.js"></script></body></html>
+</main><script src="assets/app.js?v=20261007-03"></script><script src="assets/accounting-closing.js?v=20261007-04"></script><script src="assets/app-boot.js"></script></body></html>
