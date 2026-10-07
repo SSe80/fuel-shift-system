@@ -1657,24 +1657,12 @@ def sales():
 
 @app.post("/api/sales")
 def create_sale():
-    eid=session.get("employee_id")
-    if not eid:return jsonify({"error":"Unauthorized"}),401
-    data=request.get_json(silent=True) or {}
-    product=str(data.get("product","")).strip()
-    payment=str(data.get("payment_method","cash")).strip().lower()
-    try: qty,price=float(data.get("quantity_liters",0)),float(data.get("unit_price",0))
-    except (TypeError,ValueError):return jsonify({"error":"Invalid quantity or price"}),400
-    if not product or qty<=0 or price<0:return jsonify({"error":"Product, positive quantity and valid price are required"}),400
-    if payment not in {"cash","card","mobile","other"}:return jsonify({"error":"Invalid payment method"}),400
-    shift_id=str(data.get("shift_id","")).strip()
-    if not shift_id:return jsonify({"error":"Select an active shift"}),400
-    ss,sr=sb("shifts",params={"id":"eq."+shift_id,"employee_id":"eq."+eid,"status":"eq.active","select":"id,nozzle_id","limit":"1"})
-    if ss!=200 or not sr:return jsonify({"error":"Selected active shift not found"}),409
-    pending_status,pending_rows=sb("handovers",params={"shift_id":"eq."+shift_id,"status":"eq.pending","select":"id","limit":"1"})
-    if pending_status==200 and pending_rows:return jsonify({"error":"This shift has a pending handover and cannot record new sales"}),409
-    status,result=rpc("record_fuel_sale",{"p_shift_id":shift_id,"p_employee_id":eid,"p_nozzle_id":sr[0]["nozzle_id"],"p_product":product,"p_quantity_liters":qty,"p_unit_price":price,"p_payment_method":payment})
-    if status>=400:return jsonify({"error":result}),status
-    return jsonify(result),201
+    # Fuel-volume sales are authoritative from nozzle meter reconciliation.
+    # Direct manual fuel-sale creation would create a second tank SALE
+    # movement for the same liters during shift close/deactivation.
+    return jsonify({
+        "error":"Direct fuel-volume sales are disabled. Fuel sales are recorded from nozzle meter reconciliation during shift handover or dispenser deactivation."
+    }),410
 
 @app.get("/api/purchases")
 def purchases():
