@@ -2485,10 +2485,8 @@ def daily_report_confirmations():
         if row and row.get("status")=="confirmed":
             snap["status"]="confirmed"; snap["confirmed_at"]=row.get("confirmed_at"); snap["confirmed_by"]=row.get("confirmed_by")
         else:
-            us,ur=sb("daily_report_confirmations",method="POST",params={"on_conflict":"report_date"},body={"report_date":d.isoformat(),"total_sales_liters":snap["total_sales_liters"],"total_sales_amount":snap["total_sales_amount"],"sales_by_method":snap["sales_by_method"],"shift_count":snap["shift_count"],"status":"pending"},prefer="resolution=merge-duplicates,return=representation")
-            if us>=400:return jsonify({"error":ur}),us
+            # Loading confirmation cards must remain read-only.
             snap["status"]="pending"
-            row=(ur[0] if isinstance(ur,list) and ur else row)
         snap["id"]=(row or {}).get("id")
         cards.append(snap)
     return jsonify(cards),200
