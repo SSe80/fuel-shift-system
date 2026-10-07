@@ -1479,53 +1479,117 @@ function downloadPurchaseDetailPdf(){
 }
 window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
 
-function openAdminSaleHistoryDetails(id){
+async function openAdminSaleHistoryDetails(id){
   const historySource=(typeof adminSalesHistoryData!=='undefined'&&Array.isArray(adminSalesHistoryData.history)?adminSalesHistoryData.history:((typeof adminSalesData!=='undefined'&&Array.isArray(adminSalesData.history))?adminSalesData.history:[]));
   const item=historySource.find(x=>String((x.takeover||{}).id)===String(id));
   if(!item)return;
-  const t=item.takeover||{};
-  const sales=Array.isArray(item.sales)?item.sales:[];
-  const total=Number(t.total_sales_amount||0);
-  const entryTotal=sales.reduce((sum,s)=>sum+Number(s.amount||0),0);
-  const started=t.shift_started_at?new Date(t.shift_started_at).toLocaleString():'—';
-  const ended=t.shift_ended_at?new Date(t.shift_ended_at).toLocaleString():'—';
-  const confirmed=t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—';
+  const initial=item.takeover||{};
+  const modal=document.getElementById('admin-sale-history-details');
+  const box=document.getElementById('admin-sale-history-details-content');
+  const download=document.getElementById('admin-sale-history-download');
+  if(download)download.dataset.takeoverId=String(id);
+  if(box)box.innerHTML='<div class="history-detail-section"><p class="muted">Loading complete shift details…</p></div>';
+  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+
+  let t=initial, sales=Array.isArray(item.sales)?item.sales:[], saleMeta={};
+  try{
+    const data=await api('/api/shift-takeovers/'+id+'/sale-record');
+    if(data?.takeover)t=data.takeover;
+    if(Array.isArray(data?.sales))sales=data.sales;
+    saleMeta=data?.takeover||{};
+  }catch(e){
+    // Keep the history record as a fallback so the detail view still works offline/with older records.
+  }
+
+  const shifts=window.dashboardShiftRecords||[];
+  const nozzles=window.dashboardNozzleRecords||[];
+  const employees=window.dashboardEmployeeRecords||[];
+  const tanks=window.dashboardTankRecords||[];
+  const products=window.dashboardProductRecords||[];
+  const shift=shifts.find(s=>String(s.id)===String(t.shift_id));
+  const nozzleId=t.nozzle_id||shift?.nozzle_id||item.dispenser?.nozzle_id;
+  const nozzle=nozzles.find(n=>String(n.id)===String(nozzleId));
+  const employee=employees.find(e=>String(e.id)===String(t.to_employee_id));
+  const tankId=t.tank_id||nozzle?.tank_id||item.tank?.id||item.tank_id;
+  const tank=tanks.find(x=>String(x.id)===String(tankId));
+  const productId=tank?.product_id||item.product?.id||item.product_id;
+  const product=products.find(p=>String(p.id)===String(productId)||String(p.name||'').toLowerCase()===String(tank?.product||item.dispenser?.product||'').toLowerCase());
+
+  const opening=Array.isArray(t.nozzle_opening_readings)?t.nozzle_opening_readings:[];
+  const closing=Array.isArray(t.nozzle_closing_readings)?t.nozzle_closing_readings:[];
+  const nozzleSales=Array.isArray(t.nozzle_sales_liters)?t.nozzle_sales_liters:[];
+  const ids=[];
+  [...opening,...closing,...nozzleSales].forEach(x=>{const n=x?.nozzle_id;if(n!=null&&!ids.some(v=>String(v)===String(n)))ids.push(n);});
+  if(!ids.length&&nozzleId)ids.push(nozzleId);
+
+  const productCode=product?.code_name||item.product?.code_name||item.product_code||t.product_code||tank?.product_code||'—';
+  const tankCode=tank?.tank_code||item.tank?.tank_code||item.tank_code||t.tank_code||t.tank_id||'—';
+  const dispenserCode=nozzle?.nozzle_code||item.dispenser?.nozzle_code||item.dispenser?.code||t.dispenser_code||'Dispenser';
+  const attendant=employee?.name||item.to_employee?.name||t.to_employee_name||item.to_employee_id||'—';
+  const shiftName=shift?.name||item.shift?.name||t.shift_name||t.shift_id||'—';
+  const dsrId=item.dsr_id||item.dsr?.id||t.dsr_id||t.dsr?.id||dailyReportIdFromTimestamp(t.shift_started_at);
+  const submittedAt=saleMeta.sales_submitted_at||t.sales_submitted_at||initial.sales_submitted_at;
+  const confirmedAt=saleMeta.sales_confirmed_at||t.sales_confirmed_at||initial.sales_confirmed_at;
+  const totalAmount=Number(t.total_sales_amount||initial.total_sales_amount||0);
+  const totalLiters=Number(t.total_sales_liters||initial.total_sales_liters||0);
+  const status=String(saleMeta.sales_status||t.sales_status||'confirmed').replace(/_/g,' ');
+  const statusLabel=status.replace(/\b\w/g,m=>m.toUpperCase());
+
+  const rows=ids.map((nid,i)=>{
+    const o=opening.find(x=>String(x.nozzle_id)===String(nid))||opening[i]||{};
+    const cl=closing.find(x=>String(x.nozzle_id)===String(nid))||closing[i]||{};
+    const s=nozzleSales.find(x=>String(x.nozzle_id)===String(nid))||nozzleSales[i]||{};
+    const nn=nozzles.find(x=>String(x.id)===String(nid));
+    const openVal=o.opening_reading??o.reading;
+    const closeVal=cl.reading??cl.closing_reading;
+    const soldVal=s.liters_sold??(Number.isFinite(Number(openVal))&&Number.isFinite(Number(closeVal))?Number(closeVal)-Number(openVal):0);
+    return '<div class="history-detail-reading-row"><div><strong>'+h(nn?.nozzle_code||item.dispenser?.nozzle_code||('Nozzle '+(i+1)))+'</strong><small>'+h(productCode)+'</small></div><div><span>Opening</span><b>'+reading(openVal)+'</b></div><div><span>Closing</span><b>'+reading(closeVal)+'</b></div><div><span>Sold</span><b>'+liters(soldVal)+' L</b></div></div>';
+  }).join('');
+
   const saleRows=sales.map((s,i)=>{
     const desc=s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'';
     const reason=s.reason?'<small class="reason">Reason: '+h(s.reason)+'</small>':'';
     return '<div class="history-detail-sale"><span class="history-detail-sale-number">'+(i+1)+'</span><div class="history-detail-sale-name"><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+desc+reason+'</div><strong class="history-detail-sale-value">'+money(s.amount)+'</strong></div>';
   }).join('');
+  const entryTotal=sales.reduce((sum,s)=>sum+Number(s.amount||0),0);
+
   const content=[
     '<div class="history-detail-overview">',
-      '<div class="history-detail-main"><span class="section-kicker">CONFIRMED SALES</span><h4>'+h((item.dispenser||{}).name||'Dispenser')+'</h4><p>'+h((item.from_employee||{}).name||'—')+' <span>→</span> '+h((item.to_employee||{}).name||'—')+'</p></div>',
-      '<div class="history-detail-amount"><span>Total</span><strong>'+money(total)+'</strong><small>'+liters(t.total_sales_liters)+' L</small></div>',
+      '<div class="history-detail-main"><span class="section-kicker">SHIFT DETAILS</span><h4>'+h(dispenserCode)+'</h4><p>'+h(productCode)+' · '+h(tankCode)+'</p></div>',
+      '<div class="history-detail-amount"><span>'+h(statusLabel)+'</span><strong>'+money(totalAmount)+'</strong><small>'+liters(totalLiters)+' L</small></div>',
     '</div>',
     '<div class="history-detail-section">',
       '<div class="history-detail-section-head"><div><span class="section-kicker">SHIFT</span><h4>Shift information</h4></div></div>',
       '<div class="history-detail-info-grid">',
-        '<div><span>From</span><strong>'+h(item.from_employee?.name||'—')+'</strong></div>',
-        '<div><span>Received by</span><strong>'+h(item.to_employee?.name||'—')+'</strong></div>',
-        '<div><span>Started</span><strong>'+h(started)+'</strong></div>',
-        '<div><span>Ended</span><strong>'+h(ended)+'</strong></div>',
+        '<div><span>Attendant</span><strong>'+h(attendant)+'</strong></div>',
+        '<div><span>Shift</span><strong>'+h(String(shiftName).slice(0,60))+'</strong></div>',
+        '<div><span>Started</span><strong>'+h(t.shift_started_at?new Date(t.shift_started_at).toLocaleString():'—')+'</strong></div>',
+        '<div><span>Ended</span><strong>'+h(t.shift_ended_at?new Date(t.shift_ended_at).toLocaleString():'—')+'</strong></div>',
+        '<div><span>Dispenser / Nozzle</span><strong>'+h(dispenserCode)+'</strong></div>',
+        '<div><span>Tank</span><strong>'+h(tankCode)+'</strong></div>',
+        '<div><span>Product</span><strong>'+h(productCode)+'</strong></div>',
+        '<div><span>DSR ID</span><strong class="mono">'+h(dsrId||'—')+'</strong></div>',
         '<div class="wide"><span>Shift ID</span><strong class="mono">'+h(t.shift_id||'—')+'</strong></div>',
       '</div>',
     '</div>',
     '<div class="history-detail-section">',
-      '<div class="history-detail-section-head"><div><span class="section-kicker">BREAKDOWN</span><h4>Recorded sales</h4></div><span class="history-detail-count">'+sales.length+' '+(sales.length===1?'entry':'entries')+'</span></div>',
+      '<div class="history-detail-section-head"><div><span class="section-kicker">READINGS</span><h4>Opening & closing readings</h4></div></div>',
+      '<div class="history-detail-readings">'+(rows||'<div class="history-detail-empty">No nozzle readings were recorded.</div>')+'</div>',
+      '<div class="history-detail-total-row"><span>Total liters sold</span><strong>'+liters(totalLiters)+' L</strong></div>',
+    '</div>',
+    '<div class="history-detail-section">',
+      '<div class="history-detail-section-head"><div><span class="section-kicker">SALES</span><h4>Recorded sales</h4></div><span class="history-detail-count">'+sales.length+' '+(sales.length===1?'entry':'entries')+'</span></div>',
       '<div class="history-detail-sales">'+(saleRows||'<div class="history-detail-empty">No sale entries were recorded.</div>')+'</div>',
       '<div class="history-detail-total-row"><span>Entries total</span><strong>'+money(entryTotal)+'</strong></div>',
     '</div>',
-    '<div class="history-detail-confirmed"><span>✓</span><div><strong>Confirmed by admin</strong><small>'+h(confirmed)+'</small></div></div>'
+    '<div class="history-detail-section">',
+      '<div class="history-detail-info-grid">',
+        '<div><span>Submitted</span><strong>'+h(submittedAt?new Date(submittedAt).toLocaleString():'—')+'</strong></div>',
+        '<div><span>Confirmed</span><strong>'+h(confirmedAt?new Date(confirmedAt).toLocaleString():'—')+'</strong></div>',
+      '</div>',
+    '</div>'
   ].join('');
-  const modal=document.getElementById('admin-sale-history-details');
-  const download=document.getElementById('admin-sale-history-download');
-  if(download)download.dataset.takeoverId=String(id);
-  const box=document.getElementById('admin-sale-history-details-content');
   if(box)box.innerHTML=content;
-  if(modal){
-    modal.classList.add('open');
-    modal.setAttribute('aria-hidden','false');
-  }
 }
 function closeAdminSaleHistoryDetails(){const modal=document.getElementById('admin-sale-history-details');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}}
 window.openAdminSaleHistoryDetails=openAdminSaleHistoryDetails;
