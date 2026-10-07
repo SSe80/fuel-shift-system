@@ -314,30 +314,30 @@ async function openTakeoverDetails(id){
     if(details)details.innerHTML='<p class="muted shift-details-error">'+h(e.message||'Unable to load shift details.')+'</p>';
     return;
   }
-  const status=String(saleMeta.sales_status||takeover.sales_status||'confirmed').replace(/_/g,' ');
+  const status=String(saleMeta.sales_status||takeover.sales_status||'confirmed').replace(/_/g,' ');\n  const statusLabel=status.replace(/\\b\\w/g,m=>m.toUpperCase());
   const rows=nozzleSales.map((s,i)=>{
     const o=opening.find(x=>String(x.nozzle_id)===String(s.nozzle_id))||opening[i]||{};
     const cl=closing.find(x=>String(x.nozzle_id)===String(s.nozzle_id))||closing[i]||{};
     const nn=nozzles.find(x=>String(x.id)===String(s.nozzle_id));
-    return '<div class="shift-details-reading-row"><div><strong>'+h(nn?.nozzle_code||('Nozzle '+(i+1)))+'</strong><small>'+h(product?.code_name||product?.name||'—')+'</small></div><div><span>Opening</span><b>'+reading(o.opening_reading??o.reading)+'</b></div><div><span>Closing</span><b>'+reading(cl.reading??cl.closing_reading)+'</b></div><div><span>Sold</span><b>'+liters(s.liters_sold)+' L</b></div></div>';
+    return '<div class="shift-details-reading-row"><div><strong>'+h(nn?.nozzle_code||('Nozzle '+(i+1)))+'</strong><small>'+h(product?.code_name||'—')+'</small></div><div><span>Opening</span><b>'+reading(o.opening_reading??o.reading)+'</b></div><div><span>Closing</span><b>'+reading(cl.reading??cl.closing_reading)+'</b></div><div><span>Sold</span><b>'+liters(s.liters_sold)+' L</b></div></div>';
   }).join('');
   const recordedRows=recorded.map(s=>'<div class="shift-details-sale-row"><div><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+(s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'')+(s.reason?'<em>Reason: '+h(s.reason)+'</em>':'')+'</div><strong>'+money(s.amount)+'</strong></div>').join('');
   const submittedAt=saleMeta.sales_submitted_at||takeover.sales_submitted_at;
   const confirmedAt=saleMeta.sales_confirmed_at||takeover.sales_confirmed_at;
   if(details)details.innerHTML=
-    '<div class="shift-details-hero"><div><span class="section-kicker">SHIFT DETAILS</span><h4>'+h(nozzle?.nozzle_code||takeover.dispenser_code||'Dispenser')+'</h4><p>'+h(product?.code_name||product?.name||'Product not assigned')+' · '+h(tank?.tank_code||'Tank not assigned')+'</p></div><span class="shift-details-status">'+h(status)+'</span></div>'+
+    '<div class="shift-details-hero"><div><span class="section-kicker">SHIFT DETAILS</span><h4>'+h(nozzle?.nozzle_code||takeover.dispenser_code||'Dispenser')+'</h4><p>'+h(product?.code_name||'Product code not assigned')+' · '+h(tank?.tank_code||'Tank not assigned')+'</p></div><span class="shift-details-status">'+h(statusLabel)+'</span></div>'+
     '<div class="shift-details-grid">'+
       '<div><span>Attendant</span><strong>'+h(employee?.name||takeover.to_employee_id||'—')+'</strong></div>'+
       '<div><span>Shift ID</span><strong>'+h(String(takeover.shift_id||'—').slice(0,8))+'</strong></div>'+
       '<div><span>Started</span><strong>'+h(takeover.shift_started_at?new Date(takeover.shift_started_at).toLocaleString():'—')+'</strong></div>'+
       '<div><span>Ended</span><strong>'+h(takeover.shift_ended_at?new Date(takeover.shift_ended_at).toLocaleString():'—')+'</strong></div>'+
-      '<div><span>Admin confirmed</span><strong>'+h(confirmedAt?new Date(confirmedAt).toLocaleString():'Pending')+'</strong></div>'+
+      '<div><span>Confirmed</span><strong>'+h(confirmedAt?new Date(confirmedAt).toLocaleString():'Pending')+'</strong></div>'+
       '<div><span>Submitted</span><strong>'+h(submittedAt?new Date(submittedAt).toLocaleString():'—')+'</strong></div>'+
     '</div>'+
     '<div class="shift-details-section"><div class="shift-details-section-title">Tank readings</div><div class="shift-details-metrics"><div><span>Opening</span><strong>'+liters(takeover.tank_opening_liters)+' L</strong></div><div><span>Closing</span><strong>'+liters(takeover.tank_closing_liters)+' L</strong></div><div><span>Sold</span><strong>'+liters(takeover.tank_sales_liters)+' L</strong></div><div><span>Variance</span><strong>'+liters(takeover.tank_variance_liters)+' L</strong><small>'+Number(takeover.tank_variance_pct||0).toFixed(2)+'%</small></div></div></div>'+
-    '<div class="shift-details-section"><div class="shift-details-section-title">Nozzle readings</div>'+(rows||'<p class="muted">No nozzle readings recorded.</p>')+'</div>'+
-    '<div class="shift-details-section"><div class="shift-details-section-title">Recorded sales</div>'+(recordedRows||'<p class="muted">No recorded sale entries.</p>')+'<div class="shift-details-total"><span>Recorded sales total</span><strong>'+money(recorded.reduce((sum,s)=>sum+Number(s.amount||0),0))+'</strong></div></div>'+
-    '<div class="shift-details-total calculated"><span>Calculated shift sales</span><strong>'+liters(takeover.total_sales_liters)+' L</strong><strong>'+money(takeover.total_sales_amount)+'</strong></div>';
+    '<div class="shift-details-section"><div class="shift-details-section-title">Meter readings</div>'+(rows||'<p class="muted">No nozzle readings recorded.</p>')+'</div>'+
+    '<div class="shift-details-section"><div class="shift-details-section-title">Recorded sales</div>'+(recordedRows||'<p class="muted">No recorded sale entries.</p>')+'<div class="shift-details-total"><span>Sales total</span><strong>'+money(recorded.reduce((sum,s)=>sum+Number(s.amount||0),0))+'</strong></div></div>'+
+    '<div class="shift-details-total calculated"><span>Shift total</span><strong>'+liters(takeover.total_sales_liters)+' L</strong><strong>'+money(takeover.total_sales_amount)+'</strong></div>';
 }
 
 function closeTakeoverDetails(){
