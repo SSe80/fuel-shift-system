@@ -366,6 +366,31 @@ function closeDispenserDeactivationModal(){
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
   window.pendingDispenserDeactivationRequest=null;
 }
+function updateDispenserDeactivationDip(value){
+  const req=window.pendingDispenserDeactivationRequest||{};
+  const nozzle=req.nozzle||{};
+  const tanks=window.dashboardTankRecords||[];
+  const tank=tanks.find(t=>String(t.id)===String(nozzle.tank_id));
+  const mm=Number(value);
+  const box=document.getElementById('dispenser-deactivation-tank-verification');
+  if(!box)return;
+  if(!tank){
+    box.textContent='Connected tank calibration could not be loaded.';
+    return;
+  }
+  const calibrationMm=Number(tank.calibration_mm);
+  const calibrationLiters=Number(tank.calibration_liters);
+  if(!Number.isFinite(calibrationMm)||calibrationMm<=0||!Number.isFinite(calibrationLiters)||calibrationLiters<0){
+    box.textContent='Calibration is not configured for this tank.';
+    return;
+  }
+  if(!Number.isFinite(mm)||mm<0){
+    box.textContent='Calibration: '+reading(calibrationMm)+' mm = '+liters(calibrationLiters)+' L';
+    return;
+  }
+  const equivalent=tankLitersFromDip(tank,mm);
+  box.innerHTML='Calibration: <b>'+reading(calibrationMm)+' mm = '+liters(calibrationLiters)+' L</b> · Closing stock: <b>'+liters(equivalent)+' L</b>';
+}
 function openDispenserDeactivationConfirmation(id){
   const req=(window.pendingDispenserDeactivationRequests||[]).find(x=>String(x.id)===String(id));
   if(!req)return;
@@ -376,7 +401,7 @@ function openDispenserDeactivationConfirmation(id){
     modal.id='dispenser-deactivation-modal';
     modal.className='modal';
     modal.setAttribute('aria-hidden','true');
-    modal.innerHTML='<div class="modal-backdrop" onclick="closeDispenserDeactivationModal()"></div><form class="modal-card form" onsubmit="confirmDispenserDeactivationByAttendant(event)"><div class="top"><div><span class="section-kicker">DISPENSER DEACTIVATION</span><h3 id="dispenser-deactivation-title">Close active shift</h3></div><button type="button" class="modal-close" onclick="closeDispenserDeactivationModal()">×</button></div><p id="dispenser-deactivation-summary" class="muted"></p><div id="dispenser-deactivation-reading-list"></div><label>Closing tank stock (L)<input id="dispenser-deactivation-tank-stock" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Enter closing tank stock" required></label><label>Attendant PIN<input id="dispenser-deactivation-pin" type="password" inputmode="numeric" autocomplete="current-password" minlength="4" placeholder="Enter your PIN" required></label><p id="dispenser-deactivation-error" class="muted" style="display:none"></p><div class="row"><button type="button" onclick="closeDispenserDeactivationModal()">Cancel</button><button type="submit" class="primary">Confirm deactivation</button></div></form></div>';
+    modal.innerHTML='<div class="modal-backdrop" onclick="closeDispenserDeactivationModal()"></div><form class="modal-card form" onsubmit="confirmDispenserDeactivationByAttendant(event)"><div class="top"><div><span class="section-kicker">DISPENSER DEACTIVATION</span><h3 id="dispenser-deactivation-title">Close active shift</h3></div><button type="button" class="modal-close" onclick="closeDispenserDeactivationModal()">×</button></div><p id="dispenser-deactivation-summary" class="muted"></p><div id="dispenser-deactivation-reading-list"></div><label>Closing tank stock (dip mm)<input id="dispenser-deactivation-tank-stock" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter closing dip in mm" oninput="updateDispenserDeactivationDip(this.value)" required><small id="dispenser-deactivation-tank-verification" class="muted" style="display:block;margin-top:6px">Enter a dip to verify the calibrated liters.</small></label><label>Attendant PIN<input id="dispenser-deactivation-pin" type="password" inputmode="numeric" autocomplete="current-password" minlength="4" placeholder="Enter your PIN" required></label><p id="dispenser-deactivation-error" class="muted" style="display:none"></p><div class="row"><button type="button" onclick="closeDispenserDeactivationModal()">Cancel</button><button type="submit" class="primary">Confirm deactivation</button></div></form></div>';
     document.body.appendChild(modal);
   }
   const n=req.nozzle||{};
@@ -386,9 +411,10 @@ function openDispenserDeactivationConfirmation(id){
   const summary=document.getElementById('dispenser-deactivation-summary');
   const list=document.getElementById('dispenser-deactivation-reading-list');
   if(title)title.textContent='Close '+(n.nozzle_code||'dispenser')+' shift';
-  if(summary)summary.innerHTML='<b>Tank:</b> '+h(n.tank_id||'Connected tank')+' &nbsp; <b>Opening tank:</b> '+liters(shift.opening_tank_liters)+' L';
+  const tank=(window.dashboardTankRecords||[]).find(t=>String(t.id)===String(n.tank_id));
+  if(summary)summary.innerHTML='<b>Tank:</b> '+h(tank?.tank_code||n.tank_id||'Connected tank')+' &nbsp; <b>Opening tank:</b> '+liters(shift.opening_tank_liters)+' L';
   if(list)list.innerHTML=readings.map((r,i)=>'<div class="card" style="margin:0 0 8px;padding:10px"><div class="top"><strong>'+h(r.nozzle_code||r.nozzle_id||('Nozzle '+(i+1)))+'</strong><span>Opening '+reading(r.opening_reading)+'</span></div><label>Closing reading<input class="deactivation-closing-reading" data-nozzle-id="'+h(r.nozzle_id)+'" type="number" min="'+h(r.opening_reading||0)+'" step="0.01" inputmode="decimal" placeholder="Enter closing reading" required></label></div>').join('');
-  const stock=document.getElementById('dispenser-deactivation-tank-stock'); if(stock)stock.value='';
+  const stock=document.getElementById('dispenser-deactivation-tank-stock'); if(stock){stock.value='';updateDispenserDeactivationDip('');}
   const pin=document.getElementById('dispenser-deactivation-pin'); if(pin)pin.value='';
   const error=document.getElementById('dispenser-deactivation-error'); if(error){error.textContent='';error.style.display='none';}
   modal.classList.add('open');modal.setAttribute('aria-hidden','false');
@@ -400,12 +426,15 @@ async function confirmDispenserDeactivationByAttendant(event){
   if(!req)return;
   const readings=[...document.querySelectorAll('#dispenser-deactivation-modal .deactivation-closing-reading')].map(input=>({nozzle_id:input.dataset.nozzleId,reading:Number(input.value)}));
   if(readings.some(x=>!Number.isFinite(x.reading))){toast('Enter every closing nozzle reading.');return;}
-  const tank=Number(document.getElementById('dispenser-deactivation-tank-stock')?.value);
+  const dip=Number(document.getElementById('dispenser-deactivation-tank-stock')?.value);
+  const tank=(window.dashboardTankRecords||[]).find(t=>String(t.id)===String(req.nozzle?.tank_id));
+  const tankLiters=tankLitersFromDip(tank,dip);
   const pin=document.getElementById('dispenser-deactivation-pin')?.value.trim()||'';
   const error=document.getElementById('dispenser-deactivation-error');
-  if(!Number.isFinite(tank)||tank<0||!pin){if(error){error.textContent='Enter the closing tank stock and your PIN.';error.style.display='block';}return;}
+  if(!Number.isFinite(dip)||dip<0||!Number.isFinite(tankLiters)){if(error){error.textContent='Enter a valid closing dip and ensure tank calibration is configured.';error.style.display='block';}return;}
+  if(!pin){if(error){error.textContent='Enter your PIN.';error.style.display='block';}return;}
   try{
-    const result=await api('/api/dispenser-deactivation-requests/'+encodeURIComponent(req.id)+'/confirm',{method:'POST',body:JSON.stringify({pin,closing_tank_liters:tank,closing_nozzle_readings:readings})});
+    const result=await api('/api/dispenser-deactivation-requests/'+encodeURIComponent(req.id)+'/confirm',{method:'POST',body:JSON.stringify({pin,closing_tank_liters:tankLiters,closing_tank_dip_mm:dip,closing_nozzle_readings:readings})});
     closeDispenserDeactivationModal();
     toast('Dispenser deactivated. Record Sale is now ready.');
     await userDashboard();
