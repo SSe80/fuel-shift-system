@@ -1278,7 +1278,7 @@ async function adminSalesConfirmations(){
 function createStyledReportPdf(report){
   const W=595,H=842,M=38,CONTENT_W=W-M*2,TOP=116,BOTTOM=48;
   // Keep all PDF offsets byte-accurate; the generated PDF is ASCII only.
-  const clean=v=>String(v==null?'':v).replace(/[^ -~]/g,'?');
+  const clean=v=>String(v==null?'':v).replace(/[•·]/g,' - ').replace(/[→➜]/g,' -> ').replace(/—/g,'-').replace(/[^ -~]/g,'');
   const esc=v=>clean(v).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
   const wrap=(value,maxChars)=>{
     const words=clean(value).split(/\s+/),out=[];let line='';
@@ -1383,7 +1383,7 @@ function createStyledReportPdf(report){
   pages.forEach((commands,pi)=>{
     const pageId=next++,contentId=next++;kids.push(pageId+' 0 R');
     commands.push(rgb(...[148,163,184])+' rg\nBT\n/F1 7 Tf\n1 0 0 1 '+M+' 25 Tm\n('+esc('Fuel Station Management - '+report.title)+') Tj\nET\n');
-    commands.push(rgb(...[148,163,184])+' rg\nBT\n/F1 7 Tf\n1 0 0 1 '+(W-80)+' 25 Tm\n('+esc('Page '+(pi+1)+' / '+pages.length)+') Tj\nET\n');
+    commands.push(rgb(...[148,163,184])+' rg\nBT\n/F1 7 Tf\n1 0 0 1 '+(W-105)+' 25 Tm\n('+esc('Page '+(pi+1)+' / '+pages.length)+') Tj\nET\n');
     const stream=commands.join('');
     const streamBytes=new TextEncoder().encode(stream).length;
     objects.push({id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+contentId+' 0 R >>'},{id:contentId,body:'<< /Length '+streamBytes+' >>\nstream\n'+stream+'\nendstream'});
@@ -1486,7 +1486,7 @@ async function downloadAdminSaleHistoryDetails(id){
   const blob=createStyledReportPdf({
     title:'SALES REPORT',
     subtitle:'Confirmed shift sales detail',
-    reference:'DSR '+dsrId,
+    reference:String(dsrId||'DSR'),
     generated:statusLabel.toUpperCase(),
     summary:[
       ['DISPENSER',dispenserCode+''],
