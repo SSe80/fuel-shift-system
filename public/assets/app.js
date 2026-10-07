@@ -635,6 +635,8 @@ async function userDashboard(){
         '<div class="main-record-sale-actions"><button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button><button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button></div>'+
       '</div>';
     }).join('');
+    // A pending deactivation replaces the active-shift card on the attendant dashboard.
+    // Never render both states for the same shift.
     const pendingDeactivationShiftIds=new Set((Array.isArray(deactivationRequests)?deactivationRequests:[]).map(x=>String(x.shift_id)));
     const activeForDisplay=active.filter(s=>!pendingOutgoingHandovers.some(x=>String(x.shift_id)===String(s.id))&&!pendingDeactivationShiftIds.has(String(s.id)));
     const activeHtml=activeForDisplay.map(s=>{
