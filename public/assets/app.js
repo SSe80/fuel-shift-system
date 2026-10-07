@@ -355,7 +355,7 @@ async function openTakeoverDetails(id){
   const details=document.getElementById('takeover-details-content');
   const modal=document.getElementById('takeover-details-modal');
   if(details)details.innerHTML='<div class="shift-details-loading">Loading shift details…</div>';
-  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+  if(modal){modal.classList.add('open','takeover-details-force');modal.setAttribute('aria-hidden','false');}
   let recorded=[],saleMeta={};
   try{
     const data=await api('/api/shift-takeovers/'+id+'/sale-record');
@@ -394,7 +394,7 @@ async function openTakeoverDetails(id){
 
 function closeTakeoverDetails(){
   const modal=document.getElementById('takeover-details-modal');
-  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  if(modal){modal.classList.remove('open','takeover-details-force');modal.setAttribute('aria-hidden','true');}
 }
 
 async function cancelPendingTakeoverSale(id){
