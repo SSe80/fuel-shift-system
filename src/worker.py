@@ -1314,8 +1314,27 @@ def dispenser_deactivation_requests():
     for row in rows:
         n=nozzle_map.get(str(row.get("nozzle_id")),{}); s=shift_map.get(str(row.get("shift_id")),{})
         rs,readings=sb("shift_nozzle_readings",params={"shift_id":"eq."+str(row["shift_id"]),"select":"id,nozzle_id,opening_reading,opening_liters","order":"created_at.asc"})
-        row["nozzle"]=n; row["shift"]=s; row["nozzle_readings"]=readings if rs==200 else []
+        readings=readings if rs==200 else []
+        reading_ids=sorted(set(str(x.get("nozzle_id")) for x in readings if x.get("nozzle_id")))
+        drs,drows=sb("dispenser_nozzles",params={"id":"in.("+",".join(reading_ids)+")","select":"id,nozzle_code,nozzle_number"}) if reading_ids else (200,[])
+        reading_nozzles={str(x.get("id")):x for x in drows} if drs==200 else {}
+        for reading_row in readings:
+            dn=reading_nozzles.get(str(reading_row.get("nozzle_id")),{})
+            reading_row["nozzle_code"]=dn.get("nozzle_code") or reading_row.get("nozzle_id")
+            reading_row["nozzle_number"]=dn.get("nozzle_number")
+        row["nozzle"]=n; row["shift"]=s; row["nozzle_readings"]=readings
     return jsonify(rows),200
+
+@app.post("/api/dispenser-deactivation-requests/<request_id>/cancel")
+def cancel_nozzle_deactivation(request_id):
+    auth=require_admin()
+    if auth:return auth
+    status,current=sb("dispenser_deactivation_requests",params={"id":"eq."+request_id,"status":"eq.pending","select":"id,nozzle_id,shift_id,status","limit":"1"})
+    if status!=200:return jsonify({"error":current}),status
+    if not current:return jsonify({"error":"Pending deactivation request not found"}),404
+    status,result=sb("dispenser_deactivation_requests",method="PATCH",params={"id":"eq."+request_id,"status":"eq.pending"},body={"status":"cancelled"},prefer="return=representation")
+    if status>=400:return jsonify({"error":result}),status
+    return jsonify({"ok":True,"request":result[0] if result else {"id":request_id,"status":"cancelled"}}),200
 
 @app.post("/api/dispenser-deactivation-requests/<request_id>/confirm")
 def confirm_nozzle_deactivation(request_id):
