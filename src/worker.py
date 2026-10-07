@@ -1006,117 +1006,45 @@ def update_tank_stock(tank_id):
     auth=require_admin()
     if auth:return auth
     data=request.get_json(silent=True) or {}
-    try:
-        stock=float(data.get("stock_liters"))
-    except (TypeError,ValueError):
-        return jsonify({"error":"Invalid tank stock reading"}),400
-    if stock < 0:
-        return jsonify({"error":"Tank stock cannot be negative"}),400
-
-    remark = str(data.get("remark") or "").strip()
-    if len(remark) > 1000:
-        return jsonify({"error":"Remark is too long"}),400
-
+    try: stock=float(data.get("stock_liters"))
+    except (TypeError,ValueError): return jsonify({"error":"Invalid physical tank stock reading"}),400
+    if stock<0:return jsonify({"error":"Tank stock cannot be negative"}),400
+    remark=str(data.get("remark") or "").strip()
+    if len(remark)>1000:return jsonify({"error":"Remark is too long"}),400
     purchase_id=str(data.get("purchase_id") or "").strip()
-    event_index=data.get("event_index")
-    try:
-        event_index=int(event_index)
-    except (TypeError,ValueError):
-        return jsonify({"error":"Discharge operation is required"}),400
-
-    ts,rows=sb("tanks",params={"id":"eq."+tank_id,"select":"id,tank_code,product,capacity_liters,current_liters,active","limit":"1"})
-    if ts!=200:return jsonify(rows),ts
-    if not rows:return jsonify({"error":"Tank not found"}),404
-    tank=rows[0]
-    capacity=float(tank.get("capacity_liters") or 0)
-    if stock>capacity:return jsonify({"error":"Tank stock cannot exceed tank capacity"}),400
-
-    if not purchase_id:
-        return jsonify({"error":"Purchase reference is required"}),400
+    try:event_index=int(data.get("event_index"))
+    except (TypeError,ValueError):return jsonify({"error":"Discharge operation is required"}),400
     ps,purchases=sb("purchases",params={"id":"eq."+purchase_id,"select":"id,product,discharge_history","limit":"1"})
     if ps!=200:return jsonify(purchases),ps
     if not purchases:return jsonify({"error":"Purchase not found"}),404
-    purchase=purchases[0]
-    history=purchase.get("discharge_history") or []
-    if not isinstance(history,list) or event_index<0 or event_index>=len(history):
-        return jsonify({"error":"Discharge operation not found"}),404
+    history=purchases[0].get("discharge_history") or []
+    if not isinstance(history,list) or event_index<0 or event_index>=len(history):return jsonify({"error":"Discharge operation not found"}),404
     event=dict(history[event_index] or {})
-    if str(event.get("tank_id") or "") != str(tank_id):
-        return jsonify({"error":"Selected tank does not match this discharge operation"}),400
+    if str(event.get("tank_id") or "")!=str(tank_id):return jsonify({"error":"Selected tank does not match this discharge operation"}),400
     if event.get("tank_stock_recorded"):
-        if not data.get("remark_only"):
-            return jsonify({"error":"Tank stock for this discharge operation is already recorded"}),409
-        event["tank_stock_remark"]=remark
-        history[event_index]=event
+        if not data.get("remark_only"):return jsonify({"error":"Physical tank stock for this discharge operation is already recorded"}),409
+        event["tank_stock_remark"]=remark; history[event_index]=event
         ms,mr=sb("purchases",method="PATCH",params={"id":"eq."+purchase_id},body={"discharge_history":history},prefer="return=representation")
-        if ms>=400:
-            return jsonify({"error":"The tank stock was saved, but the remark could not be updated.","details":mr}),500
+        if ms>=400:return jsonify({"error":"The physical reading was saved, but the remark could not be updated.","details":mr}),500
         return jsonify({"ok":True,"event_index":event_index,"remark":remark}),200
-
-    # Reconcile the physical reading against this discharge operation's
-    # expected post-discharge stock, not against whatever the tank happens to
-    # contain now. A later discharge must never be overwritten by recording an
-    # older operation's stock.
-    previous=float(event.get("tank_liters_after") if event.get("tank_liters_after") is not None else tank.get("current_liters") or 0)
-    delta=stock-previous
+    try: expected_after=float(event.get("tank_liters_after"))
+    except (TypeError,ValueError):return jsonify({"error":"This discharge has no recorded accounting closing balance"}),409
+    difference=stock-expected_after
     now=datetime.now(timezone.utc).isoformat()
-    event["tank_stock_recorded"]=True
-    event["tank_stock_recorded_liters"]=stock
+    event["tank_stock_recorded"]=True; event["tank_stock_recorded_liters"]=stock
     if data.get("stock_mm") is not None:
-        try:
-            stock_mm=float(data.get("stock_mm"))
-        except (TypeError,ValueError):
-            return jsonify({"error":"Invalid tank dip reading"}),400
-        if stock_mm < 0:
-            return jsonify({"error":"Tank dip cannot be negative"}),400
+        try: stock_mm=float(data.get("stock_mm"))
+        except (TypeError,ValueError):return jsonify({"error":"Invalid tank dip reading"}),400
+        if stock_mm<0:return jsonify({"error":"Tank dip cannot be negative"}),400
         event["tank_stock_recorded_mm"]=stock_mm
     event["tank_stock_recorded_at"]=now
-    event["tank_stock_adjustment_liters"]=delta
+    event["tank_stock_difference_liters"]=difference
+    event["tank_stock_adjustment_liters"]=difference  # legacy read-only field; never posted to tank_movements
     event["tank_stock_remark"]=remark
     history[event_index]=event
-
-    # Only move the tank's live balance when this operation is still the
-    # latest recorded tank movement. If newer movements exist, this reading
-    # remains an audit adjustment for the older operation.
-    try:
-        event_time=datetime.fromisoformat(str(event.get("discharge_datetime") or "").replace("Z","+00:00"))
-        if event_time.tzinfo is None:
-            event_time=event_time.replace(tzinfo=timezone.utc)
-        event_time=event_time.astimezone(timezone.utc)
-    except Exception:
-        event_time=None
-    latest_status,latest_rows=sb("tank_movements",params={
-        "select":"id,created_at",
-        "tank_id":"eq."+tank_id,
-        "created_at":"gt."+str(event.get("discharge_datetime") or ""),
-        "order":"created_at.desc","limit":"1"
-    }) if event_time else (200,[])
-    has_newer_movement=latest_status==200 and bool(latest_rows)
-    if not has_newer_movement:
-        body={"current_liters":stock,"updated_at":now}
-        status,result=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body=body,prefer="return=representation")
-        if status>=400:return jsonify(result),status
-    else:
-        result=tank
-
     ms,mr=sb("purchases",method="PATCH",params={"id":"eq."+purchase_id},body={"discharge_history":history},prefer="return=representation")
-    if ms>=400:
-        return jsonify({"error":"Tank stock was updated, but the discharge record could not be marked complete.","details":mr}),500
-
-    if abs(delta)>0.000001:
-        ms,mr=sb("tank_movements",method="POST",body={
-            "tank_id":tank_id,
-            "movement_type":"adjustment",
-            "quantity_liters":delta,
-            "reference_id":purchase_id,
-            "notes":"Physical tank stock recorded after purchase discharge",
-            "created_by":session.get("employee_id")
-        },prefer="return=representation")
-        if ms>=400:return jsonify({"error":mr}),ms
-
-    return jsonify({"ok":True,"tank":result[0] if isinstance(result,list) and result else result,
-                    "previous_liters":previous,"stock_liters":stock,
-                    "adjustment_liters":delta,"event_index":event_index}),200
+    if ms>=400:return jsonify({"error":"Physical tank reading could not be recorded.","details":mr}),500
+    return jsonify({"ok":True,"tank":None,"previous_liters":expected_after,"stock_liters":stock,"adjustment_liters":0,"physical_difference_liters":difference,"event_index":event_index}),200
 
 @app.route("/api/tanks/<tank_id>", methods=["DELETE"])
 def delete_tank(tank_id):
