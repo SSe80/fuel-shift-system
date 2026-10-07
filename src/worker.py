@@ -491,6 +491,36 @@ def delete_sale_type(sale_type_id):
     if status>=400:return jsonify(result),status
     return jsonify(result),200
 
+@app.get("/api/accounting/closing")
+def accounting_closing():
+    auth=require_admin()
+    if auth:return auth
+    period_id=str(request.args.get("period_id") or "").strip()
+    if not period_id:return jsonify({"error":"period_id is required"}),400
+    ps,periods=sb("accounting_periods",params={"id":"eq."+period_id,"select":"id,name,status,starts_at,ends_at,opened_by,closed_by,notes,created_at,closed_at","limit":"1"})
+    if ps!=200:return jsonify(periods),ps
+    if not periods:return jsonify({"error":"Accounting period not found"}),404
+    cs,closings=sb("tank_closing_snapshots",params={"accounting_period_id":"eq."+period_id,"select":"id,tank_id,physical_liters,physical_height_mm,measured_at,recorded_by,calibration_version,reason,notes,expected_closing_liters,difference_liters,variance_percent,variance_status,created_at","order":"created_at.asc"})
+    if cs!=200:return jsonify(closings),cs
+    return jsonify({"period":periods[0],"closings":closings or []}),200
+
+@app.post("/api/accounting/closing")
+def accounting_record_closing():
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    period_id=str(data.get("period_id") or "").strip()
+    tank_id=str(data.get("tank_id") or "").strip()
+    try: physical=float(data.get("physical_liters"))
+    except (TypeError,ValueError): return jsonify({"error":"Physical closing liters are required"}),400
+    calibration=str(data.get("calibration_version") or "").strip()
+    if not period_id or not tank_id:return jsonify({"error":"Accounting period and tank are required"}),400
+    if not calibration:return jsonify({"error":"Calibration version is required"}),400
+    payload={"p_accounting_period_id":period_id,"p_tank_id":tank_id,"p_physical_liters":physical,"p_physical_height_mm":data.get("physical_height_mm"),"p_measured_at":data.get("measured_at") or datetime.now(timezone.utc).isoformat(),"p_recorded_by":str(session.get("employee_id")) if session.get("employee_id") else None,"p_calibration_version":calibration,"p_notes":str(data.get("notes") or "").strip() or None}
+    status,result=rpc("record_control_period_closing",payload)
+    if status>=400:return jsonify(result),status
+    return jsonify(result),201
+
 @app.get("/api/accounting/current-period")
 def accounting_current_period():
     auth=require_admin()
