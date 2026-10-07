@@ -3328,7 +3328,7 @@ async function loadDailyReport(showDetails=false){
     document.getElementById('report-sales-summary').innerHTML=
       '<div class="dsr-sales-column"><div class="dsr-subhead">Fuel sales by product</div>'+(productRows||'<div class="daily-empty">No product sales.</div>')+'</div>'+
       '<div class="dsr-sales-column"><div class="dsr-subhead">Sales methods</div>'+(typeRows||'<div class="daily-empty">No sale methods recorded.</div>')+'</div>'+
-      '<div class="dsr-sales-total"><div class="dsr-sales-total-row"><span>Sales amount</span><strong>'+money(salesSummary.total_amount)+'</strong></div><div class="dsr-sales-total-row"><span>Liters sold</span><strong>'+liters(salesSummary.total_liters)+' L</strong></div></div>';
+      '<div class="dsr-sales-total"><div class="dsr-sales-total-row"><span>Calculated sales</span><strong>'+money(salesSummary.total_amount)+'</strong></div><div class="dsr-sales-total-row"><span>Entered payments</span><strong>'+money(perf.entered_payment_amount ?? perf.total_sales_amount ?? 0)+'</strong></div><div class="dsr-sales-total-row"><span>Financial difference</span><strong>'+money(perf.financial_difference ?? 0)+'</strong></div><div class="dsr-sales-total-row"><span>Liters sold</span><strong>'+liters(salesSummary.total_liters)+' L</strong></div></div>';
 
     const nozzleLabels={};
     dispenserDetails.forEach(disp=>(disp.nozzles||[]).forEach(n=>{
@@ -3368,9 +3368,12 @@ async function loadDailyReport(showDetails=false){
 
     const perfRows=[
       ['Fuel sold',liters(perf.total_sales_liters)+' L'],
-      ['Sales amount',money(perf.total_sales_amount)],
+      ['Calculated sales',money(perf.calculated_sales_amount||0)],
+      ['Entered payments',money(perf.entered_payment_amount ?? perf.total_sales_amount ?? 0)],
+      ['Financial difference',money(perf.financial_difference ?? perf.sales_amount_difference ?? 0)],
+      ['Financial status',String(perf.financial_reconciliation_status||((Math.abs(Number(perf.financial_difference ?? perf.sales_amount_difference ?? 0))<=1)?'matched':'variance')).replace(/^./,m=>m.toUpperCase())],
       ['Meter-calculated sales',money(perf.calculated_sales_amount||0)],
-      ['Recorded − meter',money(perf.sales_amount_difference||0)],
+      ['Entered − calculated',money(perf.financial_difference ?? perf.sales_amount_difference ?? 0)],
       ['Average liters / shift',liters(perf.average_liters_per_shift)+' L'],
       ['Average sales / shift',money(perf.average_sales_per_shift)],
       ['Dispensers',Number(perf.dispenser_count||0)],
