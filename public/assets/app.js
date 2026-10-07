@@ -1415,7 +1415,7 @@ async function downloadAdminSaleHistoryDetails(id){
 
   const rows=sales.map((s,i)=>[String(i+1),s.sale_type_name||'Sale',money(s.amount),s.reason||s.sale_type_description||'—']);
   const blob=createStyledReportPdf({
-    title:'SALES REPORT',subtitle:'Confirmed shift sales detail',reference:'DSR '+dailyReportIdFromTimestamp(t.shift_started_at),generated:'CONFIRMED',
+    title:'SALES REPORT',subtitle:'Confirmed shift sales detail',reference:'DSR '+(t.daily_report_id||t.dsr_id||dailyReportIdFromTimestamp(t.shift_started_at)),generated:'CONFIRMED',
     summary:[['PRODUCT CODE',productCode],['TANK',item.tank?.name||'—'],['LITERS SOLD',liters(t.total_sales_liters)+' L'],['STATUS','CONFIRMED']],
     sections:[
       {title:'Shift & Attendant',fields:[
