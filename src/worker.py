@@ -2855,7 +2855,7 @@ def daily_report():
         methods[method]=methods.get(method,0)+amount
 
     def sales_methods_for_shift(shift_id):
-        recorded=takeover_sale_methods_by_shift.get(str(shift_id))
+        recorded=payment_methods_by_shift.get(str(shift_id))
         if recorded:
             return dict(recorded)
         methods={}
