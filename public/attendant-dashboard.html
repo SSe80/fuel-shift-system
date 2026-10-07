@@ -1458,7 +1458,135 @@ body.attendant-dashboard-page .pending-deactivation-action button span:last-chil
     padding-right:12px!important;
   }
 }
-</style></style></head><body class="attendant-page attendant-dashboard-page admin-shell" data-app-page="userDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div><div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing dip (mm)<input id="handover-closing-dip" type="number" min="0" step="0.1" placeholder="Enter tank closing dip" required oninput="updateHandoverClosingDip(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter a dip to calculate liters.</div><input id="handover-closing-liters" type="hidden"><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="takeover-sale-modal" class="modal" aria-hidden="true">
+
+/* FINAL — Attendant Shift History / View Details card */
+body.attendant-dashboard-page #takeover-details-modal{z-index:1200!important;padding:14px!important;box-sizing:border-box!important}
+body.attendant-dashboard-page #takeover-details-modal .takeover-details-modal{
+  width:min(620px,calc(100vw - 24px))!important;
+  max-width:620px!important;
+  max-height:88vh!important;
+  display:flex!important;
+  flex-direction:column!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:1px solid #e2e8f0!important;
+  border-radius:18px!important;
+  background:#fff!important;
+  box-shadow:0 24px 70px rgba(16,24,40,.22)!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-details-modal>.top{
+  flex:0 0 auto!important;
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:15px 17px 13px!important;
+  border-bottom:1px solid #e8edf2!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-details-modal>.top .section-kicker{
+  display:block!important;margin:0 0 4px!important;font-size:9px!important;line-height:1.2!important;
+  letter-spacing:.11em!important;font-weight:900!important;color:#b4232f!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-details-modal>.top h3{
+  margin:0!important;font-size:18px!important;line-height:1.2!important;font-weight:850!important;color:#182230!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-details-modal>.top .modal-close{
+  width:34px!important;height:34px!important;flex:0 0 34px!important;padding:0!important;border:1px solid #e2e8f0!important;
+  border-radius:9px!important;background:#f8fafc!important;color:#475467!important;font-size:21px!important;line-height:1!important;
+}
+body.attendant-dashboard-page #takeover-details-modal #takeover-details-content{
+  flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:auto!important;padding:12px 14px 14px!important;
+  background:#f8fafc!important;scrollbar-width:thin!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-loading{
+  padding:34px 12px!important;text-align:center!important;color:#667085!important;font-size:12px!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-error{
+  margin:8px!important;padding:12px!important;border:1px solid #f0c4c8!important;border-radius:10px!important;background:#fff5f5!important;color:#b4232f!important;font-size:11px!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-hero{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;
+  padding:14px 15px!important;border:1px solid #e4e9ef!important;border-radius:13px!important;background:#fff!important;
+  box-shadow:0 2px 7px rgba(16,24,40,.035)!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-hero>div{min-width:0!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-hero .section-kicker{display:block!important;margin:0 0 4px!important;font-size:8px!important;letter-spacing:.1em!important;font-weight:900!important;color:#98a2b3!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-hero h4{margin:0!important;font-size:16px!important;line-height:1.2!important;color:#182230!important;font-weight:850!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-hero p{margin:4px 0 0!important;font-size:10px!important;line-height:1.3!important;color:#667085!important;overflow-wrap:anywhere!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-status{
+  flex:0 0 auto!important;padding:6px 9px!important;border:1px solid #b7e1c8!important;border-radius:999px!important;background:#effaf3!important;color:#18794e!important;
+  font-size:9px!important;font-weight:850!important;white-space:nowrap!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-grid{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:1px!important;margin-top:10px!important;
+  overflow:hidden!important;border:1px solid #e2e8f0!important;border-radius:12px!important;background:#e2e8f0!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-grid>div{min-width:0!important;padding:10px 11px!important;background:#fff!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-grid span,
+body.attendant-dashboard-page #takeover-details-modal .shift-details-metrics span{
+  display:block!important;margin:0!important;font-size:8px!important;line-height:1.2!important;text-transform:uppercase!important;letter-spacing:.05em!important;color:#98a2b3!important;font-weight:850!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-grid strong{
+  display:block!important;margin-top:4px!important;font-size:10px!important;line-height:1.35!important;color:#344054!important;overflow-wrap:anywhere!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-section{
+  margin-top:10px!important;border:1px solid #e2e8f0!important;border-radius:12px!important;background:#fff!important;overflow:hidden!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-section-title{
+  padding:9px 11px!important;border-bottom:1px solid #e8edf2!important;background:#fbfcfe!important;font-size:10px!important;line-height:1.2!important;
+  font-weight:850!important;color:#344054!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-metrics{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:1px!important;background:#e8edf2!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-metrics>div{min-width:0!important;padding:10px 11px!important;background:#fff!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-metrics strong{display:block!important;margin-top:4px!important;font-size:12px!important;line-height:1.2!important;color:#182230!important;overflow-wrap:anywhere!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-metrics small{display:block!important;margin-top:3px!important;font-size:8px!important;color:#98a2b3!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row{
+  display:grid!important;grid-template-columns:minmax(110px,1.25fr) repeat(3,minmax(72px,1fr))!important;align-items:center!important;gap:8px!important;
+  padding:9px 10px!important;border-bottom:1px solid #edf1f4!important;background:#fff!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row:last-child{border-bottom:0!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row>div{min-width:0!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row>div:first-child strong{display:block!important;font-size:10px!important;line-height:1.25!important;color:#344054!important;overflow-wrap:anywhere!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row>div:first-child small{display:block!important;margin-top:3px!important;font-size:8px!important;line-height:1.2!important;color:#b4232f!important;font-weight:750!important;overflow-wrap:anywhere!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row span{display:block!important;font-size:8px!important;color:#98a2b3!important;line-height:1.15!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row b{display:block!important;margin-top:3px!important;font-size:10px!important;line-height:1.2!important;color:#344054!important;white-space:nowrap!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;padding:9px 11px!important;border-bottom:1px solid #edf1f4!important;background:#fff!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row:last-of-type{border-bottom:0!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row>div{min-width:0!important;flex:1 1 auto!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row>div strong{display:block!important;font-size:10px!important;line-height:1.25!important;color:#344054!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row>div small,
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row>div em{display:block!important;margin-top:3px!important;font-size:8px!important;line-height:1.3!important;color:#98a2b3!important;font-style:normal!important;overflow-wrap:anywhere!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row>strong{flex:0 0 auto!important;font-size:11px!important;color:#182230!important;white-space:nowrap!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;padding:10px 11px!important;border-top:1px solid #e2e8f0!important;background:#fbfcfe!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total span{font-size:9px!important;font-weight:800!important;color:#667085!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total strong{font-size:12px!important;color:#182230!important;white-space:nowrap!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total.calculated{margin-top:10px!important;border:1px solid #d7e4f7!important;border-radius:12px!important;background:#eef5ff!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total.calculated span{color:#526b8a!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total.calculated strong:first-of-type{margin-left:auto!important;color:#1264d8!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total.calculated strong:last-of-type{color:#182230!important}
+body.attendant-dashboard-page #takeover-details-modal .muted{font-size:10px!important}
+body.attendant-dashboard-page #takeover-details-modal>.modal-card>.row{
+  flex:0 0 auto!important;display:flex!important;justify-content:flex-end!important;gap:8px!important;margin:0!important;padding:9px 14px 12px!important;border-top:1px solid #e8edf2!important;background:#fff!important;
+}
+body.attendant-dashboard-page #takeover-details-modal>.modal-card>.row button{flex:0 0 92px!important;min-height:38px!important;border-radius:9px!important;font-size:11px!important;font-weight:850!important}
+@media(max-width:600px){
+ body.attendant-dashboard-page #takeover-details-modal{padding:10px!important}
+ body.attendant-dashboard-page #takeover-details-modal .takeover-details-modal{width:calc(100vw - 20px)!important;max-height:90vh!important;border-radius:16px!important}
+ body.attendant-dashboard-page #takeover-details-modal #takeover-details-content{padding:10px!important}
+ body.attendant-dashboard-page #takeover-details-modal .shift-details-grid{grid-template-columns:1fr 1fr!important}
+ body.attendant-dashboard-page #takeover-details-modal .shift-details-metrics{grid-template-columns:1fr 1fr!important}
+ body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row{grid-template-columns:minmax(90px,1.1fr) repeat(3,minmax(55px,1fr))!important;gap:5px!important;padding:8px 7px!important}
+ body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row b{font-size:9px!important}
+ body.attendant-dashboard-page #takeover-details-modal .shift-details-hero{padding:12px!important}
+}
+</style></head><body class="attendant-page attendant-dashboard-page admin-shell" data-app-page="userDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div><div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing dip (mm)<input id="handover-closing-dip" type="number" min="0" step="0.1" placeholder="Enter tank closing dip" required oninput="updateHandoverClosingDip(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter a dip to calculate liters.</div><input id="handover-closing-liters" type="hidden"><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="takeover-sale-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closeTakeoverSaleModal()"></div>
 <div class="modal-card takeover-action-modal">
 <div class="top"><div><span class="section-kicker">SHIFT HANDOVER</span><h3>Record Sale</h3></div><button type="button" class="modal-close" onclick="closeTakeoverSaleModal()" aria-label="Close">×</button></div>
