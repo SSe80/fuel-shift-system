@@ -1349,20 +1349,94 @@ function createStyledReportPdf(report){
   pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF';
   return new Blob([pdf],{type:'application/pdf'});
 }
-function downloadAdminSaleHistoryDetails(id){
-  const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));if(!item)return;
+async function downloadAdminSaleHistoryDetails(id){
+  const item=(adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
+  if(!item)return;
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],total=Number(t.total_sales_amount||0);
   const entryTotal=sales.reduce((sum,s)=>sum+Number(s.amount||0),0);
+
+  // Load the authoritative dispenser/product records so the PDF identifies
+  // fuel by configured product code rather than the display product name.
+  let nozzles=[],products=[];
+  try{
+    [nozzles,products]=await Promise.all([
+      api('/api/nozzles').catch(()=>[]),
+      api('/api/products').catch(()=>[])
+    ]);
+  }catch(_){}
+
+  const dispenserId=String(item.dispenser?.id||'');
+  const dispenser=nozzles.find(n=>String(n.id)===dispenserId)||{};
+  const productRaw=String(dispenser.product||'').trim().toLowerCase();
+  const product=products.find(p=>
+    String(p.name||'').trim().toLowerCase()===productRaw ||
+    String(p.code_name||'').trim().toLowerCase()===productRaw
+  );
+  const productCode=product?.code_name||dispenser.product||'—';
+
+  const opening=Array.isArray(t.nozzle_opening_readings)?t.nozzle_opening_readings:[];
+  const closing=Array.isArray(t.nozzle_closing_readings)?t.nozzle_closing_readings:[];
+  const nozzleSales=Array.isArray(t.nozzle_sales_liters)?t.nozzle_sales_liters:[];
+  const readingRows=nozzleSales.length
+    ? nozzleSales.map((s,i)=>{
+        const nozzleId=String(s.nozzle_id||'');
+        const o=opening.find(x=>String(x?.nozzle_id||'')===nozzleId)||opening[i]||{};
+        const cl=closing.find(x=>String(x?.nozzle_id||'')===nozzleId)||closing[i]||{};
+        const n=nozzles.find(x=>String(x.id)===nozzleId)||{};
+        const raw=String(n.product||dispenser.product||'').trim().toLowerCase();
+        const p=products.find(x=>String(x.name||'').trim().toLowerCase()===raw||String(x.code_name||'').trim().toLowerCase()===raw);
+        const code=p?.code_name||n.product||productCode;
+        return [
+          n.nozzle_code||('Nozzle '+(i+1)),
+          code||'—',
+          item.tank?.name||'—',
+          reading(o.opening_reading??o.reading),
+          reading(cl.reading??cl.closing_reading),
+          liters(s.liters_sold)+' L'
+        ];
+      })
+    : (opening.length||closing.length)
+      ? Array.from({length:Math.max(opening.length,closing.length)},(_,i)=>{
+          const o=opening[i]||{},cl=closing[i]||{};
+          const nozzleId=String(o.nozzle_id||cl.nozzle_id||'');
+          const n=nozzles.find(x=>String(x.id)===nozzleId)||{};
+          const raw=String(n.product||dispenser.product||'').trim().toLowerCase();
+          const p=products.find(x=>String(x.name||'').trim().toLowerCase()===raw||String(x.code_name||'').trim().toLowerCase()===raw);
+          return [
+            n.nozzle_code||('Nozzle '+(i+1)),
+            p?.code_name||n.product||productCode||'—',
+            item.tank?.name||'—',
+            reading(o.opening_reading??o.reading),
+            reading(cl.reading??cl.closing_reading),
+            '—'
+          ];
+        })
+      : [['—',productCode,item.tank?.name||'—','—','—',liters(t.total_sales_liters)+' L']];
+
   const rows=sales.map((s,i)=>[String(i+1),s.sale_type_name||'Sale',money(s.amount),s.reason||s.sale_type_description||'—']);
   const blob=createStyledReportPdf({
     title:'SALES REPORT',subtitle:'Confirmed shift sales detail',reference:'DSR '+dailyReportIdFromTimestamp(t.shift_started_at),generated:'CONFIRMED',
-    summary:[['TOTAL SALES',money(total)],['LITERS SOLD',liters(t.total_sales_liters)+' L'],['ENTRIES',String(sales.length)],['STATUS','CONFIRMED']],
+    summary:[['PRODUCT CODE',productCode],['TANK',item.tank?.name||'—'],['LITERS SOLD',liters(t.total_sales_liters)+' L'],['STATUS','CONFIRMED']],
     sections:[
       {title:'Shift & Attendant',fields:[
-        ['Dispenser',item.dispenser?.name||'—'],['From attendant',item.from_employee?.name||'—'],
+        ['Dispenser',item.dispenser?.name||'—'],['Product code',productCode],
+        ['Tank',item.tank?.name||'—'],['From attendant',item.from_employee?.name||'—'],
         ['Received by',item.to_employee?.name||'—'],['Shift ID',t.shift_id||id],
         ['Shift started',t.shift_started_at?new Date(t.shift_started_at).toLocaleString():'—'],['Shift ended',t.shift_ended_at?new Date(t.shift_ended_at).toLocaleString():'—'],
         ['Confirmed',t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—']
+      ]},
+      {title:'Product, Tank & Meter Readings',table:{
+        headers:['Nozzle','Product code','Tank','Opening','Closing','Sold'],
+        widths:[75,95,85,75,75,110],
+        rows:readingRows
+      }},
+      {title:'Tank Readings',fields:[
+        ['Tank',item.tank?.name||'—'],
+        ['Tank opening',liters(t.tank_opening_liters)+' L'],
+        ['Tank closing',liters(t.tank_closing_liters)+' L'],
+        ['Tank sales',liters(t.tank_sales_liters)+' L'],
+        ['Tank variance',liters(t.tank_variance_liters)+' L'],
+        ['Variance %',Number(t.tank_variance_pct||0).toFixed(2)+'%']
       ]},
       {title:'Recorded Sales',table:{headers:['#','Sale type','Amount','Description / reason'],widths:[28,150,90,297],rows}},
       {title:'Reconciliation',fields:[['Calculated total',money(total)],['Entries total',money(entryTotal)],['Difference',money(Math.abs(total-entryTotal))],['Confirmation','Admin confirmed']],cols:2}
@@ -1370,6 +1444,7 @@ function downloadAdminSaleHistoryDetails(id){
   });
   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='sales-'+String(t.shift_id||id).slice(0,12)+'.pdf';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('PDF downloaded');
 }
+
 function downloadPurchaseDetailPdf(){
   const id=window.currentPurchaseDetailId;
   const p=window.currentPurchaseDetailData||((typeof purchaseDetailData!=='undefined'&&Array.isArray(purchaseDetailData)?purchaseDetailData:[]).find(x=>String(x.id)===String(id)));
