@@ -1260,7 +1260,205 @@ body.attendant-dashboard-page #takeover-details-modal{z-index:1100!important}
 .attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-meta{background:#fff}
 .attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-list{padding:10px 14px 12px}
 .attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-row{padding:10px 0}
-</style></head><body class="attendant-page attendant-dashboard-page admin-shell" data-app-page="userDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div><div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing dip (mm)<input id="handover-closing-dip" type="number" min="0" step="0.1" placeholder="Enter tank closing dip" required oninput="updateHandoverClosingDip(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter a dip to calculate liters.</div><input id="handover-closing-liters" type="hidden"><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="takeover-sale-modal" class="modal" aria-hidden="true">
+<style>
+/* Pending dispenser deactivation — compact action card */
+body.attendant-dashboard-page .pending-deactivation-card{
+  border:1px solid #eadfbe!important;
+  border-radius:15px!important;
+  background:#fff!important;
+  box-shadow:0 4px 14px rgba(16,24,40,.055)!important;
+}
+body.attendant-dashboard-page .pending-deactivation-card::before{
+  width:4px!important;
+  background:#f59e0b!important;
+}
+body.attendant-dashboard-page .pending-deactivation-head{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:14px 15px 12px 17px!important;
+  background:#fffdf7!important;
+  border-bottom:1px solid #f1ead7!important;
+}
+body.attendant-dashboard-page .pending-deactivation-head-main{
+  min-width:0!important;
+}
+body.attendant-dashboard-page .pending-deactivation-kicker{
+  margin:0 0 4px!important;
+  font-size:9px!important;
+  line-height:1.2!important;
+  letter-spacing:.1em!important;
+  font-weight:900!important;
+  color:#a16207!important;
+}
+body.attendant-dashboard-page .pending-deactivation-card .pending-card-title{
+  font-size:15px!important;
+  line-height:1.25!important;
+  font-weight:850!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .pending-deactivation-card .pending-card-subtitle{
+  max-width:620px!important;
+  margin-top:5px!important;
+  font-size:10px!important;
+  line-height:1.45!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .pending-deactivation-status{
+  flex:0 0 auto!important;
+  padding:5px 8px!important;
+  border:1px solid #f1d38b!important;
+  border-radius:999px!important;
+  background:#fff8e7!important;
+  color:#9a6700!important;
+  font-size:9px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  white-space:nowrap!important;
+}
+body.attendant-dashboard-page .pending-deactivation-summary{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:1px!important;
+  margin:11px 14px 0!important;
+  overflow:hidden!important;
+  border:1px solid #e8edf2!important;
+  border-radius:10px!important;
+  background:#e8edf2!important;
+}
+body.attendant-dashboard-page .pending-deactivation-summary>div{
+  min-width:0!important;
+  padding:9px 11px!important;
+  background:#fbfcfe!important;
+}
+body.attendant-dashboard-page .pending-deactivation-summary span{
+  display:block!important;
+  margin:0!important;
+  font-size:8px!important;
+  line-height:1.2!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  color:#98a2b3!important;
+  font-weight:850!important;
+}
+body.attendant-dashboard-page .pending-deactivation-summary strong{
+  display:block!important;
+  margin-top:4px!important;
+  overflow-wrap:anywhere!important;
+  font-size:12px!important;
+  line-height:1.25!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .pending-deactivation-readings{
+  margin:10px 14px 0!important;
+  overflow:hidden!important;
+  border:1px solid #e8edf2!important;
+  border-radius:10px!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .pending-deactivation-section-title{
+  padding:8px 10px!important;
+  border-bottom:1px solid #e8edf2!important;
+  background:#fbfcfe!important;
+  font-size:9px!important;
+  line-height:1.2!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  font-weight:850!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .pending-deactivation-reading-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  min-width:0!important;
+  padding:8px 10px!important;
+  border-bottom:1px solid #eef1f4!important;
+}
+body.attendant-dashboard-page .pending-deactivation-reading-row:last-child{
+  border-bottom:0!important;
+}
+body.attendant-dashboard-page .pending-deactivation-reading-row>div:first-child{
+  display:flex!important;
+  align-items:baseline!important;
+  gap:8px!important;
+  min-width:0!important;
+}
+body.attendant-dashboard-page .pending-deactivation-reading-index{
+  flex:0 0 auto!important;
+  font-size:8px!important;
+  color:#98a2b3!important;
+  font-weight:750!important;
+}
+body.attendant-dashboard-page .pending-deactivation-reading-row>div:first-child strong{
+  min-width:0!important;
+  overflow-wrap:anywhere!important;
+  font-size:11px!important;
+  line-height:1.25!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .pending-deactivation-opening{
+  flex:0 0 auto!important;
+  text-align:right!important;
+}
+body.attendant-dashboard-page .pending-deactivation-opening span{
+  display:block!important;
+  font-size:8px!important;
+  color:#98a2b3!important;
+  line-height:1.1!important;
+}
+body.attendant-dashboard-page .pending-deactivation-opening strong{
+  display:block!important;
+  margin-top:2px!important;
+  font-size:12px!important;
+  line-height:1.1!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .pending-deactivation-action{
+  padding:10px 14px 13px!important;
+}
+body.attendant-dashboard-page .pending-deactivation-action button{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  width:100%!important;
+  min-height:40px!important;
+  padding:0 12px!important;
+  border-radius:9px!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  box-shadow:none!important;
+}
+body.attendant-dashboard-page .pending-deactivation-action button span:last-child{
+  font-size:15px!important;
+  line-height:1!important;
+  opacity:.8!important;
+}
+@media(max-width:600px){
+  body.attendant-dashboard-page .pending-deactivation-head{
+    padding:13px 13px 11px 15px!important;
+  }
+  body.attendant-dashboard-page .pending-deactivation-status{
+    padding:5px 7px!important;
+  }
+  body.attendant-dashboard-page .pending-deactivation-summary{
+    grid-template-columns:1fr 1fr!important;
+    margin-left:12px!important;
+    margin-right:12px!important;
+  }
+  body.attendant-dashboard-page .pending-deactivation-readings{
+    margin-left:12px!important;
+    margin-right:12px!important;
+  }
+  body.attendant-dashboard-page .pending-deactivation-action{
+    padding-left:12px!important;
+    padding-right:12px!important;
+  }
+}
+</style></style></head><body class="attendant-page attendant-dashboard-page admin-shell" data-app-page="userDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div><div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing dip (mm)<input id="handover-closing-dip" type="number" min="0" step="0.1" placeholder="Enter tank closing dip" required oninput="updateHandoverClosingDip(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter a dip to calculate liters.</div><input id="handover-closing-liters" type="hidden"><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="takeover-sale-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closeTakeoverSaleModal()"></div>
 <div class="modal-card takeover-action-modal">
 <div class="top"><div><span class="section-kicker">SHIFT HANDOVER</span><h3>Record Sale</h3></div><button type="button" class="modal-close" onclick="closeTakeoverSaleModal()" aria-label="Close">×</button></div>
