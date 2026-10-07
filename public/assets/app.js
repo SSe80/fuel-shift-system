@@ -1406,6 +1406,19 @@ async function adminSettings(){
     toast('Settings error: '+e.message);
   }
 }
+async function cancelPendingDispenserDeactivation(event,id){
+  event?.stopPropagation();
+  const request=(window.pendingDispenserDeactivationRequests||[]).find(x=>String(x.id)===String(id));
+  const nozzleCode=request?.nozzle?.nozzle_code||request?.nozzle_id||'this dispenser';
+  const details='<p><b>Dispenser:</b> '+h(nozzleCode)+'</p>'+
+    settingsDiff('Deactivation status','Pending','Cancelled')+
+    '<p class="muted">The dispenser will remain active and the assigned attendant will no longer be asked to close the shift.</p>';
+  showSettingsConfirmation('Cancel Pending Deactivation',details,async()=>{
+    await api('/api/dispenser-deactivation-requests/'+encodeURIComponent(id)+'/cancel',{method:'POST',body:'{}'});
+    await loadSettingsData();
+  },'Deactivation request cancelled','<p>The pending deactivation request was cancelled. The dispenser remains active.</p>'+details);
+}
+
 async function _cancelAdminPendingShift(id){
   try{
     await api('/api/shifts/'+id+'/cancel',{method:'POST',body:'{}'});
@@ -1426,6 +1439,7 @@ async function loadSettingsData(){
   const pendingHandovers=shifts.filter(x=>x.status==='assigned');
   const pendingByDispenser=Object.fromEntries(pendingHandovers.map(x=>[x.nozzle_id,x]));
   const pendingDeactivationByDispenser=Object.fromEntries((Array.isArray(deactivationRequests)?deactivationRequests:[]).map(x=>[x.nozzle_id,x]));
+  window.pendingDispenserDeactivationRequests=Array.isArray(deactivationRequests)?deactivationRequests:[];
   const names=Object.fromEntries(employees.map(e=>[e.id,e.name]));
   // Pending assignments are rendered in place of their dispenser card.
   // The separate pending-handover box is kept empty to avoid duplicate cards.
@@ -1519,6 +1533,7 @@ async function loadSettingsData(){
         '<div class="dispenser-info-grid"><div><span>Connected tank</span><b>'+h(tank?.tank_code||n.tank_id||'Not connected')+'</b></div><div><span>Assigned attendant</span><b>'+h(requestAttendant)+'</b></div><div><span>Dispenser status</span><b>Awaiting attendant</b></div></div>'+
         '<div class="dispenser-detail-block"><span class="dispenser-detail-title">Opening readings</span>'+requestReadingText+'</div>'+
         '<p class="dispenser-note">Waiting for the assigned attendant to enter the closing nozzle readings, closing tank stock, and PIN.</p>'+
+        '<div class="dispenser-card-actions"><button type="button" class="dispenser-danger-action" onclick="cancelPendingDispenserDeactivation(event,\''+pendingDeactivation.id+'\')">Cancel deactivation</button></div>'+
       '</div>';
     }
     return (itemIndex===0?'<div class="settings-product-group-label">'+h(productCode)+'</div>':'')+'<div class="card settings-item-card dispenser-settings-card '+(n.active?'dispenser-active-card settings-active-card':'')+' '+(itemIndex===0&&groupIndex>0?'dispenser-group-start':'')+'" data-dispenser-product-group="'+h(groupKey)+'" data-settings-key="dispensers" data-settings-id="'+h(n.id)+'" onclick="toggleSettingsItem(event,this)">'+
