@@ -1322,7 +1322,7 @@ def dispenser_deactivation_requests():
             dn=reading_nozzles.get(str(reading_row.get("nozzle_id")),{})
             reading_row["nozzle_code"]=dn.get("nozzle_code") or reading_row.get("nozzle_id")
             reading_row["nozzle_number"]=dn.get("nozzle_number")
-        row["nozzle"]=n; row["shift"]=s; row["nozzle_readings"]=readings
+        row["nozzle"]=n; row["nozzle_code"]=n.get("nozzle_code") or row.get("nozzle_id"); row["shift"]=s; row["nozzle_readings"]=readings
     return jsonify(rows),200
 
 @app.post("/api/dispenser-deactivation-requests/<request_id>/cancel")
