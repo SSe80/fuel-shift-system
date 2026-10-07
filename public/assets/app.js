@@ -1384,10 +1384,10 @@ function downloadPurchaseDetailPdf(){
   const compartmentRows=compartments.map((q,i)=>[String(i+1),'Compartment '+(i+1),Number(q||0).toLocaleString()+' L']);
   const blob=createStyledReportPdf({
     title:'PURCHASE REPORT',subtitle:'Purchase, truck and discharge record',reference:'Invoice '+(p.invoice_number||'—'),generated:p.status||'RECORDED',
-    summary:[['PRODUCT',p.product||p.product_code||'—'],['DELIVERED',delivered.toLocaleString()+' L'],['DISCHARGED',discharged.toLocaleString()+' L'],['REMAINING',remaining.toLocaleString()+' L']],
+    summary:[['PRODUCT CODE',p.product_code||p.product||'—'],['DELIVERED',delivered.toLocaleString()+' L'],['DISCHARGED',discharged.toLocaleString()+' L'],['REMAINING',remaining.toLocaleString()+' L']],
     sections:[
       {title:'Purchase Summary',fields:[
-        ['Product',p.product||p.product_code||'—'],['Invoice',p.invoice_number||'—'],
+        ['Product code',p.product_code||p.product||'—'],['Invoice',p.invoice_number||'—'],
         ['Purchase date',p.purchase_date?new Date(p.purchase_date).toLocaleString():(p.created_at?new Date(p.created_at).toLocaleString():'—')],
         ['Ordered quantity',Number(p.ordered_quantity_liters||p.quantity_liters||0).toLocaleString()+' L'],
         ['Delivered quantity',delivered.toLocaleString()+' L'],['Status',p.status||'—']
@@ -3078,7 +3078,7 @@ function downloadDailyReportPdf(){
     const yy=y,pc=productFor(t.product);
     colorDot(margin+8,yy-4,pc.color,7);
     text(margin+19,yy,pdfSafe((t.tank||'Tank')+' / '+(pc.code||t.product||'')),7.1,true);
-    text(margin+19,yy-10,pdfSafe(pc.name||''),5.9,false,'0.38 0.43 0.50');
+    text(margin+19,yy-10,pdfSafe(pc.code||''),5.9,false,'0.38 0.43 0.50');
     text(margin+158,yy,fmtL(t.opening_stock_liters),7.1);
     text(margin+226,yy,'+'+fmtL(t.purchase_discharged_liters),7.1);
     text(margin+294,yy,fmtL(t.nozzle_sales_liters),7.1);
