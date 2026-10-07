@@ -1277,6 +1277,7 @@ async function adminSalesConfirmations(){
 }
 function createStyledReportPdf(report){
   const W=595,H=842,M=38,CONTENT_W=W-M*2,TOP=116,BOTTOM=48;
+  // Keep all PDF offsets byte-accurate; the generated PDF is ASCII only.
   const clean=v=>String(v==null?'':v).replace(/[^ -~]/g,'?');
   const esc=v=>clean(v).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
   const wrap=(value,maxChars)=>{
@@ -1381,10 +1382,11 @@ function createStyledReportPdf(report){
   const objects=[{id:1,body:'<< /Type /Catalog /Pages 2 0 R >>'}],kids=[];let next=4;
   pages.forEach((commands,pi)=>{
     const pageId=next++,contentId=next++;kids.push(pageId+' 0 R');
-    commands.push(rgb(...[148,163,184])+' rg\nBT\n/F1 7 Tf\n1 0 0 1 '+M+' 25 Tm\n('+esc('Fuel Station Management • '+report.title)+') Tj\nET\n');
+    commands.push(rgb(...[148,163,184])+' rg\nBT\n/F1 7 Tf\n1 0 0 1 '+M+' 25 Tm\n('+esc('Fuel Station Management - '+report.title)+') Tj\nET\n');
     commands.push(rgb(...[148,163,184])+' rg\nBT\n/F1 7 Tf\n1 0 0 1 '+(W-80)+' 25 Tm\n('+esc('Page '+(pi+1)+' / '+pages.length)+') Tj\nET\n');
     const stream=commands.join('');
-    objects.push({id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+contentId+' 0 R >>'},{id:contentId,body:'<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream'});
+    const streamBytes=new TextEncoder().encode(stream).length;
+    objects.push({id:pageId,body:'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+contentId+' 0 R >>'},{id:contentId,body:'<< /Length '+streamBytes+' >>\nstream\n'+stream+'\nendstream'});
   });
   objects.push({id:2,body:'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+pages.length+' >>'},{id:3,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'},{id:4,body:'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'});
   objects.sort((a,b)=>a.id-b.id);
