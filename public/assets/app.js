@@ -2939,222 +2939,146 @@ function downloadDailyReportPdf(){
   const pct=v=>Number.isFinite(Number(v))?Number(v).toFixed(1)+'%':'-';
   const fmtL=v=>liters(num(v))+' L';
   const fmtM=v=>money(num(v));
-  const signedL=v=>(num(v)>=0?'+':'')+fmtL(v);
-  const perf=r.dsr_performance||{}, summary=r.summary||{}, sales=r.dsr_sales_summary||{};
+  const perf=r.dsr_performance||{}, sales=r.dsr_sales_summary||{};
   const dispensers=Array.isArray(r.dsr_dispenser_details)?r.dsr_dispenser_details:[];
   const tanks=Array.isArray(r.dsr_tank_details)?r.dsr_tank_details:[];
-  const shifts=Array.isArray(r.shift_summary)?r.shift_summary:[];
-  const methods=Array.isArray(sales.by_type)?sales.by_type:[];
   const products=Array.isArray(sales.by_product)?sales.by_product:[];
+  const methods=Array.isArray(sales.by_type)?sales.by_type:[];
   const productInfo=window.currentDsrProductInfo||{};
   const productFor=p=>productInfo[String(p||'').toLowerCase()]||{code:p||'Unknown',name:p||'Unknown',color:''};
-  const hexRgb=hex=>{
-    const m=String(hex||'').replace('#','').match(/^[0-9a-fA-F]{6}$/);
-    if(!m)return null;
-    return [parseInt(m[0].slice(0,2),16)/255,parseInt(m[0].slice(2,4),16)/255,parseInt(m[0].slice(4,6),16)/255];
-  };
 
-  const W=595,H=842,margin=38,contentW=W-margin*2;
-  const pages=[];let page=[],y=H-48,pageNo=0;
-  const newPage=()=>{if(page.length)pages.push(page);page=[];y=H-48;pageNo++;};
+  // Landscape A4: the PDF follows the same visual hierarchy as the DSR detail view.
+  const W=842,H=595,margin=28,contentW=W-margin*2;
+  const pages=[];let page=[],pageNo=0,y=H-margin;
+  const newPage=()=>{if(page.length)pages.push(page);page=[];pageNo++;y=H-margin;};
   const finish=()=>{if(page.length)pages.push(page);};
-  const line=yy=>page.push('0.6 w 0.84 0.87 0.91 RG '+margin+' '+yy+' m '+(W-margin)+' '+yy+' l S');
-  const rect=(x,yy,w,h,fill='0.97 0.98 1')=>{
+  const rgbFromHex=hex=>{
+    const m=String(hex||'').replace('#','').match(/^[0-9a-fA-F]{6}$/);
+    return m?[parseInt(m[0].slice(0,2),16)/255,parseInt(m[0].slice(2,4),16)/255,parseInt(m[0].slice(4,6),16)/255]:null;
+  };
+  const fillRect=(x,yy,w,h,fill='1 1 1',stroke='0.86 0.89 0.93',radius=false)=>{
     page.push(fill+' rg '+x+' '+yy+' '+w+' '+h+' re f');
-    page.push('0.65 w 0.82 0.86 0.91 RG '+x+' '+yy+' '+w+' '+h+' re S');
+    page.push('0.7 w '+stroke+' RG '+x+' '+yy+' '+w+' '+h+' re S');
   };
   const text=(x,yy,s,size=8,bold=false,fill='0.12 0.17 0.23')=>{
     page.push('BT /'+(bold?'F2':'F1')+' '+size+' Tf '+fill+' rg '+x+' '+yy+' Td ('+escPdf(s)+') Tj ET');
   };
-  const ensure=h=>{if(y-h<62)newPage();};
+  const line=yy=>page.push('0.65 w 0.84 0.87 0.91 RG '+margin+' '+yy+' m '+(W-margin)+' '+yy+' l S');
   const footer=()=>{
-    line(39);
-    text(margin,25,'DSR - '+dailyReportIdLabel(d),6,false,'0.48 0.52 0.58');
-    text(W-margin-48,25,'Page '+pageNo,6,false,'0.48 0.52 0.58');
+    line(25);
+    text(margin,12,'DSR - '+dailyReportIdLabel(d),6,false,'0.48 0.52 0.58');
+    text(W-margin-46,12,'Page '+pageNo,6,false,'0.48 0.52 0.58');
   };
-  const header=(continued=false)=>{
-    text(margin,y,continued?'DAILY SALES REPORT - CONTINUED':'DAILY SALES REPORT',20,true);
-    y-=19;
-    text(margin,y,'STATION DAILY RECONCILIATION',7,true,'0.07 0.39 0.82');
-    if(!continued){
-      y-=13;
-      text(margin,y,'DSR - '+dailyReportIdLabel(d),9,false,'0.38 0.43 0.50');
-      const status=r.report_ready?'CONFIRMED':'PENDING';
-      text(W-margin-(status.length*4.1),y,status,7,true,r.report_ready?'0.05 0.48 0.28':'0.58 0.40 0.02');
-    }
-    y-=12;line(y);y-=16;
+  const header=()=>{
+    fillRect(margin,y-54,contentW,54,'1 1 1','0.84 0.88 0.92');
+    text(margin+16,y-16,'DAILY SALES REPORT',17,true);
+    text(margin+16,y-30,'STATION DAILY RECONCILIATION',7,true,'0.07 0.39 0.82');
+    text(margin+16,y-44,'DSR - '+dailyReportIdLabel(d),7.5,false,'0.38 0.43 0.50');
+    const status=r.report_ready?'CONFIRMED':'PENDING';
+    text(W-margin-16-(status.length*4.2),y-20,status,7,true,r.report_ready?'0.05 0.48 0.28':'0.58 0.40 0.02');
+    y-=68;
   };
-  const section=title=>{
-    ensure(31);y-=2;text(margin,y,title.toUpperCase(),10,true,'0.13 0.20 0.29');y-=7;line(y);y-=13;
+  const sectionTitle=(title,subtitle)=>{
+    text(margin,y,title,10,true,'0.13 0.20 0.29');
+    text(margin+105,y,subtitle,7,false,'0.43 0.48 0.54');
+    y-=10;line(y);y-=11;
   };
-  const kv=(label,value)=>{
-    ensure(18);text(margin,y,label,7.5,false,'0.40 0.45 0.51');text(margin+178,y,value,8,true);y-=16;
-  };
-  const tableHeader=(cols,widths)=>{
-    const h=20;ensure(h+34);
-    rect(margin,y-h,contentW,h,'0.10 0.25 0.40');
-    let x=margin+8;
-    cols.forEach((c,i)=>{text(x,y-13,c,6.3,true,'1 1 1');x+=widths[i];});
-    y-=h+7;
-  };
-  const colorDot=(x,yy,hex,size=7)=>{
-    const rgb=hexRgb(hex);
-    if(rgb)page.push(rgb[0]+' '+rgb[1]+' '+rgb[2]+' rg '+x+' '+(yy-size/2)+' '+size+' '+size+' re f');
+  const card=(x,yy,w,h,fill='1 1 1')=>fillRect(x,yy,w,h,fill,'0.84 0.88 0.92');
+
+  const drawDispenserCard=(x,yy,w,h,disp)=>{
+    card(x,yy,w,h,'0.98 0.99 1');
+    const pc=productFor(disp.nozzles?.[0]?.product||'');
+    const dot=rgbFromHex(pc.color);
+    if(dot)page.push(dot[0]+' '+dot[1]+' '+dot[2]+' rg '+(x+10)+' '+(yy+h-18)+' 7 7 re f');
+    text(x+22,yy+h-17,pdfSafe(disp.dispenser||'Dispenser'),8.5,true);
+    text(x+10,yy+h-31,pdfSafe(pc.code||'Unknown'),6.3,false,'0.38 0.43 0.50');
+    text(x+10,yy+h-44,'Fuel sold',6.1,false,'0.43 0.48 0.54');
+    text(x+10,yy+h-55,fmtL(disp.sales_liters),9,true,'0.08 0.38 0.76');
+    text(x+w-62,yy+h-44,'Sales',6.1,false,'0.43 0.48 0.54');
+    text(x+w-62,yy+h-55,fmtM(disp.sales_amount),7.3,true);
+    text(x+10,yy+10,Number((disp.nozzles||[]).length)+' nozzle(s) · '+Number(disp.shift_count||0)+' shift(s)',6.1,false,'0.48 0.52 0.58');
   };
 
-  // PAGE 1: overview + core reconciliation
-  newPage();header();
+  const drawTankCard=(x,yy,w,h,t)=>{
+    card(x,yy,w,h,'0.98 0.99 1');
+    const pc=productFor(t.product);
+    const dot=rgbFromHex(pc.color);
+    if(dot)page.push(dot[0]+' '+dot[1]+' '+dot[2]+' rg '+(x+10)+' '+(yy+h-18)+' 7 7 re f');
+    const diff=num(t.difference_liters||0);
+    const status=Math.abs(diff)<0.001?'RECONCILED':'VARIANCE';
+    text(x+22,yy+h-17,pdfSafe(t.tank||'Tank'),8.5,true);
+    text(x+10,yy+h-31,pdfSafe(pc.code||t.product||'Unknown'),6.3,false,'0.38 0.43 0.50');
+    text(x+10,yy+h-44,'Opening',6.1,false,'0.43 0.48 0.54');
+    text(x+10,yy+h-55,fmtL(t.opening_stock_liters),7.2,true);
+    text(x+w/2,yy+h-44,'Closing',6.1,false,'0.43 0.48 0.54');
+    text(x+w/2,yy+h-55,fmtL(t.closing_stock_liters),7.2,true);
+    text(x+10,yy+10,'Difference '+(diff>=0?'+':'')+fmtL(diff)+' · '+pct(t.reconciliation_pct),6.1,false,diff===0?'0.05 0.48 0.28':'0.65 0.25 0.15');
+    text(x+w-57,yy+h-17,status,5.8,true,diff===0?'0.05 0.48 0.28':'0.65 0.25 0.15');
+  };
 
-  const kpis=[
-    ['FUEL SOLD',fmtL(perf.total_sales_liters??summary.sales_liters),'0.90 0.96 1.00'],
-    ['CALCULATED SALES',fmtM(perf.calculated_sales_amount??perf.total_sales_amount??summary.sales_amount),'0.95 0.97 1.00'],
-    ['SHIFTS',String(num(perf.shift_count)),'0.96 0.98 0.99'],
-    ['DISPENSERS',String(num(perf.dispenser_count)),'0.96 0.98 0.99'],
-    ['TANKS',String(num(perf.tank_count)),'0.96 0.98 0.99']
+  const drawSalesColumn=(x,yy,w,h,title,rows)=>{
+    card(x,yy,w,h,'0.98 0.99 1');
+    text(x+10,yy+h-16,title,7.5,true,'0.13 0.20 0.29');
+    let ry=yy+h-31;
+    rows.slice(0,5).forEach(row=>{
+      text(x+10,ry,pdfSafe(row.label),6.5);
+      text(x+w-70,ry,pdfSafe(row.value),6.5,true);
+      if(row.sub)text(x+10,ry-9,pdfSafe(row.sub),5.4,false,'0.48 0.52 0.58');
+      ry-=row.sub?21:16;
+    });
+  };
+
+  newPage();
+  header();
+
+  // ROW 1 — DISPENSERS, horizontally arranged.
+  sectionTitle('Dispenser','Dispenser readings and fuel sold by nozzle.');
+  const dispH=82, dispGap=9, dispCols=Math.max(1,Math.min(5,dispensers.length||1));
+  const dispW=(contentW-dispGap*(dispCols-1))/dispCols;
+  const dispY=y-dispH;
+  dispensers.forEach((disp,i)=>{
+    const x=margin+i*(dispW+dispGap);
+    drawDispenserCard(x,dispY,dispW,dispH,disp);
+  });
+  y=dispY-dispH?dispY-13:y-13;
+
+  // ROW 2 — TANKS, horizontally arranged.
+  sectionTitle('Tank','Tank movement and stock reconciliation.');
+  const tankH=82, tankGap=9, tankCols=Math.max(1,Math.min(5,tanks.length||1));
+  const tankW=(contentW-tankGap*(tankCols-1))/tankCols;
+  const tankY=y-tankH;
+  tanks.forEach((t,i)=>{
+    const x=margin+i*(tankW+tankGap);
+    drawTankCard(x,tankY,tankW,tankH,t);
+  });
+  y=tankY-13;
+
+  // ROW 3 — SALES SUMMARY: product sales, payment methods, and totals.
+  sectionTitle('Sales Summary','Complete sales totals for the DSR.');
+  const salesY=y-142, colGap=10, colW=(contentW-colGap*2)/3;
+  const productRows=products.map(x=>({label:productFor(x.product).code||x.product,value:fmtM(x.amount),sub:fmtL(x.liters)+' · '+pct(x.percentage)}));
+  const methodRows=methods.map(x=>({label:x.type||'Method',value:fmtM(x.amount),sub:pct(x.percentage)}));
+  const totalRows=[
+    {label:'Calculated sales',value:fmtM(sales.total_amount??perf.calculated_sales_amount)},
+    {label:'Entered payments',value:perf.entered_payment_amount==null?'-':fmtM(perf.entered_payment_amount)},
+    {label:'Financial difference',value:perf.financial_difference==null?'-':fmtM(perf.financial_difference)},
+    {label:'Liters sold',value:fmtL(sales.total_liters??perf.total_sales_liters)},
+    {label:'Shifts / attendants',value:num(perf.shift_count)+' / '+num(perf.attendant_count)},
+    {label:'Dispensers / nozzles',value:num(perf.dispenser_count)+' / '+num(perf.nozzle_count)}
   ];
-  const kw=(contentW-12)/2;
-  kpis.forEach((k,i)=>{
-    const row=Math.floor(i/2),col=i%2,xx=margin+col*(kw+12),yy=y-row*50;
-    rect(xx,yy-37,kw,41,k[2]);
-    text(xx+10,yy-11,k[0],6.5,true,'0.39 0.45 0.52');
-    text(xx+10,yy-29,k[1],13,true,'0.08 0.38 0.76');
-  });
-  y-=Math.ceil(kpis.length/2)*50+3;
+  drawSalesColumn(margin,salesY,colW,142,'FUEL SALES BY PRODUCT',productRows.length?productRows:[{label:'No product sales',value:'-'}]);
+  drawSalesColumn(margin+colW+colGap,salesY,colW,142,'SALES METHODS',methodRows.length?methodRows:[{label:'No sale methods',value:'-'}]);
+  drawSalesColumn(margin+(colW+colGap)*2,salesY,colW,142,'DAILY TOTALS',totalRows);
+  y=salesY-18;
 
-  section('Reconciliation overview');
-  const avgNozzle=num(perf.average_nozzle_reconciliation_pct);
-  const meterDiff=num(perf.sales_amount_difference);
-  const tankDiff=num(perf.tank_difference_liters);
-  const avgL=num(perf.average_liters_per_shift);
-  const avgSales=num(perf.average_sales_per_shift);
-  const calculatedSales=num(perf.calculated_sales_amount);
-  [
-    ['Avg. liters / shift',fmtL(avgL)],['Avg. sales / shift',fmtM(avgSales)],
-    ['Calculated sales',fmtM(calculatedSales)],['Entered payments',perf.entered_payment_amount==null?'-':fmtM(perf.entered_payment_amount)],['Financial difference',perf.financial_difference==null?'-':fmtM(perf.financial_difference)],
-    ['Avg. nozzle reconciliation',pct(avgNozzle)],['Total tank difference',signedL(tankDiff)]
-  ].forEach((s,i)=>{
-    const col=i%2,row=Math.floor(i/2),xx=margin+col*(contentW/2),yy=y-row*26;
-    text(xx,yy,s[0],7,false,'0.43 0.48 0.54');text(xx+136,yy,s[1],8,true);
-  });
-  y-=78;
-
-  section('Performance statistics');
-  const topDisp=[...dispensers].sort((a,b)=>num(b.sales_liters)-num(a.sales_liters))[0];
-  const topProduct=[...products].sort((a,b)=>num(b.amount)-num(a.amount))[0];
-  [
-    ['Top dispenser',topDisp?.dispenser||'-',topDisp?fmtL(topDisp.sales_liters):'-'],
-    ['Top product',topProduct?.product||'-',topProduct?fmtL(topProduct.liters):'-'],
-    ['Average nozzle reconciliation',pct(avgNozzle),''],
-    ['Nozzle count',String(num(perf.nozzle_count)),''],
-    ['Attendants',String(num(perf.attendant_count)),'']
-  ].forEach(row=>{
-    ensure(17);text(margin,y,row[0],7.5,false,'0.40 0.45 0.51');text(margin+170,y,pdfSafe(row[1]),8,true);text(margin+430,y,row[2],8,true);y-=16;
-  });
-
-  section('Dispenser and nozzle performance');
-  tableHeader(['DISPENSER / NOZZLE','OPENING','CLOSING','SOLD','METER','RECON.'],[145,65,65,65,65,55]);
-  dispensers.forEach(disp=>{
-    (disp.nozzles||[]).forEach(n=>{
-      ensure(30);
-      const yy=y,pc=productFor(n.product);
-      colorDot(margin+8,yy-4,pc.color,7);
-      const nozzleLabel=n.nozzle_code&&String(n.nozzle_code).toLowerCase()!==String(disp.dispenser||'').toLowerCase()
-        ? n.nozzle_code : 'N'+(n.nozzle_number||1);
-      text(margin+19,yy,pdfSafe((disp.dispenser||'Dispenser')+' / '+nozzleLabel),7.1,true);
-      text(margin+19,yy-10,pdfSafe(pc.code||pc.name||'Unknown'),5.9,false,'0.38 0.43 0.50');
-      text(margin+153,yy,reading(n.opening_reading),7.1);
-      text(margin+218,yy,reading(n.closing_reading),7.1);
-      text(margin+283,yy,fmtL(n.sales_liters),7.1);
-      text(margin+348,yy,fmtL(n.meter_delta_liters),7.1);
-      text(margin+413,yy,pct(n.meter_reconciliation_pct),7.1,true);
-      y-=27;
-    });
-  });
-
-  section('Tank reconciliation');
-  tableHeader(['TANK / PRODUCT','OPENING','PURCHASES','SOLD','EXPECTED','RECORDED'],[150,68,68,65,70,65]);
-  tanks.forEach(t=>{
-    ensure(42);
-    const yy=y,pc=productFor(t.product);
-    colorDot(margin+8,yy-4,pc.color,7);
-    text(margin+19,yy,pdfSafe((t.tank||'Tank')+' / '+(pc.code||t.product||'')),7.1,true);
-    text(margin+19,yy-10,pdfSafe(pc.name||''),5.9,false,'0.38 0.43 0.50');
-    text(margin+158,yy,fmtL(t.opening_stock_liters),7.1);
-    text(margin+226,yy,'+'+fmtL(t.purchase_discharged_liters),7.1);
-    text(margin+294,yy,fmtL(t.nozzle_sales_liters),7.1);
-    text(margin+359,yy,fmtL(t.expected_closing_liters),7.1);
-    text(margin+429,yy,fmtL(t.closing_stock_liters),7.1,true);
-    text(margin+19,yy-22,'Adjustment '+signedL(t.documented_stock_adjustment_liters)+'  |  Continuity '+signedL(t.opening_adjustment_liters)+'  |  Difference '+signedL(t.difference_liters)+'  |  Variance '+pct(t.variance_pct),6.6,false,'0.40 0.45 0.51');
-    y-=35;
-  });
-
-  // PAGE 2: sales, shifts, final performance
-  newPage();header(true);
-  section('Sales statistics');
-  if(products.length){
-    text(margin,y,'BY PRODUCT',7,true,'0.07 0.39 0.82');y-=13;
-    products.forEach(x=>{
-      ensure(18);
-      const pc=productFor(x.product);
-      colorDot(margin+3,y-3,pc.color,7);
-      text(margin+14,y,pdfSafe(pc.code||x.product||'Product'),7.5);
-      text(margin+245,y,fmtL(x.liters),7.5);
-      text(margin+350,y,fmtM(x.amount),7.5,true);
-      text(margin+470,y,pct(x.percentage),7.5,true);
-      y-=16;
-    });
-  }else{
-    text(margin,y,'No product sales recorded for this DSR.',7.5,false,'0.45 0.50 0.56');y-=17;
-  }
-  y-=3;
-  if(methods.length){
-    text(margin,y,'BY SALES METHOD',7,true,'0.07 0.39 0.82');y-=13;
-    methods.forEach(x=>{
-      ensure(18);text(margin,y,pdfSafe(x.type||'Method'),7.5);
-      text(margin+350,y,fmtM(x.amount),7.5,true);
-      text(margin+470,y,pct(x.percentage),7.5,true);y-=16;
-    });
-  }else{
-    text(margin,y,'No payment-method sales recorded for this DSR.',7.5,false,'0.45 0.50 0.56');y-=17;
-  }
-  y-=2;line(y);y-=14;
-  kv('Calculated sales',fmtM(sales.total_amount??perf.calculated_sales_amount??perf.total_sales_amount));
-  kv('Liters total',fmtL(sales.total_liters??perf.total_sales_liters));
-
-  section('Shift summary');
-  shifts.forEach((s,i)=>{
-    ensure(57);
-    rect(margin,y-48,contentW,52,'0.97 0.98 0.99');
-    text(margin+10,y-12,'SHIFT '+(i+1)+' - '+pdfSafe(s.attendant||s.employee_name||'Unknown'),8.5,true);
-    const pc=productFor(s.product);
-    colorDot(margin+10,y-27,pc.color,7);
-    text(margin+20,y-25,pdfSafe((s.dispenser||'-')+' / '+(pc.code||s.product||'')),7.2,false,'0.40 0.45 0.51');
-    text(margin+10,y-39,'Start '+dailyReportTime(s.started_at||s.start_time)+'  End '+dailyReportTime(s.ended_at||s.end_time),7.1);
-    text(margin+310,y-25,'Sold '+fmtL(s.sales_liters||s.total_sales_liters),7.2,true);
-    text(margin+310,y-39,'Entered payments '+(s.sales_amount==null?'—':fmtM(s.sales_amount)),7.2,true);
-    y-=62;
-  });
-
-  section('Final daily performance');
-  const finalRows=[
-    ['Report status',r.report_ready?'CONFIRMED':'PENDING'],
-    ['Fuel sold',fmtL(perf.total_sales_liters)],
-    ['Calculated sales',fmtM(perf.calculated_sales_amount ?? perf.total_sales_amount)],
-    ['Entered payments',perf.entered_payment_amount==null?'-':fmtM(perf.entered_payment_amount)],
-    ['Financial difference',perf.financial_difference==null?'-':fmtM(perf.financial_difference)],
-    ['Average nozzle reconciliation',pct(perf.average_nozzle_reconciliation_pct)],
-    ['Tank difference',signedL(perf.tank_difference_liters)],
-    ['Shifts / attendants',num(perf.shift_count)+' / '+num(perf.attendant_count)],
-    ['Dispensers / nozzles',num(perf.dispenser_count)+' / '+num(perf.nozzle_count)]
-  ];
-  finalRows.forEach((row,i)=>{
-    ensure(18);
-    const bg=i%2===0?'0.97 0.98 0.99':'1 1 1';
-    rect(margin,y-14,contentW,18,bg);
-    text(margin+8,y-11,row[0],7.4,false,'0.40 0.45 0.51');
-    text(margin+300,y-11,row[1],8,true);
-    y-=21;
-  });
+  // Small reconciliation strip matching the detail view's final summary language.
+  const stripH=34;
+  card(margin,y-stripH,contentW,stripH,'0.96 0.98 1');
+  text(margin+12,y-13,'RECONCILIATION',6.2,true,'0.39 0.45 0.52');
+  text(margin+108,y-13,'Average nozzle '+pct(perf.average_nozzle_reconciliation_pct),6.5,true);
+  text(margin+270,y-13,'Tank difference '+(num(perf.tank_difference_liters)>=0?'+':'')+fmtL(perf.tank_difference_liters),6.5,true);
+  text(margin+440,y-13,'Financial difference '+(perf.financial_difference==null?'-':fmtM(perf.financial_difference)),6.5,true);
+  text(margin+650,y-13,r.report_ready?'CONFIRMED':'PENDING',6.5,true,r.report_ready?'0.05 0.48 0.28':'0.58 0.40 0.02');
 
   finish();
   pages.forEach((p,i)=>{page=p;pageNo=i+1;footer();});
