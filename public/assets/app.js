@@ -1396,119 +1396,136 @@ function createStyledReportPdf(report){
   return new Blob([pdf],{type:'application/pdf'});
 }
 async function downloadAdminSaleHistoryDetails(id){
-  // The full Sales History page uses adminSalesHistoryData, while the main
-  // Sales page uses adminSalesData. Support both sources and fall back to the
-  // authoritative sale-record endpoint so the PDF button always has data.
+  // Generate the PDF from the same data and section order shown in the
+  // Admin Sales History View Details card.
   let item=(adminSalesHistoryData.history||[]).find(x=>String(x.takeover?.id)===String(id))
     || (adminSalesData.history||[]).find(x=>String(x.takeover?.id)===String(id));
   if(!item){
     try{
       const data=await api('/api/shift-takeovers/'+encodeURIComponent(id)+'/sale-record');
-      if(data?.takeover){
-        item={takeover:data.takeover,sales:Array.isArray(data.sales)?data.sales:[]};
-      }
-    }catch(e){
-      toast(e.message||'Unable to load the sales record for PDF.');
-      return;
-    }
+      if(data?.takeover)item={takeover:data.takeover,sales:Array.isArray(data.sales)?data.sales:[]};
+    }catch(e){toast(e.message||'Unable to load the sales record for PDF.');return;}
   }
-  if(!item?.takeover){
-    toast('Sales details are not available for this record.');
-    return;
-  }
-  const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],total=Number(t.total_sales_amount||0);
-  const entryTotal=sales.reduce((sum,s)=>sum+Number(s.amount||0),0);
+  if(!item?.takeover){toast('Sales details are not available for this record.');return;}
 
-  // Load the authoritative dispenser/product records so the PDF identifies
-  // fuel by configured product code rather than the display product name.
-  let nozzles=[],products=[];
+  const t=item.takeover||{},initial=t,sales=Array.isArray(item.sales)?item.sales:[],saleMeta={};
   try{
-    [nozzles,products]=await Promise.all([
-      api('/api/nozzles').catch(()=>[]),
-      api('/api/products').catch(()=>[])
-    ]);
+    const data=await api('/api/shift-takeovers/'+encodeURIComponent(id)+'/sale-record');
+    if(data?.takeover)Object.assign(t,data.takeover);
+    if(Array.isArray(data?.sales))sales.splice(0,sales.length,...data.sales);
   }catch(_){}
 
-  const dispenserId=String(item.dispenser?.id||'');
-  const dispenser=nozzles.find(n=>String(n.id)===dispenserId)||{};
-  const productRaw=String(dispenser.product||'').trim().toLowerCase();
-  const product=products.find(p=>
-    String(p.name||'').trim().toLowerCase()===productRaw ||
-    String(p.code_name||'').trim().toLowerCase()===productRaw
-  );
-  const productCode=product?.code_name||dispenser.product||'—';
+  let takeovers=[],shifts=[],nozzles=[],tanks=[],products=[],employees=[];
+  const results=await Promise.allSettled([
+    api('/api/shift-takeovers'),api('/api/shifts'),api('/api/nozzles'),
+    api('/api/tanks'),api('/api/products'),api('/api/employees')
+  ]);
+  takeovers=Array.isArray(results[0]?.value)?results[0].value:[];
+  shifts=Array.isArray(results[1]?.value)?results[1].value:[];
+  nozzles=Array.isArray(results[2]?.value)?results[2].value:[];
+  tanks=Array.isArray(results[3]?.value)?results[3].value:[];
+  products=Array.isArray(results[4]?.value)?results[4].value:[];
+  employees=Array.isArray(results[5]?.value)?results[5].value:[];
+
+  const fullTakeover=takeovers.find(x=>String(x.id)===String(id));
+  if(fullTakeover)Object.assign(t,fullTakeover);
+  const shift=shifts.find(x=>String(x.id)===String(t.shift_id));
+  const nozzleId=shift?.nozzle_id||t.nozzle_id||item.dispenser?.nozzle_id;
+  const nozzle=nozzles.find(x=>String(x.id)===String(nozzleId));
+  const employee=employees.find(x=>String(x.id)===String(t.to_employee_id));
+  const tankId=t.tank_id||nozzle?.tank_id||item.tank?.id||item.tank_id;
+  const tank=tanks.find(x=>String(x.id)===String(tankId));
+  const productId=tank?.product_id||item.product?.id||item.product_id;
+  const product=products.find(x=>String(x.id)===String(productId)||
+    String(x.name||'').toLowerCase()===String(tank?.product||item.dispenser?.product||'').toLowerCase());
 
   const opening=Array.isArray(t.nozzle_opening_readings)?t.nozzle_opening_readings:[];
   const closing=Array.isArray(t.nozzle_closing_readings)?t.nozzle_closing_readings:[];
   const nozzleSales=Array.isArray(t.nozzle_sales_liters)?t.nozzle_sales_liters:[];
-  const readingRows=nozzleSales.length
-    ? nozzleSales.map((s,i)=>{
-        const nozzleId=String(s.nozzle_id||'');
-        const o=opening.find(x=>String(x?.nozzle_id||'')===nozzleId)||opening[i]||{};
-        const cl=closing.find(x=>String(x?.nozzle_id||'')===nozzleId)||closing[i]||{};
-        const n=nozzles.find(x=>String(x.id)===nozzleId)||{};
-        const raw=String(n.product||dispenser.product||'').trim().toLowerCase();
-        const p=products.find(x=>String(x.name||'').trim().toLowerCase()===raw||String(x.code_name||'').trim().toLowerCase()===raw);
-        const code=p?.code_name||n.product||productCode;
-        return [
-          n.nozzle_code||('Nozzle '+(i+1)),
-          code||'—',
-          item.tank?.name||'—',
-          reading(o.opening_reading??o.reading),
-          reading(cl.reading??cl.closing_reading),
-          liters(s.liters_sold)+' L'
-        ];
-      })
-    : (opening.length||closing.length)
-      ? Array.from({length:Math.max(opening.length,closing.length)},(_,i)=>{
-          const o=opening[i]||{},cl=closing[i]||{};
-          const nozzleId=String(o.nozzle_id||cl.nozzle_id||'');
-          const n=nozzles.find(x=>String(x.id)===nozzleId)||{};
-          const raw=String(n.product||dispenser.product||'').trim().toLowerCase();
-          const p=products.find(x=>String(x.name||'').trim().toLowerCase()===raw||String(x.code_name||'').trim().toLowerCase()===raw);
-          return [
-            n.nozzle_code||('Nozzle '+(i+1)),
-            p?.code_name||n.product||productCode||'—',
-            item.tank?.name||'—',
-            reading(o.opening_reading??o.reading),
-            reading(cl.reading??cl.closing_reading),
-            '—'
-          ];
-        })
-      : [['—',productCode,item.tank?.name||'—','—','—',liters(t.total_sales_liters)+' L']];
+  const ids=[];
+  [...opening,...closing,...nozzleSales].forEach(x=>{
+    const n=x?.nozzle_uuid||x?.nozzle_id;
+    if(n!=null&&!ids.some(v=>String(v)===String(n)))ids.push(n);
+  });
+  if(!ids.length&&nozzleId)ids.push(nozzleId);
 
-  const rows=sales.map((s,i)=>[String(i+1),s.sale_type_name||'Sale',money(s.amount),s.reason||s.sale_type_description||'—']);
+  const productCode=product?.code_name||item.product?.code_name||item.product_code||t.product_code||tank?.product_code||'—';
+  const tankCode=tank?.tank_code||item.tank?.tank_code||item.tank_code||t.tank_code||'—';
+  const dispenserCode=nozzle?.nozzle_code||item.dispenser?.nozzle_code||item.dispenser?.code||t.dispenser_code||'Dispenser';
+  const attendant=employee?.name||item.to_employee?.name||t.to_employee_name||item.to_employee_id||'—';
+  const shiftName=shift?.name||item.shift?.name||((item.from_employee?.name||t.from_employee_name||'')+' → '+(item.to_employee?.name||t.to_employee_name||attendant));
+  const dsrId=item.dsr_id||item.dsr?.id||t.dsr_id||t.dsr?.id||dailyReportIdFromTimestamp(t.shift_started_at||shift?.start_time);
+  const submittedAt=t.sales_submitted_at||initial.sales_submitted_at;
+  const confirmedAt=t.sales_confirmed_at||initial.sales_confirmed_at;
+  const startedAt=t.shift_started_at||shift?.start_time;
+  const endedAt=t.shift_ended_at||shift?.end_time;
+  const totalAmount=Number(t.total_sales_amount||0);
+  const totalLiters=Number(t.total_sales_liters||0);
+  const status=String(t.sales_status||'confirmed').replace(/_/g,' ');
+  const statusLabel=status.replace(/\b\w/g,m=>m.toUpperCase());
+
+  const readingRows=ids.map((nid,i)=>{
+    const o=opening.find(x=>String(x?.nozzle_uuid||x?.nozzle_id)===String(nid))||opening[i]||{};
+    const cl=closing.find(x=>String(x?.nozzle_uuid||x?.nozzle_id)===String(nid))||closing[i]||{};
+    const ss=nozzleSales.find(x=>String(x?.nozzle_uuid||x?.nozzle_id)===String(nid))||nozzleSales[i]||{};
+    const nn=nozzles.find(x=>String(x.id)===String(nid))||nozzle;
+    const openVal=o.opening_reading??o.reading;
+    const closeVal=cl.closing_reading??cl.reading;
+    const soldVal=ss.liters_sold??(Number.isFinite(Number(openVal))&&Number.isFinite(Number(closeVal))?Number(closeVal)-Number(openVal):0);
+    return [nn?.nozzle_code||ss.nozzle_id||('Nozzle '+(i+1)),productCode,tankCode,reading(openVal),reading(closeVal),liters(soldVal)+' L'];
+  });
+  const finalReadingRows=readingRows.length?readingRows:[['—',productCode,tankCode,'—','—',liters(totalLiters)+' L']];
+  const saleRows=sales.map((x,i)=>[
+    String(i+1),x.sale_type_name||'Sale',money(x.amount),
+    x.reason||x.sale_type_description||'—'
+  ]);
+  const entryTotal=sales.reduce((sum,x)=>sum+Number(x.amount||0),0);
+
   const blob=createStyledReportPdf({
-    title:'SALES REPORT',subtitle:'Confirmed shift sales detail',reference:'DSR '+(t.daily_report_id||t.dsr_id||dailyReportIdFromTimestamp(t.shift_started_at)),generated:'CONFIRMED',
-    summary:[['PRODUCT CODE',productCode],['TANK',item.tank?.name||'—'],['LITERS SOLD',liters(t.total_sales_liters)+' L'],['STATUS','CONFIRMED']],
+    title:'SALES REPORT',
+    subtitle:'Confirmed shift sales detail',
+    reference:'DSR '+dsrId,
+    generated:statusLabel.toUpperCase(),
+    summary:[
+      ['DISPENSER',dispenserCode+''],
+      ['PRODUCT',productCode],
+      ['TANK',tankCode],
+      ['LITERS SOLD',liters(totalLiters)+' L']
+    ],
     sections:[
-      {title:'Shift & Attendant',fields:[
-        ['Dispenser',item.dispenser?.name||'—'],['Product code',productCode],
-        ['Tank',item.tank?.name||'—'],['From attendant',item.from_employee?.name||'—'],
-        ['Received by',item.to_employee?.name||'—'],['Shift ID',t.shift_id||id],
-        ['Shift started',t.shift_started_at?new Date(t.shift_started_at).toLocaleString():'—'],['Shift ended',t.shift_ended_at?new Date(t.shift_ended_at).toLocaleString():'—'],
-        ['Confirmed',t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—']
+      {title:'SHIFT DETAILS',fields:[
+        ['Dispenser',dispenserCode],['Product',productCode],
+        ['Tank',tankCode],['Attendant',attendant],
+        ['Shift',shiftName],['DSR ID',dsrId||'—'],
+        ['Started',startedAt?new Date(startedAt).toLocaleString():'—'],
+        ['Ended',endedAt?new Date(endedAt).toLocaleString():'—'],
+        ['Shift ID',t.shift_id||'—']
       ]},
-      {title:'Product, Tank & Meter Readings',table:{
-        headers:['Nozzle','Product code','Tank','Opening','Closing','Sold'],
-        widths:[75,95,85,75,75,110],
-        rows:readingRows
+      {title:'OPENING & CLOSING READINGS',table:{
+        headers:['Nozzle','Product','Tank','Opening','Closing','Sold'],
+        widths:[75,95,85,75,75,110],rows:finalReadingRows
       }},
-      {title:'Tank Readings',fields:[
-        ['Tank',item.tank?.name||'—'],
-        ['Tank opening',liters(t.tank_opening_liters)+' L'],
-        ['Tank closing',liters(t.tank_closing_liters)+' L'],
-        ['Tank sales',liters(t.tank_sales_liters)+' L'],
-        ['Tank variance',liters(t.tank_variance_liters)+' L'],
-        ['Variance %',Number(t.tank_variance_pct||0).toFixed(2)+'%']
-      ]},
-      {title:'Recorded Sales',table:{headers:['#','Sale type','Amount','Description / reason'],widths:[28,150,90,297],rows}},
-      {title:'Reconciliation',fields:[['Calculated total',money(total)],['Entries total',money(entryTotal)],['Difference',money(Math.abs(total-entryTotal))],['Confirmation','Admin confirmed']],cols:2}
+      {title:'RECORDED SALES',table:{
+        headers:['#','Sale type','Amount','Description / reason'],
+        widths:[28,150,90,297],
+        rows:saleRows.length?saleRows:[['—','No sale entries recorded','—','—']]
+      }},
+      {title:'SALES TOTAL',fields:[
+        ['Status',statusLabel],['Total liters sold',liters(totalLiters)+' L'],
+        ['Calculated amount',money(totalAmount)],['Entries total',money(entryTotal)],
+        ['Difference',money(Math.abs(totalAmount-entryTotal))],
+        ['Submitted',submittedAt?new Date(submittedAt).toLocaleString():'—'],
+        ['Confirmed',confirmedAt?new Date(confirmedAt).toLocaleString():'—']
+      ]}
     ]
   });
-  const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='sales-'+String(t.shift_id||id).slice(0,12)+'.pdf';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('PDF downloaded');
+  const url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;
+  link.download='sales-'+String(t.shift_id||id).slice(0,12)+'.pdf';
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('PDF downloaded');
 }
-
 function downloadPurchaseDetailPdf(){
   const id=window.currentPurchaseDetailId;
   const p=window.currentPurchaseDetailData||((typeof purchaseDetailData!=='undefined'&&Array.isArray(purchaseDetailData)?purchaseDetailData:[]).find(x=>String(x.id)===String(id)));
