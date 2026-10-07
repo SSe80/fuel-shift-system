@@ -571,7 +571,8 @@ async function userDashboard(){
     window.takeoverRecords=takeoverList;
     window.dashboardShiftRecords=shifts;
     window.dashboardNozzleRecords=nozzles;
-    window.dashboardEmployeeRecords=employees;\n    window.dashboardProductRecords=products;
+    window.dashboardEmployeeRecords=employees;
+    window.dashboardProductRecords=products;
     window.dashboardTankRecords=tanks;
     window.pendingDispenserDeactivationRequests=Array.isArray(deactivationRequests)?deactivationRequests:[];
 
