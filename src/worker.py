@@ -491,6 +491,18 @@ def delete_sale_type(sale_type_id):
     if status>=400:return jsonify(result),status
     return jsonify(result),200
 
+@app.post("/api/accounting/close")
+def accounting_close_period():
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    period_id=str(data.get("period_id") or "").strip()
+    if not period_id:return jsonify({"error":"period_id is required"}),400
+    payload={"p_accounting_period_id":period_id,"p_closed_by":str(session.get("employee_id")) if session.get("employee_id") else None,"p_notes":str(data.get("notes") or "").strip() or None}
+    status,result=rpc("close_control_period",payload)
+    if status>=400:return jsonify(result),status
+    return jsonify(result),200
+
 @app.get("/api/accounting/closing")
 def accounting_closing():
     auth=require_admin()
