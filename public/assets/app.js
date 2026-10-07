@@ -3007,7 +3007,7 @@ function downloadDailyReportPdf(){
 
   const kpis=[
     ['FUEL SOLD',fmtL(perf.total_sales_liters??summary.sales_liters),'0.90 0.96 1.00'],
-    ['TOTAL SALES',fmtM(perf.total_sales_amount??summary.sales_amount),'0.95 0.97 1.00'],
+    ['CALCULATED SALES',fmtM(perf.calculated_sales_amount??perf.total_sales_amount??summary.sales_amount),'0.95 0.97 1.00'],
     ['SHIFTS',String(num(perf.shift_count)),'0.96 0.98 0.99'],
     ['DISPENSERS',String(num(perf.dispenser_count)),'0.96 0.98 0.99'],
     ['TANKS',String(num(perf.tank_count)),'0.96 0.98 0.99']
@@ -3030,7 +3030,7 @@ function downloadDailyReportPdf(){
   const calculatedSales=num(perf.calculated_sales_amount);
   [
     ['Avg. liters / shift',fmtL(avgL)],['Avg. sales / shift',fmtM(avgSales)],
-    ['Calculated sales',fmtM(calculatedSales)],['Entered payments',perf.entered_payment_amount==null?'-':fmtM(perf.entered_payment_amount)],['Financial difference',perf.financial_difference==null?fmtM(meterDiff):fmtM(perf.financial_difference)],
+    ['Calculated sales',fmtM(calculatedSales)],['Entered payments',perf.entered_payment_amount==null?'-':fmtM(perf.entered_payment_amount)],['Financial difference',perf.financial_difference==null?'-':fmtM(perf.financial_difference)],
     ['Avg. nozzle reconciliation',pct(avgNozzle)],['Total tank difference',signedL(tankDiff)]
   ].forEach((s,i)=>{
     const col=i%2,row=Math.floor(i/2),xx=margin+col*(contentW/2),yy=y-row*26;
@@ -3118,7 +3118,7 @@ function downloadDailyReportPdf(){
     text(margin,y,'No payment-method sales recorded for this DSR.',7.5,false,'0.45 0.50 0.56');y-=17;
   }
   y-=2;line(y);y-=14;
-  kv('Sales total',fmtM(sales.total_amount??perf.total_sales_amount));
+  kv('Calculated sales',fmtM(sales.total_amount??perf.calculated_sales_amount??perf.total_sales_amount));
   kv('Liters total',fmtL(sales.total_liters??perf.total_sales_liters));
 
   section('Shift summary');
@@ -3131,7 +3131,7 @@ function downloadDailyReportPdf(){
     text(margin+20,y-25,pdfSafe((s.dispenser||'-')+' / '+(pc.code||s.product||'')),7.2,false,'0.40 0.45 0.51');
     text(margin+10,y-39,'Start '+dailyReportTime(s.started_at||s.start_time)+'  End '+dailyReportTime(s.ended_at||s.end_time),7.1);
     text(margin+310,y-25,'Sold '+fmtL(s.sales_liters||s.total_sales_liters),7.2,true);
-    text(margin+310,y-39,'Sales '+fmtM(s.sales_amount||s.total_sales_amount),7.2,true);
+    text(margin+310,y-39,'Entered payments '+(s.sales_amount==null?'—':fmtM(s.sales_amount)),7.2,true);
     y-=62;
   });
 
