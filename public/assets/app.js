@@ -1579,148 +1579,91 @@ function downloadPurchaseDetailPdf(){
 window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
 
 async function openAdminSaleHistoryDetails(id){
-  const historySource=(typeof adminSalesHistoryData!=='undefined'&&Array.isArray(adminSalesHistoryData.history)?adminSalesHistoryData.history:((typeof adminSalesData!=='undefined'&&Array.isArray(adminSalesData.history))?adminSalesData.history:[]));
-  const item=historySource.find(x=>String((x.takeover||{}).id)===String(id));
-  if(!item)return;
-  const initial=item.takeover||{};
+  const source=(typeof adminSalesHistoryData!=='undefined'&&Array.isArray(adminSalesHistoryData.history))
+    ?adminSalesHistoryData.history
+    :((typeof adminSalesData!=='undefined'&&Array.isArray(adminSalesData.history))?adminSalesData.history:[]);
+  const item=source.find(function(x){return String((x&&x.takeover&&x.takeover.id)||'')===String(id);});
   const modal=document.getElementById('admin-sale-history-details');
   const box=document.getElementById('admin-sale-history-details-content');
   const download=document.getElementById('admin-sale-history-download');
+  if(!item){
+    if(box)box.innerHTML='<div class="history-detail-section"><p class="muted">Shift details could not be found.</p></div>';
+    if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+    return;
+  }
   if(download)download.dataset.takeoverId=String(id);
   if(box)box.innerHTML='<div class="history-detail-section"><p class="muted">Loading complete shift details…</p></div>';
   if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
 
-  let t=initial, sales=Array.isArray(item.sales)?item.sales:[], saleMeta={};
+  let t=(item&&item.takeover)||{};
+  let sales=Array.isArray(item&&item.sales)?item.sales:[];
   try{
-    const data=await api('/api/shift-takeovers/'+id+'/sale-record');
+    const data=await api('/api/shift-takeovers/'+encodeURIComponent(id)+'/sale-record');
     if(data&&data.takeover)t=data.takeover;
-    if(Array.isArray(data&&data.sales))sales=data.sales;
-    saleMeta=(data&&data.takeover)||{};
+    if(data&&Array.isArray(data.sales))sales=data.sales;
   }catch(e){}
 
-  // Admin history does not necessarily preload the same dashboard lookup
-  // collections used by the attendant shift-history view. Load the exact
-  // reference records here so historical details use the same relationships.
-  let takeovers=[],shifts=[],nozzles=[],tanks=[],products=[],employees=[];
   try{
-    const results=await Promise.allSettled([
-      api('/api/shift-takeovers'),
-      api('/api/shifts'),
-      api('/api/nozzles'),
-      api('/api/tanks'),
-      api('/api/products'),
-      api('/api/employees')
-    ]);
-    takeovers=Array.isArray(results[0]?.value)?results[0].value:[];
-    shifts=Array.isArray(results[1]?.value)?results[1].value:[];
-    nozzles=Array.isArray(results[2]?.value)?results[2].value:[];
-    tanks=Array.isArray(results[3]?.value)?results[3].value:[];
-    products=Array.isArray(results[4]?.value)?results[4].value:[];
-    employees=Array.isArray(results[5]?.value)?results[5].value:[];
-  }catch(e){}
+    const dispenser=(item.dispenser&&(
+      item.dispenser.nozzle_code||item.dispenser.code||item.dispenser.name
+    ))||t.dispenser_code||'Dispenser';
+    const productCode=(item.product&&item.product.code_name)||item.product_code||t.product_code||'—';
+    const tankCode=(item.tank&&item.tank.tank_code)||item.tank_code||t.tank_code||'—';
+    const attendant=(item.to_employee&&item.to_employee.name)||t.to_employee_name||item.to_employee_id||'—';
+    const from=(item.from_employee&&item.from_employee.name)||t.from_employee_name||'';
+    const to=(item.to_employee&&item.to_employee.name)||t.to_employee_name||attendant;
+    const shiftName=(item.shift&&item.shift.name)||((from||'Attendant')+' → '+(to||'Attendant'));
+    const dsrId=item.dsr_id||(item.dsr&&item.dsr.id)||t.dsr_id||dailyReportIdFromTimestamp(t.shift_started_at);
+    const submittedAt=t.sales_submitted_at||item.sales_submitted_at;
+    const confirmedAt=t.sales_confirmed_at||item.sales_confirmed_at;
+    const startedAt=t.shift_started_at;
+    const endedAt=t.shift_ended_at;
+    const totalAmount=Number(t.total_sales_amount||0);
+    const totalLiters=Number(t.total_sales_liters||0);
+    const status=String(t.sales_status||'confirmed').replace(/_/g,' ');
+    const statusLabel=status.replace(/\b\w/g,function(m){return m.toUpperCase();});
 
-  const fullTakeover=takeovers.find(x=>String(x.id)===String(id));
-  if(fullTakeover)t={...t,...fullTakeover};
-  const shift=shifts.find(s=>String(s.id)===String(t.shift_id));
-  const nozzleId=shift?.nozzle_id||t.nozzle_id||item.dispenser?.nozzle_id;
-  const nozzle=nozzles.find(n=>String(n.id)===String(nozzleId));
-  const employee=employees.find(e=>String(e.id)===String(t.to_employee_id));
-  const tankId=t.tank_id||nozzle?.tank_id||item.tank?.id||item.tank_id;
-  const tank=tanks.find(x=>String(x.id)===String(tankId));
-  const productId=tank?.product_id||item.product?.id||item.product_id;
-  const product=products.find(p=>String(p.id)===String(productId)||String(p.name||'').toLowerCase()===String(tank?.product||item.dispenser?.product||'').toLowerCase());
+    const opening=Array.isArray(t.nozzle_opening_readings)?t.nozzle_opening_readings:[];
+    const closing=Array.isArray(t.nozzle_closing_readings)?t.nozzle_closing_readings:[];
+    const nozzleSales=Array.isArray(t.nozzle_sales_liters)?t.nozzle_sales_liters:[];
+    const ids=[];
+    opening.concat(closing,nozzleSales).forEach(function(x){
+      const n=x&&(x.nozzle_uuid||x.nozzle_id);
+      if(n!=null&&ids.indexOf(n)<0)ids.push(n);
+    });
+    if(!ids.length&&t.nozzle_id)ids.push(t.nozzle_id);
+    if(!ids.length&&(item.dispenser&&item.dispenser.nozzle_id))ids.push(item.dispenser.nozzle_id);
 
-  const opening=Array.isArray(t.nozzle_opening_readings)?t.nozzle_opening_readings:[];
-  const closing=Array.isArray(t.nozzle_closing_readings)?t.nozzle_closing_readings:[];
-  const nozzleSales=Array.isArray(t.nozzle_sales_liters)?t.nozzle_sales_liters:[];
-  const ids=[];
-  [...opening,...closing,...nozzleSales].forEach(x=>{
-    const n=x?.nozzle_uuid||x?.nozzle_id;
-    if(n!=null&&!ids.some(v=>String(v)===String(n)))ids.push(n);
-  });
-  if(!ids.length&&nozzleId)ids.push(nozzleId);
+    const rows=ids.map(function(nid,i){
+      const o=opening.find(function(x){return String((x&&x.nozzle_uuid)||x&&x.nozzle_id)===String(nid);})||opening[i]||{};
+      const cl=closing.find(function(x){return String((x&&x.nozzle_uuid)||x&&x.nozzle_id)===String(nid);})||closing[i]||{};
+      const s=nozzleSales.find(function(x){return String((x&&x.nozzle_uuid)||x&&x.nozzle_id)===String(nid);})||nozzleSales[i]||{};
+      const openVal=o.opening_reading!=null?o.opening_reading:o.reading;
+      const closeVal=cl.closing_reading!=null?cl.closing_reading:cl.reading;
+      const soldVal=s.liters_sold!=null?s.liters_sold:(Number.isFinite(Number(openVal))&&Number.isFinite(Number(closeVal))?Number(closeVal)-Number(openVal):0);
+      const nozzleCode=(s.nozzle_code||o.nozzle_code||cl.nozzle_code||String(nid));
+      return '<div class="history-detail-reading-row"><div><strong>'+h(nozzleCode)+'</strong><small>'+h(productCode)+'</small></div><div><span>Opening</span><b>'+reading(openVal)+'</b></div><div><span>Closing</span><b>'+reading(closeVal)+'</b></div><div><span>Sold</span><b>'+liters(soldVal)+' L</b></div></div>';
+    }).join('');
 
-  const productCode=product?.code_name||item.product?.code_name||item.product_code||t.product_code||tank?.product_code||'—';
-  const tankOpening=Number(t.tank_opening_liters);
-  const tankClosing=Number(t.tank_closing_liters);
-  const tankCode=tank?.tank_code||item.tank?.tank_code||item.tank_code||t.tank_code||'—';
-  const dispenserCode=nozzle?.nozzle_code||item.dispenser?.nozzle_code||item.dispenser?.code||t.dispenser_code||'Dispenser';
-  const attendant=employee?.name||item.to_employee?.name||t.to_employee_name||item.to_employee_id||'—';
-  const shiftName=shift?.name||item.shift?.name||((item.from_employee?.name||t.from_employee_name||'')+' → '+(item.to_employee?.name||t.to_employee_name||attendant));
-  const dsrId=item.dsr_id||(item.dsr&&item.dsr.id)||t.dsr_id||(t.dsr&&t.dsr.id)||dailyReportIdFromTimestamp(t.shift_started_at||shift?.start_time);
-  const submittedAt=saleMeta.sales_submitted_at||t.sales_submitted_at||initial.sales_submitted_at;
-  const confirmedAt=saleMeta.sales_confirmed_at||t.sales_confirmed_at||initial.sales_confirmed_at;
-  const startedAt=t.shift_started_at||shift?.start_time;
-  const endedAt=t.shift_ended_at||shift?.end_time;
-  const totalAmount=Number(t.total_sales_amount||initial.total_sales_amount||0);
-  const totalLiters=Number(t.total_sales_liters||initial.total_sales_liters||0);
-  const status=String(saleMeta.sales_status||t.sales_status||'confirmed').replace(/_/g,' ');
-  const statusLabel=status.replace(/\b\w/g,m=>m.toUpperCase());
+    const saleRows=sales.map(function(s,i){
+      return '<div class="history-detail-sale"><span class="history-detail-sale-number">'+(i+1)+'</span><div class="history-detail-sale-name"><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+(s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'')+(s.reason?'<small class="reason">Reason: '+h(s.reason)+'</small>':'')+'</div><strong class="history-detail-sale-value">'+money(s.amount)+'</strong></div>';
+    }).join('');
+    const entryTotal=sales.reduce(function(sum,s){return sum+Number(s.amount||0);},0);
+    const tankOpening=Number(t.tank_opening_liters);
+    const tankClosing=Number(t.tank_closing_liters);
 
-  const rows=ids.map((nid,i)=>{
-    const o=opening.find(x=>String(x.nozzle_uuid||x.nozzle_id)===String(nid))||opening[i]||{};
-    const cl=closing.find(x=>String(x.nozzle_uuid||x.nozzle_id)===String(nid))||closing[i]||{};
-    const s=nozzleSales.find(x=>String(x.nozzle_uuid||x.nozzle_id)===String(nid))||nozzleSales[i]||{};
-    const nn=nozzles.find(x=>String(x.id)===String(nid))||nozzle;
-    const openVal=o.opening_reading??o.reading;
-    const closeVal=cl.closing_reading??cl.reading;
-    const soldVal=s.liters_sold!=null?s.liters_sold:(Number.isFinite(Number(openVal))&&Number.isFinite(Number(closeVal))?Number(closeVal)-Number(openVal):0);
-    return '<div class="history-detail-reading-row"><div><strong>'+h(nn?.nozzle_code||s.nozzle_id||('Nozzle '+(i+1)))+'</strong><small>'+h(productCode)+'</small></div><div><span>Opening</span><b>'+reading(openVal)+'</b></div><div><span>Closing</span><b>'+reading(closeVal)+'</b></div><div><span>Sold</span><b>'+liters(soldVal)+' L</b></div></div>';
-  }).join('');
-
-  const saleRows=sales.map((s,i)=>{
-    const desc=s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'';
-    const reason=s.reason?'<small class="reason">Reason: '+h(s.reason)+'</small>':'';
-    return '<div class="history-detail-sale"><span class="history-detail-sale-number">'+(i+1)+'</span><div class="history-detail-sale-name"><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+desc+reason+'</div><strong class="history-detail-sale-value">'+money(s.amount)+'</strong></div>';
-  }).join('');
-  const entryTotal=sales.reduce((sum,s)=>sum+Number(s.amount||0),0);
-
-  const content=[
-    '<div class="history-detail-overview">',
-      '<div class="history-detail-main"><span class="section-kicker">SHIFT DETAILS</span><h4>'+h(dispenserCode)+'</h4><p>'+h(productCode)+' · '+h(tankCode)+'</p></div>',
-      '<div class="history-detail-amount"><span>'+h(statusLabel)+'</span><strong>'+money(totalAmount)+'</strong><small>'+liters(totalLiters)+' L</small></div>',
-    '</div>',
-    '<div class="history-detail-section">',
-      '<div class="history-detail-section-head"><div><span class="section-kicker">SHIFT</span><h4>Shift information</h4></div></div>',
-      '<div class="history-detail-info-grid">',
-        '<div><span>Attendant</span><strong>'+h(attendant)+'</strong></div>',
-        '<div><span>Shift</span><strong>'+h(String(shiftName||'—').slice(0,60))+'</strong></div>',
-        '<div><span>Started</span><strong>'+h(startedAt?new Date(startedAt).toLocaleString():'—')+'</strong></div>',
-        '<div><span>Ended</span><strong>'+h(endedAt?new Date(endedAt).toLocaleString():'—')+'</strong></div>',
-        '<div><span>Dispenser / Nozzle</span><strong>'+h(dispenserCode)+'</strong></div>',
-        '<div><span>Tank</span><strong>'+h(tankCode)+'</strong></div>',
-        '<div><span>Product</span><strong>'+h(productCode)+'</strong></div>',
-        '<div><span>DSR ID</span><strong class="mono">'+h(dsrId||'—')+'</strong></div>',
-        '<div class="wide"><span>Shift ID</span><strong class="mono">'+h(t.shift_id||'—')+'</strong></div>',
-      '</div>',
-    '</div>',
-    '<div class="history-detail-section">',
-      '<div class="history-detail-section-head"><div><span class="section-kicker">READINGS</span><h4>Opening & closing meter readings</h4></div></div>',
-      '<div class="history-detail-readings">'+(rows||'<div class="history-detail-empty">No nozzle readings were recorded.</div>')+'</div>',
-      '<div class="history-detail-total-row"><span>Total liters sold</span><strong>'+liters(totalLiters)+' L</strong></div>',
-    '</div>',
-    '<div class="history-detail-section">',
-      '<div class="history-detail-section-head"><div><span class="section-kicker">TANK STOCK</span><h4>Tank opening & closing stock</h4></div></div>',
-      '<div class="history-detail-info-grid">',
-        '<div><span>Opening stock</span><strong>'+ (Number.isFinite(tankOpening)?liters(tankOpening):'—') +' L</strong></div>',
-        '<div><span>Closing stock</span><strong>'+ (Number.isFinite(tankClosing)?liters(tankClosing):'—') +' L</strong></div>',
-        '<div><span>Tank sales</span><strong>'+liters(t.tank_sales_liters)+' L</strong></div>',
-        '<div><span>Stock variance</span><strong>'+liters(t.tank_variance_liters)+' L</strong></div>',
-      '</div>',
-    '</div>',
-    '<div class="history-detail-section">',
-      '<div class="history-detail-section-head"><div><span class="section-kicker">SALES</span><h4>Recorded sales</h4></div><span class="history-detail-count">'+sales.length+' '+(sales.length===1?'entry':'entries')+'</span></div>',
-      '<div class="history-detail-sales">'+(saleRows||'<div class="history-detail-empty">No sale entries were recorded.</div>')+'</div>',
-      '<div class="history-detail-total-row"><span>Entries total</span><strong>'+money(entryTotal)+'</strong></div>',
-    '</div>',
-    '<div class="history-detail-section">',
-      '<div class="history-detail-info-grid">',
-        '<div><span>Submitted</span><strong>'+h(submittedAt?new Date(submittedAt).toLocaleString():'—')+'</strong></div>',
-        '<div><span>Confirmed</span><strong>'+h(confirmedAt?new Date(confirmedAt).toLocaleString():'—')+'</strong></div>',
-      '</div>',
-    '</div>'
-  ].join('');
-  if(box)box.innerHTML=content;
+    const content=[
+      '<div class="history-detail-overview"><div class="history-detail-main"><span class="section-kicker">SHIFT DETAILS</span><h4>'+h(dispenser)+'</h4><p>'+h(productCode)+' · '+h(tankCode)+'</p></div><div class="history-detail-amount"><span>'+h(statusLabel)+'</span><strong>'+money(totalAmount)+'</strong><small>'+liters(totalLiters)+' L</small></div></div>',
+      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">SHIFT</span><h4>Shift information</h4></div></div><div class="history-detail-info-grid"><div><span>Attendant</span><strong>'+h(attendant)+'</strong></div><div><span>Shift</span><strong>'+h(shiftName)+'</strong></div><div><span>Started</span><strong>'+h(startedAt?new Date(startedAt).toLocaleString():'—')+'</strong></div><div><span>Ended</span><strong>'+h(endedAt?new Date(endedAt).toLocaleString():'—')+'</strong></div><div><span>Dispenser / Nozzle</span><strong>'+h(dispenser)+'</strong></div><div><span>Tank</span><strong>'+h(tankCode)+'</strong></div><div><span>Product</span><strong>'+h(productCode)+'</strong></div><div><span>DSR ID</span><strong class="mono">'+h(dsrId||'—')+'</strong></div><div class="wide"><span>Shift ID</span><strong class="mono">'+h(t.shift_id||'—')+'</strong></div></div></div>',
+      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">READINGS</span><h4>Opening & closing meter readings</h4></div></div><div class="history-detail-readings">'+(rows||'<div class="history-detail-empty">No nozzle readings were recorded.</div>')+'</div><div class="history-detail-total-row"><span>Total liters sold</span><strong>'+liters(totalLiters)+' L</strong></div></div>',
+      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">TANK STOCK</span><h4>Tank opening & closing stock</h4></div></div><div class="history-detail-info-grid"><div><span>Opening stock</span><strong>'+(Number.isFinite(tankOpening)?liters(tankOpening):'—')+' L</strong></div><div><span>Closing stock</span><strong>'+(Number.isFinite(tankClosing)?liters(tankClosing):'—')+' L</strong></div><div><span>Tank sales</span><strong>'+liters(t.tank_sales_liters)+' L</strong></div><div><span>Stock variance</span><strong>'+liters(t.tank_variance_liters)+' L</strong></div></div></div>',
+      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">SALES</span><h4>Recorded sales</h4></div><span class="history-detail-count">'+sales.length+' '+(sales.length===1?'entry':'entries')+'</span></div><div class="history-detail-sales">'+(saleRows||'<div class="history-detail-empty">No sale entries were recorded.</div>')+'</div><div class="history-detail-total-row"><span>Entries total</span><strong>'+money(entryTotal)+'</strong></div></div>',
+      '<div class="history-detail-section"><div class="history-detail-info-grid"><div><span>Submitted</span><strong>'+h(submittedAt?new Date(submittedAt).toLocaleString():'—')+'</strong></div><div><span>Confirmed</span><strong>'+h(confirmedAt?new Date(confirmedAt).toLocaleString():'—')+'</strong></div></div></div>'
+    ].join('');
+    if(box)box.innerHTML=content;
+  }catch(e){
+    if(box)box.innerHTML='<div class="history-detail-section"><p class="muted">Unable to display shift details: '+h(e&&e.message?e.message:'Unknown error')+'</p></div>';
+  }
 }
 function closeAdminSaleHistoryDetails(){const modal=document.getElementById('admin-sale-history-details');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}}
 window.openAdminSaleHistoryDetails=openAdminSaleHistoryDetails;
