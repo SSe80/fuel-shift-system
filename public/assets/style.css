@@ -906,7 +906,7 @@ body[data-app-page="adminAccountingControl"] .wrap{max-width:980px}
 body[data-app-page="adminFuelConfiguration"] .settings-header,
 body[data-app-page="adminInventory"] .settings-header,
 body[data-app-page="adminAttendants"] .settings-header,
-body[data-app-page="adminAccountingControl"] .settings-header{padding:10px 4px 4px}
+body[data-app-page="adminAccountingControl"] .settings-header{padding:10px 4px 16px}
 /* Subpage titles intentionally inherit the exact same .eyebrow styling as STATION CONTROL. */
 body[data-app-page="adminInventory"] .inventory-details{margin-top:9px;padding-top:8px;border-top:1px solid rgba(127,127,127,.2);display:grid;gap:3px}
 
