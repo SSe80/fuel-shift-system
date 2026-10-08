@@ -1048,3 +1048,69 @@ body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-nav a[ar
   background:#dc2626!important;
   border-radius:2px!important;
 }
+
+
+/* Unified admin sub-page body card */
+body.admin-shell .admin-page-body-card{
+  width:100%;
+  box-sizing:border-box;
+  margin:0;
+  padding:18px 20px;
+  border:1px solid #dfe6ee;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 4px 16px #17202a0a;
+}
+body.admin-shell .admin-page-body-card > .card,
+body.admin-shell .admin-page-body-card > .purchase-section,
+body.admin-shell .admin-page-body-card > .admin-sales-section,
+body.admin-shell .admin-page-body-card > .settings-section,
+body.admin-shell .admin-page-body-card > .daily-section{
+  margin:0;
+  padding:0 0 18px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+body.admin-shell .admin-page-body-card > .card + .card,
+body.admin-shell .admin-page-body-card > .purchase-section + .purchase-section,
+body.admin-shell .admin-page-body-card > .admin-sales-section + .admin-sales-section,
+body.admin-shell .admin-page-body-card > .settings-section + .settings-section,
+body.admin-shell .admin-page-body-card > .daily-section + .daily-section{
+  padding-top:18px;
+  border-top:1px solid #edf1f4;
+}
+body.admin-shell .admin-page-body-card > .admin-sales-section{
+  padding-bottom:0;
+}
+body.admin-shell .admin-page-body-card > .admin-sales-section > .purchase-section{
+  padding:18px 0;
+  border-top:1px solid #edf1f4;
+}
+body.admin-shell .admin-page-body-card > .admin-sales-section > .purchase-section:first-of-type{
+  border-top:0;
+}
+body.admin-shell .admin-page-body-card .section-heading,
+body.admin-shell .admin-page-body-card .purchase-section-head,
+body.admin-shell .admin-page-body-card .admin-sales-section-heading{
+  margin-bottom:12px;
+}
+body.admin-shell .admin-page-body-card > .settings-section .section-heading{
+  margin-bottom:12px;
+}
+body.admin-shell .admin-page-body-card > .settings-section .settings-collapsible{
+  padding-top:0;
+}
+body.admin-shell .admin-page-body-card > .daily-section{
+  padding-bottom:18px;
+}
+body.admin-shell .admin-page-body-card > .daily-section:last-of-type{
+  padding-bottom:0;
+}
+@media(max-width:700px){
+  body.admin-shell .admin-page-body-card{
+    padding:15px;
+    border-radius:12px;
+  }
+}
