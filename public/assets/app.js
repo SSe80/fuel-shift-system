@@ -4291,7 +4291,7 @@ window.adminSalesHistory=adminSalesHistory;
 window.adminSettings=adminSettings;
 window.userDashboard=userDashboard;
 
-// Unified admin sidebar toggle
+// Prefetch dashboard sub-pages so navigation feels immediate.\n(function prefetchDashboardSubPages(){\n  if(document.body?.classList?.contains('admin-shell')===false)return;\n  const links=[...document.querySelectorAll('.dashboard-section-nav a[href]')];\n  const urls=[...new Set(links.map(a=>a.getAttribute('href')).filter(Boolean))];\n  const add=(url)=>{\n    if(!url||document.head.querySelector('link[rel=\"prefetch\"][href=\"'+url+'\"]'))return;\n    const link=document.createElement('link');\n    link.rel='prefetch';\n    link.as='document';\n    link.href=url;\n    link.fetchPriority='low';\n    document.head.appendChild(link);\n  };\n  // Start with the currently visible dashboard group; do not block page rendering.\n  if('requestIdleCallback' in window){\n    requestIdleCallback(()=>urls.forEach(add),{timeout:1200});\n  }else{\n    setTimeout(()=>urls.forEach(add),250);\n  }\n})();\n\n// Unified admin sidebar toggle
 function toggleAdminSidebar(){
   const body=document.body;
   if(!body || !body.classList.contains('admin-shell'))return;
