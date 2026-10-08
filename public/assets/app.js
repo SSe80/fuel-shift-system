@@ -2644,6 +2644,25 @@ function closeDispenserActivation(){
   modal.setAttribute('aria-hidden','true');
 }
 
+async function _performDispenserActivation(pending){
+  if(!pending?.id)return false;
+  try{
+    await api('/api/shifts',{method:'POST',body:JSON.stringify({
+      employee_id:pending.employeeId,
+      nozzle_id:pending.id,
+      opening_tank_liters:pending.openingTankLiters,
+      activation_nozzles:pending.selected.map(x=>({nozzle_id:x.nozzle_id,opening_reading:x.activation_number}))
+    })});
+    window.pendingDispenserAssignment=null;
+    pendingDispenserActivationId=null;
+    await loadSettingsData();
+    return true;
+  }catch(e){
+    toast(e.message);
+    return false;
+  }
+}
+
 async function _confirmDispenserActivation(){
   const id=pendingDispenserActivationId;
   if(!id)return;
@@ -2653,18 +2672,19 @@ async function _confirmDispenserActivation(){
   const employeeSelect=document.getElementById('dispenser-activation-employee');
   const employeeId=employeeSelect?.value||'';
   const attendantName=employeeSelect?.selectedOptions?.[0]?.textContent||'Selected attendant';
-  const tank= (window.tankRecords||[]).find(x=>String(x.id)===String(d.tank_id));
+  const tank=(window.tankRecords||[]).find(x=>String(x.id)===String(d.tank_id));
   const openingTankMm=Number(document.getElementById('dispenser-activation-tank-dip')?.value);
   const openingTankLiters=tankLitersFromDip(tank,openingTankMm);
   const selected=[];
   ids.forEach((nozzleId,i)=>{
     const box=document.getElementById('nozzle-activation-input-'+i);
     const input=document.getElementById('nozzle-activation-number-'+i);
-    if(box&&box.style.display!=='none'&&input&&input.value.trim()!==''&&Number(input.value)>=0)selected.push({nozzle_id:nozzleId,activation_number:Number(input.value)});
+    if(box&&box.style.display!=='none'&&input&&input.value.trim()!==''&&Number(input.value)>=0){
+      selected.push({nozzle_id:nozzleId,activation_number:Number(input.value)});
+    }
   });
   const error=document.getElementById('dispenser-activate-error');
   const review=document.getElementById('dispenser-activation-review');
-  const confirmation=document.getElementById('dispenser-attendant-confirmation');
   if(!Number.isFinite(openingTankLiters)||openingTankLiters<0){
     error.textContent='Enter a valid tank opening dip and ensure calibration is set.';
     error.style.display='block'; return false;
@@ -2677,17 +2697,52 @@ async function _confirmDispenserActivation(){
     error.textContent='Activate at least one nozzle and enter its opening meter reading before continuing.';
     error.style.display='block'; return false;
   }
-  if(review)review.innerHTML='<div class="card" style="margin:0"><b>Attendant reading confirmation</b><p style="margin:6px 0">Attendant: <b>'+h(attendantName)+'</b></p><p style="margin:6px 0">Tank opening liters: <b>'+liters(openingTankLiters)+' L</b></p><p style="margin:6px 0">Nozzle opening readings: '+selected.map(x=>'<b>'+h(x.nozzle_id)+'</b> = '+liters(x.activation_number)).join(' • ')+'</p><p class="muted" style="margin:6px 0 0">The selected Attendant must review these readings and confirm they are correct before the shift is activated.</p></div>';
-  try{
-    await api('/api/shifts',{method:'POST',body:JSON.stringify({
-      employee_id:employeeId,
-      nozzle_id:id,
-      opening_tank_liters:openingTankLiters,
-      activation_nozzles:selected.map(x=>({nozzle_id:x.nozzle_id,opening_reading:x.activation_number}))
-    })});
-    closeDispenserActivation();
-    await loadSettingsData();
-  }catch(e){toast(e.message);}
+
+  const product=(window.productRecords||[]).find(p=>String(p.name||'').toLowerCase()===String(d.product||'').toLowerCase());
+  const productCode=product?.code_name||d.product||'—';
+  const tankCode=tank?.tank_code||d.tank_id||'Not connected';
+  const nozzleReadings=selected.map(x=>'<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #edf0f3"><span>'+h(x.nozzle_id)+'</span><b>'+reading(x.activation_number)+'</b></div>').join('');
+  const details=
+    '<div style="display:grid;gap:10px">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+        '<div><span class="muted" style="font-size:11px">DISPENSER</span><b style="display:block;margin-top:3px">'+h(d.nozzle_code||id)+'</b></div>'+
+        '<div><span class="muted" style="font-size:11px">PRODUCT</span><b style="display:block;margin-top:3px">'+h(productCode)+'</b></div>'+
+        '<div><span class="muted" style="font-size:11px">ATTENDANT</span><b style="display:block;margin-top:3px">'+h(attendantName)+'</b></div>'+
+        '<div><span class="muted" style="font-size:11px">TANK</span><b style="display:block;margin-top:3px">'+h(tankCode)+'</b></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+        '<div><span class="muted" style="font-size:11px">TANK OPENING DIP</span><b style="display:block;margin-top:3px">'+h(reading(openingTankMm))+' mm</b></div>'+
+        '<div><span class="muted" style="font-size:11px">TANK OPENING VOLUME</span><b style="display:block;margin-top:3px">'+h(liters(openingTankLiters))+' L</b></div>'+
+      '</div>'+
+      '<div><span class="muted" style="font-size:11px">OPENING NOZZLE READINGS</span><div style="margin-top:4px">'+nozzleReadings+'</div></div>'+
+      '<p class="muted" style="margin:2px 0 0">Review these details before assigning the shift. Nothing will be assigned until you press Confirm.</p>'+
+    '</div>';
+
+  window.pendingDispenserAssignment={
+    id,
+    employeeId,
+    attendantName,
+    openingTankMm,
+    openingTankLiters,
+    selected,
+    productCode,
+    tankCode
+  };
+  if(review)review.innerHTML='';
+  const modal=document.getElementById('dispenser-activate-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  showSettingsConfirmation(
+    'Confirm Shift Assignment',
+    details,
+    ()=>_performDispenserActivation(window.pendingDispenserAssignment),
+    'Shift assigned successfully',
+    h(d.nozzle_code||id)+' is now assigned to '+h(attendantName)+'.'
+  );
+  return true;
+}
+
+function confirmDispenserActivation(){
+  return _confirmDispenserActivation();
 }
 
 let pendingDispenserDeactivationId=null;
