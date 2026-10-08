@@ -4164,3 +4164,27 @@ body[data-app-page="adminInventory"] .tank-movement-detail-row .tank-movement-ba
   align-items:center!important;
   gap:4px!important;
 }
+
+
+/* Tank movement invoice link */
+body[data-app-page="adminInventory"] .tank-movement-invoice-link{
+  display:inline!important;
+  padding:0!important;
+  border:0!important;
+  background:none!important;
+  color:#1264d8!important;
+  font:inherit!important;
+  font-size:inherit!important;
+  font-weight:900!important;
+  text-decoration:underline!important;
+  text-underline-offset:2px!important;
+  cursor:pointer!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-invoice-link:hover{
+  color:#084a9b!important;
+}
+body[data-app-page="adminPurchases"] .purchase-card-linked{
+  outline:2px solid #1264d8!important;
+  outline-offset:3px!important;
+  transition:outline .2s ease!important;
+}
