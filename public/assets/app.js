@@ -1477,8 +1477,8 @@ async function downloadAdminSaleHistoryDetails(id){
 
   const blob=createStyledReportPdf({
     singlePage:true,
-    title:'SALES REPORT',
-    subtitle:'Confirmed shift sales detail',
+    title:'SALES REPORT · CONFIRMED SHIFT SALES DETAIL',
+    subtitle:'Shift sales record',
     reference:String(dsrId||'DSR'),
     generated:statusLabel.toUpperCase(),
     summary:[
