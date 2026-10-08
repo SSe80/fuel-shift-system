@@ -4337,7 +4337,12 @@ document.addEventListener('DOMContentLoaded',()=>{
     'admin-purchases.html':'purchases',
     'admin-sales.html':'sales',
     'admin-daily-report.html':'daily-report',
-        'admin-settings.html':'settings'
+    'admin-settings.html':'settings',
+    /* All Admin Dashboard sub-pages keep Dashboard selected in the main sidebar. */
+    'admin-fuel-configuration.html':'dashboard',
+    'admin-inventory.html':'dashboard',
+    'admin-attendants.html':'dashboard',
+    'admin-accounting-control.html':'dashboard'
   };
   const active=map[page]||'';
   links.forEach(link=>{
