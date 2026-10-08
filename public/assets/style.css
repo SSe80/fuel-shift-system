@@ -1253,3 +1253,64 @@ body[data-app-page="adminInventory"] .admin-page-body-card #tank-movements{
     padding-top:18px!important;
   }
 }
+
+
+/* Dashboard sub-pages — remove content cards inside each section, keep the main body card */
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid > .stat,
+body[data-app-page="adminInventory"] .admin-page-body-card .statgrid > .stat,
+body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid > .stat{
+  margin:0!important;
+  padding:13px 0!important;
+  border:0!important;
+  border-top:1px solid #edf1f5!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid > .stat:first-child,
+body[data-app-page="adminInventory"] .admin-page-body-card .statgrid > .stat:first-child,
+body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid > .stat:first-child{
+  border-top:0!important;
+  padding-top:0!important;
+}
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid > .stat:last-child,
+body[data-app-page="adminInventory"] .admin-page-body-card .statgrid > .stat:last-child,
+body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid > .stat:last-child{
+  padding-bottom:0!important;
+}
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid > .card,
+body[data-app-page="adminInventory"] .admin-page-body-card .statgrid > .card,
+body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid > .card,
+body[data-app-page="adminInventory"] .admin-page-body-card #tank-movements > .card{
+  margin:0!important;
+  padding:12px 0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body[data-app-page="adminInventory"] .admin-page-body-card .tank-movement-group{
+  margin:0!important;
+  padding:13px 0!important;
+  border:0!important;
+  border-top:1px solid #edf1f5!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body[data-app-page="adminInventory"] .admin-page-body-card .tank-movement-group:first-child{
+  border-top:0!important;
+  padding-top:0!important;
+}
+body[data-app-page="adminInventory"] .admin-page-body-card .tank-movement-group:last-child{
+  padding-bottom:0!important;
+}
+body[data-app-page="adminAccountingControl"] .admin-page-body-card .accounting-period-summary > .card,
+body[data-app-page="adminAccountingControl"] .admin-page-body-card .accounting-period-summary .card{
+  margin:0!important;
+  padding:12px 0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
