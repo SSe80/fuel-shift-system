@@ -4400,10 +4400,12 @@ async function openAdminProductDetails(productId){
     const performance='<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>PERFORMANCE</span><small>Sales volume trend</small></div><div class="admin-product-performance-summary">'+
       adminProductDetailMetric('12-month volume',liters(monthlyTotal)+' L','recorded sales')+
       adminProductDetailMetric('Monthly average',liters(monthlyAverage)+' L','12-month average')+
-      adminProductDetailMetric('Best month',h(bestMonth.label),' '+liters(bestMonth.value)+' L')+
-      '</div><div class="admin-product-chart-wrap"><div class="admin-product-chart-title">Monthly volume</div>'+adminProductBuildLineChart(monthlyRows)+'</div><div class="admin-product-chart-wrap"><div class="admin-product-chart-title">Last 7 days</div>'+adminProductBuildBars(dailyRows)+'</div></section>';
+      adminProductDetailMetric('Best month',h(bestMonth.label),liters(bestMonth.value)+' L')+
+      '</div><div class="admin-product-chart-wrap"><div class="admin-product-chart-title">Monthly volume</div>'+adminProductBuildLineChart(monthlyRows)+'</div></section>';
     const tanksSection='<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>ACTIVE TANKS</span><small>'+h(liters(stock)+' L total stock')+'</small></div><div class="admin-product-tank-list">'+tankRows+'</div></section>';
-    if(content)content.innerHTML=hero+overview+todaySection+performance+tanksSection;
+    const slideOne='<article class="admin-product-slide" data-product-slide="0" style="--product-color:'+h(color)+'">'+hero+overview+performance+'</article>';
+    const slideTwo='<article class="admin-product-slide" data-product-slide="1" style="--product-color:'+h(color)+'">'+todaySection+'<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>RECENT PERFORMANCE</span><small>Last 7 days</small></div><div class="admin-product-chart-wrap">'+adminProductBuildBars(dailyRows)+'</div></section>'+tanksSection+'</article>';
+    if(content)content.innerHTML='<div class="admin-product-slides">'+slideOne+slideTwo+'</div><div class="admin-product-slide-controls"><button type="button" class="admin-product-slide-arrow" data-product-slide-prev aria-label="Previous">‹</button><div class="admin-product-slide-dots"><button type="button" class="admin-product-slide-dot active" data-product-slide-to="0" aria-label="Slide 1"></button><button type="button" class="admin-product-slide-dot" data-product-slide-to="1" aria-label="Slide 2"></button></div><button type="button" class="admin-product-slide-arrow" data-product-slide-next aria-label="Next">›</button></div>';
   }catch(e){
     if(content)content.innerHTML='<div class="admin-product-details-error">'+h(e.message||'Unable to load product details.')+'</div>';
   }
@@ -4417,7 +4419,24 @@ document.addEventListener('click',event=>{
   }
   if(event.target.closest?.('[data-product-popup-close]')){
     closeAdminProductDetails();
+    return;
   }
+  const modal=event.target.closest?.('#admin-product-details-modal');
+  if(!modal)return;
+  const content=modal.querySelector('#admin-product-details-content');
+  const slides=modal.querySelectorAll('.admin-product-slide');
+  if(!content||slides.length<2)return;
+  let current=[...slides].findIndex(s=>s.classList.contains('active'));
+  if(current<0)current=0;
+  let target=null;
+  if(event.target.closest('[data-product-slide-next]'))target=Math.min(slides.length-1,current+1);
+  if(event.target.closest('[data-product-slide-prev]'))target=Math.max(0,current-1);
+  const dot=event.target.closest('[data-product-slide-to]');
+  if(dot)target=Math.max(0,Math.min(slides.length-1,Number(dot.getAttribute('data-product-slide-to'))||0));
+  if(target===null||target===current)return;
+  slides.forEach((s,i)=>s.classList.toggle('active',i===target));
+  modal.querySelectorAll('.admin-product-slide-dot').forEach((d,i)=>d.classList.toggle('active',i===target));
+  content.setAttribute('data-product-slide-current',String(target));
 });
 document.addEventListener('keydown',event=>{
   const card=event.target.closest?.('#products .activated-product-card');
