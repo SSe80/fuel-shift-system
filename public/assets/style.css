@@ -917,3 +917,37 @@ body[data-app-page="adminInventory"] .inventory-details{margin-top:9px;padding-t
 /* Admin dashboard section page headings */
 .page-description{margin:6px 0 0;max-width:720px;font-size:13px;line-height:1.5;color:var(--muted,#6b7280)}
 @media(max-width:480px){.page-description{font-size:12px;line-height:1.45;margin-top:5px}}
+
+
+/* Final admin sidebar navigation — text-only active state, no blue padding */
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a,
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a:hover,
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a:active,
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a:focus,
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a:focus-visible,
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a.active,
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a[aria-current="page"]{
+  background:transparent!important;
+  box-shadow:none!important;
+  border-color:transparent!important;
+  outline:none!important;
+  border-radius:0!important;
+  transform:none!important;
+}
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a{
+  color:#aeb8c7!important;
+  -webkit-tap-highlight-color:transparent;
+}
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a:hover{
+  color:#60a5fa!important;
+}
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a:active,
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a:focus,
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a:focus-visible,
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a.active,
+body.admin-shell>.admin-sidebar .admin-sidebar-nav a[aria-current="page"]{
+  color:#60a5fa!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  outline:0!important;
+}
