@@ -1696,9 +1696,16 @@ function downloadPurchaseDetailPdf(){
 window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
 
 async function openAdminSaleHistoryDetails(id){
-  const source=(typeof adminSalesHistoryData!=='undefined'&&Array.isArray(adminSalesHistoryData.history))
+  // Admin Sales uses adminSalesData.history. The attendant dashboard may also
+  // populate adminSalesHistoryData, but an empty attendant-only history must
+  // never hide the actual Admin Sales History records.
+  const historySource=(typeof adminSalesHistoryData!=='undefined'&&Array.isArray(adminSalesHistoryData.history))
     ?adminSalesHistoryData.history
-    :((typeof adminSalesData!=='undefined'&&Array.isArray(adminSalesData.history))?adminSalesData.history:[]);
+    :[];
+  const adminHistorySource=(typeof adminSalesData!=='undefined'&&Array.isArray(adminSalesData.history))
+    ?adminSalesData.history
+    :[];
+  const source=historySource.length?historySource:adminHistorySource;
   const item=source.find(function(x){return String((x&&x.takeover&&x.takeover.id)||'')===String(id);})||((window.__attendantTakeoverDetailsItem&&String(window.__attendantTakeoverDetailsItem.takeover?.id)===String(id))?window.__attendantTakeoverDetailsItem:null);
   const modal=document.getElementById('admin-sale-history-details');
   const box=document.getElementById('admin-sale-history-details-content');
