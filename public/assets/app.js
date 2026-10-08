@@ -3955,26 +3955,10 @@ async function _confirmGenericActivationReview(){
 }
 function confirmGenericActivation(){return _confirmGenericActivationReview();}
 async function confirmDispenserActivation(){
-  const id=pendingDispenserActivationId,d=settingsRecord(window.dispenserRecords,id);
-  const employeeSelect=document.getElementById('dispenser-activation-employee');
-  const employeeId=employeeSelect?.value||'';
-  const employee=employeeSelect?.selectedOptions?.[0]?.textContent||'Not selected';
-  const tank=document.getElementById('dispenser-activation-tank-liters')?.value.trim()||'';
-  const tankNumber=tank===''?NaN:Number(tank);
-  const ids=d.nozzle_ids||[];
-  const selected=ids.map((nozzleId,i)=>{
-    const box=document.getElementById('nozzle-activation-input-'+i),input=document.getElementById('nozzle-activation-number-'+i);
-    if(!box||box.style.display==='none'||!input||input.value.trim()==='')return null;
-    const value=Number(input.value);
-    return Number.isFinite(value)&&value>=0?{nozzleId,value}:null;
-  }).filter(Boolean);
-  if(!Number.isFinite(tankNumber)||tankNumber<0){toast('Enter the tank opening liters in liters.');return;}
-  if(!employeeId){toast('Select an attendant before continuing.');return;}
-  if(!selected.length){toast('Activate at least one nozzle and enter its opening meter reading before continuing.');return;}
-  const readings=selected.map(x=>'<p style="margin:5px 0"><b>'+h(x.nozzleId)+':</b> '+h(liters(x.value))+'</p>').join('');
-  const details='<p><b>Dispenser:</b> '+h(d.nozzle_code||id)+'</p><p><b>Attendant:</b> '+h(employee)+'</p><p><b>Opening liters:</b> '+h(liters(tankNumber))+' L</p><p><b>Nozzle opening readings:</b></p>'+readings+settingsStatus('Pending — dispenser remains inactive until attendant confirms');
-  showSettingsConfirmation('Review Dispenser Shift Assignment',details,()=>_confirmDispenserActivation(),
-    'Shift assignment created successfully','<p>The assignment was sent to <b>'+h(employee)+'</b>.</p>'+details);
+  // Assign Shift must use the tank dip entered during dispenser activation.
+  // _confirmDispenserActivation converts dip (mm) to liters from the tank calibration;
+  // do not read the hidden liters field here or ask the user to enter liters manually.
+  return _confirmDispenserActivation();
 }
 async function _toggleNozzleConfirmed(id){return _toggleNozzle(id,true);}
 function toggleNozzle(id,active){
