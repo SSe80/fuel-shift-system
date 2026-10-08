@@ -102,4 +102,19 @@
 .admin-weekly-empty strong{font-size:12px;color:#344054}
 .admin-weekly-empty span{font-size:10px;color:#8993a1}
 @media(max-width:520px){.admin-weekly-summary-item{padding:9px}.admin-weekly-summary-item strong{font-size:12px}.admin-weekly-rank-row{grid-template-columns:25px minmax(0,1fr) auto;gap:7px}.admin-weekly-rank-score strong{font-size:11px}.admin-weekly-rank-score small{font-size:8px}}
+
+/* Attendant details: two-card swipe layout */
+.admin-attendant-swipe{min-width:0;overflow:hidden}
+.admin-attendant-swipe-track{display:flex;width:100%;align-items:stretch;transition:transform .28s cubic-bezier(.2,.75,.25,1);will-change:transform;touch-action:pan-y}
+.admin-attendant-swipe-page{flex:0 0 100%;width:100%;min-width:0;box-sizing:border-box;padding:0 1px 2px}
+.admin-attendant-swipe-page .admin-attendant-section{margin-top:12px}
+.admin-attendant-shifts-panel{min-height:260px}
+.admin-attendant-shifts-list{max-height:58vh;overflow-y:auto;padding-right:3px;overscroll-behavior:contain}
+.admin-attendant-swipe-controls{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 2px 2px;border-top:1px solid #edf0f3}
+.admin-attendant-swipe-arrow{width:30px;height:30px;border:1px solid #dfe5ec;border-radius:9px;background:#fff;color:#1769df;font-size:22px;line-height:1;cursor:pointer}
+.admin-attendant-swipe-arrow:disabled{opacity:.35;cursor:default}
+.admin-attendant-swipe-dots{display:flex;align-items:center;gap:7px}
+.admin-attendant-swipe-dots button{width:7px;height:7px;padding:0;border:0;border-radius:99px;background:#cbd5e1;cursor:pointer}
+.admin-attendant-swipe-dots button.active{width:20px;background:#1769df}
+.admin-attendant-swipe-controls [data-attendant-page-label]{font-size:10px;color:#7b8795;font-weight:700;min-width:25px}
 </style></body></html>
