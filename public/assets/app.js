@@ -349,47 +349,13 @@ async function openTakeoverDetails(id){
   const employee=employees.find(e=>String(e.id)===String(takeover.to_employee_id));
   const tank=tanks.find(t=>String(t.id)===String(takeover.tank_id||nozzle?.tank_id));
   const product=products.find(p=>String(p.id)===String(tank?.product_id)||String(p.name||'').toLowerCase()===String(tank?.product||'').toLowerCase());
-  const opening=Array.isArray(takeover.nozzle_opening_readings)?takeover.nozzle_opening_readings:[];
-  const closing=Array.isArray(takeover.nozzle_closing_readings)?takeover.nozzle_closing_readings:[];
-  const nozzleSales=Array.isArray(takeover.nozzle_sales_liters)?takeover.nozzle_sales_liters:[];
-  const details=document.getElementById('takeover-details-content');
-  const modal=document.getElementById('takeover-details-modal');
-  if(details)details.innerHTML='<div class="shift-details-loading">Loading shift details…</div>';
-  if(modal){modal.classList.add('open','takeover-details-force');modal.setAttribute('aria-hidden','false');}
-  let recorded=[],saleMeta={};
-  try{
-    const data=await api('/api/shift-takeovers/'+id+'/sale-record');
-    recorded=Array.isArray(data?.sales)?data.sales:[];
-    saleMeta=data?.takeover||{};
-  }catch(e){
-    if(details)details.innerHTML='<p class="muted shift-details-error">'+h(e.message||'Unable to load shift details.')+'</p>';
+  const item={takeover:takeover,sales:[],dispenser:nozzle?{nozzle_code:nozzle.nozzle_code,nozzle_id:nozzle.id,name:nozzle.nozzle_code}:null,tank:tank||null,product:product||null,to_employee:employee||null,shift:shift||null};
+  if(typeof adminSalesHistoryData!=='undefined')adminSalesHistoryData={history:[item]};
+  if(typeof openAdminSaleHistoryDetails==='function'){
+    openAdminSaleHistoryDetails(id);
     return;
   }
-  const status=String(saleMeta.sales_status||takeover.sales_status||'confirmed').replace(/_/g,' ');
-  const statusLabel=status.replace(/\b\w/g,m=>m.toUpperCase());
-  const rows=nozzleSales.map((s,i)=>{
-    const o=opening.find(x=>String(x.nozzle_id)===String(s.nozzle_id))||opening[i]||{};
-    const cl=closing.find(x=>String(x.nozzle_id)===String(s.nozzle_id))||closing[i]||{};
-    const nn=nozzles.find(x=>String(x.id)===String(s.nozzle_id));
-    return '<div class="shift-details-reading-row"><div><strong>'+h(nn?.nozzle_code||('Nozzle '+(i+1)))+'</strong><small>'+h(product?.code_name||'—')+'</small></div><div><span>Opening</span><b>'+reading(o.opening_reading??o.reading)+'</b></div><div><span>Closing</span><b>'+reading(cl.reading??cl.closing_reading)+'</b></div><div><span>Sold</span><b>'+liters(s.liters_sold)+' L</b></div></div>';
-  }).join('');
-  const recordedRows=recorded.map(s=>'<div class="shift-details-sale-row"><div><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+(s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'')+(s.reason?'<em>Reason: '+h(s.reason)+'</em>':'')+'</div><strong>'+money(s.amount)+'</strong></div>').join('');
-  const submittedAt=saleMeta.sales_submitted_at||takeover.sales_submitted_at;
-  const confirmedAt=saleMeta.sales_confirmed_at||takeover.sales_confirmed_at;
-  if(details)details.innerHTML=
-    '<div class="shift-details-hero"><div><span class="section-kicker">SHIFT DETAILS</span><h4>'+h(nozzle?.nozzle_code||takeover.dispenser_code||'Dispenser')+'</h4><p>'+h(product?.code_name||'Product code not assigned')+' · '+h(tank?.tank_code||'Tank not assigned')+'</p></div><span class="shift-details-status">'+h(statusLabel)+'</span></div>'+
-    '<div class="shift-details-grid">'+
-      '<div><span>Attendant</span><strong>'+h(employee?.name||takeover.to_employee_id||'—')+'</strong></div>'+
-      '<div><span>Shift</span><strong>'+h(String(shift?.name||takeover.shift_name||takeover.shift_id||'—').slice(0,40))+'</strong></div>'+
-      '<div><span>Started</span><strong>'+h(takeover.shift_started_at?new Date(takeover.shift_started_at).toLocaleString():'—')+'</strong></div>'+
-      '<div><span>Ended</span><strong>'+h(takeover.shift_ended_at?new Date(takeover.shift_ended_at).toLocaleString():'—')+'</strong></div>'+
-      '<div><span>Confirmed</span><strong>'+h(confirmedAt?new Date(confirmedAt).toLocaleString():'Pending')+'</strong></div>'+
-      '<div><span>Submitted</span><strong>'+h(submittedAt?new Date(submittedAt).toLocaleString():'—')+'</strong></div>'+
-    '</div>'+
-    '<div class="shift-details-section"><div class="shift-details-section-title">Tank opening & closing stock</div><div class="shift-details-metrics"><div><span>Opening stock</span><strong>'+liters(takeover.tank_opening_liters)+' L</strong></div><div><span>Closing stock</span><strong>'+liters(takeover.tank_closing_liters)+' L</strong></div><div><span>Tank sales</span><strong>'+liters(takeover.tank_sales_liters)+' L</strong></div><div><span>Stock variance</span><strong>'+liters(takeover.tank_variance_liters)+' L</strong><small>'+Number(takeover.tank_variance_pct||0).toFixed(2)+'%</small></div></div></div>'+
-    '<div class="shift-details-section"><div class="shift-details-section-title">Meter readings</div>'+(rows||'<p class="muted">No nozzle readings recorded.</p>')+'</div>'+
-    '<div class="shift-details-section"><div class="shift-details-section-title">Sales recorded</div>'+(recordedRows||'<p class="muted">No recorded sale entries.</p>')+'<div class="shift-details-total"><span>Sales total</span><strong>'+money(recorded.reduce((sum,s)=>sum+Number(s.amount||0),0))+'</strong></div></div>'+
-    '<div class="shift-details-total calculated"><span>Shift total</span><strong>'+liters(takeover.total_sales_liters)+' L</strong><strong>'+money(takeover.total_sales_amount)+'</strong></div>';
+  toast('Shift details are unavailable.');
 }
 
 function closeTakeoverDetails(){
