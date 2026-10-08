@@ -4316,3 +4316,35 @@ body[data-app-page="adminAttendants"] #attendants .attendant-shift-row strong{
     grid-template-columns:1fr!important;
   }
 }
+
+
+/* Admin Dashboard > Accounting Control */
+body[data-app-page="adminAccountingControl"] .settings-header{margin:0 0 8px!important;min-height:0!important}
+body[data-app-page="adminAccountingControl"] .settings-header .eyebrow{font-weight:850!important;letter-spacing:.12em!important}
+body[data-app-page="adminAccountingControl"] .admin-page-body-card{padding:16px!important;border:1px solid #e7ebf0!important;border-radius:16px!important;background:#f7f9fc!important}
+body[data-app-page="adminAccountingControl"] .admin-page-body-card>.card{padding:18px!important;border:1px solid #e2e8f0!important;border-radius:14px!important;background:#fff!important;box-shadow:0 4px 16px rgba(16,24,40,.045)!important}
+body[data-app-page="adminAccountingControl"] .admin-page-body-card>.card .section-heading{margin-bottom:12px!important}
+body[data-app-page="adminAccountingControl"] .admin-page-body-card>.card .section-kicker{font-size:9px!important;font-weight:850!important;letter-spacing:.13em!important;color:#64748b!important}
+body[data-app-page="adminAccountingControl"] .admin-page-body-card>.card h2{margin:3px 0 0!important;color:#172b4d!important;font-size:20px!important;line-height:1.2!important;font-weight:800!important}
+body[data-app-page="adminAccountingControl"] #accounting-period-status{margin:0 0 12px!important;padding:9px 11px!important;border:1px solid #e6edf5!important;border-radius:9px!important;background:#f8fafc!important;color:#475569!important;font-size:11px!important;line-height:1.4!important}
+body[data-app-page="adminAccountingControl"] #accounting-period-summary{margin-bottom:14px!important}
+body[data-app-page="adminAccountingControl"] .accounting-period-summary-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(145px,1fr))!important;gap:9px!important}
+body[data-app-page="adminAccountingControl"] .accounting-period-mini{display:flex!important;flex-direction:column!important;gap:5px!important;min-width:0!important;padding:11px!important;border:1px solid #e6ebf1!important;border-left:3px solid #64748b!important;border-radius:10px!important;background:#fff!important;color:#64748b!important;font-size:10px!important;line-height:1.35!important}
+body[data-app-page="adminAccountingControl"] .accounting-period-mini strong{font-size:12px!important;color:#1e293b!important;font-weight:800!important}
+body[data-app-page="adminAccountingControl"] .accounting-period-mini.ok,body[data-app-page="adminAccountingControl"] .accounting-period-mini.verified{border-left-color:#16a34a!important}
+body[data-app-page="adminAccountingControl"] .accounting-period-mini.warning,body[data-app-page="adminAccountingControl"] .accounting-period-mini.variance{border-left-color:#d97706!important}
+body[data-app-page="adminAccountingControl"] .admin-page-body-card>.card .actions{display:flex!important;gap:9px!important;flex-wrap:wrap!important;margin-top:8px!important}
+body[data-app-page="adminAccountingControl"] #open-accounting-period-button,body[data-app-page="adminAccountingControl"] #accounting-period-close-button{min-height:39px!important;padding:10px 15px!important;border-radius:9px!important;font-size:11px!important;font-weight:800!important}
+body[data-app-page="adminAccountingControl"] .accounting-period-form{max-width:660px!important;padding:20px!important;border:1px solid #e1e8f0!important;border-radius:16px!important}
+body[data-app-page="adminAccountingControl"] .accounting-period-form .top{align-items:flex-start!important;margin-bottom:12px!important}
+body[data-app-page="adminAccountingControl"] .accounting-period-form .top h3{margin:4px 0 0!important;font-size:19px!important;font-weight:850!important;color:#172b4d!important}
+body[data-app-page="adminAccountingControl"] .accounting-period-intro{margin:0 0 14px!important;padding:9px 11px!important;border-left:3px solid #2563eb!important;border-radius:0 8px 8px 0!important;background:#f5f8ff!important;color:#475569!important;font-size:11px!important;line-height:1.4!important}
+body[data-app-page="adminAccountingControl"] .accounting-opening-row{margin:0 0 10px!important;padding:13px!important;border:1px solid #e5eaf1!important;border-radius:11px!important;background:#fafbfd!important}
+body[data-app-page="adminAccountingControl"] .accounting-opening-row>strong{font-size:13px!important;font-weight:850!important;color:#1e293b!important}
+body[data-app-page="adminAccountingControl"] .accounting-opening-row>small{display:block!important;margin:3px 0 10px!important;color:#64748b!important;font-size:10px!important}
+body[data-app-page="adminAccountingControl"] .accounting-opening-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+body[data-app-page="adminAccountingControl"] .accounting-opening-grid label{gap:4px!important;font-size:10px!important;font-weight:700!important;color:#475569!important}
+body[data-app-page="adminAccountingControl"] .accounting-opening-grid label:last-child{grid-column:1/-1!important}
+body[data-app-page="adminAccountingControl"] .accounting-opening-grid input{min-width:0!important;padding:9px 10px!important;border-radius:8px!important;font-size:11px!important}
+body[data-app-page="adminAccountingControl"] .accounting-period-form>.row{gap:9px!important;margin-top:14px!important}
+@media(max-width:600px){body[data-app-page="adminAccountingControl"] .admin-page-body-card{padding:9px!important}body[data-app-page="adminAccountingControl"] .admin-page-body-card>.card{padding:13px!important}body[data-app-page="adminAccountingControl"] .accounting-opening-grid{grid-template-columns:1fr!important}body[data-app-page="adminAccountingControl"] .accounting-opening-grid label:last-child{grid-column:auto!important}body[data-app-page="adminAccountingControl"] .accounting-period-form{padding:15px!important}}
