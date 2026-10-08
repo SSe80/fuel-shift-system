@@ -1276,7 +1276,7 @@ async function adminSalesConfirmations(){
   }
 }
 function createStyledReportPdf(report){
-  const W=595,H=842,M=38,CONTENT_W=W-M*2,TOP=116,BOTTOM=48;
+  const W=595,H=842,compact=!!report.singlePage,M=compact?26:38,CONTENT_W=W-M*2,TOP=compact?94:116,BOTTOM=compact?24:48;
   // Keep all PDF offsets byte-accurate; the generated PDF is ASCII only.
   const clean=v=>String(v==null?'':v).replace(/[•·]/g,' - ').replace(/[→➜]/g,' -> ').replace(/—/g,'-').replace(/[^ -~]/g,'');
   const esc=v=>clean(v).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
@@ -1311,46 +1311,47 @@ function createStyledReportPdf(report){
     cmd(rgb(...color)+' RG\n'+width+' w\n'+x1+' '+y1+' m '+x2+' '+y2+' l S\n');
   };
   const section=(title)=>{
-    if(ensure(42)){}
-    rect(M,y-25,CONTENT_W,25,[244,247,250],null);
-    text(title.toUpperCase(),M+10,y-17,9,true,[71,85,105]);
-    y-=37;
+    if(ensure(compact?31:42)){}
+    const sh=compact?22:25;
+    rect(M,y-sh,CONTENT_W,sh,[244,247,250],null);
+    text(title.toUpperCase(),M+9,y-(compact?15:17),compact?7.5:9,true,[71,85,105]);
+    y-=compact?30:37;
   };
   const kvGrid=(items,cols=2)=>{
-    const gap=8,w=(CONTENT_W-gap*(cols-1))/cols,h=43;
+    const gap=compact?6:8,w=(CONTENT_W-gap*(cols-1))/cols,h=compact?31:43;
     for(let i=0;i<items.length;i+=cols){
-      const row=items.slice(i,i+cols);ensure(h+8);
+      const row=items.slice(i,i+cols);ensure(h+(compact?5:8));
       row.forEach((item,j)=>{
         const x=M+j*(w+gap);
         rect(x,y-h,w,h,[250,251,252],[229,234,240]);
-        text(item[0],x+9,y-13,7,false,[100,116,139]);
-        const vals=wrap(item[1]||'—',Math.max(16,Math.floor(w/6.2))).slice(0,2);
-        text(vals[0],x+9,y-28,10,true,[15,23,42]);
-        if(vals[1])text(vals[1],x+9,y-39,8,false,[71,85,105]);
+        text(item[0],x+8,y-(compact?11:13),compact?6.5:7,false,[100,116,139]);
+        const vals=wrap(item[1]||'—',Math.max(16,Math.floor(w/(compact?7.2:6.2)))).slice(0,2);
+        text(vals[0],x+8,y-(compact?23:28),compact?8.5:10,true,[15,23,42]);
+        if(vals[1])text(vals[1],x+8,y-(compact?29:39),compact?6.5:8,false,[71,85,105]);
       });
-      y-=h+8;
+      y-=h+(compact?5:8);
     }
   };
   const table=(headers,rows,widths)=>{
-    const total=widths.reduce((a,b)=>a+b,0),headH=25,rowH=27;
+    const total=widths.reduce((a,b)=>a+b,0),headH=compact?20:25,rowH=compact?21:27;
     ensure(headH);
     let x=M;
-    widths.forEach((w,i)=>{rect(x,y-headH,w,headH,[30,64,92],null);text(headers[i],x+7,y-16,7,true,[255,255,255]);x+=w;});
+    widths.forEach((w,i)=>{rect(x,y-headH,w,headH,[30,64,92],null);text(headers[i],x+5,y-(compact?13:16),compact?6.2:7,true,[255,255,255]);x+=w;});
     y-=headH;
     rows.forEach(row=>{
       const wrapped=row.map((v,i)=>wrap(v,widths[i]<90?13:22).slice(0,2));
-      const rh=Math.max(rowH,...wrapped.map(a=>a.length*10+10));
+      const rh=Math.max(rowH,...wrapped.map(a=>a.length*(compact?8:10)+(compact?7:10)));
       if(y-rh<BOTTOM){pages.push([]);y=H-TOP;table(headers,[],widths);return tableRow(row,wrapped,rh);}
       tableRow(row,wrapped,rh);
     });
     function tableRow(row,wrapped,rh){
       let x=M;wrapped.forEach((lines,i)=>{
         rect(x,y-rh,widths[i],rh,[255,255,255],[231,235,239]);
-        lines.forEach((v,k)=>text(v,x+7,y-13-k*10,8,k===0&&i===0,[31,41,55]));
+        lines.forEach((v,k)=>text(v,x+5,y-(compact?11:13)-k*(compact?8:10),compact?6.5:8,k===0&&i===0,[31,41,55]));
         x+=widths[i];
       });y-=rh;
     }
-    y-=8;
+    y-=compact?5:8;
   };
   const paragraph=value=>{
     wrap(value,92).forEach(v=>{if(y-13<BOTTOM){pages.push([]);y=H-TOP;}text(v,M,y-10,8,false,[71,85,105]);y-=13;});
@@ -1363,15 +1364,15 @@ function createStyledReportPdf(report){
   text(report.generated,M+CONTENT_W-150,H-58,7,false,[222,235,248]);
   y=H-TOP;
   if(report.summary){
-    rect(M,y-66,CONTENT_W,66,[248,250,252],[218,226,234]);
+    rect(M,y-(compact?58:66),CONTENT_W,compact?58:66,[248,250,252],[218,226,234]);
     let x=M+14;
     report.summary.forEach((s,i)=>{
       if(i)line(x-9,y-12,x-9,y-54,[220,226,232],.6);
-      text(s[0],x,y-17,7,false,[100,116,139]);
-      text(s[1],x,y-38,13,true,[15,23,42]);
+      text(s[0],x,y-(compact?15:17),compact?6.5:7,false,[100,116,139]);
+      text(s[1],x,y-(compact?34:38),compact?11:13,true,[15,23,42]);
       x+=CONTENT_W/report.summary.length;
     });
-    y-=80;
+    y-=compact?70:80;
   }
   (report.sections||[]).forEach(s=>{
     section(s.title);
@@ -1490,6 +1491,7 @@ async function downloadAdminSaleHistoryDetails(id){
   const entryTotal=sales.reduce((sum,x)=>sum+Number(x.amount||0),0);
 
   const blob=createStyledReportPdf({
+    singlePage:true,
     title:'SALES REPORT',
     subtitle:'Confirmed shift sales detail',
     reference:String(dsrId||'DSR'),
