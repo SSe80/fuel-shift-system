@@ -366,6 +366,8 @@ async function openTakeoverDetails(id){
   if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
 }
 
+window.openTakeoverDetails=openTakeoverDetails;
+
 function closeTakeoverDetails(){
   const modal=document.getElementById('takeover-details-modal');
   if(modal){modal.classList.remove('open','takeover-details-force');modal.setAttribute('aria-hidden','true');}
@@ -652,7 +654,7 @@ async function userDashboard(){
       return '<div class="card dashboard-purchase-card takeover shift-takeover-card main-record-sale-card">'+
         '<div class="main-record-sale-head"><div><span class="section-kicker">SHIFT HANDOVER</span><div class="takeover-card-title">Record Sale</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+'</div></div><span class="main-record-sale-status">Handover completed</span></div>'+
         '<div class="main-record-sale-summary"><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div></div>'+
-        '<div class="main-record-sale-actions"><button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button><button class="btn" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">Details</button></div>'+
+        '<div class="main-record-sale-actions"><button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button><button class="btn" type="button" onclick="window.openTakeoverDetails(this.dataset.takeoverId)" data-takeover-id="'+h(t.id)+'">Details</button></div>'+
       '</div>';
     }).join('');
     // A pending deactivation replaces the active-shift card on the attendant dashboard.
