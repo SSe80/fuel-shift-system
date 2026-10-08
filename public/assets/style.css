@@ -1012,3 +1012,39 @@ body.attendant-shell>.attendant-sidebar .attendant-sidebar-nav a[aria-current="p
   background:#dc2626!important;
   border-radius:2px!important;
 }
+
+
+/* Attendant sidebar active page — red text and underline */
+body.attendant-page.admin-shell>.admin-sidebar .admin-sidebar-nav a.active,
+body.attendant-page.admin-shell>.admin-sidebar .admin-sidebar-nav a[aria-current="page"],
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-nav a.active,
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-nav a[aria-current="page"]{
+  color:#dc2626!important;
+  font-weight:800!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  border:0!important;
+}
+body.attendant-page.admin-shell>.admin-sidebar .admin-sidebar-nav a.active b,
+body.attendant-page.admin-shell>.admin-sidebar .admin-sidebar-nav a[aria-current="page"] b,
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-nav a.active b,
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-nav a[aria-current="page"] b{
+  color:#dc2626!important;
+  font-weight:800!important;
+  display:inline-block!important;
+  position:relative!important;
+  padding-bottom:3px!important;
+}
+body.attendant-page.admin-shell>.admin-sidebar .admin-sidebar-nav a.active b::after,
+body.attendant-page.admin-shell>.admin-sidebar .admin-sidebar-nav a[aria-current="page"] b::after,
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-nav a.active b::after,
+body.attendant-dashboard-page.admin-shell>.admin-sidebar .admin-sidebar-nav a[aria-current="page"] b::after{
+  content:""!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  bottom:0!important;
+  height:2px!important;
+  background:#dc2626!important;
+  border-radius:2px!important;
+}
