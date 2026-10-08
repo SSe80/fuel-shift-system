@@ -1038,7 +1038,14 @@ async function adminDashboard(){
     if(el('product-count'))el('product-count').textContent=products.length; if(el('dispenser-count'))el('dispenser-count').textContent=dispensers.length; if(el('attendant-count'))el('attendant-count').textContent=activeEmployees.filter(e=>e.role==='attendant').length;
     await loadAccountingReconciliation();
     await loadStationReconciliationAlerts();
-    if(el('products'))el('products').innerHTML=products.length?products.map(p=>{const pc=p.color||'#1264d8';return '<div class="stat product-info-row activated-product-card"><div class="product-info-main"><div class="content-title"><span class="field-label">PRODUCT</span><b class="product-code" style="color:'+h(pc)+'">'+h(p.code_name)+'</b></div><span class="product-name">'+h(p.name)+'</span></div><div class="content-meta"><span>Active</span><span>·</span><span>Selling price</span><strong>'+money(p.selling_price)+'</strong></div></div>';}).join(''):'<div class="empty-content">No activated products.</div>';
+    if(el('products')){
+      const shownProducts=products.slice(0,4);
+      el('products').innerHTML=shownProducts.length?shownProducts.map(p=>{
+        const pc=p.color||'#1264d8';
+        return '<article class="station-product-glimpse" style="--product-accent:'+h(pc)+'"><span class="station-product-swatch"></span><div class="station-product-glimpse-main"><strong class="product-code">'+h(p.code_name||p.name)+'</strong><small>'+h(p.name||'Fuel product')+'</small></div><div class="station-product-price"><span>Selling price</span><strong>'+money(p.selling_price)+'</strong></div></article>';
+      }).join(''):'<div class="empty-content">No activated products.</div>';
+      if(products.length>4)el('products').insertAdjacentHTML('beforeend','<div class="station-glimpse-foot">Showing 4 of '+products.length+' active products</div>');
+    }
     if(el('dispensers'))el('dispensers').innerHTML=dispensers.length?dispensers.map(d=>{
       const tank=tanks.find(t=>t.id===d.tank_id);
       const product=products.find(p=>String(p.name||'').toLowerCase()===String(d.product||'').toLowerCase())||{};
@@ -1052,21 +1059,19 @@ async function adminDashboard(){
       const dispenser=shift?dispensers.find(d=>d.id===shift.nozzle_id):null;
       return '<div class="stat attendant-content-row"><div class="content-title"><span class="field-label">ATTENDANT</span><b>'+h(e.name)+'</b><span class="operator-id">ID '+h(e.operator_id)+'</span></div><div class="content-status"><span class="status-dot '+(shift?'is-active':'')+'"></span><span>'+(shift?'Active shift':'Available')+'</span><small>'+(shift?'Dispenser '+h(dispenser?.nozzle_code||shift.nozzle_id):'No active shift')+'</small></div></div>';
     }).join(''):'<div class="empty-content">No activated attendants.</div>';
-    if(el('tanks'))el('tanks').innerHTML=tanks.length?tanks.map(t=>{
-      const pct=Number(t.capacity_liters)>0?Math.max(0,Math.min(100,Number(t.current_liters)/Number(t.capacity_liters)*100)):0;
-      const inv=inventory.find(x=>String(x.tank_id)===String(t.id))||{};
-      const tankOpening=inv.opening_stock_liters ?? t.opening_stock_liters;
-      const connected=dispensers.filter(d=>d.tank_id===t.id);
-      const comparisons=connected.map(d=>{
-        const dispenserOpening=d.opening_tank_liters,hasTank=Number.isFinite(Number(tankOpening)),hasDispenser=Number.isFinite(Number(dispenserOpening));
-        const variance=hasTank&&hasDispenser?Number(dispenserOpening)-Number(tankOpening):null;
-        return '<div class="tank-comparison"><b>'+h(d.nozzle_code)+'</b><span>Opening reading: '+(hasDispenser?liters(dispenserOpening)+' L':'Not recorded')+'</span>'+(variance===null?'':'<span>Difference: <strong>'+liters(variance)+' L</strong></span>')+'</div>';
-      }).join('');
-      const expected=Number.isFinite(Number(inv.expected_liters))?Number(inv.expected_liters):null;
-      const diff=Number.isFinite(Number(inv.stock_difference_liters))?Number(inv.stock_difference_liters):null;
-      const product=products.find(p=>String(p.name||'').toLowerCase()===String(t.product||'').toLowerCase())||{},productCode=product.code_name||codeForProduct(t.product),productColor=product.color||'#1264d8';
-      return '<div class="stat tank-content-row"><div class="tank-content-head"><div><span class="field-label">TANK</span><b>'+h(t.tank_code)+'</b><div class="product-line"><span class="field-label">PRODUCT</span><strong class="product-code" style="color:'+h(productColor)+'">'+h(productCode)+'</strong></div></div><div class="tank-stock"><strong>'+liters(t.current_liters)+' L</strong><span>'+pct.toFixed(1)+'% full</span></div></div><div class="tank-capacity"><span>Capacity</span><strong>'+liters(t.capacity_liters)+' L</strong></div><div class="tank-metrics"><div><span>Opening stock</span><strong>'+(Number.isFinite(Number(tankOpening))?liters(tankOpening)+' L':'Not recorded')+'</strong></div><div><span>Purchases received</span><strong>'+liters(inv.purchases_liters)+' L</strong></div><div><span>Fuel sold</span><strong>'+liters(inv.sales_liters)+' L</strong></div><div><span>Expected stock</span><strong>'+(expected===null?'—':liters(expected)+' L')+'</strong></div><div><span>Actual stock</span><strong>'+liters(t.current_liters)+' L</strong></div><div><span>Stock difference</span><strong>'+(diff===null?'—':liters(diff)+' L')+'</strong></div></div>'+(comparisons?'<div class="tank-comparisons"><span class="field-label">DISPENSER OPENING READINGS</span>'+comparisons+'</div>':'<div class="tank-comparisons empty">No activated dispenser.</div>')+'</div>';
-    }).join(''):'<div class="empty-content">No activated tanks.</div>';
+    if(el('tanks')){
+      const shownTanks=tanks.slice(0,4);
+      el('tanks').innerHTML=shownTanks.length?shownTanks.map(t=>{
+        const capacity=Number(t.capacity_liters)||0;
+        const current=Number(t.current_liters)||0;
+        const pct=capacity>0?Math.max(0,Math.min(100,current/capacity*100)):0;
+        const product=products.find(p=>String(p.name||'').toLowerCase()===String(t.product||'').toLowerCase())||{};
+        const color=product.color||'#1769d2';
+        const code=product.code_name||codeForProduct(t.product)||'—';
+        return '<article class="station-tank-glimpse" style="--tank-accent:'+h(color)+'"><div class="station-tank-glimpse-top"><div><strong>'+h(t.tank_code||'Tank')+'</strong><small><span class="station-tank-product-dot"></span>'+h(code)+'</small></div><div class="station-tank-stock"><strong>'+liters(current)+' L</strong><small>of '+liters(capacity)+' L</small></div></div><div class="station-tank-progress" role="progressbar" aria-label="'+h(t.tank_code||'Tank')+' fill level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct.toFixed(1)+'"><span style="width:'+pct.toFixed(1)+'%"></span></div><div class="station-tank-glimpse-bottom"><span>'+pct.toFixed(1)+'% full</span><span>'+Math.max(0,liters(capacity-current))+' L space</span></div></article>';
+      }).join(''):'<div class="empty-content">No activated tanks.</div>';
+      if(tanks.length>4)el('tanks').insertAdjacentHTML('beforeend','<div class="station-glimpse-foot">Showing 4 of '+tanks.length+' active tanks</div>');
+    }
     const movementBox=el('tank-movements');
     if(movementBox){
       const movementRows=Array.isArray(movements)?movements:[];
