@@ -979,6 +979,40 @@ async function loadAccountingReconciliation(){
   }catch(e){console.warn('Accounting reconciliation unavailable',e);}
 }
 
+async function loadStationReconciliationAlerts(){
+  const box=document.getElementById('station-reconciliation-alert-list');
+  if(!box)return;
+  const renderAlert=(kind,title,detail,meta='')=>'<article class="station-reconciliation-alert '+kind+'"><span class="station-reconciliation-alert-icon" aria-hidden="true">'+(kind==='critical'?'!':kind==='warning'?'⌁':'i')+'</span><div class="station-reconciliation-alert-copy"><strong>'+h(title)+'</strong><p>'+h(detail)+'</p>'+(meta?'<small>'+h(meta)+'</small>':'')+'</div></article>';
+  try{
+    const data=await api('/api/accounting/reconciliation');
+    const alerts=[];
+    if(!data||data.open!==true){
+      alerts.push({kind:'info',title:'No controlled accounting period',detail:'Open a control period and record verified opening measurements before using controlled stock reconciliation.'});
+    }else{
+      const tanks=Array.isArray(data.tanks)?data.tanks:[];
+      tanks.forEach(t=>{
+        const tank=String(t.tank_code||t.tank_name||'Tank');
+        const closing=t.physical_closing_liters??t.closing_physical_liters??t.recorded_closing_liters??t.physical_liters??null;
+        const expected=t.expected_closing_liters??t.expected_liters??null;
+        const variance=t.variance_liters??t.stock_difference_liters??t.difference_liters??(closing!=null&&expected!=null?Number(closing)-Number(expected):null);
+        if(closing==null){
+          alerts.push({kind:'warning',title:tank+' · Closing measurement needed',detail:'Record a verified physical closing measurement to complete this tank reconciliation.',meta:expected==null?'Expected closing not available':'Expected closing '+liters(expected)+' L'});
+        }else if(variance!=null&&Math.abs(Number(variance))>0.01){
+          alerts.push({kind:'critical',title:tank+' · Stock variance detected',detail:(Number(variance)>0?'+':'')+liters(variance)+' L difference between recorded and expected stock.',meta:expected==null?'Review tank readings and stock movements':'Expected '+liters(expected)+' L · Recorded '+liters(closing)+' L'});
+        }else if(variance!=null){
+          alerts.push({kind:'success',title:tank+' · Reconciled',detail:'Recorded closing stock matches expected stock.',meta:liters(closing)+' L recorded'});
+        }
+      });
+      if(!tanks.length)alerts.push({kind:'info',title:'No tank reconciliation records',detail:'No tank reconciliation data was returned for the active control period.'});
+    }
+    const urgent=alerts.filter(a=>a.kind==='critical'||a.kind==='warning').length;
+    box.innerHTML='<div class="station-reconciliation-alert-summary"><strong>'+urgent+'</strong><span>items needing attention</span><span class="station-reconciliation-alert-summary-status">'+(urgent?'Review required':'Status checked')+'</span></div>'+
+      alerts.map(a=>renderAlert(a.kind,a.title,a.detail,a.meta)).join('');
+  }catch(e){
+    box.innerHTML=renderAlert('warning','Reconciliation status unavailable','Could not load reconciliation alerts. Open Accounting Control to review the current status.',e.message||'Request failed');
+  }
+}
+
 async function adminDashboard(){
   try{
     await window.stationCurrencyReady;
@@ -1003,6 +1037,7 @@ async function adminDashboard(){
     if(el('active-shifts'))el('active-shifts').textContent=activeShifts.length; if(el('tank-count'))el('tank-count').textContent=tanks.length; if(el('alerts'))el('alerts').textContent=low.length;
     if(el('product-count'))el('product-count').textContent=products.length; if(el('dispenser-count'))el('dispenser-count').textContent=dispensers.length; if(el('attendant-count'))el('attendant-count').textContent=activeEmployees.filter(e=>e.role==='attendant').length;
     await loadAccountingReconciliation();
+    await loadStationReconciliationAlerts();
     if(el('products'))el('products').innerHTML=products.length?products.map(p=>{const pc=p.color||'#1264d8';return '<div class="stat product-info-row activated-product-card"><div class="product-info-main"><div class="content-title"><span class="field-label">PRODUCT</span><b class="product-code" style="color:'+h(pc)+'">'+h(p.code_name)+'</b></div><span class="product-name">'+h(p.name)+'</span></div><div class="content-meta"><span>Active</span><span>·</span><span>Selling price</span><strong>'+money(p.selling_price)+'</strong></div></div>';}).join(''):'<div class="empty-content">No activated products.</div>';
     if(el('dispensers'))el('dispensers').innerHTML=dispensers.length?dispensers.map(d=>{
       const tank=tanks.find(t=>t.id===d.tank_id);
