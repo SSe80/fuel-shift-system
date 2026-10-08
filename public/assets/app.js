@@ -1332,8 +1332,9 @@ async function adminInventory(){
         const product=productForTank({product:f.tank_product});
         const pc=String(product?.color||'#1264d8').trim()||'#1264d8';
         const productCode=String(product?.code_name||codeForProduct(f.tank_product)||'—');
-        const visibleRows=rows.filter(m=>!m.no_movement_history).slice(0,8);
-        const movementCount=rows.filter(m=>!m.no_movement_history).length;
+        const allMovementRows=rows.filter(m=>!m.no_movement_history);
+        const visibleRows=allMovementRows.slice(0,3);
+        const movementCount=allMovementRows.length;
         return '<section class="tank-movement-group" data-tank-code="'+h(f.tank_code||'Tank')+'" data-product="'+h(String(f.tank_product||''))+'" style="--product-color:'+h(pc)+'">'+
           '<div class="tank-movement-group-head">'+
             '<div class="tank-movement-heading">'+
@@ -1368,7 +1369,7 @@ async function adminInventory(){
               '</div>';
             }).join(''):'<div class="tank-movement-no-history"><strong>No movement history</strong><span>Current stock is '+liters(current)+' L.</span></div>')+
           '</div>'+
-          (movementCount>8?'<div class="tank-movement-more">Showing latest 8 of '+movementCount+' movements</div>':'')+
+          (movementCount>3?'<button type="button" class="tank-movement-more" data-tank-movement-show="'+h(String(f.tank_id||''))+'">Show more · '+movementCount+' movements</button>':'')+
         '</section>';
       }).join('');
 
@@ -1379,42 +1380,55 @@ async function adminInventory(){
         '<div><span>PURCHASES</span><strong>+'+liters(movementStats.purchases)+' L</strong></div>'+
         '<div><span>SALES</span><strong>−'+liters(movementStats.sales)+' L</strong></div>'+
       '</div>'+
-      '<div class="tank-movement-filters">'+
-        '<label><span>SEARCH</span><input id="tank-movement-search" type="search" placeholder="Tank code"></label>'+
-        '<label><span>PRODUCT</span><select id="tank-movement-product-filter"><option value="">All products</option>'+
-          productOptions.map(p=>'<option value="'+h(String(p.name||''))+'">'+h(p.code_name||p.name||'—')+'</option>').join('')+
-        '</select></label>'+
-        '<label><span>MOVEMENT</span><select id="tank-movement-type-filter"><option value="">All movements</option><option value="purchase">Purchase</option><option value="sale">Sale</option><option value="discharge">Discharge</option><option value="opening">Opening</option><option value="adjustment">Adjustment</option><option value="dip">Dip</option><option value="transfer">Transfer</option></select></label>'+
-      '</div>'+
     '</div>'+
-    '<div class="tank-movement-results">'+movementGroupMarkup+'</div>'+
-    '<div class="tank-movement-empty-filter" hidden><strong>No matching movements</strong><span>Try a different tank, product, or movement filter.</span></div>';
-    el('tank-movements').innerHTML=movementToolbar;
-
-    const applyMovementFilters=()=>{
-      const q=String(document.getElementById('tank-movement-search')?.value||'').trim().toLowerCase();
-      const productFilter=String(document.getElementById('tank-movement-product-filter')?.value||'').toLowerCase();
-      const typeFilter=String(document.getElementById('tank-movement-type-filter')?.value||'').toLowerCase();
-      let matched=0;
-      el('tank-movements').querySelectorAll('.tank-movement-group').forEach(group=>{
-        const tank=String(group.dataset.tankCode||'').toLowerCase();
-        const product=String(group.dataset.product||'').toLowerCase();
-        const tankMatch=!q||tank.includes(q);
-        const productMatch=!productFilter||product===productFilter;
-        const typeMatch=!typeFilter||group.querySelector('.tank-movement-row[data-movement-type="'+CSS.escape(typeFilter)+'"]');
-        const show=tankMatch&&productMatch&&!!typeMatch;
-        group.hidden=!show;
-        if(show)matched++;
-      });
-      const empty=el('tank-movements').querySelector('.tank-movement-empty-filter');
-      if(empty)empty.hidden=matched!==0;
-    };
-    ['tank-movement-search','tank-movement-product-filter','tank-movement-type-filter'].forEach(id=>{
-      document.getElementById(id)?.addEventListener(id==='tank-movement-search'?'input':'change',applyMovementFilters);
-    });
-    if(!movementGroupMarkup){
+    '<div class="tank-movement-results">'+movementGroupMarkup+'</div>';    if(!movementGroupMarkup){
       el('tank-movements').innerHTML='<div class="tank-movement-empty-filter"><strong>No tank movements recorded.</strong><span>There are no active tanks or movement records to display.</span></div>';
     }
+    const ensureTankMovementModal=()=>{
+      if(document.getElementById('tank-movement-detail-modal'))return;
+      const modal=document.createElement('div');
+      modal.id='tank-movement-detail-modal';
+      modal.className='tank-movement-detail-modal';
+      modal.innerHTML='<div class="tank-movement-detail-backdrop" data-tank-movement-close></div>'+
+        '<div class="tank-movement-detail-card" role="dialog" aria-modal="true">'+
+          '<div class="tank-movement-detail-head"><div><span class="field-label">TANK MOVEMENTS</span><h3 id="tank-movement-detail-title">Movements</h3></div><button type="button" class="tank-movement-detail-close" data-tank-movement-close aria-label="Close">×</button></div>'+
+          '<div class="tank-movement-detail-body" id="tank-movement-detail-body"></div>'+
+        '</div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click',e=>{
+        if(e.target.closest('[data-tank-movement-close]'))modal.classList.remove('is-open');
+      });
+    };
+    el('tank-movements').querySelectorAll('[data-tank-movement-show]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const tankId=String(btn.dataset.tankMovementShow||'');
+        const rows=movementRows.filter(m=>String(m.tank_id||'')===tankId)
+          .sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+        const tank=tanks.find(t=>String(t.id)===tankId);
+        const product=productForTank(tank||{});
+        const pc=String(product?.color||'#1264d8');
+        ensureTankMovementModal();
+        const modal=document.getElementById('tank-movement-detail-modal');
+        const title=document.getElementById('tank-movement-detail-title');
+        const body=document.getElementById('tank-movement-detail-body');
+        title.textContent=(tank?.tank_code||rows[0]?.tank_code||'Tank')+' · '+(product?.code_name||codeForProduct(tank?.product||rows[0]?.tank_product)||'—');
+        body.innerHTML=rows.map(m=>{
+          const type=String(m.movement_type||'').toLowerCase();
+          const qty=Math.abs(Number(m.quantity_liters||0));
+          const out=type==='sale'||type==='discharge';
+          const signed=out?-qty:qty;
+          const dt=m.created_at?new Date(m.created_at):null;
+          return '<div class="tank-movement-detail-row">'+
+            '<div class="tank-movement-icon '+h(movementTypeClass[type]||'other')+'">'+h(movementTypeIcon[type]||'•')+'</div>'+
+            '<div class="tank-movement-main"><strong>'+h(movementTypeLabel[type]||m.movement_type||'Movement')+'</strong><small>'+h(dt&&!Number.isNaN(dt.getTime())?dt.toLocaleString():'—')+(m.notes?' · '+h(m.notes):'')+'</small></div>'+
+            '<div class="tank-movement-qty '+(signed<0?'negative':'positive')+'">'+(signed>0?'+':signed<0?'−':'')+liters(qty)+' L</div>'+
+            '<div class="tank-movement-balance"><small>Balance</small><strong>'+liters(m.balance_after)+' L</strong></div>'+
+          '</div>';
+        }).join('')||'<div class="tank-movement-empty-filter"><strong>No movement history</strong></div>';
+        modal.style.setProperty('--product-color',pc);
+        modal.classList.add('is-open');
+      });
+    });
   }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
 async function adminAttendants(){
