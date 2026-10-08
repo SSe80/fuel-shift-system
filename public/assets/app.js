@@ -1482,11 +1482,33 @@ async function openAdminAttendantDetails(id){
     const employeeShifts=allShifts.filter(belongsToEmployee);
     const activeShifts=employeeShifts.filter(s=>String(s.status||'').trim().toLowerCase()==='active');
     const history=Array.isArray(salesResult.data)?salesResult.data:[];
-    const salesItems=history.filter(x=>String(x?.takeover?.from_employee_id||'')===String(employee.id)||String(x?.takeover?.to_employee_id||'')===String(employee.id));
-    const sales=salesItems.flatMap(x=>Array.isArray(x.sales)?x.sales:[]);
-    const totalLiters=sales.reduce((n,s)=>n+(Number(s.quantity_liters)||0),0);
+    const salesItems=history.filter(x=>{
+      const t=x?.takeover||x?.shift||x||{};
+      const ids=[t.from_employee_id,t.to_employee_id,t.employee_id,t.attendant_id,t.user_id,t.operator_user_id,x?.employee_id,x?.attendant_id];
+      return ids.some(v=>v!=null&&String(v)===String(employee.id));
+    });
+    const sales=salesItems.flatMap(x=>Array.isArray(x.sales)?x.sales:(Array.isArray(x.sale_items)?x.sale_items:[]));
+    const totalLiters=sales.reduce((n,s)=>n+(Number(s.quantity_liters||s.liters)||0),0);
     const totalAmount=sales.reduce((n,s)=>n+(Number(s.total_amount||s.amount)||0),0);
     const avg=employeeShifts.length?totalLiters/employeeShifts.length:0;
+    const chartEnd=new Date(); chartEnd.setHours(23,59,59,999);
+    const chartStart=new Date(chartEnd); chartStart.setDate(chartStart.getDate()-6); chartStart.setHours(0,0,0,0);
+    const chartDays=Array.from({length:7},(_,i)=>{const d=new Date(chartStart);d.setDate(chartStart.getDate()+i);return d;});
+    const dailyVolumes=chartDays.map(day=>{
+      const key=day.toDateString();
+      return sales.reduce((sum,s)=>{
+        const raw=s.sale_time||s.created_at||s.confirmed_at||s.createdAt;
+        const d=raw?new Date(raw):null;
+        return sum+(d&&!Number.isNaN(d.getTime())&&d.toDateString()===key?(Number(s.quantity_liters||s.liters)||0):0);
+      },0);
+    });
+    const chartMax=Math.max(1,...dailyVolumes);
+    const chartW=320,chartH=100,chartGap=9,barW=28;
+    const chartBars=dailyVolumes.map((v,i)=>{
+      const bh=Math.max(v>0?3:0,(v/chartMax)*66);
+      const x=10+i*(barW+chartGap),y=76-bh;
+      return '<g><rect x="'+x+'" y="'+y.toFixed(1)+'" width="'+barW+'" height="'+bh.toFixed(1)+'" rx="4" fill="#1769df" opacity="'+(v>0?'0.92':'0.18')+'"><title>'+h(chartDays[i].toLocaleDateString()+': '+liters(v)+' L')+'</title></rect><text x="'+(x+barW/2)+'" y="94" text-anchor="middle" font-size="9" fill="#778395">'+h(chartDays[i].toLocaleDateString(undefined,{weekday:'short'}))+'</text></g>';
+    }).join('');
     const shiftRows=employeeShifts.slice().sort((a,b)=>new Date(b.shift_started_at||b.created_at||0)-new Date(a.shift_started_at||a.created_at||0)).slice(0,12).map(s=>{
       const n=allNozzles.find(x=>String(x.id)===String(s.nozzle_id));
       const p=allProducts.find(x=>String(x.id)===String(n?.product_id)||String(x.name||'').toLowerCase()===String(n?.product||'').toLowerCase());
@@ -1496,7 +1518,7 @@ async function openAdminAttendantDetails(id){
     if(box)box.innerHTML=
       '<div class="admin-attendant-hero"><div><span class="section-kicker">ATTENDANT</span><h2>'+h(employee.name)+'</h2><p>ID '+h(employee.operator_id||'—')+' · '+h(employee.active===true?'Active':'Inactive')+'</p></div><span class="admin-attendant-status '+(activeShifts.length?'':'inactive')+'">'+(activeShifts.length?'ON SHIFT':'AVAILABLE')+'</span></div>'+
       '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>STATISTICS</span><small>All recorded shifts</small></div><div class="admin-attendant-metrics"><div class="admin-attendant-metric"><span>Total shifts</span><strong>'+employeeShifts.length+'</strong><small>'+activeShifts.length+' active now</small></div><div class="admin-attendant-metric"><span>Sales</span><strong>'+sales.length+'</strong><small>confirmed entries</small></div><div class="admin-attendant-metric"><span>Volume</span><strong>'+liters(totalLiters)+' L</strong><small>total sold</small></div><div class="admin-attendant-metric"><span>Sales value</span><strong>'+money(totalAmount)+'</strong><small>confirmed sales</small></div></div></div>'+
-      '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>PERFORMANCE</span><small>'+h(performance)+'</small></div><div class="admin-attendant-metrics"><div class="admin-attendant-metric"><span>Average per shift</span><strong>'+liters(avg)+' L</strong><small>based on recorded shifts</small></div><div class="admin-attendant-metric"><span>Active shifts</span><strong>'+activeShifts.length+'</strong><small>currently assigned</small></div></div></div>'+
+      '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>PERFORMANCE</span><small>Last 7 days · liters sold</small></div><div class="admin-attendant-metrics"><div class="admin-attendant-metric"><span>Average per shift</span><strong>'+liters(avg)+' L</strong><small>based on recorded shifts</small></div><div class="admin-attendant-metric"><span>Active shifts</span><strong>'+activeShifts.length+'</strong><small>currently assigned</small></div></div><div class="admin-attendant-performance-chart"><div class="admin-attendant-chart-summary"><span>Daily sales volume</span><strong>'+liters(dailyVolumes.reduce((n,v)=>n+v,0))+' L</strong></div><svg viewBox="0 0 '+chartW+' '+chartH+'" role="img" aria-label="Daily liters sold over the last seven days" preserveAspectRatio="xMidYMid meet"><line x1="5" y1="76" x2="315" y2="76" stroke="#e5eaf0" stroke-width="1"/>'+chartBars+'</svg><p class="admin-attendant-chart-note">'+(dailyVolumes.some(v=>v>0)?'Daily volume from confirmed sales records.':'No dated sales records available for this attendant in the last 7 days.')+'</p></div></div>'+
       '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>SHIFT DATA</span><small>'+employeeShifts.length+' record'+(employeeShifts.length===1?'':'s')+'</small></div>'+(shiftRows||'<p class="muted">No shift records.</p>')+'</div>';
   }catch(e){if(box)box.innerHTML='<p class="muted">'+h(e.message||'Unable to load attendant details.')+'</p>';}
 }
