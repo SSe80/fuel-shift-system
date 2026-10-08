@@ -1012,7 +1012,7 @@ async function adminFuelConfiguration(){
     const dispensers=allDispensers.filter(d=>d.active===true&&tanks.some(t=>t.id===d.tank_id));
     const activeEmployees=employees.filter(e=>e.active===true), activeShifts=allShifts.filter(s=>s.status==='active');
     const el=id=>document.getElementById(id), productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
-    el('products').innerHTML=products.length?products.map(p=>{const pc=String(p.color||'#1264d8').trim()||'#1264d8';return '<article class="stat activated-product-card" style="--product-color:'+h(pc)+'"><div class="activated-product-main"><span class="activated-product-color" aria-hidden="true"></span><div class="activated-product-copy"><span class="field-label">PRODUCT</span><div class="activated-product-code">'+h(p.code_name)+'</div><div class="activated-product-name">'+h(p.name)+'</div></div></div><div class="activated-product-meta"><div><span>STATUS</span><strong>Active</strong></div><div><span>SELLING PRICE</span><strong>'+money(p.selling_price)+'</strong></div></div></article>';}).join(''):'<div class="empty-content">No activated products.</div>';
+    el('products').innerHTML=products.length?products.map(p=>{const pc=String(p.color||'#1264d8').trim()||'#1264d8';return '<article class="stat activated-product-card" data-product-id="'+h(p.id)+'" role="button" tabindex="0" onclick="openAdminProductDetails(\\''+h(p.id)+'\\')" onkeydown="if(event.key===\\'Enter\\'||event.key===\\' \\'){event.preventDefault();openAdminProductDetails(\\''+h(p.id)+'\\')} " style="--product-color:'+h(pc)+'"><div class="activated-product-main"><span class="activated-product-color" aria-hidden="true"></span><div class="activated-product-copy"><span class="field-label">PRODUCT</span><div class="activated-product-code">'+h(p.code_name)+'</div><div class="activated-product-name">'+h(p.name)+'</div></div></div><div class="activated-product-meta"><div><span>STATUS</span><strong>Active</strong></div><div><span>SELLING PRICE</span><strong>'+money(p.selling_price)+'</strong></div></div></article>';}).join(''):'<div class="empty-content">No activated products.</div>';
     el('dispensers').innerHTML=dispensers.length?dispensers.map(d=>{const tank=tanks.find(t=>t.id===d.tank_id),shift=activeShifts.find(s=>s.nozzle_id===d.id),attendant=shift?activeEmployees.find(e=>e.id===shift.employee_id):null;return '<div class="stat"><b>'+h(d.nozzle_code)+'</b><span>'+h(productCodes[String(d.product||'').toLowerCase()]||d.product||'—')+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small></div>';}).join(''):'<div class="card"><p>No activated dispensers.</p></div>';
   }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
@@ -4368,3 +4368,89 @@ document.addEventListener('click',event=>{
   const opener=window.openAdminSaleHistoryDetails;
   if(typeof opener==='function')opener(id);else toast('Sales details are still loading. Please try again.');
 },{capture:true});
+
+
+/* Admin Fuel Configuration — product performance details */
+let adminProductDetailsCache=null;
+function closeAdminProductDetails(){
+  const modal=document.getElementById('admin-product-details-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+function adminProductMetric(label,value,sub=''){
+  return '<div class="admin-product-metric"><span>'+h(label)+'</span><strong>'+h(value)+'</strong>'+(sub?'<small>'+h(sub)+'</small>':'')+'</div>';
+}
+function renderAdminProductDetails(product,data){
+  const tanks=data.tanks.filter(t=>String(t.product||'').trim().toLowerCase()===String(product.name||'').trim().toLowerCase());
+  const dispensers=data.dispensers.filter(d=>tanks.some(t=>String(t.id)===String(d.tank_id)));
+  const purchases=data.purchases.filter(p=>String(p.product||'').trim().toLowerCase()===String(product.name||'').trim().toLowerCase());
+  const sales=data.sales.filter(x=>String(x.dispenser?.product||'').trim().toLowerCase()===String(product.name||'').trim().toLowerCase());
+  const soldLiters=sales.reduce((n,x)=>n+Number(x.takeover?.total_sales_liters||0),0);
+  const revenue=sales.reduce((n,x)=>n+Number(x.takeover?.total_sales_amount||0),0);
+  const purchasedLiters=purchases.reduce((n,x)=>n+Number(x.quantity_liters||0),0);
+  const currentStock=tanks.reduce((n,t)=>n+Number(t.current_liters||0),0);
+  const capacity=tanks.reduce((n,t)=>n+Number(t.capacity_liters||0),0);
+  const avgPrice=soldLiters>0?revenue/soldLiters:Number(product.selling_price||0);
+  const stockCoverage=soldLiters>0?currentStock/(soldLiters/30):null;
+  const utilization=capacity>0?currentStock/capacity*100:0;
+  const recentSales=sales.filter(x=>{const d=new Date(x.takeover?.sales_confirmed_at||x.takeover?.shift_ended_at||x.takeover?.shift_started_at);return Number.isFinite(d.getTime())&&Date.now()-d.getTime()<=30*86400000;});
+  const recentLiters=recentSales.reduce((n,x)=>n+Number(x.takeover?.total_sales_liters||0),0);
+  const recentRevenue=recentSales.reduce((n,x)=>n+Number(x.takeover?.total_sales_amount||0),0);
+  const color=String(product.color||'#1264d8');
+  const modal=document.getElementById('admin-product-details-modal');
+  if(!modal)return;
+  modal.style.setProperty('--product-color',color);
+  const title=modal.querySelector('.admin-product-details-title');
+  const code=modal.querySelector('.admin-product-details-code');
+  const content=modal.querySelector('.admin-product-details-content');
+  if(title)title.textContent=product.name||product.code_name||'Product';
+  if(code)code.textContent=product.code_name||'—';
+  if(content)content.innerHTML=
+    '<div class="admin-product-details-hero"><div><span class="section-kicker">PRODUCT PERFORMANCE</span><h2>'+h(product.code_name||'—')+'</h2><p>'+h(product.name||'—')+'</p></div><span class="admin-product-details-status">ACTIVE</span></div>'+
+    '<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>OVERVIEW</span><small>Current configuration</small></div><div class="admin-product-metrics">'+
+      adminProductMetric('Selling price',money(product.selling_price))+
+      adminProductMetric('Current stock',liters(currentStock)+' L',tanks.length+' tank'+(tanks.length===1?'':'s'))+
+      adminProductMetric('Tank capacity',liters(capacity)+' L',utilization.toFixed(1)+'% currently filled')+
+      adminProductMetric('Dispensers',String(dispensers.length),'Active dispensers')+
+    '</div></section>'+
+    '<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>PERFORMANCE</span><small>Last 30 days</small></div><div class="admin-product-metrics">'+
+      adminProductMetric('Fuel sold',liters(recentLiters)+' L','Confirmed sales')+
+      adminProductMetric('Sales revenue',money(recentRevenue),'Confirmed sales')+
+      adminProductMetric('Average price',money(recentLiters>0?recentRevenue/recentLiters:avgPrice),'Per liter')+
+      adminProductMetric('Daily average',liters(recentLiters/30)+' L','Based on 30 days')+
+    '</div></section>'+
+    '<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>STOCK & SUPPLY</span><small>Recorded activity</small></div><div class="admin-product-metrics">'+
+      adminProductMetric('Total purchases',liters(purchasedLiters)+' L',purchases.length+' purchase'+(purchases.length===1?'':'s'))+
+      adminProductMetric('Sales records',String(sales.length),'Confirmed shifts')+
+      adminProductMetric('Stock coverage',stockCoverage===null?'—':stockCoverage.toFixed(1)+' days','Estimated from 30-day average')+
+      adminProductMetric('30-day movement',liters(recentLiters)+' L sold','Demand indicator')+
+    '</div></section>'+
+    '<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>FUEL STATIONS</span><small>Assigned tanks</small></div><div class="admin-product-tank-list">'+
+      (tanks.length?tanks.map(t=>'<div class="admin-product-tank-row"><div><strong>'+h(t.tank_code||'Tank')+'</strong><small>'+liters(t.current_liters)+' L / '+liters(t.capacity_liters)+' L</small></div><b>'+((Number(t.capacity_liters)>0?(Number(t.current_liters)/Number(t.capacity_liters)*100):0).toFixed(1))+'%</b></div>').join(''):'<div class="muted">No active tanks assigned.</div>')+
+    '</div></section>';
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+}
+async function openAdminProductDetails(productId){
+  let modal=document.getElementById('admin-product-details-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='admin-product-details-modal';
+    modal.className='admin-product-details-modal';
+    modal.setAttribute('aria-hidden','true');
+    modal.innerHTML='<div class="admin-product-details-backdrop" onclick="closeAdminProductDetails()"></div><div class="admin-product-details-card" role="dialog" aria-modal="true" aria-labelledby="admin-product-details-heading"><div class="admin-product-details-top"><div><span class="section-kicker">PRODUCT DETAILS</span><h3 id="admin-product-details-heading" class="admin-product-details-title">Product</h3></div><button type="button" class="admin-product-details-close" onclick="closeAdminProductDetails()" aria-label="Close">×</button></div><div class="admin-product-details-content"></div></div>';
+    document.body.appendChild(modal);
+  }
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+  const content=modal.querySelector('.admin-product-details-content');
+  if(content)content.innerHTML='<div class="admin-product-details-loading">Loading product performance…</div>';
+  try{
+    if(!adminProductDetailsCache){
+      const [products,tanks,dispensers,purchases,sales]=await Promise.all([api('/api/products'),api('/api/tanks'),api('/api/nozzles'),api('/api/purchases'),api('/api/sales/history')]);
+      adminProductDetailsCache={products:Array.isArray(products)?products:[],tanks:Array.isArray(tanks)?tanks:[],dispensers:Array.isArray(dispensers)?dispensers:[],purchases:Array.isArray(purchases)?purchases:[],sales:Array.isArray(sales)?sales:[]};
+    }
+    const product=adminProductDetailsCache.products.find(p=>String(p.id)===String(productId));
+    if(!product)throw new Error('Product could not be found.');
+    renderAdminProductDetails(product,adminProductDetailsCache);
+  }catch(e){
+    if(content)content.innerHTML='<div class="admin-product-details-error">'+h(e.message||'Unable to load product details.')+'</div>';
+  }
+}
