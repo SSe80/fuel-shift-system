@@ -4565,3 +4565,195 @@ body[data-app-page="adminDashboard"] .station-reconciliation-loading{grid-column
   body[data-app-page="adminDashboard"] .station-reconciliation-alert-list{grid-template-columns:1fr!important}
   body[data-app-page="adminDashboard"] .station-reconciliation-alert-summary{grid-column:auto!important}
 }
+
+
+/* Station Control — compact product and tank inventory glimpses */
+body[data-app-page="adminDashboard"] .station-inventory-glimpses{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:14px!important;
+  margin-top:14px!important;
+  align-items:start!important;
+}
+body[data-app-page="adminDashboard"] .station-glimpse-card{
+  min-width:0!important;
+  padding:16px!important;
+  border:1px solid #e3e9f1!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  box-shadow:0 3px 12px rgba(20,42,70,.035)!important;
+}
+body[data-app-page="adminDashboard"] .station-glimpse-head{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  margin-bottom:13px!important;
+}
+body[data-app-page="adminDashboard"] .station-glimpse-head h2{
+  margin:4px 0 4px!important;
+  color:#172b46!important;
+  font-size:16px!important;
+  line-height:1.3!important;
+  font-weight:800!important;
+}
+body[data-app-page="adminDashboard"] .station-glimpse-head p{
+  margin:0!important;
+  color:#7b8797!important;
+  font-size:10px!important;
+  line-height:1.45!important;
+}
+body[data-app-page="adminDashboard"] .station-glimpse-head>a{
+  flex:0 0 auto!important;
+  margin-top:5px!important;
+  color:#1769d2!important;
+  font-size:10px!important;
+  font-weight:800!important;
+  text-decoration:none!important;
+  white-space:nowrap!important;
+}
+body[data-app-page="adminDashboard"] .station-product-glimpse-list,
+body[data-app-page="adminDashboard"] .station-tank-glimpse-list{
+  display:grid!important;
+  gap:8px!important;
+  min-width:0!important;
+}
+body[data-app-page="adminDashboard"] .station-product-glimpse{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  min-width:0!important;
+  padding:10px 11px!important;
+  border:1px solid #e8edf3!important;
+  border-radius:10px!important;
+  background:#fcfdff!important;
+}
+body[data-app-page="adminDashboard"] .station-product-swatch{
+  flex:0 0 4px!important;
+  align-self:stretch!important;
+  min-height:32px!important;
+  border-radius:4px!important;
+  background:var(--product-accent,#1769d2)!important;
+}
+body[data-app-page="adminDashboard"] .station-product-glimpse-main{
+  display:flex!important;
+  flex:1 1 auto!important;
+  flex-direction:column!important;
+  gap:3px!important;
+  min-width:0!important;
+}
+body[data-app-page="adminDashboard"] .station-product-glimpse-main strong{
+  overflow:hidden!important;
+  color:var(--product-accent,#1769d2)!important;
+  font-size:12px!important;
+  font-weight:850!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+body[data-app-page="adminDashboard"] .station-product-glimpse-main small{
+  overflow:hidden!important;
+  color:#7b8797!important;
+  font-size:10px!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+body[data-app-page="adminDashboard"] .station-product-price{
+  display:flex!important;
+  flex:0 0 auto!important;
+  flex-direction:column!important;
+  align-items:flex-end!important;
+  gap:3px!important;
+}
+body[data-app-page="adminDashboard"] .station-product-price span{
+  color:#8490a0!important;
+  font-size:9px!important;
+}
+body[data-app-page="adminDashboard"] .station-product-price strong{
+  color:#24364b!important;
+  font-size:11px!important;
+  font-weight:800!important;
+  white-space:nowrap!important;
+}
+body[data-app-page="adminDashboard"] .station-tank-glimpse{
+  min-width:0!important;
+  padding:11px!important;
+  border:1px solid #e8edf3!important;
+  border-radius:10px!important;
+  background:#fcfdff!important;
+}
+body[data-app-page="adminDashboard"] .station-tank-glimpse-top,
+body[data-app-page="adminDashboard"] .station-tank-glimpse-bottom{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:8px!important;
+}
+body[data-app-page="adminDashboard"] .station-tank-glimpse-top>div:first-child{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:4px!important;
+  min-width:0!important;
+}
+body[data-app-page="adminDashboard"] .station-tank-glimpse-top>div:first-child>strong{
+  color:#24364b!important;
+  font-size:12px!important;
+  font-weight:850!important;
+}
+body[data-app-page="adminDashboard"] .station-tank-glimpse-top>div:first-child>small{
+  display:flex!important;
+  align-items:center!important;
+  gap:5px!important;
+  color:var(--tank-accent,#1769d2)!important;
+  font-size:10px!important;
+  font-weight:800!important;
+}
+body[data-app-page="adminDashboard"] .station-tank-product-dot{
+  width:6px!important;
+  height:6px!important;
+  flex:0 0 6px!important;
+  border-radius:50%!important;
+  background:var(--tank-accent,#1769d2)!important;
+}
+body[data-app-page="adminDashboard"] .station-tank-stock{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-end!important;
+  gap:3px!important;
+  white-space:nowrap!important;
+}
+body[data-app-page="adminDashboard"] .station-tank-stock strong{
+  color:#182b42!important;
+  font-size:13px!important;
+  font-weight:850!important;
+}
+body[data-app-page="adminDashboard"] .station-tank-stock small{
+  color:#8490a0!important;
+  font-size:9px!important;
+}
+body[data-app-page="adminDashboard"] .station-tank-progress{
+  height:6px!important;
+  overflow:hidden!important;
+  margin-top:11px!important;
+  border-radius:99px!important;
+  background:#eaf0f6!important;
+}
+body[data-app-page="adminDashboard"] .station-tank-progress>span{
+  display:block!important;
+  height:100%!important;
+  border-radius:99px!important;
+  background:var(--tank-accent,#1769d2)!important;
+}
+body[data-app-page="adminDashboard"] .station-tank-glimpse-bottom{
+  margin-top:6px!important;
+  color:#8490a0!important;
+  font-size:9px!important;
+}
+body[data-app-page="adminDashboard"] .station-glimpse-foot{
+  padding:3px 2px 0!important;
+  color:#8490a0!important;
+  font-size:10px!important;
+}
+@media(max-width:760px){
+  body[data-app-page="adminDashboard"] .station-inventory-glimpses{grid-template-columns:minmax(0,1fr)!important;gap:12px!important}
+  body[data-app-page="adminDashboard"] .station-glimpse-card{padding:13px!important}
+}
