@@ -2632,3 +2632,23 @@ body[data-app-page="adminFuelConfiguration"] .activated-products-pie-item small{
     width:100%!important;
   }
 }
+
+
+/* Activated Products pie chart — polished dashboard presentation */
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph{margin-top:16px!important;padding:15px 0 2px!important;border-top:1px solid #e6ebf1!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph-head{align-items:center!important;margin:0 4px 12px!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph-head h3{font-size:14px!important;letter-spacing:-.01em!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph-unit{padding:5px 8px!important;border:1px solid #e5eaf0!important;border-radius:999px!important;background:#f8fafc!important;color:#667085!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-pie-layout{align-items:center!important;gap:28px!important;padding:10px 14px 14px!important;border:1px solid #e6ebf1!important;border-radius:14px!important;background:linear-gradient(180deg,#fff 0%,#fbfcfe 100%)!important;box-shadow:0 6px 18px rgba(16,24,40,.05)!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-pie-chart{width:210px!important;min-width:210px!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-pie-chart svg{filter:drop-shadow(0 5px 9px rgba(16,24,40,.10))!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-pie-total{font-size:14px!important;letter-spacing:-.02em!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-pie-total-label{font-size:6.5px!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-pie-legend{gap:3px!important;padding:2px 0!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-pie-item{min-height:34px!important;padding:5px 0!important;border-bottom:1px solid #eef1f5!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-pie-item:last-child{border-bottom:0!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-pie-dot{width:9px!important;height:9px!important;box-shadow:0 0 0 3px rgba(15,23,42,.035)!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-pie-code{font-size:10.5px!important;color:#273446!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-pie-item strong{font-size:10px!important}
+body[data-app-page="adminFuelConfiguration"] .activated-products-pie-item small{font-size:8.5px!important;color:#667085!important}
+@media(max-width:560px){body[data-app-page="adminFuelConfiguration"] .activated-products-pie-layout{gap:10px!important;padding:10px!important}body[data-app-page="adminFuelConfiguration"] .activated-products-pie-chart{width:185px!important;min-width:185px!important}}
