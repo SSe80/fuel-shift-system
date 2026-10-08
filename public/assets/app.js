@@ -946,7 +946,7 @@ async function adminDashboard(){
     if(el('active-shifts'))el('active-shifts').textContent=activeShifts.length; if(el('tank-count'))el('tank-count').textContent=tanks.length; if(el('alerts'))el('alerts').textContent=low.length;
     if(el('product-count'))el('product-count').textContent=products.length; if(el('dispenser-count'))el('dispenser-count').textContent=dispensers.length; if(el('attendant-count'))el('attendant-count').textContent=activeEmployees.filter(e=>e.role==='attendant').length;
     await loadAccountingReconciliation();
-    if(el('products'))el('products').innerHTML=products.length?products.map(p=>{const pc=p.color||'#1264d8';return '<div class="stat product-info-row activated-product-card" role="button" tabindex="0" onclick="openAdminProductDetails(\\''+h(p.id)+'\\')" onkeydown="if(event.key===\\'Enter\\'||event.key===\\' \\'){event.preventDefault();openAdminProductDetails(\\''+h(p.id)+'\\')}"><div class="product-info-main"><div class="content-title"><span class="field-label">PRODUCT</span><b class="product-code" style="color:'+h(pc)+'">'+h(p.code_name)+'</b></div><span class="product-name">'+h(p.name)+'</span></div><div class="content-meta"><span>Active</span><span>·</span><span>Selling price</span><strong>'+money(p.selling_price)+'</strong></div></div>';}).join(''):'<div class="empty-content">No activated products.</div>';
+    if(el('products'))el('products').innerHTML=products.length?products.map(p=>{const pc=p.color||'#1264d8';return '<div class="stat product-info-row activated-product-card" data-product-id="'+h(p.id)+'" role="button" tabindex="0"><div class="product-info-main"><div class="content-title"><span class="field-label">PRODUCT</span><b class="product-code" style="color:'+h(pc)+'">'+h(p.code_name)+'</b></div><span class="product-name">'+h(p.name)+'</span></div><div class="content-meta"><span>Active</span><span>·</span><span>Selling price</span><strong>'+money(p.selling_price)+'</strong></div></div>';}).join(''):'<div class="empty-content">No activated products.</div>';
     if(el('dispensers'))el('dispensers').innerHTML=dispensers.length?dispensers.map(d=>{
       const tank=tanks.find(t=>t.id===d.tank_id);
       const product=products.find(p=>String(p.name||'').toLowerCase()===String(d.product||'').toLowerCase())||{};
@@ -4291,7 +4291,29 @@ window.adminSalesHistory=adminSalesHistory;
 window.adminSettings=adminSettings;
 window.userDashboard=userDashboard;
 
-// Prefetch dashboard sub-pages so navigation feels immediate.\n(function prefetchDashboardSubPages(){\n  if(document.body?.classList?.contains('admin-shell')===false)return;\n  const links=[...document.querySelectorAll('.dashboard-section-nav a[href]')];\n  const urls=[...new Set(links.map(a=>a.getAttribute('href')).filter(Boolean))];\n  const add=(url)=>{\n    if(!url||document.head.querySelector('link[rel=\"prefetch\"][href=\"'+url+'\"]'))return;\n    const link=document.createElement('link');\n    link.rel='prefetch';\n    link.as='document';\n    link.href=url;\n    link.fetchPriority='low';\n    document.head.appendChild(link);\n  };\n  // Start with the currently visible dashboard group; do not block page rendering.\n  if('requestIdleCallback' in window){\n    requestIdleCallback(()=>urls.forEach(add),{timeout:1200});\n  }else{\n    setTimeout(()=>urls.forEach(add),250);\n  }\n})();\n\n// Unified admin sidebar toggle
+// Prefetch dashboard sub-pages so navigation feels immediate.
+(function prefetchDashboardSubPages(){
+  if(document.body?.classList?.contains('admin-shell')===false)return;
+  const links=[...document.querySelectorAll('.dashboard-section-nav a[href]')];
+  const urls=[...new Set(links.map(a=>a.getAttribute('href')).filter(Boolean))];
+  const add=(url)=>{
+    if(!url||document.head.querySelector('link[rel=\"prefetch\"][href=\"'+url+'\"]'))return;
+    const link=document.createElement('link');
+    link.rel='prefetch';
+    link.as='document';
+    link.href=url;
+    link.fetchPriority='low';
+    document.head.appendChild(link);
+  };
+  // Start with the currently visible dashboard group; do not block page rendering.
+  if('requestIdleCallback' in window){
+    requestIdleCallback(()=>urls.forEach(add),{timeout:1200});
+  }else{
+    setTimeout(()=>urls.forEach(add),250);
+  }
+})();
+
+// Unified admin sidebar toggle
 function toggleAdminSidebar(){
   const body=document.body;
   if(!body || !body.classList.contains('admin-shell'))return;
@@ -4370,65 +4392,107 @@ document.addEventListener('click',event=>{
 },{capture:true});
 
 
-/* Admin Fuel Configuration — product performance details */
+
+/* Admin Fuel Configuration — safe product performance details */
 let adminProductDetailsCache=null;
+
 function closeAdminProductDetails(){
   const modal=document.getElementById('admin-product-details-modal');
-  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  if(modal){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+  }
 }
-function adminProductMetric(label,value,sub=''){
+
+function adminProductMetric(label,value,sub){
   return '<div class="admin-product-metric"><span>'+h(label)+'</span><strong>'+h(value)+'</strong>'+(sub?'<small>'+h(sub)+'</small>':'')+'</div>';
 }
+
+function productText(v){
+  return String(v==null?'':v).trim().toLowerCase();
+}
+
+function productMatches(value,product){
+  const target=[product.id,product.code_name,product.name].filter(Boolean).map(productText);
+  if(value&&typeof value==='object'){
+    value=[value.id,value.code_name,value.product_code,value.name,value.product].filter(Boolean);
+  }
+  return target.includes(productText(value));
+}
+
+function salesProductMatches(row,product){
+  const candidates=[
+    row?.product,row?.product_code,row?.product_name,
+    row?.dispenser?.product,row?.dispenser?.product_code,row?.dispenser?.product_name,
+    row?.takeover?.product,row?.takeover?.product_code
+  ];
+  return candidates.some(v=>productMatches(v,product));
+}
+
+function tankProductMatches(tank,product){
+  return productMatches(tank?.product,product)||productMatches(tank?.product_id,product)||productMatches(tank?.product_code,product)||productMatches(tank?.product_name,product);
+}
+
+function purchaseProductMatches(purchase,product){
+  return productMatches(purchase?.product,product)||productMatches(purchase?.product_id,product)||productMatches(purchase?.product_code,product)||productMatches(purchase?.product_name,product);
+}
+
 function renderAdminProductDetails(product,data){
-  const tanks=data.tanks.filter(t=>String(t.product||'').trim().toLowerCase()===String(product.name||'').trim().toLowerCase());
-  const dispensers=data.dispensers.filter(d=>tanks.some(t=>String(t.id)===String(d.tank_id)));
-  const purchases=data.purchases.filter(p=>String(p.product||'').trim().toLowerCase()===String(product.name||'').trim().toLowerCase());
-  const sales=data.sales.filter(x=>String(x.dispenser?.product||'').trim().toLowerCase()===String(product.name||'').trim().toLowerCase());
-  const soldLiters=sales.reduce((n,x)=>n+Number(x.takeover?.total_sales_liters||0),0);
-  const revenue=sales.reduce((n,x)=>n+Number(x.takeover?.total_sales_amount||0),0);
-  const purchasedLiters=purchases.reduce((n,x)=>n+Number(x.quantity_liters||0),0);
-  const currentStock=tanks.reduce((n,t)=>n+Number(t.current_liters||0),0);
-  const capacity=tanks.reduce((n,t)=>n+Number(t.capacity_liters||0),0);
-  const avgPrice=soldLiters>0?revenue/soldLiters:Number(product.selling_price||0);
-  const stockCoverage=soldLiters>0?currentStock/(soldLiters/30):null;
+  const tanks=data.tanks.filter(t=>tankProductMatches(t,product));
+  const dispensers=data.dispensers.filter(d=>{
+    const tank=tanks.find(t=>String(t.id)===String(d.tank_id));
+    return !!tank || productMatches(d.product,product) || productMatches(d.product_code,product);
+  });
+  const purchases=data.purchases.filter(p=>purchaseProductMatches(p,product));
+  const sales=data.sales.filter(s=>salesProductMatches(s,product));
+
+  const soldLiters=sales.reduce((n,x)=>n+Number(x.takeover?.total_sales_liters||x.total_sales_liters||0),0);
+  const revenue=sales.reduce((n,x)=>n+Number(x.takeover?.total_sales_amount||x.total_sales_amount||0),0);
+  const purchasedLiters=purchases.reduce((n,x)=>n+Number(x.quantity_liters||x.ordered_quantity_liters||x.quantity||0),0);
+  const currentStock=tanks.reduce((n,t)=>n+Number(t.current_liters||t.current_stock||t.stock_liters||0),0);
+  const capacity=tanks.reduce((n,t)=>n+Number(t.capacity_liters||t.capacity||0),0);
+  const recentSales=sales.filter(x=>{
+    const d=new Date(x.takeover?.sales_confirmed_at||x.takeover?.shift_ended_at||x.takeover?.shift_started_at||x.created_at);
+    return Number.isFinite(d.getTime()) && Date.now()-d.getTime()<=30*86400000;
+  });
+  const recentLiters=recentSales.reduce((n,x)=>n+Number(x.takeover?.total_sales_liters||x.total_sales_liters||0),0);
+  const recentRevenue=recentSales.reduce((n,x)=>n+Number(x.takeover?.total_sales_amount||x.total_sales_amount||0),0);
   const utilization=capacity>0?currentStock/capacity*100:0;
-  const recentSales=sales.filter(x=>{const d=new Date(x.takeover?.sales_confirmed_at||x.takeover?.shift_ended_at||x.takeover?.shift_started_at);return Number.isFinite(d.getTime())&&Date.now()-d.getTime()<=30*86400000;});
-  const recentLiters=recentSales.reduce((n,x)=>n+Number(x.takeover?.total_sales_liters||0),0);
-  const recentRevenue=recentSales.reduce((n,x)=>n+Number(x.takeover?.total_sales_amount||0),0);
-  const color=String(product.color||'#1264d8');
+  const avgPrice=recentLiters>0?recentRevenue/recentLiters:Number(product.selling_price||0);
+  const stockCoverage=recentLiters>0?currentStock/(recentLiters/30):null;
+
   const modal=document.getElementById('admin-product-details-modal');
   if(!modal)return;
-  modal.style.setProperty('--product-color',color);
+  modal.style.setProperty('--product-color',String(product.color||'#1264d8'));
   const title=modal.querySelector('.admin-product-details-title');
-  const code=modal.querySelector('.admin-product-details-code');
   const content=modal.querySelector('.admin-product-details-content');
-  if(title)title.textContent=product.name||product.code_name||'Product';
-  if(code)code.textContent=product.code_name||'—';
+  if(title)title.textContent=product.code_name||product.name||'Product';
+
   if(content)content.innerHTML=
     '<div class="admin-product-details-hero"><div><span class="section-kicker">PRODUCT PERFORMANCE</span><h2>'+h(product.code_name||'—')+'</h2><p>'+h(product.name||'—')+'</p></div><span class="admin-product-details-status">ACTIVE</span></div>'+
     '<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>OVERVIEW</span><small>Current configuration</small></div><div class="admin-product-metrics">'+
       adminProductMetric('Selling price',money(product.selling_price))+
       adminProductMetric('Current stock',liters(currentStock)+' L',tanks.length+' tank'+(tanks.length===1?'':'s'))+
       adminProductMetric('Tank capacity',liters(capacity)+' L',utilization.toFixed(1)+'% currently filled')+
-      adminProductMetric('Dispensers',String(dispensers.length),'Active dispensers')+
+      adminProductMetric('Dispensers',String(dispensers.length),'Assigned dispensers')+
     '</div></section>'+
     '<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>PERFORMANCE</span><small>Last 30 days</small></div><div class="admin-product-metrics">'+
       adminProductMetric('Fuel sold',liters(recentLiters)+' L','Confirmed sales')+
       adminProductMetric('Sales revenue',money(recentRevenue),'Confirmed sales')+
-      adminProductMetric('Average price',money(recentLiters>0?recentRevenue/recentLiters:avgPrice),'Per liter')+
-      adminProductMetric('Daily average',liters(recentLiters/30)+' L','Based on 30 days')+
+      adminProductMetric('Average price',money(avgPrice),'Per liter')+
+      adminProductMetric('Daily average',liters(recentLiters/30)+' L','30-day average')+
     '</div></section>'+
     '<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>STOCK & SUPPLY</span><small>Recorded activity</small></div><div class="admin-product-metrics">'+
       adminProductMetric('Total purchases',liters(purchasedLiters)+' L',purchases.length+' purchase'+(purchases.length===1?'':'s'))+
-      adminProductMetric('Sales records',String(sales.length),'Confirmed shifts')+
-      adminProductMetric('Stock coverage',stockCoverage===null?'—':stockCoverage.toFixed(1)+' days','Estimated from 30-day average')+
-      adminProductMetric('30-day movement',liters(recentLiters)+' L sold','Demand indicator')+
+      adminProductMetric('Sales records',String(sales.length),'Confirmed records')+
+      adminProductMetric('Stock coverage',stockCoverage===null?'—':stockCoverage.toFixed(1)+' days','Estimated')+
+      adminProductMetric('30-day movement',liters(recentLiters)+' L','Sold volume')+
     '</div></section>'+
     '<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>FUEL STATIONS</span><small>Assigned tanks</small></div><div class="admin-product-tank-list">'+
-      (tanks.length?tanks.map(t=>'<div class="admin-product-tank-row"><div><strong>'+h(t.tank_code||'Tank')+'</strong><small>'+liters(t.current_liters)+' L / '+liters(t.capacity_liters)+' L</small></div><b>'+((Number(t.capacity_liters)>0?(Number(t.current_liters)/Number(t.capacity_liters)*100):0).toFixed(1))+'%</b></div>').join(''):'<div class="muted">No active tanks assigned.</div>')+
+      (tanks.length?tanks.map(t=>'<div class="admin-product-tank-row"><div><strong>'+h(t.tank_code||t.code||t.name||'Tank')+'</strong><small>'+liters(t.current_liters||t.current_stock||t.stock_liters||0)+' L / '+liters(t.capacity_liters||t.capacity||0)+' L</small></div><b>'+((Number(t.capacity_liters||t.capacity||0)>0?(Number(t.current_liters||t.current_stock||t.stock_liters||0)/Number(t.capacity_liters||t.capacity||0)*100):0).toFixed(1))+'%</b></div>').join(''):'<div class="muted">No active tanks assigned.</div>')+
     '</div></section>';
-  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
 }
+
 async function openAdminProductDetails(productId){
   let modal=document.getElementById('admin-product-details-modal');
   if(!modal){
@@ -4436,21 +4500,53 @@ async function openAdminProductDetails(productId){
     modal.id='admin-product-details-modal';
     modal.className='admin-product-details-modal';
     modal.setAttribute('aria-hidden','true');
-    modal.innerHTML='<div class="admin-product-details-backdrop" onclick="closeAdminProductDetails()"></div><div class="admin-product-details-card" role="dialog" aria-modal="true" aria-labelledby="admin-product-details-heading"><div class="admin-product-details-top"><div><span class="section-kicker">PRODUCT DETAILS</span><h3 id="admin-product-details-heading" class="admin-product-details-title">Product</h3></div><button type="button" class="admin-product-details-close" onclick="closeAdminProductDetails()" aria-label="Close">×</button></div><div class="admin-product-details-content"></div></div>';
+    modal.innerHTML='<div class="admin-product-details-backdrop"></div><div class="admin-product-details-card" role="dialog" aria-modal="true" aria-labelledby="admin-product-details-heading"><div class="admin-product-details-top"><div><span class="section-kicker">PRODUCT DETAILS</span><h3 id="admin-product-details-heading" class="admin-product-details-title">Product</h3></div><button type="button" class="admin-product-details-close" aria-label="Close">×</button></div><div class="admin-product-details-content"></div></div>';
     document.body.appendChild(modal);
+    modal.querySelector('.admin-product-details-backdrop').addEventListener('click',closeAdminProductDetails);
+    modal.querySelector('.admin-product-details-close').addEventListener('click',closeAdminProductDetails);
   }
-  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
   const content=modal.querySelector('.admin-product-details-content');
   if(content)content.innerHTML='<div class="admin-product-details-loading">Loading product performance…</div>';
   try{
     if(!adminProductDetailsCache){
-      const [products,tanks,dispensers,purchases,sales]=await Promise.all([api('/api/products'),api('/api/tanks'),api('/api/nozzles'),api('/api/purchases'),api('/api/sales/history')]);
-      adminProductDetailsCache={products:Array.isArray(products)?products:[],tanks:Array.isArray(tanks)?tanks:[],dispensers:Array.isArray(dispensers)?dispensers:[],purchases:Array.isArray(purchases)?purchases:[],sales:Array.isArray(sales)?sales:[]};
+      const result=await Promise.all([
+        api('/api/products'),
+        api('/api/tanks'),
+        api('/api/nozzles'),
+        api('/api/purchases'),
+        api('/api/sales/history')
+      ]);
+      adminProductDetailsCache={
+        products:Array.isArray(result[0])?result[0]:[],
+        tanks:Array.isArray(result[1])?result[1]:[],
+        dispensers:Array.isArray(result[2])?result[2]:[],
+        purchases:Array.isArray(result[3])?result[3]:[],
+        sales:Array.isArray(result[4])?result[4]:[]
+      };
     }
     const product=adminProductDetailsCache.products.find(p=>String(p.id)===String(productId));
     if(!product)throw new Error('Product could not be found.');
     renderAdminProductDetails(product,adminProductDetailsCache);
-  }catch(e){
-    if(content)content.innerHTML='<div class="admin-product-details-error">'+h(e.message||'Unable to load product details.')+'</div>';
+  }catch(error){
+    if(content)content.innerHTML='<div class="admin-product-details-error">'+h(error?.message||'Unable to load product details.')+'</div>';
   }
 }
+
+document.addEventListener('click',function(event){
+  const card=event.target.closest?.('#products .activated-product-card');
+  if(!card)return;
+  openAdminProductDetails(card.getAttribute('data-product-id'));
+});
+
+document.addEventListener('keydown',function(event){
+  if(event.key!=='Enter' && event.key!==' ')return;
+  const card=event.target.closest?.('#products .activated-product-card');
+  if(!card)return;
+  event.preventDefault();
+  openAdminProductDetails(card.getAttribute('data-product-id'));
+});
+
+window.openAdminProductDetails=openAdminProductDetails;
+window.closeAdminProductDetails=closeAdminProductDetails;
