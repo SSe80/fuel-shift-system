@@ -4188,3 +4188,24 @@ body[data-app-page="adminPurchases"] .purchase-card-linked{
   outline-offset:3px!important;
   transition:outline .2s ease!important;
 }
+
+
+/* Tank movement invoice — navigates to the matching purchase card */
+body[data-app-page="adminInventory"] .tank-movement-invoice-link{
+  display:inline!important;
+  margin-left:3px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  color:#1264d8!important;
+  font:inherit!important;
+  font-size:inherit!important;
+  font-weight:900!important;
+  text-decoration:underline!important;
+  text-decoration-thickness:1px!important;
+  text-underline-offset:2px!important;
+  cursor:pointer!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-invoice-link:hover{
+  color:#0b4fa8!important;
+}
