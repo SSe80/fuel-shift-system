@@ -1491,6 +1491,18 @@ async function openAdminAttendantDetails(id){
     const totalLiters=sales.reduce((n,s)=>n+(Number(s.quantity_liters||s.liters)||0),0);
     const totalAmount=sales.reduce((n,s)=>n+(Number(s.total_amount||s.amount)||0),0);
     const avg=employeeShifts.length?totalLiters/employeeShifts.length:0;
+    const now=new Date();
+    const monthStart=new Date(now.getFullYear(),now.getMonth(),1); monthStart.setHours(0,0,0,0);
+    const elapsedMonthDays=Math.max(1,now.getDate());
+    const monthlySales=sales.filter(s=>{
+      const raw=s.sale_time||s.created_at||s.confirmed_at||s.createdAt;
+      const d=raw?new Date(raw):null;
+      return d&&!Number.isNaN(d.getTime())&&d>=monthStart&&d<=now;
+    });
+    const monthlyAmount=monthlySales.reduce((n,s)=>n+(Number(s.total_amount||s.amount)||0),0);
+    const monthlyLiters=monthlySales.reduce((n,s)=>n+(Number(s.quantity_liters||s.liters)||0),0);
+    const dailyAverageSales=monthlyAmount/elapsedMonthDays;
+    const dailyAverageLiters=monthlyLiters/elapsedMonthDays;
     const chartEnd=new Date(); chartEnd.setHours(23,59,59,999);
     const chartStart=new Date(chartEnd); chartStart.setDate(chartStart.getDate()-6); chartStart.setHours(0,0,0,0);
     const chartDays=Array.from({length:7},(_,i)=>{const d=new Date(chartStart);d.setDate(chartStart.getDate()+i);return d;});
@@ -1516,10 +1528,37 @@ async function openAdminAttendantDetails(id){
     }).join('');
     const performance=totalLiters>0?'Active sales performance':'No confirmed sales yet';
     if(box)box.innerHTML=
+      '<div class="admin-attendant-swipe" data-attendant-swipe><div class="admin-attendant-swipe-track" data-attendant-swipe-track>'+
+      '<section class="admin-attendant-swipe-page" aria-label="Attendant overview">'+
       '<div class="admin-attendant-hero"><div><span class="section-kicker">ATTENDANT</span><h2>'+h(employee.name)+'</h2><p>ID '+h(employee.operator_id||'—')+' · '+h(employee.active===true?'Active':'Inactive')+'</p></div><span class="admin-attendant-status '+(activeShifts.length?'':'inactive')+'">'+(activeShifts.length?'ON SHIFT':'AVAILABLE')+'</span></div>'+
-      '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>STATISTICS</span><small>All recorded shifts</small></div><div class="admin-attendant-metrics"><div class="admin-attendant-metric"><span>Total shifts</span><strong>'+employeeShifts.length+'</strong><small>'+activeShifts.length+' active now</small></div><div class="admin-attendant-metric"><span>Sales</span><strong>'+sales.length+'</strong><small>confirmed entries</small></div><div class="admin-attendant-metric"><span>Volume</span><strong>'+liters(totalLiters)+' L</strong><small>total sold</small></div><div class="admin-attendant-metric"><span>Sales value</span><strong>'+money(totalAmount)+'</strong><small>confirmed sales</small></div></div></div>'+
-      '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>PERFORMANCE</span><small>Last 7 days · liters sold</small></div><div class="admin-attendant-metrics"><div class="admin-attendant-metric"><span>Average per shift</span><strong>'+liters(avg)+' L</strong><small>based on recorded shifts</small></div><div class="admin-attendant-metric"><span>Active shifts</span><strong>'+activeShifts.length+'</strong><small>currently assigned</small></div></div><div class="admin-attendant-performance-chart"><div class="admin-attendant-chart-summary"><span>Daily sales volume</span><strong>'+liters(dailyVolumes.reduce((n,v)=>n+v,0))+' L</strong></div><svg viewBox="0 0 '+chartW+' '+chartH+'" role="img" aria-label="Daily liters sold over the last seven days" preserveAspectRatio="xMidYMid meet"><line x1="5" y1="76" x2="315" y2="76" stroke="#e5eaf0" stroke-width="1"/>'+chartBars+'</svg><p class="admin-attendant-chart-note">'+(dailyVolumes.some(v=>v>0)?'Daily volume from confirmed sales records.':'No dated sales records available for this attendant in the last 7 days.')+'</p></div></div>'+
-      '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>SHIFT DATA</span><small>'+employeeShifts.length+' record'+(employeeShifts.length===1?'':'s')+'</small></div>'+(shiftRows||'<p class="muted">No shift records.</p>')+'</div>';
+      '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>STATISTICS</span><small>All recorded shifts</small></div><div class="admin-attendant-metrics"><div class="admin-attendant-metric"><span>Total shifts</span><strong>'+employeeShifts.length+'</strong><small>'+activeShifts.length+' active now</small></div><div class="admin-attendant-metric"><span>Sales entries</span><strong>'+sales.length+'</strong><small>confirmed records</small></div><div class="admin-attendant-metric"><span>Volume sold</span><strong>'+liters(totalLiters)+' L</strong><small>all recorded sales</small></div><div class="admin-attendant-metric"><span>Total sales</span><strong>'+money(totalAmount)+'</strong><small>all recorded sales</small></div></div></div>'+
+      '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>PERFORMANCE</span><small>'+h(now.toLocaleString(undefined,{month:'long',year:'numeric'}))+'</small></div><div class="admin-attendant-metrics"><div class="admin-attendant-metric"><span>Daily average sales</span><strong>'+money(dailyAverageSales)+'</strong><small>monthly sales value ÷ '+elapsedMonthDays+' days</small></div><div class="admin-attendant-metric"><span>Daily average volume</span><strong>'+liters(dailyAverageLiters)+' L</strong><small>monthly liters ÷ '+elapsedMonthDays+' days</small></div><div class="admin-attendant-metric"><span>Monthly sales</span><strong>'+money(monthlyAmount)+'</strong><small>'+monthlySales.length+' confirmed entries this month</small></div><div class="admin-attendant-metric"><span>Monthly volume</span><strong>'+liters(monthlyLiters)+' L</strong><small>current month to date</small></div></div><div class="admin-attendant-performance-chart"><div class="admin-attendant-chart-summary"><span>Daily sales volume · last 7 days</span><strong>'+liters(dailyVolumes.reduce((n,v)=>n+v,0))+' L</strong></div><svg viewBox="0 0 '+chartW+' '+chartH+'" role="img" aria-label="Daily liters sold over the last seven days" preserveAspectRatio="xMidYMid meet"><line x1="5" y1="76" x2="315" y2="76" stroke="#e5eaf0" stroke-width="1"/>'+chartBars+'</svg><p class="admin-attendant-chart-note">'+(dailyVolumes.some(v=>v>0)?'Daily volume from confirmed sales records.':'No dated sales records available for this attendant in the last 7 days.')+'</p></div></div>'+
+      '</section><section class="admin-attendant-swipe-page" aria-label="Attendant shift records">'+
+      '<div class="admin-attendant-section admin-attendant-shifts-panel"><div class="admin-attendant-section-head"><span>SHIFT DATA</span><small>'+employeeShifts.length+' record'+(employeeShifts.length===1?'':'s')+'</small></div><div class="admin-attendant-shifts-list">'+(shiftRows||'<p class="muted">No shift records.</p>')+'</div></div>'+
+      '</section></div><div class="admin-attendant-swipe-controls"><button type="button" class="admin-attendant-swipe-arrow" data-attendant-prev aria-label="Previous detail card" disabled>‹</button><div class="admin-attendant-swipe-dots"><button type="button" class="active" data-attendant-page="0" aria-label="Overview card"></button><button type="button" data-attendant-page="1" aria-label="Shift data card"></button></div><span data-attendant-page-label>1 / 2</span><button type="button" class="admin-attendant-swipe-arrow" data-attendant-next aria-label="Next detail card">›</button></div></div>';
+    const swipe=box?.querySelector('[data-attendant-swipe]');
+    if(swipe){
+      const track=swipe.querySelector('[data-attendant-swipe-track]');
+      const pages=[...swipe.querySelectorAll('[data-attendant-page]')];
+      const prev=swipe.querySelector('[data-attendant-prev]');
+      const next=swipe.querySelector('[data-attendant-next]');
+      const label=swipe.querySelector('[data-attendant-page-label]');
+      let page=0;
+      const goTo=(index)=>{
+        page=Math.max(0,Math.min(1,index));
+        track.style.transform='translateX(-'+(page*100)+'%)';
+        pages.forEach((b,i)=>b.classList.toggle('active',i===page));
+        if(prev)prev.disabled=page===0;
+        if(next)next.disabled=page===1;
+        if(label)label.textContent=(page+1)+' / 2';
+      };
+      prev?.addEventListener('click',()=>goTo(page-1));
+      next?.addEventListener('click',()=>goTo(page+1));
+      pages.forEach((b,i)=>b.addEventListener('click',()=>goTo(i)));
+      let touchStartX=0;
+      track.addEventListener('touchstart',e=>{touchStartX=e.changedTouches[0]?.clientX||0;},{passive:true});
+      track.addEventListener('touchend',e=>{const dx=(e.changedTouches[0]?.clientX||touchStartX)-touchStartX;if(Math.abs(dx)>45)goTo(page+(dx<0?1:-1));},{passive:true});
+    }
   }catch(e){if(box)box.innerHTML='<p class="muted">'+h(e.message||'Unable to load attendant details.')+'</p>';}
 }
 function renderAdminAttendantWeeklyRanking(attendants,history){
