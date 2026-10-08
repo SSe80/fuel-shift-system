@@ -1978,3 +1978,69 @@ body[data-app-page="adminFuelConfiguration"] .activated-product-meta div:first-c
     gap:1px!important;
   }
 }
+
+
+/* Activated Products — compact card sizing */
+body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+  min-height:64px!important;
+  padding:10px 12px 10px 10px!important;
+  gap:12px!important;
+  border-radius:9px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-main{
+  gap:8px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-color{
+  flex-basis:3px!important;
+  width:3px!important;
+  min-height:42px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-copy .field-label{
+  margin-bottom:2px!important;
+  font-size:7px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-code{
+  font-size:14px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-name{
+  margin-top:2px!important;
+  font-size:9px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-meta{
+  min-width:82px!important;
+  gap:5px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-meta div{
+  gap:4px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-meta span{
+  font-size:7px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-meta strong{
+  font-size:10px!important;
+}
+@media(max-width:700px){
+  body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+    flex-basis:min(250px,calc(100vw - 56px))!important;
+    min-height:60px!important;
+    padding:9px 10px 9px 9px!important;
+  }
+}
+@media(max-width:480px){
+  body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+    flex-basis:min(225px,calc(100vw - 52px))!important;
+    min-height:58px!important;
+    padding:8px 9px!important;
+    gap:9px!important;
+  }
+  body[data-app-page="adminFuelConfiguration"] .activated-product-code{
+    font-size:13px!important;
+  }
+  body[data-app-page="adminFuelConfiguration"] .activated-product-name{
+    font-size:8.5px!important;
+  }
+  body[data-app-page="adminFuelConfiguration"] .activated-product-meta{
+    min-width:76px!important;
+    gap:4px!important;
+  }
+}
