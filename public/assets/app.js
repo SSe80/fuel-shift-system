@@ -731,6 +731,7 @@ async function loadAttendantShiftPage(){
     window.dashboardShiftRecords=shifts;
     window.dashboardNozzleRecords=nozzles;
     window.dashboardEmployeeRecords=employees;
+    window.dashboardProductRecords=products;
     window.dashboardTankRecords=tanks;
     const historyBox=document.getElementById('shift-history');
     if(historyBox){
