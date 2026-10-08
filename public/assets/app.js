@@ -1450,14 +1450,61 @@ async function adminInventory(){
     });
   }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
+function closeAdminAttendantDetails(){
+  const modal=document.getElementById('admin-attendant-details-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+function fmtAttendantDate(v){
+  if(!v)return '—';
+  const d=new Date(v); return Number.isNaN(d.getTime())?'—':d.toLocaleString();
+}
+async function openAdminAttendantDetails(id){
+  let modal=document.getElementById('admin-attendant-details-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='admin-attendant-details-modal';
+    modal.className='admin-attendant-details-modal';
+    modal.setAttribute('aria-hidden','true');
+    modal.innerHTML='<div class="admin-attendant-details-backdrop" onclick="closeAdminAttendantDetails()"></div><div class="admin-attendant-details-card" role="dialog" aria-modal="true"><div class="admin-attendant-details-top"><h3>Attendant Details</h3><button type="button" class="admin-attendant-details-close" onclick="closeAdminAttendantDetails()">×</button></div><div id="admin-attendant-details-content" class="admin-attendant-details-content"><p class="muted">Loading…</p></div></div>';
+    document.body.appendChild(modal);
+  }
+  modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+  const box=document.getElementById('admin-attendant-details-content');
+  if(box)box.innerHTML='<p class="muted">Loading attendant data…</p>';
+  try{
+    const [employees,shifts,nozzles,products,salesHistory]=await Promise.all([
+      api('/api/users'),api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/sales/history')
+    ]);
+    const employee=(Array.isArray(employees)?employees:[]).find(e=>String(e.id)===String(id));
+    if(!employee){if(box)box.innerHTML='<p class="muted">Attendant not found.</p>';return;}
+    const allShifts=Array.isArray(shifts)?shifts:[], allNozzles=Array.isArray(nozzles)?nozzles:[], allProducts=Array.isArray(products)?products:[];
+    const employeeShifts=allShifts.filter(s=>String(s.employee_id)===String(employee.id));
+    const activeShifts=employeeShifts.filter(s=>s.status==='active');
+    const history=Array.isArray(salesHistory)?salesHistory:[];
+    const salesItems=history.filter(x=>String(x?.takeover?.from_employee_id||'')===String(employee.id)||String(x?.takeover?.to_employee_id||'')===String(employee.id));
+    const sales=salesItems.flatMap(x=>Array.isArray(x.sales)?x.sales:[]);
+    const totalLiters=sales.reduce((n,s)=>n+(Number(s.quantity_liters)||0),0);
+    const totalAmount=sales.reduce((n,s)=>n+(Number(s.total_amount||s.amount)||0),0);
+    const avg=employeeShifts.length?totalLiters/employeeShifts.length:0;
+    const shiftRows=employeeShifts.slice().sort((a,b)=>new Date(b.shift_started_at||b.created_at||0)-new Date(a.shift_started_at||a.created_at||0)).slice(0,12).map(s=>{
+      const n=allNozzles.find(x=>String(x.id)===String(s.nozzle_id));
+      const p=allProducts.find(x=>String(x.id)===String(n?.product_id)||String(x.name||'').toLowerCase()===String(n?.product||'').toLowerCase());
+      return '<div class="admin-attendant-shift"><div class="admin-attendant-shift-head"><strong>'+h(n?.nozzle_code||s.nozzle_id||'Dispenser')+'</strong><span>'+h(s.status||'—')+'</span></div><p>'+h(p?.code_name||n?.product||p?.name||'Product not assigned')+'</p><div class="admin-attendant-shift-grid"><div><span>Started</span><b>'+h(fmtAttendantDate(s.shift_started_at||s.created_at))+'</b></div><div><span>Ended</span><b>'+h(fmtAttendantDate(s.shift_ended_at))+'</b></div><div><span>Shift</span><b>'+h(String(s.id||'').slice(0,8)||'—')+'</b></div></div></div>';
+    }).join('');
+    const performance=totalLiters>0?'Active sales performance':'No confirmed sales yet';
+    if(box)box.innerHTML=
+      '<div class="admin-attendant-hero"><div><span class="section-kicker">ATTENDANT</span><h2>'+h(employee.name)+'</h2><p>ID '+h(employee.operator_id||'—')+' · '+h(employee.active===true?'Active':'Inactive')+'</p></div><span class="admin-attendant-status '+(activeShifts.length?'':'inactive')+'">'+(activeShifts.length?'ON SHIFT':'AVAILABLE')+'</span></div>'+
+      '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>STATISTICS</span><small>All recorded shifts</small></div><div class="admin-attendant-metrics"><div class="admin-attendant-metric"><span>Total shifts</span><strong>'+employeeShifts.length+'</strong><small>'+activeShifts.length+' active now</small></div><div class="admin-attendant-metric"><span>Sales</span><strong>'+sales.length+'</strong><small>confirmed entries</small></div><div class="admin-attendant-metric"><span>Volume</span><strong>'+liters(totalLiters)+' L</strong><small>total sold</small></div><div class="admin-attendant-metric"><span>Sales value</span><strong>'+money(totalAmount)+'</strong><small>confirmed sales</small></div></div></div>'+
+      '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>PERFORMANCE</span><small>'+h(performance)+'</small></div><div class="admin-attendant-metrics"><div class="admin-attendant-metric"><span>Average per shift</span><strong>'+liters(avg)+' L</strong><small>based on recorded shifts</small></div><div class="admin-attendant-metric"><span>Active shifts</span><strong>'+activeShifts.length+'</strong><small>currently assigned</small></div></div></div>'+
+      '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>SHIFT DATA</span><small>'+employeeShifts.length+' record'+(employeeShifts.length===1?'':'s')+'</small></div>'+(shiftRows||'<p class="muted">No shift records.</p>')+'</div>';
+  }catch(e){if(box)box.innerHTML='<p class="muted">'+h(e.message||'Unable to load attendant details.')+'</p>';}
+}
 async function adminAttendants(){
   try{
     await window.stationCurrencyReady;
     const me=await currentUser();
     if(me.role!=='admin')return location.href='admin-login.html';
-    const [employees,shifts,dispensers]=await Promise.all([
-      api('/api/users'),api('/api/shifts'),api('/api/nozzles')
-    ]);
+    const [employees,shifts,dispensers]=await Promise.all([api('/api/users'),api('/api/shifts'),api('/api/nozzles')]);
     const active=employees.filter(e=>e.active===true&&e.role==='attendant');
     const activeShifts=shifts.filter(s=>s.status==='active');
     const el=document.getElementById('attendants');
@@ -1468,31 +1515,12 @@ async function adminAttendants(){
         const d=dispensers.find(x=>String(x.id)===String(shift.nozzle_id));
         return d?.nozzle_code||shift.nozzle_id||'Assigned dispenser';
       });
-      return '<article class="stat attendant-admin-card">'+
-        '<div class="attendant-content-row">'+
-          '<div class="attendant-content-main">'+
-            '<span class="field-label">ATTENDANT</span>'+
-            '<b>'+h(e.name)+'</b>'+
-            '<span class="operator-id">ID '+h(e.operator_id||'—')+'</span>'+
-          '</div>'+
-          '<div class="content-status">'+
-            '<i class="status-dot '+(employeeShifts.length?'is-active':'')+'"></i>'+
-            '<span>'+(employeeShifts.length?'Active shift':'Available')+'</span>'+
-          '</div>'+
-        '</div>'+
-        '<div class="attendant-shift-row">'+
-          '<span class="field-label">SHIFT'+(employeeShifts.length>1?'S':'')+'</span>'+
-          '<div class="attendant-shift-list">'+
-            (stations.length?stations.map(station=>'<strong>'+h(station)+'</strong>').join(''): '<strong>No active shift</strong>')+
-          '</div>'+
-        '</div>'+
+      return '<article class="stat attendant-admin-card admin-attendant-card" onclick="openAdminAttendantDetails(&quot;'+h(e.id)+'&quot;)" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openAdminAttendantDetails(&quot;'+h(e.id)+'&quot;)}">'+
+        '<div class="attendant-content-row"><div class="attendant-content-main"><span class="field-label">ATTENDANT</span><b>'+h(e.name)+'</b><span class="operator-id">ID '+h(e.operator_id||'—')+'</span></div><div class="content-status"><i class="status-dot '+(employeeShifts.length?'is-active':'')+'"></i><span>'+(employeeShifts.length?'Active shift':'Available')+'</span></div></div>'+
+        '<div class="attendant-shift-row"><span class="field-label">SHIFT'+(employeeShifts.length>1?'S':'')+'</span><div class="attendant-shift-list">'+(stations.length?stations.map(station=>'<strong>'+h(station)+'</strong>').join(''): '<strong>No active shift</strong>')+'</div></div>'+
       '</article>';
     }).join(''):'<div class="empty-content">No activated attendants.</div>';
-  }catch(e){
-    const s=document.getElementById('page-status');
-    if(s)s.textContent=e.message;
-    if(e.message==='Unauthorized')location.href='admin-login.html';
-  }
+  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
 async function adminAccountingControl(){
   try{
