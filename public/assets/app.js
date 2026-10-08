@@ -4285,6 +4285,42 @@ function refreshAdminSalesHistory(){
 }
 
 
+function adminProductSalesTimestamp(s){
+  return s.sale_time||s.created_at||s.timestamp||s.date||s.sold_at||'';
+}
+function adminProductMonthKey(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function adminProductMonthLabel(key){
+  const p=key.split('-');
+  return new Date(Number(p[0]),Number(p[1])-1,1).toLocaleDateString(undefined,{month:'short'});
+}
+function adminProductBuildLineChart(rows){
+  const w=560,hg=190,pad=28;
+  const vals=rows.map(r=>Number(r.value)||0);
+  const max=Math.max(...vals,1);
+  const points=rows.map((r,i)=>{
+    const x=pad+(rows.length===1?0:i*(w-pad*2)/(rows.length-1));
+    const y=hg-pad-(Number(r.value)||0)/max*(hg-pad*2);
+    return {x,y};
+  });
+  const path=points.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
+  const dots=points.map(p=>'<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3" class="admin-product-chart-dot"></circle>').join('');
+  const labels=rows.map((r,i)=>'<text x="'+points[i].x.toFixed(1)+'" y="'+(hg-7)+'" text-anchor="middle" class="admin-product-chart-label">'+h(r.label)+'</text>').join('');
+  return '<svg class="admin-product-chart" viewBox="0 0 '+w+' '+hg+'" role="img" aria-label="Product sales performance chart"><line x1="'+pad+'" y1="'+(hg-pad)+'" x2="'+(w-pad)+'" y2="'+(hg-pad)+'" class="admin-product-chart-axis"></line><path d="'+path+'" class="admin-product-chart-line"></path>'+dots+labels+'</svg>';
+}
+function adminProductBuildBars(rows){
+  const w=560,hg=190,pad=28;
+  const max=Math.max(...rows.map(r=>Number(r.value)||0),1);
+  const gap=7, inner=w-pad*2, bw=Math.max(5,(inner-gap*(rows.length-1))/rows.length);
+  const bars=rows.map((r,i)=>{
+    const value=Number(r.value)||0;
+    const bh=Math.max(value?2:0,(hg-pad*2)*value/max);
+    const x=pad+i*(bw+gap), y=hg-pad-bh;
+    return '<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="3" class="admin-product-chart-bar"></rect><text x="'+(x+bw/2).toFixed(1)+'" y="'+(hg-7)+'" text-anchor="middle" class="admin-product-chart-label">'+h(r.label)+'</text>';
+  }).join('');
+  return '<svg class="admin-product-chart" viewBox="0 0 '+w+' '+hg+'" role="img" aria-label="Product sales volume chart"><line x1="'+pad+'" y1="'+(hg-pad)+'" x2="'+(w-pad)+'" y2="'+(hg-pad)+'" class="admin-product-chart-axis"></line>'+bars+'</svg>';
+}
 /* Admin Fuel Configuration — product details popup.
    Uses delegated events so product cards never need inline JavaScript. */
 function ensureAdminProductDetailsModal(){
@@ -4358,8 +4394,32 @@ async function openAdminProductDetails(productId){
       adminProductDetailMetric('Sales count',String(todaySales.length),'confirmed records')+
       adminProductDetailMetric('All-time volume',liters(totalLiters)+' L','available records')+
       '</div></section>';
+
+    const now=new Date();
+    const monthlyRows=[];
+    for(let i=11;i>=0;i--){
+      const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+      const key=adminProductMonthKey(d);
+      const rows=productSales.filter(s=>adminProductMonthKey(new Date(adminProductSalesTimestamp(s)))===key);
+      monthlyRows.push({label:adminProductMonthLabel(key),value:rows.reduce((sum,s)=>sum+Number(s.quantity_liters||0),0)});
+    }
+    const dailyRows=[];
+    for(let i=6;i>=0;i--){
+      const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);
+      const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const rows=productSales.filter(s=>String(adminProductSalesTimestamp(s)).slice(0,10)===key);
+      dailyRows.push({label:d.toLocaleDateString(undefined,{weekday:'short'}),value:rows.reduce((sum,s)=>sum+Number(s.quantity_liters||0),0)});
+    }
+    const monthlyTotal=monthlyRows.reduce((sum,r)=>sum+r.value,0);
+    const monthlyAverage=monthlyRows.reduce((sum,r)=>sum+r.value,0)/12;
+    const bestMonth=monthlyRows.reduce((best,r)=>r.value>best.value?r:best,{label:'—',value:0});
+    const performance='<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>PERFORMANCE</span><small>Sales volume trend</small></div><div class="admin-product-performance-summary">'+
+      adminProductDetailMetric('12-month volume',liters(monthlyTotal)+' L','recorded sales')+
+      adminProductDetailMetric('Monthly average',liters(monthlyAverage)+' L','12-month average')+
+      adminProductDetailMetric('Best month',h(bestMonth.label),' '+liters(bestMonth.value)+' L')+
+      '</div><div class="admin-product-chart-wrap"><div class="admin-product-chart-title">Monthly volume</div>'+adminProductBuildLineChart(monthlyRows)+'</div><div class="admin-product-chart-wrap"><div class="admin-product-chart-title">Last 7 days</div>'+adminProductBuildBars(dailyRows)+'</div></section>';
     const tanksSection='<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>ACTIVE TANKS</span><small>'+h(liters(stock)+' L total stock')+'</small></div><div class="admin-product-tank-list">'+tankRows+'</div></section>';
-    if(content)content.innerHTML=hero+overview+todaySection+tanksSection;
+    if(content)content.innerHTML=hero+overview+todaySection+performance+tanksSection;
   }catch(e){
     if(content)content.innerHTML='<div class="admin-product-details-error">'+h(e.message||'Unable to load product details.')+'</div>';
   }
