@@ -4220,3 +4220,91 @@ body[data-app-page="adminInventory"] .tank-movement-invoice-link{
 body[data-app-page="adminInventory"] .tank-movement-invoice-link:hover{
   opacity:.75!important;
 }
+
+/* Admin Dashboard > Attendants — clean staff cards */
+body[data-app-page="adminAttendants"] #attendants{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px 14px!important;
+}
+body[data-app-page="adminAttendants"] #attendants .attendant-admin-card{
+  display:block!important;
+  min-width:0!important;
+  padding:14px 15px!important;
+  border:1px solid #e3e8ee!important;
+  border-radius:12px!important;
+  background:#fff!important;
+  box-shadow:0 2px 8px rgba(24,34,48,.045)!important;
+}
+body[data-app-page="adminAttendants"] #attendants .attendant-content-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:14px!important;
+}
+body[data-app-page="adminAttendants"] #attendants .attendant-content-main{
+  min-width:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+}
+body[data-app-page="adminAttendants"] #attendants .attendant-content-main .field-label{
+  margin:0 0 4px!important;
+  font-size:7px!important;
+  letter-spacing:.11em!important;
+  color:#8a95a3!important;
+}
+body[data-app-page="adminAttendants"] #attendants .attendant-content-main > b{
+  max-width:100%!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:#182230!important;
+  font-size:15px!important;
+  line-height:1.2!important;
+  font-weight:750!important;
+}
+body[data-app-page="adminAttendants"] #attendants .operator-id{
+  margin-top:3px!important;
+}
+body[data-app-page="adminAttendants"] #attendants .content-status{
+  flex:0 0 auto!important;
+  padding:5px 8px!important;
+  border:1px solid #e6ebef!important;
+  border-radius:999px!important;
+  background:#fafbfd!important;
+  font-size:9px!important;
+  font-weight:700!important;
+}
+body[data-app-page="adminAttendants"] #attendants .content-status .status-dot{
+  flex:0 0 7px!important;
+}
+body[data-app-page="adminAttendants"] #attendants .attendant-shift-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  margin-top:12px!important;
+  padding-top:10px!important;
+  border-top:1px solid #edf1f5!important;
+}
+body[data-app-page="adminAttendants"] #attendants .attendant-shift-row .field-label{
+  margin:0!important;
+  font-size:7px!important;
+  letter-spacing:.11em!important;
+  color:#8a95a3!important;
+}
+body[data-app-page="adminAttendants"] #attendants .attendant-shift-row strong{
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:#344054!important;
+  font-size:11px!important;
+  font-weight:700!important;
+}
+@media(max-width:700px){
+  body[data-app-page="adminAttendants"] #attendants{
+    grid-template-columns:1fr!important;
+  }
+}
