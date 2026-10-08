@@ -1339,3 +1339,245 @@ body[data-app-page="adminDashboard"] .admin-page-body-card > .card #activity > .
 body[data-app-page="adminDashboard"] .admin-page-body-card > .card #activity > .stat:last-child{
   padding-bottom:0!important;
 }
+
+
+/* Dashboard section contents — refined flat rows, not inner cards */
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid,
+body[data-app-page="adminInventory"] .admin-page-body-card .statgrid,
+body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid{
+  display:grid!important;
+  gap:0!important;
+}
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid > .stat,
+body[data-app-page="adminInventory"] .admin-page-body-card .statgrid > .stat,
+body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid > .stat{
+  position:relative!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:18px!important;
+  min-width:0!important;
+  padding:14px 2px!important;
+  border:0!important;
+  border-top:1px solid #edf1f5!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  transition:background .16s ease, padding-left .16s ease!important;
+}
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid > .stat:hover,
+body[data-app-page="adminInventory"] .admin-page-body-card .statgrid > .stat:hover,
+body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid > .stat:hover{
+  padding-left:10px!important;
+  background:#f8fafc!important;
+}
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid > .stat::before,
+body[data-app-page="adminInventory"] .admin-page-body-card .statgrid > .stat::before,
+body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid > .stat::before{
+  content:""!important;
+  position:absolute!important;
+  left:0!important;
+  top:14px!important;
+  bottom:14px!important;
+  width:3px!important;
+  border-radius:3px!important;
+  background:var(--product-color,#1264d8)!important;
+  opacity:.9!important;
+}
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid > .stat:first-child::before,
+body[data-app-page="adminInventory"] .admin-page-body-card .statgrid > .stat:first-child::before,
+body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid > .stat:first-child::before{
+  top:0!important;
+}
+body[data-app-page="adminFuelConfiguration"] .product-info-main,
+body[data-app-page="adminInventory"] .product-related-main,
+body[data-app-page="adminAttendants"] .product-related-main{
+  min-width:0!important;
+  display:flex!important;
+  align-items:baseline!important;
+  flex-wrap:wrap!important;
+  gap:5px 10px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .product-info-main b,
+body[data-app-page="adminInventory"] .product-related-main>b{
+  font-size:16px!important;
+  line-height:1.25!important;
+  font-weight:800!important;
+}
+body[data-app-page="adminFuelConfiguration"] .product-info-main .product-name{
+  font-size:13px!important;
+  font-weight:700!important;
+}
+body[data-app-page="adminFuelConfiguration"] .product-info-main + small,
+body[data-app-page="adminInventory"] .product-related-main + small,
+body[data-app-page="adminAttendants"] .product-related-main + small{
+  flex:0 0 auto!important;
+  margin:0!important;
+  color:#718096!important;
+  font-size:11px!important;
+  line-height:1.35!important;
+}
+body[data-app-page="adminInventory"] .product-related-main span,
+body[data-app-page="adminAttendants"] .product-related-main span{
+  font-size:13px!important;
+  font-weight:750!important;
+}
+body[data-app-page="adminInventory"] .product-secondary,
+body[data-app-page="adminAttendants"] .product-secondary{
+  color:#718096!important;
+  font-size:12px!important;
+  font-weight:600!important;
+}
+body[data-app-page="adminInventory"] .admin-page-body-card #tanks .stat > small{
+  display:block!important;
+}
+body[data-app-page="adminInventory"] .admin-page-body-card #tanks .stat > div:not(.product-related-main){
+  width:100%!important;
+}
+body[data-app-page="adminInventory"] .admin-page-body-card #tank-movements{
+  display:grid!important;
+  gap:0!important;
+}
+body[data-app-page="adminInventory"] .admin-page-body-card .tank-movement-group{
+  position:relative!important;
+  padding:15px 2px!important;
+  border:0!important;
+  border-top:1px solid #edf1f5!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body[data-app-page="adminInventory"] .admin-page-body-card .tank-movement-group::before{
+  content:""!important;
+  position:absolute!important;
+  left:0!important;
+  top:15px!important;
+  bottom:15px!important;
+  width:3px!important;
+  border-radius:3px!important;
+  background:var(--product-color,#1264d8)!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-product{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  font-size:14px!important;
+  font-weight:800!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-product i{
+  width:8px!important;
+  height:8px!important;
+  flex:0 0 8px!important;
+  border-radius:50%!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-group-head h4{
+  margin:5px 0 1px!important;
+  font-size:13px!important;
+  color:#182230!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-group-head .product-name{
+  font-size:11px!important;
+  font-weight:700!important;
+}
+body[data-app-page="adminAccountingControl"] .admin-page-body-card .accounting-period-summary{
+  display:grid!important;
+  gap:0!important;
+}
+body[data-app-page="adminAccountingControl"] .admin-page-body-card .accounting-period-summary > .card{
+  padding:13px 2px!important;
+  border-top:1px solid #edf1f5!important;
+}
+body[data-app-page="adminAccountingControl"] .admin-page-body-card .accounting-period-summary > .card:first-child{
+  border-top:0!important;
+}
+body[data-app-page="adminAccountingControl"] .admin-page-body-card .accounting-period-open-badge{
+  background:#f5f8fc!important;
+  color:#1264d8!important;
+}
+body[data-app-page="adminAccountingControl"] .admin-page-body-card .actions{
+  display:flex!important;
+  gap:9px!important;
+  flex-wrap:wrap!important;
+}
+@media(max-width:700px){
+  body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid > .stat,
+  body[data-app-page="adminInventory"] .admin-page-body-card .statgrid > .stat,
+  body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid > .stat{
+    align-items:flex-start!important;
+    flex-direction:column!important;
+    gap:6px!important;
+    padding:13px 2px!important;
+  }
+  body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid > .stat::before,
+  body[data-app-page="adminInventory"] .admin-page-body-card .statgrid > .stat::before,
+  body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid > .stat::before{
+    top:13px!important;
+    bottom:13px!important;
+  }
+  body[data-app-page="adminFuelConfiguration"] .product-info-main + small,
+  body[data-app-page="adminInventory"] .product-related-main + small,
+  body[data-app-page="adminAttendants"] .product-related-main + small{
+    align-self:flex-start!important;
+  }
+}
+
+/* Station Control — same refined flat content language */
+body[data-app-page="adminDashboard"] .admin-page-body-card > .statgrid{
+  display:grid!important;
+  gap:0!important;
+}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .statgrid > .stat{
+  position:relative!important;
+  padding:13px 2px!important;
+  border-top:1px solid #edf1f5!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  transition:background .16s ease,padding-left .16s ease!important;
+}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .statgrid > .stat:hover{
+  padding-left:10px!important;
+  background:#f8fafc!important;
+}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .statgrid > .stat::before{
+  content:""!important;
+  position:absolute!important;
+  left:0!important;
+  top:13px!important;
+  bottom:13px!important;
+  width:3px!important;
+  border-radius:3px!important;
+  background:#1264d8!important;
+}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .statgrid > .stat:first-child{
+  border-top:0!important;
+}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .statgrid > .stat:first-child::before{
+  top:0!important;
+}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .card #activity{
+  display:grid!important;
+  gap:0!important;
+}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .card #activity > .card{
+  position:relative!important;
+  padding:12px 2px 12px 12px!important;
+  border:0!important;
+  border-top:1px solid #edf1f5!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .card #activity > .card:first-child{
+  border-top:0!important;
+}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .card #activity > .card::before{
+  content:""!important;
+  position:absolute!important;
+  left:0!important;
+  top:12px!important;
+  bottom:12px!important;
+  width:3px!important;
+  border-radius:3px!important;
+  background:#1264d8!important;
+}
