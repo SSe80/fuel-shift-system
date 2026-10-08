@@ -1502,14 +1502,14 @@ function createStyledReportPdf(report){
     });y-=65;
   };
   const summary=()=>{
-    section('KEY FIGURES');
+    section('OVERVIEW');
     const vals=Array.isArray(report.summary)?report.summary:[],gap=10,n=vals.length||1,w=(CONTENT_W-gap*(n-1))/n,h=55;
     vals.forEach((s,i)=>{const x=M+i*(w+gap);rect(x,y-h,w,h,[244,246,249],null);text(s[0],x+10,y-16,6.5,false,MUTED);text(s[1],x+10,y-38,11.5,true,i===1?GREEN:TEXT);});
     y-=70;
   };
   const s=report.sales||{};
   summary();
-  section('SHIFT INFORMATION');
+  section('SHIFT DETAILS');
   fieldColumns(
     [['Dispenser',s.dispenserCode],['Product',s.productCode],['Tank',s.tankCode],['Attendant',s.attendant],['Shift',s.shiftName]],
     [['DSR ID',s.dsrId],['Started',s.startedAt],['Ended',s.endedAt],['Shift ID',s.shiftId],['Status',s.statusLabel]]
@@ -1517,7 +1517,7 @@ function createStyledReportPdf(report){
   section('DISPENSER & NOZZLE PERFORMANCE');
   table(['DISPENSER / NOZZLE','PRODUCT','TANK','OPENING','CLOSING','SOLD'],s.readingRows&&s.readingRows.length?s.readingRows:[['-',s.productCode,s.tankCode,'-','-',(s.totalLiters||0)+' L']],[132,82,92,70,70,77]);
   section('TANK RECONCILIATION');
-  table(['TANK / PRODUCT','OPENING','PURCHASES','SOLD','EXPECTED','RECORDED'],[[s.tankCode,s.tankOpening,s.tankPurchases||'+0 L',s.totalLiters,s.tankExpected||'-',s.tankClosing]],[145,75,78,70,75,116]);
+  table(['TANK','OPENING STOCK','CLOSING STOCK','TANK SALES','STOCK VARIANCE','VARIANCE %'],[[s.tankCode,s.tankOpening||'-',s.tankClosing||'-',s.totalLiters||'0 L',s.tankDifference||'-',s.variancePct||'-']],[118,88,90,82,90,84]);
   keyCards([['ADJUSTMENT',s.adjustment||'+0 L'],['CONTINUITY',s.continuity||'+0 L'],['DIFFERENCE',s.tankDifference||'-',true],['VARIANCE',s.variancePct||'-',true]]);
   section('RECORDED SALES');
   table(['#','SALE TYPE','AMOUNT','DESCRIPTION / REASON'],s.saleRows&&s.saleRows.length?s.saleRows:[['-','No sale entries recorded','-','-']],[30,140,100,287]);
