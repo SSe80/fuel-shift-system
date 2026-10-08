@@ -1833,3 +1833,17 @@ body[data-app-page="adminAttendants"] .empty-content{
     text-align:left!important;
   }
 }
+
+
+/* Do not tint whole rows with product color — color is reserved for product-code text */
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid > .stat::before,
+body[data-app-page="adminInventory"] .admin-page-body-card .statgrid > .stat::before,
+body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid > .stat::before{
+  display:none!important;
+}
+body[data-app-page="adminInventory"] .admin-page-body-card .tank-movement-group::before{
+  display:none!important;
+}
+body[data-app-page="adminInventory"] .admin-page-body-card .tank-movement-group{
+  padding-left:2px!important;
+}
