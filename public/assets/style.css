@@ -3113,3 +3113,44 @@ body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-ca
     grid-template-columns:1fr!important;
   }
 }
+
+/* Activated Dispensers — product-style detail popup */
+.admin-dispenser-details-modal{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(15,23,42,.62);}
+.admin-dispenser-details-modal.open{display:flex;}
+.admin-dispenser-details-backdrop{position:absolute;inset:0;}
+.admin-dispenser-details-card{position:relative;width:min(560px,calc(100vw - 24px));max-height:86vh;overflow:hidden;display:flex;flex-direction:column;border:2px solid var(--product-color,#1264d8);border-radius:16px;background:#fff;box-shadow:0 28px 80px rgba(15,23,42,.28);}
+.admin-dispenser-details-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px 10px;border-bottom:1px solid #e8edf2;background:#fff;}
+.admin-dispenser-details-top .section-kicker{display:block;margin:0 0 3px;color:#8a95a3;font-size:8px;font-weight:900;letter-spacing:.12em;}
+.admin-dispenser-details-top h3{margin:0;color:#182230;font-size:17px;line-height:1.2;}
+.admin-dispenser-details-close{width:34px;height:34px;border:1px solid #dfe5ec;border-radius:9px;background:#f8fafc;color:#344054;font-size:21px;line-height:1;}
+.admin-dispenser-details-content{min-height:0;overflow:auto;padding:10px 12px 4px;}
+.admin-dispenser-details-loading,.admin-dispenser-details-error{padding:28px 12px;text-align:center;color:#667085;font-size:11px;}
+.admin-dispenser-slide{display:none;padding:0;}
+.admin-dispenser-slide.active{display:block;}
+.admin-dispenser-details-hero{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;margin-bottom:9px;border:1px solid #e5eaf0;border-radius:12px;background:#fff;}
+.admin-dispenser-details-hero .field-label{display:block;color:#8a95a3;font-size:7px;font-weight:900;letter-spacing:.1em;}
+.admin-dispenser-details-hero h2{margin:4px 0 2px;color:#182230;font-size:20px;line-height:1.1;}
+.admin-dispenser-details-hero p{margin:0;color:var(--product-color,#1264d8);font-size:10px;font-weight:850;}
+.admin-dispenser-details-status{padding:5px 8px;border:1px solid color-mix(in srgb,var(--product-color,#1264d8) 35%,#dfe5ec);border-radius:999px;color:var(--product-color,#1264d8);background:#f8fafc;font-size:7px;font-weight:900;letter-spacing:.08em;}
+.admin-dispenser-details-section{margin:0 0 9px;padding:10px;border:1px solid #e5eaf0;border-radius:12px;background:#fff;}
+.admin-dispenser-details-section-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.admin-dispenser-details-section-head span{color:#344054;font-size:8px;font-weight:900;letter-spacing:.1em;}
+.admin-dispenser-details-section-head small{color:#98a2b3;font-size:7.5px;}
+.admin-dispenser-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}
+.admin-dispenser-metric{min-width:0;padding:8px;border:1px solid #edf1f5;border-radius:9px;background:#fbfcfe;}
+.admin-dispenser-metric>span{display:block;color:#8a95a3;font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;}
+.admin-dispenser-metric>strong{display:block;margin-top:3px;color:#182230;font-size:11px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.admin-dispenser-metric>small{display:block;margin-top:2px;color:#98a2b3;font-size:7px;line-height:1.25;}
+.admin-dispenser-slide-controls{display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 12px 10px;border-top:1px solid #edf1f5;}
+.admin-dispenser-slide-arrow{width:32px;height:30px;border:1px solid #dfe5ec;border-radius:8px;background:#f8fafc;color:var(--product-color,#1264d8);font-size:19px;line-height:1;}
+.admin-dispenser-slide-dots{display:flex;align-items:center;gap:6px;}
+.admin-dispenser-slide-dot{width:7px;height:7px;padding:0;border:0;border-radius:50%;background:#d8dee7;}
+.admin-dispenser-slide-dot.active{background:var(--product-color,#1264d8);transform:scale(1.15);}
+@media(max-width:560px){
+  .admin-dispenser-details-card{max-height:88vh;}
+  .admin-dispenser-details-content{padding:8px 9px 3px;}
+  .admin-dispenser-details-hero{padding:10px;}
+  .admin-dispenser-details-hero h2{font-size:18px;}
+  .admin-dispenser-metrics{gap:6px;}
+  .admin-dispenser-metric{padding:7px;}
+}
