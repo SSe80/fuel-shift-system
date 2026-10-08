@@ -1044,7 +1044,31 @@ async function adminFuelConfiguration(){
     const el=id=>document.getElementById(id), productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     el('products').innerHTML=products.length?products.map(p=>{const pc=String(p.color||'#1264d8').trim()||'#1264d8';return '<article class="stat activated-product-card" data-product-id="'+h(p.id)+'" role="button" tabindex="0" aria-label="View '+h(p.code_name)+' details" style="--product-color:'+h(pc)+'"><div class="activated-product-main"><span class="activated-product-color" aria-hidden="true"></span><div class="activated-product-copy"><span class="field-label">PRODUCT</span><div class="activated-product-code">'+h(p.code_name)+'</div><div class="activated-product-name">'+h(p.name)+'</div></div></div><div class="activated-product-meta"><div><span>STATUS</span><strong>Active</strong></div><div><span>SELLING PRICE</span><strong>'+money(p.selling_price)+'</strong></div></div></article>';}).join(''):'<div class="empty-content">No activated products.</div>';
     renderActivatedProductsGraph(products,sales);
-    el('dispensers').innerHTML=dispensers.length?dispensers.map(d=>{const tank=tanks.find(t=>t.id===d.tank_id),shift=activeShifts.find(s=>s.nozzle_id===d.id),attendant=shift?activeEmployees.find(e=>e.id===shift.employee_id):null;return '<div class="stat"><b>'+h(d.nozzle_code)+'</b><span>'+h(productCodes[String(d.product||'').toLowerCase()]||d.product||'—')+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small></div>';}).join(''):'<div class="card"><p>No activated dispensers.</p></div>';
+    const dispenserGroups=products.map(p=>({
+      product:p,
+      items:dispensers.filter(d=>{
+        const tank=tanks.find(t=>t.id===d.tank_id);
+        const value=String(d.product||tank?.product||'').toLowerCase();
+        return value===String(p.name||'').toLowerCase()||value===String(p.code_name||'').toLowerCase();
+      })
+    })).filter(g=>g.items.length);
+    const groupedDispenserIds=new Set(dispenserGroups.flatMap(g=>g.items.map(d=>String(d.id))));
+    const ungroupedDispensers=dispensers.filter(d=>!groupedDispenserIds.has(String(d.id)));
+    const renderDispenserCard=(d,productCode)=>{
+      const tank=tanks.find(t=>t.id===d.tank_id);
+      const shift=activeShifts.find(s=>s.nozzle_id===d.id);
+      const attendant=shift?activeEmployees.find(e=>e.id===shift.employee_id):null;
+      return '<div class="stat activated-dispenser-card"><b>'+h(d.nozzle_code)+'</b><span>'+h(productCode||'—')+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small></div>';
+    };
+    const renderDispenserGroup=(g)=>{
+      const pc=String(g.product.color||'#1264d8').trim()||'#1264d8';
+      return '<section class="activated-dispenser-product-group" style="--product-color:'+h(pc)+'"><div class="activated-dispenser-group-head"><span class="activated-dispenser-group-dot"></span><div><span class="field-label">PRODUCT</span><strong>'+h(g.product.code_name||g.product.name||'—')+'</strong></div><span class="activated-dispenser-group-count">'+g.items.length+' dispenser'+(g.items.length===1?'':'s')+'</span></div><div class="activated-dispenser-group-cards">'+g.items.map(d=>renderDispenserCard(d,g.product.code_name||g.product.name)).join('')+'</div></section>';
+    };
+    let dispenserMarkup=dispenserGroups.map(renderDispenserGroup).join('');
+    if(ungroupedDispensers.length){
+      dispenserMarkup+='<section class="activated-dispenser-product-group activated-dispenser-ungrouped"><div class="activated-dispenser-group-head"><span class="activated-dispenser-group-dot"></span><div><span class="field-label">PRODUCT</span><strong>Other / Unmatched</strong></div><span class="activated-dispenser-group-count">'+ungroupedDispensers.length+' dispenser'+(ungroupedDispensers.length===1?'':'s')+'</span></div><div class="activated-dispenser-group-cards">'+ungroupedDispensers.map(d=>renderDispenserCard(d,productCodes[String(d.product||'').toLowerCase()]||d.product||'—')).join('')+'</div></section>';
+    }
+    el('dispensers').innerHTML=dispenserMarkup||'<div class="card"><p>No activated dispensers.</p></div>';
   }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
 async function adminInventory(){
