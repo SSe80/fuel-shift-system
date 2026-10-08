@@ -386,7 +386,7 @@ async function openTakeoverDetails(id){
       '<div><span>Confirmed</span><strong>'+h(confirmedAt?new Date(confirmedAt).toLocaleString():'Pending')+'</strong></div>'+
       '<div><span>Submitted</span><strong>'+h(submittedAt?new Date(submittedAt).toLocaleString():'—')+'</strong></div>'+
     '</div>'+
-    '<div class="shift-details-section"><div class="shift-details-section-title">Tank readings</div><div class="shift-details-metrics"><div><span>Opening</span><strong>'+liters(takeover.tank_opening_liters)+' L</strong></div><div><span>Closing</span><strong>'+liters(takeover.tank_closing_liters)+' L</strong></div><div><span>Sold</span><strong>'+liters(takeover.tank_sales_liters)+' L</strong></div><div><span>Variance</span><strong>'+liters(takeover.tank_variance_liters)+' L</strong><small>'+Number(takeover.tank_variance_pct||0).toFixed(2)+'%</small></div></div></div>'+
+    '<div class="shift-details-section"><div class="shift-details-section-title">Tank opening & closing stock</div><div class="shift-details-metrics"><div><span>Opening stock</span><strong>'+liters(takeover.tank_opening_liters)+' L</strong></div><div><span>Closing stock</span><strong>'+liters(takeover.tank_closing_liters)+' L</strong></div><div><span>Tank sales</span><strong>'+liters(takeover.tank_sales_liters)+' L</strong></div><div><span>Stock variance</span><strong>'+liters(takeover.tank_variance_liters)+' L</strong><small>'+Number(takeover.tank_variance_pct||0).toFixed(2)+'%</small></div></div></div>'+
     '<div class="shift-details-section"><div class="shift-details-section-title">Meter readings</div>'+(rows||'<p class="muted">No nozzle readings recorded.</p>')+'</div>'+
     '<div class="shift-details-section"><div class="shift-details-section-title">Sales recorded</div>'+(recordedRows||'<p class="muted">No recorded sale entries.</p>')+'<div class="shift-details-total"><span>Sales total</span><strong>'+money(recorded.reduce((sum,s)=>sum+Number(s.amount||0),0))+'</strong></div></div>'+
     '<div class="shift-details-total calculated"><span>Shift total</span><strong>'+liters(takeover.total_sales_liters)+' L</strong><strong>'+money(takeover.total_sales_amount)+'</strong></div>';
@@ -1503,7 +1503,13 @@ async function downloadAdminSaleHistoryDetails(id){
         ['Ended',endedAt?new Date(endedAt).toLocaleString():'—'],
         ['Shift ID',t.shift_id||'—']
       ]},
-      {title:'OPENING & CLOSING READINGS',table:{
+      {title:'TANK OPENING & CLOSING STOCK',fields:[
+        ['Tank',tankCode],['Opening stock',liters(t.tank_opening_liters)+' L'],
+        ['Closing stock',liters(t.tank_closing_liters)+' L'],['Tank sales',liters(t.tank_sales_liters)+' L'],
+        ['Stock variance',liters(t.tank_variance_liters)+' L'],
+        ['Variance %',Number(t.tank_variance_pct||0).toFixed(2)+'%']
+      ]},
+      {title:'OPENING & CLOSING METER READINGS',table:{
         headers:['Nozzle','Product','Tank','Opening','Closing','Sold'],
         widths:[75,95,85,75,75,110],rows:finalReadingRows
       }},
@@ -1682,7 +1688,16 @@ async function openAdminSaleHistoryDetails(id){
       '</div>',
     '</div>',
     '<div class="history-detail-section">',
-      '<div class="history-detail-section-head"><div><span class="section-kicker">READINGS</span><h4>Opening & closing readings</h4></div></div>',
+      '<div class="history-detail-section-head"><div><span class="section-kicker">TANK STOCK</span><h4>Tank opening & closing stock</h4></div></div>',
+      '<div class="history-detail-info-grid">',
+        '<div><span>Opening stock</span><strong>'+liters(t.tank_opening_liters)+' L</strong></div>',
+        '<div><span>Closing stock</span><strong>'+liters(t.tank_closing_liters)+' L</strong></div>',
+        '<div><span>Tank sales</span><strong>'+liters(t.tank_sales_liters)+' L</strong></div>',
+        '<div><span>Stock variance</span><strong>'+liters(t.tank_variance_liters)+' L</strong></div>',
+      '</div>',
+    '</div>',
+    '<div class="history-detail-section">',
+      '<div class="history-detail-section-head"><div><span class="section-kicker">READINGS</span><h4>Opening & closing meter readings</h4></div></div>',
       '<div class="history-detail-readings">'+(rows||'<div class="history-detail-empty">No nozzle readings were recorded.</div>')+'</div>',
       '<div class="history-detail-total-row"><span>Total liters sold</span><strong>'+liters(totalLiters)+' L</strong></div>',
     '</div>',
