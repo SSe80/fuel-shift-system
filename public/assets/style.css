@@ -4209,3 +4209,14 @@ body[data-app-page="adminInventory"] .tank-movement-invoice-link{
 body[data-app-page="adminInventory"] .tank-movement-invoice-link:hover{
   color:#0b4fa8!important;
 }
+
+body[data-app-page="adminInventory"] .tank-movement-invoice-link{
+  color:#1264d8!important;
+  font-weight:900!important;
+  text-decoration:underline!important;
+  text-underline-offset:2px!important;
+  cursor:pointer!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-invoice-link:hover{
+  opacity:.75!important;
+}
