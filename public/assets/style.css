@@ -3202,3 +3202,40 @@ body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-legend-i
   body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-wrap svg{min-height:138px;}
   body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-label{font-size:7px;}
 }
+
+
+/* Inventory — match Fuel Configuration product-group/card design */
+body[data-app-page="adminInventory"] #tanks{display:block!important;margin:0!important;}
+body[data-app-page="adminInventory"] .inventory-product-group{margin:0 0 18px!important;padding:0!important;}
+body[data-app-page="adminInventory"] .inventory-product-group:last-child{margin-bottom:0!important;}
+body[data-app-page="adminInventory"] .inventory-product-group-head{display:flex!important;align-items:center!important;gap:8px!important;margin:0 0 8px!important;padding:0 2px!important;}
+body[data-app-page="adminInventory"] .inventory-product-group-head>div{min-width:0!important;}
+body[data-app-page="adminInventory"] .inventory-product-group-head .field-label{display:block!important;margin:0 0 2px!important;color:#8a95a3!important;font-size:7px!important;font-weight:900!important;letter-spacing:.12em!important;}
+body[data-app-page="adminInventory"] .inventory-product-group-head strong{display:block!important;color:var(--product-color,#1264d8)!important;font-size:13px!important;font-weight:900!important;line-height:1.2!important;}
+body[data-app-page="adminInventory"] .inventory-product-dot{width:8px!important;height:8px!important;flex:0 0 8px!important;border-radius:50%!important;background:var(--product-color,#1264d8)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--product-color,#1264d8) 12%,transparent)!important;}
+body[data-app-page="adminInventory"] .inventory-product-count{margin-left:auto!important;padding:4px 7px!important;border:1px solid color-mix(in srgb,var(--product-color,#1264d8) 24%,#e3e8ef)!important;border-radius:999px!important;color:#667085!important;background:#fff!important;font-size:8px!important;font-weight:850!important;white-space:nowrap!important;}
+body[data-app-page="adminInventory"] .inventory-tank-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;}
+body[data-app-page="adminInventory"] .inventory-tank-card{position:relative!important;display:block!important;min-width:0!important;margin:0!important;padding:12px 13px 11px 15px!important;border:1px solid color-mix(in srgb,var(--product-color,#1264d8) 55%,#dfe5ec)!important;border-left:4px solid var(--product-color,#1264d8)!important;border-radius:10px!important;background:#fff!important;box-shadow:0 3px 9px rgba(16,24,40,.055)!important;overflow:hidden!important;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease!important;}
+body[data-app-page="adminInventory"] .inventory-tank-card:hover{border-color:var(--product-color,#1264d8)!important;box-shadow:0 6px 15px color-mix(in srgb,var(--product-color,#1264d8) 13%,transparent)!important;transform:translateY(-1px)!important;}
+body[data-app-page="adminInventory"] .inventory-tank-main{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;}
+body[data-app-page="adminInventory"] .inventory-tank-main .field-label{display:block!important;color:#8a95a3!important;font-size:7px!important;font-weight:900!important;letter-spacing:.1em!important;}
+body[data-app-page="adminInventory"] .inventory-tank-main b{display:block!important;margin-top:3px!important;color:#182230!important;font-size:15px!important;font-weight:900!important;line-height:1.2!important;}
+body[data-app-page="adminInventory"] .inventory-tank-product{display:flex!important;align-items:center!important;gap:5px!important;margin-top:5px!important;}
+body[data-app-page="adminInventory"] .inventory-tank-product span{color:#8a95a3!important;font-size:7px!important;font-weight:900!important;letter-spacing:.08em!important;}
+body[data-app-page="adminInventory"] .inventory-tank-product .product-code{color:var(--product-color,#1264d8)!important;font-size:9.5px!important;font-weight:900!important;}
+body[data-app-page="adminInventory"] .inventory-tank-stock{text-align:right!important;flex:0 0 auto!important;}
+body[data-app-page="adminInventory"] .inventory-tank-stock strong{display:block!important;color:#182230!important;font-size:15px!important;font-weight:900!important;line-height:1.1!important;}
+body[data-app-page="adminInventory"] .inventory-tank-stock span{display:block!important;margin-top:3px!important;color:#7a8696!important;font-size:8px!important;font-weight:800!important;}
+body[data-app-page="adminInventory"] .inventory-tank-capacity{display:flex!important;align-items:center!important;justify-content:space-between!important;margin-top:10px!important;padding-top:7px!important;border-top:1px solid #edf1f5!important;}
+body[data-app-page="adminInventory"] .inventory-tank-capacity span{color:#8a95a3!important;font-size:7px!important;font-weight:900!important;letter-spacing:.08em!important;}
+body[data-app-page="adminInventory"] .inventory-tank-capacity strong{color:#475467!important;font-size:9px!important;font-weight:850!important;}
+body[data-app-page="adminInventory"] .inventory-tank-metrics{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px 9px!important;margin-top:8px!important;}
+body[data-app-page="adminInventory"] .inventory-tank-metrics>div{min-width:0!important;padding-top:5px!important;border-top:1px solid #f0f2f5!important;}
+body[data-app-page="adminInventory"] .inventory-tank-metrics span{display:block!important;color:#98a2b3!important;font-size:7px!important;font-weight:800!important;}
+body[data-app-page="adminInventory"] .inventory-tank-metrics strong{display:block!important;margin-top:2px!important;color:#344054!important;font-size:8.5px!important;font-weight:850!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;}
+body[data-app-page="adminInventory"] .inventory-unmatched-group .inventory-product-group-head strong{color:#667085!important;}
+@media(max-width:700px){
+ body[data-app-page="adminInventory"] .inventory-tank-grid{grid-template-columns:1fr!important;}
+ body[data-app-page="adminInventory"] .inventory-product-group{margin-bottom:16px!important;}
+ body[data-app-page="adminInventory"] .inventory-tank-card{padding:11px 12px 10px 14px!important;}
+}
