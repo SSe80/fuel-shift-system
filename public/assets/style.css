@@ -2423,3 +2423,15 @@ body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
   .admin-product-details-section{padding:10px!important}
   .admin-product-metric{padding:8px!important}
 }
+
+/* Product performance statistics and charts */
+.admin-product-performance-summary{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;margin-bottom:9px!important}
+.admin-product-chart-wrap{margin-top:9px!important;padding:9px!important;border:1px solid #edf1f5!important;border-radius:9px!important;background:#fafbfd!important}
+.admin-product-chart-title{font-size:8px!important;font-weight:900!important;letter-spacing:.07em!important;color:#526071!important;text-transform:uppercase!important;margin-bottom:4px!important}
+.admin-product-chart{display:block!important;width:100%!important;height:auto!important;overflow:visible!important}
+.admin-product-chart-axis{stroke:#dfe5ec!important;stroke-width:1!important}
+.admin-product-chart-line{fill:none!important;stroke:var(--product-color,#1264d8)!important;stroke-width:3!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+.admin-product-chart-dot{fill:#fff!important;stroke:var(--product-color,#1264d8)!important;stroke-width:2!important}
+.admin-product-chart-bar{fill:var(--product-color,#1264d8)!important;opacity:.78!important}
+.admin-product-chart-label{fill:#8a95a3!important;font-size:8px!important}
+@media(max-width:650px){.admin-product-performance-summary{grid-template-columns:1fr 1fr!important}.admin-product-performance-summary .admin-product-metric:last-child{grid-column:1/-1}}
