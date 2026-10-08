@@ -2841,3 +2841,65 @@ body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-gr
   background:#fff!important;
   box-shadow:0 3px 10px color-mix(in srgb,var(--product-color,#1264d8) 12%,transparent)!important;
 }
+
+/* Activated Dispensers — product label outside, dispenser cards white with clean borders */
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-product-group{
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  padding:0!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-group-head{
+  margin:0 0 7px!important;
+  padding:0 2px!important;
+  border:0!important;
+  background:transparent!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-group-cards{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-card{
+  min-height:76px!important;
+  margin:0!important;
+  padding:11px 12px!important;
+  border:1px solid #e1e7ee!important;
+  border-radius:11px!important;
+  background:#fff!important;
+  box-shadow:0 2px 7px rgba(16,24,40,.05)!important;
+  transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-card:hover{
+  border-color:var(--product-color,#1264d8)!important;
+  box-shadow:0 5px 12px color-mix(in srgb,var(--product-color,#1264d8) 12%,transparent)!important;
+  transform:translateY(-1px)!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-card b{
+  color:#182230!important;
+  font-size:15px!important;
+  font-weight:850!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-card span{
+  margin-top:5px!important;
+  color:var(--product-color,#1264d8)!important;
+  font-size:9.5px!important;
+  font-weight:850!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-card small{
+  margin-top:4px!important;
+  color:#667085!important;
+  font-size:8.5px!important;
+  line-height:1.35!important;
+}
+@media(max-width:700px){
+  body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-group-cards{
+    grid-template-columns:1fr!important;
+  }
+}
