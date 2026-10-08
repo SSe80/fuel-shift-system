@@ -2203,3 +2203,11 @@ body[data-app-page="adminFuelConfiguration"] .activated-product-code{
     min-height:80px!important;
   }
 }
+
+
+/* Activated Products — clean white card interior and equal border weight */
+body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+  background:#fff!important;
+  border:1px solid var(--product-color)!important;
+  border-left-width:1px!important;
+}
