@@ -1500,14 +1500,53 @@ async function openAdminAttendantDetails(id){
       '<div class="admin-attendant-section"><div class="admin-attendant-section-head"><span>SHIFT DATA</span><small>'+employeeShifts.length+' record'+(employeeShifts.length===1?'':'s')+'</small></div>'+(shiftRows||'<p class="muted">No shift records.</p>')+'</div>';
   }catch(e){if(box)box.innerHTML='<p class="muted">'+h(e.message||'Unable to load attendant details.')+'</p>';}
 }
+function renderAdminAttendantWeeklyRanking(attendants,history){
+  const rankingBox=document.getElementById('attendant-weekly-ranking');
+  const summaryBox=document.getElementById('attendant-weekly-summary');
+  if(!rankingBox)return;
+  const now=new Date(); now.setHours(23,59,59,999);
+  const start=new Date(now); start.setDate(start.getDate()-6); start.setHours(0,0,0,0);
+  const weekly=(Array.isArray(history)?history:[]).filter(item=>{
+    const t=item?.takeover||item||{};
+    const raw=t.shift_ended_at||t.sales_confirmed_at||t.shift_started_at||t.created_at||item?.created_at||item?.sale_time;
+    const d=new Date(raw);
+    return !Number.isNaN(d.getTime())&&d>=start&&d<=now;
+  });
+  const stats=new Map((attendants||[]).map(e=>[String(e.id),{employee:e,liters:0,amount:0,entries:0,days:Array(7).fill(0)}]));
+  weekly.forEach(item=>{
+    const t=item?.takeover||item||{};
+    const attendantId=t.to_employee_id||t.employee_id||t.attendant_id||t.from_employee_id;
+    if(attendantId==null)return;
+    const row=stats.get(String(attendantId)); if(!row)return;
+    const raw=t.shift_ended_at||t.sales_confirmed_at||t.shift_started_at||t.created_at||item?.created_at||item?.sale_time;
+    const d=new Date(raw); const dayIndex=Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-new Date(start.getFullYear(),start.getMonth(),start.getDate()))/86400000);
+    if(dayIndex<0||dayIndex>6)return;
+    const sales=Array.isArray(item?.sales)?item.sales:[];
+    const volume=sales.reduce((n,s)=>n+(Number(s.quantity_liters)||0),0) || Number(t.total_sales_liters||item?.total_sales_liters||0);
+    const amount=sales.reduce((n,s)=>n+(Number(s.total_amount||s.amount)||0),0) || Number(t.total_sales_amount||item?.total_sales_amount||0);
+    row.liters+=volume; row.amount+=amount; row.entries+=sales.length||((volume||amount)?1:0); row.days[dayIndex]+=volume;
+  });
+  const sorted=[...stats.values()].sort((a,b)=>b.liters-a.liters||b.amount-a.amount);
+  const totalLiters=sorted.reduce((n,x)=>n+x.liters,0);
+  const totalAmount=sorted.reduce((n,x)=>n+x.amount,0);
+  if(summaryBox)summaryBox.innerHTML='<div class="admin-weekly-summary-item"><span>Total volume</span><strong>'+liters(totalLiters)+' L</strong></div><div class="admin-weekly-summary-item"><span>Sales value</span><strong>'+money(totalAmount)+'</strong></div><div class="admin-weekly-summary-item"><span>Attendants ranked</span><strong>'+sorted.length+'</strong></div>';
+  const max=Math.max(1,...sorted.map(x=>x.liters));
+  const dayLabels=Array.from({length:7},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d.toLocaleDateString(undefined,{weekday:'short'});});
+  rankingBox.innerHTML=sorted.length?sorted.map((row,i)=>{
+    const best=Math.max(1,...row.days);
+    const bars=row.days.map((v,j)=>'<span title="'+h(dayLabels[j]+': '+liters(v)+' L')+'" style="height:'+Math.max(3,Math.round(v/best*22))+'px"></span>').join('');
+    return '<div class="admin-weekly-rank-row"><div class="admin-weekly-rank-place '+(i===0?'first':i===1?'second':i===2?'third':'')+'">'+(i+1)+'</div><div class="admin-weekly-rank-person"><strong>'+h(row.employee.name||'Attendant')+'</strong><small>ID '+h(row.employee.operator_id||'—')+' · '+row.entries+' sales record'+(row.entries===1?'':'s')+'</small><div class="admin-weekly-bar-track"><span style="width:'+Math.max(0,Math.min(100,row.liters/max*100))+'%"></span></div><div class="admin-weekly-day-bars" aria-label="Daily liters">'+bars+'</div></div><div class="admin-weekly-rank-score"><strong>'+liters(row.liters)+' L</strong><small>'+money(row.amount)+'</small></div></div>';
+  }).join(''):'<div class="admin-weekly-empty"><strong>No confirmed sales this week</strong><span>Weekly rankings will appear when sales are recorded.</span></div>';
+}
 async function adminAttendants(){
   try{
     await window.stationCurrencyReady;
     const me=await currentUser();
     if(me.role!=='admin')return location.href='admin-login.html';
-    const [employees,shifts,dispensers]=await Promise.all([api('/api/users'),api('/api/shifts'),api('/api/nozzles')]);
+    const [employees,shifts,dispensers,salesResult]=await Promise.all([api('/api/users'),api('/api/shifts'),api('/api/nozzles'),api('/api/sales/history').then(data=>({ok:true,data})).catch(()=>({ok:false,data:[]}))]);
     const active=employees.filter(e=>e.active===true&&e.role==='attendant');
     const activeShifts=shifts.filter(s=>String(s.status||'').trim().toLowerCase()==='active');
+    renderAdminAttendantWeeklyRanking(active,Array.isArray(salesResult.data)?salesResult.data:[]);
     const el=document.getElementById('attendants');
     if(!el)return;
     el.innerHTML=active.length?active.map(e=>{
