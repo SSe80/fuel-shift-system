@@ -3154,3 +3154,10 @@ body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-ca
   .admin-dispenser-metrics{gap:6px;}
   .admin-dispenser-metric{padding:7px;}
 }
+
+/* Dispenser detail popup swipe navigation */
+.admin-dispenser-slide{touch-action:pan-y;will-change:transform,opacity;}
+.admin-dispenser-slide.swipe-in-next{animation:adminDispenserSwipeInNext .24s ease-out both;}
+.admin-dispenser-slide.swipe-in-prev{animation:adminDispenserSwipeInPrev .24s ease-out both;}
+@keyframes adminDispenserSwipeInNext{from{transform:translateX(42px);opacity:.35}to{transform:translateX(0);opacity:1}}
+@keyframes adminDispenserSwipeInPrev{from{transform:translateX(-42px);opacity:.35}to{transform:translateX(0);opacity:1}}
