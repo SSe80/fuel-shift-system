@@ -4350,6 +4350,8 @@ async function openAdminProductDetails(productId){
     const name=String(product.name||'');
     const code=String(product.code_name||name||'—');
     const color=String(product.color||'#1264d8').trim()||'#1264d8';
+    const popupCard=modal.querySelector('.admin-product-details-card');
+    if(popupCard)popupCard.style.setProperty('--product-color',color);
     const productTanks=(tanks||[]).filter(t=>String(t.product||'').toLowerCase()===name.toLowerCase()&&t.active===true);
     const tankIds=new Set(productTanks.map(t=>String(t.id)));
     const productDispensers=(dispensers||[]).filter(d=>d.active===true&&tankIds.has(String(d.tank_id)));
