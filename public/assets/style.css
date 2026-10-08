@@ -3239,3 +3239,50 @@ body[data-app-page="adminInventory"] .inventory-unmatched-group .inventory-produ
  body[data-app-page="adminInventory"] .inventory-product-group{margin-bottom:16px!important;}
  body[data-app-page="adminInventory"] .inventory-tank-card{padding:11px 12px 10px 14px!important;}
 }
+
+
+/* Inventory tank cards — compact summary */
+body[data-app-page="adminInventory"] .inventory-tank-card{cursor:pointer;min-height:82px!important;padding:11px 13px 10px 15px!important;}
+body[data-app-page="adminInventory"] .inventory-tank-card:focus-visible{outline:2px solid var(--product-color,#1264d8)!important;outline-offset:2px!important;}
+body[data-app-page="adminInventory"] .inventory-tank-card-top{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;}
+body[data-app-page="adminInventory"] .inventory-tank-card-top .field-label{display:block!important;color:#8a95a3!important;font-size:7px!important;font-weight:900!important;letter-spacing:.11em!important;}
+body[data-app-page="adminInventory"] .inventory-tank-card-top b{display:block!important;margin-top:2px!important;color:#182230!important;font-size:14px!important;font-weight:900!important;}
+body[data-app-page="adminInventory"] .inventory-tank-status{padding:3px 6px!important;border:1px solid color-mix(in srgb,var(--product-color,#1264d8) 25%,#e5eaf0)!important;border-radius:999px!important;color:var(--product-color,#1264d8)!important;background:#fff!important;font-size:6.5px!important;font-weight:900!important;letter-spacing:.08em!important;}
+body[data-app-page="adminInventory"] .inventory-tank-card-product{display:flex!important;align-items:center!important;gap:5px!important;margin-top:7px!important;}
+body[data-app-page="adminInventory"] .inventory-tank-card-product span{color:#98a2b3!important;font-size:6.5px!important;font-weight:900!important;letter-spacing:.08em!important;}
+body[data-app-page="adminInventory"] .inventory-tank-card-product strong{color:var(--product-color,#1264d8)!important;font-size:9px!important;font-weight:900!important;}
+body[data-app-page="adminInventory"] .inventory-tank-card-stock{display:flex!important;align-items:baseline!important;justify-content:space-between!important;gap:8px!important;margin-top:6px!important;padding-top:6px!important;border-top:1px solid #edf1f5!important;}
+body[data-app-page="adminInventory"] .inventory-tank-card-stock strong{color:#182230!important;font-size:12px!important;font-weight:900!important;}
+body[data-app-page="adminInventory"] .inventory-tank-card-stock span{color:#7a8696!important;font-size:7.5px!important;font-weight:800!important;}
+.admin-inventory-tank-details-modal{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(15,23,42,.62);}
+.admin-inventory-tank-details-modal.open{display:flex;}
+.admin-inventory-tank-details-backdrop{position:absolute;inset:0;}
+.admin-inventory-tank-details-card{position:relative;width:min(540px,calc(100vw - 24px));max-height:86vh;overflow:hidden;display:flex;flex-direction:column;border:2px solid var(--product-color,#1264d8);border-radius:16px;background:#fff;box-shadow:0 28px 80px rgba(15,23,42,.28);}
+.admin-inventory-tank-details-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px 10px;border-bottom:1px solid #e8edf2;}
+.admin-inventory-tank-details-top .section-kicker{display:block;margin:0 0 3px;color:#8a95a3;font-size:8px;font-weight:900;letter-spacing:.12em;}
+.admin-inventory-tank-details-top h3{margin:0;color:#182230;font-size:17px;}
+.admin-inventory-tank-details-close{width:34px;height:34px;border:1px solid #dfe5ec;border-radius:9px;background:#f8fafc;color:#344054;font-size:21px;line-height:1;}
+.admin-inventory-tank-details-content{min-height:0;overflow:auto;padding:10px 12px 5px;}
+.admin-inventory-tank-detail-hero{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;margin-bottom:9px;border:1px solid #e5eaf0;border-radius:12px;background:#fff;}
+.admin-inventory-tank-detail-hero>div span{display:block;color:#8a95a3;font-size:7px;font-weight:900;letter-spacing:.1em;}
+.admin-inventory-tank-detail-hero>div strong{display:block;margin-top:4px;color:var(--product-color,#1264d8);font-size:15px;font-weight:900;}
+.admin-inventory-tank-detail-hero>div:last-child{text-align:right;}
+.admin-inventory-tank-detail-hero>div:last-child strong{color:#182230;font-size:17px;}
+.admin-inventory-tank-detail-hero small{display:block;margin-top:2px;color:#7a8696;font-size:7.5px;}
+.admin-inventory-tank-detail-section{margin-bottom:9px;padding:10px;border:1px solid #e5eaf0;border-radius:12px;background:#fff;}
+.admin-inventory-tank-detail-section-head{margin-bottom:8px;color:#344054;font-size:8px;font-weight:900;letter-spacing:.1em;}
+.admin-inventory-tank-detail-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}
+.admin-inventory-tank-detail-metric{padding:8px;border:1px solid #edf1f5;border-radius:9px;background:#fbfcfe;}
+.admin-inventory-tank-detail-metric span{display:block;color:#8a95a3;font-size:7px;font-weight:800;}
+.admin-inventory-tank-detail-metric strong{display:block;margin-top:3px;color:#182230;font-size:11px;font-weight:900;}
+.admin-inventory-tank-movement-list{display:grid;gap:0;}
+.admin-inventory-tank-movement-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid #edf1f5;}
+.admin-inventory-tank-movement-row:first-child{border-top:0;padding-top:0;}
+.admin-inventory-tank-movement-row>div{min-width:0;}
+.admin-inventory-tank-movement-row strong{display:block;color:#344054;font-size:9px;font-weight:850;}
+.admin-inventory-tank-movement-row small{display:block;margin-top:2px;color:#98a2b3;font-size:7px;}
+.admin-inventory-tank-movement-row>b{white-space:nowrap;font-size:9px;font-weight:900;}
+.admin-inventory-tank-movement-row .positive{color:#15803d;}.admin-inventory-tank-movement-row .negative{color:#c2410c;}
+.admin-inventory-tank-empty{padding:10px 0;color:#98a2b3;font-size:9px;text-align:center;}
+@media(max-width:700px){body[data-app-page="adminInventory"] .inventory-tank-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}body[data-app-page="adminInventory"] .inventory-tank-card{min-height:78px!important;padding:10px 10px 9px 13px!important;}.admin-inventory-tank-details-card{max-height:88vh;}.admin-inventory-tank-details-content{padding:8px 9px 3px;}}
+@media(max-width:430px){body[data-app-page="adminInventory"] .inventory-tank-grid{grid-template-columns:1fr!important;}}
