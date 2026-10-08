@@ -907,16 +907,10 @@ body[data-app-page="adminFuelConfiguration"] .settings-header,
 body[data-app-page="adminInventory"] .settings-header,
 body[data-app-page="adminAttendants"] .settings-header,
 body[data-app-page="adminAccountingControl"] .settings-header{padding:10px 4px 6px}
-body[data-app-page="adminFuelConfiguration"] .settings-header .eyebrow,
-body[data-app-page="adminInventory"] .settings-header .eyebrow,
-body[data-app-page="adminAttendants"] .settings-header .eyebrow,
-body[data-app-page="adminAccountingControl"] .settings-header .eyebrow{font-size:28px;font-weight:850;letter-spacing:.02em;color:#1264d8}
+/* Subpage titles intentionally inherit the exact same .eyebrow styling as STATION CONTROL. */
 body[data-app-page="adminInventory"] .inventory-details{margin-top:9px;padding-top:8px;border-top:1px solid rgba(127,127,127,.2);display:grid;gap:3px}
 
 
-/* Admin dashboard section page headings */
-.page-description{margin:6px 0 0;max-width:720px;font-size:13px;line-height:1.5;color:var(--muted,#6b7280)}
-@media(max-width:480px){.page-description{font-size:12px;line-height:1.45;margin-top:5px}}
 
 
 /* Final admin sidebar navigation — text-only active state, no blue padding */
