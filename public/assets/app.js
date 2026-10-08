@@ -1507,6 +1507,10 @@ async function downloadAdminSaleHistoryDetails(id){
         ['Ended',endedAt?new Date(endedAt).toLocaleString():'—'],
         ['Shift ID',t.shift_id||'—']
       ]},
+      {title:'OPENING & CLOSING METER READINGS',table:{
+        headers:['Nozzle','Product','Tank','Opening','Closing','Sold'],
+        widths:[75,95,85,75,75,110],rows:finalReadingRows
+      }},
       {title:'TANK OPENING & CLOSING STOCK',fields:[
         ['Tank',tankCode],['Opening stock',Number.isFinite(tankOpening)?liters(tankOpening)+' L':'—'],
         ['Closing stock',Number.isFinite(tankClosing)?liters(tankClosing)+' L':'—'],
@@ -1514,10 +1518,6 @@ async function downloadAdminSaleHistoryDetails(id){
         ['Stock variance',Number.isFinite(tankOpening)&&Number.isFinite(tankClosing)?liters(tankClosing-(tankOpening-totalLiters))+' L':'—'],
         ['Variance %',Number.isFinite(tankOpening)&&tankOpening>0&&Number.isFinite(tankClosing)?((tankClosing-(tankOpening-totalLiters))/tankOpening*100).toFixed(2)+'%':'—']
       ]},
-      {title:'OPENING & CLOSING METER READINGS',table:{
-        headers:['Nozzle','Product','Tank','Opening','Closing','Sold'],
-        widths:[75,95,85,75,75,110],rows:finalReadingRows
-      }},
       {title:'RECORDED SALES',table:{
         headers:['#','Sale type','Amount','Description / reason'],
         widths:[28,150,90,297],
