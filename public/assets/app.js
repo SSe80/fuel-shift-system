@@ -1263,9 +1263,23 @@ async function adminInventory(){
       const pc=String(product?.color||'#1264d8').trim()||'#1264d8';
       return '<article class="stat inventory-tank-card" data-tank-id="'+h(t.id)+'" role="button" tabindex="0" aria-label="View '+h(t.tank_code||'tank')+' details" style="--product-color:'+h(pc)+'"><div class="inventory-tank-card-top"><div><span class="field-label">TANK</span><b>'+h(t.tank_code)+'</b></div><span class="inventory-tank-status">ACTIVE</span></div><div class="inventory-tank-card-product"><span>PRODUCT</span><strong>'+h(product?.code_name||codeForProduct(t.product))+'</strong></div><div class="inventory-tank-card-stock"><strong>'+liters(t.current_liters)+' L</strong><span>'+pct.toFixed(1)+'% full</span></div></article>';
     };
+    const renderInventoryTankPerformanceGraph=(g,pc)=>{
+      const rows=g.items.map(t=>{
+        const cap=Number(t.capacity_liters||0), stock=Number(t.current_liters||0);
+        return {id:String(t.id),code:String(t.tank_code||'Tank'),stock,capacity:cap,pct:cap>0?Math.max(0,Math.min(100,stock/cap*100)):0};
+      }).sort((a,b)=>b.pct-a.pct);
+      const max=100;
+      const bars=rows.map(r=>{
+        const width=Math.max(0,Math.min(max,r.pct));
+        return '<div class="inventory-tank-performance-row"><div class="inventory-tank-performance-label"><strong>'+h(r.code)+'</strong><span>'+r.pct.toFixed(1)+'%</span></div><div class="inventory-tank-performance-track"><span style="width:'+width.toFixed(2)+'%;background:'+h(pc)+'"></span></div><div class="inventory-tank-performance-stock">'+liters(r.stock)+' / '+liters(r.capacity)+' L</div></div>';
+      }).join('');
+      const avg=rows.length?rows.reduce((s,r)=>s+r.pct,0)/rows.length:0;
+      const highest=rows[0]?.code||'—';
+      return '<div class="inventory-tank-performance"><div class="inventory-tank-performance-head"><div><span class="field-label">STOCK PERFORMANCE</span><strong>Tank comparison</strong></div><div class="inventory-tank-performance-summary"><span>AVG</span><b>'+avg.toFixed(1)+'%</b><small>Highest: '+h(highest)+'</small></div></div><div class="inventory-tank-performance-chart">'+bars+'</div></div>';
+    };
     const renderInventoryTankGroup=g=>{
       const pc=String(g.product.color||'#1264d8').trim()||'#1264d8';
-      return '<section class="inventory-product-group" style="--product-color:'+h(pc)+'"><div class="inventory-product-group-head"><span class="inventory-product-dot"></span><div><span class="field-label">PRODUCT</span><strong>'+h(g.product.code_name||g.product.name||'—')+'</strong></div><span class="inventory-product-count">'+g.items.length+' tank'+(g.items.length===1?'':'s')+'</span></div><div class="inventory-tank-grid">'+g.items.map(t=>renderInventoryTankCard(t,g.product)).join('')+'</div></section>';
+      return '<section class="inventory-product-group" style="--product-color:'+h(pc)+'"><div class="inventory-product-group-head"><span class="inventory-product-dot"></span><div><span class="field-label">PRODUCT</span><strong>'+h(g.product.code_name||g.product.name||'—')+'</strong></div><span class="inventory-product-count">'+g.items.length+' tank'+(g.items.length===1?'':'s')+'</span></div><div class="inventory-tank-grid">'+g.items.map(t=>renderInventoryTankCard(t,g.product)).join('')+'</div>'+renderInventoryTankPerformanceGraph(g,pc)+'</section>';
     };
     let inventoryTankMarkup=tankGroups.map(renderInventoryTankGroup).join('');
     if(unmatchedTanks.length) inventoryTankMarkup+='<section class="inventory-product-group inventory-unmatched-group"><div class="inventory-product-group-head"><span class="inventory-product-dot"></span><div><span class="field-label">PRODUCT</span><strong>Other / Unmatched</strong></div><span class="inventory-product-count">'+unmatchedTanks.length+' tank'+(unmatchedTanks.length===1?'':'s')+'</span></div><div class="inventory-tank-grid">'+unmatchedTanks.map(t=>renderInventoryTankCard(t,productForTank(t))).join('')+'</div></section>';
