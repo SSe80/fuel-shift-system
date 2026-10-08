@@ -2181,3 +2181,25 @@ body[data-app-page="adminFuelConfiguration"] #products .activated-product-card:h
     min-height:72px!important;
   }
 }
+
+
+/* Activated Products — extra height and outlined product text */
+body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+  min-height:92px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-code{
+  color:var(--product-color)!important;
+  -webkit-text-stroke:.45px #111827!important;
+  paint-order:stroke fill!important;
+  text-shadow:0 0 0 #111827!important;
+}
+@media(max-width:700px){
+  body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+    min-height:84px!important;
+  }
+}
+@media(max-width:480px){
+  body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+    min-height:80px!important;
+  }
+}
