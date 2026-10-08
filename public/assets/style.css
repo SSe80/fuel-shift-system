@@ -1114,3 +1114,38 @@ body.admin-shell .admin-page-body-card > .daily-section:last-of-type{
     border-radius:12px;
   }
 }
+
+
+/* Restore admin sub-section title styling */
+body.admin-shell .admin-page-body-card .section-kicker,
+body.admin-shell .admin-page-body-card .purchase-section .section-kicker,
+body.admin-shell .admin-page-body-card .admin-sales-section .section-kicker,
+body.admin-shell .admin-page-body-card .daily-section .section-kicker{
+  display:block;
+  margin-bottom:6px;
+  color:#1264d8;
+  font-size:11px;
+  line-height:1.2;
+  letter-spacing:.12em;
+  font-weight:800;
+  text-transform:uppercase;
+}
+body.admin-shell .admin-page-body-card .section-heading h2,
+body.admin-shell .admin-page-body-card .purchase-section-head h2,
+body.admin-shell .admin-page-body-card .admin-sales-section-heading h2,
+body.admin-shell .admin-page-body-card .daily-section-head h2{
+  margin:0;
+  color:#182230;
+  font-size:21px;
+  line-height:1.2;
+  letter-spacing:-.02em;
+  font-weight:700;
+}
+@media(max-width:600px){
+  body.admin-shell .admin-page-body-card .section-heading h2,
+  body.admin-shell .admin-page-body-card .purchase-section-head h2,
+  body.admin-shell .admin-page-body-card .admin-sales-section-heading h2,
+  body.admin-shell .admin-page-body-card .daily-section-head h2{
+    font-size:19px;
+  }
+}
