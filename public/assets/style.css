@@ -2044,3 +2044,117 @@ body[data-app-page="adminFuelConfiguration"] .activated-product-meta strong{
     gap:4px!important;
   }
 }
+
+
+/* Activated Products — narrower, polished compact cards */
+body[data-app-page="adminFuelConfiguration"] #products{
+  gap:8px!important;
+}
+body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+  flex:0 0 210px!important;
+  width:210px!important;
+  min-width:210px!important;
+  min-height:58px!important;
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:9px!important;
+  padding:9px 10px 9px 9px!important;
+  border:1px solid #e1e7ef!important;
+  border-radius:9px!important;
+  background:linear-gradient(145deg,#fff 0%,#f9fbfd 100%)!important;
+  box-shadow:0 2px 8px rgba(24,34,48,.06)!important;
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease!important;
+}
+body[data-app-page="adminFuelConfiguration"] #products .activated-product-card:hover{
+  transform:translateY(-1px)!important;
+  border-color:#cbd6e3!important;
+  box-shadow:0 5px 14px rgba(24,34,48,.09)!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-main{
+  min-width:0!important;
+  gap:7px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-color{
+  flex:0 0 3px!important;
+  width:3px!important;
+  min-height:38px!important;
+  border-radius:4px!important;
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--product-color) 18%,transparent)!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-copy .field-label{
+  margin-bottom:1px!important;
+  font-size:6.5px!important;
+  letter-spacing:.1em!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-code{
+  font-size:13px!important;
+  line-height:1.1!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-name{
+  margin-top:2px!important;
+  font-size:8.5px!important;
+  line-height:1.15!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-meta{
+  min-width:64px!important;
+  gap:4px!important;
+  align-items:flex-end!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-meta div{
+  gap:3px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-meta span{
+  font-size:6px!important;
+  letter-spacing:.06em!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-meta strong{
+  font-size:9px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-meta div:first-child{
+  padding:2px 5px!important;
+  border-radius:999px!important;
+  background:#eef8f2!important;
+  border:1px solid #d5eddf!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-meta div:first-child span{
+  display:none!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-product-meta div:last-child{
+  padding-top:1px!important;
+}
+@media(max-width:700px){
+  body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+    flex:0 0 190px!important;
+    width:190px!important;
+    min-width:190px!important;
+    min-height:56px!important;
+    padding:8px 9px!important;
+  }
+}
+@media(max-width:480px){
+  body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+    flex:0 0 175px!important;
+    width:175px!important;
+    min-width:175px!important;
+    min-height:54px!important;
+    padding:8px!important;
+  }
+  body[data-app-page="adminFuelConfiguration"] .activated-product-code{
+    font-size:12px!important;
+  }
+  body[data-app-page="adminFuelConfiguration"] .activated-product-name{
+    font-size:8px!important;
+  }
+  body[data-app-page="adminFuelConfiguration"] .activated-product-meta{
+    min-width:58px!important;
+  }
+}
