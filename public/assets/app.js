@@ -1472,15 +1472,16 @@ async function openAdminAttendantDetails(id){
   const box=document.getElementById('admin-attendant-details-content');
   if(box)box.innerHTML='<p class="muted">Loading attendant data…</p>';
   try{
-    const [employees,shifts,nozzles,products,salesHistory]=await Promise.all([
-      api('/api/users'),api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/sales/history')
+    const [employees,shifts,nozzles,products,salesResult]=await Promise.all([
+      api('/api/users'),api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/sales/history').then(data=>({ok:true,data})).catch(()=>({ok:false,data:[]}))
     ]);
     const employee=(Array.isArray(employees)?employees:[]).find(e=>String(e.id)===String(id));
     if(!employee){if(box)box.innerHTML='<p class="muted">Attendant not found.</p>';return;}
     const allShifts=Array.isArray(shifts)?shifts:[], allNozzles=Array.isArray(nozzles)?nozzles:[], allProducts=Array.isArray(products)?products:[];
-    const employeeShifts=allShifts.filter(s=>String(s.employee_id)===String(employee.id));
-    const activeShifts=employeeShifts.filter(s=>s.status==='active');
-    const history=Array.isArray(salesHistory)?salesHistory:[];
+    const belongsToEmployee=s=>[s.employee_id,s.attendant_id,s.user_id,s.operator_user_id].some(v=>v!=null&&String(v)===String(employee.id));
+    const employeeShifts=allShifts.filter(belongsToEmployee);
+    const activeShifts=employeeShifts.filter(s=>String(s.status||'').trim().toLowerCase()==='active');
+    const history=Array.isArray(salesResult.data)?salesResult.data:[];
     const salesItems=history.filter(x=>String(x?.takeover?.from_employee_id||'')===String(employee.id)||String(x?.takeover?.to_employee_id||'')===String(employee.id));
     const sales=salesItems.flatMap(x=>Array.isArray(x.sales)?x.sales:[]);
     const totalLiters=sales.reduce((n,s)=>n+(Number(s.quantity_liters)||0),0);
@@ -1506,11 +1507,11 @@ async function adminAttendants(){
     if(me.role!=='admin')return location.href='admin-login.html';
     const [employees,shifts,dispensers]=await Promise.all([api('/api/users'),api('/api/shifts'),api('/api/nozzles')]);
     const active=employees.filter(e=>e.active===true&&e.role==='attendant');
-    const activeShifts=shifts.filter(s=>s.status==='active');
+    const activeShifts=shifts.filter(s=>String(s.status||'').trim().toLowerCase()==='active');
     const el=document.getElementById('attendants');
     if(!el)return;
     el.innerHTML=active.length?active.map(e=>{
-      const employeeShifts=activeShifts.filter(s=>String(s.employee_id)===String(e.id));
+      const employeeShifts=activeShifts.filter(s=>[s.employee_id,s.attendant_id,s.user_id,s.operator_user_id].some(v=>v!=null&&String(v)===String(e.id)));
       const stations=employeeShifts.map(shift=>{
         const d=dispensers.find(x=>String(x.id)===String(shift.nozzle_id));
         return d?.nozzle_code||shift.nozzle_id||'Assigned dispenser';
