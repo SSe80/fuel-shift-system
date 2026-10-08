@@ -329,7 +329,8 @@ async function ensureTakeoverDetailsStyle(){
 #admin-sale-history-details.open{padding:8px!important}
 #admin-sale-history-details.open .admin-sale-review-card{width:calc(100vw - 16px)!important;max-width:none!important;max-height:90vh!important;border-radius:15px!important}
 #admin-sale-history-details.open .history-detail-info-grid{grid-template-columns:1fr 1fr!important}
-}async function openTakeoverDetails(id){
+}`;
+async function openTakeoverDetails(id){
   const takeovers=Array.isArray(window.takeoverRecords)?window.takeoverRecords:[];
   const takeover=takeovers.find(x=>String(x.id)===String(id));
   const modal=document.getElementById('admin-sale-history-details');
