@@ -1620,17 +1620,23 @@ def admin_deactivate_shift(shift_id):
 def cancel_shift_assignment(shift_id):
     eid=session.get("employee_id")
     if not eid:return jsonify({"error":"Unauthorized"}),401
-    params={"id":"eq."+shift_id,"status":"eq.assigned","select":"id"}
+    params={"id":"eq."+shift_id,"status":"eq.assigned","select":"id,nozzle_id"}
     if session.get("role")!="admin":
         params["employee_id"]="eq."+eid
     status,current=sb("shifts",params=params)
     if status!=200:return jsonify({"error":current}),status
     if not current:return jsonify({"error":"Pending shift assignment not found"}),404
+    nozzle_id=current[0].get("nozzle_id")
     status,result=sb("shifts",method="PATCH",params={"id":"eq."+shift_id},body={
         "status":"cancelled",
         "end_time":datetime.now(timezone.utc).isoformat()
     },prefer="return=representation")
-    if status>=400:return jsonify({"error":result}),status
+    if status>=400:return jsonify(result),status
+    if nozzle_id:
+        ss,sr=sb("shifts",params={"nozzle_id":"eq."+str(nozzle_id),"status":"in.(assigned,active)","select":"id","limit":"1"})
+        if ss==200 and not sr:
+            sb("nozzles",method="PATCH",params={"id":"eq."+str(nozzle_id)},body={"active":False},prefer="return=minimal")
+            sb("dispenser_nozzles",method="PATCH",params={"dispenser_id":"eq."+str(nozzle_id)},body={"active":False},prefer="return=minimal")
     return jsonify(result),200
 
 @app.post("/api/shifts/<shift_id>/start")
