@@ -1481,7 +1481,7 @@ function createStyledReportPdf(report){
   section('DISPENSER & NOZZLE PERFORMANCE');
   table(['DISPENSER / NOZZLE','PRODUCT','TANK','OPENING','CLOSING','SOLD'],s.readingRows&&s.readingRows.length?s.readingRows:[['-',s.productCode,s.tankCode,'-','-',(s.totalLiters||0)+' L']],[132,82,92,70,70,77]);
   section('TANK RECONCILIATION');
-  table(['TANK / PRODUCT','OPENING','PURCHASES','SOLD','EXPECTED','RECORDED'],[[s.tankCode,s.tankOpening,s.tankPurchases||'+0 L',s.totalLiters,s.tankOpening&&s.totalLiters?s.tankOpening.replace?.(' L',''):'-',s.tankClosing]],[145,75,78,70,75,116]);
+  table(['TANK / PRODUCT','OPENING','PURCHASES','SOLD','EXPECTED','RECORDED'],[[s.tankCode,s.tankOpening,s.tankPurchases||'+0 L',s.totalLiters,s.tankExpected||'-',s.tankClosing]],[145,75,78,70,75,116]);
   keyCards([['ADJUSTMENT',s.adjustment||'+0 L'],['CONTINUITY',s.continuity||'+0 L'],['DIFFERENCE',s.tankDifference||'-',true],['VARIANCE',s.variancePct||'-',true]]);
   section('RECORDED SALES');
   table(['#','SALE TYPE','AMOUNT','DESCRIPTION / REASON'],s.saleRows&&s.saleRows.length?s.saleRows:[['-','No sale entries recorded','-','-']],[30,140,100,287]);
@@ -1642,6 +1642,7 @@ async function downloadAdminSaleHistoryDetails(id){
       differenceValue,
       tankOpening:tankOpeningLabel,
       tankClosing:tankClosingLabel,
+      tankExpected:Number.isFinite(tankExpected)?liters(tankExpected)+' L':'—',
       tankPurchases:'+0 L',
       tankDifference:tankDiffLabel,
       variancePct:varianceLabel,
