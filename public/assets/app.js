@@ -1452,8 +1452,6 @@ async function downloadAdminSaleHistoryDetails(id){
   if(!ids.length&&nozzleId)ids.push(nozzleId);
 
   const productCode=product?.code_name||item.product?.code_name||item.product_code||t.product_code||tank?.product_code||'—';
-  const tankOpening=Number(t.tank_opening_liters);
-  const tankClosing=Number(t.tank_closing_liters);
   const tankCode=tank?.tank_code||item.tank?.tank_code||item.tank_code||t.tank_code||'—';
   const dispenserCode=nozzle?.nozzle_code||item.dispenser?.nozzle_code||item.dispenser?.code||t.dispenser_code||'Dispenser';
   const attendant=employee?.name||item.to_employee?.name||t.to_employee_name||item.to_employee_id||'—';
