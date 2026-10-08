@@ -1065,9 +1065,23 @@ async function adminFuelConfiguration(){
       const pc=String(product?.color||'#1264d8').trim()||'#1264d8';
       return '<div class="stat activated-dispenser-card" data-dispenser-id="'+h(d.id)+'" role="button" tabindex="0" aria-label="View '+h(d.nozzle_code||'dispenser')+' details" style="--product-color:'+h(pc)+'"><b>'+h(d.nozzle_code)+'</b><span>'+h(productCode||'—')+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small></div>';
     };
+    const renderDispenserGroupGraph=(g,pc)=>{
+      const endDate=new Date(); endDate.setHours(23,59,59,999);
+      const days=Array.from({length:7},(_,i)=>{const d=new Date(endDate);d.setDate(endDate.getDate()-(6-i));return d;});
+      const rows=g.items.map(d=>({d,values:days.map(day=>{const key=day.toISOString().slice(0,10);return (sales||[]).filter(s=>String(s.nozzle_id||'')===String(d.id)&&String(s.sale_time||s.created_at||'').slice(0,10)===key).reduce((sum,s)=>sum+(Number(s.quantity_liters)||0),0);})}));
+      const max=Math.max(1,...rows.flatMap(r=>r.values));
+      const w=520,hg=150,padL=34,padR=10,padT=12,padB=25,iw=w-padL-padR,ih=hg-padT-padB;
+      const x=i=>padL+i*(iw/6), y=v=>padT+ih-(v/max)*ih;
+      const grid=[0,.5,1].map(v=>'<line x1="'+padL+'" y1="'+y(max*v).toFixed(1)+'" x2="'+(w-padR)+'" y2="'+y(max*v).toFixed(1)+'" class="activated-dispenser-graph-grid"></line>').join('');
+      const lines=rows.map((r,idx)=>{const opacity=Math.max(.38,1-idx*.1).toFixed(2),pts=r.values.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ');return '<polyline points="'+pts+'" fill="none" stroke="'+h(pc)+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="'+opacity+'"></polyline>'+r.values.map((v,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(v).toFixed(1)+'" r="2.5" fill="'+h(pc)+'" opacity="'+opacity+'"><title>'+h(r.d.nozzle_code)+' — '+h(days[i].toLocaleDateString(undefined,{month:'short',day:'numeric'}))+' — '+liters(v)+' L</title></circle>').join('');}).join('');
+      const labels=days.map((d,i)=>'<text x="'+x(i).toFixed(1)+'" y="'+(hg-7)+'" text-anchor="middle" class="activated-dispenser-graph-label">'+h(d.toLocaleDateString(undefined,{month:'short',day:'numeric'}))+'</text>').join('');
+      const legend=rows.map((r,idx)=>'<span class="activated-dispenser-graph-legend-item"><i style="background:'+h(pc)+';opacity:'+Math.max(.38,1-idx*.1).toFixed(2)+'"></i>'+h(r.d.nozzle_code)+'</span>').join('');
+      const total=rows.reduce((sum,r)=>sum+r.values.reduce((a,b)=>a+b,0),0);
+      return '<div class="activated-dispenser-graph"><div class="activated-dispenser-graph-head"><div><span class="section-kicker">DISPENSER PERFORMANCE</span><strong>Sales volume · Last 7 days</strong></div><span>'+h(liters(total))+' L</span></div><div class="activated-dispenser-graph-wrap"><svg viewBox="0 0 '+w+' '+hg+'" role="img" aria-label="Dispenser sales volume for the last 7 days">'+grid+'<line x1="'+padL+'" y1="'+(hg-padB)+'" x2="'+(w-padR)+'" y2="'+(hg-padB)+'" class="activated-dispenser-graph-axis"></line>'+lines+labels+'</svg></div><div class="activated-dispenser-graph-legend">'+legend+'</div></div>';
+    };
     const renderDispenserGroup=(g)=>{
       const pc=String(g.product.color||'#1264d8').trim()||'#1264d8';
-      return '<section class="activated-dispenser-product-group" style="--product-color:'+h(pc)+'"><div class="activated-dispenser-group-head"><span class="activated-dispenser-group-dot"></span><div><span class="field-label">PRODUCT</span><strong>'+h(g.product.code_name||g.product.name||'—')+'</strong></div><span class="activated-dispenser-group-count">'+g.items.length+' dispenser'+(g.items.length===1?'':'s')+'</span></div><div class="activated-dispenser-group-cards">'+g.items.map(d=>renderDispenserCard(d,g.product.code_name||g.product.name)).join('')+'</div></section>';
+      return '<section class="activated-dispenser-product-group" style="--product-color:'+h(pc)+'"><div class="activated-dispenser-group-head"><span class="activated-dispenser-group-dot"></span><div><span class="field-label">PRODUCT</span><strong>'+h(g.product.code_name||g.product.name||'—')+'</strong></div><span class="activated-dispenser-group-count">'+g.items.length+' dispenser'+(g.items.length===1?'':'s')+'</span></div><div class="activated-dispenser-group-cards">'+g.items.map(d=>renderDispenserCard(d,g.product.code_name||g.product.name)).join('')+'</div>'+renderDispenserGroupGraph(g,pc)+'</section>';
     };
     let dispenserMarkup=dispenserGroups.map(renderDispenserGroup).join('');
     if(ungroupedDispensers.length){
