@@ -1004,15 +1004,32 @@ async function adminDashboard(){
     el('dashboard-status').textContent=low.length?low.length+' tank(s) are at or below 10% capacity.':'Dashboard shows only activated Settings records.';
   }catch(e){const s=document.getElementById('dashboard-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
+function renderActivatedProductsGraph(products,sales){
+  const host=document.getElementById('activated-products-graph');
+  if(!host)return;
+  if(!products.length){host.innerHTML='<div class="empty-content">No activated products to compare.</div>';return;}
+  const totals=products.map(p=>{
+    const name=String(p.name||'').toLowerCase();
+    const volume=(sales||[]).filter(s=>String(s.product||'').toLowerCase()===name).reduce((sum,s)=>sum+Number(s.quantity_liters||0),0);
+    return {code:String(p.code_name||p.name||'—'),volume:Number.isFinite(volume)?volume:0,color:String(p.color||'#1264d8').trim()||'#1264d8'};
+  });
+  const max=Math.max(...totals.map(x=>x.volume),1),W=720,rowH=42,left=104,right=22,top=18,bottom=28,H=top+totals.length*rowH+bottom;
+  const bars=totals.map((x,i)=>{
+    const y=top+i*rowH+7,barW=Math.max(2,(W-left-right)*(x.volume/max));
+    return '<text x="'+(left-10)+'" y="'+(y+17)+'" text-anchor="end" class="activated-products-graph-label">'+h(x.code)+'</text><rect x="'+left+'" y="'+y+'" width="'+(W-left-right)+'" height="22" rx="6" class="activated-products-graph-track"></rect><rect x="'+left+'" y="'+y+'" width="'+barW.toFixed(2)+'" height="22" rx="6" fill="'+h(x.color)+'"></rect><text x="'+Math.min(W-4,left+barW+8)+'" y="'+(y+15)+'" class="activated-products-graph-value">'+h(liters(x.volume))+' L</text>';
+  }).join('');
+  host.innerHTML='<div class="activated-products-graph-head"><div><span class="section-kicker">PRODUCT PERFORMANCE</span><h3>Sales volume by product</h3></div><span class="activated-products-graph-unit">LITERS SOLD</span></div><div class="activated-products-graph-scroll"><svg class="activated-products-graph-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Sales volume comparison among activated products">'+bars+'</svg></div>';
+}
 async function adminFuelConfiguration(){
   try{
     await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
-    const [allProducts,allTanks,allDispensers,allShifts,employees]=await Promise.all([api('/api/products'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/users')]);
+    const [allProducts,allTanks,allDispensers,allShifts,employees,sales]=await Promise.all([api('/api/products'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/users'),api('/api/sales')]);
     const products=allProducts.filter(p=>p.active===true), tanks=allTanks.filter(t=>t.active===true&&products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase()));
     const dispensers=allDispensers.filter(d=>d.active===true&&tanks.some(t=>t.id===d.tank_id));
     const activeEmployees=employees.filter(e=>e.active===true), activeShifts=allShifts.filter(s=>s.status==='active');
     const el=id=>document.getElementById(id), productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     el('products').innerHTML=products.length?products.map(p=>{const pc=String(p.color||'#1264d8').trim()||'#1264d8';return '<article class="stat activated-product-card" data-product-id="'+h(p.id)+'" role="button" tabindex="0" aria-label="View '+h(p.code_name)+' details" style="--product-color:'+h(pc)+'"><div class="activated-product-main"><span class="activated-product-color" aria-hidden="true"></span><div class="activated-product-copy"><span class="field-label">PRODUCT</span><div class="activated-product-code">'+h(p.code_name)+'</div><div class="activated-product-name">'+h(p.name)+'</div></div></div><div class="activated-product-meta"><div><span>STATUS</span><strong>Active</strong></div><div><span>SELLING PRICE</span><strong>'+money(p.selling_price)+'</strong></div></div></article>';}).join(''):'<div class="empty-content">No activated products.</div>';
+    renderActivatedProductsGraph(products,sales);
     el('dispensers').innerHTML=dispensers.length?dispensers.map(d=>{const tank=tanks.find(t=>t.id===d.tank_id),shift=activeShifts.find(s=>s.nozzle_id===d.id),attendant=shift?activeEmployees.find(e=>e.id===shift.employee_id):null;return '<div class="stat"><b>'+h(d.nozzle_code)+'</b><span>'+h(productCodes[String(d.product||'').toLowerCase()]||d.product||'—')+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small></div>';}).join(''):'<div class="card"><p>No activated dispensers.</p></div>';
   }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
