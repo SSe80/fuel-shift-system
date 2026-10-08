@@ -2211,3 +2211,11 @@ body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
   border:1px solid var(--product-color)!important;
   border-left-width:1px!important;
 }
+
+
+/* Activated Products — white interior and equal border weight */
+body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+  background:#fff!important;
+  border:1px solid var(--product-color)!important;
+  border-left-width:1px!important;
+}
