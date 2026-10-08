@@ -2155,7 +2155,7 @@ def record_shift_takeover_sale(takeover_id):
 def shift_takeover_sale_record(takeover_id):
     auth=require_login()
     if auth:return auth
-    status,takeovers=sb("shift_takeovers",params={"id":"eq."+takeover_id,"select":"id,from_employee_id,sales_status,sales_submitted_at,sales_confirmed_at,sales_recorded_at","limit":"1"})
+    status,takeovers=sb("shift_takeovers",params={"id":"eq."+takeover_id,"select":"*","limit":"1"})
     if status!=200:return jsonify(takeovers),status
     if not takeovers:return jsonify({"error":"Shift takeover not found"}),404
     takeover=takeovers[0]
