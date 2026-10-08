@@ -1316,10 +1316,13 @@ async function adminInventory(){
     };
     const movementRows=[...(Array.isArray(movements)?movements:[])];
     const purchaseById=new Map((Array.isArray(purchases)?purchases:[]).map(p=>[String(p.id),p]));
+    const purchaseByInvoice=new Map((Array.isArray(purchases)?purchases:[]).filter(p=>p.invoice_number).map(p=>[String(p.invoice_number).trim().toLowerCase(),p]));
     const purchaseForMovement=m=>{
       const direct=m?.invoice_number||m?.purchase_invoice||'';
-      if(direct)return {invoice_number:direct,id:m?.purchase_id||m?.reference_id||''};
-      return purchaseById.get(String(m?.purchase_id||m?.reference_id||''))||null;
+      const directId=m?.purchase_id||m?.reference_id||'';
+      if(directId&&purchaseById.has(String(directId)))return purchaseById.get(String(directId));
+      if(direct&&purchaseByInvoice.has(String(direct).trim().toLowerCase()))return purchaseByInvoice.get(String(direct).trim().toLowerCase());
+      return purchaseById.get(String(directId))||null;
     };
     const movementStats={
       tanks:tanks.length,
@@ -1366,7 +1369,7 @@ async function adminInventory(){
                 '<div class="tank-movement-icon '+h(movementTypeClass[type]||'other')+'">'+h(movementTypeIcon[type]||'•')+'</div>'+
                 '<div class="tank-movement-main">'+
                   '<strong>'+h(movementTypeLabel[type]||m.movement_type||'Movement')+'</strong>'+
-                  '<small>'+h(dateText)+(m.notes?' · '+h(m.notes):'')+(type==='purchase'&&purchaseForMovement(m)?.invoice_number?' · ':'')+(type==='purchase'&&purchaseForMovement(m)?.invoice_number?'<button type="button" class="tank-movement-invoice-link" data-purchase-id="'+h(String(purchaseForMovement(m)?.id||''))+'" data-purchase-invoice="'+h(String(purchaseForMovement(m)?.invoice_number||''))+'">Invoice '+h(String(purchaseForMovement(m)?.invoice_number||''))+'</button>':'')+'</small>'+
+                  '<small>'+h(dateText)+(m.notes?' · '+h(m.notes):'')+(type==='purchase'&&purchaseForMovement(m)?.invoice_number?' · ':'')+(type==='purchase'&&purchaseForMovement(m)?.invoice_number?'<a class="tank-movement-invoice-link" href="admin-purchases.html#purchase-'+encodeURIComponent(String(purchaseForMovement(m)?.id||''))+'">Invoice '+h(String(purchaseForMovement(m)?.invoice_number||''))+'</a>':'')+'</small>'+
                 '</div>'+
                 '<div class="tank-movement-qty '+(signed<0?'negative':'positive')+'">'+
                   (signed>0?'+':signed<0?'−':'')+liters(qty)+' L'+
@@ -1428,7 +1431,7 @@ async function adminInventory(){
           const dt=m.created_at?new Date(m.created_at):null;
           return '<div class="tank-movement-detail-row">'+
             '<div class="tank-movement-icon '+h(movementTypeClass[type]||'other')+'">'+h(movementTypeIcon[type]||'•')+'</div>'+
-            '<div class="tank-movement-main"><strong>'+h(movementTypeLabel[type]||m.movement_type||'Movement')+'</strong><small>'+h(dt&&!Number.isNaN(dt.getTime())?dt.toLocaleString():'—')+(m.notes?' · '+h(m.notes):'')+(type==='purchase'&&purchaseForMovement(m)?.invoice_number?' · ':'')+(type==='purchase'&&purchaseForMovement(m)?.invoice_number?'<button type="button" class="tank-movement-invoice-link" data-purchase-id="'+h(String(purchaseForMovement(m)?.id||''))+'" data-purchase-invoice="'+h(String(purchaseForMovement(m)?.invoice_number||''))+'">Invoice '+h(String(purchaseForMovement(m)?.invoice_number||''))+'</button>':'')+'</small></div>'+
+            '<div class="tank-movement-main"><strong>'+h(movementTypeLabel[type]||m.movement_type||'Movement')+'</strong><small>'+h(dt&&!Number.isNaN(dt.getTime())?dt.toLocaleString():'—')+(m.notes?' · '+h(m.notes):'')+(type==='purchase'&&purchaseForMovement(m)?.invoice_number?' · ':'')+(type==='purchase'&&purchaseForMovement(m)?.invoice_number?'<a class="tank-movement-invoice-link" href="admin-purchases.html#purchase-'+encodeURIComponent(String(purchaseForMovement(m)?.id||''))+'">Invoice '+h(String(purchaseForMovement(m)?.invoice_number||''))+'</a>':'')+'</small></div>'+
             '<div class="tank-movement-qty '+(signed<0?'negative':'positive')+'">'+(signed>0?'+':signed<0?'−':'')+liters(qty)+' L</div>'+
             '<div class="tank-movement-balance"><small>Balance</small><strong>'+liters(m.balance_after)+' L</strong></div>'+
           '</div>';
