@@ -744,11 +744,19 @@ async function loadAttendantShiftPage(){
             '<div class="top"><div><span class="section-kicker">SALES CONFIRMED</span><h3>'+h(n?.nozzle_code||t.dispenser_code||'Dispenser')+'</h3></div><span class="badge">Confirmed</span></div>'+
             '<div class="compact-sale-summary"><span>Shift '+h(String(t.shift_id).slice(0,8))+'</span><span>'+liters(t.total_sales_liters)+' L</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
             '<p class="muted">Admin confirmed '+(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+' • Receiving: '+h(receiver?.name||'—')+'</p>'+
-            '<button type="button" class="btn compact-detail-button" data-takeover-id="'+h(t.id)+'" onclick="window.openTakeoverDetails(this.dataset.takeoverId)">Details</button>'+
+            '<button type="button" class="btn compact-detail-button attendant-shift-details-button" data-takeover-id="'+h(t.id)+'">Details</button>'+
           '</div>'
         };
       });
       historyBox.innerHTML=records.sort((a,b)=>b.time-a.time).map(x=>x.html).join('')||'<div class="card"><p>No confirmed sales yet.</p></div>';
+      historyBox.querySelectorAll('.attendant-shift-details-button').forEach(function(btn){
+        btn.addEventListener('click',function(event){
+          event.preventDefault();
+          event.stopPropagation();
+          const takeoverId=this.getAttribute('data-takeover-id');
+          if(takeoverId)openTakeoverDetails(takeoverId);
+        });
+      });
     }
   }catch(e){
     if(e.message==='Unauthorized')location.href='attendant-login.html';
