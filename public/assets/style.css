@@ -4080,3 +4080,87 @@ body[data-app-page="adminInventory"] .tank-movement-detail-row .tank-movement-ma
     margin:0 4px 0 0!important;
   }
 }
+
+
+/* Tank movement cards — compact transaction rows */
+body[data-app-page="adminInventory"] .tank-movement-group{
+  padding:13px 2px 12px 12px!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-row{
+  grid-template-columns:30px minmax(0,1fr) auto!important;
+  min-height:54px!important;
+  padding:8px 6px 8px 0!important;
+  border:0!important;
+  border-bottom:1px solid #eef1f4!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-row:last-child{
+  border-bottom:0!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-icon{
+  width:30px!important;
+  height:30px!important;
+  border-radius:50%!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-main strong{
+  font-size:11px!important;
+  font-weight:900!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-main small{
+  margin-top:3px!important;
+  font-size:8.5px!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-qty{
+  align-self:center!important;
+  font-size:11px!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-balance{
+  grid-column:2 / -1!important;
+  padding-left:39px!important;
+  min-width:0!important;
+  text-align:left!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:4px!important;
+  margin-top:-8px!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-balance small,
+body[data-app-page="adminInventory"] .tank-movement-balance strong{
+  display:inline!important;
+  margin:0!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-balance small{
+  font-size:7px!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-balance strong{
+  font-size:8.5px!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-more{
+  margin-top:7px!important;
+  padding:8px 9px!important;
+  border:1px solid #e4e9ef!important;
+  border-radius:8px!important;
+  background:#fafbfd!important;
+  font-size:9px!important;
+  text-align:center!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-more:hover{
+  background:#f3f6f9!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-detail-body{
+  padding:2px 12px 8px!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-detail-row{
+  grid-template-columns:30px minmax(0,1fr) auto!important;
+  min-height:55px!important;
+  padding:8px 0!important;
+}
+body[data-app-page="adminInventory"] .tank-movement-detail-row .tank-movement-balance{
+  grid-column:2 / -1!important;
+  grid-row:2!important;
+  padding-left:39px!important;
+  min-width:0!important;
+  text-align:left!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:4px!important;
+}
