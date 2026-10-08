@@ -1461,8 +1461,12 @@ async function downloadAdminSaleHistoryDetails(id){
   const confirmedAt=t.sales_confirmed_at||initial.sales_confirmed_at;
   const startedAt=t.shift_started_at||shift?.start_time;
   const endedAt=t.shift_ended_at||shift?.end_time;
-  const totalAmount=Number(t.total_sales_amount||0);
-  const totalLiters=Number(t.total_sales_liters||0);
+  const totalAmount=Number(t.total_sales_amount||initial.total_sales_amount||0);
+  const totalLiters=Number(t.total_sales_liters||initial.total_sales_liters||0);
+  // Tank stock is recorded on shift activation/handover. Historical sales records
+  // may expose it through either the takeover or normalized shift fields.
+  const tankOpening=Number(t.tank_opening_liters ?? t.opening_tank_liters ?? shift?.tank_opening_liters ?? shift?.opening_tank_liters ?? shift?.opening_liters);
+  const tankClosing=Number(t.tank_closing_liters ?? t.closing_tank_liters ?? shift?.tank_closing_liters ?? shift?.closing_liters ?? shift?.closing_tank_liters);
   const status=String(t.sales_status||'confirmed').replace(/_/g,' ');
   const statusLabel=status.replace(/\b\w/g,m=>m.toUpperCase());
 
@@ -1504,10 +1508,11 @@ async function downloadAdminSaleHistoryDetails(id){
         ['Shift ID',t.shift_id||'—']
       ]},
       {title:'TANK OPENING & CLOSING STOCK',fields:[
-        ['Tank',tankCode],['Opening stock',liters(t.tank_opening_liters)+' L'],
-        ['Closing stock',liters(t.tank_closing_liters)+' L'],['Tank sales',liters(t.tank_sales_liters)+' L'],
-        ['Stock variance',liters(t.tank_variance_liters)+' L'],
-        ['Variance %',Number(t.tank_variance_pct||0).toFixed(2)+'%']
+        ['Tank',tankCode],['Opening stock',Number.isFinite(tankOpening)?liters(tankOpening)+' L':'—'],
+        ['Closing stock',Number.isFinite(tankClosing)?liters(tankClosing)+' L':'—'],
+        ['Tank sales',liters(tankSold)+' L'],
+        ['Stock variance',Number.isFinite(tankOpening)&&Number.isFinite(tankClosing)?liters(tankClosing-(tankOpening-totalLiters))+' L':'—'],
+        ['Variance %',Number.isFinite(tankOpening)&&tankOpening>0&&Number.isFinite(tankClosing)?((tankClosing-(tankOpening-totalLiters))/tankOpening*100).toFixed(2)+'%':'—']
       ]},
       {title:'OPENING & CLOSING METER READINGS',table:{
         headers:['Nozzle','Product','Tank','Opening','Closing','Sold'],
@@ -1690,8 +1695,8 @@ async function openAdminSaleHistoryDetails(id){
     '<div class="history-detail-section">',
       '<div class="history-detail-section-head"><div><span class="section-kicker">TANK STOCK</span><h4>Tank opening & closing stock</h4></div></div>',
       '<div class="history-detail-info-grid">',
-        '<div><span>Opening stock</span><strong>'+liters(t.tank_opening_liters)+' L</strong></div>',
-        '<div><span>Closing stock</span><strong>'+liters(t.tank_closing_liters)+' L</strong></div>',
+        '<div><span>Opening stock</span><strong>'+ (Number.isFinite(tankOpening)?liters(tankOpening):'—') +' L</strong></div>',
+        '<div><span>Closing stock</span><strong>'+ (Number.isFinite(tankClosing)?liters(tankClosing):'—') +' L</strong></div>',
         '<div><span>Tank sales</span><strong>'+liters(t.tank_sales_liters)+' L</strong></div>',
         '<div><span>Stock variance</span><strong>'+liters(t.tank_variance_liters)+' L</strong></div>',
       '</div>',
