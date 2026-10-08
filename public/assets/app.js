@@ -335,10 +335,15 @@ async function ensureTakeoverDetailsStyle(){
   document.head.appendChild(style);
 }
 async function openTakeoverDetails(id){
-  ensureTakeoverDetailsStyle();
   const takeovers=Array.isArray(window.takeoverRecords)?window.takeoverRecords:[];
   const takeover=takeovers.find(x=>String(x.id)===String(id));
-  if(!takeover)return;
+  const modal=document.getElementById('admin-sale-history-details');
+  const box=document.getElementById('admin-sale-history-details-content');
+  if(!takeover){
+    if(box)box.innerHTML='<div class="history-detail-section"><p class="muted">Shift details could not be found.</p></div>';
+    if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+    return;
+  }
   const shifts=Array.isArray(window.dashboardShiftRecords)?window.dashboardShiftRecords:[];
   const nozzles=Array.isArray(window.dashboardNozzleRecords)?window.dashboardNozzleRecords:[];
   const employees=Array.isArray(window.dashboardEmployeeRecords)?window.dashboardEmployeeRecords:[];
@@ -350,12 +355,15 @@ async function openTakeoverDetails(id){
   const tank=tanks.find(t=>String(t.id)===String(takeover.tank_id||nozzle?.tank_id));
   const product=products.find(p=>String(p.id)===String(tank?.product_id)||String(p.name||'').toLowerCase()===String(tank?.product||'').toLowerCase());
   const item={takeover:takeover,sales:[],dispenser:nozzle?{nozzle_code:nozzle.nozzle_code,nozzle_id:nozzle.id,name:nozzle.nozzle_code}:null,tank:tank||null,product:product||null,to_employee:employee||null,shift:shift||null};
+  window.__attendantTakeoverDetailsItem=item;
   if(typeof adminSalesHistoryData!=='undefined')adminSalesHistoryData={history:[item]};
-  if(typeof openAdminSaleHistoryDetails==='function'){
-    openAdminSaleHistoryDetails(id);
+  const renderer=window.openAdminSaleHistoryDetails;
+  if(typeof renderer==='function'){
+    renderer(id);
     return;
   }
-  toast('Shift details are unavailable.');
+  if(box)box.innerHTML='<div class="history-detail-section"><p class="muted">Shift details are unavailable.</p></div>';
+  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
 }
 
 function closeTakeoverDetails(){
@@ -1552,7 +1560,7 @@ async function openAdminSaleHistoryDetails(id){
   const source=(typeof adminSalesHistoryData!=='undefined'&&Array.isArray(adminSalesHistoryData.history))
     ?adminSalesHistoryData.history
     :((typeof adminSalesData!=='undefined'&&Array.isArray(adminSalesData.history))?adminSalesData.history:[]);
-  const item=source.find(function(x){return String((x&&x.takeover&&x.takeover.id)||'')===String(id);});
+  const item=source.find(function(x){return String((x&&x.takeover&&x.takeover.id)||'')===String(id);})||((window.__attendantTakeoverDetailsItem&&String(window.__attendantTakeoverDetailsItem.takeover?.id)===String(id))?window.__attendantTakeoverDetailsItem:null);
   const modal=document.getElementById('admin-sale-history-details');
   const box=document.getElementById('admin-sale-history-details-content');
   const download=document.getElementById('admin-sale-history-download');
