@@ -1058,6 +1058,11 @@ async function adminFuelConfiguration(){
       const tank=tanks.find(t=>t.id===d.tank_id);
       const shift=activeShifts.find(s=>s.nozzle_id===d.id);
       const attendant=shift?activeEmployees.find(e=>e.id===shift.employee_id):null;
+      const product=products.find(p=>{
+        const value=String(d.product||tank?.product||'').toLowerCase();
+        return value===String(p.name||'').toLowerCase()||value===String(p.code_name||'').toLowerCase();
+      });
+      const pc=String(product?.color||'#1264d8').trim()||'#1264d8';
       return '<div class="stat activated-dispenser-card" data-dispenser-id="'+h(d.id)+'" role="button" tabindex="0" aria-label="View '+h(d.nozzle_code||'dispenser')+' details" style="--product-color:'+h(pc)+'"><b>'+h(d.nozzle_code)+'</b><span>'+h(productCode||'—')+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small></div>';
     };
     const renderDispenserGroup=(g)=>{
