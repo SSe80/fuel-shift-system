@@ -1314,3 +1314,28 @@ body[data-app-page="adminAccountingControl"] .admin-page-body-card .accounting-p
   background:transparent!important;
   box-shadow:none!important;
 }
+
+
+/* Station Control — remove cards from section content, keep the main body card */
+body[data-app-page="adminDashboard"] .admin-page-body-card > .statgrid > .stat,
+body[data-app-page="adminDashboard"] .admin-page-body-card > .card #activity > .card,
+body[data-app-page="adminDashboard"] .admin-page-body-card > .card #activity > .stat{
+  margin:0!important;
+  padding:13px 0!important;
+  border:0!important;
+  border-top:1px solid #edf1f5!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .statgrid > .stat:first-child,
+body[data-app-page="adminDashboard"] .admin-page-body-card > .card #activity > .card:first-child,
+body[data-app-page="adminDashboard"] .admin-page-body-card > .card #activity > .stat:first-child{
+  border-top:0!important;
+  padding-top:0!important;
+}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .statgrid > .stat:last-child,
+body[data-app-page="adminDashboard"] .admin-page-body-card > .card #activity > .card:last-child,
+body[data-app-page="adminDashboard"] .admin-page-body-card > .card #activity > .stat:last-child{
+  padding-bottom:0!important;
+}
