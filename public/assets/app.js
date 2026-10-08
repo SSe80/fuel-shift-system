@@ -1217,7 +1217,7 @@ function openAdminInventoryTankDetails(id){
   modal.querySelector('#admin-inventory-tank-details-title').textContent=t.tank_code||'Tank';
   modal.querySelector('.admin-inventory-tank-details-card').style.setProperty('--product-color',pc);
   const metric=(label,value,sub='')=>'<div class="admin-inventory-tank-detail-metric"><span>'+h(label)+'</span><strong>'+h(value)+'</strong>'+(sub?'<small>'+h(sub)+'</small>':'')+'</div>';
-  const movementLabel=type=>({opening:'Opening',purchase:'Purchase',sale:'Sale',discharge:'Discharge',adjustment:'Adjustment',dip:'Dip'})[type]||type||'Movement';
+  const movementLabel=type=>({opening:'Opening',purchase:'Discharge',sale:'Sale',discharge:'Tank Discharge',adjustment:'Adjustment',dip:'Dip'})[type]||type||'Movement';
   const rows=movements.slice(0,8).map(m=>{
     const type=String(m.movement_type||'').toLowerCase(), qty=Math.abs(Number(m.quantity_liters||0));
     const signed=(type==='sale'||type==='discharge')?-qty:qty;
@@ -1250,9 +1250,9 @@ function openAdminInventoryTankDetails(id){
 async function adminInventory(){
   try{
     await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
-    const [allTanks,allProducts,allDispensers,inventory,movements]=await Promise.all([api('/api/tanks'),api('/api/products'),api('/api/nozzles'),api('/api/inventory-summary'),api('/api/tank-movements')]);
+    const [allTanks,allProducts,allDispensers,inventory,movements,purchases]=await Promise.all([api('/api/tanks'),api('/api/products'),api('/api/nozzles'),api('/api/inventory-summary'),api('/api/tank-movements'),api('/api/purchases')]);
     const products=allProducts.filter(p=>p.active===true), tanks=allTanks.filter(t=>t.active===true&&products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase())), dispensers=allDispensers.filter(d=>d.active===true&&tanks.some(t=>t.id===d.tank_id));
-    window.__adminInventoryState={tanks,products,inventory,movements};
+    window.__adminInventoryState={tanks,products,inventory,movements,purchases};
     const codeForProduct=p=>{const x=products.find(x=>String(x.name).toLowerCase()===String(p||'').toLowerCase());return x?.code_name||p||'—';}, el=id=>document.getElementById(id);
     const productForTank=t=>products.find(p=>String(p.name||'').toLowerCase()===String(t.product||'').toLowerCase())||{};
     const tankGroups=products.map(p=>({product:p,items:tanks.filter(t=>String(t.product||'').toLowerCase()===String(p.name||'').toLowerCase())})).filter(g=>g.items.length);
@@ -1315,6 +1315,7 @@ async function adminInventory(){
       adjustment:'adjustment',dip:'dip',transfer:'transfer'
     };
     const movementRows=[...(Array.isArray(movements)?movements:[])];
+    const purchaseById=new Map((Array.isArray(purchases)?purchases:[]).map(p=>[String(p.id),p]));
     const movementStats={
       tanks:tanks.length,
       stock:tanks.reduce((sum,t)=>sum+Number(t.current_liters||0),0),
@@ -1360,7 +1361,7 @@ async function adminInventory(){
                 '<div class="tank-movement-icon '+h(movementTypeClass[type]||'other')+'">'+h(movementTypeIcon[type]||'•')+'</div>'+
                 '<div class="tank-movement-main">'+
                   '<strong>'+h(movementTypeLabel[type]||m.movement_type||'Movement')+'</strong>'+
-                  '<small>'+h(dateText)+(m.notes?' · '+h(m.notes):'')+'</small>'+
+                  '<small>'+h(dateText)+(m.notes?' · '+h(m.notes):'')+(type==='purchase'&&purchaseById.get(String(m.purchase_id||m.reference_id||''))?.invoice_number?' · Invoice '+h(purchaseById.get(String(m.purchase_id||m.reference_id||'')).invoice_number):'')+'</small>'+
                 '</div>'+
                 '<div class="tank-movement-qty '+(signed<0?'negative':'positive')+'">'+
                   (signed>0?'+':signed<0?'−':'')+liters(qty)+' L'+
@@ -1422,7 +1423,7 @@ async function adminInventory(){
           const dt=m.created_at?new Date(m.created_at):null;
           return '<div class="tank-movement-detail-row">'+
             '<div class="tank-movement-icon '+h(movementTypeClass[type]||'other')+'">'+h(movementTypeIcon[type]||'•')+'</div>'+
-            '<div class="tank-movement-main"><strong>'+h(movementTypeLabel[type]||m.movement_type||'Movement')+'</strong><small>'+h(dt&&!Number.isNaN(dt.getTime())?dt.toLocaleString():'—')+(m.notes?' · '+h(m.notes):'')+'</small></div>'+
+            '<div class="tank-movement-main"><strong>'+h(movementTypeLabel[type]||m.movement_type||'Movement')+'</strong><small>'+h(dt&&!Number.isNaN(dt.getTime())?dt.toLocaleString():'—')+(m.notes?' · '+h(m.notes):'')+(type==='purchase'&&purchaseById.get(String(m.purchase_id||m.reference_id||''))?.invoice_number?' · Invoice '+h(purchaseById.get(String(m.purchase_id||m.reference_id||'')).invoice_number):'')+'</small></div>'+
             '<div class="tank-movement-qty '+(signed<0?'negative':'positive')+'">'+(signed>0?'+':signed<0?'−':'')+liters(qty)+' L</div>'+
             '<div class="tank-movement-balance"><small>Balance</small><strong>'+liters(m.balance_after)+' L</strong></div>'+
           '</div>';
