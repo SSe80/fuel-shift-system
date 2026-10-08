@@ -2492,3 +2492,9 @@ body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
 .admin-product-slide .admin-product-tank-row{
   border-color:#edf1f5!important;
 }
+
+
+/* Product performance graph — bottom axis line */
+.admin-product-chart-axis{
+  stroke:#000!important;
+}
