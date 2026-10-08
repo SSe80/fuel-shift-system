@@ -2219,3 +2219,207 @@ body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
   border:1px solid var(--product-color)!important;
   border-left-width:1px!important;
 }
+
+
+/* Product performance popup */
+.admin-product-details-modal{
+  position:fixed!important;
+  inset:0!important;
+  z-index:5000!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:16px!important;
+  box-sizing:border-box!important;
+}
+.admin-product-details-modal.open{display:flex!important}
+.admin-product-details-backdrop{
+  position:absolute!important;
+  inset:0!important;
+  background:rgba(15,23,42,.62)!important;
+  backdrop-filter:blur(3px)!important;
+}
+.admin-product-details-card{
+  position:relative!important;
+  width:min(620px,100%)!important;
+  max-height:88vh!important;
+  overflow:hidden!important;
+  display:flex!important;
+  flex-direction:column!important;
+  background:#fff!important;
+  border:1px solid #dfe5ec!important;
+  border-top:3px solid var(--product-color,#1264d8)!important;
+  border-radius:16px!important;
+  box-shadow:0 28px 80px rgba(15,23,42,.28)!important;
+}
+.admin-product-details-top{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:14px 17px 12px!important;
+  border-bottom:1px solid #e8edf2!important;
+  background:#fff!important;
+}
+.admin-product-details-title{
+  margin:0!important;
+  color:#111827!important;
+  font-size:18px!important;
+  line-height:1.2!important;
+}
+.admin-product-details-close{
+  width:34px!important;
+  height:34px!important;
+  padding:0!important;
+  border:1px solid #dbe2ea!important;
+  border-radius:9px!important;
+  background:#fff!important;
+  color:#344054!important;
+  font-size:22px!important;
+  line-height:1!important;
+  cursor:pointer!important;
+}
+.admin-product-details-content{
+  overflow:auto!important;
+  padding:15px!important;
+}
+.admin-product-details-hero{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:14px!important;
+  padding:14px!important;
+  border:1px solid var(--product-color,#dbe2ea)!important;
+  border-radius:12px!important;
+  background:#fff!important;
+}
+.admin-product-details-hero h2{
+  margin:2px 0 2px!important;
+  color:var(--product-color,#1264d8)!important;
+  font-size:22px!important;
+  line-height:1.1!important;
+  font-weight:900!important;
+  -webkit-text-stroke:.45px #111827!important;
+  paint-order:stroke fill!important;
+}
+.admin-product-details-hero p{
+  margin:0!important;
+  color:#536174!important;
+  font-size:11px!important;
+  font-weight:600!important;
+}
+.admin-product-details-status{
+  flex:0 0 auto!important;
+  padding:5px 8px!important;
+  border:1px solid #cce8d8!important;
+  border-radius:999px!important;
+  background:#f0faf4!important;
+  color:#167047!important;
+  font-size:8px!important;
+  font-weight:900!important;
+}
+.admin-product-details-section{
+  margin-top:12px!important;
+  padding:12px!important;
+  border:1px solid #e5eaf0!important;
+  border-radius:12px!important;
+  background:#fff!important;
+}
+.admin-product-details-section-head{
+  display:flex!important;
+  align-items:baseline!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  margin-bottom:9px!important;
+}
+.admin-product-details-section-head span{
+  color:#344054!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  letter-spacing:.1em!important;
+}
+.admin-product-details-section-head small{
+  color:#98a2b3!important;
+  font-size:9px!important;
+}
+.admin-product-metrics{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:7px!important;
+}
+.admin-product-metric{
+  min-width:0!important;
+  padding:9px!important;
+  border:1px solid #edf1f5!important;
+  border-radius:9px!important;
+  background:#fafbfd!important;
+}
+.admin-product-metric>span{
+  display:block!important;
+  color:#8a95a3!important;
+  font-size:7px!important;
+  font-weight:800!important;
+  letter-spacing:.06em!important;
+  text-transform:uppercase!important;
+}
+.admin-product-metric>strong{
+  display:block!important;
+  margin-top:4px!important;
+  color:#182230!important;
+  font-size:12px!important;
+  line-height:1.2!important;
+}
+.admin-product-metric>small{
+  display:block!important;
+  margin-top:3px!important;
+  color:#8a95a3!important;
+  font-size:8px!important;
+  line-height:1.25!important;
+}
+.admin-product-tank-list{display:grid!important;gap:6px!important}
+.admin-product-tank-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:8px 9px!important;
+  border:1px solid #edf1f5!important;
+  border-radius:8px!important;
+  background:#fafbfd!important;
+}
+.admin-product-tank-row strong{
+  display:block!important;
+  color:#273446!important;
+  font-size:11px!important;
+}
+.admin-product-tank-row small{
+  display:block!important;
+  margin-top:2px!important;
+  color:#8a95a3!important;
+  font-size:8px!important;
+}
+.admin-product-tank-row>b{
+  color:var(--product-color,#1264d8)!important;
+  font-size:10px!important;
+}
+.admin-product-details-loading,
+.admin-product-details-error{
+  padding:38px 10px!important;
+  text-align:center!important;
+  color:#718096!important;
+  font-size:12px!important;
+}
+.admin-product-details-error{color:#b4232f!important}
+@media(max-width:650px){
+  .admin-product-details-modal{padding:10px!important}
+  .admin-product-details-card{max-height:92vh!important;border-radius:14px!important}
+  .admin-product-details-content{padding:10px!important}
+  .admin-product-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .admin-product-details-hero h2{font-size:19px!important}
+}
+@media(max-width:400px){
+  .admin-product-details-top{padding:12px!important}
+  .admin-product-details-title{font-size:16px!important}
+  .admin-product-details-section{padding:10px!important}
+  .admin-product-metric{padding:8px!important}
+}
