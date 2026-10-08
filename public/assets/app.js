@@ -1381,7 +1381,9 @@ async function adminInventory(){
         '<div><span>SALES</span><strong>−'+liters(movementStats.sales)+' L</strong></div>'+
       '</div>'+
     '</div>'+
-    '<div class="tank-movement-results">'+movementGroupMarkup+'</div>';    if(!movementGroupMarkup){
+    '<div class="tank-movement-results">'+movementGroupMarkup+'</div>';
+    el('tank-movements').innerHTML=movementToolbar;
+    if(!movementGroupMarkup){
       el('tank-movements').innerHTML='<div class="tank-movement-empty-filter"><strong>No tank movements recorded.</strong><span>There are no active tanks or movement records to display.</span></div>';
     }
     const ensureTankMovementModal=()=>{
