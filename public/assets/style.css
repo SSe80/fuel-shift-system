@@ -2158,3 +2158,26 @@ body[data-app-page="adminFuelConfiguration"] .activated-product-meta div:last-ch
     min-width:58px!important;
   }
 }
+
+
+/* Activated Products — taller cards with product-colored borders */
+body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+  min-height:82px!important;
+  border:1px solid var(--product-color)!important;
+  border-left-width:3px!important;
+  box-shadow:0 3px 10px color-mix(in srgb,var(--product-color) 12%,transparent)!important;
+}
+body[data-app-page="adminFuelConfiguration"] #products .activated-product-card:hover{
+  border-color:var(--product-color)!important;
+  box-shadow:0 6px 16px color-mix(in srgb,var(--product-color) 18%,transparent)!important;
+}
+@media(max-width:700px){
+  body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+    min-height:76px!important;
+  }
+}
+@media(max-width:480px){
+  body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
+    min-height:72px!important;
+  }
+}
