@@ -2498,3 +2498,60 @@ body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
 .admin-product-chart-axis{
   stroke:#000!important;
 }
+
+/* Activated Products — all-product sales comparison graph */
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph{
+  margin-top:14px!important;
+  padding-top:12px!important;
+  border-top:1px solid #e5eaf0!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph-head{
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  margin-bottom:8px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph-head h3{
+  margin:2px 0 0!important;
+  color:#182230!important;
+  font-size:13px!important;
+  line-height:1.2!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph-unit{
+  color:#8a95a3!important;
+  font-size:7px!important;
+  font-weight:900!important;
+  letter-spacing:.08em!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph-scroll{
+  width:100%!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  border:1px solid #edf1f5!important;
+  border-radius:10px!important;
+  background:#fff!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph-svg{
+  display:block!important;
+  width:100%!important;
+  min-width:520px!important;
+  height:auto!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph-track{
+  fill:#f1f4f7!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph-label{
+  fill:#344054!important;
+  font-size:10px!important;
+  font-weight:800!important;
+}
+body[data-app-page="adminFuelConfiguration"] .activated-products-graph-value{
+  fill:#526071!important;
+  font-size:9px!important;
+  font-weight:800!important;
+}
+@media(max-width:480px){
+  body[data-app-page="adminFuelConfiguration"] .activated-products-graph-head h3{font-size:12px!important}
+  body[data-app-page="adminFuelConfiguration"] .activated-products-graph-unit{font-size:6.5px!important}
+}
