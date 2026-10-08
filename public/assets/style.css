@@ -3161,3 +3161,22 @@ body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-ca
 .admin-dispenser-slide.swipe-in-prev{animation:adminDispenserSwipeInPrev .24s ease-out both;}
 @keyframes adminDispenserSwipeInNext{from{transform:translateX(42px);opacity:.35}to{transform:translateX(0);opacity:1}}
 @keyframes adminDispenserSwipeInPrev{from{transform:translateX(-42px);opacity:.35}to{transform:translateX(0);opacity:1}}
+
+/* Activated Dispensers — product-group performance graph */
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph{margin-top:12px;padding:11px 0 2px;border-top:1px solid #e8edf2;}
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 3px 7px;}
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-head .section-kicker{display:block;margin-bottom:2px;color:#8a95a3;font-size:7px;font-weight:900;letter-spacing:.1em;}
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-head strong{display:block;color:#182230;font-size:10px;font-weight:900;}
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-head>span{color:var(--product-color,#1264d8);font-size:9px;font-weight:900;white-space:nowrap;}
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-wrap{padding:6px 5px 2px;border:1px solid #e6ebf1;border-radius:10px;background:#fbfcfe;overflow:hidden;}
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-wrap svg{display:block;width:100%;height:auto;min-height:130px;overflow:visible;}
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-grid{stroke:#e9edf2;stroke-width:1;}
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-axis{stroke:#000;stroke-width:1.1;}
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-label{fill:#7a8696;font-size:8px;font-weight:700;}
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-legend{display:flex;flex-wrap:wrap;gap:5px 10px;margin:7px 3px 0;}
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-legend-item{display:inline-flex;align-items:center;gap:4px;color:#667085;font-size:8px;font-weight:800;}
+body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-legend-item i{display:inline-block;width:16px;height:3px;border-radius:3px;}
+@media(max-width:560px){
+  body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-wrap{padding-left:1px;padding-right:1px;}
+  body[data-app-page="adminFuelConfiguration"] .activated-dispenser-graph-label{font-size:7px;}
+}
