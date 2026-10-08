@@ -1452,11 +1452,43 @@ async function adminInventory(){
 }
 async function adminAttendants(){
   try{
-    await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
-    const [employees,shifts,dispensers]=await Promise.all([api('/api/users'),api('/api/shifts'),api('/api/nozzles')]);
-    const active=employees.filter(e=>e.active===true&&e.role==='attendant'), activeShifts=shifts.filter(s=>s.status==='active'), el=document.getElementById('attendants');
-    el.innerHTML=active.length?active.map(e=>{const shift=activeShifts.find(s=>s.employee_id===e.id),d=shift?dispensers.find(x=>x.id===shift.nozzle_id):null;return '<div class="stat"><b>'+h(e.name)+'</b><span>Attendant • ID '+h(e.operator_id||'—')+'</span><small>'+(shift?'Active shift on '+h(d?.nozzle_code||shift.nozzle_id):'Available / no active shift')+'</small></div>';}).join(''):'<div class="card"><p>No activated attendants.</p></div>';
-  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
+    await window.stationCurrencyReady;
+    const me=await currentUser();
+    if(me.role!=='admin')return location.href='admin-login.html';
+    const [employees,shifts,dispensers]=await Promise.all([
+      api('/api/users'),api('/api/shifts'),api('/api/nozzles')
+    ]);
+    const active=employees.filter(e=>e.active===true&&e.role==='attendant');
+    const activeShifts=shifts.filter(s=>s.status==='active');
+    const el=document.getElementById('attendants');
+    if(!el)return;
+    el.innerHTML=active.length?active.map(e=>{
+      const shift=activeShifts.find(s=>String(s.employee_id)===String(e.id));
+      const d=shift?dispensers.find(x=>String(x.id)===String(shift.nozzle_id)):null;
+      const station=shift?(d?.nozzle_code||shift.nozzle_id||'Assigned dispenser'):'No active shift';
+      return '<article class="stat attendant-admin-card">'+
+        '<div class="attendant-content-row">'+
+          '<div class="attendant-content-main">'+
+            '<span class="field-label">ATTENDANT</span>'+
+            '<b>'+h(e.name)+'</b>'+
+            '<span class="operator-id">ID '+h(e.operator_id||'—')+'</span>'+
+          '</div>'+
+          '<div class="content-status">'+
+            '<i class="status-dot '+(shift?'is-active':'')+'"></i>'+
+            '<span>'+(shift?'Active shift':'Available')+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<div class="attendant-shift-row">'+
+          '<span class="field-label">SHIFT</span>'+
+          '<strong>'+h(station)+'</strong>'+
+        '</div>'+
+      '</article>';
+    }).join(''):'<div class="empty-content">No activated attendants.</div>';
+  }catch(e){
+    const s=document.getElementById('page-status');
+    if(s)s.textContent=e.message;
+    if(e.message==='Unauthorized')location.href='admin-login.html';
+  }
 }
 async function adminAccountingControl(){
   try{
