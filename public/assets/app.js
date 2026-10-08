@@ -1090,11 +1090,33 @@ async function adminFuelConfiguration(){
     el('dispensers').innerHTML=dispenserMarkup||'<div class="card"><p>No activated dispensers.</p></div>';
   }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
+function ensureAdminInventoryTankDetailsModal(){
+  if(document.getElementById('admin-inventory-tank-details-modal'))return;
+  const modal=document.createElement('div'); modal.id='admin-inventory-tank-details-modal'; modal.className='admin-inventory-tank-details-modal'; modal.setAttribute('aria-hidden','true');
+  modal.innerHTML='<div class="admin-inventory-tank-details-backdrop"></div><div class="admin-inventory-tank-details-card" role="dialog" aria-modal="true" aria-labelledby="admin-inventory-tank-details-title"><div class="admin-inventory-tank-details-top"><div><span class="section-kicker">TANK DETAILS</span><h3 id="admin-inventory-tank-details-title">Tank</h3></div><button type="button" class="admin-inventory-tank-details-close" aria-label="Close">×</button></div><div class="admin-inventory-tank-details-content"><div id="admin-inventory-tank-details-body"></div></div></div>';
+  document.body.appendChild(modal);
+  modal.querySelector('.admin-inventory-tank-details-close').addEventListener('click',()=>closeAdminInventoryTankDetails());
+  modal.querySelector('.admin-inventory-tank-details-backdrop').addEventListener('click',()=>closeAdminInventoryTankDetails());
+}
+function closeAdminInventoryTankDetails(){const m=document.getElementById('admin-inventory-tank-details-modal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}}
+function openAdminInventoryTankDetails(id){
+  const modal=document.getElementById('admin-inventory-tank-details-modal'); if(!modal)return;
+  const state=window.__adminInventoryState||{}; const t=(state.tanks||[]).find(x=>String(x.id)===String(id)); if(!t)return;
+  const product=(state.products||[]).find(p=>String(p.name||'').toLowerCase()===String(t.product||'').toLowerCase())||{};
+  const inv=(state.inventory||[]).find(x=>String(x.tank_id)===String(t.id))||{}; const movements=(state.movements||[]).filter(x=>String(x.tank_id)===String(t.id));
+  const pc=String(product.color||'#1264d8').trim()||'#1264d8'; const pct=Number(t.capacity_liters)>0?Math.max(0,Math.min(100,Number(t.current_liters)/Number(t.capacity_liters)*100)):0;
+  const body=modal.querySelector('#admin-inventory-tank-details-body'); modal.querySelector('#admin-inventory-tank-details-title').textContent=t.tank_code||'Tank'; modal.querySelector('.admin-inventory-tank-details-card').style.setProperty('--product-color',pc);
+  const metric=(label,value,sub='')=>'<div class="admin-inventory-tank-detail-metric"><span>'+label+'</span><strong>'+value+'</strong>'+(sub?'<small>'+sub+'</small>':'')+'</div>';
+  const rows=movements.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,12).map(m=>{const type=String(m.movement_type||'').toLowerCase(),qty=Number(m.quantity_liters||0),signed=type==='sale'?-Math.abs(qty):qty;return '<div class="admin-inventory-tank-movement-row"><div><strong>'+h(({opening:'Opening',purchase:'Purchase',sale:'Sale',adjustment:'Adjustment',dip:'Dip'})[type]||m.movement_type||'Movement')+'</strong><small>'+new Date(m.created_at).toLocaleString()+'</small></div><b class="'+(signed<0?'negative':'positive')+'">'+(signed>0?'+':signed<0?'−':'')+liters(Math.abs(signed))+' L</b></div>';}).join('')||'<div class="admin-inventory-tank-empty">No movement history.</div>';
+  body.innerHTML='<div class="admin-inventory-tank-detail-hero"><div><span>PRODUCT</span><strong>'+h(product.code_name||t.product||'—')+'</strong></div><div><span>STOCK</span><strong>'+liters(t.current_liters)+' L</strong><small>'+pct.toFixed(1)+'% full</small></div></div><div class="admin-inventory-tank-detail-section"><div class="admin-inventory-tank-detail-section-head">INVENTORY SUMMARY</div><div class="admin-inventory-tank-detail-metrics">'+metric('CAPACITY',liters(t.capacity_liters)+' L')+metric('OPENING',inv.opening_stock_liters==null?'—':liters(inv.opening_stock_liters)+' L')+metric('PURCHASES',liters(inv.purchases_liters)+' L')+metric('FUEL SOLD',liters(inv.sales_liters)+' L')+metric('EXPECTED',inv.expected_liters==null?'—':liters(inv.expected_liters)+' L')+metric('ACTUAL',liters(t.current_liters)+' L')+metric('DIFFERENCE',inv.stock_difference_liters==null?'—':liters(inv.stock_difference_liters)+' L')+'</div></div><div class="admin-inventory-tank-detail-section"><div class="admin-inventory-tank-detail-section-head">RECENT MOVEMENTS</div><div class="admin-inventory-tank-movement-list">'+rows+'</div></div>';
+  modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+}
 async function adminInventory(){
   try{
     await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
     const [allTanks,allProducts,allDispensers,inventory,movements]=await Promise.all([api('/api/tanks'),api('/api/products'),api('/api/nozzles'),api('/api/inventory-summary'),api('/api/tank-movements')]);
     const products=allProducts.filter(p=>p.active===true), tanks=allTanks.filter(t=>t.active===true&&products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase())), dispensers=allDispensers.filter(d=>d.active===true&&tanks.some(t=>t.id===d.tank_id));
+    window.__adminInventoryState={tanks,products,inventory,movements};
     const codeForProduct=p=>{const x=products.find(x=>String(x.name).toLowerCase()===String(p||'').toLowerCase());return x?.code_name||p||'—';}, el=id=>document.getElementById(id);
     const productForTank=t=>products.find(p=>String(p.name||'').toLowerCase()===String(t.product||'').toLowerCase())||{};
     const tankGroups=products.map(p=>({product:p,items:tanks.filter(t=>String(t.product||'').toLowerCase()===String(p.name||'').toLowerCase())})).filter(g=>g.items.length);
