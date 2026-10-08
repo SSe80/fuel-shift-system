@@ -3347,6 +3347,40 @@ function closeDailyReportDetail(){
   document.body.classList.remove('daily-detail-open');
   window.scrollTo({top:0,behavior:'smooth'});
 }
+document.addEventListener('touchstart',event=>{
+  const modal=event.target.closest?.('#admin-dispenser-details-modal');
+  if(!modal||!modal.classList.contains('open'))return;
+  const touch=event.touches?.[0];
+  if(!touch)return;
+  modal._dispenserSwipeStartX=touch.clientX;
+  modal._dispenserSwipeStartY=touch.clientY;
+  modal._dispenserSwipeTracking=true;
+},{passive:true});
+document.addEventListener('touchend',event=>{
+  const modal=event.target.closest?.('#admin-dispenser-details-modal');
+  if(!modal||!modal._dispenserSwipeTracking)return;
+  modal._dispenserSwipeTracking=false;
+  const touch=event.changedTouches?.[0];
+  if(!touch)return;
+  const dx=touch.clientX-Number(modal._dispenserSwipeStartX||0);
+  const dy=touch.clientY-Number(modal._dispenserSwipeStartY||0);
+  if(Math.abs(dx)<45||Math.abs(dx)<=Math.abs(dy))return;
+  const slides=modal.querySelectorAll('.admin-dispenser-slide');
+  if(slides.length<2)return;
+  let current=[...slides].findIndex(s=>s.classList.contains('active'));
+  if(current<0)current=0;
+  const direction=dx<0?1:-1;
+  const target=Math.max(0,Math.min(slides.length-1,current+direction));
+  if(target===current)return;
+  slides.forEach((s,i)=>{
+    s.classList.toggle('active',i===target);
+    s.classList.remove('swipe-in-next','swipe-in-prev');
+  });
+  const incoming=slides[target];
+  incoming.classList.add(direction>0?'swipe-in-next':'swipe-in-prev');
+  setTimeout(()=>incoming.classList.remove('swipe-in-next','swipe-in-prev'),260);
+  modal.querySelectorAll('.admin-dispenser-slide-dot').forEach((d,i)=>d.classList.toggle('active',i===target));
+},{passive:true});
 document.addEventListener('keydown',event=>{
   const card=event.target.closest?.('#dispensers .activated-dispenser-card');
   if(card&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openAdminDispenserDetails(card.getAttribute('data-dispenser-id'));return;}
