@@ -1247,6 +1247,11 @@ body.attendant-dashboard-page #takeover-sale-confirm-modal>.modal-card>.row{
 body.attendant-dashboard-page #takeover-sale-modal,
 body.attendant-dashboard-page #takeover-sale-confirm-modal,
 body.attendant-dashboard-page #takeover-details-modal{z-index:1100!important}
+
+/* Add clear separation between Active Shift cards only */
+body.attendant-dashboard-page .dashboard-section:has(.active-shift-card) .dashboard-section-cards{
+  gap:16px!important;
+}
 </style><style>
 .attendant-dashboard-page .takeover-details-modal{max-width:760px;border-radius:18px;overflow:hidden}
 .attendant-dashboard-page .takeover-details-modal>.top{padding:16px 18px;border-bottom:1px solid #e8edf2;background:#fff}
