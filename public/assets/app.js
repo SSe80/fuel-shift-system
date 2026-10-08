@@ -1452,6 +1452,8 @@ async function downloadAdminSaleHistoryDetails(id){
   if(!ids.length&&nozzleId)ids.push(nozzleId);
 
   const productCode=product?.code_name||item.product?.code_name||item.product_code||t.product_code||tank?.product_code||'—';
+  const tankOpening=Number(t.tank_opening_liters);
+  const tankClosing=Number(t.tank_closing_liters);
   const tankCode=tank?.tank_code||item.tank?.tank_code||item.tank_code||t.tank_code||'—';
   const dispenserCode=nozzle?.nozzle_code||item.dispenser?.nozzle_code||item.dispenser?.code||t.dispenser_code||'Dispenser';
   const attendant=employee?.name||item.to_employee?.name||t.to_employee_name||item.to_employee_id||'—';
@@ -1693,6 +1695,11 @@ async function openAdminSaleHistoryDetails(id){
       '</div>',
     '</div>',
     '<div class="history-detail-section">',
+      '<div class="history-detail-section-head"><div><span class="section-kicker">READINGS</span><h4>Opening & closing meter readings</h4></div></div>',
+      '<div class="history-detail-readings">'+(rows||'<div class="history-detail-empty">No nozzle readings were recorded.</div>')+'</div>',
+      '<div class="history-detail-total-row"><span>Total liters sold</span><strong>'+liters(totalLiters)+' L</strong></div>',
+    '</div>',
+    '<div class="history-detail-section">',
       '<div class="history-detail-section-head"><div><span class="section-kicker">TANK STOCK</span><h4>Tank opening & closing stock</h4></div></div>',
       '<div class="history-detail-info-grid">',
         '<div><span>Opening stock</span><strong>'+ (Number.isFinite(tankOpening)?liters(tankOpening):'—') +' L</strong></div>',
@@ -1700,11 +1707,6 @@ async function openAdminSaleHistoryDetails(id){
         '<div><span>Tank sales</span><strong>'+liters(t.tank_sales_liters)+' L</strong></div>',
         '<div><span>Stock variance</span><strong>'+liters(t.tank_variance_liters)+' L</strong></div>',
       '</div>',
-    '</div>',
-    '<div class="history-detail-section">',
-      '<div class="history-detail-section-head"><div><span class="section-kicker">READINGS</span><h4>Opening & closing meter readings</h4></div></div>',
-      '<div class="history-detail-readings">'+(rows||'<div class="history-detail-empty">No nozzle readings were recorded.</div>')+'</div>',
-      '<div class="history-detail-total-row"><span>Total liters sold</span><strong>'+liters(totalLiters)+' L</strong></div>',
     '</div>',
     '<div class="history-detail-section">',
       '<div class="history-detail-section-head"><div><span class="section-kicker">SALES</span><h4>Recorded sales</h4></div><span class="history-detail-count">'+sales.length+' '+(sales.length===1?'entry':'entries')+'</span></div>',
