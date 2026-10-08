@@ -764,16 +764,67 @@ async function loadAttendantShiftPage(){
     else{const s=document.getElementById('shift-page-status');if(s)s.textContent=e.message;}
   }
 }
-async function confirmShiftAssignment(event,id){
-  event.preventDefault();
-  const pin=document.getElementById('assignment-pin-'+id)?.value||'';
+function openPendingShiftReview(id){
+  const shift=(window.dashboardShiftRecords||[]).find(s=>String(s.id)===String(id));
+  const nozzles=window.dashboardNozzleRecords||[];
+  const tanks=window.dashboardTankRecords||[];
+  if(!shift)return;
+  const n=nozzles.find(x=>String(x.id)===String(shift.nozzle_id))||{};
+  const tank=tanks.find(x=>String(x.id)===String(n.tank_id))||{};
+  const readings=Array.isArray(shift.activation_nozzles)?shift.activation_nozzles:[];
+  const configured=Array.isArray(n.nozzle_ids)?n.nozzle_ids:[];
+  let modal=document.getElementById('pending-shift-review-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='pending-shift-review-modal';
+    modal.className='pending-handover-review-modal';
+    modal.setAttribute('aria-hidden','true');
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML='<div class="pending-handover-review-backdrop" onclick="closePendingShiftReview()"></div>'+
+    '<div class="pending-handover-review-card pending-shift-review-card" role="dialog" aria-modal="true" aria-labelledby="pending-shift-review-title">'+
+      '<div class="pending-handover-review-head"><div><span class="pending-handover-review-kicker">SHIFT CONFIRMATION</span><h2 id="pending-shift-review-title">Review Pending Shift</h2><p>Check the assigned readings before starting your shift.</p></div><button type="button" class="pending-handover-review-close" onclick="closePendingShiftReview()" aria-label="Close">×</button></div>'+
+      '<div class="pending-handover-review-body">'+
+        '<div class="pending-handover-review-grid">'+
+          '<div><span>Dispenser</span><strong>'+h(n.nozzle_code||shift.nozzle_id||'Not connected')+'</strong></div>'+
+          '<div><span>Tank</span><strong>'+h(tank.tank_code||n.tank_id||'Not connected')+'</strong></div>'+
+          '<div><span>Tank opening dip</span><strong>'+h(shift.opening_tank_dip_mm==null?'—':reading(shift.opening_tank_dip_mm))+' mm</strong></div>'+
+          '<div><span>Tank opening volume</span><strong>'+liters(shift.opening_tank_liters)+' L</strong></div>'+
+        '</div>'+
+        '<div class="pending-handover-review-section"><div class="pending-handover-review-section-title">Opening meter readings</div>'+
+          (readings.length?readings.map((r,i)=>'<div class="pending-handover-review-nozzle"><div><b>Nozzle '+(i+1)+'</b><small>'+h(r.nozzle_id||configured[i]||'')+'</small></div><strong>'+reading(r.opening_reading)+'</strong></div>').join(''):'<div class="pending-handover-review-nozzle"><div><b>Nozzle readings</b></div><strong>—</strong></div>')+
+        '</div>'+
+        '<div class="pending-handover-review-pin"><label for="pending-shift-review-pin-'+h(id)+'">Your PIN</label><input id="pending-shift-review-pin-'+h(id)+'" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Enter your PIN" required></div>'+
+      '</div>'+
+      '<div class="pending-handover-review-actions"><button type="button" class="secondary" onclick="closePendingShiftReview()">Cancel</button><button type="button" class="primary" onclick="confirmPendingShiftReview(&quot;'+h(id)+'&quot;)">Confirm Shift</button></div>'+
+    '</div>';
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+  setTimeout(()=>modal.querySelector('input')?.focus(),60);
+}
+function closePendingShiftReview(){
+  const modal=document.getElementById('pending-shift-review-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+async function confirmPendingShiftReview(id){
+  const pin=document.getElementById('pending-shift-review-pin-'+id)?.value||'';
+  if(!pin){
+    const input=document.getElementById('pending-shift-review-pin-'+id);
+    if(input){input.focus();input.reportValidity?.();}
+    return;
+  }
   try{
     await api('/api/shifts/'+id+'/confirm',{method:'POST',body:JSON.stringify({pin})});
+    closePendingShiftReview();
     showAttendantActionResult('success','Shift confirmed','The shift has been confirmed and started.',()=>userDashboard());
   }catch(e){
     showAttendantActionResult('failed','Shift confirmation failed',e.message||'The shift could not be confirmed.');
   }
 }
+async function confirmShiftAssignment(event,id){
+  if(event)event.preventDefault();
+  openPendingShiftReview(id);
+}
+
 async function cancelPendingShift(id){
   if(!confirm('Cancel this pending shift assignment?'))return;
   try{
