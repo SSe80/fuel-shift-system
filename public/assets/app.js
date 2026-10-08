@@ -1000,6 +1000,44 @@ async function adminDashboard(){
     el('dashboard-status').textContent=low.length?low.length+' tank(s) are at or below 10% capacity.':'Dashboard shows only activated Settings records.';
   }catch(e){const s=document.getElementById('dashboard-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
 }
+async function adminFuelConfiguration(){
+  try{
+    await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
+    const [allProducts,allTanks,allDispensers,allShifts,employees]=await Promise.all([api('/api/products'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/users')]);
+    const products=allProducts.filter(p=>p.active===true), tanks=allTanks.filter(t=>t.active===true&&products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase()));
+    const dispensers=allDispensers.filter(d=>d.active===true&&tanks.some(t=>t.id===d.tank_id));
+    const activeEmployees=employees.filter(e=>e.active===true), activeShifts=allShifts.filter(s=>s.status==='active');
+    const el=id=>document.getElementById(id), productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
+    el('products').innerHTML=products.length?products.map(p=>'<div class="stat"><b>'+h(p.code_name)+'</b><span>'+h(p.name)+'</span><small>Active • Selling price: '+money(p.selling_price)+'</small></div>').join(''):'<div class="card"><p>No activated products.</p></div>';
+    el('dispensers').innerHTML=dispensers.length?dispensers.map(d=>{const tank=tanks.find(t=>t.id===d.tank_id),shift=activeShifts.find(s=>s.nozzle_id===d.id),attendant=shift?activeEmployees.find(e=>e.id===shift.employee_id):null;return '<div class="stat"><b>'+h(d.nozzle_code)+'</b><span>'+h(productCodes[String(d.product||'').toLowerCase()]||d.product||'—')+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small></div>';}).join(''):'<div class="card"><p>No activated dispensers.</p></div>';
+  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
+}
+async function adminInventory(){
+  try{
+    await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
+    const [allTanks,allProducts,allDispensers,inventory,movements]=await Promise.all([api('/api/tanks'),api('/api/products'),api('/api/nozzles'),api('/api/inventory-summary'),api('/api/tank-movements')]);
+    const products=allProducts.filter(p=>p.active===true), tanks=allTanks.filter(t=>t.active===true&&products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase())), dispensers=allDispensers.filter(d=>d.active===true&&tanks.some(t=>t.id===d.tank_id));
+    const codeForProduct=p=>{const x=products.find(x=>String(x.name).toLowerCase()===String(p||'').toLowerCase());return x?.code_name||p||'—';}, el=id=>document.getElementById(id);
+    el('tanks').innerHTML=tanks.length?tanks.map(t=>{const pct=Number(t.capacity_liters)>0?Math.max(0,Math.min(100,Number(t.current_liters)/Number(t.capacity_liters)*100)):0,inv=inventory.find(x=>String(x.tank_id)===String(t.id))||{},expected=Number.isFinite(Number(inv.expected_liters))?Number(inv.expected_liters):null,diff=Number.isFinite(Number(inv.stock_difference_liters))?Number(inv.stock_difference_liters):null;return '<div class="stat"><b>'+liters(t.current_liters)+' L</b><span>'+h(t.tank_code)+' • '+h(codeForProduct(t.product))+'</span><small>'+pct.toFixed(1)+'% full • Capacity '+liters(t.capacity_liters)+' L</small><div class="inventory-details"><small>Opening stock: <b>'+(inv.opening_stock_liters==null?'Not recorded':liters(inv.opening_stock_liters)+' L')+'</b></small><small>Purchases received: <b>'+liters(inv.purchases_liters)+' L</b></small><small>Fuel sold: <b>'+liters(inv.sales_liters)+' L</b></small><small>Expected stock: <b>'+(expected===null?'—':liters(expected)+' L')+'</b></small><small>Actual stock: <b>'+liters(t.current_liters)+' L</b></small><small>Stock difference: <b>'+(diff===null?'—':liters(diff)+' L')+'</b></small></div></div>';}).join(''):'<div class="card"><p>No activated tanks.</p></div>';
+    const groups=new Map(); (Array.isArray(movements)?movements:[]).forEach(m=>{const k=String(m.tank_id||m.tank_code||'');if(!groups.has(k))groups.set(k,[]);groups.get(k).push(m);}); tanks.forEach(t=>{if(!groups.has(String(t.id)))groups.set(String(t.id),[{tank_id:t.id,tank_code:t.tank_code,tank_product:t.product,current_liters:t.current_liters,capacity_liters:t.capacity_liters,no_movement_history:true}]);});
+    el('tank-movements').innerHTML=[...groups.values()].sort((a,b)=>String(a[0]?.tank_code||'').localeCompare(String(b[0]?.tank_code||''))).map(rows=>{const f=rows[0],current=Number(f.current_liters||0),cap=Number(f.capacity_liters||0),pct=cap>0?current/cap*100:0;return '<section class="tank-movement-group"><div class="tank-movement-group-head"><div><span class="tank-movement-product">'+h(codeForProduct(f.tank_product))+'</span><h4>'+h(f.tank_code||'Tank')+'</h4></div><div class="tank-movement-current"><strong>'+liters(current)+' L</strong><span>'+pct.toFixed(1)+'% full</span></div></div><div class="tank-movement-list">'+rows.map(m=>{const type=String(m.movement_type||'').toLowerCase(),qty=Number(m.quantity_liters||0),signed=type==='sale'?-Math.abs(qty):qty;return '<div class="tank-movement-row"><div class="tank-movement-icon">'+(type==='purchase'?'↓':type==='sale'?'↑':type==='adjustment'?'±':type==='opening'?'◷':'•')+'</div><div class="tank-movement-main"><strong>'+h(({opening:'Opening',purchase:'Purchase',sale:'Sale',adjustment:'Adjustment',dip:'Dip'})[type]||m.movement_type||'Movement')+'</strong><small>'+new Date(m.created_at).toLocaleString()+(m.notes?' • '+h(m.notes):'')+'</small></div><div class="tank-movement-qty '+(signed<0?'negative':'positive')+'">'+(signed>0?'+':signed<0?'−':'')+liters(Math.abs(signed))+' L</div><div class="tank-movement-balance"><small>Balance</small><strong>'+liters(m.balance_after)+' L</strong></div></div>';}).join('')+'</div>'+(f.no_movement_history?'<div class="tank-movement-no-history"><strong>No movement history</strong><span>Current stock is '+liters(current)+' L.</span></div>':'')+'</section>';}).join('')||'<div class="card"><p>No tank movements recorded.</p></div>';
+  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
+}
+async function adminAttendants(){
+  try{
+    await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
+    const [employees,shifts,dispensers]=await Promise.all([api('/api/users'),api('/api/shifts'),api('/api/nozzles')]);
+    const active=employees.filter(e=>e.active===true&&e.role==='attendant'), activeShifts=shifts.filter(s=>s.status==='active'), el=document.getElementById('attendants');
+    el.innerHTML=active.length?active.map(e=>{const shift=activeShifts.find(s=>s.employee_id===e.id),d=shift?dispensers.find(x=>x.id===shift.nozzle_id):null;return '<div class="stat"><b>'+h(e.name)+'</b><span>Attendant • ID '+h(e.operator_id||'—')+'</span><small>'+(shift?'Active shift on '+h(d?.nozzle_code||shift.nozzle_id):'Available / no active shift')+'</small></div>';}).join(''):'<div class="card"><p>No activated attendants.</p></div>';
+  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
+}
+async function adminAccountingControl(){
+  try{
+    await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
+    await loadAccountingPeriod();
+  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
+}
+
 let adminSalesData={pending:[],history:[]};
 let adminSalesHistoryData={history:[]};
 let adminSalesTab='pending';
