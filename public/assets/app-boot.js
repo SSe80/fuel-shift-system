@@ -35,7 +35,7 @@
     if (run(name)) return;
 
     var script = document.createElement('script');
-    script.src = 'assets/app.js?v=20261007-08';
+    script.src = 'assets/app.js?v=20261008-18';
     script.async = false;
 
     script.onload = function () {
