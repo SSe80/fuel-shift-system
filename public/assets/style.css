@@ -2437,7 +2437,7 @@ body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
 @media(max-width:650px){.admin-product-performance-summary{grid-template-columns:1fr 1fr!important}.admin-product-performance-summary .admin-product-metric:last-child{grid-column:1/-1}}
 
 /* Compact two-slide product performance cards */
-.admin-product-details-card{border-top:2px solid var(--product-color,#1264d8)!important}
+ .admin-product-details-card{border:2px solid var(--product-color,#1264d8)!important;border-top-width:2px!important}
 .admin-product-details-content{padding:10px!important}
 .admin-product-slides{position:relative!important;min-height:0!important}
 .admin-product-slide{display:none!important;padding:0!important}
