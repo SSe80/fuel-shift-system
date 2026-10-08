@@ -1158,6 +1158,18 @@ function ensureAdminInventoryTankDetailsModal(){
   document.body.appendChild(modal);
   modal.querySelector('.admin-inventory-tank-details-close').addEventListener('click',()=>closeAdminInventoryTankDetails());
   modal.querySelector('.admin-inventory-tank-details-backdrop').addEventListener('click',()=>closeAdminInventoryTankDetails());
+  modal.addEventListener('click',e=>{
+    const slides=modal.querySelectorAll('.admin-inventory-tank-slide'); if(slides.length!==2)return;
+    let current=[...slides].findIndex(s=>s.classList.contains('active')); if(current<0)current=0;
+    let target=null;
+    if(e.target.closest('[data-inventory-slide-next]'))target=Math.min(1,current+1);
+    if(e.target.closest('[data-inventory-slide-prev]'))target=Math.max(0,current-1);
+    const dot=e.target.closest('[data-inventory-slide-to]');
+    if(dot)target=Math.max(0,Math.min(1,Number(dot.getAttribute('data-inventory-slide-to'))||0));
+    if(target===null||target===current)return;
+    slides.forEach((s,i)=>s.classList.toggle('active',i===target));
+    modal.querySelectorAll('.admin-inventory-tank-slide-dot').forEach((d,i)=>d.classList.toggle('active',i===target));
+  });
   modal.addEventListener('touchstart',e=>{
     const t=e.touches?.[0]; if(!t)return;
     modal._inventorySwipeStartX=t.clientX; modal._inventorySwipeStartY=t.clientY; modal._inventorySwipeTracking=true;
