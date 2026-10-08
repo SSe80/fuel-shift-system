@@ -4333,9 +4333,9 @@ async function openAdminProductDetails(productId){
     const productTanks=(tanks||[]).filter(t=>String(t.product||'').toLowerCase()===name.toLowerCase()&&t.active===true);
     const tankIds=new Set(productTanks.map(t=>String(t.id)));
     const productDispensers=(dispensers||[]).filter(d=>d.active===true&&tankIds.has(String(d.tank_id)));
-    const today=new Date().toISOString().slice(0,10);
+    const todayDate=new Date().toISOString().slice(0,10);
     const productSales=(sales||[]).filter(s=>String(s.product||'').toLowerCase()===name.toLowerCase());
-    const todaySales=productSales.filter(s=>String(s.sale_time||'').slice(0,10)===today);
+    const todaySales=productSales.filter(s=>String(s.sale_time||'').slice(0,10)===todayDate);
     const totalLiters=productSales.reduce((sum,s)=>sum+Number(s.quantity_liters||0),0);
     const totalRevenue=productSales.reduce((sum,s)=>sum+Number(s.amount||0),0);
     const todayLiters=todaySales.reduce((sum,s)=>sum+Number(s.quantity_liters||0),0);
@@ -4352,14 +4352,14 @@ async function openAdminProductDetails(productId){
       adminProductDetailMetric('Active tanks',String(productTanks.length),'assigned tanks')+
       adminProductDetailMetric('Active dispensers',String(productDispensers.length),'connected dispensers')+
       '</div></section>';
-    const today='<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>TODAY</span><small>'+h(new Date().toLocaleDateString())+'</small></div><div class="admin-product-metrics">'+
+    const todaySection='<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>TODAY</span><small>'+h(new Date().toLocaleDateString())+'</small></div><div class="admin-product-metrics">'+
       adminProductDetailMetric('Volume sold',liters(todayLiters)+' L','today')+
       adminProductDetailMetric('Sales revenue',money(todayRevenue),'today')+
       adminProductDetailMetric('Sales count',String(todaySales.length),'confirmed records')+
       adminProductDetailMetric('All-time volume',liters(totalLiters)+' L','available records')+
       '</div></section>';
     const tanksSection='<section class="admin-product-details-section"><div class="admin-product-details-section-head"><span>ACTIVE TANKS</span><small>'+h(liters(stock)+' L total stock')+'</small></div><div class="admin-product-tank-list">'+tankRows+'</div></section>';
-    if(content)content.innerHTML=hero+overview+today+tanksSection;
+    if(content)content.innerHTML=hero+overview+todaySection+tanksSection;
   }catch(e){
     if(content)content.innerHTML='<div class="admin-product-details-error">'+h(e.message||'Unable to load product details.')+'</div>';
   }
