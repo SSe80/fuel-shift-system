@@ -1149,3 +1149,9 @@ body.admin-shell .admin-page-body-card .daily-section-head h2{
     font-size:19px;
   }
 }
+
+
+/* Station Control — keep Recent Activity close to the upper summary content */
+body[data-app-page="adminDashboard"] .admin-page-body-card > .statgrid{margin-bottom:8px!important}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .card{margin-top:0!important}
+body[data-app-page="adminDashboard"] .admin-page-body-card > .card .section-heading{margin-top:0!important}
