@@ -1013,13 +1013,26 @@ function renderActivatedProductsGraph(products,sales){
     const volume=(sales||[]).filter(s=>String(s.product||'').toLowerCase()===name).reduce((sum,s)=>sum+Number(s.quantity_liters||0),0);
     return {code:String(p.code_name||p.name||'—'),volume:Number.isFinite(volume)?volume:0,color:String(p.color||'#1264d8').trim()||'#1264d8'};
   });
-  const max=Math.max(...totals.map(x=>x.volume),1),W=720,rowH=42,left=104,right=22,top=18,bottom=28,H=top+totals.length*rowH+bottom;
-  const bars=totals.map((x,i)=>{
-    const y=top+i*rowH+7,barW=Math.max(2,(W-left-right)*(x.volume/max));
-    return '<text x="'+(left-10)+'" y="'+(y+17)+'" text-anchor="end" class="activated-products-graph-label">'+h(x.code)+'</text><rect x="'+left+'" y="'+y+'" width="'+(W-left-right)+'" height="22" rx="6" class="activated-products-graph-track"></rect><rect x="'+left+'" y="'+y+'" width="'+barW.toFixed(2)+'" height="22" rx="6" fill="'+h(x.color)+'"></rect><text x="'+Math.min(W-4,left+barW+8)+'" y="'+(y+15)+'" class="activated-products-graph-value">'+h(liters(x.volume))+' L</text>';
+  const total=totals.reduce((sum,x)=>sum+x.volume,0);
+  const size=220,cx=110,cy=110,r=82;
+  let angle=-Math.PI/2;
+  const paths=totals.map(x=>{
+    const share=total>0?x.volume/total:1/totals.length;
+    const next=angle+share*Math.PI*2;
+    const large=share>.5?1:0;
+    const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(next),y2=cy+r*Math.sin(next);
+    const d=totals.length===1?'M '+cx+' '+cy+' L '+cx+' '+(cy-r)+' A '+r+' '+r+' 0 1 1 '+(cx-.01)+' '+(cy-r)+' Z':'M '+cx+' '+cy+' L '+x1+' '+y1+' A '+r+' '+r+' 0 '+large+' 1 '+x2+' '+y2+' Z';
+    angle=next;
+    return '<path d="'+d+'" fill="'+h(x.color)+'" stroke="#fff" stroke-width="2"><title>'+h(x.code)+' — '+h(liters(x.volume))+' L ('+(share*100).toFixed(1)+'%)</title></path>';
   }).join('');
-  host.innerHTML='<div class="activated-products-graph-head"><div><span class="section-kicker">PRODUCT PERFORMANCE</span><h3>Sales volume by product</h3></div><span class="activated-products-graph-unit">LITERS SOLD</span></div><div class="activated-products-graph-scroll"><svg class="activated-products-graph-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Sales volume comparison among activated products">'+bars+'</svg></div>';
+  const legend=totals.map(x=>{
+    const share=total>0?x.volume/total:0;
+    return '<div class="activated-products-pie-item"><span class="activated-products-pie-dot" style="background:'+h(x.color)+'"></span><span class="activated-products-pie-code">'+h(x.code)+'</span><strong>'+h(liters(x.volume))+' L</strong><small>'+(share*100).toFixed(1)+'%</small></div>';
+  }).join('');
+  host.innerHTML='<div class="activated-products-graph-head"><div><span class="section-kicker">PRODUCT PERFORMANCE</span><h3>Sales volume by product</h3></div><span class="activated-products-graph-unit">LITERS SOLD</span></div><div class="activated-products-pie-layout"><div class="activated-products-pie-chart"><svg viewBox="0 0 '+size+' '+size+'" role="img" aria-label="Sales volume distribution among activated products">'+paths+'<circle cx="'+cx+'" cy="'+cy+'" r="48" fill="#fff"></circle><text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" class="activated-products-pie-total">'+h(liters(total))+'</text><text x="'+cx+'" y="'+(cy+11)+'" text-anchor="middle" class="activated-products-pie-total-label">LITERS</text></svg></div><div class="activated-products-pie-legend">'+legend+'</div></div>';
 }
+
 async function adminFuelConfiguration(){
   try{
     await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
