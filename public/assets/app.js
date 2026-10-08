@@ -1463,9 +1463,11 @@ async function adminAttendants(){
     const el=document.getElementById('attendants');
     if(!el)return;
     el.innerHTML=active.length?active.map(e=>{
-      const shift=activeShifts.find(s=>String(s.employee_id)===String(e.id));
-      const d=shift?dispensers.find(x=>String(x.id)===String(shift.nozzle_id)):null;
-      const station=shift?(d?.nozzle_code||shift.nozzle_id||'Assigned dispenser'):'No active shift';
+      const employeeShifts=activeShifts.filter(s=>String(s.employee_id)===String(e.id));
+      const stations=employeeShifts.map(shift=>{
+        const d=dispensers.find(x=>String(x.id)===String(shift.nozzle_id));
+        return d?.nozzle_code||shift.nozzle_id||'Assigned dispenser';
+      });
       return '<article class="stat attendant-admin-card">'+
         '<div class="attendant-content-row">'+
           '<div class="attendant-content-main">'+
@@ -1474,13 +1476,15 @@ async function adminAttendants(){
             '<span class="operator-id">ID '+h(e.operator_id||'—')+'</span>'+
           '</div>'+
           '<div class="content-status">'+
-            '<i class="status-dot '+(shift?'is-active':'')+'"></i>'+
-            '<span>'+(shift?'Active shift':'Available')+'</span>'+
+            '<i class="status-dot '+(employeeShifts.length?'is-active':'')+'"></i>'+
+            '<span>'+(employeeShifts.length?'Active shift':'Available')+'</span>'+
           '</div>'+
         '</div>'+
         '<div class="attendant-shift-row">'+
-          '<span class="field-label">SHIFT</span>'+
-          '<strong>'+h(station)+'</strong>'+
+          '<span class="field-label">SHIFT'+(employeeShifts.length>1?'S':'')+'</span>'+
+          '<div class="attendant-shift-list">'+
+            (stations.length?stations.map(station=>'<strong>'+h(station)+'</strong>').join(''): '<strong>No active shift</strong>')+
+          '</div>'+
         '</div>'+
       '</article>';
     }).join(''):'<div class="empty-content">No activated attendants.</div>';
