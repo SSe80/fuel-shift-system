@@ -4294,8 +4294,16 @@ body[data-app-page="adminAttendants"] #attendants .attendant-shift-row .field-la
   letter-spacing:.11em!important;
   color:#8a95a3!important;
 }
+body[data-app-page="adminAttendants"] #attendants .attendant-shift-list{
+  min-width:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-end!important;
+  gap:4px!important;
+}
 body[data-app-page="adminAttendants"] #attendants .attendant-shift-row strong{
   min-width:0!important;
+  max-width:100%!important;
   overflow:hidden!important;
   text-overflow:ellipsis!important;
   white-space:nowrap!important;
