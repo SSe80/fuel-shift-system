@@ -1643,7 +1643,7 @@ async function openAdminSaleHistoryDetails(id){
       const openVal=o.opening_reading!=null?o.opening_reading:o.reading;
       const closeVal=cl.closing_reading!=null?cl.closing_reading:cl.reading;
       const soldVal=s.liters_sold!=null?s.liters_sold:(Number.isFinite(Number(openVal))&&Number.isFinite(Number(closeVal))?Number(closeVal)-Number(openVal):0);
-      const nozzleCode=(s.nozzle_code||o.nozzle_code||cl.nozzle_code||String(nid));
+      const nozzleCode=(s.nozzle_id||o.nozzle_id||cl.nozzle_id||s.nozzle_code||o.nozzle_code||cl.nozzle_code||String(nid));
       return '<div class="history-detail-reading-row"><div><strong>'+h(nozzleCode)+'</strong><small>'+h(productCode)+'</small></div><div><span>Opening</span><b>'+reading(openVal)+'</b></div><div><span>Closing</span><b>'+reading(closeVal)+'</b></div><div><span>Sold</span><b>'+liters(soldVal)+' L</b></div></div>';
     }).join('');
 
