@@ -1008,29 +1008,30 @@ function renderActivatedProductsGraph(products,sales){
   const host=document.getElementById('activated-products-graph');
   if(!host)return;
   if(!products.length){host.innerHTML='<div class="empty-content">No activated products to compare.</div>';return;}
+  const norm=v=>String(v??'').trim().toLowerCase();
   const totals=products.map(p=>{
-    const name=String(p.name||'').toLowerCase();
-    const volume=(sales||[]).filter(s=>String(s.product||'').toLowerCase()===name).reduce((sum,s)=>sum+Number(s.quantity_liters||0),0);
-    return {code:String(p.code_name||p.name||'—'),volume:Number.isFinite(volume)?volume:0,color:String(p.color||'#1264d8').trim()||'#1264d8'};
+    const productName=norm(p.name),productCode=norm(p.code_name);
+    const volume=(sales||[]).reduce((sum,s)=>{
+      const saleProduct=norm(s.product),saleCode=norm(s.product_code||s.product_code_name);
+      if(saleProduct!==productName&&saleProduct!==productCode&&saleCode!==productCode)return sum;
+      const q=Number(s.quantity_liters);return sum+(Number.isFinite(q)&&q>0?q:0);
+    },0);
+    return {code:String(p.code_name||p.name||'—'),volume,color:String(p.color||'#1264d8').trim()||'#1264d8'};
   });
   const total=totals.reduce((sum,x)=>sum+x.volume,0);
-  const size=220,cx=110,cy=110,r=82;
+  const size=240,cx=120,cy=120,r=88;
   let angle=-Math.PI/2;
   const paths=totals.map(x=>{
     const share=total>0?x.volume/total:1/totals.length;
     const next=angle+share*Math.PI*2;
     const large=share>.5?1:0;
-    const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
-    const x2=cx+r*Math.cos(next),y2=cy+r*Math.sin(next);
-    const d=totals.length===1?'M '+cx+' '+cy+' L '+cx+' '+(cy-r)+' A '+r+' '+r+' 0 1 1 '+(cx-.01)+' '+(cy-r)+' Z':'M '+cx+' '+cy+' L '+x1+' '+y1+' A '+r+' '+r+' 0 '+large+' 1 '+x2+' '+y2+' Z';
+    const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle),x2=cx+r*Math.cos(next),y2=cy+r*Math.sin(next);
+    const d=share>=.999999?'M '+cx+' '+cy+' L '+cx+' '+(cy-r)+' A '+r+' '+r+' 0 1 1 '+(cx-.01)+' '+(cy-r)+' Z':'M '+cx+' '+cy+' L '+x1+' '+y1+' A '+r+' '+r+' 0 '+large+' 1 '+x2+' '+y2+' Z';
     angle=next;
-    return '<path d="'+d+'" fill="'+h(x.color)+'" stroke="#fff" stroke-width="2"><title>'+h(x.code)+' — '+h(liters(x.volume))+' L ('+(share*100).toFixed(1)+'%)</title></path>';
+    return '<path d="'+d+'" fill="'+h(x.color)+'" stroke="#fff" stroke-width="3" stroke-linejoin="round"><title>'+h(x.code)+' — '+h(liters(x.volume))+' L ('+(share*100).toFixed(1)+'%)</title></path>';
   }).join('');
-  const legend=totals.map(x=>{
-    const share=total>0?x.volume/total:0;
-    return '<div class="activated-products-pie-item"><span class="activated-products-pie-dot" style="background:'+h(x.color)+'"></span><span class="activated-products-pie-code">'+h(x.code)+'</span><strong>'+h(liters(x.volume))+' L</strong><small>'+(share*100).toFixed(1)+'%</small></div>';
-  }).join('');
-  host.innerHTML='<div class="activated-products-graph-head"><div><span class="section-kicker">PRODUCT PERFORMANCE</span><h3>Sales volume by product</h3></div><span class="activated-products-graph-unit">LITERS SOLD</span></div><div class="activated-products-pie-layout"><div class="activated-products-pie-chart"><svg viewBox="0 0 '+size+' '+size+'" role="img" aria-label="Sales volume distribution among activated products">'+paths+'<circle cx="'+cx+'" cy="'+cy+'" r="48" fill="#fff"></circle><text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" class="activated-products-pie-total">'+h(liters(total))+'</text><text x="'+cx+'" y="'+(cy+11)+'" text-anchor="middle" class="activated-products-pie-total-label">LITERS</text></svg></div><div class="activated-products-pie-legend">'+legend+'</div></div>';
+  const legend=totals.map(x=>{const share=total>0?x.volume/total:1/totals.length;return '<div class="activated-products-pie-item"><span class="activated-products-pie-dot" style="background:'+h(x.color)+'"></span><span class="activated-products-pie-code">'+h(x.code)+'</span><strong>'+h(liters(x.volume))+' L</strong><small>'+(share*100).toFixed(1)+'%</small></div>';}).join('');
+  host.innerHTML='<div class="activated-products-graph-head"><div><span class="section-kicker">PRODUCT PERFORMANCE</span><h3>Sales volume by product</h3></div><span class="activated-products-graph-unit">LITERS SOLD</span></div><div class="activated-products-pie-layout"><div class="activated-products-pie-chart"><svg viewBox="0 0 '+size+' '+size+'" role="img" aria-label="Sales volume distribution among activated products">'+paths+'<circle cx="'+cx+'" cy="'+cy+'" r="51" fill="#fff"></circle><text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" class="activated-products-pie-total">'+h(liters(total))+'</text><text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" class="activated-products-pie-total-label">LITERS</text></svg></div><div class="activated-products-pie-legend">'+legend+'</div></div>';
 }
 
 async function adminFuelConfiguration(){
