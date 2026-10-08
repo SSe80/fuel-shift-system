@@ -1467,6 +1467,8 @@ async function downloadAdminSaleHistoryDetails(id){
   // may expose it through either the takeover or normalized shift fields.
   const tankOpening=Number(t.tank_opening_liters ?? t.opening_tank_liters ?? shift?.tank_opening_liters ?? shift?.opening_tank_liters ?? shift?.opening_liters);
   const tankClosing=Number(t.tank_closing_liters ?? t.closing_tank_liters ?? shift?.tank_closing_liters ?? shift?.closing_liters ?? shift?.closing_tank_liters);
+  const recordedTankSales=Number(t.tank_sales_liters ?? t.total_sales_liters ?? totalLiters);
+  const tankSold=Number.isFinite(recordedTankSales)?recordedTankSales:totalLiters;
   const status=String(t.sales_status||'confirmed').replace(/_/g,' ');
   const statusLabel=status.replace(/\b\w/g,m=>m.toUpperCase());
 
