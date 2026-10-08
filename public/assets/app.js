@@ -3287,7 +3287,7 @@ function closeDailyReportDetail(){
   document.body.classList.remove('daily-detail-open');
   window.scrollTo({top:0,behavior:'smooth'});
 }
-document.addEventListener('touchstart',event=>{\n  const modal=event.target.closest?.('#admin-product-details-modal');\n  if(!modal||!modal.classList.contains('open'))return;\n  const touch=event.touches?.[0];\n  if(!touch)return;\n  modal._productSwipeStartX=touch.clientX;\n  modal._productSwipeStartY=touch.clientY;\n  modal._productSwipeTracking=true;\n},{passive:true});\ndocument.addEventListener('touchend',event=>{\n  const modal=event.target.closest?.('#admin-product-details-modal');\n  if(!modal||!modal._productSwipeTracking)return;\n  modal._productSwipeTracking=false;\n  const touch=event.changedTouches?.[0];\n  if(!touch)return;\n  const dx=touch.clientX-Number(modal._productSwipeStartX||0);\n  const dy=touch.clientY-Number(modal._productSwipeStartY||0);\n  if(Math.abs(dx)<45||Math.abs(dx)<=Math.abs(dy))return;\n  const slides=modal.querySelectorAll('.admin-product-slide');\n  if(slides.length<2)return;\n  let current=[...slides].findIndex(s=>s.classList.contains('active'));\n  if(current<0)current=0;\n  const direction=dx<0?1:-1;\n  const target=Math.max(0,Math.min(slides.length-1,current+direction));\n  if(target===current)return;\n  slides.forEach((s,i)=>{\n    s.classList.toggle('active',i===target);\n    s.classList.remove('swipe-in-next','swipe-in-prev');\n  });\n  const incoming=slides[target];\n  incoming.classList.add(direction>0?'swipe-in-next':'swipe-in-prev');\n  setTimeout(()=>incoming.classList.remove('swipe-in-next','swipe-in-prev'),260);\n  modal.querySelectorAll('.admin-product-slide-dot').forEach((d,i)=>d.classList.toggle('active',i===target));\n  const content=modal.querySelector('#admin-product-details-content');\n  if(content)content.setAttribute('data-product-slide-current',String(target));\n},{passive:true});\ndocument.addEventListener('keydown',event=>{
+document.addEventListener('keydown',event=>{
   if(event.key==='Escape')closeDailyDsrPreview();
 });
 function openDailyHistoryReport(date){
@@ -4438,6 +4438,42 @@ document.addEventListener('click',event=>{
   modal.querySelectorAll('.admin-product-slide-dot').forEach((d,i)=>d.classList.toggle('active',i===target));
   content.setAttribute('data-product-slide-current',String(target));
 });
+document.addEventListener('touchstart',event=>{
+  const modal=event.target.closest?.('#admin-product-details-modal');
+  if(!modal||!modal.classList.contains('open'))return;
+  const touch=event.touches?.[0];
+  if(!touch)return;
+  modal._productSwipeStartX=touch.clientX;
+  modal._productSwipeStartY=touch.clientY;
+  modal._productSwipeTracking=true;
+},{passive:true});
+document.addEventListener('touchend',event=>{
+  const modal=event.target.closest?.('#admin-product-details-modal');
+  if(!modal||!modal._productSwipeTracking)return;
+  modal._productSwipeTracking=false;
+  const touch=event.changedTouches?.[0];
+  if(!touch)return;
+  const dx=touch.clientX-Number(modal._productSwipeStartX||0);
+  const dy=touch.clientY-Number(modal._productSwipeStartY||0);
+  if(Math.abs(dx)<45||Math.abs(dx)<=Math.abs(dy))return;
+  const slides=modal.querySelectorAll('.admin-product-slide');
+  if(slides.length<2)return;
+  let current=[...slides].findIndex(s=>s.classList.contains('active'));
+  if(current<0)current=0;
+  const direction=dx<0?1:-1;
+  const target=Math.max(0,Math.min(slides.length-1,current+direction));
+  if(target===current)return;
+  slides.forEach((s,i)=>{
+    s.classList.toggle('active',i===target);
+    s.classList.remove('swipe-in-next','swipe-in-prev');
+  });
+  const incoming=slides[target];
+  incoming.classList.add(direction>0?'swipe-in-next':'swipe-in-prev');
+  setTimeout(()=>incoming.classList.remove('swipe-in-next','swipe-in-prev'),260);
+  modal.querySelectorAll('.admin-product-slide-dot').forEach((d,i)=>d.classList.toggle('active',i===target));
+  const content=modal.querySelector('#admin-product-details-content');
+  if(content)content.setAttribute('data-product-slide-current',String(target));
+},{passive:true});
 document.addEventListener('keydown',event=>{
   const card=event.target.closest?.('#products .activated-product-card');
   if(card&&(event.key==='Enter'||event.key===' ')){
