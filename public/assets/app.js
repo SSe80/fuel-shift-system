@@ -1058,7 +1058,7 @@ async function adminFuelConfiguration(){
       const tank=tanks.find(t=>t.id===d.tank_id);
       const shift=activeShifts.find(s=>s.nozzle_id===d.id);
       const attendant=shift?activeEmployees.find(e=>e.id===shift.employee_id):null;
-      return '<div class="stat activated-dispenser-card"><b>'+h(d.nozzle_code)+'</b><span>'+h(productCode||'—')+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small></div>';
+      return '<div class="stat activated-dispenser-card" data-dispenser-id="'+h(d.id)+'" role="button" tabindex="0" aria-label="View '+h(d.nozzle_code||'dispenser')+' details" style="--product-color:'+h(pc)+'"><b>'+h(d.nozzle_code)+'</b><span>'+h(productCode||'—')+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small></div>';
     };
     const renderDispenserGroup=(g)=>{
       const pc=String(g.product.color||'#1264d8').trim()||'#1264d8';
@@ -3343,6 +3343,11 @@ function closeDailyReportDetail(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 document.addEventListener('keydown',event=>{
+  const card=event.target.closest?.('#dispensers .activated-dispenser-card');
+  if(card&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openAdminDispenserDetails(card.getAttribute('data-dispenser-id'));return;}
+  if(event.key==='Escape')closeAdminDispenserDetails();
+});
+document.addEventListener('keydown',event=>{
   if(event.key==='Escape')closeDailyDsrPreview();
 });
 function openDailyHistoryReport(date){
@@ -4362,6 +4367,36 @@ function adminProductBuildBars(rows){
 }
 /* Admin Fuel Configuration — product details popup.
    Uses delegated events so product cards never need inline JavaScript. */
+function ensureAdminDispenserDetailsModal(){
+  let modal=document.getElementById('admin-dispenser-details-modal'); if(modal)return modal;
+  modal=document.createElement('div'); modal.id='admin-dispenser-details-modal'; modal.className='admin-dispenser-details-modal'; modal.setAttribute('aria-hidden','true');
+  modal.innerHTML='<div class="admin-dispenser-details-backdrop" data-dispenser-popup-close></div><div class="admin-dispenser-details-card" role="dialog" aria-modal="true"><div class="admin-dispenser-details-top"><div><span class="section-kicker">DISPENSER</span><h3>Dispenser Details</h3></div><button type="button" class="admin-dispenser-details-close" data-dispenser-popup-close>×</button></div><div id="admin-dispenser-details-content" class="admin-dispenser-details-content"></div></div>';
+  document.body.appendChild(modal); return modal;
+}
+function closeAdminDispenserDetails(){const m=document.getElementById('admin-dispenser-details-modal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}}
+function adminDispenserMetric(l,v,n){return '<div class="admin-dispenser-metric"><span>'+h(l)+'</span><strong>'+h(v)+'</strong>'+(n?'<small>'+h(n)+'</small>':'')+'</div>';}
+async function openAdminDispenserDetails(id){
+  const modal=ensureAdminDispenserDetailsModal(),content=modal.querySelector('#admin-dispenser-details-content');
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');content.innerHTML='<div class="admin-dispenser-details-loading">Loading dispenser details…</div>';
+  try{
+    const [dispensers,tanks,products,shifts,employees,sales]=await Promise.all([api('/api/nozzles'),api('/api/tanks'),api('/api/products'),api('/api/shifts'),api('/api/users'),api('/api/sales')]);
+    const d=dispensers.find(x=>String(x.id)===String(id)); if(!d)throw new Error('Dispenser details could not be found.');
+    const tank=tanks.find(x=>String(x.id)===String(d.tank_id));
+    const product=products.find(p=>String(p.name||'').toLowerCase()===String(d.product||tank?.product||'').toLowerCase()||String(p.code_name||'').toLowerCase()===String(d.product||'').toLowerCase());
+    const shift=shifts.filter(x=>x.status==='active').find(x=>String(x.nozzle_id)===String(d.id));
+    const attendant=shift?employees.find(x=>String(x.id)===String(shift.employee_id)):null;
+    const color=String(product?.color||'#1264d8').trim()||'#1264d8'; modal.querySelector('.admin-dispenser-details-card').style.setProperty('--product-color',color);
+    const count=Number(d.nozzle_count||1), reads=Array.isArray(shift?.activation_nozzles)?shift.activation_nozzles:[], nums=reads.map(x=>Number(x?.opening_reading)).filter(Number.isFinite), opening=nums.length?nums.reduce((a,b)=>a+b,0):null;
+    const salesFor=(sales||[]).filter(x=>String(x.nozzle_id||'')===String(d.id)), today=new Date().toISOString().slice(0,10), todaySales=salesFor.filter(x=>String(x.sale_time||x.created_at||'').slice(0,10)===today);
+    const allL=salesFor.reduce((a,x)=>a+Number(x.quantity_liters||0),0), dayL=todaySales.reduce((a,x)=>a+Number(x.quantity_liters||0),0);
+    const hero='<div class="admin-dispenser-details-hero"><div><span class="field-label">DISPENSER</span><h2>'+h(d.nozzle_code||'Dispenser')+'</h2><p>'+h(product?.code_name||d.product||tank?.product||'—')+' • '+h(tank?.tank_code||'No tank')+'</p></div><span class="admin-dispenser-details-status">ACTIVE</span></div>';
+    const overview='<section class="admin-dispenser-details-section"><div class="admin-dispenser-details-section-head"><span>OVERVIEW</span><small>Current dispenser status</small></div><div class="admin-dispenser-metrics">'+adminDispenserMetric('Product',product?.code_name||d.product||tank?.product||'—','product code')+adminDispenserMetric('Connected tank',tank?.tank_code||'—','assigned tank')+adminDispenserMetric('Nozzles',String(count),'configured')+adminDispenserMetric('Shift attendant',attendant?.name||'No active shift',shift?'current shift':'')+'</div></section>';
+    const shiftBox='<section class="admin-dispenser-details-section"><div class="admin-dispenser-details-section-head"><span>SHIFT</span><small>'+(shift?'Active now':'No active shift')+'</small></div><div class="admin-dispenser-metrics">'+adminDispenserMetric('Opening reading',opening===null?'—':reading(opening),'combined nozzle reading')+adminDispenserMetric('Shift ID',shift?.id||'—','current assignment')+adminDispenserMetric('Tank stock',tank?.current_liters==null?'—':liters(tank.current_liters)+' L','current tank stock')+adminDispenserMetric('Tank capacity',tank?.capacity_liters==null?'—':liters(tank.capacity_liters)+' L','tank capacity')+'</div></section>';
+    const perf='<section class="admin-dispenser-details-section"><div class="admin-dispenser-details-section-head"><span>PERFORMANCE</span><small>Sales recorded on this dispenser</small></div><div class="admin-dispenser-metrics">'+adminDispenserMetric('Today volume',liters(dayL)+' L','today')+adminDispenserMetric('All-time volume',liters(allL)+' L','available records')+adminDispenserMetric('Today sales',String(todaySales.length),'confirmed records')+adminDispenserMetric('All-time sales',String(salesFor.length),'confirmed records')+'</div></section>';
+    const config='<section class="admin-dispenser-details-section"><div class="admin-dispenser-details-section-head"><span>CONFIGURATION</span><small>Dispenser setup</small></div><div class="admin-dispenser-metrics">'+adminDispenserMetric('Dispenser ID',d.id||'—','system identifier')+adminDispenserMetric('Status',d.active?'Active':'Inactive','configuration')+adminDispenserMetric('Nozzle count',String(count),'configured nozzles')+adminDispenserMetric('Tank',tank?.tank_code||'—','connection')+'</div></section>';
+    content.innerHTML='<div class="admin-dispenser-slides"><article class="admin-dispenser-slide active">'+hero+overview+shiftBox+'</article><article class="admin-dispenser-slide">'+perf+config+'</article></div><div class="admin-dispenser-slide-controls"><button type="button" class="admin-dispenser-slide-arrow" data-dispenser-slide-prev>‹</button><div class="admin-dispenser-slide-dots"><button type="button" class="admin-dispenser-slide-dot active" data-dispenser-slide-to="0"></button><button type="button" class="admin-dispenser-slide-dot" data-dispenser-slide-to="1"></button></div><button type="button" class="admin-dispenser-slide-arrow" data-dispenser-slide-next>›</button></div>';
+  }catch(e){content.innerHTML='<div class="admin-dispenser-details-error">'+h(e.message||'Unable to load dispenser details.')+'</div>';}
+}
 function ensureAdminProductDetailsModal(){
   let modal=document.getElementById('admin-product-details-modal');
   if(modal)return modal;
@@ -4467,6 +4502,19 @@ async function openAdminProductDetails(productId){
     if(content)content.innerHTML='<div class="admin-product-details-error">'+h(e.message||'Unable to load product details.')+'</div>';
   }
 }
+document.addEventListener('click',event=>{
+  const card=event.target.closest?.('#dispensers .activated-dispenser-card');
+  if(card){event.preventDefault();openAdminDispenserDetails(card.getAttribute('data-dispenser-id'));return;}
+  if(event.target.closest?.('[data-dispenser-popup-close]')){closeAdminDispenserDetails();return;}
+  const modal=event.target.closest?.('#admin-dispenser-details-modal'); if(!modal)return;
+  const slides=modal.querySelectorAll('.admin-dispenser-slide'); if(slides.length<2)return;
+  let current=[...slides].findIndex(x=>x.classList.contains('active')); if(current<0)current=0; let target=null;
+  if(event.target.closest('[data-dispenser-slide-next]'))target=Math.min(1,current+1);
+  if(event.target.closest('[data-dispenser-slide-prev]'))target=Math.max(0,current-1);
+  const dot=event.target.closest('[data-dispenser-slide-to]'); if(dot)target=Number(dot.getAttribute('data-dispenser-slide-to'))||0;
+  if(target===null||target===current)return;
+  slides.forEach((x,i)=>x.classList.toggle('active',i===target)); modal.querySelectorAll('.admin-dispenser-slide-dot').forEach((x,i)=>x.classList.toggle('active',i===target));
+});
 document.addEventListener('click',event=>{
   const card=event.target.closest?.('#products .activated-product-card');
   if(card){
