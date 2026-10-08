@@ -833,3 +833,39 @@ body[data-app-page="adminDashboard"] .accounting-period-mini span{font-size:9px!
   body[data-app-page="adminDashboard"] .accounting-period-actions button{font-size:10px!important;padding:8px 10px!important}
   body[data-app-page="adminDashboard"] .accounting-period-summary-grid{grid-template-columns:1fr!important}
 }
+
+
+/* Dashboard subpage navigation */
+body.admin-shell .dashboard-section-nav{
+  display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;
+  margin:0 0 14px;padding:6px;border:1px solid #dfe6ee;border-radius:12px;background:#fff;
+  box-shadow:0 3px 12px #17202a0a;
+}
+body.admin-shell .dashboard-section-nav::-webkit-scrollbar{display:none}
+body.admin-shell .dashboard-section-nav a{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:center;min-height:38px;
+  padding:0 13px;border-radius:9px;color:#536174;text-decoration:none;font-size:11px;font-weight:800;
+  letter-spacing:.02em;white-space:nowrap;transition:.15s ease;
+}
+body.admin-shell .dashboard-section-nav a:hover{background:#f1f5f9;color:#182230}
+body.admin-shell .dashboard-section-nav a.active{background:#182230;color:#fff}
+@media(max-width:800px){
+ body.admin-shell .dashboard-section-nav{margin:0 0 11px;padding:5px;gap:4px}
+ body.admin-shell .dashboard-section-nav a{min-height:36px;padding:0 11px;font-size:10px}
+}
+@media(max-width:480px){
+ body.admin-shell .dashboard-section-nav a{min-height:34px;padding:0 10px;font-size:9px}
+}
+body[data-app-page="adminFuelConfiguration"] .wrap,
+body[data-app-page="adminInventory"] .wrap,
+body[data-app-page="adminAttendants"] .wrap,
+body[data-app-page="adminAccountingControl"] .wrap{max-width:980px}
+body[data-app-page="adminFuelConfiguration"] .settings-header,
+body[data-app-page="adminInventory"] .settings-header,
+body[data-app-page="adminAttendants"] .settings-header,
+body[data-app-page="adminAccountingControl"] .settings-header{padding:10px 4px 16px}
+body[data-app-page="adminFuelConfiguration"] .settings-header .eyebrow,
+body[data-app-page="adminInventory"] .settings-header .eyebrow,
+body[data-app-page="adminAttendants"] .settings-header .eyebrow,
+body[data-app-page="adminAccountingControl"] .settings-header .eyebrow{font-size:18px;font-weight:850;letter-spacing:.02em}
+body[data-app-page="adminInventory"] .inventory-details{margin-top:9px;padding-top:8px;border-top:1px solid rgba(127,127,127,.2);display:grid;gap:3px}
