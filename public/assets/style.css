@@ -2435,3 +2435,41 @@ body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
 .admin-product-chart-bar{fill:var(--product-color,#1264d8)!important;opacity:.78!important}
 .admin-product-chart-label{fill:#8a95a3!important;font-size:8px!important}
 @media(max-width:650px){.admin-product-performance-summary{grid-template-columns:1fr 1fr!important}.admin-product-performance-summary .admin-product-metric:last-child{grid-column:1/-1}}
+
+/* Compact two-slide product performance cards */
+.admin-product-details-card{border-top:2px solid var(--product-color,#1264d8)!important}
+.admin-product-details-content{padding:10px!important}
+.admin-product-slides{position:relative!important;min-height:0!important}
+.admin-product-slide{display:none!important;padding:0!important}
+.admin-product-slide.active{display:block!important}
+.admin-product-slide .admin-product-details-hero,
+.admin-product-slide .admin-product-details-section{border-color:var(--product-color,#1264d8)!important}
+.admin-product-slide .admin-product-details-hero{padding:9px!important;border-radius:9px!important}
+.admin-product-slide .admin-product-details-hero h2{font-size:18px!important}
+.admin-product-slide .admin-product-details-section{margin-top:7px!important;padding:8px!important;border-radius:9px!important}
+.admin-product-slide .admin-product-details-section-head{margin-bottom:6px!important}
+.admin-product-slide .admin-product-metrics{gap:5px!important}
+.admin-product-slide .admin-product-metric{padding:6px!important;border-color:color-mix(in srgb,var(--product-color,#1264d8) 35%,#edf1f5)!important}
+.admin-product-slide .admin-product-metric>strong{font-size:11px!important;margin-top:2px!important}
+.admin-product-slide .admin-product-metric>small{font-size:7px!important;margin-top:2px!important}
+.admin-product-slide .admin-product-performance-summary{gap:5px!important;margin-bottom:6px!important}
+.admin-product-slide .admin-product-chart-wrap{margin-top:6px!important;padding:6px!important;border-color:color-mix(in srgb,var(--product-color,#1264d8) 35%,#edf1f5)!important}
+.admin-product-slide .admin-product-chart-title{font-size:7px!important;margin-bottom:2px!important}
+.admin-product-chart-line{stroke:var(--product-color,#1264d8)!important;filter:drop-shadow(0 1px 2px color-mix(in srgb,var(--product-color,#1264d8) 35%,transparent))!important}
+.admin-product-chart-dot{fill:#fff!important;stroke:var(--product-color,#1264d8)!important}
+.admin-product-chart-bar{fill:var(--product-color,#1264d8)!important;opacity:.9!important}
+.admin-product-chart-axis{stroke:color-mix(in srgb,var(--product-color,#1264d8) 25%,#dfe5ec)!important}
+.admin-product-chart-label{fill:color-mix(in srgb,var(--product-color,#1264d8) 65%,#536174)!important}
+.admin-product-slide .admin-product-tank-list{gap:4px!important}
+.admin-product-slide .admin-product-tank-row{padding:6px 7px!important;border-color:color-mix(in srgb,var(--product-color,#1264d8) 28%,#edf1f5)!important}
+.admin-product-slide-controls{display:flex!important;align-items:center!important;justify-content:center!important;gap:12px!important;margin-top:8px!important}
+.admin-product-slide-arrow{width:25px!important;height:25px!important;padding:0!important;border:1px solid var(--product-color,#1264d8)!important;border-radius:7px!important;background:#fff!important;color:var(--product-color,#1264d8)!important;font-size:17px!important;line-height:20px!important;cursor:pointer!important}
+.admin-product-slide-dots{display:flex!important;align-items:center!important;gap:5px!important}
+.admin-product-slide-dot{width:7px!important;height:7px!important;padding:0!important;border:1px solid var(--product-color,#1264d8)!important;border-radius:50%!important;background:#fff!important;cursor:pointer!important}
+.admin-product-slide-dot.active{background:var(--product-color,#1264d8)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--product-color,#1264d8) 15%,transparent)!important}
+@media(max-width:650px){
+ .admin-product-details-content{padding:8px!important}
+ .admin-product-slide .admin-product-details-section{padding:7px!important}
+ .admin-product-slide .admin-product-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .admin-product-slide .admin-product-chart-wrap{padding:5px!important}
+}
