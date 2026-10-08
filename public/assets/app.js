@@ -1660,7 +1660,7 @@ async function downloadAdminSaleHistoryDetails(id){
   link.download='sales-report-'+String(t.shift_id||id).slice(0,12)+'.pdf';
   document.body.appendChild(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
-  toast('PDF downloaded');
+  showAttendantActionResult('success','PDF downloaded','The confirmed sales PDF has been downloaded successfully.');
 }
 function downloadPurchaseDetailPdf(){
   const id=window.currentPurchaseDetailId;
