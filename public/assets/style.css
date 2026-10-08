@@ -2477,3 +2477,18 @@ body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
  .admin-product-slide .admin-product-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}
  .admin-product-slide .admin-product-chart-wrap{padding:5px!important}
 }
+
+
+/* Product performance popup — product color only on the outer popup card border */
+.admin-product-details-card{
+  border:2px solid var(--product-color,#1264d8)!important;
+}
+.admin-product-slide .admin-product-details-hero,
+.admin-product-slide .admin-product-details-section{
+  border-color:#e5eaf0!important;
+}
+.admin-product-slide .admin-product-metric,
+.admin-product-slide .admin-product-chart-wrap,
+.admin-product-slide .admin-product-tank-row{
+  border-color:#edf1f5!important;
+}
