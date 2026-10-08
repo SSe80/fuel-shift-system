@@ -835,17 +835,19 @@ body[data-app-page="adminDashboard"] .accounting-period-mini span{font-size:9px!
 }
 
 
-/* Dashboard subpage navigation — clean active state + blue hover */
+/* Dashboard subpage navigation — white outer card, compact typography */
 body.admin-shell .dashboard-section-nav{
-  display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:none;
-  margin:0 0 14px;padding:4px 0;border:0;border-radius:0;background:transparent;
-  box-shadow:none;
+  display:flex;align-items:center;gap:5px;overflow-x:auto;scrollbar-width:none;
+  margin:0 0 14px;padding:5px 7px;border:1px solid #dfe6ee;border-radius:12px;
+  background:#fff;box-shadow:0 3px 12px #17202a0a;
 }
 body.admin-shell .dashboard-section-nav::-webkit-scrollbar{display:none}
 body.admin-shell .dashboard-section-nav a{
-  flex:0 0 auto;display:flex;align-items:center;justify-content:center;min-height:36px;
-  padding:0 10px;border-radius:8px;color:#536174;text-decoration:none;font-size:11px;font-weight:800;
-  letter-spacing:.02em;white-space:nowrap;transition:background-color .15s ease,color .15s ease;
+  flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  min-height:34px;padding:0 10px!important;border-radius:7px;
+  color:#536174;text-decoration:none;font-size:10px;font-weight:700;
+  letter-spacing:.015em;line-height:1;white-space:nowrap;
+  transition:background-color .15s ease,color .15s ease;
 }
 body.admin-shell .dashboard-section-nav a:hover,
 body.admin-shell .dashboard-section-nav a:focus-visible{
@@ -854,29 +856,34 @@ body.admin-shell .dashboard-section-nav a:focus-visible{
 body.admin-shell .dashboard-section-nav a.active,
 body.admin-shell .dashboard-section-nav a[aria-current="page"]{
   background:transparent!important;color:#1264d8!important;
-  padding-left:0!important;padding-right:0!important;
-  box-shadow:none!important;
+  padding:0!important;margin:0!important;box-shadow:none!important;
 }
 body.admin-shell .dashboard-section-nav a.active:hover,
 body.admin-shell .dashboard-section-nav a[aria-current="page"]:hover{
   background:#1264d8!important;color:#fff!important;
-  padding-left:10px!important;padding-right:10px!important;
+  padding:0 10px!important;
 }
 @media(max-width:800px){
- body.admin-shell .dashboard-section-nav{margin:0 0 11px;padding:3px 0;gap:7px}
- body.admin-shell .dashboard-section-nav a{min-height:34px;padding:0 9px;font-size:10px}
+ body.admin-shell .dashboard-section-nav{margin:0 0 11px;padding:4px 6px;gap:4px}
+ body.admin-shell .dashboard-section-nav a{
+   min-height:32px;padding:0 8px!important;font-size:9px;font-weight:700;
+ }
  body.admin-shell .dashboard-section-nav a.active,
- body.admin-shell .dashboard-section-nav a[aria-current="page"]{padding-left:0!important;padding-right:0!important}
+ body.admin-shell .dashboard-section-nav a[aria-current="page"]{padding:0!important}
  body.admin-shell .dashboard-section-nav a.active:hover,
- body.admin-shell .dashboard-section-nav a[aria-current="page"]:hover{padding-left:9px!important;padding-right:9px!important}
+ body.admin-shell .dashboard-section-nav a[aria-current="page"]:hover{padding:0 8px!important}
 }
 @media(max-width:480px){
- body.admin-shell .dashboard-section-nav a{min-height:32px;padding:0 8px;font-size:9px}
+ body.admin-shell .dashboard-section-nav{padding:3px 5px;gap:3px}
+ body.admin-shell .dashboard-section-nav a{
+   min-height:30px;padding:0 7px!important;font-size:8px;font-weight:700;
+ }
  body.admin-shell .dashboard-section-nav a.active,
- body.admin-shell .dashboard-section-nav a[aria-current="page"]{padding-left:0!important;padding-right:0!important}
+ body.admin-shell .dashboard-section-nav a[aria-current="page"]{padding:0!important}
  body.admin-shell .dashboard-section-nav a.active:hover,
- body.admin-shell .dashboard-section-nav a[aria-current="page"]:hover{padding-left:8px!important;padding-right:8px!important}
+ body.admin-shell .dashboard-section-nav a[aria-current="page"]:hover{padding:0 7px!important}
 }
+
 body[data-app-page="adminFuelConfiguration"] .wrap,
 body[data-app-page="adminInventory"] .wrap,
 body[data-app-page="adminAttendants"] .wrap,
