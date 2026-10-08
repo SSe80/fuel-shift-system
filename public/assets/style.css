@@ -3064,3 +3064,52 @@ body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-ca
     justify-content:initial!important;
   }
 }
+
+/* Activated Dispensers — updated card design */
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-group-cards{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:9px!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-card{
+  min-height:88px!important;
+  padding:12px 13px 11px 15px!important;
+  border:1px solid color-mix(in srgb,var(--product-color,#1264d8) 55%,#dfe5ec)!important;
+  border-left:4px solid var(--product-color,#1264d8)!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  box-shadow:0 3px 9px rgba(16,24,40,.055)!important;
+  overflow:hidden!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-card::before{
+  display:none!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-card b{
+  margin:0!important;
+  color:#182230!important;
+  font-size:14px!important;
+  font-weight:900!important;
+  line-height:1.2!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-card span{
+  margin-top:6px!important;
+  color:var(--product-color,#1264d8)!important;
+  font-size:9.5px!important;
+  font-weight:850!important;
+  line-height:1.25!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-card small{
+  margin-top:5px!important;
+  color:#7a8696!important;
+  font-size:8px!important;
+  line-height:1.35!important;
+}
+body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-card:hover{
+  border-color:var(--product-color,#1264d8)!important;
+  box-shadow:0 6px 15px color-mix(in srgb,var(--product-color,#1264d8) 13%,transparent)!important;
+  transform:translateY(-1px)!important;
+}
+@media(max-width:700px){
+  body[data-app-page="adminFuelConfiguration"] #dispensers .activated-dispenser-group-cards{
+    grid-template-columns:1fr!important;
+  }
+}
