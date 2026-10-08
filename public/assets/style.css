@@ -4448,3 +4448,120 @@ body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-
   body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric > b{font-size:24px!important}
   body[data-app-page="adminDashboard"] .station-control-metrics .station-metric-label{margin-bottom:10px!important;font-size:10px!important}
 }
+
+
+/* Station Control — reconciliation alerts */
+body[data-app-page="adminDashboard"] .station-reconciliation-alerts{
+  margin-top:16px!important;
+  padding:18px!important;
+  border:1px solid #e3e9f1!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  box-shadow:0 3px 12px rgba(20,42,70,.035)!important;
+}
+body[data-app-page="adminDashboard"] .station-reconciliation-alerts-head{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:16px!important;
+  margin-bottom:14px!important;
+}
+body[data-app-page="adminDashboard"] .station-alert-kicker{
+  color:#64748b!important;
+  font-size:9px!important;
+  font-weight:850!important;
+  letter-spacing:.13em!important;
+}
+body[data-app-page="adminDashboard"] .station-reconciliation-alerts-head h2{
+  margin:4px 0 5px!important;
+  color:#172b46!important;
+  font-size:18px!important;
+  line-height:1.25!important;
+  font-weight:800!important;
+}
+body[data-app-page="adminDashboard"] .station-reconciliation-alerts-head p{
+  margin:0!important;
+  color:#7b8797!important;
+  font-size:11px!important;
+  line-height:1.5!important;
+}
+body[data-app-page="adminDashboard"] .station-reconciliation-alerts-head>a{
+  flex:0 0 auto!important;
+  margin-top:4px!important;
+  color:#1769d2!important;
+  font-size:10px!important;
+  font-weight:800!important;
+  text-decoration:none!important;
+}
+body[data-app-page="adminDashboard"] .station-reconciliation-alerts-head>a:hover{text-decoration:underline!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert-list{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:9px!important;
+}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert-summary{
+  grid-column:1/-1!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  min-height:34px!important;
+  padding:8px 10px!important;
+  border-radius:8px!important;
+  background:#f7f9fc!important;
+  color:#64748b!important;
+  font-size:10px!important;
+}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert-summary>strong{
+  color:#172b46!important;
+  font-size:15px!important;
+  font-weight:850!important;
+}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert-summary-status{
+  margin-left:auto!important;
+  color:#64748b!important;
+  font-size:9px!important;
+  font-weight:750!important;
+}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert{
+  display:flex!important;
+  align-items:flex-start!important;
+  gap:10px!important;
+  min-width:0!important;
+  padding:12px!important;
+  border:1px solid #e8edf3!important;
+  border-left:3px solid #94a3b8!important;
+  border-radius:10px!important;
+  background:#fff!important;
+}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert.critical{border-left-color:#dc4545!important;background:#fffafa!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert.warning{border-left-color:#e19a28!important;background:#fffdf7!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert.success{border-left-color:#20a16b!important;background:#fbfefc!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert.info{border-left-color:#4384d8!important;background:#fbfdff!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert-icon{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex:0 0 25px!important;
+  width:25px!important;
+  height:25px!important;
+  border-radius:8px!important;
+  background:#eef2f7!important;
+  color:#475569!important;
+  font-size:13px!important;
+  font-weight:900!important;
+}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert.critical .station-reconciliation-alert-icon{background:#fee8e7!important;color:#bd2c2c!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert.warning .station-reconciliation-alert-icon{background:#fff0d5!important;color:#a76508!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert.success .station-reconciliation-alert-icon{background:#e2f7eb!important;color:#137b4c!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert.info .station-reconciliation-alert-icon{background:#e7f0ff!important;color:#225eb0!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert-copy{min-width:0!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert-copy>strong{display:block!important;color:#26364b!important;font-size:11px!important;font-weight:800!important;line-height:1.4!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert-copy>p{margin:4px 0 0!important;color:#64748b!important;font-size:10px!important;line-height:1.45!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-alert-copy>small{display:block!important;margin-top:5px!important;color:#8792a2!important;font-size:9px!important;line-height:1.4!important}
+body[data-app-page="adminDashboard"] .station-reconciliation-loading{grid-column:1/-1!important;padding:16px!important;color:#7b8797!important;font-size:11px!important}
+@media(max-width:620px){
+  body[data-app-page="adminDashboard"] .station-reconciliation-alerts{padding:13px!important}
+  body[data-app-page="adminDashboard"] .station-reconciliation-alerts-head{flex-direction:column!important;gap:8px!important}
+  body[data-app-page="adminDashboard"] .station-reconciliation-alert-list{grid-template-columns:1fr!important}
+  body[data-app-page="adminDashboard"] .station-reconciliation-alert-summary{grid-column:auto!important}
+}
