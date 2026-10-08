@@ -1157,96 +1157,99 @@ body[data-app-page="adminDashboard"] .admin-page-body-card > .card{margin-top:0!
 body[data-app-page="adminDashboard"] .admin-page-body-card > .card .section-heading{margin-top:0!important}
 
 
-/* Admin body sections — flat section content inside the single page body card */
-body.admin-shell .admin-page-body-card > section,
-body.admin-shell .admin-page-body-card > .admin-sales-section,
-body.admin-shell .admin-page-body-card > .purchase-section,
-body.admin-shell .admin-page-body-card > .settings-section,
-body.admin-shell .admin-page-body-card > .daily-section{
+
+/* Dashboard sub-pages — flat section content inside the single body card */
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card > section,
+body[data-app-page="adminInventory"] .admin-page-body-card > section,
+body[data-app-page="adminAttendants"] .admin-page-body-card > section,
+body[data-app-page="adminAccountingControl"] .admin-page-body-card > section{
   background:transparent!important;
   border:0!important;
   border-radius:0!important;
   box-shadow:none!important;
 }
-body.admin-shell .admin-page-body-card > section{padding:0 0 22px!important}
-body.admin-shell .admin-page-body-card > section + section{padding-top:22px!important;border-top:1px solid #e8edf2!important}
-body.admin-shell .admin-page-body-card > section:last-child{padding-bottom:0!important}
-
-body.admin-shell .admin-page-body-card .section-heading,
-body.admin-shell .admin-page-body-card .purchase-section-head,
-body.admin-shell .admin-page-body-card .admin-sales-section-heading,
-body.admin-shell .admin-page-body-card .daily-section-head{
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card > section,
+body[data-app-page="adminInventory"] .admin-page-body-card > section,
+body[data-app-page="adminAttendants"] .admin-page-body-card > section,
+body[data-app-page="adminAccountingControl"] .admin-page-body-card > section{
+  padding:0 0 22px!important;
+}
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card > section + section,
+body[data-app-page="adminInventory"] .admin-page-body-card > section + section,
+body[data-app-page="adminAttendants"] .admin-page-body-card > section + section,
+body[data-app-page="adminAccountingControl"] .admin-page-body-card > section + section{
+  padding-top:22px!important;
+  border-top:1px solid #e8edf2!important;
+}
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card > section:last-child,
+body[data-app-page="adminInventory"] .admin-page-body-card > section:last-child,
+body[data-app-page="adminAttendants"] .admin-page-body-card > section:last-child,
+body[data-app-page="adminAccountingControl"] .admin-page-body-card > section:last-child{
+  padding-bottom:0!important;
+}
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .section-heading,
+body[data-app-page="adminInventory"] .admin-page-body-card .section-heading,
+body[data-app-page="adminAttendants"] .admin-page-body-card .section-heading,
+body[data-app-page="adminAccountingControl"] .admin-page-body-card .section-heading{
   margin:0 0 14px!important;
   padding:0 0 11px!important;
   border-bottom:1px solid #edf1f5!important;
 }
-body.admin-shell .admin-page-body-card .section-heading h2,
-body.admin-shell .admin-page-body-card .purchase-section-head h2,
-body.admin-shell .admin-page-body-card .admin-sales-section-heading h2,
-body.admin-shell .admin-page-body-card .daily-section-head h2{
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .section-heading h2,
+body[data-app-page="adminInventory"] .admin-page-body-card .section-heading h2,
+body[data-app-page="adminAttendants"] .admin-page-body-card .section-heading h2,
+body[data-app-page="adminAccountingControl"] .admin-page-body-card .section-heading h2{
   font-size:20px!important;
   line-height:1.25!important;
   font-weight:700!important;
   color:#182230!important;
 }
-body.admin-shell .admin-page-body-card .section-heading p,
-body.admin-shell .admin-page-body-card .purchase-section-head p,
-body.admin-shell .admin-page-body-card .admin-sales-section-heading p,
-body.admin-shell .admin-page-body-card .daily-section-head p{
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .section-heading p,
+body[data-app-page="adminInventory"] .admin-page-body-card .section-heading p,
+body[data-app-page="adminAttendants"] .admin-page-body-card .section-heading p,
+body[data-app-page="adminAccountingControl"] .admin-page-body-card .section-heading p{
   margin:5px 0 0!important;
   color:#718096!important;
   font-size:12px!important;
   line-height:1.45!important;
 }
-body.admin-shell .admin-page-body-card .settings-collapsible{padding:0!important}
-body.admin-shell .admin-page-body-card .settings-section.card{
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid,
+body[data-app-page="adminInventory"] .admin-page-body-card .statgrid,
+body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid{
+  gap:10px!important;
   margin:0!important;
-  padding:0 0 22px!important;
 }
-body.admin-shell .admin-page-body-card .settings-section.card + .settings-section.card{
-  padding-top:22px!important;
-  border-top:1px solid #e8edf2!important;
+body[data-app-page="adminAccountingControl"] .admin-page-body-card .actions{
+  margin-top:14px!important;
 }
-
-/* Actual data cards remain, but use a lighter content treatment */
-body.admin-shell .admin-page-body-card .statgrid > .stat,
-body.admin-shell .admin-page-body-card #products > .card,
-body.admin-shell .admin-page-body-card #dispensers > .card,
-body.admin-shell .admin-page-body-card #tanks > .card,
-body.admin-shell .admin-page-body-card #employees > .card,
-body.admin-shell .admin-page-body-card #attendants > .card{
+body[data-app-page="adminFuelConfiguration"] .admin-page-body-card .statgrid > .stat,
+body[data-app-page="adminInventory"] .admin-page-body-card .statgrid > .stat,
+body[data-app-page="adminAttendants"] .admin-page-body-card .statgrid > .stat{
   border:1px solid #e5eaf0!important;
   border-radius:11px!important;
   background:#fbfcfe!important;
   box-shadow:none!important;
 }
-body.admin-shell .admin-page-body-card #activity > .card{
-  margin:0!important;
-  border:0!important;
-  border-bottom:1px solid #edf1f4!important;
-  border-radius:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-body.admin-shell .admin-page-body-card #activity > .card:last-child{border-bottom:0!important}
-
-body.admin-shell .admin-page-body-card .admin-sales-separated-section + .admin-sales-separated-section{
-  margin-top:22px!important;
-  padding-top:22px!important;
-  border-top:1px solid #e8edf2!important;
+body[data-app-page="adminInventory"] .admin-page-body-card #tank-movements{
+  margin-top:0!important;
 }
 @media(max-width:700px){
-  body.admin-shell .admin-page-body-card{padding:15px!important}
-  body.admin-shell .admin-page-body-card > section{padding-bottom:18px!important}
-  body.admin-shell .admin-page-body-card > section + section{padding-top:18px!important}
-  body.admin-shell .admin-page-body-card .section-heading,
-  body.admin-shell .admin-page-body-card .purchase-section-head,
-  body.admin-shell .admin-page-body-card .admin-sales-section-heading,
-  body.admin-shell .admin-page-body-card .daily-section-head{
-    margin-bottom:12px!important;padding-bottom:9px!important;
+  body[data-app-page="adminFuelConfiguration"] .admin-page-body-card,
+  body[data-app-page="adminInventory"] .admin-page-body-card,
+  body[data-app-page="adminAttendants"] .admin-page-body-card,
+  body[data-app-page="adminAccountingControl"] .admin-page-body-card{
+    padding:15px!important;
   }
-  body.admin-shell .admin-page-body-card .section-heading h2,
-  body.admin-shell .admin-page-body-card .purchase-section-head h2,
-  body.admin-shell .admin-page-body-card .admin-sales-section-heading h2,
-  body.admin-shell .admin-page-body-card .daily-section-head h2{font-size:18px!important}
+  body[data-app-page="adminFuelConfiguration"] .admin-page-body-card > section,
+  body[data-app-page="adminInventory"] .admin-page-body-card > section,
+  body[data-app-page="adminAttendants"] .admin-page-body-card > section,
+  body[data-app-page="adminAccountingControl"] .admin-page-body-card > section{
+    padding-bottom:18px!important;
+  }
+  body[data-app-page="adminFuelConfiguration"] .admin-page-body-card > section + section,
+  body[data-app-page="adminInventory"] .admin-page-body-card > section + section,
+  body[data-app-page="adminAttendants"] .admin-page-body-card > section + section,
+  body[data-app-page="adminAccountingControl"] .admin-page-body-card > section + section{
+    padding-top:18px!important;
+  }
 }
