@@ -752,3 +752,84 @@ body.attendant-dashboard-page .shift-details-total.calculated{
   #admin-sale-history-details .history-detail-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
   #admin-sale-history-details .history-detail-reading-row{grid-template-columns:minmax(105px,1.4fr) repeat(3,minmax(58px,1fr))!important;gap:5px!important}
 }
+
+
+/* Accounting Control — clean period card */
+body[data-app-page="adminDashboard"] .accounting-control-card{
+  padding:18px 20px!important;
+  border:1px solid #e1e7ee!important;
+  background:#fff!important;
+  box-shadow:0 5px 18px #17202a0a!important;
+}
+body[data-app-page="adminDashboard"] .accounting-control-card .accounting-period-heading{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:18px!important;
+  margin:0 0 14px!important;
+  padding:0 0 14px!important;
+  border-bottom:1px solid #edf1f5!important;
+}
+body[data-app-page="adminDashboard"] .accounting-period-title{min-width:0!important}
+body[data-app-page="adminDashboard"] .accounting-period-title h2{
+  margin:0!important;
+  font-size:19px!important;
+  line-height:1.2!important;
+  letter-spacing:-.02em!important;
+  color:#182230!important;
+}
+body[data-app-page="adminDashboard"] .accounting-period-title .muted{
+  margin:5px 0 0!important;
+  font-size:11px!important;
+  line-height:1.4!important;
+  color:#667085!important;
+}
+body[data-app-page="adminDashboard"] .accounting-period-actions{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:8px!important;
+  flex:0 0 auto!important;
+}
+body[data-app-page="adminDashboard"] .accounting-period-actions button{
+  min-height:38px!important;
+  padding:8px 13px!important;
+  border-radius:9px!important;
+  font-size:11px!important;
+  font-weight:750!important;
+  white-space:nowrap!important;
+}
+body[data-app-page="adminDashboard"] .accounting-period-summary{gap:8px!important}
+body[data-app-page="adminDashboard"] .accounting-period-summary-grid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+body[data-app-page="adminDashboard"] .accounting-period-mini{
+  min-width:0!important;
+  padding:10px 11px!important;
+  border:1px solid #e8edf2!important;
+  border-radius:10px!important;
+  background:#fafbfd!important;
+  display:grid!important;
+  gap:3px!important;
+}
+body[data-app-page="adminDashboard"] .accounting-period-mini strong{font-size:11px!important;color:#344054!important}
+body[data-app-page="adminDashboard"] .accounting-period-mini span{font-size:9px!important;line-height:1.35!important;color:#667085!important}
+@media(max-width:700px){
+  body[data-app-page="adminDashboard"] .accounting-control-card{padding:15px!important}
+  body[data-app-page="adminDashboard"] .accounting-control-card .accounting-period-heading{
+    align-items:stretch!important;
+    flex-direction:column!important;
+    gap:10px!important;
+  }
+  body[data-app-page="adminDashboard"] .accounting-period-actions{justify-content:flex-start!important}
+  body[data-app-page="adminDashboard"] .accounting-period-actions button{flex:1!important}
+  body[data-app-page="adminDashboard"] .accounting-period-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:430px){
+  body[data-app-page="adminDashboard"] .accounting-period-title h2{font-size:17px!important}
+  body[data-app-page="adminDashboard"] .accounting-period-title .muted{font-size:10px!important}
+  body[data-app-page="adminDashboard"] .accounting-period-actions button{font-size:10px!important;padding:8px 10px!important}
+  body[data-app-page="adminDashboard"] .accounting-period-summary-grid{grid-template-columns:1fr!important}
+}
