@@ -2440,8 +2440,12 @@ body[data-app-page="adminFuelConfiguration"] #products .activated-product-card{
  .admin-product-details-card{border:2px solid var(--product-color,#1264d8)!important;border-top-width:2px!important}
 .admin-product-details-content{padding:10px!important}
 .admin-product-slides{position:relative!important;min-height:0!important}
-.admin-product-slide{display:none!important;padding:0!important}
+.admin-product-slide{display:none!important;padding:0!important;touch-action:pan-y;will-change:transform,opacity}
 .admin-product-slide.active{display:block!important}
+.admin-product-slide.swipe-in-next{animation:adminProductSwipeInNext .24s ease-out both}
+.admin-product-slide.swipe-in-prev{animation:adminProductSwipeInPrev .24s ease-out both}
+@keyframes adminProductSwipeInNext{from{transform:translateX(42px);opacity:.35}to{transform:translateX(0);opacity:1}}
+@keyframes adminProductSwipeInPrev{from{transform:translateX(-42px);opacity:.35}to{transform:translateX(0);opacity:1}}
 .admin-product-slide .admin-product-details-hero,
 .admin-product-slide .admin-product-details-section{border-color:var(--product-color,#1264d8)!important}
 .admin-product-slide .admin-product-details-hero{padding:9px!important;border-radius:9px!important}
