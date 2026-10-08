@@ -1303,7 +1303,7 @@ async function adminInventory(){
     });
 
     const movementTypeLabel={
-      opening:'Opening',purchase:'Purchase',sale:'Sale',discharge:'Discharge',
+      opening:'Opening',purchase:'Discharge',sale:'Sale',discharge:'Discharge',
       adjustment:'Adjustment',dip:'Dip',transfer:'Transfer'
     };
     const movementTypeIcon={
@@ -1316,6 +1316,11 @@ async function adminInventory(){
     };
     const movementRows=[...(Array.isArray(movements)?movements:[])];
     const purchaseById=new Map((Array.isArray(purchases)?purchases:[]).map(p=>[String(p.id),p]));
+    const purchaseForMovement=m=>{
+      const direct=m?.invoice_number||m?.purchase_invoice||'';
+      if(direct)return {invoice_number:direct,id:m?.purchase_id||m?.reference_id||''};
+      return purchaseById.get(String(m?.purchase_id||m?.reference_id||''))||null;
+    };
     const movementStats={
       tanks:tanks.length,
       stock:tanks.reduce((sum,t)=>sum+Number(t.current_liters||0),0),
@@ -1361,7 +1366,7 @@ async function adminInventory(){
                 '<div class="tank-movement-icon '+h(movementTypeClass[type]||'other')+'">'+h(movementTypeIcon[type]||'•')+'</div>'+
                 '<div class="tank-movement-main">'+
                   '<strong>'+h(movementTypeLabel[type]||m.movement_type||'Movement')+'</strong>'+
-                  '<small>'+h(dateText)+(m.notes?' · '+h(m.notes):'')+(type==='purchase'&&purchaseById.get(String(m.purchase_id||m.reference_id||''))?.invoice_number?' · Invoice '+h(purchaseById.get(String(m.purchase_id||m.reference_id||'')).invoice_number):'')+'</small>'+
+                  '<small>'+h(dateText)+(m.notes?' · '+h(m.notes):'')+(type==='purchase'&&purchaseForMovement(m)?.invoice_number?' · ':'')+(type==='purchase'&&purchaseForMovement(m)?.invoice_number?'<button type="button" class="tank-movement-invoice-link" data-purchase-id="'+h(String(purchaseForMovement(m)?.id||''))+'" data-purchase-invoice="'+h(String(purchaseForMovement(m)?.invoice_number||''))+'">Invoice '+h(String(purchaseForMovement(m)?.invoice_number||''))+'</button>':'')+'</small>'+
                 '</div>'+
                 '<div class="tank-movement-qty '+(signed<0?'negative':'positive')+'">'+
                   (signed>0?'+':signed<0?'−':'')+liters(qty)+' L'+
@@ -1423,7 +1428,7 @@ async function adminInventory(){
           const dt=m.created_at?new Date(m.created_at):null;
           return '<div class="tank-movement-detail-row">'+
             '<div class="tank-movement-icon '+h(movementTypeClass[type]||'other')+'">'+h(movementTypeIcon[type]||'•')+'</div>'+
-            '<div class="tank-movement-main"><strong>'+h(movementTypeLabel[type]||m.movement_type||'Movement')+'</strong><small>'+h(dt&&!Number.isNaN(dt.getTime())?dt.toLocaleString():'—')+(m.notes?' · '+h(m.notes):'')+(type==='purchase'&&purchaseById.get(String(m.purchase_id||m.reference_id||''))?.invoice_number?' · Invoice '+h(purchaseById.get(String(m.purchase_id||m.reference_id||'')).invoice_number):'')+'</small></div>'+
+            '<div class="tank-movement-main"><strong>'+h(movementTypeLabel[type]||m.movement_type||'Movement')+'</strong><small>'+h(dt&&!Number.isNaN(dt.getTime())?dt.toLocaleString():'—')+(m.notes?' · '+h(m.notes):'')+(type==='purchase'&&purchaseForMovement(m)?.invoice_number?' · ':'')+(type==='purchase'&&purchaseForMovement(m)?.invoice_number?'<button type="button" class="tank-movement-invoice-link" data-purchase-id="'+h(String(purchaseForMovement(m)?.id||''))+'" data-purchase-invoice="'+h(String(purchaseForMovement(m)?.invoice_number||''))+'">Invoice '+h(String(purchaseForMovement(m)?.invoice_number||''))+'</button>':'')+'</small></div>'+
             '<div class="tank-movement-qty '+(signed<0?'negative':'positive')+'">'+(signed>0?'+':signed<0?'−':'')+liters(qty)+' L</div>'+
             '<div class="tank-movement-balance"><small>Balance</small><strong>'+liters(m.balance_after)+' L</strong></div>'+
           '</div>';
