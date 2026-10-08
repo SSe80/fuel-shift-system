@@ -1595,9 +1595,9 @@ async async function openAdminSaleHistoryDetails(id){
   let t=initial, sales=Array.isArray(item.sales)?item.sales:[], saleMeta={};
   try{
     const data=await api('/api/shift-takeovers/'+id+'/sale-record');
-    if(data?.takeover)t=data.takeover;
-    if(Array.isArray(data?.sales))sales=data.sales;
-    saleMeta=data?.takeover||{};
+    if(data&&data.takeover)t=data.takeover;
+    if(Array.isArray(data&&data.sales))sales=data.sales;
+    saleMeta=(data&&data.takeover)||{};
   }catch(e){}
 
   // Admin history does not necessarily preload the same dashboard lookup
@@ -1649,7 +1649,7 @@ async async function openAdminSaleHistoryDetails(id){
   const dispenserCode=nozzle?.nozzle_code||item.dispenser?.nozzle_code||item.dispenser?.code||t.dispenser_code||'Dispenser';
   const attendant=employee?.name||item.to_employee?.name||t.to_employee_name||item.to_employee_id||'—';
   const shiftName=shift?.name||item.shift?.name||((item.from_employee?.name||t.from_employee_name||'')+' → '+(item.to_employee?.name||t.to_employee_name||attendant));
-  const dsrId=item.dsr_id||item.dsr?.id||t.dsr_id||t.dsr?.id||dailyReportIdFromTimestamp(t.shift_started_at||shift?.start_time);
+  const dsrId=item.dsr_id||(item.dsr&&item.dsr.id)||t.dsr_id||(t.dsr&&t.dsr.id)||dailyReportIdFromTimestamp(t.shift_started_at||shift?.start_time);
   const submittedAt=saleMeta.sales_submitted_at||t.sales_submitted_at||initial.sales_submitted_at;
   const confirmedAt=saleMeta.sales_confirmed_at||t.sales_confirmed_at||initial.sales_confirmed_at;
   const startedAt=t.shift_started_at||shift?.start_time;
@@ -1666,7 +1666,7 @@ async async function openAdminSaleHistoryDetails(id){
     const nn=nozzles.find(x=>String(x.id)===String(nid))||nozzle;
     const openVal=o.opening_reading??o.reading;
     const closeVal=cl.closing_reading??cl.reading;
-    const soldVal=s.liters_sold??(Number.isFinite(Number(openVal))&&Number.isFinite(Number(closeVal))?Number(closeVal)-Number(openVal):0);
+    const soldVal=s.liters_sold!=null?s.liters_sold:(Number.isFinite(Number(openVal))&&Number.isFinite(Number(closeVal))?Number(closeVal)-Number(openVal):0);
     return '<div class="history-detail-reading-row"><div><strong>'+h(nn?.nozzle_code||s.nozzle_id||('Nozzle '+(i+1)))+'</strong><small>'+h(productCode)+'</small></div><div><span>Opening</span><b>'+reading(openVal)+'</b></div><div><span>Closing</span><b>'+reading(closeVal)+'</b></div><div><span>Sold</span><b>'+liters(soldVal)+' L</b></div></div>';
   }).join('');
 
