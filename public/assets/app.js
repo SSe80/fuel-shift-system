@@ -3443,7 +3443,7 @@ async function loadPurchases(){
       list.innerHTML=rows.length
         ?rows.map(p=>{
           const t=tankById[String(p.tank_id)];
-          return '<div class="purchase-card">'+
+          return '<div class="purchase-card" id="purchase-card-'+h(String(p.id||''))+'" data-purchase-id="'+h(String(p.id||''))+'" data-purchase-invoice="'+h(String(p.invoice_number||''))+'">'+
             '<div class="purchase-card-top">'+
               '<div class="purchase-product-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+h(colorForProduct(p.product))+';margin-right:6px"></span>'+h(codeForProduct(p.product))+'</div>'+
               '<div class="purchase-quantity">'+liters(p.quantity_liters)+' L</div>'+
@@ -3459,6 +3459,17 @@ async function loadPurchases(){
           '</div>';
         }).join('')
         :'<div class="purchase-empty">No purchases recorded yet.</div>';
+    }
+    if(location.hash&&location.hash.indexOf('#purchase-')===0){
+      const purchaseId=decodeURIComponent(location.hash.slice('#purchase-'.length));
+      setTimeout(()=>{
+        const card=document.getElementById('purchase-card-'+CSS.escape(purchaseId));
+        if(card){
+          card.scrollIntoView({behavior:'smooth',block:'center'});
+          card.classList.add('purchase-card-linked');
+          setTimeout(()=>card.classList.remove('purchase-card-linked'),1800);
+        }
+      },80);
     }
   }catch(e){
     if(statusEl)statusEl.textContent=e.message||'Unable to load purchase data';
@@ -5063,6 +5074,19 @@ window.userDashboard=userDashboard;
     setTimeout(()=>urls.forEach(add),250);
   }
 })();
+
+document.addEventListener('click',event=>{
+  const link=event.target.closest?.('.tank-movement-invoice-link');
+  if(!link)return;
+  event.preventDefault();
+  const id=String(link.dataset.purchaseId||'');
+  const invoice=String(link.dataset.purchaseInvoice||'');
+  if(id){
+    location.href='admin-purchases.html#purchase-'+encodeURIComponent(id);
+  }else{
+    location.href='admin-purchases.html#purchase-invoice-'+encodeURIComponent(invoice);
+  }
+});
 
 // Unified admin sidebar toggle
 function toggleAdminSidebar(){
