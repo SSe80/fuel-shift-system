@@ -5076,3 +5076,14 @@ body[data-app-page="adminInbox"] .station-notifications-card+.station-inbox-butt
  body[data-app-page="adminInbox"] .inbox-filter-panel{position:fixed;top:50%;left:50%;right:auto;transform:translate(-50%,-50%);width:calc(100vw - 28px);max-width:360px;max-height:82vh;overflow-y:auto;box-shadow:0 24px 80px rgba(15,35,64,.28)}
  body[data-app-page="adminInbox"] .inbox-notification-list .station-notification-row{padding-top:13px!important;padding-bottom:13px!important}
 }
+
+
+/* Inbox pagination controls for six notifications per page. */
+body[data-app-page="adminInbox"] .inbox-pagination{display:flex;align-items:center;justify-content:center;gap:14px;padding:15px 0 17px;border-top:1px solid #e7edf4;margin-top:2px}
+body[data-app-page="adminInbox"] .inbox-pagination[hidden]{display:none!important}
+body[data-app-page="adminInbox"] .inbox-page-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid #d8e2ef;border-radius:9px;background:#fff;color:#285bb3;font-size:23px;line-height:1;cursor:pointer;transition:background .15s,border-color .15s}
+body[data-app-page="adminInbox"] .inbox-page-btn:hover:not(:disabled){border-color:#8eb0e8;background:#f1f6ff}
+body[data-app-page="adminInbox"] .inbox-page-btn:disabled{opacity:.35;cursor:not-allowed}
+body[data-app-page="adminInbox"] .inbox-page-indicator{font-size:11px;color:#718096}
+body[data-app-page="adminInbox"] .inbox-page-indicator strong{color:#253b58;font-weight:850}
+@media(max-width:640px){body[data-app-page="adminInbox"] .inbox-pagination{padding:12px 0 14px}}
