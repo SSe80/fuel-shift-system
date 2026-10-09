@@ -1048,12 +1048,61 @@ async function loadStationNotifications(){
   let readIds={},favoriteIds={};try{readIds=JSON.parse(localStorage.getItem(readKey)||'{}')||{};}catch(_e){}try{favoriteIds=JSON.parse(localStorage.getItem(favoriteKey)||'{}')||{};}catch(_e){}
   items.forEach(item=>{item.isRead=!!readIds[item.key];item.isFavorite=!!favoriteIds[item.key];});
   items.sort((a,b)=>(Number(b.isFavorite)-Number(a.isFavorite))||(Number(a.isRead)-Number(b.isRead))||(rank[a.level]??9)-(rank[b.level]??9));
+  items.forEach(item=>{if(!item.date)item.date=new Date().toISOString();});
   const unreadCount=items.filter(item=>!item.isRead).length;
   if(count)count.textContent=String(unreadCount);if(status)status.textContent=failed?'Some checks unavailable':'Updated just now';
-  const visibleItems=inboxPage?items:items.slice(0,4);
-  list.innerHTML=visibleItems.length?visibleItems.map(item=>{const isRead=!!item.isRead,isFavorite=!!item.isFavorite;return '<div class="station-notification-row '+esc(item.level)+(isRead?' is-read':' is-unread')+(isFavorite?' is-favorite':'')+'" data-inbox-row="'+esc(item.key)+'"><span class="station-notification-icon" aria-hidden="true">'+icons[item.level]+'</span><span class="station-notification-copy"><a class="station-notification-main" href="'+esc(item.href)+'" data-inbox-key="'+esc(item.key)+'"><span class="station-notification-title">'+esc(item.title)+'</span><span class="station-notification-detail">'+esc(item.detail)+'</span>'+(item.meta?'<span class="station-notification-meta">'+esc(item.meta)+'</span>':'')+'<span class="station-notification-open">'+(isRead?'Read':'Unread')+' · '+labels[item.level]+' <span aria-hidden="true">→</span></span></a></span><button type="button" class="station-notification-favorite'+(isFavorite?' active':'')+'" data-favorite-key="'+esc(item.key)+'" aria-label="'+(isFavorite?'Remove from favorites':'Add to favorites')+'" aria-pressed="'+String(isFavorite)+'" title="'+(isFavorite?'Remove from favorites':'Add to favorites')+'">'+(isFavorite?'★':'☆')+'</button></div>';}).join(''):'<div class="station-notification-empty">'+(failed?'No active alerts were found in the available checks. Some data sources could not be reached.':'You’re all caught up. No active notifications.')+'</div>';
-  list.querySelectorAll('[data-inbox-key]').forEach(link=>link.addEventListener('click',()=>{try{const saved=JSON.parse(localStorage.getItem(readKey)||'{}')||{};const key=link.getAttribute('data-inbox-key');if(!saved[key]){saved[key]=Date.now();localStorage.setItem(readKey,JSON.stringify(saved));const row=link.closest('[data-inbox-row]');if(row){row.classList.remove('is-unread');row.classList.add('is-read');const open=row.querySelector('.station-notification-open');if(open)open.innerHTML='Read · '+labels[items.find(x=>x.key===key)?.level||'info']+' <span aria-hidden="true">→</span>';}if(count)count.textContent=String(Math.max(0,Number(count.textContent||0)-1));}}catch(_e){}}));
-  list.querySelectorAll('[data-favorite-key]').forEach(button=>button.addEventListener('click',()=>{const key=button.getAttribute('data-favorite-key');try{const saved=JSON.parse(localStorage.getItem(favoriteKey)||'{}')||{};if(saved[key])delete saved[key];else saved[key]=Date.now();localStorage.setItem(favoriteKey,JSON.stringify(saved));}catch(_e){}const active=button.getAttribute('aria-pressed')!=='true';button.setAttribute('aria-pressed',String(active));button.classList.toggle('active',active);button.textContent=active?'★':'☆';button.title=active?'Remove from favorites':'Add to favorites';button.setAttribute('aria-label',button.title);const row=button.closest('[data-inbox-row]');if(row)row.classList.toggle('is-favorite',active);}));
+  const inboxFilterDefaults={from:'',to:'',status:'all',priority:'all',favorites:false};
+  const filterState={...inboxFilterDefaults};
+  const getFilterEl=id=>document.getElementById(id);
+  const filterToggle=getFilterEl('inbox-filter-toggle'),filterPanel=getFilterEl('inbox-filter-panel');
+  const isInboxPage=document.body.getAttribute('data-app-page')==='adminInbox';
+  const activeFilterCount=()=>Number(!!filterState.from)+Number(!!filterState.to)+Number(filterState.status!=='all')+Number(filterState.priority!=='all')+Number(filterState.favorites);
+  const renderInboxList=()=>{
+    let visibleItems=inboxPage?items:items.slice(0,4);
+    if(inboxPage){
+      visibleItems=visibleItems.filter(item=>{
+        if(filterState.status==='unread'&&item.isRead)return false;
+        if(filterState.status==='read'&&!item.isRead)return false;
+        if(filterState.priority!=='all'&&item.level!==filterState.priority)return false;
+        if(filterState.favorites&&!item.isFavorite)return false;
+        const day=String(item.date||new Date().toISOString()).slice(0,10);
+        if(filterState.from&&day<filterState.from)return false;
+        if(filterState.to&&day>filterState.to)return false;
+        return true;
+      });
+      const total=items.length,shown=visibleItems.length,filterCount=activeFilterCount();
+      const visibleCount=getFilterEl('inbox-visible-count'),summary=getFilterEl('inbox-filter-summary'),badge=getFilterEl('inbox-filter-badge');
+      if(visibleCount)visibleCount.textContent=shown+' of '+total+' notifications';
+      if(summary)summary.textContent=filterCount?filterCount+' filter'+(filterCount===1?'':'s')+' applied':'Showing every alert';
+      if(badge){badge.textContent=String(filterCount);badge.hidden=!filterCount;}
+      if(filterToggle)filterToggle.classList.toggle('has-filters',filterCount>0);
+    }
+    list.innerHTML=visibleItems.length?visibleItems.map(item=>{const isRead=!!item.isRead,isFavorite=!!item.isFavorite;return '<div class="station-notification-row '+esc(item.level)+(isRead?' is-read':' is-unread')+(isFavorite?' is-favorite':'')+'" data-inbox-row="'+esc(item.key)+'"><span class="station-notification-icon" aria-hidden="true">'+icons[item.level]+'</span><span class="station-notification-copy"><a class="station-notification-main" href="'+esc(item.href)+'" data-inbox-key="'+esc(item.key)+'"><span class="station-notification-title">'+esc(item.title)+'</span><span class="station-notification-detail">'+esc(item.detail)+'</span>'+(item.meta?'<span class="station-notification-meta">'+esc(item.meta)+'</span>':'')+'<span class="station-notification-open">'+(isRead?'Read':'Unread')+' · '+labels[item.level]+' <span aria-hidden="true">→</span></span></a></span><button type="button" class="station-notification-favorite'+(isFavorite?' active':'')+'" data-favorite-key="'+esc(item.key)+'" aria-label="'+(isFavorite?'Remove from favorites':'Add to favorites')+'" aria-pressed="'+String(isFavorite)+'" title="'+(isFavorite?'Remove from favorites':'Add to favorites')+'">'+(isFavorite?'★':'☆')+'</button></div>';}).join(''):'<div class="station-notification-empty">'+(inboxPage&&activeFilterCount()?'No notifications match these filters. Try changing or clearing your filters.':(failed?'No active alerts were found in the available checks. Some data sources could not be reached.':'You’re all caught up. No active notifications.'))+'</div>';
+    list.querySelectorAll('[data-inbox-key]').forEach(link=>link.addEventListener('click',()=>{try{const saved=JSON.parse(localStorage.getItem(readKey)||'{}')||{};const key=link.getAttribute('data-inbox-key');if(!saved[key]){saved[key]=Date.now();localStorage.setItem(readKey,JSON.stringify(saved));const item=items.find(x=>x.key===key);if(item)item.isRead=true;const row=link.closest('[data-inbox-row]');if(row){row.classList.remove('is-unread');row.classList.add('is-read');const open=row.querySelector('.station-notification-open');if(open)open.innerHTML='Read · '+labels[item?.level||'info']+' <span aria-hidden="true">→</span>';}if(count)count.textContent=String(Math.max(0,Number(count.textContent||0)-1));}}catch(_e){}}));
+    list.querySelectorAll('[data-favorite-key]').forEach(button=>button.addEventListener('click',()=>{const key=button.getAttribute('data-favorite-key');let active=false;try{const saved=JSON.parse(localStorage.getItem(favoriteKey)||'{}')||{};if(saved[key])delete saved[key];else saved[key]=Date.now();localStorage.setItem(favoriteKey,JSON.stringify(saved));active=!!saved[key];}catch(_e){active=button.getAttribute('aria-pressed')!=='true';}const item=items.find(x=>x.key===key);if(item)item.isFavorite=active;button.setAttribute('aria-pressed',String(active));button.classList.toggle('active',active);button.textContent=active?'★':'☆';button.title=active?'Remove from favorites':'Add to favorites';button.setAttribute('aria-label',button.title);const row=button.closest('[data-inbox-row]');if(row)row.classList.toggle('is-favorite',active);}));
+  };
+  if(inboxPage&&filterToggle&&!filterToggle.dataset.bound){
+    filterToggle.dataset.bound='1';
+    filterToggle.addEventListener('click',()=>{const opening=filterPanel.hidden;filterPanel.hidden=!opening;filterToggle.setAttribute('aria-expanded',String(opening));});
+    getFilterEl('inbox-filter-close')?.addEventListener('click',()=>{filterPanel.hidden=true;filterToggle.setAttribute('aria-expanded','false');});
+    getFilterEl('inbox-filter-apply')?.addEventListener('click',()=>{
+      filterState.from=getFilterEl('inbox-filter-from')?.value||'';
+      filterState.to=getFilterEl('inbox-filter-to')?.value||'';
+      filterState.status=getFilterEl('inbox-filter-status')?.value||'all';
+      filterState.priority=getFilterEl('inbox-filter-priority')?.value||'all';
+      filterState.favorites=!!getFilterEl('inbox-filter-favorites')?.checked;
+      if(filterState.from&&filterState.to&&filterState.from>filterState.to){toast('From date must be before the To date.');return;}
+      filterPanel.hidden=true;filterToggle.setAttribute('aria-expanded','false');renderInboxList();
+    });
+    getFilterEl('inbox-filter-reset')?.addEventListener('click',()=>{
+      Object.assign(filterState,inboxFilterDefaults);
+      const f=getFilterEl('inbox-filter-from'),t=getFilterEl('inbox-filter-to'),st=getFilterEl('inbox-filter-status'),pr=getFilterEl('inbox-filter-priority'),fav=getFilterEl('inbox-filter-favorites');
+      if(f)f.value='';if(t)t.value='';if(st)st.value='all';if(pr)pr.value='all';if(fav)fav.checked=false;
+      renderInboxList();
+    });
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!filterPanel.hidden){filterPanel.hidden=true;filterToggle.setAttribute('aria-expanded','false');}});
+  }
+  renderInboxList();
   const footer=document.querySelector('.station-notifications-footer');if(footer)footer.hidden=inboxPage;
  }catch(e){if(status)status.textContent='Unable to refresh';list.innerHTML='<div class="station-notification-empty">Notifications could not be loaded. Open the related section to check station records.</div>';}
 }
