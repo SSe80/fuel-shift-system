@@ -171,6 +171,24 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
  body.msr-page .msr-panel-head{break-after:avoid!important}
  a{color:inherit!important;text-decoration:none!important}
 }
+</style><style id="msr-download-toast-style">
+#toast.msr-download-toast{
+  position:fixed!important;right:20px!important;bottom:20px!important;top:auto!important;left:auto!important;
+  z-index:100000!important;display:none;box-sizing:border-box;width:min(360px,calc(100vw - 28px));
+  padding:15px 18px 15px 52px!important;border:1px solid #dbe5ef!important;
+  border-left:4px solid #16a34a!important;border-radius:12px!important;background:#fff!important;
+  color:#172033!important;font:600 14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;
+  box-shadow:0 12px 32px rgba(15,23,42,.18)!important;overflow-wrap:anywhere;
+  animation:msrToastIn .2s ease-out;
+}
+#toast.msr-download-toast::before{
+  content:"✓";position:absolute;left:15px;top:50%;transform:translateY(-50%);
+  display:grid;place-items:center;width:25px;height:25px;border-radius:50%;
+  background:#dcfce7;color:#15803d;font-size:16px;font-weight:800;
+}
+@keyframes msrToastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:480px){#toast.msr-download-toast{right:14px!important;bottom:14px!important;width:calc(100vw - 28px)}}
+@media(prefers-reduced-motion:reduce){#toast.msr-download-toast{animation:none}}
 </style></head>
 <body class="admin-shell msr-page" data-app-page="adminMonthlyReport">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div><nav class="admin-sidebar-nav">
@@ -343,4 +361,5 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
  $('msr-compare-run').addEventListener('click',()=>{if(selectedCompareMonths.length<2){$('msr-compare-validation').textContent='Select at least two different months.';return;}hasRunComparison=true;closeCompare();$('msr-comparison').innerHTML='<div class="msr-empty">Preparing comparison…</div>';load();});
  $('msr-month').addEventListener('change',load);load();
 })();
-</script></body></html>
+</script><div id="toast" class="toast msr-download-toast" role="status" aria-live="polite"></div>
+</body></html>
