@@ -1033,14 +1033,39 @@ async function loadStationNotifications(){
    const missing=[];pendingDsr.forEach(report=>arr(report.missing_sales_shifts).concat(arr(report.unsubmitted_sales_shifts)).forEach(shift=>{const name=first(shift,['attendant_name','employee_name','name','attendant','employee'])||first(shift?.employee,['name'])||first(shift?.attendant,['name'])||'Attendant',key=String(name)+'|'+String(report.date||'');if(!missing.some(x=>x.key===key))missing.push({key,name,date:report.date});}));
    if(missing.length)add('missing-sales','warning','Attendants without recorded sales',missing.length+' attendant/shift record'+(missing.length===1?'':'s')+' still need sales recording after the DSR period.','admin-attendants.html',missing.slice(0,6).map(x=>String(x.name)+' · '+dailyReportIdLabel(x.date)).join(' | ')+(missing.length>6?' · +'+(missing.length-6)+' more':''),missing.map(x=>x.date).filter(Boolean).sort().slice(-1)[0]||null);
   }
-  const pending=[],partial=[];arr(purchaseData).forEach(p=>{
-   const discharged=first(p,['discharged_quantity_liters','discharged_liters','quantity_discharged_liters','total_discharged_liters','discharged_quantity']),remaining=first(p,['remaining_quantity_liters','remaining_liters','undischarged_liters','quantity_remaining_liters','remaining_quantity']);
-   const total=Number(first(p,['quantity_liters','ordered_quantity_liters','quantity'])||0),done=Number(discharged),rem=remaining!=null?Number(remaining):(discharged!=null&&Number.isFinite(total)&&Number.isFinite(done)?Math.max(0,total-done):null),state=String(first(p,['discharge_status','status'])||'').toLowerCase(),hasFields=discharged!=null||remaining!=null||p.discharge_status!=null,label=String(p.invoice_number||p.order_number||p.id||'Purchase'),product=codeFor(p.product);
-   if(hasFields&&rem!=null&&rem>0.01){const row={label,product,remaining:rem,date:first(p,['purchase_date','order_date','created_at','createdAt','invoice_date','date'])};if(rem<total-.01||done>0||/partial/i.test(state))partial.push(row);else if(/pending|undischarged|awaiting|not.?discharg/i.test(state)||done===0)pending.push(row);}
-   else if(!hasFields&&/pending|undischarged|awaiting.?discharg/i.test(state))pending.push({label,product,remaining:total,date:first(p,['purchase_date','order_date','created_at','createdAt','invoice_date','date'])});
+  // Purchase alerts use the delivered quantity (the sum of truck compartments),
+  // not only the ordered quantity. Each alert links directly to its own purchase.
+  arr(purchaseData).forEach(p=>{
+   const state=String(first(p,['discharge_status','status'])||'').toLowerCase();
+   if(/^(discharged|cancelled|canceled|void)$/i.test(state))return;
+   const compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
+   const deliveredFromCompartments=compartments.reduce((sum,value)=>sum+(Number(value)||0),0);
+   const totalRaw=deliveredFromCompartments>0?deliveredFromCompartments:first(p,['delivered_quantity_liters','delivered_liters','quantity_liters','ordered_quantity_liters','quantity']);
+   const total=Number(totalRaw||0);
+   const dischargedRaw=first(p,['discharged_quantity_liters','discharged_liters','quantity_discharged_liters','total_discharged_liters','discharged_quantity']);
+   const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
+   const done=dischargedRaw!=null?Number(dischargedRaw):history.reduce((sum,row)=>sum+(Number(first(row,['discharged_quantity_liters','quantity_liters','quantity']))||0),0);
+   const remainingRaw=first(p,['remaining_quantity_liters','remaining_liters','undischarged_liters','quantity_remaining_liters','remaining_quantity']);
+   const rem=remainingRaw!=null?Math.max(0,Number(remainingRaw)||0):Math.max(0,total-done);
+   // A stale pending status must never produce an alert when all delivered
+   // liters have already been discharged.
+   if(!(total>0)||!(rem>0.01))return;
+   const invoice=String(first(p,['invoice_number','order_number'])||'').trim();
+   const id=String(p.id||'').trim();
+   const shortId=id?id.slice(0,8):'unreferenced';
+   const label=invoice?'Invoice '+invoice:'Purchase #'+shortId;
+   const product=codeFor(first(p,['product_code','product']));
+   const date=first(p,['purchase_date','order_date','created_at','createdAt','invoice_date','date']);
+   const isPartial=done>0||rem<total-0.01||/partial/i.test(state);
+   const key=(isPartial?'purchase-partial:':'purchase-discharge:')+(id||invoice||shortId);
+   const detail=isPartial
+     ?product+' has '+liters(rem)+' L remaining to discharge.'
+     :product+' · '+liters(rem)+' L delivered quantity is awaiting discharge.';
+   const meta=(invoice?'Invoice '+invoice+' · ':'Invoice not provided · Ref '+shortId+' · ')+
+     'Delivered '+liters(total)+' L · Discharged '+liters(Math.min(done,total))+' L';
+   add(key,'warning',isPartial?'Partial purchase discharge · '+label:'Purchase awaiting discharge · '+label,
+     detail,'admin-purchases.html'+(id?'#purchase-'+encodeURIComponent(id):''),meta,date);
   });
-  if(pending.length)add('purchase-discharge','warning','Purchases awaiting discharge',pending.length+' purchase'+(pending.length===1?' needs':'s need')+' discharge.','admin-purchases.html',pending.slice(0,5).map(p=>p.product+' · '+p.label+' · '+liters(p.remaining)+' L').join(' | '),pending.map(p=>p.date).filter(Boolean).map(String).sort().slice(-1)[0]||null);
-  if(partial.length)add('purchase-partial','warning','Partial purchase discharges',partial.length+' purchase'+(partial.length===1?' has':'s have')+' undischarged quantity remaining.','admin-purchases.html',partial.slice(0,5).map(p=>p.product+' · '+p.label+' · '+liters(p.remaining)+' L remaining').join(' | '),partial.map(p=>p.date).filter(Boolean).map(String).sort().slice(-1)[0]||null);
   const differences=[];arr(recon?.tanks).forEach(t=>{const closing=first(t,['physical_closing_liters','closing_physical_liters','recorded_closing_liters','physical_liters']),expected=first(t,['expected_closing_liters','expected_liters']),raw=first(t,['variance_liters','stock_difference_liters','difference_liters']),diff=raw!=null?Number(raw):(closing!=null&&expected!=null?Number(closing)-Number(expected):null);if(diff!=null&&Number.isFinite(diff)&&Math.abs(diff)>.01)differences.push({tank:t.tank_code||t.tank_name||'Tank',diff});});
   if(differences.length)add('stock-differences','critical','Tank stock differences',differences.length+' tank reconciliation'+(differences.length===1?' shows':'s show')+' a difference between expected and recorded stock.','admin-accounting-control.html',differences.slice(0,6).map(x=>x.tank+' · '+(x.diff>0?'+':'')+liters(x.diff)+' L').join(' | '));
   const failed=results.filter(r=>r.status==='rejected').length,icons={critical:'!',warning:'!',info:'i'},labels={critical:'Needs attention',warning:'Action needed',info:'For review'},rank={critical:0,warning:1,info:2};
@@ -1124,7 +1149,7 @@ async function loadStationNotifications(){
         pagination.querySelector('[data-inbox-page="next"]')?.addEventListener('click',()=>{if(inboxCurrentPage<pageCount){inboxCurrentPage++;renderInboxList();}});
       }
     }
-    list.innerHTML=visibleItems.length?visibleItems.map(item=>{const isRead=!!item.isRead,isFavorite=!!item.isFavorite;return '<div class="station-notification-row '+esc(item.level)+(isRead?' is-read':' is-unread')+(isFavorite?' is-favorite':'')+'" data-inbox-row="'+esc(item.key)+'"><span class="station-notification-icon" aria-hidden="true">'+icons[item.level]+'</span><span class="station-notification-copy"><a class="station-notification-main" href="'+esc(item.href)+'" data-inbox-key="'+esc(item.key)+'"><span class="station-notification-title">'+esc(item.title)+'</span><span class="station-notification-detail">'+esc(item.detail)+'</span>'+(item.meta?'<span class="station-notification-meta">'+esc(item.meta)+'</span>':'')+'<span class="station-notification-open">'+(isRead?'Read':'Unread')+' · '+labels[item.level]+' <span aria-hidden="true">→</span></span></a></span><button type="button" class="station-notification-favorite'+(isFavorite?' active':'')+'" data-favorite-key="'+esc(item.key)+'" aria-label="'+(isFavorite?'Remove from favorites':'Add to favorites')+'" aria-pressed="'+String(isFavorite)+'" title="'+(isFavorite?'Remove from favorites':'Add to favorites')+'">'+(isFavorite?'★':'☆')+'</button></div>';}).join(''):'<div class="station-notification-empty">'+(inboxPage&&activeFilterCount()?'No notifications match these filters. Try changing or clearing your filters.':(failed?'No active alerts were found in the available checks. Some data sources could not be reached.':'You’re all caught up. No active notifications.'))+'</div>';
+    list.innerHTML=visibleItems.length?visibleItems.map(item=>{const isRead=!!item.isRead,isFavorite=!!item.isFavorite,isPurchase=/^purchase-(discharge|partial):/.test(String(item.key||'')),openLabel=isPurchase?'Open purchase':(isRead?'Read':'Unread')+' · '+labels[item.level];return '<div class="station-notification-row '+esc(item.level)+(isRead?' is-read':' is-unread')+(isFavorite?' is-favorite':'')+(isPurchase?' station-purchase-notification':'')+'" data-inbox-row="'+esc(item.key)+'"><span class="station-notification-icon" aria-hidden="true">'+icons[item.level]+'</span><span class="station-notification-copy"><a class="station-notification-main" href="'+esc(item.href)+'" data-inbox-key="'+esc(item.key)+'"><span class="station-notification-title">'+esc(item.title)+'</span><span class="station-notification-detail">'+esc(item.detail)+'</span>'+(item.meta?'<span class="station-notification-meta">'+esc(item.meta)+'</span>':'')+'<span class="station-notification-open">'+openLabel+' <span aria-hidden="true">→</span></span></a></span><button type="button" class="station-notification-favorite'+(isFavorite?' active':'')+'" data-favorite-key="'+esc(item.key)+'" aria-label="'+(isFavorite?'Remove from favorites':'Add to favorites')+'" aria-pressed="'+String(isFavorite)+'" title="'+(isFavorite?'Remove from favorites':'Add to favorites')+'">'+(isFavorite?'★':'☆')+'</button></div>';}).join(''):'<div class="station-notification-empty">'+(inboxPage&&activeFilterCount()?'No notifications match these filters. Try changing or clearing your filters.':(failed?'No active alerts were found in the available checks. Some data sources could not be reached.':'You’re all caught up. No active notifications.'))+'</div>';
     list.querySelectorAll('[data-inbox-key]').forEach(link=>link.addEventListener('click',async event=>{
       event.preventDefault();
       const key=link.getAttribute('data-inbox-key'),item=items.find(x=>x.key===key),target=link.href;
