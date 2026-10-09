@@ -919,7 +919,7 @@
 <div class="modal-card purchase-detail-card">
   <div class="top"><div><span class="section-kicker">PURCHASE DETAILS</span><h3>Purchase Details</h3></div><button type="button" class="modal-close" onclick="closePurchaseDetail()">×</button></div>
   <div id="purchase-detail-content" class="purchase-detail-content"></div>
-  <div class="purchase-detail-actions" id="purchase-detail-actions"><button type="button" class="purchase-detail-download" onclick="downloadPurchaseDetailPdf()">Print / PDF</button><button type="button" onclick="closePurchaseDetail()">Close</button></div>
+  <div class="purchase-detail-actions" id="purchase-detail-actions"><button type="button" class="purchase-detail-download" onclick="downloadPurchaseDetailPdf()">Download PDF</button><button type="button" onclick="closePurchaseDetail()">Close</button></div>
 </div>
 </div><div id="toast" class="toast"></div></main><script id="purchase-pdf-engine"></script>
 <script>
@@ -945,10 +945,9 @@ window.ensurePurchasePdfEngine=async function(){
 };
 
 window.downloadPurchaseDetailPdf=async function(){
-  const printWindow=window.open('about:blank','_blank');
   const p=window.currentPurchaseDetailData;
   const fail=(msg)=>{if(typeof window.openPurchaseFailed==='function')window.openPurchaseFailed(msg,'PDF Download Failed');else alert(msg);};
-  if(!p){if(printWindow&&!printWindow.closed)printWindow.close();fail('Purchase details are not available.');return;}
+  if(!p){fail('Purchase details are not available.');return;}
   const n=v=>Number(v||0), L=v=>n(v).toLocaleString(undefined,{maximumFractionDigits:2})+' L';
   const dt=v=>{try{return v?new Date(v).toLocaleString():'—';}catch(_){return '—';}};
   const btn=document.querySelector('.purchase-detail-download');
@@ -967,7 +966,7 @@ window.downloadPurchaseDetailPdf=async function(){
     const title=(s)=>{T(s.toUpperCase(),M,y,7,blue,'bold');doc.setDrawColor(...blue);doc.setLineWidth(.7);doc.line(M,y+2,W-M,y+2);y+=9;};
     const field=(label,value,x,yy,w)=>{T(label.toUpperCase(),x,yy,5,muted,'bold');const v=String(value??'—'),lines=wrap(v,w,7).slice(0,2);T(lines[0]||'—',x,yy+6.5,fit(lines[0]||'—',w,7),'bold');if(lines[1])T(lines[1],x,yy+10,6,navy,'bold');};
     const grid=(items,x,yy,w,cols,rowH=15)=>{const gap=5,cw=(w-gap*(cols-1))/cols;items.forEach((it,i)=>{const col=i%cols,row=Math.floor(i/cols);field(it[0],it[1],x+col*(cw+gap),yy+row*rowH,cw);});return yy+Math.ceil(items.length/cols)*rowH;};
-    const product=String(p.product_code||p.product_code_name||p.code_name||p.product?.code_name||'Product code unavailable'),invoice=String(p.invoice_number||'—'),ordered=n(p.ordered_quantity_liters);
+    const product=String(p.product||'Fuel'),invoice=String(p.invoice_number||'—'),ordered=n(p.ordered_quantity_liters);
     const comps=Array.isArray(p.compartment_liters)?p.compartment_liters:[],delivered=comps.reduce((s,v)=>s+n(v),0),discharged=n(p.discharged_quantity_liters),remaining=Math.max(delivered-discharged,0);
     const status=String(p.status||'').replaceAll('_',' ')||'Purchase',hist=Array.isArray(p.discharge_history)?p.discharge_history:[],tanks=Array.isArray(window.currentPurchaseDetailTanks)?window.currentPurchaseDetailTanks:[];
     header();
@@ -1017,15 +1016,12 @@ window.downloadPurchaseDetailPdf=async function(){
     const lines=wrap(remark,CW-8,7).slice(0,6),rh=Math.max(18,10+lines.length*4.2);box(M,y,CW,rh);lines.forEach((ln,i)=>T(ln,M+4,y+7+i*4.2,7,muted));y+=rh+7;
     if(y>H-22){footer();doc.addPage();header();}
     T('Record ID',M,y,5,muted,'bold');T(String(p.id||'—'),M,y+5.5,5.5,navy);footer();
-    const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);
-    const blob=doc.output('blob');
-    if(typeof window.openPdfForPrinting==='function')window.openPdfForPrinting(blob,'purchase_'+safe+'.pdf',printWindow);
-    else {doc.save('purchase_'+safe+'.pdf');if(printWindow&&!printWindow.closed)printWindow.close();}
-  }catch(e){if(printWindow&&!printWindow.closed)printWindow.close();fail(e.message||'Unable to create the PDF.');}
-  finally{if(btn){btn.disabled=false;btn.textContent='Print / PDF';}}
+    const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);doc.save('purchase_'+safe+'.pdf');
+  }catch(e){fail(e.message||'Unable to create the PDF.');}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF';}}
 }
 </script>
-<script src="assets/app.js?v=20261010-print-ready"></script><script>
+<script src="assets/app.js?v=20261007-03"></script><script>
 (function(){
   const productSelect=document.getElementById('purchase-product');
   const orderedQuantityInput=document.getElementById('purchase-ordered-quantity');
