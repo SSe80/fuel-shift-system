@@ -4920,3 +4920,20 @@ body[data-app-page="adminInbox"] .station-notification-row.is-favorite{box-shado
  body[data-app-page="adminDashboard"] .station-notification-favorite,
  body[data-app-page="adminInbox"] .station-notification-favorite{width:32px!important;height:32px!important;min-width:32px!important;font-size:18px!important}
 }
+
+
+/* Stronger visible separator between every inbox message. */
+body[data-app-page="adminInbox"] .station-notification-row{
+ border-bottom:1px solid #c4cedb!important;
+ box-shadow:0 1px 0 rgba(255,255,255,.9)!important;
+}
+body[data-app-page="adminInbox"] .station-notification-row:last-child{
+ border-bottom:0!important;
+ box-shadow:none!important;
+}
+body[data-app-page="adminInbox"] .station-notification-row + .station-notification-row{
+ border-top:0!important;
+}
+body[data-app-page="adminInbox"] .station-notification-row.is-unread{
+ border-left:3px solid #e5a126!important;
+}
