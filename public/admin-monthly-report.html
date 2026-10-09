@@ -128,10 +128,33 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
  const $=id=>document.getElementById(id), fmt=n=>Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}), money=n=>(window.stationCurrency||'ETB')+' '+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}), arr=x=>Array.isArray(x)?x:[], safeDate=s=>String(s||'').slice(0,10), monthLabel=s=>{const d=new Date(s+'-01T12:00:00');return d.toLocaleDateString(undefined,{month:'long',year:'numeric'});};
  let lastExportRows=[];let hasRunComparison=false;
  const now=new Date(), currentMonth=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');$('msr-month').value=currentMonth; const initialMonths=[currentMonth,...(()=>{const a=[];for(let i=1;i<=2;i++){const d=new Date(currentMonth+'-01T12:00:00');d.setMonth(d.getMonth()-i);a.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}return a;})()];let selectedCompareMonths=[...initialMonths];
- function amount(r){const p=r.dsr_performance||{},s=r.summary||{},ss=r.dsr_sales_summary||r.sales_summary||{};return Number(p.calculated_sales_amount??p.total_sales_amount??s.sales_amount??ss.total_amount??r.total_sales_amount??0);}
- function litersTotal(r){const p=r.dsr_performance||{},s=r.summary||{},ss=r.dsr_sales_summary||r.sales_summary||{};return Number(p.total_sales_liters??s.sales_liters??ss.total_liters??r.total_sales_liters??0);}
- function payments(r){const p=r.dsr_performance||{};return p.entered_payment_amount==null?null:Number(p.entered_payment_amount);}
- function shifts(r){return Number((r.dsr_performance||{}).shift_count??arr(r.shift_summary).length??0);}
+ const number=v=>{const n=Number(v);return Number.isFinite(n)?n:0;};
+ function amount(r){const p=r.dsr_performance||{},s=r.summary||{},ss=r.dsr_sales_summary||r.sales_summary||{};return number(p.calculated_sales_amount??p.total_sales_amount??s.sales_amount??ss.total_amount??r.total_sales_amount??0);}
+ function litersTotal(r){const p=r.dsr_performance||{},s=r.summary||{},ss=r.dsr_sales_summary||r.sales_summary||{};return number(p.total_sales_liters??s.sales_liters??ss.total_liters??r.total_sales_liters??0);}
+ function payments(r){const p=r.dsr_performance||{};if(p.entered_payment_amount==null)return null;const n=Number(p.entered_payment_amount);return Number.isFinite(n)?n:null;}
+ function shifts(r){return number((r.dsr_performance||{}).shift_count??arr(r.shift_summary).length??0);}
+ function renderMonthlyRanking(stats,failed,totalDates){
+  const eligible=stats.filter(s=>s.days>0).sort((a,b)=>b.avgAmount-a.avgAmount||b.amount-a.amount||b.liters-a.liters);
+  if(!eligible.length){$('msr-month-ranking-summary').innerHTML='<div class="msr-empty">No confirmed monthly report details are available to rank.</div>';$('msr-month-ranking').innerHTML='<div class="msr-empty">Monthly ranking will appear when confirmed DSR data is available.</div>';return;}
+  const topDaily=eligible[0],topTotal=[...eligible].sort((a,b)=>b.amount-a.amount||b.days-a.days)[0];
+  $('msr-month-ranking-summary').innerHTML='<div class="msr-month-rank-highlight"><span>Best average daily sales</span><strong>'+h(monthLabel(topDaily.month))+'</strong><small>'+money(topDaily.avgAmount)+' per confirmed day · '+fmt(topDaily.days)+' confirmed days</small></div><div class="msr-month-rank-highlight"><span>Highest total sales</span><strong>'+h(monthLabel(topTotal.month))+(topTotal.month===currentMonth?' · In progress':'')+'</strong><small>'+money(topTotal.amount)+' total sales · '+fmt(topTotal.liters)+' L sold</small></div>';
+  const byMonth=new Map(eligible.map(s=>[s.month,s]));
+  $('msr-month-ranking').innerHTML='<table class="msr-table msr-month-ranking-table"><thead><tr><th>Rank</th><th>Month</th><th class="num">Total sales</th><th class="num">Average / day</th><th class="num">Fuel sold</th><th class="num">Confirmed days</th><th class="num">Sales change</th></tr></thead><tbody>'+eligible.map((s,i)=>{const d=new Date(s.month+'-01T12:00:00');d.setMonth(d.getMonth()-1);const previousKey=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),prior=byMonth.get(previousKey),delta=prior&&prior.amount!==0?((s.amount-prior.amount)/Math.abs(prior.amount))*100:null;return '<tr><td><span class="msr-rank-number '+(i===0?'first':'')+'">'+(i+1)+'</span></td><td><strong>'+h(monthLabel(s.month))+'</strong>'+(s.month===currentMonth?' <span class="msr-month-rank-current">IN PROGRESS</span>':'')+'</td><td class="num msr-rank-metric">'+money(s.amount)+'</td><td class="num">'+money(s.avgAmount)+'</td><td class="num">'+fmt(s.liters)+' L</td><td class="num">'+s.days+'</td><td class="num">'+(delta===null?'—':'<span class="msr-rank-change '+(delta>0?'positive':delta<0?'negative':'')+'">'+(delta>0?'▲ ':delta<0?'▼ ':'')+Math.abs(delta).toFixed(1)+'%</span>')+'</td></tr>';}).join('')+'</tbody></table>'+(failed?'<p class="msr-ranking-note">Some report details could not be loaded ('+failed+' of '+totalDates+'); ranking may be incomplete. Reload the page to retry.</p>':'');
+ }
+ async function loadMonthlyRanking(rows){
+  if(monthRankingPromise)return monthRankingPromise;
+  monthRankingPromise=(async()=>{
+   const dates=[...new Set(rows.map(x=>safeDate(x.date)).filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)))].sort();
+   const failedDates=new Set();
+   for(let i=0;i<dates.length;i+=6){
+    await Promise.all(dates.slice(i,i+6).map(async d=>{if(reportCache.has(d))return;try{const report=await api('/api/reports/daily?date='+encodeURIComponent(d));if(report)reportCache.set(d,report);else failedDates.add(d);}catch(e){failedDates.add(d);}}));
+    $('msr-month-ranking-summary').innerHTML='<div class="msr-empty">Building ranking · '+Math.min(i+6,dates.length)+' of '+dates.length+' confirmed DSR dates checked…</div>';
+   }
+   const grouped=new Map();dates.forEach(d=>{const r=reportCache.get(d);if(!r){failedDates.add(d);return;}const month=d.slice(0,7);if(!grouped.has(month))grouped.set(month,{month,days:0,amount:0,liters:0});const s=grouped.get(month);s.days++;s.amount+=amount(r);s.liters+=litersTotal(r);});
+   const stats=[...grouped.values()].map(s=>({...s,avgAmount:s.days?s.amount/s.days:0}));renderMonthlyRanking(stats,failedDates.size,dates.length);
+  })().catch(e=>{$('msr-month-ranking-summary').innerHTML='<div class="msr-empty">Monthly ranking could not be loaded. '+h(e.message||'Please reload and try again.')+'</div>';}).finally(()=>{monthRankingPromise=null;});
+  return monthRankingPromise;
+ }
  async function load(){
   const month=$('msr-month').value||currentMonth;$('msr-status').textContent='Loading confirmed reports…';$('msr-error').hidden=true;
   try{
