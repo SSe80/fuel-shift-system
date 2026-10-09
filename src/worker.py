@@ -323,6 +323,7 @@ def sync_station_inbox():
             for record in records:
                 if record["notification_key"] in reactivated_keys:
                     record["first_seen_at"]=now
+                    record.setdefault("source_date",now)
         status,result=sb("station_inbox_notifications",method="POST",
             params={"on_conflict":"notification_key"},body=records,
             prefer="resolution=merge-duplicates,return=representation")
