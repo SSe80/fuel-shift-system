@@ -4960,3 +4960,33 @@ body[data-app-page="adminDashboard"] .station-inbox-top-action .station-inbox-bu
 body[data-app-page="adminDashboard"] .station-inbox-top-action .station-inbox-button:hover{background:linear-gradient(135deg,#1d4ed8,#123d9a)!important;box-shadow:0 7px 16px rgba(37,99,235,.24)!important;transform:translateY(-1px)}
 body[data-app-page="adminDashboard"] .station-inbox-top-action .station-inbox-button span{font-size:17px;line-height:1}
 @media(max-width:640px){body[data-app-page="adminInbox"] .station-notifications-card{padding:14px 12px 5px!important}body[data-app-page="adminInbox"] .station-notifications-head{flex-direction:column!important;gap:7px!important}body[data-app-page="adminInbox"] .station-notifications-status{margin-top:0!important}body[data-app-page="adminDashboard"] .station-notification-title,body[data-app-page="adminInbox"] .station-notification-title{font-size:13px!important}body[data-app-page="adminDashboard"] .station-notification-detail,body[data-app-page="adminInbox"] .station-notification-detail{font-size:12px!important}.station-inbox-top-action{justify-content:stretch}body[data-app-page="adminDashboard"] .station-inbox-top-action .station-inbox-button{width:100%}}
+
+
+/* Align inbox header action with the Notifications heading; keep it as a quiet icon link. */
+body[data-app-page="adminDashboard"] .station-notifications-card>.station-inbox-top-action{display:none!important}
+body[data-app-page="adminDashboard"] .station-notifications-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:14px!important}
+body[data-app-page="adminDashboard"] .station-notifications-head>div:first-child{min-width:0;flex:1}
+body[data-app-page="adminDashboard"] .station-notifications-head h2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+body[data-app-page="adminDashboard"] .station-inbox-inline-link{
+ display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;
+ margin-left:auto;padding:5px 0 5px 10px;border:0;background:transparent;color:#245ac0;
+ text-decoration:none;font-size:12px;font-weight:750;line-height:1.3;white-space:nowrap;
+}
+body[data-app-page="adminDashboard"] .station-inbox-inline-link svg{width:17px;height:17px;display:block;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+body[data-app-page="adminDashboard"] .station-inbox-inline-link:hover{color:#163e96;text-decoration:underline;text-underline-offset:3px}
+body[data-app-page="adminDashboard"] .station-notification-row{grid-template-columns:34px minmax(0,1fr) 36px!important;column-gap:12px!important}
+body[data-app-page="adminDashboard"] .station-notification-icon{display:flex!important;align-items:center!important;justify-content:center!important;align-self:start!important;margin-top:2px!important;width:30px!important;height:30px!important;line-height:1!important;box-sizing:border-box!important}
+body[data-app-page="adminDashboard"] .station-notification-favorite,
+body[data-app-page="adminInbox"] .station-notification-favorite{display:flex!important;align-items:center!important;justify-content:center!important;align-self:start!important;justify-self:center!important;margin:1px 0 0!important;width:32px!important;height:32px!important;min-width:32px!important;box-sizing:border-box!important;line-height:1!important;font-size:20px!important}
+body[data-app-page="adminDashboard"] .station-notification-copy,
+body[data-app-page="adminInbox"] .station-notification-copy{min-width:0!important}
+body[data-app-page="adminDashboard"] .station-notification-main,
+body[data-app-page="adminInbox"] .station-notification-main{min-width:0!important;width:100%!important}
+@media(max-width:640px){
+ body[data-app-page="adminDashboard"] .station-notifications-head{align-items:flex-start!important;gap:8px!important}
+ body[data-app-page="adminDashboard"] .station-inbox-inline-link{padding:4px 0 4px 6px;font-size:11px}
+ body[data-app-page="adminDashboard"] .station-inbox-inline-link svg{width:16px;height:16px}
+ body[data-app-page="adminDashboard"] .station-notification-row{grid-template-columns:28px minmax(0,1fr) 30px!important;column-gap:8px!important}
+ body[data-app-page="adminDashboard"] .station-notification-icon{width:26px!important;height:26px!important}
+ body[data-app-page="adminDashboard"] .station-notification-favorite,body[data-app-page="adminInbox"] .station-notification-favorite{width:28px!important;height:28px!important;min-width:28px!important;font-size:18px!important}
+}
