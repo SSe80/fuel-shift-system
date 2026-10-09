@@ -1031,19 +1031,35 @@ async function loadStationNotifications(){
    const ready=pendingDsr.filter(x=>x.status==='pending'&&x.report_day_closed!==false&&x.all_shifts_complete&&x.all_handover_recorded&&x.all_sales_recorded);
    const latestPendingDate=pendingDsr.map(x=>x.date).filter(Boolean).sort().slice(-1)[0]||null;
    add('pending-dsr',ready.length?'warning':'info',ready.length?'DSR ready for confirmation':'DSR completion or confirmation pending',ready.length?ready.length+' daily report'+(ready.length===1?' is':'s are')+' ready for admin review and confirmation.':pendingDsr.length+' DSR record'+(pendingDsr.length===1?' needs':'s need')+' completion checks or confirmation.','admin-daily-report.html'+(latestPendingDate?'#dsr-'+encodeURIComponent(latestPendingDate):''),pendingDsr.slice(0,5).map(x=>dailyReportIdLabel(x.date)+' · '+(x.status==='waiting'?'Awaiting completion':'Awaiting confirmation')).join(' | '),latestPendingDate);
-   const missing=[];pendingDsr.forEach(report=>arr(report.missing_sales_shifts).concat(arr(report.unsubmitted_sales_shifts)).forEach(shift=>{
-    const employee=shift?.employee&&typeof shift.employee==='object'?shift.employee:null;
-    const attendant=shift?.attendant&&typeof shift.attendant==='object'?shift.attendant:null;
-    const name=String(first(shift,['attendant_name','employee_name','name'])||first(employee,['name','full_name','employee_name'])||first(attendant,['name','full_name','employee_name'])||first(shift,['attendant','employee'])||'Attendant').trim();
-    const shiftLabel=first(shift,['shift_name','shift_label','dispenser_name','dispenser_code','shift_id'])||'';
-    const key=String(report.date||'')+'|'+name+'|'+String(shift.id||shift.shift_id||shiftLabel||'');
-    if(!missing.some(x=>x.key===key))missing.push({key,name,date:report.date,shiftLabel});
-   }));
+   const missing=[];
+   pendingDsr.forEach(report=>{
+    const sourceRows=[];
+    arr(report.missing_sales_shift_details).forEach(shift=>sourceRows.push({...shift,issue:'missing-sales'}));
+    arr(report.unsubmitted_sales_shift_details).forEach(shift=>sourceRows.push({...shift,issue:'unsubmitted-sales'}));
+    if(!sourceRows.length){
+     arr(report.missing_sales_shifts).forEach(shift=>sourceRows.push({...((shift&&typeof shift==='object')?shift:{}),shift_id:(shift&&typeof shift==='object'?(shift.shift_id||shift.id):shift),issue:'missing-sales'}));
+     arr(report.unsubmitted_sales_shifts).forEach(shift=>sourceRows.push({...((shift&&typeof shift==='object')?shift:{}),shift_id:(shift&&typeof shift==='object'?(shift.shift_id||shift.id):shift),issue:'unsubmitted-sales'}));
+    }
+    sourceRows.forEach(shift=>{
+     const employee=shift?.employee&&typeof shift.employee==='object'?shift.employee:null;
+     const attendant=shift?.attendant&&typeof shift.attendant==='object'?shift.attendant:null;
+     const shiftId=String(first(shift,['shift_id','id'])||'').trim();
+     const shiftLabel=String(first(shift,['shift_label','shift_name','dispenser_name','dispenser_code'])||'').trim();
+     const knownName=first(shift,['attendant_name','employee_name','name'])||first(employee,['name','full_name','employee_name'])||first(attendant,['name','full_name','employee_name']);
+     const name=String(knownName||('Attendant'+(shiftId?' · '+shiftId.slice(0,8):''))).trim();
+     const issue=shift.issue==='unsubmitted-sales'?'unsubmitted-sales':'missing-sales';
+     const identity=shiftId||String(name).replace(/[^A-Za-z0-9_-]/g,'-').slice(0,70)||'unknown';
+     const key=String(report.date||'')+'|'+issue+'|'+identity;
+     if(!missing.some(x=>x.key===key))missing.push({key,name,date:report.date,shiftLabel:shiftLabel||(shiftId?'Shift '+shiftId.slice(0,8):''),shiftId,issue});
+    });
+   });
    missing.forEach(x=>{
     const dateLabel=dailyReportIdLabel(x.date);
-    const key='missing-sales:'+String(x.date||'unknown')+':'+x.key.split('|').slice(1).join('|');
+    const safePart=value=>String(value||'unknown').replace(/[^A-Za-z0-9_-]/g,'-').slice(0,70)||'unknown';
+    const key=x.issue+':'+safePart(x.date)+':'+safePart(x.shiftId||x.name);
     const meta=[dateLabel,x.shiftLabel].filter(Boolean).join(' · ');
-    add(key,'warning','Missing sales · '+x.name,'No sales have been recorded for '+x.name+' for this DSR period.','admin-daily-report.html'+(x.date?'#dsr-'+encodeURIComponent(x.date):''),meta,x.date||null);
+    const unsubmitted=x.issue==='unsubmitted-sales';
+    add(key,'warning',(unsubmitted?'Sales not submitted · ':'Missing sales · ')+x.name,unsubmitted?'Sales for '+x.name+' have been recorded but not submitted for this DSR period.':'No sales have been recorded for '+x.name+' for this DSR period.','admin-daily-report.html'+(x.date?'#dsr-'+encodeURIComponent(x.date):''),meta,x.date||null);
    });
   }
   // Purchase alerts use the delivered quantity (the sum of truck compartments),
