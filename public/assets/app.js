@@ -2626,21 +2626,85 @@ function createPurchaseReportPdf(r){
 }
 
 /* ---------- DSR (DAILY SALES REPORT) ---------- */
+function downloadMonthlySalesReportPdf(data){
+  if(!data||!data.summary){toast('Monthly report data is still loading. Please try again.');return;}
+  const s=data.summary,cur=window.stationCurrency||'ETB',num=v=>Number(v||0),fmt=v=>num(v).toLocaleString('en-US',{maximumFractionDigits:2}),money=v=>cur+' '+num(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),monthLabel=v=>{const dt=new Date(String(v)+'-01T12:00:00');return Number.isNaN(dt.getTime())?String(v||'Monthly report'):dt.toLocaleDateString('en-US',{month:'long',year:'numeric'});};
+  const daily=Array.isArray(data.daily)?data.daily:[],products=Array.isArray(data.products)?data.products:[],attendants=Array.isArray(data.attendants)?data.attendants:[],ranking=Array.isArray(data.monthRanking)?data.monthRanking:[];
+  const blob=createDsrReportPdf({
+    reportType:'MSR',title:monthLabel(data.month),statusLabel:'Generated',footer:'Monthly sales report · '+monthLabel(data.month),
+    key:[
+      {label:'Calculated sales',value:money(s.totalSales),tone:'good'},
+      {label:'Fuel sold',value:fmt(s.totalLiters)+' L'},
+      {label:'Confirmed days',value:String(num(s.confirmedDays)),size:16},
+      {label:'Confirmed shifts',value:fmt(s.totalShifts),size:16},
+      {label:'Average sales / day',value:money(s.averageDailySales),size:11}
+    ],
+    dispRows:daily.map(row=>[{t:String(row.date||'—'),sub:'Confirmed daily report'},fmt(row.liters)+' L',money(row.sales),row.payments==null?'—':money(row.payments),String(num(row.shifts)),'Confirmed']),
+    tanks:products.map((p,i)=>({name:p.code||'Product code unavailable',sub:'Monthly product performance',cells:[fmt(p.liters)+' L',money(p.sales),num(p.sharePct).toFixed(1)+'%',money(num(p.liters)?num(p.sales)/num(p.liters):0),String(i+1)],cards:[
+      {label:'Fuel sold',value:fmt(p.liters)+' L'},
+      {label:'Calculated sales',value:money(p.sales)},
+      {label:'Share of sales',value:num(p.sharePct).toFixed(1)+'%'},
+      {label:'Sales per liter',value:money(num(p.liters)?num(p.sales)/num(p.liters):0)}
+    ]})),
+    stats:[
+      {label:'Expected confirmed DSR days',value:String(num(s.expectedDays))},
+      {label:'Entered payments',value:s.enteredPayments==null?'Incomplete':money(s.enteredPayments)},
+      {label:'Financial difference',value:s.financialDifference==null?'Incomplete':money(s.financialDifference)},
+      {label:'Report generated',value:new Date().toLocaleString('en-US')}
+    ],
+    overview:[
+      {label:'Report month',value:monthLabel(data.month)},
+      {label:'Confirmed DSR days',value:String(num(s.confirmedDays))},
+      {label:'Calculated sales',value:money(s.totalSales)},
+      {label:'Fuel sold',value:fmt(s.totalLiters)+' L'},
+      {label:'Average sales / confirmed day',value:money(s.averageDailySales)},
+      {label:'Confirmed shifts',value:fmt(s.totalShifts)},
+      {label:'Entered payments',value:s.enteredPayments==null?'Incomplete':money(s.enteredPayments)},
+      {label:'Financial difference',value:s.financialDifference==null?'Incomplete':money(s.financialDifference)}
+    ],
+    perf:ranking.slice(0,12).map((x,i)=>({label:(i+1)+'. '+monthLabel(x.month),value:money(x.amount)+' total · '+money(x.avgAmount)+'/day'})),
+    shifts:attendants.map((x,i)=>({title:'ATTENDANT '+(i+1)+' - '+(x.attendant||'Unknown'),sub:'Monthly attendant performance',cols:[
+      {label:'Sales',value:money(x.sales),tone:'good',w:76},
+      {label:'Fuel sold',value:fmt(x.liters)+' L',w:76},
+      {label:'Shifts',value:String(num(x.shiftCount)),w:76},
+      {label:'Share',value:(num(s.totalSales)?(num(x.sales)/num(s.totalSales)*100):0).toFixed(1)+'%',w:76}
+    ]})),
+    finalLeft:[
+      {label:'Report month',value:monthLabel(data.month)},
+      {label:'Calculated sales',value:money(s.totalSales)},
+      {label:'Fuel sold',value:fmt(s.totalLiters)+' L'},
+      {label:'Average sales / confirmed day',value:money(s.averageDailySales)},
+      {label:'Confirmed days',value:String(num(s.confirmedDays))}
+    ],
+    finalRight:[
+      {label:'Confirmed shifts',value:fmt(s.totalShifts)},
+      {label:'Entered payments',value:s.enteredPayments==null?'Incomplete':money(s.enteredPayments)},
+      {label:'Financial difference',value:s.financialDifference==null?'Incomplete':money(s.financialDifference)},
+      {label:'Product count',value:String(products.length)},
+      {label:'Attendant count',value:String(attendants.length)}
+    ]
+  });
+  const url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download='MSR-'+String(data.month||'report').replace(/[^A-Za-z0-9_-]/g,'')+'-report.pdf';
+  document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  toast('MSR PDF downloaded');
+}
+
 function createDsrReportPdf(r){
-  const d=createPdfDoc(),M=d.M,C=d.C;
-  d.header({kicker:'DAILY SALES REPORT  \u00b7  STATION DAILY RECONCILIATION',title:r.title,h:84,kBase:28,tBase:54,pillTop:31.5,pillBase:48.5,status:r.statusLabel});
+  const d=createPdfDoc(),M=d.M,C=d.C,monthly=r.reportType==='MSR';
+  d.header({kicker:monthly?'MONTHLY SALES REPORT  ·  STATION-WIDE PERFORMANCE':'DAILY SALES REPORT  ·  STATION DAILY RECONCILIATION',title:r.title,h:84,kBase:28,tBase:54,pillTop:31.5,pillBase:48.5,status:r.statusLabel});
   d.y=105.8;
   // ---- page 1 ----
   d.section('Key figures',M,d.y);d.y+=24.2;
   const kw=[100.1,169.9,69.8,69.8,69.8],kg=(d.CW-kw.reduce((a,b)=>a+b,0))/4;
   d.y+=d.cards(r.key,{top:d.y,widths:kw,gap:kg,h:58,pad:10,labelBase:19,valBase:43,valSize:14})+28;
-  d.table('Dispenser & nozzle performance',[
-    {h:'Dispenser / nozzle',x:8,max:170},{h:'Opening',x:248,a:'r'},{h:'Closing',x:314,a:'r'},{h:'Sold',x:380,a:'r',b:true},{h:'Meter',x:446,a:'r'},{h:'Recon.',x:d.CW-8,a:'r',b:true}],
+  d.table(monthly?'Daily sales breakdown':'Dispenser & nozzle performance',[
+    {h:monthly?'Date':'Dispenser / nozzle',x:8,max:170},{h:monthly?'Fuel sold':'Opening',x:248,a:'r'},{h:monthly?'Sales':'Closing',x:314,a:'r'},{h:monthly?'Payments':'Sold',x:380,a:'r',b:true},{h:monthly?'Shifts':'Meter',x:446,a:'r'},{h:monthly?'Status':'Recon.',x:d.CW-8,a:'r',b:true}],
     r.dispRows,{hdrGap:25.9,hdrH:22,hdrBase:14.1,minH:36,numOff:18.1,nameOff:13.1,subOff:24.1,lineW:1,after:31.5});
   // tank table (rows then four cards per tank)
   d.ensure(26+22+36+52+40);
-  d.section('Tank reconciliation',M,d.y);d.y+=25.9;
-  const tcols=[{h:'Tank / product',x:8},{h:'Opening',x:206,a:'r'},{h:'Purchases',x:276,a:'r'},{h:'Sold',x:346,a:'r'},{h:'Expected',x:426,a:'r'},{h:'Recorded',x:d.CW-8,a:'r',b:true}];
+  d.section(monthly?'Product performance':'Tank reconciliation',M,d.y);d.y+=25.9;
+  const tcols=monthly?[{h:'Product code',x:8},{h:'Fuel sold',x:206,a:'r'},{h:'Sales',x:276,a:'r'},{h:'Share',x:346,a:'r'},{h:'Sales / L',x:426,a:'r'},{h:'Rank',x:d.CW-8,a:'r',b:true}]:[{h:'Tank / product',x:8},{h:'Opening',x:206,a:'r'},{h:'Purchases',x:276,a:'r'},{h:'Sold',x:346,a:'r'},{h:'Expected',x:426,a:'r'},{h:'Recorded',x:d.CW-8,a:'r',b:true}];
   d.box(M,d.y,d.CW,22,C.NAVY,6);tcols.forEach(c=>d.text(c.h.toUpperCase(),M+c.x,d.y+14.1,7.5,true,[255,255,255],c.a==='r'?'r':'l'));d.y+=22;
   r.tanks.forEach(tk=>{
     d.ensure(36+10+42+30);
@@ -2651,13 +2715,13 @@ function createDsrReportPdf(r){
     d.hline(M,M+d.CW,d.y+35.5,C.LINE,1);d.y+=36+10;
     d.y+=d.cards(tk.cards,{top:d.y,perRow:4,gap:8,h:42,pad:10,labelBase:14.8,valBase:32.8,valSize:13})+32;
   });
-  d.section('Sales statistics',M,d.y);d.y+=9;
+  d.section(monthly?'Monthly report notes':'Sales statistics',M,d.y);d.y+=9;
   d.y+=d.lines(r.stats,{base:17,step:22});
   // ---- page 2 ----
   d.topY=47.9;d.newPage();
   const colW=(d.CW-24)/2;
-  d.y+=d.rowsBlock([{title:'Reconciliation overview',rows:r.overview},{title:'Performance statistics',rows:r.perf}],{start:8.8,step:24,base:19,size:9,valSize:9,valPad:110})+43.4;
-  d.section('Shift summary',M,d.y);d.y+=24.1;
+  d.y+=d.rowsBlock([{title:monthly?'Monthly summary':'Reconciliation overview',rows:r.overview},{title:monthly?'Monthly performance ranking':'Performance statistics',rows:r.perf}],{start:8.8,step:24,base:19,size:9,valSize:9,valPad:110})+43.4;
+  d.section(monthly?'Attendant performance':'Shift summary',M,d.y);d.y+=24.1;
   r.shifts.forEach(s=>{
     d.ensure(56+10);
     d.box(M,d.y,d.CW,55.5,C.CARD,4.5);
@@ -2669,8 +2733,8 @@ function createDsrReportPdf(r){
     d.y+=55.5+10;
   });
   d.y+=18.5;
-  d.y+=d.rowsBlock([{title:'Final daily performance',rows:r.finalLeft},{title:'',rows:r.finalRight}],{start:8.8,step:24,base:19,size:9,valSize:9,valPad:110})+0;
-  return d.finish(r.footer,'DSR - '+r.title);
+  d.y+=d.rowsBlock([{title:monthly?'Final monthly performance':'Final daily performance',rows:r.finalLeft},{title:'',rows:r.finalRight}],{start:8.8,step:24,base:19,size:9,valSize:9,valPad:110})+0;
+  return d.finish(r.footer,(monthly?'MSR - ':'DSR - ')+r.title);
 }
 
 async function downloadAdminSaleHistoryDetails(id){
