@@ -216,14 +216,14 @@ def _inbox_key_is_valid(value):
     return bool(value) and len(value)<=180 and all(c.isalnum() or c in "-_:" for c in value)
 
 def _inbox_date(value):
-    if not value:
-        return _inbox_now()
+    if value is None or not str(value).strip():
+        return None
     text=str(value).strip()
     try:
         datetime.fromisoformat(text.replace("Z","+00:00"))
         return text
     except (TypeError,ValueError):
-        return _inbox_now()
+        return None
 
 @app.get("/api/inbox")
 def get_station_inbox():
@@ -288,20 +288,41 @@ def sync_station_inbox():
         if key in seen:continue
         seen.add(key)
         meta=item.get("meta")
-        records.append({
+        record={
             "notification_key":key,
             "level":level,
             "title":title[:240],
             "detail":detail[:2000],
             "href":href[:500],
             "meta":str(meta)[:2000] if meta else None,
-            "source_date":_inbox_date(item.get("date")),
             "is_active":True,
             "last_seen_at":now,
             "resolved_at":None,
             "updated_at":now
-        })
+        }
+        source_date=_inbox_date(item.get("date"))
+        if source_date:
+            record["source_date"]=source_date
+        records.append(record)
     if records:
+        keys=sorted(seen)
+        params={"notification_key":"in.("+",".join(keys)+")",
+            "select":"id,notification_key,is_active","limit":str(len(keys))}
+        existing_status,existing_rows=sb("station_inbox_notifications",params=params)
+        if existing_status!=200:
+            return jsonify({"error":"Unable to check existing inbox notifications","details":existing_rows}),existing_status
+        reactivated=[row for row in (existing_rows or []) if not row.get("is_active")]
+        reactivated_ids=[str(row.get("id")) for row in reactivated if row.get("id")]
+        if reactivated_ids:
+            state_status,state_result=sb("station_inbox_notification_states",method="DELETE",
+                params={"notification_id":"in.("+",".join(reactivated_ids)+")"},
+                prefer="return=minimal")
+            if state_status>=400:
+                return jsonify({"error":"Unable to reset resolved inbox preferences","details":state_result}),state_status
+            reactivated_keys={str(row.get("notification_key")) for row in reactivated}
+            for record in records:
+                if record["notification_key"] in reactivated_keys:
+                    record["first_seen_at"]=now
         status,result=sb("station_inbox_notifications",method="POST",
             params={"on_conflict":"notification_key"},body=records,
             prefer="resolution=merge-duplicates,return=representation")
