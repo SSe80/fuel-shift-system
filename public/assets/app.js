@@ -1024,14 +1024,16 @@ async function loadStationNotifications(){
   const productByName=Object.fromEntries(products.map(p=>[String(p.name||'').trim().toLowerCase(),p])),codeFor=p=>productByName[String(p||'').trim().toLowerCase()]?.code_name||p||'Unknown product';
   const tanks=arr(tankData).filter(t=>t.active!==false),low=[],high=[];
   tanks.forEach(t=>{const cap=Number(t.capacity_liters),stock=Number(t.current_liters);if(!(cap>0)||!Number.isFinite(stock))return;if(stock/cap<=.10)low.push(t);else if(stock/cap>=.90)high.push(t);});
-  if(low.length)add('low-tanks','warning','Low tank stock',low.length+' tank'+(low.length===1?' is':'s are')+' at or below 10% capacity: '+low.slice(0,4).map(t=>t.tank_code||'Tank').join(', ')+(low.length>4?' and '+(low.length-4)+' more':''),'admin-inventory.html',low.slice(0,6).map(t=>(t.tank_code||'Tank')+' · '+codeFor(t.product)+' · '+liters(t.current_liters)+' L left').join(' | '));
-  if(high.length)add('high-tanks','info','High tank level',high.length+' tank'+(high.length===1?' is':'s are')+' at or above 90% capacity: '+high.slice(0,4).map(t=>t.tank_code||'Tank').join(', ')+(high.length>4?' and '+(high.length-4)+' more':''),'admin-inventory.html',high.slice(0,6).map(t=>(t.tank_code||'Tank')+' · '+Math.round(Number(t.current_liters)/Number(t.capacity_liters)*100)+'% full').join(' | '));
+  if(low.length)add('low-tanks','warning','Low tank stock',low.length+' tank'+(low.length===1?' is':'s are')+' at or below 10% capacity: '+low.slice(0,4).map(t=>t.tank_code||'Tank').join(', ')+(low.length>4?' and '+(low.length-4)+' more':''),'admin-inventory.html'+(low[0]?.id?'#tank-'+encodeURIComponent(low[0].id):''),low.slice(0,6).map(t=>(t.tank_code||'Tank')+' · '+codeFor(t.product)+' · '+liters(t.current_liters)+' L left').join(' | '));
+  if(high.length)add('high-tanks','info','High tank level',high.length+' tank'+(high.length===1?' is':'s are')+' at or above 90% capacity: '+high.slice(0,4).map(t=>t.tank_code||'Tank').join(', ')+(high.length>4?' and '+(high.length-4)+' more':''),'admin-inventory.html'+(high[0]?.id?'#tank-'+encodeURIComponent(high[0].id):''),high.slice(0,6).map(t=>(t.tank_code||'Tank')+' · '+Math.round(Number(t.current_liters)/Number(t.capacity_liters)*100)+'% full').join(' | '));
   const pendingDsr=arr(dsrs).filter(x=>x.status==='pending'||x.status==='waiting');
   if(pendingDsr.length){
    const ready=pendingDsr.filter(x=>x.status==='pending'&&x.report_day_closed!==false&&x.all_shifts_complete&&x.all_handover_recorded&&x.all_sales_recorded);
-   add('pending-dsr',ready.length?'warning':'info',ready.length?'DSR ready for confirmation':'DSR completion or confirmation pending',ready.length?ready.length+' daily report'+(ready.length===1?' is':'s are')+' ready for admin review and confirmation.':pendingDsr.length+' DSR record'+(pendingDsr.length===1?' needs':'s need')+' completion checks or confirmation.','admin-daily-report.html',pendingDsr.slice(0,5).map(x=>dailyReportIdLabel(x.date)+' · '+(x.status==='waiting'?'Awaiting completion':'Awaiting confirmation')).join(' | '),pendingDsr.map(x=>x.date).filter(Boolean).sort().slice(-1)[0]||null);
+   const latestPendingDate=pendingDsr.map(x=>x.date).filter(Boolean).sort().slice(-1)[0]||null;
+   add('pending-dsr',ready.length?'warning':'info',ready.length?'DSR ready for confirmation':'DSR completion or confirmation pending',ready.length+' daily report'+(ready.length===1?' is':'s are')+' ready for admin review and confirmation.':pendingDsr.length+' DSR record'+(pendingDsr.length===1?' needs':'s need')+' completion checks or confirmation.','admin-daily-report.html'+(latestPendingDate?'#dsr-'+encodeURIComponent(latestPendingDate):''),pendingDsr.slice(0,5).map(x=>dailyReportIdLabel(x.date)+' · '+(x.status==='waiting'?'Awaiting completion':'Awaiting confirmation')).join(' | '),latestPendingDate);
    const missing=[];pendingDsr.forEach(report=>arr(report.missing_sales_shifts).concat(arr(report.unsubmitted_sales_shifts)).forEach(shift=>{const name=first(shift,['attendant_name','employee_name','name','attendant','employee'])||first(shift?.employee,['name'])||first(shift?.attendant,['name'])||'Attendant',key=String(name)+'|'+String(report.date||'');if(!missing.some(x=>x.key===key))missing.push({key,name,date:report.date});}));
-   if(missing.length)add('missing-sales','warning','Attendants without recorded sales',missing.length+' attendant/shift record'+(missing.length===1?'':'s')+' still need sales recording after the DSR period.','admin-attendants.html',missing.slice(0,6).map(x=>String(x.name)+' · '+dailyReportIdLabel(x.date)).join(' | ')+(missing.length>6?' · +'+(missing.length-6)+' more':''),missing.map(x=>x.date).filter(Boolean).sort().slice(-1)[0]||null);
+   const latestMissingDate=missing.map(x=>x.date).filter(Boolean).sort().slice(-1)[0]||null;
+   if(missing.length)add('missing-sales','warning','Attendants without recorded sales',missing.length+' attendant/shift record'+(missing.length===1?'':'s')+' still need sales recording after the DSR period.','admin-daily-report.html'+(latestMissingDate?'#dsr-'+encodeURIComponent(latestMissingDate):''),missing.slice(0,6).map(x=>String(x.name)+' · '+dailyReportIdLabel(x.date)).join(' | ')+(missing.length>6?' · +'+(missing.length-6)+' more':''),latestMissingDate);
   }
   // Purchase alerts use the delivered quantity (the sum of truck compartments),
   // not only the ordered quantity. Each alert links directly to its own purchase.
@@ -1066,7 +1068,17 @@ async function loadStationNotifications(){
    add(key,'warning',isPartial?'Partial purchase discharge · '+label:'Purchase awaiting discharge · '+label,
      detail,'admin-purchases.html'+(id?'#purchase-'+encodeURIComponent(id):''),meta,date);
   });
-  const differences=[];arr(recon?.tanks).forEach(t=>{const closing=first(t,['physical_closing_liters','closing_physical_liters','recorded_closing_liters','physical_liters']),expected=first(t,['expected_closing_liters','expected_liters']),raw=first(t,['variance_liters','stock_difference_liters','difference_liters']),diff=raw!=null?Number(raw):(closing!=null&&expected!=null?Number(closing)-Number(expected):null);if(diff!=null&&Number.isFinite(diff)&&Math.abs(diff)>.01)differences.push({tank:t.tank_code||t.tank_name||'Tank',diff});});
+  const differences=[];if(recon?.open===true)arr(recon.tanks).forEach(t=>{
+    const expectedRaw=first(t,['expected_closing_liters','expected_liters']);
+    const closingRaw=first(t,['physical_closing_liters','closing_physical_liters','recorded_closing_liters','physical_liters']);
+    const ledgerRaw=first(t,['ledger_current_liters','current_liters']);
+    const raw=first(t,['variance_liters','stock_difference_liters','difference_liters']);
+    const expected=expectedRaw==null?null:Number(expectedRaw);
+    // The current reconciliation API exposes ledger_current_liters and
+    // expected_closing_liters; physical_closing_liters is not recorded yet.
+    const diff=raw!=null?Number(raw):(closingRaw!=null&&expected!=null?Number(closingRaw)-expected:(ledgerRaw!=null&&expected!=null?Number(ledgerRaw)-expected:null));
+    if(diff!=null&&Number.isFinite(diff)&&Math.abs(diff)>.01)differences.push({tank:t.tank_code||t.tank_name||'Tank',diff});
+  });
   if(differences.length)add('stock-differences','critical','Tank stock differences',differences.length+' tank reconciliation'+(differences.length===1?' shows':'s show')+' a difference between expected and recorded stock.','admin-accounting-control.html',differences.slice(0,6).map(x=>x.tank+' · '+(x.diff>0?'+':'')+liters(x.diff)+' L').join(' | '));
   const failed=results.filter(r=>r.status==='rejected').length,icons={critical:'!',warning:'!',info:'i'},labels={critical:'Needs attention',warning:'Action needed',info:'For review'},rank={critical:0,warning:1,info:2};
   const inboxPage=document.body.getAttribute('data-app-page')==='adminInbox';
@@ -1514,7 +1526,7 @@ async function adminInventory(){
     const renderInventoryTankCard=(t,product)=>{
       const pct=Number(t.capacity_liters)>0?Math.max(0,Math.min(100,Number(t.current_liters)/Number(t.capacity_liters)*100)):0;
       const pc=String(product?.color||'#1264d8').trim()||'#1264d8';
-      return '<article class="stat inventory-tank-card" data-tank-id="'+h(t.id)+'" role="button" tabindex="0" aria-label="View '+h(t.tank_code||'tank')+' details" style="--product-color:'+h(pc)+'"><div class="inventory-tank-card-top"><div><span class="field-label">TANK</span><b>'+h(t.tank_code)+'</b></div><span class="inventory-tank-status">ACTIVE</span></div><div class="inventory-tank-card-product"><span>PRODUCT</span><strong>'+h(product?.code_name||codeForProduct(t.product))+'</strong></div><div class="inventory-tank-card-stock"><strong>'+liters(t.current_liters)+' L</strong><span>'+pct.toFixed(1)+'% full</span></div></article>';
+      return '<article class="stat inventory-tank-card" id="inventory-tank-'+h(t.id)+'" data-tank-id="'+h(t.id)+'" role="button" tabindex="0" aria-label="View '+h(t.tank_code||'tank')+' details" style="--product-color:'+h(pc)+'"><div class="inventory-tank-card-top"><div><span class="field-label">TANK</span><b>'+h(t.tank_code)+'</b></div><span class="inventory-tank-status">ACTIVE</span></div><div class="inventory-tank-card-product"><span>PRODUCT</span><strong>'+h(product?.code_name||codeForProduct(t.product))+'</strong></div><div class="inventory-tank-card-stock"><strong>'+liters(t.current_liters)+' L</strong><span>'+pct.toFixed(1)+'% full</span></div></article>';
     };
     const renderInventoryTankPerformanceGraph=(g,pc)=>{
       const rows=g.items.map(t=>{
@@ -1539,6 +1551,11 @@ async function adminInventory(){
     el('tanks').innerHTML=inventoryTankMarkup||'<div class="empty-content">No activated tanks.</div>';
     ensureAdminInventoryTankDetailsModal();
     el('tanks').querySelectorAll('.inventory-tank-card').forEach(card=>{card.addEventListener('click',()=>openAdminInventoryTankDetails(card.dataset.tankId));card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAdminInventoryTankDetails(card.dataset.tankId);}});});
+    const tankHash=String(location.hash||'');
+    if(tankHash.startsWith('#tank-')){
+      const targetTankId=decodeURIComponent(tankHash.slice('#tank-'.length));
+      setTimeout(()=>{const target=document.getElementById('inventory-tank-'+targetTankId);if(target){target.scrollIntoView({behavior:'smooth',block:'center'});target.classList.add('purchase-card-linked');setTimeout(()=>target.classList.remove('purchase-card-linked'),2200);}},100);
+    }
     const movementGroups=new Map();
     (Array.isArray(movements)?movements:[]).forEach(m=>{
       const k=String(m.tank_id||m.tank_code||'');
