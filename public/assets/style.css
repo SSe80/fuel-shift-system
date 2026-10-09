@@ -4778,3 +4778,29 @@ body[data-app-page="adminDashboard"] .station-notification-open{margin-top:2px;f
 body[data-app-page="adminDashboard"] .station-notification-chevron{flex:0 0 auto;margin:4px 2px 0;color:#9aa5b3;font-size:23px;line-height:20px}
 body[data-app-page="adminDashboard"] .station-notification-empty{padding:15px 3px 17px;border-top:1px solid #edf0f4;color:#7b8798;font-size:11px;line-height:1.5}
 @media(max-width:640px){body[data-app-page="adminDashboard"] .station-notifications-card{margin:11px 0 13px;padding:13px 13px 5px}body[data-app-page="adminDashboard"] .station-notifications-head{align-items:flex-start}body[data-app-page="adminDashboard"] .station-notifications-status{max-width:94px;text-align:right;line-height:1.4}body[data-app-page="adminDashboard"] .station-notification-row{gap:8px;padding-top:10px;padding-bottom:10px}}
+
+
+/* Inbox list: clear read/unread hierarchy, shared by dashboard preview and full inbox. */
+body[data-app-page="adminDashboard"] .station-notifications-footer{display:flex;justify-content:flex-end;padding:10px 0 7px;border-top:1px solid #edf0f4}
+body[data-app-page="adminDashboard"] .station-inbox-button,body[data-app-page="adminInbox"] .station-inbox-button{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #d8e4f8;border-radius:9px;background:#f3f7ff;color:#245ac0;text-decoration:none;font-size:11px;font-weight:800}
+body[data-app-page="adminDashboard"] .station-inbox-button:hover,body[data-app-page="adminInbox"] .station-inbox-button:hover{background:#e8f0ff}
+body[data-app-page="adminDashboard"] .station-notification-row.is-unread,body[data-app-page="adminInbox"] .station-notification-row.is-unread{background:#f2f7ff}
+body[data-app-page="adminDashboard"] .station-notification-row.is-unread .station-notification-title,body[data-app-page="adminInbox"] .station-notification-row.is-unread .station-notification-title{font-weight:850;color:#163d80}
+body[data-app-page="adminDashboard"] .station-notification-row.is-unread .station-notification-copy:before,body[data-app-page="adminInbox"] .station-notification-row.is-unread .station-notification-copy:before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#2e6bd1;position:absolute;margin-left:-12px;margin-top:5px}
+body[data-app-page="adminDashboard"] .station-notification-copy,body[data-app-page="adminInbox"] .station-notification-copy{position:relative}
+body[data-app-page="adminDashboard"] .station-notification-row.is-read,body[data-app-page="adminInbox"] .station-notification-row.is-read{background:transparent;opacity:.78}
+body[data-app-page="adminDashboard"] .station-notification-row.is-read .station-notification-title,body[data-app-page="adminInbox"] .station-notification-row.is-read .station-notification-title{font-weight:600;color:#68778a}
+body[data-app-page="adminDashboard"] .station-notification-row.is-read .station-notification-icon,body[data-app-page="adminInbox"] .station-notification-row.is-read .station-notification-icon{background:#f0f2f5;color:#8994a3}
+body[data-app-page="adminDashboard"] .station-notification-row.is-read .station-notification-open,body[data-app-page="adminInbox"] .station-notification-row.is-read .station-notification-open{color:#8994a3}
+body[data-app-page="adminInbox"] .wrap{max-width:980px;padding:18px 0 36px}
+body[data-app-page="adminInbox"] .station-notifications-card{margin:12px 0 18px;padding:18px 20px 8px;border:1px solid #e3e8ef;border-radius:14px;background:var(--card-bg,#fff);box-shadow:0 2px 8px rgba(16,24,40,.035);color:#172b46}
+body[data-app-page="adminInbox"] .station-notifications-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:13px}
+body[data-app-page="adminInbox"] .station-notifications-head h2{display:flex;align-items:center;gap:8px;margin:3px 0 4px;font-size:19px;line-height:1.25;font-weight:800}
+body[data-app-page="adminInbox"] .station-notifications-head p{margin:0;color:#778397;font-size:12px}
+body[data-app-page="adminInbox"] .station-notifications-count{min-width:21px;height:21px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#edf3ff;color:#245ac0;font-size:11px;font-weight:800}
+body[data-app-page="adminInbox"] .station-notification-row{padding:14px 8px;gap:12px;border-top:1px solid #e9edf3;border-radius:7px}
+body[data-app-page="adminInbox"] .station-notification-title{font-size:13px}
+body[data-app-page="adminInbox"] .station-notification-detail{font-size:12px}
+body[data-app-page="adminInbox"] .station-notification-meta{font-size:11px}
+body[data-app-page="adminInbox"] .station-notification-open{font-size:11px}
+@media(max-width:640px){body[data-app-page="adminInbox"] .wrap{padding:10px 0 26px}body[data-app-page="adminInbox"] .station-notifications-card{padding:13px 12px 6px}body[data-app-page="adminInbox"] .station-notification-row{padding:12px 3px}}
