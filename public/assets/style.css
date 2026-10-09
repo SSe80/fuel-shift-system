@@ -5154,7 +5154,9 @@ body[data-app-page="adminInbox"] .station-purchase-notification .station-notific
   border-color:#e7c37e!important;
 }
 body[data-app-page="admin-purchases"] .purchase-card-linked,
-.purchase-card.purchase-card-linked{
+.purchase-card.purchase-card-linked,
+.inventory-tank-card.purchase-card-linked,
+.daily-confirm-card.purchase-card-linked{
   outline:3px solid #2f73dc!important;
   outline-offset:3px!important;
   box-shadow:0 0 0 7px rgba(47,115,220,.12),0 12px 30px rgba(27,73,139,.12)!important;
