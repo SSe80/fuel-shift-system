@@ -1048,7 +1048,9 @@ async function loadStationNotifications(){
   let databaseBacked=false;
   try{
     if(failed===0){
-      await api('/api/inbox/sync',{method:'POST',body:JSON.stringify({complete:true,items:items.map(item=>({key:item.key,level:item.level,title:item.title,detail:item.detail,href:item.href,meta:item.meta,date:item.date}))})});
+      try{
+        await api('/api/inbox/sync',{method:'POST',body:JSON.stringify({complete:true,items:items.map(item=>({key:item.key,level:item.level,title:item.title,detail:item.detail,href:item.href,meta:item.meta,date:item.date}))})});
+      }catch(syncError){console.warn('Could not synchronize inbox notifications.',syncError);}
     }
     const savedInbox=await api('/api/inbox');
     if(Array.isArray(savedInbox?.items)){
