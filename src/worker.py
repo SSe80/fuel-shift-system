@@ -207,6 +207,165 @@ def require_admin():
 def rpc(name, body):
     return sb("rpc/" + name, method="POST", body=body)
 
+
+def _inbox_now():
+    return datetime.now(timezone.utc).isoformat()
+
+def _inbox_key_is_valid(value):
+    value=str(value or "")
+    return bool(value) and len(value)<=180 and all(c.isalnum() or c in "-_:" for c in value)
+
+def _inbox_date(value):
+    if not value:
+        return _inbox_now()
+    text=str(value).strip()
+    try:
+        datetime.fromisoformat(text.replace("Z","+00:00"))
+        return text
+    except (TypeError,ValueError):
+        return _inbox_now()
+
+@app.get("/api/inbox")
+def get_station_inbox():
+    auth=require_admin()
+    if auth:return auth
+    status,rows=sb("station_inbox_notifications",params={
+        "is_active":"eq.true",
+        "select":"id,notification_key,level,title,detail,href,meta,source_date,first_seen_at,last_seen_at",
+        "order":"source_date.desc",
+        "limit":"1000"
+    })
+    if status!=200:return jsonify({"error":"Unable to load station inbox","details":rows}),status
+    employee_id=str(session.get("employee_id") or "")
+    ss,states=sb("station_inbox_notification_states",params={
+        "employee_id":"eq."+employee_id,
+        "select":"notification_id,read_at,favorited_at",
+        "limit":"5000"
+    })
+    if ss!=200:return jsonify({"error":"Unable to load inbox preferences","details":states}),ss
+    state_by_id={str(x.get("notification_id")):x for x in (states or [])}
+    items=[]
+    for row in rows or []:
+        state=state_by_id.get(str(row.get("id")),{})
+        items.append({
+            "id":row.get("id"),
+            "key":row.get("notification_key"),
+            "level":row.get("level"),
+            "title":row.get("title"),
+            "detail":row.get("detail"),
+            "href":row.get("href"),
+            "meta":row.get("meta") or "",
+            "date":row.get("source_date"),
+            "is_read":bool(state.get("read_at")),
+            "is_favorite":bool(state.get("favorited_at")),
+            "first_seen_at":row.get("first_seen_at"),
+            "last_seen_at":row.get("last_seen_at")
+        })
+    return jsonify({"items":items,"count":len(items)})
+
+@app.post("/api/inbox/sync")
+def sync_station_inbox():
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    incoming=data.get("items")
+    if not isinstance(incoming,list) or len(incoming)>300:
+        return jsonify({"error":"Inbox sync requires an items array with no more than 300 entries"}),400
+    now=_inbox_now()
+    records=[]
+    seen=set()
+    for item in incoming:
+        if not isinstance(item,dict):continue
+        key=str(item.get("key") or "").strip()
+        level=str(item.get("level") or "").strip().lower()
+        title=str(item.get("title") or "").strip()
+        detail=str(item.get("detail") or "").strip()
+        href=str(item.get("href") or "").strip()
+        if not _inbox_key_is_valid(key) or level not in ("critical","warning","info") or not title or not detail:
+            continue
+        if not href or href.startswith("//") or "://" in href or href.lower().startswith("javascript:"):
+            continue
+        if key in seen:continue
+        seen.add(key)
+        meta=item.get("meta")
+        records.append({
+            "notification_key":key,
+            "level":level,
+            "title":title[:240],
+            "detail":detail[:2000],
+            "href":href[:500],
+            "meta":str(meta)[:2000] if meta else None,
+            "source_date":_inbox_date(item.get("date")),
+            "is_active":True,
+            "last_seen_at":now,
+            "resolved_at":None,
+            "updated_at":now
+        })
+    if records:
+        status,result=sb("station_inbox_notifications",method="POST",
+            params={"on_conflict":"notification_key"},body=records,
+            prefer="resolution=merge-duplicates,return=representation")
+        if status>=400:return jsonify({"error":"Unable to save inbox notifications","details":result}),status
+    else:
+        result=[]
+    if data.get("complete") is True:
+        params={"is_active":"eq.true"}
+        if seen:
+            params["notification_key"]="not.in.("+",".join(sorted(seen))+")"
+        status,updated=sb("station_inbox_notifications",method="PATCH",params=params,
+            body={"is_active":False,"resolved_at":now,"updated_at":now},
+            prefer="return=minimal")
+        if status>=400:return jsonify({"error":"Unable to update resolved inbox notifications","details":updated}),status
+    return jsonify({"ok":True,"saved":len(records),"complete":data.get("complete") is True}),200
+
+@app.patch("/api/inbox/<notification_key>/state")
+def update_station_inbox_state(notification_key):
+    auth=require_admin()
+    if auth:return auth
+    if not _inbox_key_is_valid(notification_key):
+        return jsonify({"error":"Invalid notification key"}),400
+    data=request.get_json(silent=True) or {}
+    if "is_read" not in data and "is_favorite" not in data:
+        return jsonify({"error":"Provide is_read and/or is_favorite"}),400
+    if ("is_read" in data and not isinstance(data.get("is_read"),bool)) or ("is_favorite" in data and not isinstance(data.get("is_favorite"),bool)):
+        return jsonify({"error":"Inbox state values must be boolean"}),400
+    status,notifications=sb("station_inbox_notifications",params={
+        "notification_key":"eq."+notification_key,
+        "select":"id,notification_key",
+        "limit":"1"
+    })
+    if status!=200:return jsonify({"error":"Unable to find inbox notification","details":notifications}),status
+    if not notifications:return jsonify({"error":"Inbox notification not found"}),404
+    notification_id=str(notifications[0]["id"])
+    employee_id=str(session.get("employee_id") or "")
+    ss,existing=sb("station_inbox_notification_states",params={
+        "notification_id":"eq."+notification_id,
+        "employee_id":"eq."+employee_id,
+        "select":"read_at,favorited_at",
+        "limit":"1"
+    })
+    if ss!=200:return jsonify({"error":"Unable to load inbox state","details":existing}),ss
+    prior=existing[0] if existing else {}
+    now=_inbox_now()
+    read_at=prior.get("read_at")
+    favorited_at=prior.get("favorited_at")
+    if "is_read" in data:
+        read_at=(read_at or now) if data["is_read"] else None
+    if "is_favorite" in data:
+        favorited_at=(favorited_at or now) if data["is_favorite"] else None
+    payload={
+        "notification_id":notification_id,
+        "employee_id":employee_id,
+        "read_at":read_at,
+        "favorited_at":favorited_at,
+        "updated_at":now
+    }
+    status,result=sb("station_inbox_notification_states",method="POST",
+        params={"on_conflict":"notification_id,employee_id"},body=payload,
+        prefer="resolution=merge-duplicates,return=representation")
+    if status>=400:return jsonify({"error":"Unable to save inbox state","details":result}),status
+    return jsonify({"ok":True,"is_read":bool(read_at),"is_favorite":bool(favorited_at)}),200
+
 @app.get("/api/health")
 def health():
     try:
