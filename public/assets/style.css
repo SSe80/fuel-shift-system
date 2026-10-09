@@ -5008,3 +5008,71 @@ body[data-app-page="adminDashboard"] .station-notifications-heading>.station-not
  body[data-app-page="adminDashboard"] .station-inbox-inline-link{gap:4px;font-size:11px!important;padding-left:4px!important}
  body[data-app-page="adminDashboard"] .station-inbox-inline-link .station-inbox-arrow{font-size:16px}
 }
+
+
+/* Full inbox page: cleaner header, balanced card spacing, and modern filter controls. */
+body[data-app-page="adminInbox"] .wrap{max-width:1240px!important;padding-top:18px!important}
+body[data-app-page="adminInbox"] .settings-header{margin-bottom:14px!important}
+body[data-app-page="adminInbox"] .settings-header h1{font-size:26px!important;letter-spacing:-.035em!important;margin:3px 0 5px!important;color:#172b46!important}
+body[data-app-page="adminInbox"] .settings-header p{margin:0!important;line-height:1.5!important}
+body[data-app-page="adminInbox"] .admin-page-body-card{padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+body[data-app-page="adminInbox"] .station-notifications-card{overflow:visible!important;padding:0 22px 8px!important;background:#fff!important;border:1px solid #dce4ef!important;border-radius:17px!important;box-shadow:0 10px 30px rgba(20,39,67,.07)!important}
+body[data-app-page="adminInbox"] .station-notifications-head.inbox-page-head{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:18px!important;padding:21px 0 17px!important;margin:0!important;border:0!important;border-bottom:1px solid #e8edf4!important}
+body[data-app-page="adminInbox"] .inbox-page-heading{flex:1;min-width:0}
+body[data-app-page="adminInbox"] .inbox-title-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
+body[data-app-page="adminInbox"] .inbox-title-line h2{margin:0!important;font-size:22px!important;font-weight:850!important;letter-spacing:-.035em!important;color:#162b47!important;line-height:1.3!important}
+body[data-app-page="adminInbox"] .inbox-title-line .station-notifications-count{display:inline-flex;align-items:center;min-height:23px;padding:3px 9px!important;border:1px solid #dbe7fa!important;border-radius:999px!important;background:#eff5ff!important;color:#285bb3!important;font-size:10px!important;font-weight:800!important;line-height:1!important}
+body[data-app-page="adminInbox"] .inbox-page-heading p{max-width:650px!important;margin:7px 0 0!important;color:#66758a!important;font-size:12.5px!important;line-height:1.55!important}
+body[data-app-page="adminInbox"] .inbox-live-status{display:inline-flex!important;align-items:center;gap:7px;white-space:nowrap;margin:4px 0 0!important;padding:6px 9px;border:1px solid #e3eaf2;border-radius:999px;background:#f8fafc;color:#6c7b8f;font-size:10px!important;line-height:1.2}
+body[data-app-page="adminInbox"] .inbox-status-dot{width:6px;height:6px;border-radius:50%;background:#22a06b;box-shadow:0 0 0 3px #e2f6ec}
+body[data-app-page="adminInbox"] .inbox-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0 12px;border-bottom:1px solid #e7edf4}
+body[data-app-page="adminInbox"] .inbox-toolbar-summary{display:flex;flex-direction:column;gap:3px;min-width:0}
+body[data-app-page="adminInbox"] .inbox-toolbar-summary strong{font-size:12px;font-weight:800;color:#273b55}
+body[data-app-page="adminInbox"] .inbox-toolbar-summary span{font-size:11px;color:#8190a2}
+body[data-app-page="adminInbox"] .inbox-filter-wrap{position:relative;flex:0 0 auto;z-index:5}
+body[data-app-page="adminInbox"] .inbox-filter-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:8px 12px;border:1px solid #d5dfed;border-radius:10px;background:#fff;color:#334b68;font-size:12px;font-weight:800;line-height:1;box-shadow:0 2px 5px rgba(21,41,69,.04);cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s}
+body[data-app-page="adminInbox"] .inbox-filter-toggle svg{width:17px;height:17px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+body[data-app-page="adminInbox"] .inbox-filter-toggle:hover,body[data-app-page="adminInbox"] .inbox-filter-toggle.has-filters{border-color:#8fb0e8;background:#f3f7ff;color:#245ac0}
+body[data-app-page="adminInbox"] .inbox-filter-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#245ac0;color:#fff;font-size:10px;font-weight:850}
+body[data-app-page="adminInbox"] .inbox-filter-panel{position:absolute;right:0;top:calc(100% + 9px);width:min(350px,calc(100vw - 44px));padding:16px;background:#fff;border:1px solid #dbe4ef;border-radius:15px;box-shadow:0 18px 48px rgba(15,35,64,.18);z-index:30}
+body[data-app-page="adminInbox"] .inbox-filter-panel[hidden]{display:none!important}
+body[data-app-page="adminInbox"] .inbox-filter-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid #edf1f6}
+body[data-app-page="adminInbox"] .inbox-filter-panel-head>div{display:flex;flex-direction:column;gap:4px}
+body[data-app-page="adminInbox"] .inbox-filter-panel-head strong{font-size:14px;color:#1d304a}
+body[data-app-page="adminInbox"] .inbox-filter-panel-head span{font-size:11px;color:#7b899a}
+body[data-app-page="adminInbox"] .inbox-filter-close{width:28px;height:28px;border:0;border-radius:8px;background:#f2f5f9;color:#69788b;font-size:20px;line-height:1;cursor:pointer}
+body[data-app-page="adminInbox"] .inbox-filter-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px;padding:14px 0}
+body[data-app-page="adminInbox"] .inbox-filter-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+body[data-app-page="adminInbox"] .inbox-filter-field>span{font-size:10px;font-weight:800;color:#586a80}
+body[data-app-page="adminInbox"] .inbox-filter-field input,body[data-app-page="adminInbox"] .inbox-filter-field select{width:100%;min-width:0;height:37px;padding:7px 9px;border:1px solid #dbe3ed;border-radius:8px;background:#fff;color:#263b56;font-size:11px;outline:none}
+body[data-app-page="adminInbox"] .inbox-filter-field input:focus,body[data-app-page="adminInbox"] .inbox-filter-field select:focus{border-color:#6d98e5;box-shadow:0 0 0 3px rgba(45,103,201,.1)}
+body[data-app-page="adminInbox"] .inbox-filter-favorite{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:11px 10px;border:1px solid #e6ebf2;border-radius:10px;background:#f9fbfd;cursor:pointer}
+body[data-app-page="adminInbox"] .inbox-filter-favorite input{width:16px;height:16px;accent-color:#245ac0}
+body[data-app-page="adminInbox"] .inbox-filter-favorite span{display:flex;flex-direction:column;gap:3px}
+body[data-app-page="adminInbox"] .inbox-filter-favorite strong{font-size:11px;color:#344a64}
+body[data-app-page="adminInbox"] .inbox-filter-favorite small{font-size:10px;color:#8592a2}
+body[data-app-page="adminInbox"] .inbox-filter-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px solid #edf1f6}
+body[data-app-page="adminInbox"] .inbox-filter-reset,body[data-app-page="adminInbox"] .inbox-filter-apply{min-height:36px;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer}
+body[data-app-page="adminInbox"] .inbox-filter-reset{border:1px solid #dbe3ed;background:#fff;color:#617186}
+body[data-app-page="adminInbox"] .inbox-filter-apply{border:1px solid #245ac0;background:#245ac0;color:#fff;box-shadow:0 3px 7px rgba(36,90,192,.15)}
+body[data-app-page="adminInbox"] .inbox-notification-list{padding-top:2px}
+body[data-app-page="adminInbox"] .inbox-notification-list .station-notification-row{padding-top:16px!important;padding-bottom:16px!important}
+body[data-app-page="adminInbox"] .inbox-notification-list .station-notification-title{font-size:14px!important}
+body[data-app-page="adminInbox"] .inbox-notification-list .station-notification-detail{font-size:12.5px!important;line-height:1.6!important}
+body[data-app-page="adminInbox"] .inbox-notification-list .station-notification-meta{font-size:10.5px!important}
+body[data-app-page="adminInbox"] .station-notifications-card+.station-inbox-button{display:inline-flex!important;align-items:center;gap:7px;margin-top:14px!important;padding:8px 0!important;border:0!important;background:transparent!important;box-shadow:none!important;color:#245ac0!important;font-size:12px!important;font-weight:800!important;text-decoration:none!important}
+body[data-app-page="adminInbox"] .station-notifications-card+.station-inbox-button:hover{text-decoration:underline!important;text-underline-offset:3px}
+@media(max-width:640px){
+ body[data-app-page="adminInbox"] .wrap{padding:8px 0 22px!important}
+ body[data-app-page="adminInbox"] .settings-header{margin-bottom:10px!important}
+ body[data-app-page="adminInbox"] .settings-header h1{font-size:23px!important}
+ body[data-app-page="adminInbox"] .station-notifications-card{padding:0 12px 5px!important;border-radius:13px!important}
+ body[data-app-page="adminInbox"] .station-notifications-head.inbox-page-head{flex-direction:column!important;gap:10px!important;padding:16px 0 13px!important}
+ body[data-app-page="adminInbox"] .inbox-title-line h2{font-size:19px!important}
+ body[data-app-page="adminInbox"] .inbox-page-heading p{font-size:11.5px!important}
+ body[data-app-page="adminInbox"] .inbox-live-status{margin-top:0!important}
+ body[data-app-page="adminInbox"] .inbox-toolbar{align-items:center;padding:12px 0 10px}
+ body[data-app-page="adminInbox"] .inbox-filter-toggle{min-height:36px;padding:8px 10px}
+ body[data-app-page="adminInbox"] .inbox-filter-panel{position:fixed;top:50%;left:50%;right:auto;transform:translate(-50%,-50%);width:calc(100vw - 28px);max-width:360px;max-height:82vh;overflow-y:auto;box-shadow:0 24px 80px rgba(15,35,64,.28)}
+ body[data-app-page="adminInbox"] .inbox-notification-list .station-notification-row{padding-top:13px!important;padding-bottom:13px!important}
+}
