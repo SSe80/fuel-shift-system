@@ -4757,3 +4757,24 @@ body[data-app-page="adminDashboard"] .station-glimpse-foot{
   body[data-app-page="adminDashboard"] .station-inventory-glimpses{grid-template-columns:minmax(0,1fr)!important;gap:12px!important}
   body[data-app-page="adminDashboard"] .station-glimpse-card{padding:13px!important}
 }
+
+/* Station Control inbox: compact, clickable message-style notifications. */
+body[data-app-page="adminDashboard"] .station-notifications-card{margin:14px 0 16px;padding:15px 17px 8px;border:1px solid #e3e8ef;border-radius:13px;background:var(--card-bg,#fff);box-shadow:0 2px 8px rgba(16,24,40,.035);color:#172b46}
+body[data-app-page="adminDashboard"] .station-notifications-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px}
+body[data-app-page="adminDashboard"] .station-notifications-head h2{display:flex;align-items:center;gap:8px;margin:3px 0 4px;font-size:16px;line-height:1.25;font-weight:750}
+body[data-app-page="adminDashboard"] .station-notifications-head p{margin:0;color:#778397;font-size:11px;line-height:1.45}
+body[data-app-page="adminDashboard"] .station-notifications-count{min-width:20px;height:20px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#edf3ff;color:#245ac0;font-size:10px;font-weight:800}
+body[data-app-page="adminDashboard"] .station-notifications-status{flex:0 0 auto;color:#8a96a6;font-size:10px}
+body[data-app-page="adminDashboard"] .station-notifications-list{display:flex;flex-direction:column}
+body[data-app-page="adminDashboard"] .station-notification-row{display:flex;align-items:flex-start;gap:10px;padding:11px 2px 11px 0;border-top:1px solid #edf0f4;color:inherit;text-decoration:none;min-width:0;transition:background .15s ease,padding .15s ease}
+body[data-app-page="adminDashboard"] .station-notification-row:hover{background:#f8fafc;padding-left:5px}
+body[data-app-page="adminDashboard"] .station-notification-icon{flex:0 0 28px;width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:#eef4ff;color:#245ac0;font-size:14px;font-weight:800}
+body[data-app-page="adminDashboard"] .station-notification-row.critical .station-notification-icon,body[data-app-page="adminDashboard"] .station-notification-row.warning .station-notification-icon{background:#fff0ed;color:#c43e32}
+body[data-app-page="adminDashboard"] .station-notification-copy{display:flex;flex:1;flex-direction:column;gap:3px;min-width:0}
+body[data-app-page="adminDashboard"] .station-notification-title{font-size:12px;line-height:1.35;font-weight:750;color:#23354e}
+body[data-app-page="adminDashboard"] .station-notification-detail{font-size:11px;line-height:1.45;color:#657388}
+body[data-app-page="adminDashboard"] .station-notification-meta{font-size:10px;line-height:1.55;color:#8a96a6;overflow-wrap:anywhere}
+body[data-app-page="adminDashboard"] .station-notification-open{margin-top:2px;font-size:10px;line-height:1.3;font-weight:700;color:#285fc1}
+body[data-app-page="adminDashboard"] .station-notification-chevron{flex:0 0 auto;margin:4px 2px 0;color:#9aa5b3;font-size:23px;line-height:20px}
+body[data-app-page="adminDashboard"] .station-notification-empty{padding:15px 3px 17px;border-top:1px solid #edf0f4;color:#7b8798;font-size:11px;line-height:1.5}
+@media(max-width:640px){body[data-app-page="adminDashboard"] .station-notifications-card{margin:11px 0 13px;padding:13px 13px 5px}body[data-app-page="adminDashboard"] .station-notifications-head{align-items:flex-start}body[data-app-page="adminDashboard"] .station-notifications-status{max-width:94px;text-align:right;line-height:1.4}body[data-app-page="adminDashboard"] .station-notification-row{gap:8px;padding-top:10px;padding-bottom:10px}}
