@@ -126,7 +126,7 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
 <script src="assets/app.js?v=20261009-msr"></script><script>
 (function(){
  const $=id=>document.getElementById(id), fmt=n=>Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}), money=n=>(window.stationCurrency||'ETB')+' '+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}), arr=x=>Array.isArray(x)?x:[], safeDate=s=>String(s||'').slice(0,10), monthLabel=s=>{const d=new Date(s+'-01T12:00:00');return d.toLocaleDateString(undefined,{month:'long',year:'numeric'});};
- let lastExportRows=[];let hasRunComparison=false;
+ let lastExportRows=[];let hasRunComparison=false;let monthRankingPromise=null;const reportCache=new Map();
  const now=new Date(), currentMonth=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');$('msr-month').value=currentMonth; const initialMonths=[currentMonth,...(()=>{const a=[];for(let i=1;i<=2;i++){const d=new Date(currentMonth+'-01T12:00:00');d.setMonth(d.getMonth()-i);a.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}return a;})()];let selectedCompareMonths=[...initialMonths];
  const number=v=>{const n=Number(v);return Number.isFinite(n)?n:0;};
  function amount(r){const p=r.dsr_performance||{},s=r.summary||{},ss=r.dsr_sales_summary||r.sales_summary||{};return number(p.calculated_sales_amount??p.total_sales_amount??s.sales_amount??ss.total_amount??r.total_sales_amount??0);}
