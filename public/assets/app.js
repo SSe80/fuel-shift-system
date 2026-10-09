@@ -4320,6 +4320,14 @@ async function loadDailyReportConfirmations(){
         ?active.map(renderDailyPendingConfirmationCard).join('')
         :'<div class="daily-empty">No DSRs are currently waiting for completion or confirmation.</div>';
       bindDailyDsrChecks();
+      const dsrHash=String(location.hash||'');
+      if(dsrHash.startsWith('#dsr-')){
+        const targetDate=decodeURIComponent(dsrHash.slice('#dsr-'.length));
+        setTimeout(()=>{
+          const target=Array.from(document.querySelectorAll('.daily-confirm-card')).find(card=>String(card.dataset.reportDate||'')===targetDate);
+          if(target){target.scrollIntoView({behavior:'smooth',block:'center'});target.classList.add('purchase-card-linked');setTimeout(()=>target.classList.remove('purchase-card-linked'),2200);}
+        },100);
+      }
     }
     if(dateEl){
       // Paint the interactive confirmation card first. History is intentionally
