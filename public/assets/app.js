@@ -1047,11 +1047,12 @@ async function loadStationNotifications(){
   const inboxPage=document.body.getAttribute('data-app-page')==='adminInbox';
   let databaseBacked=false;
   try{
-    if(failed===0){
-      try{
-        await api('/api/inbox/sync',{method:'POST',body:JSON.stringify({complete:true,items:items.map(item=>({key:item.key,level:item.level,title:item.title,detail:item.detail,href:item.href,meta:item.meta,...(item.date?{date:item.date}:{})}))})});
-      }catch(syncError){console.warn('Could not synchronize inbox notifications.',syncError);}
-    }
+    // Sync every alert we could confidently derive. Only mark absent alerts
+    // resolved when every source check succeeded, otherwise a temporary API
+    // failure could incorrectly clear the inbox.
+    try{
+      await api('/api/inbox/sync',{method:'POST',body:JSON.stringify({complete:failed===0,items:items.map(item=>({key:item.key,level:item.level,title:item.title,detail:item.detail,href:item.href,meta:item.meta,...(item.date?{date:item.date}:{})}))})});
+    }catch(syncError){console.warn('Could not synchronize inbox notifications.',syncError);}
     const savedInbox=await api('/api/inbox');
     if(Array.isArray(savedInbox?.items)){
       // An empty newly-created inbox table must not erase alerts found by the
