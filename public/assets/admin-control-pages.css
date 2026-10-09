@@ -565,7 +565,7 @@ body.admin-control-ui[data-app-page] .station-activity-card .section-heading p {
    ========================================================================== */
 body.admin-control-ui[data-app-page] #products.statgrid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)) !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)) !important;
   gap: 14px !important;
 }
 body.admin-control-ui[data-app-page] #products .activated-product-card {
@@ -1636,6 +1636,235 @@ body.admin-control-ui[data-app-page] .admin-attendant-card .admin-attendant-stat
 }
 
 /* ==========================================================================
+   PRODUCT CARDS — v3 layout: tinted header with code, status and price
+   ========================================================================== */
+body.admin-control-ui[data-app-page] #products .activated-product-card {
+  padding: 0 !important;
+  border-radius: var(--ac-radius-lg) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-card::before {
+  height: 5px !important;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-main {
+  position: relative;
+  padding: 22px 20px 18px !important;
+  background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--product-color, #2563eb) 22%, #fff) 0%, transparent 60%), #ffffff;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-copy {
+  display: flex !important;
+  flex-direction: column;
+  gap: 4px;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-copy .field-label {
+  font-size: 10px !important;
+  letter-spacing: .12em;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 30px !important;
+  font-weight: 850 !important;
+  letter-spacing: -.02em !important;
+  line-height: 1.05;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-code::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border-radius: 5px;
+  background: var(--product-color, #2563eb);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--product-color, #2563eb) 22%, transparent);
+  flex: 0 0 auto;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-name {
+  margin-top: 2px;
+  font-size: 14px !important;
+  font-weight: 600;
+  color: var(--ac-body) !important;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-meta {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start !important;
+  gap: 12px !important;
+  width: 100% !important;
+  max-width: none !important;
+  justify-self: stretch !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 16px 20px !important;
+  border-top: 1px solid var(--ac-line-soft) !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 0 !important;
+  background: var(--ac-surface);
+}
+body.admin-control-ui[data-app-page] #products .activated-product-meta > div { position: static !important; }
+body.admin-control-ui[data-app-page] #products .activated-product-meta > div:first-child span { display: none !important; }
+body.admin-control-ui[data-app-page] #products .activated-product-meta > div:first-child strong {
+  width: fit-content !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  margin: 0 !important;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--ac-ok-soft);
+  color: #047857 !important;
+  font-size: 12px !important;
+  font-weight: 750;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-meta > div:first-child strong::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-meta > div:last-child { text-align: left !important; display: block !important; min-width: 0; }
+body.admin-control-ui[data-app-page] #products .activated-product-meta > div:first-child { display: block !important; }
+body.admin-control-ui[data-app-page] #products .activated-product-meta > div:last-child span {
+  position: static !important;
+  display: block !important;
+  font-size: 10px !important;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ac-muted);
+}
+body.admin-control-ui[data-app-page] #products .activated-product-meta > div:last-child strong {
+  display: block;
+  margin-top: 4px !important;
+  font-size: 24px !important;
+  font-weight: 850 !important;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   DISPENSER CARDS — v3 layout: status pill, id, product/tank, and chips
+   ========================================================================== */
+body.admin-control-ui[data-app-page] .activated-dispenser-card {
+  padding: 16px 16px 14px 18px !important;
+  gap: 6px;
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-card::before {
+  top: 0; bottom: 0; left: 0;
+  width: 4px;
+  border-radius: 0;
+}
+body.admin-control-ui[data-app-page] .ac-status {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+body.admin-control-ui[data-app-page] .ac-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+body.admin-control-ui[data-app-page] .ac-status--active { background: var(--ac-ok-soft); color: #047857; }
+body.admin-control-ui[data-app-page] .ac-status--active::before { background: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.2); }
+body.admin-control-ui[data-app-page] .ac-status--idle { background: var(--ac-line-soft); color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .ac-status--idle::before { background: #94a3b8; }
+body.admin-control-ui[data-app-page] .activated-dispenser-card b {
+  font-size: 19px !important;
+  font-weight: 850 !important;
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-card > span {
+  margin-top: 0 !important;
+  font-size: 12.5px !important;
+  font-weight: 650 !important;
+  color: var(--ac-body) !important;
+}
+body.admin-control-ui[data-app-page] .ac-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+body.admin-control-ui[data-app-page] .ac-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--ac-line);
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--ac-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.admin-control-ui[data-app-page] .ac-chip--on { background: var(--ac-brand-soft); border-color: #bfdbfe; color: #1d4ed8; }
+body.admin-control-ui[data-app-page] .ac-chip--off { color: var(--ac-muted); border-style: dashed; }
+
+/* Dispenser group header: product tint */
+body.admin-control-ui[data-app-page] .activated-dispenser-group-head {
+  margin: -20px -20px 0;
+  padding: 16px 20px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--product-color, #2563eb) 12%, #fff), #fff 70%);
+  border-radius: var(--ac-radius-lg) var(--ac-radius-lg) 0 0;
+  border-bottom: 1px solid var(--ac-line-soft);
+}
+
+/* ==========================================================================
+   CHARTS — dispenser performance and product volume
+   ========================================================================== */
+body.admin-control-ui[data-app-page] .activated-dispenser-graph {
+  padding: 14px 14px 12px;
+  background: #fff;
+  border: 1px solid var(--ac-line);
+  border-radius: var(--ac-radius);
+  box-shadow: var(--ac-shadow-sm);
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-head { margin-bottom: 10px; }
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-head strong { font-size: 14px !important; letter-spacing: -.01em; }
+body.admin-control-ui[data-app-page] .activated-dispenser-graph svg { overflow: visible; }
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-grid {
+  stroke: #eef2f7 !important;
+  stroke-dasharray: none !important;
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-axis { stroke: #e2e8f0 !important; }
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-label {
+  font-size: 10px !important;
+  font-weight: 650 !important;
+  fill: #94a3b8 !important;
+}
+body.admin-control-ui[data-app-page] .ac-area { fill-opacity: .14; stroke: none; }
+body.admin-control-ui[data-app-page] .activated-dispenser-graph polyline { filter: drop-shadow(0 2px 3px rgba(15, 23, 42, .12)); }
+body.admin-control-ui[data-app-page] .ac-last-dot { filter: drop-shadow(0 1px 2px rgba(15, 23, 42, .25)); }
+
+/* Product donut panel */
+body.admin-control-ui[data-app-page] .activated-products-graph {
+  background: #fff !important;
+  border: 1px solid var(--ac-line) !important;
+  box-shadow: var(--ac-shadow-sm);
+  padding: 22px !important;
+}
+body.admin-control-ui[data-app-page] .activated-products-pie-item { transition: border-color .15s ease, box-shadow .15s ease; }
+body.admin-control-ui[data-app-page] .activated-products-pie-item:hover {
+  border-color: var(--ac-line);
+  box-shadow: var(--ac-shadow-sm);
+}
+
+/* ==========================================================================
    Responsive
    ========================================================================== */
 @media (max-width: 1100px) {
@@ -1678,4 +1907,62 @@ body.admin-control-ui[data-app-page] .admin-attendant-card .admin-attendant-stat
 @media (prefers-reduced-motion: reduce) {
   body.admin-control-ui[data-app-page] *,
   body.admin-control-ui[data-app-page] *::before { transition: none !important; animation: none !important; }
+}
+
+/* ==========================================================================
+   Dispenser card overrides at ID specificity. Legacy rules scope product
+   colour to "#dispensers .activated-dispenser-card span", which outranks
+   class-only selectors, so these repeat the key rules with the same prefix.
+   ========================================================================== */
+body.admin-control-ui[data-app-page] #dispensers .activated-dispenser-card > span {
+  color: var(--ac-body) !important;
+}
+body.admin-control-ui[data-app-page] #dispensers .ac-status {
+  position: static !important;
+  display: inline-flex !important;
+  width: fit-content !important;
+  padding: 3px 9px !important;
+  background-image: none !important;
+}
+body.admin-control-ui[data-app-page] #dispensers .ac-status::before {
+  position: static !important;
+  display: inline-block !important;
+  width: 6px !important;
+  height: 6px !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+  background: #10b981 !important;
+  content: "" !important;
+  opacity: 1 !important;
+}
+body.admin-control-ui[data-app-page] #dispensers .ac-status--idle::before { background: #94a3b8 !important; }
+body.admin-control-ui[data-app-page] #dispensers .ac-status--active { background: var(--ac-ok-soft) !important; color: #047857 !important; }
+body.admin-control-ui[data-app-page] #dispensers .ac-status--idle { background: var(--ac-line-soft) !important; color: var(--ac-muted) !important; }
+body.admin-control-ui[data-app-page] #dispensers .ac-chip {
+  color: var(--ac-body) !important;
+  background: #fff !important;
+}
+body.admin-control-ui[data-app-page] #dispensers .ac-chip--on {
+  color: #1d4ed8 !important;
+  background: var(--ac-brand-soft) !important;
+  border-color: #bfdbfe !important;
+}
+body.admin-control-ui[data-app-page] #dispensers .ac-chip--off {
+  color: var(--ac-muted) !important;
+}
+
+/* Dispenser card: neutral border (product colour lives in the left strip) and
+   hide the raw summary line that the chips replace. */
+body.admin-control-ui[data-app-page] #dispensers .activated-dispenser-card {
+  border: 1px solid var(--ac-line) !important;
+  border-left: 0 !important;
+  box-shadow: var(--ac-shadow-sm) !important;
+}
+body.admin-control-ui[data-app-page] #dispensers .activated-dispenser-card > small[style*="display: none"],
+body.admin-control-ui[data-app-page] #dispensers .activated-dispenser-card > small {
+  display: none !important;
+}
+body.admin-control-ui[data-app-page] #dispensers .activated-dispenser-card::before {
+  display: block !important;
+  background: var(--product-color, #2563eb) !important;
 }

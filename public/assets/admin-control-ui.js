@@ -46,11 +46,117 @@
     }
   }
 
+  /* Dispenser cards: turn the one-line summary into status + chips.
+     Source text (from app.js) looks like:
+       "Active • 2 nozzle(s) • Shift active — Mohammed"  */
+  function enhanceDispensers(root) {
+    var cards = root.querySelectorAll('.activated-dispenser-card:not([data-ui])');
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i];
+      card.setAttribute('data-ui', '1');
+      var small = card.querySelector('small');
+      if (!small) continue;
+      var parts = small.textContent.split(' • ').map(function (x) { return x.trim(); });
+      var status = (parts[0] || '').toLowerCase();
+      var nozzles = parts[1] || '';
+      var shift = parts.slice(2).join(' • ');
+      var active = status.indexOf('active') === 0;
+      var state = active ? 'active' : 'idle';
+      var shiftOn = /shift active/i.test(shift);
+      var who = shiftOn ? shift.replace(/^.*—\s*/, '') : 'No shift';
+
+      var pill = document.createElement('span');
+      pill.className = 'ac-status ac-status--' + state;
+      pill.textContent = active ? 'Online' : 'Offline';
+      card.insertBefore(pill, card.firstChild);
+
+      var chips = document.createElement('div');
+      chips.className = 'ac-chips';
+      var nz = parseInt(nozzles, 10);
+      chips.appendChild(chip(isNaN(nz) ? nozzles : (nz + (nz === 1 ? ' nozzle' : ' nozzles'))));
+      var sc = chip(who, shiftOn ? 'on' : 'off');
+      chips.appendChild(sc);
+      small.style.display = 'none';
+      card.appendChild(chips);
+    }
+  }
+  function chip(text, mod) {
+    var c = document.createElement('span');
+    c.className = 'ac-chip' + (mod ? ' ac-chip--' + mod : '');
+    c.textContent = text;
+    return c;
+  }
+
+  function hexToRgb(hex) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+    if (!m) return null;
+    var n = parseInt(m[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function luminance(hex) {
+    var c = hexToRgb(hex);
+    if (!c) return 0;
+    return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
+  }
+  function darken(hex, f) {
+    var c = hexToRgb(hex);
+    if (!c) return null;
+    return '#' + c.map(function (v) {
+      return ('0' + Math.round(v * f).toString(16)).slice(-2);
+    }).join('');
+  }
+
+  /* Dispenser graphs: add a soft area under each line and emphasise the latest point. */
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function enhanceCharts(root) {
+    var svgs = root.querySelectorAll('.activated-dispenser-graph svg:not([data-ui])');
+    for (var i = 0; i < svgs.length; i++) {
+      var svg = svgs[i];
+      svg.setAttribute('data-ui', '1');
+      var poly = svg.querySelector('polyline');
+      if (!poly) continue;
+      var pts = (poly.getAttribute('points') || '').trim().split(/\s+/).filter(Boolean);
+      if (pts.length < 2) continue;
+      var axis = svg.querySelector('.activated-dispenser-graph-axis');
+      var base = axis ? parseFloat(axis.getAttribute('y1')) : null;
+      if (base === null || isNaN(base)) continue;
+      var first = pts[0].split(','), last = pts[pts.length - 1].split(',');
+      var d = 'M' + first[0] + ',' + base;
+      for (var j = 0; j < pts.length; j++) d += ' L' + pts[j];
+      d += ' L' + last[0] + ',' + base + ' Z';
+      var area = document.createElementNS(SVGNS, 'path');
+      area.setAttribute('d', d);
+      area.setAttribute('class', 'ac-area');
+      area.setAttribute('fill', poly.getAttribute('stroke') || '#2563eb');
+      poly.parentNode.insertBefore(area, poly);
+      poly.setAttribute('stroke-width', '2.6');
+      /* Pale product colours (e.g. yellow) vanish on white: draw the line in a
+         darker shade of the same hue. The area keeps the original colour. */
+      var stroke = poly.getAttribute('stroke') || '';
+      var dark = darken(stroke, 0.72);
+      if (dark && luminance(stroke) > 0.6) {
+        poly.setAttribute('stroke', dark);
+        var sdots = svg.querySelectorAll('circle');
+        for (var k = 0; k < sdots.length; k++) sdots[k].setAttribute('fill', dark);
+      }
+      var dots = svg.querySelectorAll('circle');
+      if (dots.length) {
+        var lastDot = dots[dots.length - 1];
+        lastDot.setAttribute('r', '4.5');
+        lastDot.setAttribute('class', 'ac-last-dot');
+        lastDot.setAttribute('stroke', '#ffffff');
+        lastDot.setAttribute('stroke-width', '2');
+      }
+    }
+  }
+
   var scheduled = false;
   function run() {
     scheduled = false;
     tagGauges(document);
     addAvatars(document);
+    enhanceDispensers(document);
+    enhanceCharts(document);
   }
   function schedule() {
     if (scheduled) return;
