@@ -1271,7 +1271,7 @@ window.downloadPurchaseDetailPdf=async function(){
     if(dischargeMode){
       const undischargedIndexes=compartments.map((_,i)=>i+1).filter(i=>!(Array.isArray(p.discharged_compartment_indexes)?p.discharged_compartment_indexes:[]).includes(i));
       const undischargedText=undischargedIndexes.length?undischargedIndexes.map(i=>'C'+i).join(', '):'None';
-      return '<article class="purchase-card purchase-discharge-pending-card"><div class="purchase-discharge-pending-head"><div><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(p.invoice_number?('Invoice #'+p.invoice_number):'Purchase — No Invoice')+'</strong></div><small>'+purchaseH(productCode)+' · '+purchaseH(datePurchase)+'</small></div><span class="purchase-pending-status">PENDING</span></div><div class="purchase-discharge-remaining"><span>Undischarged quantity</span><strong>'+purchaseH(purchaseLiters(remaining))+' L</strong></div><div class="purchase-discharge-pending-info"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Remaining compartments <b>'+purchaseH(undischargedText)+'</b></span></div><div class="purchase-discharge-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">Details</button><button type="button" onclick="dischargePurchase(this.dataset.id)" data-id="'+purchaseH(p.id)+'" class="primary">Continue Discharge</button></div></article>';
+      return '<article class="purchase-card purchase-discharge-pending-card" id="purchase-card-'+purchaseH(p.id)+'" data-purchase-id="'+purchaseH(p.id)+'"><div class="purchase-discharge-pending-head"><div><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(p.invoice_number?('Invoice #'+p.invoice_number):'Purchase — No Invoice')+'</strong></div><small>'+purchaseH(productCode)+' · '+purchaseH(datePurchase)+'</small></div><span class="purchase-pending-status">PENDING</span></div><div class="purchase-discharge-remaining"><span>Undischarged quantity</span><strong>'+purchaseH(purchaseLiters(remaining))+' L</strong></div><div class="purchase-discharge-pending-info"><span>Invoice <b>'+purchaseH(p.invoice_number||'—')+'</b></span><span>Remaining compartments <b>'+purchaseH(undischargedText)+'</b></span></div><div class="purchase-discharge-pending-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">Details</button><button type="button" onclick="dischargePurchase(this.dataset.id)" data-id="'+purchaseH(p.id)+'" class="primary">Continue Discharge</button></div></article>';
     }
 
     if(p.status!=='discharged'){
@@ -1306,6 +1306,18 @@ window.downloadPurchaseDetailPdf=async function(){
           const renderHistoryGroup=(items,title,kind)=>{if(!items.length)return '';const visible=kind==='recorded'?items.slice(0,3):items;const more=kind==='recorded'&&items.length>3?'<div class="purchase-history-show-more-wrap"><a class="btn primary purchase-history-show-more" href="admin-purchase-history.html">Show more</a></div>':'';return '<section class="purchase-history-stock-group '+kind+'"><div class="purchase-history-stock-group-head"><span>'+title+'</span><strong>'+items.length+'</strong></div>'+visible.map(p=>{const t=tanks.find(x=>String(x.id)===String(p.tank_id));return renderPurchaseCard(p,t,false);}).join('')+more+'</section>';};
           list.innerHTML=renderHistoryGroup(unrecordedHistory,'⚠ Tank Stock Not Recorded','unrecorded')+renderHistoryGroup(recordedHistory,'Purchase History','recorded');
         }
+      }
+      const purchaseHash=String(location.hash||'');
+      if(purchaseHash.startsWith('#purchase-')){
+        const targetPurchaseId=decodeURIComponent(purchaseHash.slice('#purchase-'.length));
+        setTimeout(()=>{
+          const targetCard=document.getElementById('purchase-card-'+CSS.escape(targetPurchaseId));
+          if(targetCard){
+            targetCard.scrollIntoView({behavior:'smooth',block:'center'});
+            targetCard.classList.add('purchase-card-linked');
+            setTimeout(()=>targetCard.classList.remove('purchase-card-linked'),2200);
+          }
+        },100);
       }
       setStatus('',false);
     }catch(e){
