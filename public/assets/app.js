@@ -1016,7 +1016,7 @@ async function loadStationReconciliationAlerts(){
 async function loadStationNotifications(){
  const list=document.getElementById('station-notifications-list'),count=document.getElementById('station-notifications-count'),status=document.getElementById('station-notifications-status');
  if(!list)return;
- const esc=v=>h(String(v==null?'':v));let items=[];const add=(key,level,title,detail,href,meta='',date=null)=>items.push({key,level,title,detail,href,meta,date:date||new Date().toISOString()});
+ const esc=v=>h(String(v==null?'':v));let items=[];const add=(key,level,title,detail,href,meta='',date=null)=>items.push({key,level,title,detail,href,meta,date:date||null});
  const arr=v=>Array.isArray(v)?v:[],first=(o,keys)=>{for(const k of keys)if(o&&o[k]!=null&&o[k]!=='')return o[k];return null;};
  try{
   const results=await Promise.allSettled([api('/api/reports/daily/confirmations'),api('/api/tanks'),api('/api/products'),api('/api/purchases'),api('/api/accounting/reconciliation')]);
@@ -1049,7 +1049,7 @@ async function loadStationNotifications(){
   try{
     if(failed===0){
       try{
-        await api('/api/inbox/sync',{method:'POST',body:JSON.stringify({complete:true,items:items.map(item=>({key:item.key,level:item.level,title:item.title,detail:item.detail,href:item.href,meta:item.meta,date:item.date}))})});
+        await api('/api/inbox/sync',{method:'POST',body:JSON.stringify({complete:true,items:items.map(item=>({key:item.key,level:item.level,title:item.title,detail:item.detail,href:item.href,meta:item.meta,...(item.date?{date:item.date}:{})}))})});
       }catch(syncError){console.warn('Could not synchronize inbox notifications.',syncError);}
     }
     const savedInbox=await api('/api/inbox');
