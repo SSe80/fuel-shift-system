@@ -1013,6 +1013,42 @@ async function loadStationReconciliationAlerts(){
   }
 }
 
+async function loadStationNotifications(){
+ const list=document.getElementById('station-notifications-list'),count=document.getElementById('station-notifications-count'),status=document.getElementById('station-notifications-status');
+ if(!list)return;
+ const esc=v=>h(String(v==null?'':v)),items=[],add=(key,level,title,detail,href,meta='')=>items.push({key,level,title,detail,href,meta});
+ const arr=v=>Array.isArray(v)?v:[],first=(o,keys)=>{for(const k of keys)if(o&&o[k]!=null&&o[k]!=='')return o[k];return null;};
+ try{
+  const results=await Promise.allSettled([api('/api/reports/daily/confirmations'),api('/api/tanks'),api('/api/products'),api('/api/purchases'),api('/api/accounting/reconciliation')]);
+  const val=i=>results[i].status==='fulfilled'?results[i].value:null,dsrs=val(0),tankData=val(1),productData=val(2),purchaseData=val(3),recon=val(4),products=arr(productData);
+  const productByName=Object.fromEntries(products.map(p=>[String(p.name||'').trim().toLowerCase(),p])),codeFor=p=>productByName[String(p||'').trim().toLowerCase()]?.code_name||p||'Unknown product';
+  const tanks=arr(tankData).filter(t=>t.active!==false),low=[],high=[];
+  tanks.forEach(t=>{const cap=Number(t.capacity_liters),stock=Number(t.current_liters);if(!(cap>0)||!Number.isFinite(stock))return;if(stock/cap<=.10)low.push(t);else if(stock/cap>=.90)high.push(t);});
+  if(low.length)add('low-tanks','warning','Low tank stock',low.length+' tank'+(low.length===1?' is':'s are')+' at or below 10% capacity: '+low.slice(0,4).map(t=>t.tank_code||'Tank').join(', ')+(low.length>4?' and '+(low.length-4)+' more':''),'admin-inventory.html',low.slice(0,6).map(t=>(t.tank_code||'Tank')+' · '+codeFor(t.product)+' · '+liters(t.current_liters)+' L left').join(' | '));
+  if(high.length)add('high-tanks','info','High tank level',high.length+' tank'+(high.length===1?' is':'s are')+' at or above 90% capacity: '+high.slice(0,4).map(t=>t.tank_code||'Tank').join(', ')+(high.length>4?' and '+(high.length-4)+' more':''),'admin-inventory.html',high.slice(0,6).map(t=>(t.tank_code||'Tank')+' · '+Math.round(Number(t.current_liters)/Number(t.capacity_liters)*100)+'% full').join(' | '));
+  const pendingDsr=arr(dsrs).filter(x=>x.status==='pending'||x.status==='waiting');
+  if(pendingDsr.length){
+   const ready=pendingDsr.filter(x=>x.status==='pending'&&x.report_day_closed!==false&&x.all_shifts_complete&&x.all_handover_recorded&&x.all_sales_recorded);
+   add('pending-dsr',ready.length?'warning':'info',ready.length?'DSR ready for confirmation':'DSR completion or confirmation pending',ready.length?ready.length+' daily report'+(ready.length===1?' is':'s are')+' ready for admin review and confirmation.':pendingDsr.length+' DSR record'+(pendingDsr.length===1?' needs':'s need')+' completion checks or confirmation.','admin-daily-report.html',pendingDsr.slice(0,5).map(x=>dailyReportIdLabel(x.date)+' · '+(x.status==='waiting'?'Awaiting completion':'Awaiting confirmation')).join(' | '));
+   const missing=[];pendingDsr.forEach(report=>arr(report.missing_sales_shifts).concat(arr(report.unsubmitted_sales_shifts)).forEach(shift=>{const name=first(shift,['attendant_name','employee_name','name','attendant','employee'])||first(shift?.employee,['name'])||first(shift?.attendant,['name'])||'Attendant',key=String(name)+'|'+String(report.date||'');if(!missing.some(x=>x.key===key))missing.push({key,name,date:report.date});}));
+   if(missing.length)add('missing-sales','warning','Attendants without recorded sales',missing.length+' attendant/shift record'+(missing.length===1?'':'s')+' still need sales recording after the DSR period.','admin-attendants.html',missing.slice(0,6).map(x=>String(x.name)+' · '+dailyReportIdLabel(x.date)).join(' | ')+(missing.length>6?' · +'+(missing.length-6)+' more':''));
+  }
+  const pending=[],partial=[];arr(purchaseData).forEach(p=>{
+   const discharged=first(p,['discharged_quantity_liters','discharged_liters','quantity_discharged_liters','total_discharged_liters','discharged_quantity']),remaining=first(p,['remaining_quantity_liters','remaining_liters','undischarged_liters','quantity_remaining_liters','remaining_quantity']);
+   const total=Number(first(p,['quantity_liters','ordered_quantity_liters','quantity'])||0),done=Number(discharged),rem=remaining!=null?Number(remaining):(discharged!=null&&Number.isFinite(total)&&Number.isFinite(done)?Math.max(0,total-done):null),state=String(first(p,['discharge_status','status'])||'').toLowerCase(),hasFields=discharged!=null||remaining!=null||p.discharge_status!=null,label=String(p.invoice_number||p.order_number||p.id||'Purchase'),product=codeFor(p.product);
+   if(hasFields&&rem!=null&&rem>0.01){const row={label,product,remaining:rem};if(rem<total-.01||done>0||/partial/i.test(state))partial.push(row);else if(/pending|undischarged|awaiting|not.?discharg/i.test(state)||done===0)pending.push(row);}
+   else if(!hasFields&&/pending|undischarged|awaiting.?discharg/i.test(state))pending.push({label,product,remaining:total});
+  });
+  if(pending.length)add('purchase-discharge','warning','Purchases awaiting discharge',pending.length+' purchase'+(pending.length===1?' needs':'s need')+' discharge.','admin-purchases.html',pending.slice(0,5).map(p=>p.product+' · '+p.label+' · '+liters(p.remaining)+' L').join(' | '));
+  if(partial.length)add('purchase-partial','warning','Partial purchase discharges',partial.length+' purchase'+(partial.length===1?' has':'s have')+' undischarged quantity remaining.','admin-purchases.html',partial.slice(0,5).map(p=>p.product+' · '+p.label+' · '+liters(p.remaining)+' L remaining').join(' | '));
+  const differences=[];arr(recon?.tanks).forEach(t=>{const closing=first(t,['physical_closing_liters','closing_physical_liters','recorded_closing_liters','physical_liters']),expected=first(t,['expected_closing_liters','expected_liters']),raw=first(t,['variance_liters','stock_difference_liters','difference_liters']),diff=raw!=null?Number(raw):(closing!=null&&expected!=null?Number(closing)-Number(expected):null);if(diff!=null&&Number.isFinite(diff)&&Math.abs(diff)>.01)differences.push({tank:t.tank_code||t.tank_name||'Tank',diff});});
+  if(differences.length)add('stock-differences','critical','Tank stock differences',differences.length+' tank reconciliation'+(differences.length===1?' shows':'s show')+' a difference between expected and recorded stock.','admin-accounting-control.html',differences.slice(0,6).map(x=>x.tank+' · '+(x.diff>0?'+':'')+liters(x.diff)+' L').join(' | '));
+  const failed=results.filter(r=>r.status==='rejected').length,icons={critical:'!',warning:'!',info:'i'},labels={critical:'Attention',warning:'Action needed',info:'For review'},rank={critical:0,warning:1,info:2};items.sort((a,b)=>(rank[a.level]??9)-(rank[b.level]??9));
+  if(count)count.textContent=String(items.length);if(status)status.textContent=failed?'Some checks unavailable':'Updated just now';
+  list.innerHTML=items.length?items.map(item=>'<a class="station-notification-row '+esc(item.level)+'" href="'+esc(item.href)+'"><span class="station-notification-icon" aria-hidden="true">'+icons[item.level]+'</span><span class="station-notification-copy"><span class="station-notification-title">'+esc(item.title)+'</span><span class="station-notification-detail">'+esc(item.detail)+'</span>'+(item.meta?'<span class="station-notification-meta">'+esc(item.meta)+'</span>':'')+'<span class="station-notification-open">'+labels[item.level]+' <span aria-hidden="true">→</span></span></span><span class="station-notification-chevron" aria-hidden="true">›</span></a>').join(''):'<div class="station-notification-empty">'+(failed?'No active alerts were found in the available checks. Some data sources could not be reached.':'You’re all caught up. No active notifications.')+'</div>';
+ }catch(e){if(status)status.textContent='Unable to refresh';list.innerHTML='<div class="station-notification-empty">Notifications could not be loaded. Open the related section to check station records.</div>';}
+}
+
 async function adminDashboard(){
   try{
     await window.stationCurrencyReady;
@@ -1038,6 +1074,7 @@ async function adminDashboard(){
     if(el('product-count'))el('product-count').textContent=products.length; if(el('dispenser-count'))el('dispenser-count').textContent=dispensers.length; if(el('attendant-count'))el('attendant-count').textContent=activeEmployees.filter(e=>e.role==='attendant').length;
     await loadAccountingReconciliation();
     await loadStationReconciliationAlerts();
+    await loadStationNotifications();
     if(el('products')){
       const shownProducts=products.slice(0,4);
       el('products').innerHTML=shownProducts.length?shownProducts.map(p=>{
