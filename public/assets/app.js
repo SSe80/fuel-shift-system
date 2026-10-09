@@ -5518,6 +5518,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     'admin-purchases.html':'purchases',
     'admin-sales.html':'sales',
     'admin-daily-report.html':'daily-report',
+    'admin-monthly-report.html':'monthly-report',
     'admin-settings.html':'settings',
     /* All Admin Dashboard sub-pages keep Dashboard selected in the main sidebar. */
     'admin-fuel-configuration.html':'dashboard',
