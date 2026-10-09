@@ -1016,7 +1016,7 @@ async function loadStationReconciliationAlerts(){
 async function loadStationNotifications(){
  const list=document.getElementById('station-notifications-list'),count=document.getElementById('station-notifications-count'),status=document.getElementById('station-notifications-status');
  if(!list)return;
- const esc=v=>h(String(v==null?'':v)),items=[],add=(key,level,title,detail,href,meta='',date=null)=>items.push({key,level,title,detail,href,meta,date:date||new Date().toISOString()});
+ const esc=v=>h(String(v==null?'':v));let items=[];const add=(key,level,title,detail,href,meta='',date=null)=>items.push({key,level,title,detail,href,meta,date:date||new Date().toISOString()});
  const arr=v=>Array.isArray(v)?v:[],first=(o,keys)=>{for(const k of keys)if(o&&o[k]!=null&&o[k]!=='')return o[k];return null;};
  try{
   const results=await Promise.allSettled([api('/api/reports/daily/confirmations'),api('/api/tanks'),api('/api/products'),api('/api/purchases'),api('/api/accounting/reconciliation')]);
@@ -1043,10 +1043,32 @@ async function loadStationNotifications(){
   if(partial.length)add('purchase-partial','warning','Partial purchase discharges',partial.length+' purchase'+(partial.length===1?' has':'s have')+' undischarged quantity remaining.','admin-purchases.html',partial.slice(0,5).map(p=>p.product+' · '+p.label+' · '+liters(p.remaining)+' L remaining').join(' | '),partial.map(p=>p.date).filter(Boolean).map(String).sort().slice(-1)[0]||null);
   const differences=[];arr(recon?.tanks).forEach(t=>{const closing=first(t,['physical_closing_liters','closing_physical_liters','recorded_closing_liters','physical_liters']),expected=first(t,['expected_closing_liters','expected_liters']),raw=first(t,['variance_liters','stock_difference_liters','difference_liters']),diff=raw!=null?Number(raw):(closing!=null&&expected!=null?Number(closing)-Number(expected):null);if(diff!=null&&Number.isFinite(diff)&&Math.abs(diff)>.01)differences.push({tank:t.tank_code||t.tank_name||'Tank',diff});});
   if(differences.length)add('stock-differences','critical','Tank stock differences',differences.length+' tank reconciliation'+(differences.length===1?' shows':'s show')+' a difference between expected and recorded stock.','admin-accounting-control.html',differences.slice(0,6).map(x=>x.tank+' · '+(x.diff>0?'+':'')+liters(x.diff)+' L').join(' | '));
-  const failed=results.filter(r=>r.status==='rejected').length,icons={critical:'!',warning:'!',info:'i'},labels={critical:'Needs attention',warning:'Action needed',info:'For review'},rank={critical:0,warning:1,info:2};items.sort((a,b)=>(rank[a.level]??9)-(rank[b.level]??9));
-  const inboxPage=document.body.getAttribute('data-app-page')==='adminInbox',readKey='fuelStationInboxReadV1',favoriteKey='fuelStationInboxFavoritesV1';
-  let readIds={},favoriteIds={};try{readIds=JSON.parse(localStorage.getItem(readKey)||'{}')||{};}catch(_e){}try{favoriteIds=JSON.parse(localStorage.getItem(favoriteKey)||'{}')||{};}catch(_e){}
-  items.forEach(item=>{item.isRead=!!readIds[item.key];item.isFavorite=!!favoriteIds[item.key];});
+  const failed=results.filter(r=>r.status==='rejected').length,icons={critical:'!',warning:'!',info:'i'},labels={critical:'Needs attention',warning:'Action needed',info:'For review'},rank={critical:0,warning:1,info:2};
+  const inboxPage=document.body.getAttribute('data-app-page')==='adminInbox';
+  let databaseBacked=false;
+  try{
+    if(failed===0){
+      await api('/api/inbox/sync',{method:'POST',body:JSON.stringify({complete:true,items:items.map(item=>({key:item.key,level:item.level,title:item.title,detail:item.detail,href:item.href,meta:item.meta,date:item.date}))})});
+    }
+    const savedInbox=await api('/api/inbox');
+    if(Array.isArray(savedInbox?.items)){
+      items.splice(0,items.length,...savedInbox.items.map(row=>({
+        key:row.key,level:row.level,title:row.title,detail:row.detail,href:row.href,
+        meta:row.meta||'',date:row.date||new Date().toISOString(),
+        isRead:!!row.is_read,isFavorite:!!row.is_favorite
+      })));
+      databaseBacked=true;
+    }
+  }catch(inboxDbError){
+    console.warn('Database inbox is unavailable; using current station checks.',inboxDbError);
+  }
+  if(!databaseBacked){
+    const readKey='fuelStationInboxReadV1',favoriteKey='fuelStationInboxFavoritesV1';
+    let readIds={},favoriteIds={};
+    try{readIds=JSON.parse(localStorage.getItem(readKey)||'{}')||{};}catch(_e){}
+    try{favoriteIds=JSON.parse(localStorage.getItem(favoriteKey)||'{}')||{};}catch(_e){}
+    items.forEach(item=>{item.isRead=!!readIds[item.key];item.isFavorite=!!favoriteIds[item.key];});
+  }
   items.sort((a,b)=>(Number(b.isFavorite)-Number(a.isFavorite))||(Number(a.isRead)-Number(b.isRead))||(rank[a.level]??9)-(rank[b.level]??9));
   items.forEach(item=>{if(!item.date)item.date=new Date().toISOString();});
   const unreadCount=items.filter(item=>!item.isRead).length;
@@ -1092,8 +1114,44 @@ async function loadStationNotifications(){
       }
     }
     list.innerHTML=visibleItems.length?visibleItems.map(item=>{const isRead=!!item.isRead,isFavorite=!!item.isFavorite;return '<div class="station-notification-row '+esc(item.level)+(isRead?' is-read':' is-unread')+(isFavorite?' is-favorite':'')+'" data-inbox-row="'+esc(item.key)+'"><span class="station-notification-icon" aria-hidden="true">'+icons[item.level]+'</span><span class="station-notification-copy"><a class="station-notification-main" href="'+esc(item.href)+'" data-inbox-key="'+esc(item.key)+'"><span class="station-notification-title">'+esc(item.title)+'</span><span class="station-notification-detail">'+esc(item.detail)+'</span>'+(item.meta?'<span class="station-notification-meta">'+esc(item.meta)+'</span>':'')+'<span class="station-notification-open">'+(isRead?'Read':'Unread')+' · '+labels[item.level]+' <span aria-hidden="true">→</span></span></a></span><button type="button" class="station-notification-favorite'+(isFavorite?' active':'')+'" data-favorite-key="'+esc(item.key)+'" aria-label="'+(isFavorite?'Remove from favorites':'Add to favorites')+'" aria-pressed="'+String(isFavorite)+'" title="'+(isFavorite?'Remove from favorites':'Add to favorites')+'">'+(isFavorite?'★':'☆')+'</button></div>';}).join(''):'<div class="station-notification-empty">'+(inboxPage&&activeFilterCount()?'No notifications match these filters. Try changing or clearing your filters.':(failed?'No active alerts were found in the available checks. Some data sources could not be reached.':'You’re all caught up. No active notifications.'))+'</div>';
-    list.querySelectorAll('[data-inbox-key]').forEach(link=>link.addEventListener('click',()=>{try{const saved=JSON.parse(localStorage.getItem(readKey)||'{}')||{};const key=link.getAttribute('data-inbox-key');if(!saved[key]){saved[key]=Date.now();localStorage.setItem(readKey,JSON.stringify(saved));const item=items.find(x=>x.key===key);if(item)item.isRead=true;const row=link.closest('[data-inbox-row]');if(row){row.classList.remove('is-unread');row.classList.add('is-read');const open=row.querySelector('.station-notification-open');if(open)open.innerHTML='Read · '+labels[item?.level||'info']+' <span aria-hidden="true">→</span>';}if(count)count.textContent=String(Math.max(0,Number(count.textContent||0)-1));}}catch(_e){}}));
-    list.querySelectorAll('[data-favorite-key]').forEach(button=>button.addEventListener('click',()=>{const key=button.getAttribute('data-favorite-key');let active=false;try{const saved=JSON.parse(localStorage.getItem(favoriteKey)||'{}')||{};if(saved[key])delete saved[key];else saved[key]=Date.now();localStorage.setItem(favoriteKey,JSON.stringify(saved));active=!!saved[key];}catch(_e){active=button.getAttribute('aria-pressed')!=='true';}const item=items.find(x=>x.key===key);if(item)item.isFavorite=active;button.setAttribute('aria-pressed',String(active));button.classList.toggle('active',active);button.textContent=active?'★':'☆';button.title=active?'Remove from favorites':'Add to favorites';button.setAttribute('aria-label',button.title);const row=button.closest('[data-inbox-row]');if(row)row.classList.toggle('is-favorite',active);if(inboxPage){inboxCurrentPage=1;renderInboxList();}}));
+    list.querySelectorAll('[data-inbox-key]').forEach(link=>link.addEventListener('click',async event=>{
+      event.preventDefault();
+      const key=link.getAttribute('data-inbox-key'),item=items.find(x=>x.key===key),target=link.href;
+      try{
+        if(item&&!item.isRead){
+          if(databaseBacked){
+            await api('/api/inbox/'+encodeURIComponent(key)+'/state',{method:'PATCH',body:JSON.stringify({is_read:true,is_favorite:!!item.isFavorite})});
+          }else{
+            const saved=JSON.parse(localStorage.getItem('fuelStationInboxReadV1')||'{}')||{};
+            saved[key]=Date.now();localStorage.setItem('fuelStationInboxReadV1',JSON.stringify(saved));
+          }
+          if(item)item.isRead=true;
+          if(count)count.textContent=String(Math.max(0,Number(count.textContent||0)-1));
+        }
+      }catch(e){toast('Could not save the read status. Please try again.');}
+      location.href=target;
+    }));
+    list.querySelectorAll('[data-favorite-key]').forEach(button=>button.addEventListener('click',async event=>{
+      event.preventDefault();event.stopPropagation();
+      const key=button.getAttribute('data-favorite-key'),item=items.find(x=>x.key===key);
+      if(!item)return;
+      const active=!item.isFavorite;
+      try{
+        if(databaseBacked){
+          await api('/api/inbox/'+encodeURIComponent(key)+'/state',{method:'PATCH',body:JSON.stringify({is_read:!!item.isRead,is_favorite:active})});
+        }else{
+          const saved=JSON.parse(localStorage.getItem('fuelStationInboxFavoritesV1')||'{}')||{};
+          if(active)saved[key]=Date.now();else delete saved[key];
+          localStorage.setItem('fuelStationInboxFavoritesV1',JSON.stringify(saved));
+        }
+        item.isFavorite=active;
+        if(inboxPage){inboxCurrentPage=1;renderInboxList();return;}
+        button.setAttribute('aria-pressed',String(active));button.classList.toggle('active',active);
+        button.textContent=active?'★':'☆';button.title=active?'Remove from favorites':'Add to favorites';
+        button.setAttribute('aria-label',button.title);
+        const row=button.closest('[data-inbox-row]');if(row)row.classList.toggle('is-favorite',active);
+      }catch(e){toast('Could not save this favorite. Please try again.');}
+    }));
   };
   if(inboxPage&&filterToggle&&!filterToggle.dataset.bound){
     filterToggle.dataset.bound='1';
