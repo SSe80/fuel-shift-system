@@ -5087,3 +5087,86 @@ body[data-app-page="adminInbox"] .inbox-page-btn:disabled{opacity:.35;cursor:not
 body[data-app-page="adminInbox"] .inbox-page-indicator{font-size:11px;color:#718096}
 body[data-app-page="adminInbox"] .inbox-page-indicator strong{color:#253b58;font-weight:850}
 @media(max-width:640px){body[data-app-page="adminInbox"] .inbox-pagination{padding:12px 0 14px}}
+
+
+/* Purchase inbox alerts — clearer hierarchy and a distinct action affordance. */
+body[data-app-page="adminDashboard"] .station-notification-row.station-purchase-notification,
+body[data-app-page="adminInbox"] .station-notification-row.station-purchase-notification{
+  align-items:start!important;
+  border-left:3px solid #d97706!important;
+  padding-left:13px!important;
+  background:linear-gradient(100deg,#fffaf0 0%,#fff 68%)!important;
+}
+body[data-app-page="adminDashboard"] .station-notification-row.station-purchase-notification .station-notification-icon,
+body[data-app-page="adminInbox"] .station-notification-row.station-purchase-notification .station-notification-icon{
+  color:#9a5a08!important;
+  background:#fff0ce!important;
+  border:1px solid #f2d49a!important;
+  border-radius:10px!important;
+  font-weight:900!important;
+}
+body[data-app-page="adminDashboard"] .station-purchase-notification .station-notification-title,
+body[data-app-page="adminInbox"] .station-purchase-notification .station-notification-title{
+  display:block!important;
+  color:#23334a!important;
+  font-weight:800!important;
+  line-height:1.4!important;
+  overflow-wrap:anywhere!important;
+}
+body[data-app-page="adminDashboard"] .station-purchase-notification .station-notification-detail,
+body[data-app-page="adminInbox"] .station-purchase-notification .station-notification-detail{
+  display:block!important;
+  margin-top:5px!important;
+  color:#5b6675!important;
+  line-height:1.5!important;
+}
+body[data-app-page="adminDashboard"] .station-purchase-notification .station-notification-meta,
+body[data-app-page="adminInbox"] .station-purchase-notification .station-notification-meta{
+  display:block!important;
+  margin-top:8px!important;
+  padding:7px 9px!important;
+  border:1px solid #f0e4cb!important;
+  border-radius:8px!important;
+  background:#fffdf8!important;
+  color:#786548!important;
+  font-size:10.5px!important;
+  line-height:1.5!important;
+  overflow-wrap:anywhere!important;
+}
+body[data-app-page="adminDashboard"] .station-purchase-notification .station-notification-open,
+body[data-app-page="adminInbox"] .station-purchase-notification .station-notification-open{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  margin-top:9px!important;
+  padding:7px 10px!important;
+  border:1px solid #f0d7a6!important;
+  border-radius:8px!important;
+  background:#fff5dd!important;
+  color:#89520a!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  line-height:1.2!important;
+}
+body[data-app-page="adminDashboard"] .station-purchase-notification .station-notification-main:hover .station-notification-open,
+body[data-app-page="adminInbox"] .station-purchase-notification .station-notification-main:hover .station-notification-open{
+  background:#ffebbd!important;
+  border-color:#e7c37e!important;
+}
+body[data-app-page="admin-purchases"] .purchase-card-linked,
+.purchase-card.purchase-card-linked{
+  outline:3px solid #2f73dc!important;
+  outline-offset:3px!important;
+  box-shadow:0 0 0 7px rgba(47,115,220,.12),0 12px 30px rgba(27,73,139,.12)!important;
+  animation:purchaseInboxFocus 1.8s ease-out both;
+}
+@keyframes purchaseInboxFocus{
+  0%{outline-color:#2f73dc;box-shadow:0 0 0 8px rgba(47,115,220,.22)}
+  100%{outline-color:transparent;box-shadow:0 0 0 0 rgba(47,115,220,0)}
+}
+@media(max-width:640px){
+  body[data-app-page="adminDashboard"] .station-notification-row.station-purchase-notification,
+  body[data-app-page="adminInbox"] .station-notification-row.station-purchase-notification{padding-left:9px!important}
+  body[data-app-page="adminDashboard"] .station-purchase-notification .station-notification-meta,
+  body[data-app-page="adminInbox"] .station-purchase-notification .station-notification-meta{font-size:10px!important}
+}
