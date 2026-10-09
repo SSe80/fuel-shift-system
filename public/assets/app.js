@@ -997,8 +997,7 @@ async function loadStationReconciliationAlerts(){
         const variance=t.variance_liters??t.stock_difference_liters??t.difference_liters??(closing!=null&&expected!=null?Number(closing)-Number(expected):null);
         if(closing==null){
           alerts.push({kind:'warning',title:tank+' · Closing measurement needed',detail:'Record a verified physical closing measurement to complete this tank reconciliation.',meta:expected==null?'Expected closing not available':'Expected closing '+liters(expected)+' L'});
-        }else if(variance!=null&&Math.abs(Number(variance))>0.01){
-          alerts.push({kind:'critical',title:tank+' · Stock variance detected',detail:(Number(variance)>0?'+':'')+liters(variance)+' L difference between recorded and expected stock.',meta:expected==null?'Review tank readings and stock movements':'Expected '+liters(expected)+' L · Recorded '+liters(closing)+' L'});
+        }else if(variance!=null&&Math.abs(Number(variance))>0.01){          alerts.push({kind:'critical',title:tank+' · Stock variance detected',detail:(Number(variance)>0?'+':'')+liters(variance)+' L difference between recorded and expected stock.',meta:expected==null?'Review tank readings and stock movements':'Expected '+liters(expected)+' L · Recorded '+liters(closing)+' L'});
         }else if(variance!=null){
           alerts.push({kind:'success',title:tank+' · Reconciled',detail:'Recorded closing stock matches expected stock.',meta:liters(closing)+' L recorded'});
         }
@@ -1997,8 +1996,7 @@ function createGenericReportPdf(report){
       let x=M;wrapped.forEach((lines,i)=>{
         rect(x,y-rh,widths[i],rh,[255,255,255],[231,235,239]);
         lines.forEach((v,k)=>text(v,x+5,y-(compact?11:13)-k*(compact?8:10),compact?6.5:8,k===0&&i===0,[31,41,55]));
-        x+=widths[i];
-      });y-=rh;
+        x+=widths[i];      });y-=rh;
     }
     y-=compact?5:8;
   };
@@ -2174,6 +2172,138 @@ function createStyledReportPdf(report){
   pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF';
   return new Blob([pdf],{type:'application/pdf'});
 }
+function createSalesReportPdf(r){
+  // Layout measured from the approved sales report sample (A4, 36pt margins).
+  const W=595.28,H=841.89,M=36,CW=W-M*2,BOTTOM=792;
+  const WR=[278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584],WB=[278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584];
+  const NAVY=[20,33,61],BLUE=[37,99,235],INK=[17,24,39],GRAY=[107,114,128],CARD=[243,244,246],LINE=[229,231,235],GREEN=[21,128,61],AMBER=[180,83,9],AMBERBG=[254,243,199];
+  const clean=v=>String(v==null?'':v).replace(/[\u2022\u00b7]/g,' - ').replace(/[\u2192\u279c]/g,'->').replace(/[\u2013\u2014]/g,'-').replace(/[\u00a0\u202f]/g,' ').replace(/[^ -~]/g,'');
+  const esc=v=>clean(v).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  const tw=(v,size,bold)=>{const t=bold?WB:WR;let n=0;clean(v).split('').forEach(c=>{n+=t[c.charCodeAt(0)-32]||556;});return n*size/1000;};
+  const fit=(v,size,bold,max)=>{let s=clean(v);if(tw(s,size,bold)<=max)return s;while(s.length>1&&tw(s+'...',size,bold)>max)s=s.slice(0,-1);return s+'...';};
+  const wrap=(v,size,bold,max)=>{const out=[];let line='';clean(v).split(/\s+/).forEach(word=>{if(!word)return;
+    const cand=line?line+' '+word:word;
+    if(tw(cand,size,bold)<=max){line=cand;return;}
+    if(line)out.push(line);line=word;
+    while(tw(line,size,bold)>max&&line.length>1){let k=line.length-1;while(k>1&&tw(line.slice(0,k),size,bold)>max)k--;out.push(line.slice(0,k));line=line.slice(k);}
+  });if(line)out.push(line);return out.length?out:[''];};
+  const col=c=>(c[0]/255).toFixed(4)+' '+(c[1]/255).toFixed(4)+' '+(c[2]/255).toFixed(4);
+  const n2=v=>(Math.round(v*100)/100).toString();
+  const pages=[[]];let y=0;
+  const cmd=s=>pages[pages.length-1].push(s);
+  const Y=t=>n2(H-t);
+  const rrPath=(x,t,w,h,r)=>{r=Math.min(r,w/2,h/2);const k=r*.5523,b=H-t-h,l=x,rt=x+w,tp=H-t;
+    return n2(l+r)+' '+n2(b)+' m '+n2(rt-r)+' '+n2(b)+' l '+n2(rt-r+k)+' '+n2(b)+' '+n2(rt)+' '+n2(b+r-k)+' '+n2(rt)+' '+n2(b+r)+' c '+
+      n2(rt)+' '+n2(tp-r)+' l '+n2(rt)+' '+n2(tp-r+k)+' '+n2(rt-r+k)+' '+n2(tp)+' '+n2(rt-r)+' '+n2(tp)+' c '+
+      n2(l+r)+' '+n2(tp)+' l '+n2(l+r-k)+' '+n2(tp)+' '+n2(l)+' '+n2(tp-r+k)+' '+n2(l)+' '+n2(tp-r)+' c '+
+      n2(l)+' '+n2(b+r)+' l '+n2(l)+' '+n2(b+r-k)+' '+n2(l+r-k)+' '+n2(b)+' '+n2(l+r)+' '+n2(b)+' c h ';};
+  const box=(x,t,w,h,fill,rad)=>cmd(col(fill)+' rg '+(rad?rrPath(x,t,w,h,rad)+'f':n2(x)+' '+Y(t+h)+' '+n2(w)+' '+n2(h)+' re f')+'\n');
+  const hline=(x1,x2,t,c=LINE,wd=.6)=>cmd(col(c)+' RG '+wd+' w '+n2(x1)+' '+Y(t)+' m '+n2(x2)+' '+Y(t)+' l S\n');
+  // text(value,x,baselineTop,size,bold,color,align): 'r' right-aligns at x, 'c' centres on x
+  const text=(v,x,base,size,bold,color,align)=>{
+    const s=clean(v),w=tw(s,size,bold);
+    const px=align==='r'?x-w:align==='c'?x-w/2:x;
+    cmd(col(color||INK)+' rg BT /F'+(bold?2:1)+' '+size+' Tf 1 0 0 1 '+n2(px)+' '+Y(base)+' Tm ('+esc(s)+') Tj ET\n');
+  };
+  const newPage=()=>{pages.push([]);y=40;};
+  const ensure=h=>{if(y+h>BOTTOM)newPage();};
+  const section=(title,x,t)=>{box(x,t,3,13.4,BLUE);text(title.toUpperCase(),x+10,t+10.2,10.5,true,NAVY);};
+
+  // ---- header band ----
+  box(0,0,W,84,NAVY);
+  cmd(col([147,197,253])+' rg BT /F2 8.5 Tf 1 0 0 1 '+M+' '+Y(28)+' Tm (SALES REPORT \\267 CONFIRMED SHIFT SALES DETAIL) Tj ET\n');
+  text(fit(r.title,22,true,380),M,54,22,true,[255,255,255]);
+  text(fit(r.subtitle,9.5,false,380),M,71,9.5,false,[203,213,225]);
+  const pillLabel=clean(r.statusLabel).toUpperCase(),pw=tw(pillLabel,10,true)+36;
+  box(W-M-pw,31.5,pw,25,[220,252,231],12.5);
+  text(pillLabel,W-M-pw/2,48.5,10,true,GREEN,'c');
+  y=105.8;
+
+  const cards=(items,perRow,top,gap=10,h=50)=>{
+    const w=(CW-gap*(perRow-1))/perRow;
+    items.forEach((it,i)=>{
+      const row=Math.floor(i/perRow),c=i%perRow,x=M+c*(w+gap),t=top+row*(h+gap);
+      const warn=it.tone==='warn';
+      box(x,t,w,h,warn?AMBERBG:CARD,4.5);
+      text(it.label.toUpperCase(),x+12,t+17.7,8,false,GRAY);
+      const size=it.size||10.5;
+      text(fit(it.value,size,true,w-18),x+12,t+38.7,size,true,it.tone==='good'?GREEN:warn?AMBER:INK);
+    });
+    return Math.ceil(items.length/perRow)*(h+gap)-gap;
+  };
+
+  // ---- overview ----
+  section('Overview',M,y);
+  y+=24.5;y+=cards(r.overview,4,y)+20;
+
+  // ---- details (two columns) ----
+  ensure(130);
+  const colW=(CW-24)/2,xl=M,xr=M+colW+24;
+  section(r.leftTitle,xl,y);section(r.rightTitle,xr,y);
+  const drawRows=(rows,x)=>{let t=y+12;rows.forEach(rw=>{
+    const rh=rw.small?22:20,size=rw.small?7.5:9.5;
+    text(rw.label,x,t+14,9.5,false,GRAY);
+    text(fit(rw.value,size,true,colW-80),x+colW,t+14,size,true,INK,'r');
+    hline(x,x+colW,t+rh);t+=rh;});return t-y-12;};
+  const hl=drawRows(r.left,xl),hr=drawRows(r.right,xr);
+  y+=12+Math.max(hl,hr)+30;
+
+  // ---- generic table ----
+  const table=(title,cols,rows)=>{
+    ensure(26+24+30);
+    section(title,M,y);
+    const head=()=>{box(M,y,CW,24,NAVY,6);cols.forEach(c=>text(c.h.toUpperCase(),M+c.x,y+15,7.5,true,[255,255,255],c.a==='r'?'r':'l'));y+=24;};
+    y+=25.9;
+    head();
+    rows.forEach(row=>{
+      const lines=row.map((v,i)=>cols[i].wrap?wrap(v,9.5,!!cols[i].b,cols[i].wrap):[fit(v,9.5,!!cols[i].b,cols[i].max||200)]);
+      const n=Math.max(...lines.map(l=>l.length)),rh=Math.max(30,n*11.5+18.5);
+      if(y+rh>BOTTOM){newPage();head();}
+      box(M,y,CW,rh,CARD);
+      lines.forEach((ls,i)=>ls.forEach((s,k)=>text(s,M+cols[i].x,y+19+k*11.5,9.5,!!cols[i].b,(row.tone&&row.tone[i])||INK,cols[i].a==='r'?'r':'l')));
+      hline(M,M+CW,y+rh-.3);y+=rh;
+    });
+    y+=20;
+  };
+  table('Opening & closing meter readings',[
+    {h:'Nozzle',x:10,max:120},{h:'Product',x:140,max:65},{h:'Tank',x:210,max:90},
+    {h:'Opening',x:370,a:'r'},{h:'Closing',x:440,a:'r'},{h:'Sold',x:CW-10,a:'r',b:true}],r.meterRows);
+  table('Tank opening & closing stock',[
+    {h:'Tank',x:10,max:110},{h:'Opening stock',x:200,a:'r'},{h:'Closing stock',x:280,a:'r'},
+    {h:'Tank sales',x:360,a:'r',b:true},{h:'Stock variance',x:440,a:'r',b:true},{h:'Variance %',x:CW-10,a:'r',b:true}],r.tankRows);
+  table('Recorded sales',[
+    {h:'#',x:10},{h:'Sale type',x:38,max:150},{h:'Amount',x:268,a:'r',b:true},{h:'Description / reason',x:288,wrap:CW-288-10}],r.saleRows);
+
+  // ---- totals ----
+  ensure(134.1);
+  section('Sales total',M,y);y+=24.1;
+  y+=cards(r.totals1,4,y)+10;
+  y+=cards(r.totals2,3,y)+10;
+
+  // ---- footer + assemble ----
+  const objs=[],kids=[];let next=6;
+  pages.forEach((cmds,pi)=>{
+    const pid=next++,cid=next++;kids.push(pid+' 0 R');
+    cmds.push(col(LINE)+' RG .5 w '+M+' '+Y(802)+' m '+n2(W-M)+' '+Y(802)+' l S\n');
+    cmds.push(col(GRAY)+' rg BT /F1 8 Tf 1 0 0 1 '+M+' '+Y(813.8)+' Tm (Fuel Station Management \\267 SALES REPORT) Tj ET\n');
+    const pg='Page '+(pi+1)+' of '+pages.length;
+    cmds.push(col(GRAY)+' rg BT /F1 8 Tf 1 0 0 1 '+n2(W-M-tw(pg,8,false))+' '+Y(813.8)+' Tm ('+pg+') Tj ET\n');
+    const stream=cmds.join('');
+    objs.push([pid,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+cid+' 0 R >>']);
+    objs.push([cid,'<< /Length '+stream.length+' >>\nstream\n'+stream+'endstream']);
+  });
+  const all=[[1,'<< /Type /Catalog /Pages 2 0 R >>'],[2,'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+pages.length+' >>'],
+    [3,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'],
+    [4,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'],
+    [5,'<< /Title ('+esc('Sales Report - '+r.title)+') /Producer (Fuel Station Management) >>']].concat(objs);
+  let pdf='%PDF-1.4\n';const off=[];
+  all.forEach(o=>{off[o[0]]=pdf.length;pdf+=o[0]+' 0 obj\n'+o[1]+'\nendobj\n';});
+  const xref=pdf.length;pdf+='xref\n0 '+(all.length+1)+'\n0000000000 65535 f \n';
+  for(let i=1;i<=all.length;i++)pdf+=String(off[i]).padStart(10,'0')+' 00000 n \n';
+  pdf+='trailer\n<< /Size '+(all.length+1)+' /Root 1 0 R /Info 5 0 R >>\nstartxref\n'+xref+'\n%%EOF';
+  return new Blob([pdf],{type:'application/pdf'});
+}
+
 async function downloadAdminSaleHistoryDetails(id){
   // Generate the PDF from the same data and section order shown in the
   // Admin Sales History View Details card.
@@ -2232,7 +2362,9 @@ async function downloadAdminSaleHistoryDetails(id){
   const tankCode=tank?.tank_code||item.tank?.tank_code||item.tank_code||t.tank_code||'—';
   const dispenserCode=nozzle?.nozzle_code||item.dispenser?.nozzle_code||item.dispenser?.code||t.dispenser_code||'Dispenser';
   const attendant=employee?.name||item.to_employee?.name||t.to_employee_name||item.to_employee_id||'—';
-  const shiftName=shift?.name||item.shift?.name||((item.from_employee?.name||t.from_employee_name||'')+' → '+(item.to_employee?.name||t.to_employee_name||attendant));
+  const fromEmployee=employees.find(x=>String(x.id)===String(t.from_employee_id));
+  const fromName=item.from_employee?.name||t.from_employee_name||fromEmployee?.name||'Attendant';
+  const shiftName=shift?.name||item.shift?.name||(fromName+' → '+(item.to_employee?.name||t.to_employee_name||attendant));
   const dsrId=item.dsr_id||item.dsr?.id||t.dsr_id||t.dsr?.id||dailyReportIdFromTimestamp(t.shift_started_at||shift?.start_time);
   const submittedAt=t.sales_submitted_at||initial.sales_submitted_at;
   const confirmedAt=t.sales_confirmed_at||initial.sales_confirmed_at;
@@ -2276,52 +2408,57 @@ async function downloadAdminSaleHistoryDetails(id){
   const entryTotalLabel=money(entryTotal);
   const differenceValue=Math.abs(totalAmount-entryTotal);
   const differenceLabel=money(differenceValue);
-  const blob=createStyledReportPdf({
-    title:'SALES REPORT · CONFIRMED SHIFT SALES DETAIL',
-    subtitle:'SHIFT SALES RECONCILIATION',
-    reference:String(dsrId||'DSR'),
-    generated:statusLabel.toUpperCase(),
-    dateLabel:startedAt?new Date(startedAt).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'',
-    summary:[
-      ['LITERS SOLD',liters(totalLiters)+' L'],
-      ['TOTAL SALES',money(totalAmount)],
-      ['DISPENSER',dispenserCode],
-      ['TANK',tankCode]
+  const fmtDate=v=>{if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('en-US');};
+  const fmtNum=v=>{const n=Number(v);return Number.isFinite(n)?n.toLocaleString('en-US',{maximumFractionDigits:2}):'—';};
+  const fmtMoney=v=>currencyLabel()+' '+Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const WARN=[180,83,9];
+  // Prefer the stored tank variance (matches the on-screen card); otherwise use the calculated one.
+  const storedVar=Number(t.tank_variance_liters),storedPct=Number(t.tank_variance_pct);
+  const hasTank=Number.isFinite(tankOpening)&&Number.isFinite(tankClosing);
+  const varLiters=(t.tank_variance_liters!=null&&Number.isFinite(storedVar))?storedVar:tankDiff;
+  const varPct=(t.tank_variance_pct!=null&&Number.isFinite(storedPct))?storedPct:variancePct;
+  const varTone=Number.isFinite(varLiters)&&Math.abs(varLiters)>=0.005?WARN:[21,128,61];
+  const tankRow=[tankCode,hasTank?fmtNum(tankOpening)+' L':'—',hasTank?fmtNum(tankClosing)+' L':'—',fmtNum(tankSold)+' L',
+    Number.isFinite(varLiters)?(varLiters>0?'+':'')+fmtNum(varLiters)+' L':'—',
+    Number.isFinite(varPct)?(varPct>0?'+':'')+varPct.toFixed(2)+'%':'—'];
+  tankRow.tone=[0,0,0,0,varTone,varTone];
+  const numCell=v=>{const n=Number(String(v).replace(/,/g,''));return Number.isFinite(n)?fmtNum(n):v;};
+  const meterRows=finalReadingRows.map(rw=>[rw[0],rw[1],rw[2],numCell(rw[3]),numCell(rw[4]),String(rw[5]).replace(/^[\d,.\-]+/,m=>numCell(m))]);
+  const blob=createSalesReportPdf({
+    title:String(dsrId||'DSR'),
+    subtitle:'Shift: '+shiftName,
+    statusLabel:statusLabel,
+    overview:[
+      {label:'Dispenser',value:dispenserCode},{label:'Product',value:productCode},{label:'Tank',value:tankCode},
+      {label:'Liters sold',value:fmtNum(totalLiters)+' L',size:14,tone:'good'}
     ],
-    sales:{
-      dsrId:dsrId||'—',
-      statusLabel,
-      dispenserCode,
-      productCode,
-      tankCode,
-      attendant,
-      shiftName,
-      startedAt:startedAt?new Date(startedAt).toLocaleString():'—',
-      endedAt:endedAt?new Date(endedAt).toLocaleString():'—',
-      shiftId:t.shift_id||'—',
-      totalLiters:liters(totalLiters),
-      totalAmount:money(totalAmount),
-      entryTotal:entryTotalLabel,
-      difference:differenceLabel,
-      differenceValue,
-      tankOpening:tankOpeningLabel,
-      tankClosing:tankClosingLabel,
-      tankExpected:Number.isFinite(tankExpected)?liters(tankExpected)+' L':'—',
-      tankPurchases:'+0 L',
-      tankDifference:tankDiffLabel,
-      variancePct:varianceLabel,
-      adjustment:'+0 L',
-      continuity:'+0 L',
-      reconciliation:readingRows.length?'100.0%':'—',
-      submittedAt:submittedAt?new Date(submittedAt).toLocaleString():'—',
-      confirmedAt:confirmedAt?new Date(confirmedAt).toLocaleString():'—',
-      readingRows:finalReadingRows,
-      saleRows:saleRows.length?saleRows:[['—','No sale entries recorded','—','—']]
-    }
+    leftTitle:'Shift details',rightTitle:'Timing & reference',
+    left:[
+      {label:'Dispenser',value:dispenserCode},{label:'Product',value:productCode},{label:'Tank',value:tankCode},
+      {label:'Attendant',value:attendant},{label:'Shift',value:shiftName}
+    ],
+    right:[
+      {label:'DSR ID',value:dsrId||'—'},{label:'Started',value:fmtDate(startedAt)},
+      {label:'Ended',value:fmtDate(endedAt)},{label:'Shift ID',value:t.shift_id||'—',small:true}
+    ],
+    meterRows:meterRows,
+    tankRows:[tankRow],
+    saleRows:sales.length?sales.map((x,i)=>[String(i+1),x.sale_type_name||'Sale',fmtMoney(x.amount),x.reason||x.sale_type_description||'—']):[['—','No sale entries recorded','—','—']],
+    totals1:[
+      {label:'Total liters sold',value:fmtNum(totalLiters)+' L',size:11.5},
+      {label:'Calculated amount',value:fmtMoney(totalAmount),size:11.5},
+      {label:'Entries total',value:fmtMoney(entryTotal),size:11.5},
+      {label:'Difference',value:fmtMoney(differenceValue),size:11.5,tone:differenceValue>=0.005?'warn':undefined}
+    ],
+    totals2:[
+      {label:'Status',value:statusLabel,size:11.5,tone:/confirmed/i.test(statusLabel)?'good':undefined},
+      {label:'Submitted',value:fmtDate(submittedAt),size:11.5},
+      {label:'Confirmed',value:fmtDate(confirmedAt),size:11.5}
+    ]
   });
   const url=URL.createObjectURL(blob),link=document.createElement('a');
   link.href=url;
-  link.download='sales-report-'+String(t.shift_id||id).slice(0,12)+'.pdf';
+  link.download='sales-'+String(t.shift_id||id).slice(0,8)+'-report.pdf';
   document.body.appendChild(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
   showAttendantActionResult('success','PDF downloaded','The confirmed sales PDF has been downloaded successfully.');
@@ -2858,8 +2995,7 @@ function openSaleTypeEdit(id){
   const modal=document.getElementById('sale-type-edit-modal');
   modal.classList.add('open');modal.setAttribute('aria-hidden','false');
 }
-function closeSaleTypeEdit(){
-  const modal=document.getElementById('sale-type-edit-modal');
+function closeSaleTypeEdit(){  const modal=document.getElementById('sale-type-edit-modal');
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
 }
 async function saveSaleTypeEdit(event){
@@ -3858,8 +3994,7 @@ function renderDailyPreviewHistoryCard(item){
   return '<article class="dsr-history-card" data-dsr-date="'+h(item.date)+'">'+
     '<button type="button" class="dsr-history-card-head" onclick="toggleDailyHistoryCard(event,this)" aria-expanded="false"><span class="dsr-history-card-title"><strong>'+h(dateLabel)+'</strong><small>DSR preview · not confirmed</small></span><span class="dsr-history-card-right"><span class="dsr-history-badge">PREVIEW</span><span class="dsr-history-toggle">⌄</span></span></button>'+
     '<div class="dsr-history-card-body" hidden><div class="dsr-history-stats"><div class="dsr-history-stat"><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div class="dsr-history-stat"><span>Calculated sales</span><strong>'+money(item.calculated_sales_amount ?? item.total_sales_amount ?? 0)+'</strong></div><div class="dsr-history-stat"><span>Entered payments</span><strong>'+((item.entered_payment_amount!=null)?money(item.entered_payment_amount):'—')+'</strong></div><div class="dsr-history-stat"><span>Financial difference</span><strong>'+((item.financial_difference!=null)?money(item.financial_difference):'—')+'</strong></div><div class="dsr-history-stat"><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div class="dsr-history-stat"><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div><div class="dsr-history-actions" style="display:flex;justify-content:flex-end;margin-top:10px"><button type="button" class="primary dsr-history-report-button" style="width:50%;min-height:38px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 12px;border:1px solid #4b83bd;border-radius:9px;background:#4b83bd;color:#fff;box-shadow:0 3px 9px rgba(75,131,189,.16);font:inherit;font-size:12px;font-weight:800;cursor:pointer" onclick="previewDailyReport(this.closest(\'.dsr-history-card\').dataset.dsrDate)">View Full Report</button></div></div></article>';
-}
-function renderDsrHistoryCard(item){
+}function renderDsrHistoryCard(item){
   const date=String(item?.date||'');
   const confirmedAt=item?.confirmed_at ? new Date(item.confirmed_at).toLocaleString() : 'Confirmed';
   const dateLabel=dailyReportIdLabel(date);
@@ -4858,8 +4993,7 @@ const end=e=>{
   };
   showSettingsConfirmation('Save New '+label+' Order','<p>The '+h(label)+' order was changed.</p><p><b>Save these new positions?</b></p>',async()=>{
     try{await api('/api/settings/reorder',{method:'POST',body:JSON.stringify({key:s.key,ids:current})});await loadSettingsData();}
-    catch(err){await loadSettingsData();throw err;}
-  },'Order saved successfully','<p>The new '+h(label)+' positions have been saved.</p>');
+    catch(err){await loadSettingsData();throw err;}  },'Order saved successfully','<p>The new '+h(label)+' positions have been saved.</p>');
 };
 handle.addEventListener('pointerup',end);
 handle.addEventListener('pointercancel',()=>{if(state)cleanup();});
@@ -5381,6 +5515,5 @@ document.addEventListener('click',event=>{
   const opener=window.openAdminSaleHistoryDetails;
   if(typeof opener==='function')opener(id);else toast('Sales details are still loading. Please try again.');
 },{capture:true});
-
 
 
