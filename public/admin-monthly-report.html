@@ -136,6 +136,41 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
  .msr-open-compare{display:none!important}
  a{color:inherit!important;text-decoration:none!important}
 }
+
+/* MSR PDF layout: clean report header, no app navigation or month comparison, and a printable sales graph */
+.msr-pdf-graph{width:100%;padding:12px 14px 8px;border:1px solid #e4eaf2;border-radius:13px;background:#fff;box-sizing:border-box}
+.msr-pdf-graph svg{display:block;width:100%;height:auto;max-height:340px;overflow:visible}
+.msr-pdf-graph-legend{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 6px;font-size:11px;color:#475569}
+.msr-pdf-graph-legend span{display:flex;align-items:center;gap:7px}
+.msr-pdf-graph-legend i{display:inline-block;width:19px;height:3px;border-radius:4px;background:#2563eb}
+.msr-pdf-graph-legend strong{font-size:12px;color:#172033}
+@media print{
+ @page{size:A4 portrait;margin:12mm}
+ html,body.msr-page{display:block!important;width:auto!important;min-width:0!important;height:auto!important;margin:0!important;padding:0!important;background:#fff!important;color:#172033!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ body.msr-page{font-size:9pt!important}
+ body.msr-page .admin-sidebar,body.msr-page .admin-sidebar-nav,body.msr-page .admin-sidebar-brand,body.msr-page .admin-sidebar-logout,body.msr-page .admin-sidebar-toggle{display:none!important;visibility:hidden!important;width:0!important;height:0!important;position:absolute!important;left:-10000px!important;top:-10000px!important}
+ body.msr-page main.wrap{display:block!important;position:static!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;left:auto!important;right:auto!important;transform:none!important}
+ body.msr-page .msr-header{display:flex!important;margin:0 0 8mm!important;padding:0 0 4mm!important;border-bottom:1px solid #cbd5e1!important}
+ body.msr-page .msr-month-control,body.msr-page .msr-report-actions,body.msr-page .msr-selected-compare-section,body.msr-page .msr-compare-modal,#msr-error{display:none!important}
+ body.msr-page .msr-report-shell{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important}
+ body.msr-page .msr-report-shell-head{padding:0 0 4mm!important;margin:0 0 2mm!important;border-bottom:1px solid #cbd5e1!important}
+ body.msr-page .msr-shell-heading h2{font-size:19pt!important}
+ body.msr-page .msr-panel{display:block!important;box-shadow:none!important;border-color:#d7dee8!important;break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important}
+ body.msr-page .msr-report-shell>.msr-panel{padding:4mm 0!important;border-bottom:1px solid #d7dee8!important}
+ body.msr-page .msr-report-shell .msr-two-col{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:0!important;overflow:visible!important}
+ body.msr-page .msr-report-shell .msr-two-col>.msr-panel{padding:4mm 3mm!important;border-bottom:1px solid #d7dee8!important;min-width:0!important}
+ body.msr-page .msr-pdf-graph-panel{break-inside:avoid!important;page-break-inside:avoid!important}
+ body.msr-page .msr-pdf-graph{padding:3mm!important;border-color:#d7dee8!important;break-inside:avoid!important}
+ body.msr-page .msr-pdf-graph svg{width:100%!important;height:auto!important;max-height:none!important}
+ body.msr-page .msr-chart{overflow:visible!important;max-width:none!important}
+ body.msr-page .msr-table-wrap{overflow:visible!important;max-width:none!important}
+ body.msr-page .msr-table{width:100%!important;font-size:8px!important;table-layout:auto!important}
+ body.msr-page .msr-table th,body.msr-page .msr-table td{white-space:normal!important;overflow-wrap:anywhere!important;padding:5px 4px!important}
+ body.msr-page .msr-open-compare{display:none!important}
+ body.msr-page .msr-report-shell .msr-kpi{break-inside:avoid!important}
+ body.msr-page .msr-panel-head{break-after:avoid!important}
+ a{color:inherit!important;text-decoration:none!important}
+}
 </style></head>
 <body class="admin-shell msr-page" data-app-page="adminMonthlyReport">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div><nav class="admin-sidebar-nav">
@@ -144,6 +179,7 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
 <div class="msr-report-shell"><div class="msr-report-shell-head"><div class="msr-shell-heading"><span class="msr-report-kicker">MONTHLY REPORT</span><h2 id="msr-shell-title">Monthly performance</h2><p>All statistics and daily records for the selected month.</p><span class="msr-shell-month" id="msr-shell-month">Selected month</span></div><div class="msr-report-actions" aria-label="Report export actions"><button type="button" id="msr-export" class="msr-action-btn msr-action-primary"><span aria-hidden="true">⇩</span> Export CSV</button><button type="button" id="msr-print" class="msr-action-btn msr-action-secondary"><span aria-hidden="true">▤</span> Export PDF</button></div></div><section class="msr-panel"><div class="msr-panel-head"><div><h2 id="msr-overview-title">Monthly overview</h2><p>Confirmed DSR records only; figures are calculated from the station's daily reports.</p></div><span id="msr-status" class="msr-status">Loading…</span></div><div id="msr-kpis" class="msr-kpis"><div class="msr-empty">Loading monthly statistics…</div></div></section>
 <section class="msr-panel msr-month-ranking-panel"><div class="msr-panel-head"><div><h2>Monthly performance ranking</h2><p>All available confirmed DSR months, ranked by average calculated sales per confirmed day. Total sales and fuel volume provide additional context.</p></div><span class="msr-ranking-method">AVG. SALES / DAY</span></div><div id="msr-month-ranking-summary" class="msr-month-ranking-summary"><div class="msr-empty">Building ranking from confirmed monthly reports…</div></div><div id="msr-month-ranking" class="msr-table-wrap"><div class="msr-empty">Loading monthly performance ranking…</div></div><p class="msr-ranking-note">The current month is provisional because additional DSRs may still be confirmed. Ranking uses confirmed report days only.</p></section><section class="msr-panel"><div class="msr-panel-head"><div><h2>Recent-month comparison</h2><p>Compare the report month with the previous three months to track the recent trend.</p></div></div><div id="msr-recent-comparison" class="msr-table-wrap"><div class="msr-empty">Loading recent-month comparison…</div></div></section>
 
+<section class="msr-panel msr-pdf-graph-panel"><div class="msr-panel-head"><div><h2>Sales performance graph</h2><p>Daily calculated sales across the selected month. Each point represents one confirmed DSR day.</p></div></div><div id="msr-pdf-graph" class="msr-pdf-graph"><div class="msr-empty">Preparing sales graph…</div></div></section>
 <section class="msr-panel"><div class="msr-panel-head"><div><h2>Daily sales trend</h2><p>Calculated sales amount for each day in the selected month.</p></div></div><div id="msr-chart" class="msr-chart"><div class="msr-empty">Loading daily trend…</div></div></section>
 <section class="msr-panel"><div class="msr-panel-head"><div><h2>Financial reconciliation</h2><p>Compare calculated sales with entered payment totals for the selected month.</p></div></div><div id="msr-reconciliation" class="msr-reconcile-grid"><div class="msr-empty">Calculating reconciliation…</div></div></section>
 <section class="msr-panel"><div class="msr-panel-head"><div><h2>Weekday performance</h2><p>Average sales per confirmed report for each weekday.</p></div></div><div id="msr-weekdays" class="msr-weekday-list"><div class="msr-empty">Calculating weekday performance…</div></div></section>
@@ -223,6 +259,8 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
    lastExportData={month,summary:{confirmedDays:days.length,expectedDays:inMonth.length,totalSales:totalAmount,totalLiters,totalShifts,enteredPayments:paymentDataComplete?totalPayments:null,financialDifference:financialDiffComplete?finDiff:null,averageDailySales:avg},daily:lastExportRows,products:prods.map(([code,v])=>({code,liters:v.liters,sales:v.amount,sharePct:totalAmount>0?v.amount/totalAmount*100:0})),attendants:[],shifts:[]};
 
    const max=Math.max(1,...days.map(x=>x.amount));$('msr-chart').innerHTML=days.length?days.map(x=>'<div class="msr-bar-wrap" title="'+x.date+': '+money(x.amount)+'"><div class="msr-bar" style="height:'+Math.max(2,x.amount/max*150)+'px"></div><span class="msr-day">'+Number(x.date.slice(8,10))+'</span></div>').join(''):'<div class="msr-empty">No confirmed DSRs for this month.</div>';
+   renderMsrcurve(days);
+
    $('msr-daily-table').innerHTML=days.length?'<table class="msr-table"><thead><tr><th>Date</th><th class="num">Fuel sold</th><th class="num">Sales</th><th class="num">Payments</th><th class="num">Shifts</th></tr></thead><tbody>'+days.map(x=>'<tr><td>'+x.date+'</td><td class="num">'+fmt(x.liters)+' L</td><td class="num">'+money(x.amount)+'</td><td class="num">'+(x.payments==null?'—':money(x.payments))+'</td><td class="num">'+fmt(x.shifts)+'</td></tr>').join('')+'</tbody></table>':'<div class="msr-empty">No confirmed DSR records found for this month.</div>';
    const productTotals={};days.forEach(x=>{const r=x.report,ss=r.dsr_sales_summary||r.sales_summary||{},groups=arr(ss.by_product);groups.forEach(p=>{const raw=p.product_code||p.code_name||p.product_code_name||p.product||p.name||'Unknown product';const name=productCode(raw);const info=products.find(q=>String(q.code_name||q.code||'').trim().toLowerCase()===String(raw).trim().toLowerCase()||String(q.name||'').trim().toLowerCase()===String(raw).trim().toLowerCase());const color=(info&&info.color)||p.product_color||p.color||'#2563eb';const liters=Number(p.total_liters??p.sales_liters??p.liters??0),amount=Number(p.total_amount??p.sales_amount??p.amount??0);if(!productTotals[name])productTotals[name]={liters:0,amount:0,color};productTotals[name].liters+=liters;productTotals[name].amount+=amount;});});
    const prods=Object.entries(productTotals).sort((a,b)=>b[1].amount-a[1].amount),maxProductSales=Math.max(1,...prods.map(x=>x[1].amount));$('msr-products').innerHTML=prods.length?prods.map(([name,v])=>'<div class="msr-product" style="--product-color:'+h(v.color)+'"><div><div class="msr-product-name"><i class="msr-product-dot"></i>'+h(name)+'</div><div class="msr-product-sub">'+fmt(v.liters)+' L sold</div><div class="msr-product-track"><div class="msr-product-fill" style="width:'+Math.max(0,Math.min(100,v.amount/maxProductSales*100))+'%"></div></div></div><div class="msr-product-value">'+money(v.amount)+'<small>'+((totalAmount>0)?(v.amount/totalAmount*100).toFixed(1):'0.0')+'% of sales</small></div></div>').join(''):'<div class="msr-empty">Product-level totals are not available in the confirmed DSR records for this month.</div>';
@@ -251,6 +289,26 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
    $('msr-shift-ranking').innerHTML=shiftRows.length?'<table class="msr-table"><thead><tr><th>Shift / dispenser</th><th class="num">Sales</th><th class="num">Liters</th><th class="num">Records</th></tr></thead><tbody>'+shiftRows.map(([name,v],i)=>'<tr><td><strong>'+(i+1)+'. '+h(name)+'</strong></td><td class="num">'+money(v.amount)+'</td><td class="num">'+fmt(v.liters)+' L</td><td class="num">'+v.shifts+'</td></tr>').join('')+'</tbody></table>':'<div class="msr-empty">Shift-level sales details are not available in these DSRs.</div>';
    if(!days.length)$('msr-status').textContent='No confirmed DSRs found for '+monthLabel(month);
   }catch(e){$('msr-status').textContent='Could not load report';$('msr-error').hidden=false;$('msr-error').className='msr-error';$('msr-error').textContent='Unable to load the MSR: '+(e.message||'Unknown error');}
+ }
+ function renderMsrcurve(days){
+  const host=$('msr-pdf-graph');
+  if(!host)return;
+  if(!days.length){host.innerHTML='<div class="msr-empty">No confirmed daily sales available to plot.</div>';return;}
+  const W=900,H=290,L=76,R=22,T=22,B=48,plotW=W-L-R,plotH=H-T-B;
+  const maxValue=Math.max(1,...days.map(d=>Number(d.amount)||0));
+  const niceMax=Math.ceil(maxValue/1000)*1000||maxValue;
+  const x=i=>L+(days.length===1?plotW/2:i*plotW/(days.length-1));
+  const y=v=>T+plotH-(Math.max(0,Number(v)||0)/niceMax)*plotH;
+  const fmtAxis=v=>{const n=Number(v)||0;return n>=1000000?(n/1000000).toFixed(n%1000000?1:0)+'M':n>=1000?(n/1000).toFixed(n%1000?1:0)+'k':String(Math.round(n));};
+  let grid='';
+  for(let i=0;i<=4;i++){const val=niceMax*i/4,yy=y(val);grid+='<line x1="'+L+'" y1="'+yy+'" x2="'+(W-R)+'" y2="'+yy+'" stroke="#e5ebf3" stroke-width="1"/><text x="'+(L-12)+'" y="'+(yy+4)+'" text-anchor="end" font-size="11" fill="#64748b">'+fmtAxis(val)+'</text>';}
+  const pts=days.map((d,i)=>({x:x(i),y:y(d.amount),day:Number(d.date.slice(8,10)),date:d.date,amount:Number(d.amount)||0}));
+  const path=pts.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
+  const line='<path d="'+path+'" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+  const dots=pts.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="3.8" fill="#fff" stroke="#2563eb" stroke-width="2"><title>'+p.date+' · '+money(p.amount)+'</title></circle>').join('');
+  const labelStep=Math.max(1,Math.ceil(pts.length/15));
+  const labels=pts.filter((p,i)=>i%labelStep===0||i===pts.length-1).map(p=>'<text x="'+p.x+'" y="'+(H-18)+'" text-anchor="middle" font-size="11" fill="#64748b">'+p.day+'</text>').join('');
+  host.innerHTML='<div class="msr-pdf-graph-legend"><span><i></i> Daily sales ('+(window.stationCurrency||'ETB')+')</span><strong>'+money(days.reduce((sum,d)=>sum+(Number(d.amount)||0),0))+' total</strong></div><svg role="img" aria-label="Line graph of daily calculated sales" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">'+grid+line+dots+labels+'</svg>';
  }
  $('msr-export').addEventListener('click',()=>{
   if(!lastExportData||!lastExportData.daily.length){$('msr-status').textContent='No monthly rows available to export';return;}
