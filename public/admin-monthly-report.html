@@ -329,7 +329,7 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='MSR-'+d.month+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
  });
- $('msr-print').addEventListener('click',()=>window.print());
+ $('msr-print').addEventListener('click',()=>{if(!lastExportData){$('msr-status').textContent='Monthly report is still loading. Please try again.';return;}if(typeof downloadMonthlySalesReportPdf!=='function'){$('msr-status').textContent='PDF download is unavailable. Reload the page and try again.';return;}downloadMonthlySalesReportPdf(lastExportData);});
  function renderMonthChips(){ $('msr-selected-months').innerHTML=selectedCompareMonths.slice().sort().map(m=>'<span class="msr-month-chip">'+h(monthLabel(m))+' <button type="button" data-remove-month="'+m+'" aria-label="Remove '+h(monthLabel(m))+'">×</button></span>').join('');$('msr-selected-months').querySelectorAll('[data-remove-month]').forEach(b=>b.addEventListener('click',()=>{selectedCompareMonths=selectedCompareMonths.filter(m=>m!==b.dataset.removeMonth);renderMonthChips();}));}
  $('msr-compare-month').value=currentMonth;renderMonthChips();
  const modal=$('msr-compare-modal');
