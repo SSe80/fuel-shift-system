@@ -1,0 +1,1681 @@
+/* ==========================================================================
+   Fuel Shift — Admin Control design system (v2)
+   Applies to: Station Control, Fuel Configuration, Inventory, Attendants,
+   Accounting Control. Every selector is prefixed with
+   body.admin-control-ui[data-app-page] so it outranks the legacy layers in
+   style.css without touching the JavaScript that renders the data.
+   ========================================================================== */
+
+:root {
+  --ac-ink: #0f172a;
+  --ac-body: #334155;
+  --ac-muted: #64748b;
+  --ac-faint: #94a3b8;
+  --ac-line: #e2e8f0;
+  --ac-line-soft: #f1f5f9;
+  --ac-surface: #f8fafc;
+  --ac-canvas: #f1f5f9;
+  --ac-card: #ffffff;
+  --ac-brand: #2563eb;
+  --ac-brand-soft: #eff6ff;
+  --ac-ok: #059669;
+  --ac-ok-soft: #ecfdf5;
+  --ac-warn: #d97706;
+  --ac-warn-soft: #fffbeb;
+  --ac-crit: #dc2626;
+  --ac-crit-soft: #fef2f2;
+  --ac-radius-lg: 18px;
+  --ac-radius: 14px;
+  --ac-radius-sm: 10px;
+  --ac-shadow-sm: 0 1px 2px rgba(15, 23, 42, .05);
+  --ac-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px -12px rgba(15, 23, 42, .12);
+  --ac-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ---------- Page frame ---------- */
+body.admin-control-ui[data-app-page] {
+  background: var(--ac-canvas);
+  color: var(--ac-ink);
+  font-family: var(--ac-font);
+  -webkit-font-smoothing: antialiased;
+}
+body.admin-control-ui[data-app-page] main.wrap {
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 20px 24px 56px !important;
+}
+body.admin-control-ui[data-app-page] .muted { color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] #page-status:empty,
+body.admin-control-ui[data-app-page] .control-status-line:empty { display: none; }
+body.admin-control-ui[data-app-page] .control-status-line {
+  margin: 0 0 16px !important;
+  padding: 11px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--ac-radius-sm);
+  background: var(--ac-brand-soft);
+  color: #1e40af;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------- Section navigation ---------- */
+body.admin-control-ui[data-app-page] .dashboard-section-nav {
+  display: flex !important;
+  gap: 4px !important;
+  margin: 0 0 22px !important;
+  padding: 5px !important;
+  background: var(--ac-card);
+  border: 1px solid var(--ac-line);
+  border-radius: 999px;
+  box-shadow: var(--ac-shadow-sm);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+body.admin-control-ui[data-app-page] .dashboard-section-nav::-webkit-scrollbar { display: none; }
+body.admin-control-ui[data-app-page] .dashboard-section-nav a {
+  flex: 0 0 auto;
+  padding: 9px 16px !important;
+  border-radius: 999px;
+  font-size: 12px !important;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--ac-muted);
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease;
+}
+body.admin-control-ui[data-app-page] .dashboard-section-nav a:hover {
+  background: var(--ac-surface);
+  color: var(--ac-ink);
+}
+body.admin-control-ui[data-app-page] .dashboard-section-nav a.active,
+body.admin-control-ui[data-app-page] .dashboard-section-nav a[aria-current="page"] {
+  background: var(--ac-ink) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, .18);
+}
+
+/* ---------- Page header ---------- */
+body.admin-control-ui[data-app-page] .control-page-header {
+  display: block !important;
+  margin: 0 0 22px !important;
+  padding: 0 2px !important;
+}
+body.admin-control-ui[data-app-page] .control-page-header .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ac-brand);
+}
+body.admin-control-ui[data-app-page] .control-page-header .eyebrow::before {
+  content: "";
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+body.admin-control-ui[data-app-page] .control-page-header h1 {
+  margin: 8px 0 4px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  color: var(--ac-ink);
+  line-height: 1.15;
+}
+body.admin-control-ui[data-app-page] .control-page-header p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ac-muted);
+  line-height: 1.5;
+}
+
+/* ---------- Page body & cards ---------- */
+body.admin-control-ui[data-app-page] .admin-page-body-card {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+body.admin-control-ui[data-app-page] .card {
+  position: relative;
+  background: var(--ac-card) !important;
+  border: 1px solid var(--ac-line) !important;
+  border-radius: var(--ac-radius-lg) !important;
+  padding: 22px !important;
+  box-shadow: var(--ac-shadow) !important;
+  margin: 0 0 20px !important;
+  min-width: 0;
+}
+body.admin-control-ui[data-app-page] .section-heading {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  margin: 0 0 18px !important;
+  padding: 0 0 16px !important;
+  border-bottom: 1px solid var(--ac-line-soft) !important;
+}
+body.admin-control-ui[data-app-page] .section-heading h2 {
+  margin: 4px 0 0 !important;
+  font-size: 18px !important;
+  font-weight: 750;
+  letter-spacing: -.02em;
+  color: var(--ac-ink);
+}
+body.admin-control-ui[data-app-page] .section-heading p { margin: 4px 0 0; font-size: 13px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .section-kicker {
+  display: block !important;
+  margin: 0 !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui[data-app-page] .empty-content,
+body.admin-control-ui[data-app-page] .card > p.muted:only-child {
+  padding: 26px;
+  text-align: center;
+  color: var(--ac-muted);
+  font-size: 14px;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--ac-radius);
+  background: var(--ac-surface);
+}
+
+/* ---------- Pills & status ---------- */
+body.admin-control-ui[data-app-page] .pill,
+body.admin-control-ui[data-app-page] .status-pill,
+body.admin-control-ui[data-app-page] .section-count-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ac-line-soft);
+  color: var(--ac-body);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+body.admin-control-ui[data-app-page] .status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ac-faint);
+  flex: 0 0 auto;
+}
+body.admin-control-ui[data-app-page] .status-dot.is-active {
+  background: var(--ac-ok);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, .18);
+}
+
+/* ---------- Product colour: readable text + colour chip ----------
+   Product colours from the database include very light tones (Gasoil is
+   #ffff00), which are unreadable as text. Codes are shown in ink and the
+   product colour is carried by a chip or a rule instead. */
+body.admin-control-ui[data-app-page] .product-code,
+body.admin-control-ui[data-app-page] .product-name {
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui[data-app-page] .field-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ac-muted);
+}
+
+/* ---------- Shared stat tile ---------- */
+body.admin-control-ui[data-app-page] .stat {
+  position: relative;
+  min-width: 0;
+  padding: 16px 18px;
+  background: var(--ac-surface);
+  border: 1px solid var(--ac-line-soft);
+  border-radius: var(--ac-radius);
+}
+body.admin-control-ui[data-app-page] .stat b { font-variant-numeric: tabular-nums; }
+
+/* ==========================================================================
+   STATION CONTROL
+   ========================================================================== */
+body.admin-control-ui[data-app-page] .station-control-metrics {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 20px !important;
+}
+body.admin-control-ui[data-app-page] .station-control-metrics .stat {
+  background: var(--ac-card) !important;
+  border: 1px solid var(--ac-line) !important;
+  border-radius: var(--ac-radius-lg) !important;
+  padding: 18px 18px 16px !important;
+  box-shadow: var(--ac-shadow);
+  overflow: hidden;
+}
+body.admin-control-ui[data-app-page] .station-control-metrics .stat::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 18px !important;
+  top: 18px !important;
+  width: 26px !important;
+  height: 3px !important;
+  border-radius: 3px !important;
+  background: var(--metric-accent, var(--ac-brand)) !important;
+}
+body.admin-control-ui[data-app-page] .station-metric-sales    { --metric-accent: #2563eb; }
+body.admin-control-ui[data-app-page] .station-metric-shifts   { --metric-accent: #059669; }
+body.admin-control-ui[data-app-page] .station-metric-tanks    { --metric-accent: #0891b2; }
+body.admin-control-ui[data-app-page] .station-metric-alerts   { --metric-accent: #dc2626; }
+body.admin-control-ui[data-app-page] .station-metric-products { --metric-accent: #d97706; }
+body.admin-control-ui[data-app-page] .station-metric-label {
+  display: block !important;
+  margin-top: 12px !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui[data-app-page] .station-control-metrics .stat b {
+  display: block;
+  margin: 8px 0 4px !important;
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em;
+  line-height: 1.1 !important;
+  color: var(--ac-ink) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.admin-control-ui[data-app-page] .station-control-metrics .stat small {
+  display: block;
+  font-size: 12px !important;
+  line-height: 1.4;
+  color: var(--ac-muted) !important;
+}
+
+/* Reconciliation alerts */
+body.admin-control-ui[data-app-page] .station-reconciliation-alerts {
+  background: var(--ac-card);
+  border: 1px solid var(--ac-line);
+  border-radius: var(--ac-radius-lg);
+  padding: 22px;
+  margin: 0 0 20px;
+  box-shadow: var(--ac-shadow);
+}
+body.admin-control-ui[data-app-page] .station-reconciliation-alerts-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui[data-app-page] .station-reconciliation-alerts-head h2 {
+  margin: 4px 0 2px;
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -.02em;
+}
+body.admin-control-ui[data-app-page] .station-reconciliation-alerts-head p { margin: 0; font-size: 13px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .station-alert-kicker {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ac-muted);
+}
+body.admin-control-ui[data-app-page] .station-reconciliation-alerts-head > a,
+body.admin-control-ui[data-app-page] .station-glimpse-head > a {
+  white-space: nowrap;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--ac-brand-soft);
+  color: var(--ac-brand);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+body.admin-control-ui[data-app-page] .station-reconciliation-alert-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+}
+body.admin-control-ui[data-app-page] .station-reconciliation-alert {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--ac-radius);
+  background: var(--ac-surface);
+  border: 1px solid var(--ac-line);
+}
+body.admin-control-ui[data-app-page] .station-reconciliation-alert.critical { background: var(--ac-crit-soft); border-color: #fecaca; }
+body.admin-control-ui[data-app-page] .station-reconciliation-alert.warning  { background: var(--ac-warn-soft); border-color: #fde68a; }
+body.admin-control-ui[data-app-page] .station-reconciliation-alert.info     { background: var(--ac-brand-soft); border-color: #bfdbfe; }
+body.admin-control-ui[data-app-page] .station-reconciliation-alert-icon {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 800;
+  background: #fff;
+  color: var(--ac-body);
+  box-shadow: var(--ac-shadow-sm);
+}
+body.admin-control-ui[data-app-page] .station-reconciliation-alert-copy strong { font-size: 13.5px; color: var(--ac-ink); }
+body.admin-control-ui[data-app-page] .station-reconciliation-alert-copy p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ac-body); }
+body.admin-control-ui[data-app-page] .station-reconciliation-alert-copy small { display: block; margin-top: 6px; font-size: 11.5px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .station-reconciliation-loading {
+  padding: 14px;
+  font-size: 13px;
+  color: var(--ac-muted);
+}
+
+/* Two-column glimpse cards */
+body.admin-control-ui[data-app-page] .station-inventory-glimpses {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin: 0 0 20px;
+}
+body.admin-control-ui[data-app-page] .station-glimpse-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 22px;
+  background: var(--ac-card);
+  border: 1px solid var(--ac-line);
+  border-radius: var(--ac-radius-lg);
+  box-shadow: var(--ac-shadow);
+}
+body.admin-control-ui[data-app-page] .station-glimpse-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui[data-app-page] .station-glimpse-head h2 {
+  margin: 4px 0 2px;
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -.02em;
+}
+body.admin-control-ui[data-app-page] .station-glimpse-head p { margin: 0; font-size: 13px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .station-product-glimpse-list,
+body.admin-control-ui[data-app-page] .station-tank-glimpse-list { display: grid; gap: 10px; }
+
+/* Product rows */
+body.admin-control-ui[data-app-page] .station-product-glimpse {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--ac-line-soft);
+  border-radius: var(--ac-radius);
+  background: var(--ac-surface);
+  transition: border-color .15s ease, background .15s ease;
+}
+body.admin-control-ui[data-app-page] .station-product-glimpse:hover { border-color: var(--ac-line); background: #fff; }
+body.admin-control-ui[data-app-page] .station-product-swatch {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--product-accent);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .08);
+}
+body.admin-control-ui[data-app-page] .station-product-glimpse-main strong { display: block; font-size: 15px; font-weight: 800; letter-spacing: .02em; }
+body.admin-control-ui[data-app-page] .station-product-glimpse-main small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .station-product-price { text-align: right; }
+body.admin-control-ui[data-app-page] .station-product-price span {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ac-muted);
+}
+body.admin-control-ui[data-app-page] .station-product-price strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ac-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tank rows with fill gauge */
+body.admin-control-ui[data-app-page] .station-tank-glimpse {
+  padding: 16px;
+  border: 1px solid var(--ac-line-soft);
+  border-radius: var(--ac-radius);
+  background: var(--ac-surface);
+}
+body.admin-control-ui[data-app-page] .station-tank-glimpse-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+body.admin-control-ui[data-app-page] .station-tank-glimpse-top > div:first-child strong {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--ac-ink);
+}
+body.admin-control-ui[data-app-page] .station-tank-glimpse-top small {
+  color: var(--ac-body) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ac-muted);
+}
+body.admin-control-ui[data-app-page] .station-tank-product-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tank-accent, var(--ac-brand));
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .15);
+}
+body.admin-control-ui[data-app-page] .station-tank-stock { text-align: right; }
+body.admin-control-ui[data-app-page] .station-tank-stock strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ac-ink);
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui[data-app-page] .station-tank-stock small { font-size: 12px; color: var(--ac-muted); }
+
+/* Fill gauge — colour follows status (data-level set by admin-control-ui.js) */
+body.admin-control-ui[data-app-page] [role="progressbar"] {
+  position: relative;
+  height: 10px;
+  margin: 14px 0 9px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+body.admin-control-ui[data-app-page] [role="progressbar"] > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  transition: width .5s ease;
+}
+body.admin-control-ui[data-app-page] [role="progressbar"][data-level="warning"] > span {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+body.admin-control-ui[data-app-page] [role="progressbar"][data-level="critical"] > span {
+  background: linear-gradient(90deg, #dc2626, #f87171);
+}
+body.admin-control-ui[data-app-page] .station-tank-glimpse-bottom {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ac-muted);
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui[data-app-page] .station-glimpse-foot {
+  padding-top: 2px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--ac-muted);
+}
+
+/* Recent activity */
+body.admin-control-ui[data-app-page] .station-activity-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+  gap: 10px;
+}
+body.admin-control-ui[data-app-page] .station-activity-list > .card {
+  margin: 0 !important;
+  padding: 14px 16px !important;
+  background: var(--ac-surface) !important;
+  border: 1px solid var(--ac-line-soft) !important;
+  border-left: 3px solid var(--ac-brand) !important;
+  border-radius: var(--ac-radius-sm) !important;
+  box-shadow: none !important;
+}
+body.admin-control-ui[data-app-page] .station-activity-list .muted { font-size: 12px; }
+body.admin-control-ui[data-app-page] .station-activity-card .section-heading p { margin-top: 4px; }
+
+/* ==========================================================================
+   FUEL CONFIGURATION
+   ========================================================================== */
+body.admin-control-ui[data-app-page] #products.statgrid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)) !important;
+  gap: 14px !important;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-card {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  padding: 18px !important;
+  background: var(--ac-card) !important;
+  border: 1px solid var(--ac-line) !important;
+  border-radius: var(--ac-radius-lg) !important;
+  box-shadow: var(--ac-shadow) !important;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-card::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 4px;
+  background: var(--product-color, var(--ac-brand));
+}
+body.admin-control-ui[data-app-page] #products .activated-product-card:hover,
+body.admin-control-ui[data-app-page] #products .activated-product-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -14px rgba(15, 23, 42, .22) !important;
+}
+body.admin-control-ui[data-app-page] .activated-product-main { display: block; }
+body.admin-control-ui[data-app-page] .activated-product-color { display: none !important; }
+body.admin-control-ui[data-app-page] .activated-product-copy .field-label { font-size: 10px; }
+body.admin-control-ui[data-app-page] .activated-product-code {
+  margin-top: 6px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  color: var(--ac-ink);
+}
+body.admin-control-ui[data-app-page] .activated-product-name { font-size: 13px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .activated-product-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui[data-app-page] .activated-product-meta > div:last-child { text-align: right; }
+body.admin-control-ui[data-app-page] .activated-product-meta span {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ac-muted);
+}
+body.admin-control-ui[data-app-page] .activated-product-meta strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ac-ink);
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui[data-app-page] .activated-product-meta strong:first-child { font-size: 12px; }
+
+/* Group headers and status pills: ink text, product colour carried by the dot */
+body.admin-control-ui[data-app-page] .inventory-product-group-head strong,
+body.admin-control-ui[data-app-page] .activated-dispenser-group-head strong,
+body.admin-control-ui[data-app-page] .inventory-tank-status,
+body.admin-control-ui[data-app-page] .inventory-product-group-head span,
+body.admin-control-ui[data-app-page] .activated-dispenser-group-head span {
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui[data-app-page] .inventory-tank-status {
+  background: var(--ac-ok-soft) !important;
+  color: #047857 !important;
+}
+body.admin-control-ui[data-app-page] .inventory-product-group,
+body.admin-control-ui[data-app-page] .activated-dispenser-product-group {
+  padding: 20px !important;
+}
+
+/* Product codes and dispenser product lines: ink text, colour carried by bars and dots */
+body.admin-control-ui[data-app-page] .activated-product-code,
+body.admin-control-ui[data-app-page] .activated-dispenser-card > span,
+body.admin-control-ui[data-app-page] .activated-dispenser-card > span strong {
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-card::before {
+  display: block !important;
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 0 !important;
+  width: auto !important;
+  height: 4px !important;
+  background: var(--product-color, var(--ac-brand)) !important;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-main {
+  width: 100% !important;
+  margin: 0 !important;
+}
+body.admin-control-ui[data-app-page] #products .activated-product-main,
+body.admin-control-ui[data-app-page] #products .activated-product-copy {
+  width: 100% !important;
+  margin: 0 !important;
+  display: block !important;
+  justify-items: start !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+/* Notification actions sit inline, not full-width */
+body.admin-control-ui[data-app-page] .station-notification-row button,
+body.admin-control-ui[data-app-page] .station-notification-row .station-notification-open {
+  width: auto !important;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+body.admin-control-ui[data-app-page] .station-notification-main { min-width: 0; }
+/* Text that takes a product colour through a CSS variable: keep it ink */
+body.admin-control-ui[data-app-page] .station-tank-glimpse [style*="accent"]:not(svg):not(svg *):not([role="progressbar"] *):not(.station-tank-product-dot),
+body.admin-control-ui[data-app-page] .station-tank-glimpse small span,
+body.admin-control-ui[data-app-page] .station-tank-glimpse-top small > span:not(.station-tank-product-dot) {
+  color: var(--ac-ink) !important;
+}
+
+/* Inline text colours written by the renderer (product codes, dispenser
+   product lines) are replaced with ink so light product colours stay legible.
+   Chart SVG keeps its data colours. */
+body.admin-control-ui[data-app-page] [style*="color:"]:not(svg):not(svg *):not(.activated-dispenser-group-dot):not(.activated-products-pie-dot) {
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui[data-app-page] .activated-product-main,
+body.admin-control-ui[data-app-page] .activated-product-copy { text-align: left !important; }
+body.admin-control-ui[data-app-page] #products .activated-product-card::before {
+  opacity: 1;
+}
+
+/* Charts shared container */
+body.admin-control-ui[data-app-page] .activated-products-graph {
+  margin-top: 18px;
+  padding: 20px;
+  background: var(--ac-surface);
+  border: 1px solid var(--ac-line-soft);
+  border-radius: var(--ac-radius-lg);
+}
+body.admin-control-ui[data-app-page] .activated-products-graph-head,
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+body.admin-control-ui[data-app-page] .activated-products-graph-head h3 {
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -.01em;
+}
+body.admin-control-ui[data-app-page] .activated-products-graph-unit {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--ac-line);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--ac-muted);
+}
+body.admin-control-ui[data-app-page] .activated-products-pie-layout {
+  display: grid;
+  grid-template-columns: minmax(170px, 230px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+}
+body.admin-control-ui[data-app-page] .activated-products-pie-chart svg { display: block; width: 100%; height: auto; max-width: 230px; margin: 0 auto; }
+body.admin-control-ui[data-app-page] .activated-products-pie-total { font-size: 17px; font-weight: 800; fill: var(--ac-ink); }
+body.admin-control-ui[data-app-page] .activated-products-pie-total-label { font-size: 9px; font-weight: 700; letter-spacing: .12em; fill: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .activated-products-pie-legend { display: grid; gap: 10px; }
+body.admin-control-ui[data-app-page] .activated-products-pie-item {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--ac-line-soft);
+  border-radius: var(--ac-radius-sm);
+}
+body.admin-control-ui[data-app-page] .activated-products-pie-dot { width: 12px; height: 12px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .12); }
+body.admin-control-ui[data-app-page] .activated-products-pie-code { font-size: 13.5px; font-weight: 700; color: var(--ac-ink); }
+body.admin-control-ui[data-app-page] .activated-products-pie-item strong { font-size: 13.5px; font-weight: 800; font-variant-numeric: tabular-nums; }
+body.admin-control-ui[data-app-page] .activated-products-pie-item small {
+  min-width: 52px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ac-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dispensers grouped by product */
+body.admin-control-ui[data-app-page] #dispensers.statgrid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)) !important;
+  gap: 20px !important;
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-product-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
+  background: var(--ac-card);
+  border: 1px solid var(--ac-line);
+  border-radius: var(--ac-radius-lg);
+  box-shadow: var(--ac-shadow);
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-group-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-group-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 5px;
+  background: var(--product-color, var(--ac-brand));
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .15);
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-group-head strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ac-ink);
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-group-head .field-label { font-size: 10px; }
+body.admin-control-ui[data-app-page] .activated-dispenser-group-count {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ac-line-soft);
+  color: var(--ac-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-group-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+  gap: 12px;
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-card {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  padding: 14px 16px !important;
+  background: var(--ac-surface) !important;
+  border: 1px solid var(--ac-line-soft) !important;
+  border-radius: var(--ac-radius) !important;
+  cursor: pointer;
+  position: relative;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 14px; bottom: 14px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--product-color, var(--ac-brand));
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-card:hover { border-color: var(--ac-line); box-shadow: var(--ac-shadow-sm); }
+body.admin-control-ui[data-app-page] .activated-dispenser-card b {
+  display: block;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  color: var(--ac-ink);
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-card > span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ac-body);
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-card small {
+  display: block;
+  margin-top: 8px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ac-muted);
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-graph {
+  padding: 14px;
+  background: var(--ac-surface);
+  border: 1px solid var(--ac-line-soft);
+  border-radius: var(--ac-radius);
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-head strong { display: block; font-size: 13.5px; font-weight: 750; color: var(--ac-ink); }
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-head .section-kicker { font-size: 10px !important; }
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-head > span:last-child {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--ac-line);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ac-body);
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-graph svg { display: block; width: 100%; height: auto; }
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-grid { stroke: #e2e8f0; stroke-dasharray: 3 4; }
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-axis { stroke: #cbd5e1; }
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-label { font-size: 9.5px; font-weight: 600; fill: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--ac-line);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ac-body);
+}
+body.admin-control-ui[data-app-page] .activated-dispenser-graph-legend-item i { width: 8px; height: 8px; border-radius: 50%; }
+body.admin-control-ui[data-app-page] .activated-dispenser-ungrouped { border-style: dashed; box-shadow: none; }
+
+/* ==========================================================================
+   INVENTORY
+   ========================================================================== */
+body.admin-control-ui[data-app-page] #tanks.statgrid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)) !important;
+  gap: 20px !important;
+}
+body.admin-control-ui[data-app-page] .inventory-product-group {
+  display: flex !important;
+  flex-direction: column;
+  gap: 16px;
+  height: auto !important;
+  min-width: 0;
+  overflow: visible !important;
+  padding: 20px;
+  background: var(--ac-card);
+  border: 1px solid var(--ac-line);
+  border-radius: var(--ac-radius-lg);
+  box-shadow: var(--ac-shadow);
+}
+body.admin-control-ui[data-app-page] .inventory-product-group-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui[data-app-page] .inventory-product-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 5px;
+  background: var(--product-color, var(--ac-brand));
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .15);
+}
+body.admin-control-ui[data-app-page] .inventory-product-group-head strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ac-ink);
+}
+body.admin-control-ui[data-app-page] .inventory-product-group-head .field-label { font-size: 10px; }
+body.admin-control-ui[data-app-page] .inventory-product-count {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ac-line-soft);
+  color: var(--ac-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+body.admin-control-ui[data-app-page] .inventory-tank-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr));
+  gap: 12px;
+}
+body.admin-control-ui[data-app-page] .inventory-tank-card {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  padding: 16px !important;
+  background: var(--ac-surface) !important;
+  border: 1px solid var(--ac-line-soft) !important;
+  border-radius: var(--ac-radius) !important;
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+body.admin-control-ui[data-app-page] .inventory-tank-card:hover {
+  border-color: var(--ac-line);
+  box-shadow: 0 10px 22px -14px rgba(15, 23, 42, .3);
+  transform: translateY(-1px);
+}
+body.admin-control-ui[data-app-page] .inventory-tank-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+body.admin-control-ui[data-app-page] .inventory-tank-card-top b {
+  display: block;
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ac-ink);
+}
+body.admin-control-ui[data-app-page] .inventory-tank-status {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--ac-ok-soft);
+  color: #047857;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+body.admin-control-ui[data-app-page] .inventory-tank-card-product { margin-top: 10px; }
+body.admin-control-ui[data-app-page] .inventory-tank-card-product span { font-size: 10px; }
+body.admin-control-ui[data-app-page] .inventory-tank-card-product strong {
+  position: relative;
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px 9px 3px 22px;
+  border-radius: 6px;
+  background: var(--ac-line-soft);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui[data-app-page] .inventory-tank-card-product strong::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--product-color, var(--ac-brand));
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .15);
+}
+body.admin-control-ui[data-app-page] .inventory-tank-card-stock {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui[data-app-page] .inventory-tank-card-stock strong {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ac-ink);
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui[data-app-page] .inventory-tank-card-stock span { font-size: 12px; font-weight: 600; color: var(--ac-muted); }
+
+/* Fill comparison panel */
+body.admin-control-ui[data-app-page] .inventory-tank-performance {
+  margin: 0 !important;
+  padding: 16px;
+  background: var(--ac-surface);
+  border: 1px solid var(--ac-line-soft);
+  border-radius: var(--ac-radius);
+}
+body.admin-control-ui[data-app-page] .inventory-tank-performance-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+body.admin-control-ui[data-app-page] .inventory-tank-performance-head strong { font-size: 13.5px; font-weight: 750; color: var(--ac-ink); }
+body.admin-control-ui[data-app-page] .inventory-tank-performance-summary { text-align: right; }
+body.admin-control-ui[data-app-page] .inventory-tank-performance-summary span { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .inventory-tank-performance-summary b { display: block; font-size: 16px; font-weight: 800; color: var(--ac-ink); font-variant-numeric: tabular-nums; }
+body.admin-control-ui[data-app-page] .inventory-tank-performance-summary small { font-size: 11px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .inventory-tank-performance-row {
+  display: grid;
+  grid-template-columns: minmax(104px, auto) minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid #e9eef4;
+}
+body.admin-control-ui[data-app-page] .inventory-tank-performance-label { display: flex; gap: 8px; align-items: baseline; font-size: 12px; }
+body.admin-control-ui[data-app-page] .inventory-tank-performance-label strong { color: var(--ac-ink); font-weight: 750; }
+body.admin-control-ui[data-app-page] .inventory-tank-performance-label span { color: var(--ac-muted); font-variant-numeric: tabular-nums; }
+body.admin-control-ui[data-app-page] .inventory-tank-performance-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+body.admin-control-ui[data-app-page] .inventory-tank-performance-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #60a5fa) !important;
+  transition: width .5s ease;
+}
+body.admin-control-ui[data-app-page] .inventory-tank-performance-label strong { white-space: nowrap; }
+body.admin-control-ui[data-app-page] .inventory-tank-performance-stock {
+  grid-column: 2;
+  font-size: 11px;
+  color: var(--ac-muted);
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui[data-app-page] .inventory-unmatched-group { border-style: dashed; box-shadow: none; }
+
+/* Tank movements */
+body.admin-control-ui[data-app-page] #tank-movements { display: block; }
+body.admin-control-ui[data-app-page] .tank-movement-toolbar { display: block; margin-bottom: 18px; }
+body.admin-control-ui[data-app-page] .tank-movement-stats {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px;
+}
+body.admin-control-ui[data-app-page] .tank-movement-stats > div {
+  min-width: 0;
+  padding: 14px 16px;
+  background: var(--ac-card);
+  border: 1px solid var(--ac-line);
+  border-radius: var(--ac-radius);
+  box-shadow: var(--ac-shadow-sm);
+}
+body.admin-control-ui[data-app-page] .tank-movement-stats span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .tank-movement-stats strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ac-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui[data-app-page] .tank-movement-results {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr));
+  gap: 20px;
+  align-items: start;
+}
+body.admin-control-ui[data-app-page] .tank-movement-group {
+  min-width: 0;
+  padding: 20px;
+  background: var(--ac-card);
+  border: 1px solid var(--ac-line);
+  border-radius: var(--ac-radius-lg);
+  box-shadow: var(--ac-shadow);
+}
+body.admin-control-ui[data-app-page] .tank-movement-group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui[data-app-page] .tank-movement-group-head h4 { margin: 4px 0 0; font-size: 16px; font-weight: 800; color: var(--ac-ink); }
+body.admin-control-ui[data-app-page] .tank-movement-group-head small { font-size: 12px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .tank-movement-current { text-align: right; }
+body.admin-control-ui[data-app-page] .tank-movement-current strong { display: block; font-size: 17px; font-weight: 800; color: var(--ac-ink); font-variant-numeric: tabular-nums; }
+body.admin-control-ui[data-app-page] .tank-movement-current span { font-size: 12px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .tank-movement-group [role="progressbar"] { margin: 14px 0 6px; }
+body.admin-control-ui[data-app-page] .tank-movement-list { margin-top: 4px; }
+body.admin-control-ui[data-app-page] .tank-movement-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui[data-app-page] .tank-movement-row:last-child { border-bottom: 0; }
+body.admin-control-ui[data-app-page] .tank-movement-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--ac-line-soft);
+  color: var(--ac-body);
+  font-size: 15px;
+  font-weight: 800;
+}
+body.admin-control-ui[data-app-page] .tank-movement-main strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--ac-ink); }
+body.admin-control-ui[data-app-page] .tank-movement-main small { font-size: 11.5px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .tank-movement-qty { font-size: 14px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+body.admin-control-ui[data-app-page] .tank-movement-qty.positive { color: var(--ac-ok); }
+body.admin-control-ui[data-app-page] .tank-movement-qty.negative { color: var(--ac-crit); }
+body.admin-control-ui[data-app-page] .tank-movement-balance { display: none; }
+
+/* ==========================================================================
+   ATTENDANTS
+   ========================================================================== */
+body.admin-control-ui[data-app-page] .admin-attendant-ranking-card .section-heading { flex-wrap: wrap; }
+body.admin-control-ui[data-app-page] .admin-ranking-period {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--ac-brand-soft);
+  color: var(--ac-brand);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+body.admin-control-ui[data-app-page] .admin-weekly-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 8px;
+}
+body.admin-control-ui[data-app-page] .admin-weekly-summary-item {
+  padding: 14px 16px;
+  background: var(--ac-surface);
+  border: 1px solid var(--ac-line-soft);
+  border-radius: var(--ac-radius);
+}
+body.admin-control-ui[data-app-page] .admin-weekly-summary-item span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .admin-weekly-summary-item strong { display: block; margin-top: 6px; font-size: 19px; font-weight: 800; color: var(--ac-ink); font-variant-numeric: tabular-nums; }
+body.admin-control-ui[data-app-page] .admin-weekly-rank-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 4px;
+  border-top: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui[data-app-page] .admin-weekly-rank-place {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--ac-line-soft);
+  color: var(--ac-body);
+  font-size: 14px;
+  font-weight: 800;
+}
+body.admin-control-ui[data-app-page] .admin-weekly-rank-place.first  { background: linear-gradient(135deg, #fde68a, #f59e0b); color: #78350f; box-shadow: 0 4px 10px -4px rgba(245, 158, 11, .6); }
+body.admin-control-ui[data-app-page] .admin-weekly-rank-place.second { background: linear-gradient(135deg, #e2e8f0, #94a3b8); color: #1e293b; }
+body.admin-control-ui[data-app-page] .admin-weekly-rank-place.third  { background: linear-gradient(135deg, #fed7aa, #ea580c); color: #7c2d12; }
+body.admin-control-ui[data-app-page] .admin-weekly-rank-person strong { display: block; font-size: 14.5px; font-weight: 750; color: var(--ac-ink); }
+body.admin-control-ui[data-app-page] .admin-weekly-rank-person > small { display: block; margin-top: 2px; font-size: 12px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .admin-weekly-bar-track {
+  height: 8px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+body.admin-control-ui[data-app-page] .admin-weekly-bar-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+}
+body.admin-control-ui[data-app-page] .admin-weekly-day-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 26px;
+  margin-top: 10px;
+}
+body.admin-control-ui[data-app-page] .admin-weekly-day-bars span {
+  flex: 1;
+  min-height: 3px;
+  border-radius: 4px 4px 2px 2px;
+  background: #bfdbfe;
+}
+body.admin-control-ui[data-app-page] .admin-weekly-rank-score { text-align: right; }
+body.admin-control-ui[data-app-page] .admin-weekly-rank-score strong { display: block; font-size: 17px; font-weight: 800; color: var(--ac-ink); font-variant-numeric: tabular-nums; }
+body.admin-control-ui[data-app-page] .admin-weekly-rank-score small { display: block; margin-top: 2px; font-size: 12px; color: var(--ac-muted); font-variant-numeric: tabular-nums; }
+body.admin-control-ui[data-app-page] .admin-weekly-empty {
+  padding: 26px;
+  text-align: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--ac-radius);
+  background: var(--ac-surface);
+}
+body.admin-control-ui[data-app-page] .admin-weekly-empty strong { display: block; color: var(--ac-ink); }
+body.admin-control-ui[data-app-page] .admin-weekly-empty span { font-size: 13px; color: var(--ac-muted); }
+
+body.admin-control-ui[data-app-page] #attendants.statgrid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)) !important;
+  gap: 16px !important;
+}
+body.admin-control-ui[data-app-page] .attendant-admin-card {
+  display: flex !important;
+  flex-direction: column;
+  gap: 14px;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 18px !important;
+  background: var(--ac-card) !important;
+  border: 1px solid var(--ac-line) !important;
+  border-radius: var(--ac-radius-lg) !important;
+  box-shadow: var(--ac-shadow) !important;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+body.admin-control-ui[data-app-page] .attendant-admin-card:hover,
+body.admin-control-ui[data-app-page] .attendant-admin-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -14px rgba(15, 23, 42, .22) !important;
+}
+body.admin-control-ui[data-app-page] .attendant-content-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+body.admin-control-ui[data-app-page] .attendant-content-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+body.admin-control-ui[data-app-page] .attendant-content-main .field-label { font-size: 10px; }
+body.admin-control-ui[data-app-page] .attendant-content-main b {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ac-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.admin-control-ui[data-app-page] .attendant-content-main .operator-id { font-size: 12px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .ac-avatar {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  margin-right: 12px;
+}
+body.admin-control-ui[data-app-page] .attendant-admin-card .content-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--ac-line-soft);
+  color: var(--ac-body);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+body.admin-control-ui[data-app-page] .attendant-admin-card .content-status:has(.is-active) {
+  background: var(--ac-ok-soft);
+  color: #047857;
+}
+body.admin-control-ui[data-app-page] .attendant-shift-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui[data-app-page] .attendant-shift-row > .field-label { font-size: 10px; }
+body.admin-control-ui[data-app-page] .attendant-shift-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+body.admin-control-ui[data-app-page] .attendant-shift-list strong {
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: var(--ac-brand-soft);
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   ACCOUNTING CONTROL
+   ========================================================================== */
+body.admin-control-ui[data-app-page] #accounting-period-status {
+  margin: 2px 0 12px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  font-size: 16px !important;
+  font-weight: 750 !important;
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui[data-app-page] .accounting-period-open-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: var(--ac-ok-soft);
+  color: #047857;
+  font-size: 13px;
+  font-weight: 700;
+}
+body.admin-control-ui[data-app-page] .accounting-period-open-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, .2);
+}
+body.admin-control-ui[data-app-page] .accounting-period-meta { margin-top: 10px; font-size: 13px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] #accounting-period-summary > .muted {
+  padding: 16px 18px;
+  border-radius: var(--ac-radius);
+  background: var(--ac-surface);
+  border: 1px dashed #cbd5e1;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+body.admin-control-ui[data-app-page] .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+body.admin-control-ui[data-app-page] .actions button {
+  padding: 11px 20px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+body.admin-control-ui[data-app-page] .actions button:disabled { opacity: .45; cursor: not-allowed; }
+
+body.admin-control-ui[data-app-page] .control-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: step;
+}
+body.admin-control-ui[data-app-page] .control-steps li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px;
+  background: var(--ac-surface);
+  border: 1px solid var(--ac-line-soft);
+  border-radius: var(--ac-radius);
+}
+body.admin-control-ui[data-app-page] .control-step-num {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--ac-ink);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+body.admin-control-ui[data-app-page] .control-steps strong { font-size: 14px; font-weight: 750; color: var(--ac-ink); }
+body.admin-control-ui[data-app-page] .control-steps p { margin: 5px 0 0; font-size: 13px; line-height: 1.5; }
+
+/* ==========================================================================
+   STATION INBOX (notifications card on Station Control)
+   ========================================================================== */
+body.admin-control-ui[data-app-page] .station-notifications-card {
+  padding: 22px;
+  margin: 0 0 20px;
+  background: var(--ac-card);
+  border: 1px solid var(--ac-line);
+  border-radius: var(--ac-radius-lg);
+  box-shadow: var(--ac-shadow);
+}
+body.admin-control-ui[data-app-page] .station-notifications-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 16px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui[data-app-page] .station-notifications-heading { min-width: 0; }
+body.admin-control-ui[data-app-page] .station-notifications-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+body.admin-control-ui[data-app-page] .station-notifications-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -.02em;
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui[data-app-page] .station-notifications-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--ac-crit);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+body.admin-control-ui[data-app-page] .station-notifications-head p { margin: 4px 0 0; font-size: 13px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .station-inbox-inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--ac-brand-soft);
+  color: var(--ac-brand) !important;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+body.admin-control-ui[data-app-page] .station-notifications-status {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--ac-line-soft);
+  color: var(--ac-body);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+body.admin-control-ui[data-app-page] .station-notifications-list { display: grid; gap: 10px; }
+body.admin-control-ui[data-app-page] .station-notification-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--ac-surface);
+  border: 1px solid var(--ac-line-soft);
+  border-left: 3px solid var(--ac-brand);
+  border-radius: var(--ac-radius);
+  transition: background .15s ease, border-color .15s ease;
+}
+body.admin-control-ui[data-app-page] .station-notification-row:hover { background: #fff; border-color: var(--ac-line); }
+body.admin-control-ui[data-app-page] .station-notification-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--ac-brand-soft);
+  color: var(--ac-brand);
+  font-size: 15px;
+  font-weight: 800;
+}
+body.admin-control-ui[data-app-page] .station-notification-title { font-size: 14px; font-weight: 750; color: var(--ac-ink) !important; }
+body.admin-control-ui[data-app-page] .station-notification-meta,
+body.admin-control-ui[data-app-page] .station-notification-detail { font-size: 12px; color: var(--ac-muted); }
+body.admin-control-ui[data-app-page] .station-notification-open {
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: var(--ac-ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  border: 0;
+  cursor: pointer;
+}
+body.admin-control-ui[data-app-page] .station-notification-favorite { color: var(--ac-warn); }
+body.admin-control-ui[data-app-page] .station-notification-empty {
+  padding: 22px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ac-muted);
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--ac-radius);
+  background: var(--ac-surface);
+}
+
+/* ==========================================================================
+   ATTENDANTS — swipe carousel
+   ========================================================================== */
+body.admin-control-ui[data-app-page] .admin-attendant-swipe { position: relative; }
+body.admin-control-ui[data-app-page] .admin-attendant-swipe-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+body.admin-control-ui[data-app-page] .admin-attendant-swipe-arrow {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--ac-line);
+  background: #fff;
+  color: var(--ac-body);
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: var(--ac-shadow-sm);
+}
+body.admin-control-ui[data-app-page] .admin-attendant-swipe-arrow:hover { background: var(--ac-surface); color: var(--ac-ink); }
+body.admin-control-ui[data-app-page] .admin-attendant-swipe-dots { display: flex; align-items: center; gap: 7px; }
+body.admin-control-ui[data-app-page] .admin-attendant-swipe-dots button {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #cbd5e1;
+  cursor: pointer;
+  transition: width .2s ease, background .2s ease;
+}
+body.admin-control-ui[data-app-page] .admin-attendant-swipe-dots button.active { width: 22px; background: var(--ac-brand); }
+body.admin-control-ui[data-app-page] .admin-attendant-swipe-controls [data-attendant-page-label] {
+  min-width: 36px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ac-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Attendant cards: rounded, consistent with staff cards */
+body.admin-control-ui[data-app-page] .admin-attendant-card .admin-attendant-status {
+  justify-self: start;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 1100px) {
+  body.admin-control-ui[data-app-page] .station-control-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  body.admin-control-ui[data-app-page] .station-inventory-glimpses { grid-template-columns: 1fr; }
+  body.admin-control-ui[data-app-page] .activated-products-pie-layout { grid-template-columns: 1fr; }
+  body.admin-control-ui[data-app-page] .control-steps { grid-template-columns: 1fr; }
+  body.admin-control-ui[data-app-page] .admin-weekly-summary { grid-template-columns: 1fr; }
+  body.admin-control-ui[data-app-page] .tank-movement-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 640px) {
+  body.admin-control-ui[data-app-page] main.wrap { padding: 14px 12px 40px !important; }
+  body.admin-control-ui[data-app-page] .control-page-header h1 { font-size: 23px; }
+  body.admin-control-ui[data-app-page] .card,
+  body.admin-control-ui[data-app-page] .station-glimpse-card,
+  body.admin-control-ui[data-app-page] .activated-dispenser-product-group,
+  body.admin-control-ui[data-app-page] .inventory-product-group,
+  body.admin-control-ui[data-app-page] .tank-movement-group { padding: 16px !important; border-radius: 16px !important; }
+  body.admin-control-ui[data-app-page] .station-control-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  body.admin-control-ui[data-app-page] .station-control-metrics .stat b { font-size: 21px !important; }
+  body.admin-control-ui[data-app-page] .station-control-metrics .stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  body.admin-control-ui[data-app-page] .station-product-glimpse { grid-template-columns: 38px minmax(0, 1fr); }
+  body.admin-control-ui[data-app-page] .station-product-price { grid-column: 2; text-align: left; }
+  body.admin-control-ui[data-app-page] .station-product-price span,
+  body.admin-control-ui[data-app-page] .station-product-price strong { text-align: left; }
+  body.admin-control-ui[data-app-page] #products.statgrid { grid-template-columns: 1fr !important; }
+  body.admin-control-ui[data-app-page] #dispensers.statgrid,
+  body.admin-control-ui[data-app-page] #tanks.statgrid,
+  body.admin-control-ui[data-app-page] .tank-movement-results { grid-template-columns: 1fr !important; }
+  body.admin-control-ui[data-app-page] .inventory-tank-grid,
+  body.admin-control-ui[data-app-page] .activated-dispenser-group-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.admin-control-ui[data-app-page] .admin-weekly-rank-row { grid-template-columns: 36px minmax(0, 1fr); }
+  body.admin-control-ui[data-app-page] .admin-weekly-rank-score { grid-column: 2; text-align: left; }
+  body.admin-control-ui[data-app-page] .attendant-shift-list { justify-content: flex-start; }
+  body.admin-control-ui[data-app-page] .activated-products-pie-item { grid-template-columns: 12px minmax(0, 1fr) auto; }
+  body.admin-control-ui[data-app-page] .activated-products-pie-item small { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.admin-control-ui[data-app-page] *,
+  body.admin-control-ui[data-app-page] *::before { transition: none !important; animation: none !important; }
+}
