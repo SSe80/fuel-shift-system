@@ -1031,9 +1031,20 @@ async function loadStationNotifications(){
    const ready=pendingDsr.filter(x=>x.status==='pending'&&x.report_day_closed!==false&&x.all_shifts_complete&&x.all_handover_recorded&&x.all_sales_recorded);
    const latestPendingDate=pendingDsr.map(x=>x.date).filter(Boolean).sort().slice(-1)[0]||null;
    add('pending-dsr',ready.length?'warning':'info',ready.length?'DSR ready for confirmation':'DSR completion or confirmation pending',ready.length?ready.length+' daily report'+(ready.length===1?' is':'s are')+' ready for admin review and confirmation.':pendingDsr.length+' DSR record'+(pendingDsr.length===1?' needs':'s need')+' completion checks or confirmation.','admin-daily-report.html'+(latestPendingDate?'#dsr-'+encodeURIComponent(latestPendingDate):''),pendingDsr.slice(0,5).map(x=>dailyReportIdLabel(x.date)+' · '+(x.status==='waiting'?'Awaiting completion':'Awaiting confirmation')).join(' | '),latestPendingDate);
-   const missing=[];pendingDsr.forEach(report=>arr(report.missing_sales_shifts).concat(arr(report.unsubmitted_sales_shifts)).forEach(shift=>{const name=first(shift,['attendant_name','employee_name','name','attendant','employee'])||first(shift?.employee,['name'])||first(shift?.attendant,['name'])||'Attendant',key=String(name)+'|'+String(report.date||'');if(!missing.some(x=>x.key===key))missing.push({key,name,date:report.date});}));
-   const latestMissingDate=missing.map(x=>x.date).filter(Boolean).sort().slice(-1)[0]||null;
-   if(missing.length)add('missing-sales','warning','Attendants without recorded sales',missing.length+' attendant/shift record'+(missing.length===1?'':'s')+' still need sales recording after the DSR period.','admin-daily-report.html'+(latestMissingDate?'#dsr-'+encodeURIComponent(latestMissingDate):''),missing.slice(0,6).map(x=>String(x.name)+' · '+dailyReportIdLabel(x.date)).join(' | ')+(missing.length>6?' · +'+(missing.length-6)+' more':''),latestMissingDate);
+   const missing=[];pendingDsr.forEach(report=>arr(report.missing_sales_shifts).concat(arr(report.unsubmitted_sales_shifts)).forEach(shift=>{
+    const employee=shift?.employee&&typeof shift.employee==='object'?shift.employee:null;
+    const attendant=shift?.attendant&&typeof shift.attendant==='object'?shift.attendant:null;
+    const name=String(first(shift,['attendant_name','employee_name','name'])||first(employee,['name','full_name','employee_name'])||first(attendant,['name','full_name','employee_name'])||first(shift,['attendant','employee'])||'Attendant').trim();
+    const shiftLabel=first(shift,['shift_name','shift_label','dispenser_name','dispenser_code','shift_id'])||'';
+    const key=String(report.date||'')+'|'+name+'|'+String(shift.id||shift.shift_id||shiftLabel||'');
+    if(!missing.some(x=>x.key===key))missing.push({key,name,date:report.date,shiftLabel});
+   }));
+   missing.forEach(x=>{
+    const dateLabel=dailyReportIdLabel(x.date);
+    const key='missing-sales:'+String(x.date||'unknown')+':'+x.key.split('|').slice(1).join('|');
+    const meta=[dateLabel,x.shiftLabel].filter(Boolean).join(' · ');
+    add(key,'warning','Missing sales · '+x.name,'No sales have been recorded for '+x.name+' for this DSR period.','admin-daily-report.html'+(x.date?'#dsr-'+encodeURIComponent(x.date):''),meta,x.date||null);
+   });
   }
   // Purchase alerts use the delivered quantity (the sum of truck compartments),
   // not only the ordered quantity. Each alert links directly to its own purchase.
