@@ -1054,12 +1054,20 @@ async function loadStationNotifications(){
     }
     const savedInbox=await api('/api/inbox');
     if(Array.isArray(savedInbox?.items)){
-      items.splice(0,items.length,...savedInbox.items.map(row=>({
-        key:row.key,level:row.level,title:row.title,detail:row.detail,href:row.href,
-        meta:row.meta||'',date:row.date||new Date().toISOString(),
-        isRead:!!row.is_read,isFavorite:!!row.is_favorite
-      })));
-      databaseBacked=true;
+      // An empty newly-created inbox table must not erase alerts found by the
+      // live station checks. Use database rows when present; otherwise keep
+      // the current generated alerts until the first successful sync populates
+      // the table.
+      if(savedInbox.items.length){
+        items.splice(0,items.length,...savedInbox.items.map(row=>({
+          key:row.key,level:row.level,title:row.title,detail:row.detail,href:row.href,
+          meta:row.meta||'',date:row.date||new Date().toISOString(),
+          isRead:!!row.is_read,isFavorite:!!row.is_favorite
+        })));
+        databaseBacked=true;
+      }else if(items.length===0){
+        databaseBacked=true;
+      }
     }
   }catch(inboxDbError){
     console.warn('Database inbox is unavailable; using current station checks.',inboxDbError);
