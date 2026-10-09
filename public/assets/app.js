@@ -1046,7 +1046,7 @@ async function loadStationNotifications(){
    const history=Array.isArray(p.discharge_history)?p.discharge_history:[];
    const done=dischargedRaw!=null?Number(dischargedRaw):history.reduce((sum,row)=>sum+(Number(first(row,['discharged_quantity_liters','quantity_liters','quantity']))||0),0);
    const remainingRaw=first(p,['remaining_quantity_liters','remaining_liters','undischarged_liters','quantity_remaining_liters','remaining_quantity']);
-   const rem=remainingRaw!=null?Math.max(0,Number(remainingRaw)||0):Math.max(0,total-done);
+   const rem=total>0&&done>=total-0.01?0:(remainingRaw!=null?Math.max(0,Number(remainingRaw)||0):Math.max(0,total-done));
    // A stale pending status must never produce an alert when all delivered
    // liters have already been discharged.
    if(!(total>0)||!(rem>0.01))return;
