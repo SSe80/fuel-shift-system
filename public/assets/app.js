@@ -2362,6 +2362,30 @@ function createStyledReportPdf(report){
   pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF';
   return new Blob([pdf],{type:'application/pdf'});
 }
+/* Open generated A4 PDFs in a browser PDF viewer so they are immediately ready to print.
+   If pop-ups are blocked, fall back to downloading the same PDF. */
+function openPdfForPrinting(blob,filename,targetWindow){
+  const url=URL.createObjectURL(blob);
+  let viewer=targetWindow;
+  if(!viewer||viewer.closed){
+    try{viewer=window.open(url,'_blank');}catch(_){viewer=null;}
+  }else{
+    try{viewer.location.href=url;}catch(_){viewer=null;}
+  }
+  if(viewer){
+    try{viewer.opener=null;}catch(_){}
+    setTimeout(()=>URL.revokeObjectURL(url),5*60*1000);
+    toast('PDF opened — use Print in the PDF viewer.');
+    return true;
+  }
+  const link=document.createElement('a');
+  link.href=url;link.download=filename||'report.pdf';
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  toast('PDF downloaded because the browser blocked the print tab.');
+  return false;
+}
+
 /* ===== Shared PDF report engine (Sales / Purchase / DSR). Plain JS, no libraries. A4, 36pt margins. ===== */
 function createPdfDoc(){
   const W=595.28,H=841.89,M=36,CW=W-M*2,BOTTOM=792;
@@ -2621,6 +2645,7 @@ function createDsrReportPdf(r){
 }
 
 async function downloadAdminSaleHistoryDetails(id){
+  const printWindow=window.open('about:blank','_blank');
   // Generate the PDF from the same data and section order shown in the
   // Admin Sales History View Details card.
   let item=(adminSalesHistoryData.history||[]).find(x=>String(x.takeover?.id)===String(id))
@@ -2629,9 +2654,9 @@ async function downloadAdminSaleHistoryDetails(id){
     try{
       const data=await api('/api/shift-takeovers/'+encodeURIComponent(id)+'/sale-record');
       if(data?.takeover)item={takeover:data.takeover,sales:Array.isArray(data.sales)?data.sales:[]};
-    }catch(e){toast(e.message||'Unable to load the sales record for PDF.');return;}
+    }catch(e){if(printWindow&&!printWindow.closed)printWindow.close();toast(e.message||'Unable to load the sales record for PDF.');return;}
   }
-  if(!item?.takeover){toast('Sales details are not available for this record.');return;}
+  if(!item?.takeover){if(printWindow&&!printWindow.closed)printWindow.close();toast('Sales details are not available for this record.');return;}
 
   const t=item.takeover||{},initial=t,sales=Array.isArray(item.sales)?item.sales:[],saleMeta={};
   try{
@@ -2772,12 +2797,10 @@ async function downloadAdminSaleHistoryDetails(id){
       {label:'Confirmed',value:fmtDate(confirmedAt),size:11.5}
     ]
   });
-  const url=URL.createObjectURL(blob),link=document.createElement('a');
-  link.href=url;
-  link.download='sales-'+String(t.shift_id||id).slice(0,8)+'-report.pdf';
-  document.body.appendChild(link);link.click();link.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-  showAttendantActionResult('success','PDF downloaded','The confirmed sales PDF has been downloaded successfully.');
+  const filename='sales-'+String(t.shift_id||id).slice(0,8)+'-report.pdf';
+  const opened=openPdfForPrinting(blob,filename,printWindow);
+  if(!opened&&printWindow&&!printWindow.closed)printWindow.close();
+  if(opened)showAttendantActionResult('success','PDF ready to print','The confirmed sales PDF is open in a new tab. Use the PDF viewer’s Print command.');
 }
 function downloadPurchaseDetailPdf(){
   const id=window.currentPurchaseDetailId;
@@ -2840,10 +2863,8 @@ function downloadPurchaseDetailPdf(){
     remark:remarkText||'No purchase remark recorded.',remarkEmpty:!remarkText,
     footer:'Invoice '+invoice+'  \u00b7  '+productName+'  \u00b7  Purchase detail'
   });
-  const url=URL.createObjectURL(blob),link=document.createElement('a');
-  link.href=url;link.download='purchase-'+invoice.replace(/[^A-Za-z0-9_-]/g,'_')+'-report.pdf';
-  document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-  toast('PDF downloaded');
+  const filename='purchase-'+invoice.replace(/[^A-Za-z0-9_-]/g,'_')+'-report.pdf';
+  openPdfForPrinting(blob,filename);
 }
 window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
 
@@ -4515,9 +4536,10 @@ function selectDailyReportDate(date){
 }
 
 function downloadDailyReportPdf(){
+  const printWindow=window.open('about:blank','_blank');
   const r=window.currentDailyReportData;
   const d=window.currentDailyReportDate||document.getElementById('report-date')?.value;
-  if(!r){toast('Open a DSR detail page first.');return;}
+  if(!r){if(printWindow&&!printWindow.closed)printWindow.close();toast('Open a DSR detail page first.');return;}
   const num=v=>Number.isFinite(Number(v))?Number(v):0;
   const fmtNum=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:2});
   const pct=v=>(v!=null&&Number.isFinite(Number(v)))?Number(v).toFixed(1)+'%':'-';
@@ -4601,11 +4623,8 @@ function downloadDailyReportPdf(){
       {label:'Average nozzle reconciliation',value:pct(avgNozzle)},{label:'Tank difference',value:signedL(tankDiff)},
       {label:'Shifts / attendants',value:num(perf.shift_count)+' / '+num(perf.attendant_count)},{label:'Dispensers / nozzles',value:num(perf.dispenser_count)+' / '+num(perf.nozzle_count)}]
   });
-  const url=URL.createObjectURL(blob),link=document.createElement('a');
-  link.href=url;link.download='DSR-'+String(d||'report').replace(/[^A-Za-z0-9_-]/g,'_')+'-report.pdf';
-  document.body.appendChild(link);link.click();link.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1500);
-  toast('DSR PDF downloaded');
+  const filename='DSR-'+String(d||'report').replace(/[^A-Za-z0-9_-]/g,'_')+'-report.pdf';
+  openPdfForPrinting(blob,filename,printWindow);
 }
 
 async function loadDailyReport(showDetails=false){
