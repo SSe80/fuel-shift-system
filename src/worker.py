@@ -2656,9 +2656,22 @@ def daily_report_confirmations():
     auth=require_admin()
     if auth:return auth
     today=(datetime.now(timezone.utc)+timedelta(hours=3)).date(); start=today-timedelta(days=3650)
-    ss,shifts=sb("shifts",params={"start_time":"gte."+start.isoformat()+"T00:00:00+03:00","select":"id,start_time,end_time","order":"start_time.asc","limit":"10000"})
+    ss,shifts=sb("shifts",params={"start_time":"gte."+start.isoformat()+"T00:00:00+03:00","select":"id,start_time,end_time,employee_id,nozzle_id","order":"start_time.asc","limit":"10000"})
     if ss!=200:return jsonify({"error":shifts}),ss
     shifts=[x for x in shifts if _local_date_from_iso(x.get("start_time")) and _local_date_from_iso(x.get("start_time"))<=today]
+    # Resolve missing-sales shift IDs to human-readable attendants and dispensers
+    # once for the whole date range, rather than issuing extra queries per DSR day.
+    employee_ids=sorted(set(str(x.get("employee_id")) for x in shifts if x.get("employee_id")))
+    employee_map={}
+    if employee_ids:
+        ems,employees=sb("employees",params={"id":"in.("+",".join(employee_ids)+")","select":"id,name","limit":"10000"})
+        if ems==200:employee_map={str(x.get("id")):str(x.get("name") or "").strip() for x in employees}
+    nozzle_ids=sorted(set(str(x.get("nozzle_id")) for x in shifts if x.get("nozzle_id")))
+    nozzle_map={}
+    if nozzle_ids:
+        nss,nozzles=sb("nozzles",params={"id":"in.("+",".join(nozzle_ids)+")","select":"id,nozzle_code","limit":"10000"})
+        if nss==200:nozzle_map={str(x.get("id")):str(x.get("nozzle_code") or "").strip() for x in nozzles}
+    shift_lookup={str(x.get("id")):x for x in shifts if x.get("id")}
     es,existing=sb("daily_report_confirmations",params={"report_date":"gte."+start.isoformat(),"select":"id,report_date,status,confirmed_at,confirmed_by","order":"report_date.desc","limit":"5000"})
     if es!=200:return jsonify({"error":existing}),es
     existing=[x for x in existing if str(x.get("report_date") or "")[:10]<=today.isoformat()]
@@ -2685,6 +2698,21 @@ def daily_report_confirmations():
             snap["status"]="pending"
         snap["id"]=(row or {}).get("id")
         cards.append(snap)
+    # Keep the existing ID arrays for DSR readiness UI compatibility, and add
+    # parallel detail arrays for inbox notifications that need attendant names.
+    for card in cards:
+        for source_key,detail_key in (("missing_sales_shifts","missing_sales_shift_details"),("unsubmitted_sales_shifts","unsubmitted_sales_shift_details")):
+            details=[]
+            for shift_id in card.get(source_key) or []:
+                shift=shift_lookup.get(str(shift_id),{})
+                employee_id=str(shift.get("employee_id") or "")
+                nozzle_id=str(shift.get("nozzle_id") or "")
+                details.append({
+                    "shift_id":str(shift_id),
+                    "attendant_name":employee_map.get(employee_id) or "",
+                    "shift_label":nozzle_map.get(nozzle_id) or "",
+                })
+            card[detail_key]=details
     return jsonify(cards),200
 
 @app.post("/api/reports/daily/confirmations/<report_date>/confirm")
