@@ -2322,3 +2322,346 @@ body.admin-control-ui :is(.msr-panel, .purchase-section, .admin-sales-section, .
   display: none !important;
   content: none !important;
 }
+
+/* ==========================================================================
+   ATTENDANT PANEL — shift cards, handover, confirmations
+   Scoped to body.attendant-dashboard-page (added to the page). Replaces the
+   red warning styling used for active shifts with the standard blue system.
+   ========================================================================== */
+body.admin-control-ui.attendant-dashboard-page main.wrap {
+  max-width: 1040px !important;
+}
+body.admin-control-ui.attendant-dashboard-page .page-heading {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 20px 22px !important;
+  background: var(--ac-card) !important;
+  border: 1px solid var(--ac-line) !important;
+  border-radius: var(--ac-radius-lg) !important;
+  box-shadow: var(--ac-shadow) !important;
+  margin: 0 0 22px !important;
+}
+body.admin-control-ui.attendant-dashboard-page .page-heading h2 {
+  margin: 4px 0 2px !important;
+  font-size: 19px !important;
+  font-weight: 750 !important;
+  letter-spacing: -.02em;
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .page-heading p {
+  margin: 0 !important;
+  font-size: 13px;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .page-heading .section-kicker {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em;
+  color: var(--ac-brand) !important;
+}
+
+/* Section wrappers */
+body.admin-control-ui.attendant-dashboard-page .dashboard-section {
+  margin: 0 0 24px !important;
+}
+body.admin-control-ui.attendant-dashboard-page .dashboard-section-head {
+  display: flex !important;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin: 0 2px 12px !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+body.admin-control-ui.attendant-dashboard-page .dashboard-section-head h2 {
+  margin: 4px 0 0 !important;
+  font-size: 18px !important;
+  font-weight: 750 !important;
+  letter-spacing: -.02em;
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .dashboard-section-head .section-kicker {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .dashboard-section-cards {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)) !important;
+  gap: 16px !important;
+}
+
+/* Shift cards: neutral surface with a blue accent (not red) */
+body.admin-control-ui.attendant-dashboard-page .dashboard-purchase-card {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: var(--ac-card) !important;
+  border: 1px solid var(--ac-line) !important;
+  border-radius: var(--ac-radius-lg) !important;
+  box-shadow: var(--ac-shadow) !important;
+  overflow: hidden;
+  position: relative;
+}
+body.admin-control-ui.attendant-dashboard-page .dashboard-purchase-card.active-shift-card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #2563eb, #60a5fa);
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-head {
+  display: flex !important;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px 22px !important;
+  background: none !important;
+  border: 0 !important;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-head h3 {
+  margin: 4px 0 2px !important;
+  font-size: 17px !important;
+  font-weight: 750 !important;
+  letter-spacing: -.01em;
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-head p {
+  margin: 0 !important;
+  font-size: 12.5px;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-head .section-kicker {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em;
+  color: var(--ac-brand) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-badge {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  background: var(--ac-ok-soft) !important;
+  color: #047857 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  border: 0 !important;
+  white-space: nowrap;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-meta {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  padding: 0 20px 14px 22px !important;
+  background: none !important;
+  border: 0 !important;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-meta > div {
+  min-width: 0;
+  padding: 11px 12px !important;
+  background: var(--ac-surface) !important;
+  border: 1px solid var(--ac-line-soft) !important;
+  border-radius: var(--ac-radius) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-meta span {
+  display: block;
+  font-size: 10px !important;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-meta strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 14.5px !important;
+  font-weight: 800 !important;
+  color: var(--ac-ink) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-readings {
+  padding: 14px 20px 16px 22px !important;
+  border-top: 1px solid var(--ac-line-soft) !important;
+  background: none !important;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-readings-head {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-readings-head span {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-readings-head small {
+  font-size: 11.5px !important;
+  font-weight: 700;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-reading-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)) !important;
+  gap: 10px !important;
+}
+body.admin-control-ui.attendant-dashboard-page .pending-nozzle-reading {
+  padding: 12px 14px !important;
+  background: #fff !important;
+  border: 1px solid var(--ac-line) !important;
+  border-radius: var(--ac-radius) !important;
+  box-shadow: var(--ac-shadow-sm);
+}
+body.admin-control-ui.attendant-dashboard-page .pending-nozzle-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--ac-brand-soft);
+  color: #1d4ed8 !important;
+  font-size: 10.5px !important;
+  font-weight: 700;
+}
+body.admin-control-ui.attendant-dashboard-page .pending-nozzle-number {
+  margin-top: 8px;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em;
+  color: var(--ac-ink) !important;
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui.attendant-dashboard-page .pending-nozzle-code {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .active-shift-actions {
+  padding: 0 20px 20px 22px !important;
+  background: none !important;
+  border: 0 !important;
+}
+body.admin-control-ui.attendant-dashboard-page .active-handover-btn,
+body.admin-control-ui.attendant-dashboard-page .btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(180deg, #2563eb, #1d4ed8) !important;
+  color: #fff !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 2px rgba(29, 78, 216, .25), 0 6px 14px -8px rgba(37, 99, 235, .6) !important;
+  cursor: pointer;
+}
+body.admin-control-ui.attendant-dashboard-page .active-handover-btn { width: 100% !important; }
+body.admin-control-ui.attendant-dashboard-page .btn.secondary {
+  background: #fff !important;
+  color: var(--ac-body) !important;
+  border: 1px solid var(--ac-line) !important;
+  box-shadow: var(--ac-shadow-sm) !important;
+}
+body.admin-control-ui.attendant-dashboard-page .btn.danger {
+  background: var(--ac-crit-soft) !important;
+  color: #b91c1c !important;
+  border: 1px solid #fecaca !important;
+  box-shadow: none !important;
+}
+body.admin-control-ui.attendant-dashboard-page .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  body.admin-control-ui.attendant-dashboard-page .dashboard-section-cards { grid-template-columns: 1fr !important; }
+  body.admin-control-ui.attendant-dashboard-page .active-shift-meta { grid-template-columns: 1fr 1fr !important; }
+  body.admin-control-ui.attendant-dashboard-page .active-shift-meta > div:last-child { grid-column: 1 / -1; }
+  body.admin-control-ui.attendant-dashboard-page .page-heading { padding: 16px !important; }
+}
+
+/* Attendant panel: the legacy .active modifier paints shift cards red and
+   offsets them; keep every shift card on the neutral surface and aligned. */
+body.admin-control-ui.attendant-dashboard-page .dashboard-purchase-card.active,
+body.admin-control-ui.attendant-dashboard-page .dashboard-purchase-card.active-shift-card {
+  border-color: var(--ac-line) !important;
+  outline: none !important;
+  transform: none !important;
+  margin: 0 !important;
+  top: 0 !important;
+}
+body.admin-control-ui.attendant-dashboard-page .dashboard-section-cards {
+  align-items: stretch !important;
+}
+body.admin-control-ui.attendant-dashboard-page header.settings-header ~ * a.active,
+body.admin-control-ui.attendant-dashboard-page a.active {
+  color: #93c5fd !important;
+  border-bottom-color: #60a5fa !important;
+}
+
+/* Same overrides again at page-attribute specificity: the legacy rules are
+   scoped with body[data-app-page], which outranks the class-only selectors. */
+body.admin-control-ui[data-app-page].attendant-dashboard-page .dashboard-purchase-card.active,
+body.admin-control-ui[data-app-page].attendant-dashboard-page .dashboard-purchase-card.active-shift-card,
+body.admin-control-ui[data-app-page].attendant-dashboard-page .card.active-shift-card {
+  border: 1px solid var(--ac-line) !important;
+  border-left: 0 !important;
+  box-shadow: var(--ac-shadow) !important;
+  background: var(--ac-card) !important;
+}
+body.admin-control-ui[data-app-page].attendant-dashboard-page .dashboard-purchase-card.active-shift-card::before {
+  display: block !important;
+}
+body.admin-control-ui[data-app-page].attendant-dashboard-page a.active {
+  color: #93c5fd !important;
+  border-bottom-color: #60a5fa !important;
+  background: none !important;
+}
+
+/* Attendant top-nav active item: legacy rule uses body.attendant-page.admin-shell
+   with !important and paints red. Match its structure with the page attribute. */
+body.admin-control-ui[data-app-page].attendant-dashboard-page > .admin-sidebar .admin-sidebar-nav a.active,
+body.admin-control-ui[data-app-page].attendant-dashboard-page > .admin-sidebar .admin-sidebar-nav a.active b,
+body.admin-control-ui[data-app-page].attendant-dashboard-page > .admin-sidebar .admin-sidebar-nav a.active span {
+  color: #93c5fd !important;
+}
+body.admin-control-ui[data-app-page].attendant-dashboard-page > .admin-sidebar .admin-sidebar-nav a.active {
+  border-bottom-color: #60a5fa !important;
+  text-decoration-color: #60a5fa !important;
+}
+
+/* Handover modal: titles in ink; only real problems (e.g. "Not recorded") stay red */
+body.admin-control-ui.attendant-dashboard-page #handover-input-modal :is(h2, h3, h4, strong) {
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-dashboard-page #handover-input-modal #handover-dispenser-title {
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em;
+}
+body.admin-control-ui.attendant-dashboard-page #handover-nozzle-readings > * {
+  background: #fff !important;
+  border: 1px solid var(--ac-line) !important;
+  border-radius: var(--ac-radius) !important;
+  padding: 14px !important;
+  box-shadow: var(--ac-shadow-sm);
+}
+body.admin-control-ui.attendant-dashboard-page #handover-input-modal .modal-card,
+body.admin-control-ui.attendant-dashboard-page #handover-input-modal > div:not(.modal-backdrop) {
+  border-radius: 20px;
+}
