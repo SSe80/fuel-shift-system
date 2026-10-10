@@ -246,13 +246,12 @@
     .operational-reset-note{background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:12px;margin:12px 0;color:#7f1d1d}
     .operational-reset-input{width:100%;box-sizing:border-box;margin:8px 0 12px;padding:12px;border:1px solid #ef4444;border-radius:8px}
     .operational-reset-status{margin-top:10px;white-space:pre-wrap}
-    #reset-operational-data-section .settings-collapsible{display:block!important;visibility:visible!important;height:auto!important;overflow:visible!important}
     #reset-operational-data-section #open-operational-reset{display:inline-flex!important;align-items:center;justify-content:center;visibility:visible!important;min-height:44px;padding:12px 18px;border-radius:9px;cursor:pointer}
     #operational-reset-modal.open{display:flex!important;visibility:visible!important;align-items:center;justify-content:center;position:fixed;inset:0;z-index:10000;padding:18px;overflow:auto}
     #operational-reset-modal[aria-hidden="true"]{display:none!important}
   </style>
   <section id="reset-operational-data-section" class="settings-section card operational-reset-card">
-    <div class="section-heading">
+    <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0">
       <div><span class="section-kicker">DANGER ZONE</span><h2>Reset Operational Data</h2>
       <p>Clear operational records to start a fresh operating period.</p></div>
     </div>

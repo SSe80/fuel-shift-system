@@ -2952,8 +2952,11 @@ body.admin-control-ui.admin-settings-page #reset-operational-data-section .secti
   font-size: 13.5px;
   color: #6b4b4b !important;
 }
-body.admin-control-ui.admin-settings-page #reset-operational-data-section .settings-collapsible {
-  display: grid !important;
+body.admin-control-ui.admin-settings-page #reset-operational-data-section:not(.expanded) .settings-collapsible {
+  display: none !important;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section.expanded .settings-collapsible {
+  display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 14px;
   align-items: stretch;
@@ -3029,4 +3032,349 @@ body.admin-control-ui.admin-settings-page #reset-operational-data-section #opera
   body.admin-control-ui.admin-settings-page #reset-operational-data-section .settings-collapsible {
     grid-template-columns: 1fr;
   }
+}
+
+/* Danger Zone header behaves like the other settings cards (click to expand) */
+body.admin-control-ui.admin-settings-page #reset-operational-data-section .section-heading.settings-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section .section-heading.settings-toggle::after {
+  content: "+";
+  flex: 0 0 auto;
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #b91c1c;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section.expanded .section-heading.settings-toggle::after {
+  content: "\2212";
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section:not(.expanded) .section-heading {
+  border-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* ==========================================================================
+   ATTENDANT SHIFT PAGE — history cards and the shift details view
+   ========================================================================== */
+/* Page title: one heading only, in ink; red eyebrow matches the attendant panel */
+body.admin-control-ui.attendant-shift-page .eyebrow {
+  color: #dc2626 !important;
+}
+body.admin-control-ui.attendant-shift-page .eyebrow::before { background: #dc2626 !important; }
+body.admin-control-ui.attendant-shift-page header.settings-header h1 {
+  color: var(--ac-ink) !important;
+}
+/* The section kicker repeats the card title below it, so the block is hidden */
+body.admin-control-ui.attendant-shift-page section.page-heading {
+  display: none !important;
+}
+/* The list card around the history only groups the cards, so it draws no frame */
+body.admin-control-ui.attendant-shift-page .card:has(> #shift-history) {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+body.admin-control-ui.attendant-shift-page .card:has(> #shift-history) > .section-heading {
+  margin: 0 0 16px !important;
+  padding: 0 2px 14px !important;
+  border-bottom: 1px solid var(--ac-line-soft) !important;
+}
+body.admin-control-ui.attendant-shift-page .card:has(> #shift-history) .section-heading h2 {
+  color: var(--ac-ink) !important;
+  font-size: 18px !important;
+  font-weight: 750 !important;
+}
+body.admin-control-ui.attendant-shift-page #shift-history {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)) !important;
+  gap: 16px !important;
+}
+/* History card */
+body.admin-control-ui.attendant-shift-page .shift-takeover-history-card {
+  display: flex !important;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 18px 16px !important;
+  margin: 0 !important;
+  background: #fff !important;
+  border: 1px solid var(--ac-line) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--ac-shadow) !important;
+  position: relative;
+  overflow: hidden;
+}
+body.admin-control-ui.attendant-shift-page .shift-takeover-history-card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: #dc2626;
+  opacity: .85;
+}
+body.admin-control-ui.attendant-shift-page .shift-takeover-history-card .top {
+  display: flex !important;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+body.admin-control-ui.attendant-shift-page .shift-takeover-history-card .section-kicker {
+  display: block;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.attendant-shift-page .shift-takeover-history-card h3 {
+  margin: 4px 0 0 !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.01em;
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-shift-page .shift-takeover-history-card .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  background: var(--ac-ok-soft) !important;
+  color: #047857 !important;
+  border: 0 !important;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+body.admin-control-ui.attendant-shift-page .shift-takeover-history-card .badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+}
+body.admin-control-ui.attendant-shift-page .compact-sale-summary {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--ac-surface);
+  border: 1px solid var(--ac-line-soft);
+  border-radius: 14px;
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui.attendant-shift-page .compact-sale-summary > span {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ac-body);
+  white-space: nowrap;
+}
+body.admin-control-ui.attendant-shift-page .compact-sale-summary > strong {
+  font-size: 17px !important;
+  font-weight: 850 !important;
+  color: var(--ac-ink) !important;
+  text-align: right;
+  white-space: nowrap;
+}
+body.admin-control-ui.attendant-shift-page .shift-takeover-history-card > p.muted {
+  margin: 0 !important;
+  font-size: 12px !important;
+  line-height: 1.5;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.attendant-shift-page .compact-detail-button {
+  width: 100%;
+  min-height: 44px;
+  margin-top: auto;
+  padding: 11px 16px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  color: var(--ac-ink) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  box-shadow: var(--ac-shadow-sm) !important;
+  cursor: pointer;
+}
+body.admin-control-ui.attendant-shift-page .compact-detail-button:hover {
+  background: var(--ac-surface) !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Details view */
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details-content {
+  display: grid;
+  gap: 14px;
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-section {
+  background: #fff !important;
+  border: 1px solid var(--ac-line) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+  box-shadow: var(--ac-shadow-sm);
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-section-head {
+  padding: 14px 16px 12px !important;
+  background: var(--ac-surface) !important;
+  border-bottom: 1px solid var(--ac-line-soft) !important;
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-section-head .section-kicker,
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-section-head span {
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-section-head strong,
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-section-head h3,
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-section-head p {
+  display: block;
+  margin: 3px 0 0 !important;
+  font-size: 14px !important;
+  font-weight: 750 !important;
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-info-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-info-grid > * {
+  min-width: 0;
+  padding: 12px 16px !important;
+  border-right: 1px solid var(--ac-line-soft);
+  border-bottom: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-info-grid > *:empty,
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-info-grid > *:nth-child(3n) { border-right: 0; }
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-info-grid > *:empty { display: none !important; }
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-info-grid span {
+  display: block;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-info-grid strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 13.5px !important;
+  font-weight: 750 !important;
+  color: var(--ac-ink) !important;
+  font-variant-numeric: tabular-nums;
+}
+/* Product names are shown in ink; the product colour is only a chip */
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details [style*="color:"]:not(svg):not(svg *) {
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-total-row {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px !important;
+  background: var(--ac-surface);
+  border-top: 1px solid var(--ac-line-soft);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ac-body);
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-total-row strong {
+  font-size: 15px !important;
+  font-weight: 850 !important;
+  color: var(--ac-ink) !important;
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-actions .btn,
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-actions button {
+  border-radius: 12px !important;
+}
+@media (max-width: 640px) {
+  body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-info-grid > *:nth-child(3n) { border-right: 1px solid var(--ac-line-soft); }
+  body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-info-grid > *:nth-child(2n) { border-right: 0; }
+  body.admin-control-ui.attendant-shift-page .compact-sale-summary { grid-template-columns: 1fr auto; }
+  body.admin-control-ui.attendant-shift-page .compact-sale-summary > span:nth-child(2) { display: none; }
+}
+
+/* Shift history: flatten the card header and set the heading in ink */
+body.admin-control-ui.attendant-shift-page .card:has(> #shift-history) h2,
+body.admin-control-ui.attendant-shift-page .card:has(> #shift-history) h2 * {
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-shift-page .shift-takeover-history-card > .top {
+  background: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+/* Details view: hide the empty placeholder cell and keep the readings row in ink */
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-info-grid .history-detail-empty,
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-empty {
+  display: none !important;
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-reading-row,
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-reading-row * {
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-reading-row > *:last-child {
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-shift-page #admin-sale-history-details .history-detail-info-grid > * {
+  background: #ffffff !important;
+}
+
+/* Shift page: title colours at the specificity of the shared header rules */
+body.admin-control-ui[data-app-page].attendant-shift-page header.settings-header .eyebrow,
+body.admin-control-ui[data-app-page].attendant-shift-page header.settings-header .eyebrow::before {
+  color: #dc2626 !important;
+  background-color: transparent;
+}
+body.admin-control-ui[data-app-page].attendant-shift-page header.settings-header .eyebrow::before {
+  background: #dc2626 !important;
+}
+body.admin-control-ui[data-app-page].attendant-shift-page .card:has(> #shift-history) .section-heading h2 {
+  color: var(--ac-ink) !important;
+}
+
+/* Shift history uses section.content-section (not a .card) with an h3 heading */
+body.admin-control-ui[data-app-page].attendant-shift-page section.content-section:has(> #shift-history) {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+body.admin-control-ui[data-app-page].attendant-shift-page section.content-section:has(> #shift-history) > .section-heading {
+  margin: 0 0 16px !important;
+  padding: 0 2px 14px !important;
+  border-bottom: 1px solid var(--ac-line-soft) !important;
+  background: none !important;
+}
+body.admin-control-ui[data-app-page].attendant-shift-page section.content-section:has(> #shift-history) .section-heading h3,
+body.admin-control-ui[data-app-page].attendant-shift-page section.content-section:has(> #shift-history) .section-heading p {
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui[data-app-page].attendant-shift-page section.content-section:has(> #shift-history) .section-heading p {
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui[data-app-page].attendant-shift-page section.content-section:has(> #shift-history) .section-heading h3 {
+  margin: 0 !important;
+  font-size: 18px !important;
+  font-weight: 750 !important;
+  letter-spacing: -.02em;
 }
