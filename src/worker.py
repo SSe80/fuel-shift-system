@@ -1355,8 +1355,8 @@ def update_tank(tank_id):
                     return jsonify({"error":"Product for this tank was not found"}),404
                 if not products[0].get("active"):
                     return jsonify({"error":"Tank cannot be activated because its product is inactive"}),400
-                # Tank activation only changes its active status. Opening dip/stock
-                # readings are captured in the appropriate inventory or shift workflow.
+                # Tank activation must not require an opening stock/dip input.
+                # Capture physical opening readings later in inventory or shift workflows.
                 body["active"] = True
             else:
                 body["active"] = False
