@@ -1319,7 +1319,7 @@ body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-nozzles{
 </header>
 <input id="report-date" type="hidden">
 <div id="daily-report-details" class="daily-report-details dsr-detail-view">
- <div class="daily-detail-head"><div><span class="section-kicker daily-kicker">DSR DETAIL</span><h2 id="daily-detail-title">Daily Sales Report · Detail</h2><p id="daily-detail-subtitle" class="muted">Confirmed station-wide reconciliation</p></div><div class="daily-detail-actions"><button type="button" class="daily-detail-download" onclick="downloadDailyReportPdf()">Download PDF</button><button type="button" class="daily-detail-download" onclick="downloadDailyReportCsv()">Export CSV</button><a class="daily-detail-close" href="admin-dsr-history.html" aria-label="Back to DSR history">Back</a></div></div>
+ <div class="daily-detail-head"><div><span class="section-kicker daily-kicker">DSR DETAIL</span><h2 id="daily-detail-title">Daily Sales Report · Detail</h2><p id="daily-detail-subtitle" class="muted">Confirmed station-wide reconciliation</p></div><div class="daily-detail-actions"><button type="button" class="daily-detail-download" onclick="downloadDailyReportPdf()">Download PDF</button><button type="button" class="daily-detail-download" onclick="downloadDailyReportExcel()">Export Excel</button><a class="daily-detail-close" href="admin-dsr-history.html" aria-label="Back to DSR history">Back</a></div></div>
  <div id="report-status" class="muted daily-status">Loading report…</div>
  <div class="dsr-report-slider" aria-label="DSR report sections">
   <div id="dsr-report-track" class="dsr-report-track">
@@ -1404,79 +1404,60 @@ body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-nozzles{
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
-<script src="assets/app.js?v=20261010-12"></script>
+<script src="assets/xlsx-export.js?v=20261010-x1"></script><script src="assets/app.js?v=20261010-12"></script>
 <script>
-function downloadDailyReportCsv(){
+function downloadDailyReportExcel(){
   const report=window.currentDailyReportData;
   if(!report){if(typeof toast==='function')toast('DSR data is still loading. Please try again.');return;}
   const date=String(window.currentDailyReportDate||report.date||document.getElementById('report-date')?.value||new Date().toISOString().slice(0,10));
   const currency=window.stationCurrency||'ETB';
   const productInfo=window.currentDsrProductInfo||{};
-  const productCode=value=>{
-    const raw=String(value??'').trim();
-    if(!raw)return '';
-    const key=raw.toLowerCase();
-    if(productInfo[key]?.code)return productInfo[key].code;
-    const known=Object.values(productInfo).some(p=>String(p.code||'').toLowerCase()===key);
-    return known?raw:'Product code unavailable';
-  };
-  const esc=value=>{
-    let v=value;
-    if(v===null||v===undefined)v='';
-    else if(typeof v==='object')v=JSON.stringify(v);
-    v=String(v);
-    return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;
-  };
-  const flatten=(obj,prefix='')=>{
-    const out={};
-    if(!obj||typeof obj!=='object'||Array.isArray(obj))return {value:obj};
-    Object.entries(obj).forEach(([key,value])=>{
-      const name=prefix?prefix+'.'+key:key;
-      if(value&&typeof value==='object'&&!Array.isArray(value)){
-        Object.assign(out,flatten(value,name));
-      }else if(Array.isArray(value)){
-        out[name]=JSON.stringify(value);
-      }else{
-        const k=key.toLowerCase();
-        out[name]=['product','product_name','fuel_product','product_code_name'].includes(k)?productCode(value):value;
-      }
+  const PRODUCT_KEYS=['product','product_name','fuel_product','product_code_name'];
+  const humanize=k=>String(k).replace(/[._]+/g,' ').replace(/\s+/g,' ').trim().replace(/^\w/,c=>c.toUpperCase());
+  const infoFor=v=>{const k=String(v??'').trim().toLowerCase();if(!k)return null;return productInfo[k]||Object.values(productInfo).find(p=>String(p.code||'').toLowerCase()===k)||null;};
+  const codeFor=v=>{const i=infoFor(v);return i?(i.code||String(v)):String(v??'');};
+  const flatten=(obj,prefix='')=>{const out={};if(!obj||typeof obj!=='object'||Array.isArray(obj))return {value:obj};Object.entries(obj).forEach(([key,value])=>{const name=prefix?prefix+'.'+key:key;if(value&&typeof value==='object'&&!Array.isArray(value))Object.assign(out,flatten(value,name));else if(Array.isArray(value))out[name]=JSON.stringify(value);else out[name]=value;});return out;};
+  const cellValue=v=>{if(v===null||v===undefined)return '';if(typeof v==='boolean')return v?'Yes':'No';if(typeof v==='object')return JSON.stringify(v);return v;};
+  let rows=[];const sheets=[];
+  const push=name=>{sheets.push({name,rows});rows=[];};
+  const title=t=>rows.push({kind:'title',cells:[t]});
+  const blank=()=>rows.push({kind:'blank',cells:[]});
+  // Key / value block (summary, performance, completion)
+  const kv=(t,obj)=>{title(t);rows.push({kind:'head',cells:['Item','Value']});Object.entries(flatten(obj)).forEach(([k,v])=>rows.push({kind:'data',cells:[humanize(k),cellValue(v)]}));blank();};
+  // Table block: one row per record
+  const table=(t,list)=>{title(t);const arr=(Array.isArray(list)?list:[]).filter(x=>x!==null&&x!==undefined);
+    if(!arr.length){rows.push({kind:'note',cells:['No data']});blank();return;}
+    const objs=arr.map(x=>flatten(x));
+    const headers=[...new Set(objs.flatMap(o=>Object.keys(o)))];
+    rows.push({kind:'head',cells:headers.map(humanize)});
+    objs.forEach(o=>{
+      const cells=headers.map(h=>{let v=cellValue(o[h]);if(PRODUCT_KEYS.includes(h.toLowerCase())&&v!=='')v=codeFor(v);return v;});
+      rows.push({kind:'data',cells});
     });
-    return out;
-  };
-  const lines=[];
-  const addSection=(title,rows)=>{
-    lines.push([title]);
-    const list=Array.isArray(rows)?rows.filter(x=>x!==null&&x!==undefined):[];
-    if(!list.length){lines.push(['No data']);lines.push([]);return;}
-    const objects=list.map(x=>flatten(x));
-    const headers=[...new Set(objects.flatMap(o=>Object.keys(o)))];
-    lines.push(headers);
-    objects.forEach(o=>lines.push(headers.map(h=>o[h]??'')));
-    lines.push([]);
-  };
+    blank();};
   const summary=report.summary||{};
   const performance=report.dsr_performance||{};
-  lines.push(['DAILY SALES REPORT (DSR)']);
-  lines.push(['Report date',date]);
-  lines.push(['Status',report.report_ready?'Confirmed':'Not confirmed']);
-  lines.push(['Currency',currency]);
-  lines.push([]);
-  addSection('REPORT SUMMARY',[{...summary,...performance}]);
-  addSection('DISPENSER DETAILS',report.dsr_dispenser_details||report.dispenser_summary||[]);
-  addSection('TANK DETAILS',report.dsr_tank_details||report.tank_details||[]);
-  addSection('SHIFT DETAILS',report.shift_summary||[]);
+  // Sheet 1: summary
+  title('DAILY SALES REPORT (DSR)');
+  rows.push({kind:'data',cells:['Report date',date]});
+  rows.push({kind:'data',cells:['Status',report.report_ready?'Confirmed':'Not confirmed']});
+  rows.push({kind:'data',cells:['Currency',currency]});
+  blank();
+  kv('REPORT SUMMARY',{...summary,...performance});
+  if(report.completion)kv('REPORT COMPLETION',report.completion);
+  // Sheet 2: dispensers
+  table('DISPENSER DETAILS',report.dsr_dispenser_details||report.dispenser_summary||[]);
+  // Sheet 3: tanks
+  table('TANK DETAILS',report.dsr_tank_details||report.tank_details||[]);
+  // Sheet 4: shifts
+  table('SHIFT DETAILS',report.shift_summary||[]);
+  // Sheet 5: sales
   const sales=report.dsr_sales_summary||report.sales_summary||{};
-  addSection('SALES BY PRODUCT',sales.by_product||[]);
-  addSection('SALES BY TYPE',sales.by_type||[]);
-  addSection('FINAL PERFORMANCE',[performance]);
-  if(report.completion)addSection('REPORT COMPLETION',[report.completion]);
-  const csv='\uFEFF'+lines.map(row=>row.map(esc).join(',')).join('\r\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob);
-  const link=document.createElement('a');
-  link.href=url;link.download='DSR-'+date+'.csv';document.body.appendChild(link);link.click();link.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-  if(typeof toast==='function')toast('DSR CSV exported.');
+  table('SALES BY PRODUCT',sales.by_product||[]);
+  table('SALES BY TYPE',sales.by_type||[]);
+  push('DSR');
+  XlsxExport.download(XlsxExport.build(sheets),'DSR-'+date+'.xlsx');
+  if(typeof toast==='function')toast('DSR Excel exported.');
 }
 (function(){
   function bootDetail(){
