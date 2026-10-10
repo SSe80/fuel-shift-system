@@ -2754,7 +2754,12 @@ function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,mont
   const rankChart=(Array.isArray(ranking)?ranking:[]).filter(x=>x&&x.month).slice().sort((a,b)=>String(a.month).localeCompare(String(b.month)))
     .map(x=>({label:msrShortMonth(x.month),value:num(x.avgAmount),current:String(x.month)===String(data.month)}));
   const productRowsV2=products.map((p,i)=>({cells:[p.code||'Product code unavailable',fmt(p.liters)+' L',money(p.sales),num(p.sharePct).toFixed(1)+'%',money(num(p.liters)?num(p.sales)/num(p.liters):0),String(i+1)]}));
-  const saleTypeRowsV2=(Array.isArray(data.salesTypesForPdf)?data.salesTypesForPdf:[]).slice().sort((a,b)=>num(b.sales)-num(a.sales)).map((x,i)=>({cells:[(i+1)+'. '+String(x.name||'Sale type'),money(x.sales),num(x.sharePct).toFixed(1)+'%']}));
+  // PDF intentionally excludes every sale type configured to require a reason.
+  // Recalculate shares only across the included types and append a monthly total row.
+  const salesTypesForPdf=(Array.isArray(data.salesTypesForPdf)?data.salesTypesForPdf:[]).slice().sort((a,b)=>num(b.sales)-num(a.sales));
+  const eligibleSaleTypeTotal=salesTypesForPdf.reduce((sum,x)=>sum+num(x.sales),0);
+  const saleTypeRowsV2=salesTypesForPdf.map((x,i)=>({cells:[(i+1)+'. '+String(x.name||'Sale type'),money(x.sales),(eligibleSaleTypeTotal?num(x.sales)/eligibleSaleTypeTotal*100:0).toFixed(1)+'%']}));
+  if(saleTypeRowsV2.length)saleTypeRowsV2.push({bold:true,cells:['MONTH TOTAL',money(eligibleSaleTypeTotal),eligibleSaleTypeTotal?'100.0%':'0.0%']});
   const attRowsV2=attendants.map((x,i)=>({cells:[(i+1)+'. '+(x.attendant||'Unknown'),money(x.sales),fmt(x.liters)+' L',String(num(x.shiftCount)),share(x.sales).toFixed(1)+'%',''],}));
   const dailyRowsV2=daily.map(row=>({cells:[String(row.date||'\u2014'),fmt(row.liters)+' L',money(row.sales),row.payments==null?'\u2014':money(row.payments),String(num(row.shifts)),'Confirmed'],tones:[null,null,null,null,null,GREEN]}));
   if(daily.length>1)dailyRowsV2.push({bold:true,cells:['Month total',fmt(daily.reduce((n,x)=>n+num(x.liters),0))+' L',money(daily.reduce((n,x)=>n+num(x.sales),0)),daily.every(x=>x.payments!=null)?money(daily.reduce((n,x)=>n+num(x.payments),0)):'\u2014',String(daily.reduce((n,x)=>n+num(x.shifts),0)),'']});
