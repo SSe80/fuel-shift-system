@@ -3331,7 +3331,7 @@ async function openAdminSaleHistoryDetails(id){
     }).join('');
 
     const saleRows=sales.map(function(s,i){
-      return '<div class="history-detail-sale"><span class="history-detail-sale-number">'+(i+1)+'</span><div class="history-detail-sale-name"><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+(s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'')+(s.reason?'<small class="reason">Reason: '+h(s.reason)+'</small>':'')+'</div><strong class="history-detail-sale-value">'+money(s.amount)+'</strong></div>';
+      return '<div class="history-detail-sale"><span class="history-detail-sale-number">'+(i+1)+'</span><div class="history-detail-sale-name"><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+(s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'')+(s.reason?'<small class="reason">Reason: '+h(s.reason)+'</small>':'')+(s.submitted_amount!=null&&Math.abs(Number(s.submitted_amount)-Number(s.amount))>0.005?'<small>Submitted before return deduction: '+money(s.submitted_amount)+'</small>':'')+'</div><strong class="history-detail-sale-value">'+money(s.amount)+'</strong></div>';
     }).join('');
     const entryTotal=sales.reduce(function(sum,s){return sum+Number(s.amount||0);},0);
     const tankOpening=Number(t.tank_opening_liters);
