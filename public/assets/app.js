@@ -235,7 +235,7 @@ function updateTakeoverSaleConfirmation(){
   const calculated=adminReturnedFuelBreakdown(takeover,Number(takeover.returned_liters||0)).netAmount;
   const difference=Math.abs(total-calculated);
   const overCalculated=total>calculated+1;
-  const matches=!overCalculated && sales.length>0 && !missingReason;
+  const matches=difference<=1 && sales.length>0 && !missingReason;
   const status=document.getElementById('takeover-sale-match-status');
   if(status)status.innerHTML='<div class="takeover-confirm-sales">'+
     (sales.length?sales.map(x=>'<div class="takeover-confirm-sale-row"><span>'+h(x.name)+'</span><strong>'+money(x.amount)+'</strong></div>').join(''):'<div class="takeover-review-empty">No sale amounts entered.</div>')+
@@ -243,7 +243,7 @@ function updateTakeoverSaleConfirmation(){
     '<div class="takeover-confirm-check"><span>Net calculated sales</span><b>'+money(calculated)+'</b><span>Difference to reconcile</span><b>'+money(difference)+'</b></div></div>'+
     (missingReason?'<div class="takeover-sale-mismatch">Reason required for '+h(missingReason)+'.</div>':
      !sales.length?'<div class="takeover-sale-mismatch">Enter at least one sale amount.</div>':
-     overCalculated?'<div class="takeover-sale-mismatch">Entered sales cannot exceed the meter-calculated gross by more than ETB 1.00.</div>':
+     overCalculated?'<div class="takeover-sale-mismatch">Entered sales cannot exceed net calculated sales after the returned-fuel deduction by more than ETB 1.00.</div>':
      difference<=1?'<div class="takeover-sale-match">Entered total matches the net calculated sales after any saved returned-fuel deduction.</div>':
      '<div class="takeover-sale-match">Entered total differs from net calculated sales after the saved returned-fuel deduction. Review the sale entries.</div>');
   const button=document.querySelector('#takeover-sale-confirm-modal button.confirm-sale-button');
@@ -2131,7 +2131,7 @@ async function saveAdminProgressingReturn(id){
 function renderAdminPendingSaleCard(item){
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],dispenser=item.dispenser?.name||'Dispenser',shift=item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||''));
   const dsrId=dailyReportIdFromTimestamp(t.shift_started_at);
-  const submitted=sales.reduce((sum,x)=>sum+Number(x.amount||0),0),calculated=Number(t.total_sales_amount||0),variance=submitted-calculated;
+  const submitted=sales.reduce((sum,x)=>sum+Number(x.amount||0),0),calculated=adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netAmount,variance=submitted-calculated;
   const checked=sales.map(s=>'<label class="admin-sale-check-row"><input type="checkbox" class="admin-sale-check" data-sale-id="'+h(s.id)+'"><span><strong>'+h(s.sale_type_name||'Sale')+'</strong><small>'+(s.sale_type_description?h(s.sale_type_description)+' • ':'')+'Amount: '+money(s.amount)+(s.reason?' • Reason: '+h(s.reason):'')+'</small></span></label>').join('');
   return '<article class="card admin-sale-confirm-card admin-pending-sale-minimized" data-takeover-id="'+h(t.id)+'" data-dsr-id="'+h(dsrId)+'">'+
     '<button type="button" class="admin-pending-sale-head" onclick="toggleAdminPendingSaleCard(\''+h(t.id)+'\')" aria-expanded="false">'+
@@ -2139,8 +2139,8 @@ function renderAdminPendingSaleCard(item){
       '<span class="admin-pending-sale-right"><span class="pending-sale-badge">Pending</span><span class="admin-pending-sale-toggle" aria-hidden="true">⌄</span></span>'+
     '</button>'+
     '<div class="admin-pending-sale-body" hidden>'+
-      '<div class="admin-sale-context"><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Gross liters dispensed</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Gross calculated amount</span><strong>'+money(calculated)+'</strong></div></div>'+
-      '<div class="admin-sale-review-strip" data-admin-sale-review-strip="'+h(t.id)+'"><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(Math.abs(variance)<0.005?'match':'difference')+'">Gross difference <b>'+money(Math.abs(variance))+'</b></span></div>'+
+      '<div class="admin-sale-context"><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Net liters sold</span><strong>'+liters(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netLiters)+' L</strong></div><div><span>Gross calculated amount</span><strong>'+money(t.total_sales_amount)+'</strong></div><div><span>Net calculated amount</span><strong>'+money(calculated)+'</strong></div></div>'+
+      '<div class="admin-sale-review-strip" data-admin-sale-review-strip="'+h(t.id)+'"><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(Math.abs(variance)<=1?'match':'difference')+'">Net difference <b>'+money(Math.abs(variance))+'</b></span></div>'+
       '<div class="admin-sale-check-section"><div class="takeover-detail-heading">Sales to check <small>Check every entry before confirming</small></div>'+checked+'</div>'+
       (Number(t.returned_liters||0)>0?'<div class="admin-returned-liters-field" style="margin:12px 0;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc"><strong style="color:#172b4d">Saved returned fuel</strong><div style="display:grid;grid-template-columns:1fr auto;gap:6px 12px;margin-top:8px"><span>Returned liters</span><b>'+liters(t.returned_liters)+' L</b><span>Shift selling price</span><b>'+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).unitPrice)+' / L</b><span>Returned fuel deduction</span><b>− '+money(t.returned_amount??adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).returnedAmount)+'</b></div></div>':'')+
       '<div class="admin-sale-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="row admin-sale-actions"><button type="button" onclick="cancelAdminSaleConfirmation(\''+t.id+'\')">Cancel</button><button type="button" class="primary" disabled data-confirm-sales="'+h(t.id)+'" onclick="confirmAdminSaleConfirmation(\''+t.id+'\')">Confirm sales</button></div>'+
@@ -3408,8 +3408,7 @@ function updateAdminReturnedPreview(id){
   const submitted=(Array.isArray(item.sales)?item.sales:[]).reduce((sum,x)=>sum+Number(x.amount||0),0);
   const difference=Math.abs(submitted-b.netAmount);
   const strip=document.querySelector('[data-admin-sale-review-strip="'+id+'"]');
-  const grossMatch=value>0&&Math.abs(submitted-b.grossAmount)<=1;
-  if(strip)strip.innerHTML='<span><b>'+(Array.isArray(item.sales)?item.sales.length:0)+'</b> sale entries</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(difference<=1||grossMatch?'match':'difference')+'">'+(grossMatch?'Return deduction − '+money(b.returnedAmount):'Net difference '+money(difference))+'</span>';
+  if(strip)strip.innerHTML='<span><b>'+(Array.isArray(item.sales)?item.sales.length:0)+'</b> sale entries</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(difference<=1?'match':'difference')+'">Net difference '+money(difference)+'</span>';
 }
 function openAdminSaleReview(id){
   const card=document.querySelector('.admin-sale-confirm-card[data-takeover-id="'+id+'"]');
