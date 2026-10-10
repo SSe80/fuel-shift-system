@@ -5555,9 +5555,11 @@ const end=async e=>{
     const heading=item?.querySelector('.top b,.dispenser-card-head b,.section-kicker,h3,h4,b');
     return String(heading?.textContent||item?.dataset.settingsId||id).trim().replace(/\\s+/g,' ');
   };
-  const orderList=(ids)=>'<ol class="settings-position-preview">'+ids.map(id=>'<li>'+h(cardLabel(id))+'</li>').join('')+'</ol>';
+  const orderList=(ids)=>'<ol style="margin:8px 0 0;padding-left:22px;max-height:220px;overflow:auto;line-height:1.8">'+ids.map(id=>'<li>'+h(cardLabel(id))+'</li>').join('')+'</ol>';
   const details='<p>Review the '+h(label)+' arrangement before saving. Nothing will be saved until you confirm.</p>'+
-    '<div class="settings-position-comparison"><div><b>Before</b>'+orderList(s.original)+'</div><div><b>After</b>'+orderList(current)+'</div></div>';
+    '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">'+
+    '<div style="border:1px solid #cbd5e1;border-radius:10px;padding:12px;min-width:0"><b>Before</b>'+orderList(s.original)+'</div>'+
+    '<div style="border:1px solid #3b82f6;border-radius:10px;padding:12px;min-width:0"><b>After</b>'+orderList(current)+'</div></div>'
   window.pendingSettingsReorder={containerKey:s.key,originalOrder:s.original};
   showSettingsConfirmation('Confirm Position Arrangement',details,async()=>{
     try{
