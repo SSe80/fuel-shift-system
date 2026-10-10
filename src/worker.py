@@ -4028,6 +4028,31 @@ def generate_report():
     if status>=400:return jsonify(result),status
     return jsonify(result),201
 
+@app.post("/api/admin/reset-operational-data")
+def admin_reset_operational_data():
+    auth = require_admin()
+    if auth:
+        return auth
+
+    data = request.get_json(silent=True) or {}
+    if data.get("confirmation") != "RESET OPERATIONAL DATA":
+        return jsonify({"error": "Type RESET OPERATIONAL DATA exactly to confirm this reset."}), 400
+
+    try:
+        status, result = rpc("reset_operational_data", {})
+    except Exception:
+        return jsonify({"error": "The operational reset failed. No success was reported; check the database logs before retrying."}), 500
+
+    if status >= 400:
+        return jsonify({"error": "The operational reset failed. No success was reported.", "details": result}), status
+
+    payload = result[0] if isinstance(result, list) and result else result
+    if not isinstance(payload, dict) or payload.get("ok") is not True:
+        return jsonify({"error": "The database did not confirm the operational reset."}), 500
+
+    return jsonify(payload), 200
+
+
 @app.route("/", defaults={"path":""})
 @app.route("/<path:path>")
 def frontend(path=""):
