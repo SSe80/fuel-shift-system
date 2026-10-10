@@ -6,6 +6,7 @@ from functools import wraps
 from pyodide.ffi import run_sync, to_js
 from js import crypto, Uint8Array, Object
 from supabase_rest import request as sb_request
+import drive
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "change-me")
@@ -2838,6 +2839,7 @@ def confirm_daily_report(report_date):
         "updated_at":now
     },prefer="return=representation")
     if us>=400:return jsonify(updated),us
+    _drive_after_dsr_confirm(report_day)
     return jsonify({
         "confirmed":True,
         "already_confirmed":False,
@@ -4124,5 +4126,181 @@ def frontend(path=""):
     from flask import Response
     r=run_sync(assets.fetch("https://assets.local/"+path))
     return Response(run_sync(r.bytes()),status=r.status,headers=r.headers)
+
+
+# ---------------------------------------------------------------------------
+# Google Drive export queue (DSR and MSR PDFs)
+# The PDFs are built in the admin browser, so each report waits in drive_export_queue
+# until an admin page uploads it. The Worker never sees report data beyond what it stores.
+# ---------------------------------------------------------------------------
+DRIVE_MAX_ATTEMPTS = 3
+DRIVE_MAX_PDF_BYTES = 8 * 1024 * 1024
+
+def _addis_today():
+    return (datetime.now(timezone.utc) + timedelta(hours=3)).date()
+
+def _drive_enqueue(kind, report_key):
+    body = {"kind": kind, "report_key": report_key, "status": "pending", "attempts": 0,
+            "last_error": None, "updated_at": datetime.now(timezone.utc).isoformat()}
+    st, out = sb("drive_export_queue", method="POST", params={"on_conflict": "kind,report_key"},
+                 body=body, prefer="resolution=merge-duplicates,return=minimal")
+    return st < 400
+
+def _msr_ready(month_start):
+    """True when every day of the month, up to yesterday, has a confirmed DSR.
+    Days with no shifts cannot be confirmed (the DSR route refuses them), so they are skipped."""
+    first = month_start.replace(day=1)
+    next_first = (first.replace(day=28) + timedelta(days=4)).replace(day=1)
+    last = min(next_first - timedelta(days=1), _addis_today() - timedelta(days=1))
+    if last < first:
+        return False
+    cs, conf = sb("daily_report_confirmations", params={
+        "report_date": "gte." + first.isoformat(), "and": "(report_date.lte.%s)" % last.isoformat(),
+        "status": "eq.confirmed", "select": "report_date", "limit": "1000"})
+    if cs >= 400:
+        return False
+    confirmed = {str(r.get("report_date")) for r in (conf or [])}
+    start_utc = datetime(first.year, first.month, first.day, tzinfo=timezone.utc) - timedelta(hours=3)
+    end_utc = datetime(last.year, last.month, last.day, tzinfo=timezone.utc) - timedelta(hours=3) + timedelta(days=1)
+    ss, shifts = sb("shifts", params={
+        "and": "(start_time.gte.%s,start_time.lt.%s)" % (start_utc.isoformat(), end_utc.isoformat()),
+        "select": "start_time", "limit": "10000"})
+    if ss >= 400:
+        return False
+    days_with_shifts = set()
+    for r in (shifts or []):
+        try:
+            t = datetime.fromisoformat(str(r.get("start_time")).replace("Z", "+00:00"))
+            days_with_shifts.add((t.astimezone(timezone.utc) + timedelta(hours=3)).date().isoformat())
+        except Exception:
+            continue
+    d = first
+    while d <= last:
+        key = d.isoformat()
+        if key not in confirmed and key in days_with_shifts:
+            return False
+        d += timedelta(days=1)
+    return True
+
+def _drive_after_dsr_confirm(report_day):
+    """Called after a DSR is confirmed. Never fails the confirmation itself."""
+    try:
+        _drive_enqueue("dsr", report_day.isoformat())
+        if _msr_ready(report_day):
+            _drive_enqueue("msr", report_day.strftime("%Y-%m"))
+    except Exception:
+        app.logger.exception("drive enqueue failed")
+
+def _drive_settings():
+    st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,updated_at"})
+    if st >= 400:
+        return None
+    return (rows or [{}])[0]
+
+@app.get("/api/drive/settings")
+def drive_get_settings():
+    auth = require_admin()
+    if auth: return auth
+    row = _drive_settings()
+    if row is None:
+        return jsonify({"error": "Drive settings unavailable"}), 500
+    return jsonify({"dsr_folder_id": row.get("dsr_folder_id"), "msr_folder_id": row.get("msr_folder_id"),
+                    "updated_at": row.get("updated_at")}), 200
+
+@app.put("/api/drive/settings")
+def drive_put_settings():
+    auth = require_admin()
+    if auth: return auth
+    data = request.get_json(silent=True) or {}
+    update = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    for field, key in (("dsr_link", "dsr_folder_id"), ("msr_link", "msr_folder_id")):
+        if field in data:
+            raw = str(data.get(field) or "").strip()
+            if not raw:
+                update[key] = None
+            else:
+                fid = drive.parse_folder_id(raw)
+                if not fid:
+                    return jsonify({"error": "Paste a Google Drive folder link or folder ID for " + field}), 400
+                update[key] = fid
+    st, out = sb("drive_settings", method="PATCH", params={"id": "eq.1"}, body=update, prefer="return=representation")
+    if st >= 400:
+        return jsonify({"error": out}), st
+    return drive_get_settings()
+
+@app.post("/api/drive/test")
+def drive_test():
+    auth = require_admin()
+    if auth: return auth
+    row = _drive_settings() or {}
+    folders = {"dsr": row.get("dsr_folder_id"), "msr": row.get("msr_folder_id")}
+    try:
+        result = drive.test_folders(env(), folders)
+    except drive.DriveError as err:
+        return jsonify({"ok": False, "error": str(err)}), err.status
+    missing = [k for k, v in folders.items() if not v]
+    return jsonify({"ok": not missing, "folders": result, "missing": missing}), 200
+
+@app.get("/api/drive/queue")
+def drive_queue():
+    auth = require_admin()
+    if auth: return auth
+    st, rows = sb("drive_export_queue", params={
+        "status": "neq.done", "select": "id,kind,report_key,status,attempts,last_error,updated_at",
+        "order": "report_key.asc", "limit": "500"})
+    if st >= 400:
+        return jsonify({"error": rows}), st
+    return jsonify(rows or []), 200
+
+@app.post("/api/drive/queue/<item_id>/retry")
+def drive_retry(item_id):
+    auth = require_admin()
+    if auth: return auth
+    st, out = sb("drive_export_queue", method="PATCH", params={"id": "eq." + item_id},
+                 body={"status": "pending", "attempts": 0, "last_error": None,
+                       "updated_at": datetime.now(timezone.utc).isoformat()}, prefer="return=minimal")
+    return jsonify({"ok": st < 400}), (200 if st < 400 else st)
+
+@app.post("/api/drive/queue/<item_id>/upload")
+def drive_upload(item_id):
+    auth = require_admin()
+    if auth: return auth
+    data = request.get_json(silent=True) or {}
+    try:
+        pdf = base64.b64decode(str(data.get("pdf_base64") or ""), validate=True)
+    except Exception:
+        return jsonify({"error": "pdf_base64 is not valid base64"}), 400
+    if not pdf.startswith(b"%PDF"):
+        return jsonify({"error": "Not a PDF"}), 400
+    if len(pdf) > DRIVE_MAX_PDF_BYTES:
+        return jsonify({"error": "PDF is too large"}), 413
+    qs, items = sb("drive_export_queue", params={"id": "eq." + item_id, "select": "id,kind,report_key,status,attempts"})
+    if qs >= 400 or not items:
+        return jsonify({"error": "Queue item not found"}), 404
+    item = items[0]
+    if item.get("status") == "done":
+        return jsonify({"ok": True, "already_uploaded": True}), 200
+    settings = _drive_settings() or {}
+    kind, key = item["kind"], item["report_key"]
+    if kind == "dsr":
+        root, sub, name = settings.get("dsr_folder_id"), key[:7], "DSR-" + key + ".pdf"
+    else:
+        root, sub, name = settings.get("msr_folder_id"), key[:4], "MSR-" + key + ".pdf"
+    attempts = int(item.get("attempts") or 0) + 1
+    try:
+        if not root:
+            raise drive.DriveError("No Drive folder set for " + kind.upper() + " reports in Settings", 409)
+        file_id, link = drive.store_pdf(env(), root, sub, name, pdf)
+        sb("drive_export_queue", method="PATCH", params={"id": "eq." + item_id}, body={
+            "status": "done", "attempts": attempts, "last_error": None,
+            "drive_file_id": file_id, "drive_url": link,
+            "updated_at": datetime.now(timezone.utc).isoformat()}, prefer="return=minimal")
+        return jsonify({"ok": True, "file_id": file_id, "url": link, "path": "%s/%s/%s" % (kind.upper(), sub, name)}), 200
+    except drive.DriveError as err:
+        status = "failed" if attempts >= DRIVE_MAX_ATTEMPTS or err.status in (403, 404, 409) else "pending"
+        sb("drive_export_queue", method="PATCH", params={"id": "eq." + item_id}, body={
+            "status": status, "attempts": attempts, "last_error": str(err)[:500],
+            "updated_at": datetime.now(timezone.utc).isoformat()}, prefer="return=minimal")
+        return jsonify({"ok": False, "error": str(err), "status": status}), err.status
 
 Default=wsgi.entrypoint(app)

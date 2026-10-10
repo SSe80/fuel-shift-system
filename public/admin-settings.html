@@ -243,7 +243,8 @@
     #operational-reset-modal.open{display:flex!important;visibility:visible!important;align-items:center;justify-content:center;position:fixed;inset:0;z-index:10000;padding:18px;overflow:auto}
     #operational-reset-modal[aria-hidden="true"]{display:none!important}
   </style>
-  <section id="reset-operational-data-section" class="settings-section card operational-reset-card">
+  <section id="drive-settings-section" class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">EXPORTS</span><h2>Google Drive</h2><p>Folder links where DSR and MSR PDFs are saved automatically.</p></div></div><div class="settings-collapsible"><label class="drive-field">DSR folder link<input id="drive-dsr-link" type="url" placeholder="https://drive.google.com/drive/folders/…"></label><label class="drive-field">MSR folder link<input id="drive-msr-link" type="url" placeholder="https://drive.google.com/drive/folders/…"></label><div class="drive-actions"><button type="button" class="primary" id="drive-save-btn">Save links</button><button type="button" class="secondary" id="drive-test-btn">Test connection</button></div><p id="drive-status" class="muted"></p><h3 class="drive-queue-title">Upload queue</h3><div id="drive-queue-list"><p class="muted">Loading…</p></div></div></section>
+<section id="reset-operational-data-section" class="settings-section card operational-reset-card">
     <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0">
       <div><span class="section-kicker">DANGER ZONE</span><h2>Reset Operational Data</h2>
       <p>Clear operational records to start a fresh operating period.</p></div>
@@ -351,5 +352,6 @@
 })();
 </script>
 
+<script src="assets/drive-settings.js?v=20261011-d1"></script>
 </body>
 </html>
