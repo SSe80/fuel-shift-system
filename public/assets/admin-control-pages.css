@@ -3490,3 +3490,312 @@ body.admin-control-ui.attendant-page #pending-list > .card form.form button {
     white-space: nowrap;
   }
 }
+
+/* ==========================================================================
+   ADMIN SETTINGS — full UI redesign
+   Scope: body.admin-control-ui.admin-settings-page. Behaviour (toggles, add,
+   edit, remove, the reset control) is unchanged; only presentation changes.
+   ========================================================================== */
+body.admin-control-ui.admin-settings-page main.wrap { max-width: 1040px !important; }
+
+/* Summary strip (added by admin-control-ui.js) */
+body.admin-control-ui.admin-settings-page .si-summary {
+  display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px;
+}
+body.admin-control-ui.admin-settings-page .si-summary-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-radius: 999px;
+  background: #fff; border: 1px solid var(--ac-line); box-shadow: var(--ac-shadow-sm);
+  font-size: 12.5px; font-weight: 650; color: var(--ac-body);
+}
+body.admin-control-ui.admin-settings-page .si-summary-chip b {
+  font-size: 13px; font-weight: 850; color: var(--accent, var(--ac-ink));
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui.admin-settings-page .si-summary-chip i {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--accent, #94a3b8);
+}
+
+/* Section cards */
+body.admin-control-ui.admin-settings-page .settings-section.card {
+  padding: 0 !important;
+  margin: 0 0 16px !important;
+  border: 1px solid var(--ac-line) !important;
+  border-left: 4px solid var(--accent, var(--ac-brand)) !important;
+  border-radius: 18px !important;
+  background: #fff !important;
+  box-shadow: var(--ac-shadow) !important;
+  overflow: hidden;
+}
+body.admin-control-ui.admin-settings-page .settings-section .section-heading {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  margin: 0 !important;
+  padding: 18px 20px !important;
+  border: 0 !important;
+  cursor: pointer;
+  user-select: none;
+}
+body.admin-control-ui.admin-settings-page .settings-section .section-heading > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+body.admin-control-ui.admin-settings-page .settings-section .section-kicker {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent, #2563eb) 12%, #fff);
+  color: var(--accent, #2563eb) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: .1em;
+}
+body.admin-control-ui.admin-settings-page .settings-section .section-heading h2 {
+  margin: 8px 0 2px !important;
+  font-size: 18px !important;
+  font-weight: 750 !important;
+  letter-spacing: -.02em;
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.admin-settings-page .settings-section .section-heading p {
+  margin: 0 !important;
+  font-size: 13px !important;
+  line-height: 1.45;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.admin-settings-page .si-count {
+  display: inline-flex; align-items: center;
+  margin-left: 10px; padding: 2px 9px; border-radius: 999px;
+  background: var(--ac-line-soft); color: var(--ac-body);
+  font-size: 11.5px; font-weight: 750; vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+/* Add button */
+body.admin-control-ui.admin-settings-page .settings-section .add-action {
+  flex: 0 0 auto;
+  display: inline-flex !important;
+  align-items: center; gap: 6px;
+  padding: 10px 16px !important;
+  border-radius: 12px !important;
+  background: var(--accent, #2563eb) !important;
+  color: #fff !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  border: 0 !important;
+  box-shadow: 0 1px 2px rgba(15,23,42,.12), 0 6px 14px -8px var(--accent, #2563eb) !important;
+}
+/* Chevron toggle: a visible glyph, rotated when the card is open */
+body.admin-control-ui.admin-settings-page .settings-section .section-heading::after {
+  content: "\25BE";
+  flex: 0 0 auto;
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  border: 1px solid var(--ac-line);
+  background: #fff;
+  color: var(--ac-body);
+  font-size: 14px;
+  line-height: 1;
+  transition: transform .2s ease;
+}
+body.admin-control-ui.admin-settings-page .settings-section.expanded .section-heading::after {
+  transform: rotate(180deg);
+}
+body.admin-control-ui.admin-settings-page .settings-section:not(.expanded) .section-heading {
+  padding-bottom: 18px !important;
+}
+body.admin-control-ui.admin-settings-page .settings-section.expanded .section-heading {
+  border-bottom: 1px solid var(--ac-line-soft) !important;
+}
+body.admin-control-ui.admin-settings-page .settings-section.expanded .settings-collapsible {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px 20px;
+  background: #fbfcfe;
+}
+body.admin-control-ui.admin-settings-page .settings-section .settings-collapsible > button.primary,
+body.admin-control-ui.admin-settings-page .settings-section button[onclick*="openStationCurrencyModal"] {
+  align-self: flex-start;
+  display: inline-flex !important;
+  align-items: center; gap: 8px;
+  padding: 9px 14px !important;
+  border-radius: 11px !important;
+  background: #fff !important;
+  color: var(--ac-body) !important;
+  border: 1px dashed #cbd5e1 !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+body.admin-control-ui.admin-settings-page .settings-product-group-label {
+  display: flex !important;
+  align-items: center; gap: 8px;
+  margin: 10px 0 2px;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.admin-settings-page .settings-product-group-label.settings-product-group-start { margin-top: 18px; }
+body.admin-control-ui.admin-settings-page .settings-product-group-color {
+  width: 10px; height: 10px; border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,.15);
+}
+
+/* Item cards */
+body.admin-control-ui.admin-settings-page .settings-item-card.card {
+  margin: 0 !important;
+  padding: 14px 16px !important;
+  background: #fff !important;
+  border: 1px solid var(--ac-line) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--ac-shadow-sm) !important;
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+body.admin-control-ui.admin-settings-page .settings-item-card.card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: var(--ac-shadow) !important;
+}
+body.admin-control-ui.admin-settings-page .settings-item-card.card.expanded {
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 35%, #fff) !important;
+  box-shadow: 0 10px 24px -16px rgba(15,23,42,.25) !important;
+}
+body.admin-control-ui.admin-settings-page .settings-item-card .top {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+}
+body.admin-control-ui.admin-settings-page .settings-item-card .top > div:not(.si-avatar) {
+  flex: 1 1 auto; min-width: 0;
+}
+body.admin-control-ui.admin-settings-page .si-avatar {
+  flex: 0 0 40px;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent, #2563eb) 14%, #fff);
+  color: var(--accent, #2563eb);
+  font-size: 13px; font-weight: 850; letter-spacing: .02em;
+}
+body.admin-control-ui.admin-settings-page .settings-item-card .top > div > b {
+  display: block;
+  font-size: 14.5px !important;
+  font-weight: 750 !important;
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.admin-settings-page .settings-move-handle {
+  flex: 0 0 auto;
+  width: 26px; height: 30px;
+  border: 0 !important;
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  font-size: 16px !important;
+  cursor: grab;
+  padding: 0 !important;
+}
+body.admin-control-ui.admin-settings-page .si-status {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 750;
+  background: var(--ac-line-soft); color: var(--ac-muted);
+  white-space: nowrap;
+}
+body.admin-control-ui.admin-settings-page .si-status::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%; background: #94a3b8;
+}
+body.admin-control-ui.admin-settings-page .si-status.is-on { background: var(--ac-ok-soft); color: #047857; }
+body.admin-control-ui.admin-settings-page .si-status.is-on::before { background: #10b981; }
+body.admin-control-ui.admin-settings-page .settings-card-details {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px !important;
+  margin-top: 0 !important;
+}
+body.admin-control-ui.admin-settings-page .settings-item-card:not(.expanded) .settings-card-details { display: none !important; }
+body.admin-control-ui.admin-settings-page .settings-item-card .settings-card-details > div {
+  padding: 9px 11px;
+  background: var(--ac-surface);
+  border: 1px solid var(--ac-line-soft);
+  border-radius: 10px;
+  font-size: 12.5px !important;
+}
+body.admin-control-ui.admin-settings-page .settings-item-card .settings-card-details span {
+  display: block;
+  font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ac-muted);
+}
+body.admin-control-ui.admin-settings-page .settings-item-card .settings-card-details b {
+  display: block; margin-top: 3px; font-size: 13px !important; font-weight: 750 !important;
+  color: var(--ac-ink) !important;
+  font-variant-numeric: tabular-nums;
+}
+body.admin-control-ui.admin-settings-page .settings-item-card.expanded .settings-card-actions {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px !important;
+  padding-top: 12px;
+  border-top: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui.admin-settings-page .settings-item-card .settings-card-actions button {
+  padding: 8px 13px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--ac-line) !important;
+  background: #fff !important;
+  color: var(--ac-body) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  box-shadow: var(--ac-shadow-sm);
+}
+body.admin-control-ui.admin-settings-page .settings-item-card .settings-card-actions button.settings-toggle-action {
+  color: #b45309 !important;
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+}
+body.admin-control-ui.admin-settings-page .settings-item-card .settings-card-actions button.settings-remove-action {
+  color: #b91c1c !important;
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+}
+
+/* Summary + section + item adjustments on phones */
+@media (max-width: 640px) {
+  body.admin-control-ui.admin-settings-page .settings-section .section-heading { flex-wrap: wrap; padding: 16px !important; }
+  body.admin-control-ui.admin-settings-page .settings-section .add-action { padding: 9px 12px !important; font-size: 12.5px !important; }
+  body.admin-control-ui.admin-settings-page .settings-card-details { grid-template-columns: 1fr !important; }
+  body.admin-control-ui.admin-settings-page .settings-section.expanded .settings-collapsible { padding: 14px 14px 16px; }
+}
+
+/* Dispensers: neutral card, status shown by the chip (legacy green fill removed) */
+body.admin-control-ui.admin-settings-page .settings-item-card.card.dispenser-active-card,
+body.admin-control-ui.admin-settings-page .settings-item-card.card.dispenser-settings-card {
+  background: #fff !important;
+  border-color: var(--ac-line) !important;
+}
+body.admin-control-ui.admin-settings-page .settings-section .section-heading .si-count {
+  margin-left: 8px;
+}
+body.admin-control-ui.admin-settings-page .settings-item-card .top,
+body.admin-control-ui.admin-settings-page .settings-item-card.dispenser-active-card .top {
+  background: transparent !important;
+  border: 0 !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section .section-heading::after {
+  content: "\25BE" !important;
+  display: grid !important;
+  width: 30px !important;
+  height: 30px !important;
+  position: static !important;
+  place-items: center;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section.expanded .section-heading::after {
+  transform: rotate(180deg) !important;
+}

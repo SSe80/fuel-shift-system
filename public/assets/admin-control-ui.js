@@ -150,6 +150,83 @@
     }
   }
 
+  /* ---- Admin settings: section accents, counts, summary, item avatars and status ---- */
+  var SETTINGS_ACCENT = {
+    'ACCESS': '#2563eb', 'FUEL CATALOG': '#d97706', 'STORAGE': '#0891b2',
+    'FORECOURT': '#059669', 'SALES': '#7c3aed'
+  };
+  function settingsInitials(name) {
+    var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    var a = parts[0].charAt(0), b = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
+    return (a + b).toUpperCase();
+  }
+  function enhanceSettings(root) {
+    if (!document.body || !document.body.classList.contains('admin-settings-page')) return;
+    var sections = root.querySelectorAll('.settings-section');
+    var summary = [];
+    for (var i = 0; i < sections.length; i++) {
+      var sec = sections[i];
+      if (sec.classList.contains('operational-reset-card')) continue;
+      var kickerEl = sec.querySelector('.section-kicker');
+      var kicker = kickerEl ? kickerEl.textContent.trim().toUpperCase() : '';
+      var accent = SETTINGS_ACCENT[kicker];
+      if (accent && sec.style.getPropertyValue('--accent') !== accent) sec.style.setProperty('--accent', accent);
+      var items = sec.querySelectorAll('.settings-item-card');
+      var n = items.length;
+      var titleEl = sec.querySelector('.section-heading h2');
+      var title = titleEl ? titleEl.textContent.trim() : kicker;
+      // count badge next to the section title
+      if (titleEl) {
+        var chip = titleEl.parentNode.querySelector('.si-count');
+        if (!chip) { chip = document.createElement('span'); chip.className = 'si-count'; (kickerEl || titleEl).insertAdjacentElement('afterend', chip); }
+        var label = n + (n === 1 ? ' item' : ' items');
+        if (chip.textContent !== label) chip.textContent = label;
+      }
+      summary.push({ title: title, n: n, accent: accent || '#2563eb' });
+      // items: initials avatar and status chip
+      for (var j = 0; j < items.length; j++) {
+        var it = items[j];
+        if (it.getAttribute('data-si') === '1') continue;
+        it.setAttribute('data-si', '1');
+        var nameEl = it.querySelector('.top b');
+        var top = it.querySelector('.top');
+        if (top && nameEl) {
+          var av = document.createElement('span');
+          av.className = 'si-avatar';
+          av.setAttribute('aria-hidden', 'true');
+          av.textContent = settingsInitials(nameEl.textContent);
+          top.insertBefore(av, top.firstChild);
+        }
+        var details = it.querySelector('.settings-card-details');
+        if (details && top) {
+          var m = /Status:\s*([A-Za-z]+)/.exec(details.textContent || '');
+          if (m) {
+            var on = /^activ/i.test(m[1]);
+            var st = document.createElement('span');
+            st.className = 'si-status' + (on ? ' is-on' : '');
+            st.textContent = on ? 'Active' : 'Inactive';
+            top.appendChild(st);
+          }
+        }
+      }
+    }
+    // summary strip above the first section
+    var first = sections[0];
+    if (first && first.parentNode) {
+      var strip = first.parentNode.querySelector('.si-summary');
+      if (!strip) {
+        strip = document.createElement('div');
+        strip.className = 'si-summary';
+        first.parentNode.insertBefore(strip, first);
+      }
+      var html = summary.map(function (x) {
+        return '<span class="si-summary-chip"><i style="--accent:' + x.accent + '"></i>' + x.title.replace(/</g, '&lt;') + ' <b style="--accent:' + x.accent + '">' + x.n + '</b></span>';
+      }).join('');
+      if (strip.getAttribute('data-html') !== html) { strip.innerHTML = html; strip.setAttribute('data-html', html); }
+    }
+  }
+
   var scheduled = false;
   function run() {
     scheduled = false;
@@ -157,6 +234,7 @@
     addAvatars(document);
     enhanceDispensers(document);
     enhanceCharts(document);
+    enhanceSettings(document);
   }
   function schedule() {
     if (scheduled) return;
