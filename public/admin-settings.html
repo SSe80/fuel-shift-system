@@ -350,5 +350,19 @@
 })();
 </script>
 
+
+<script>
+/* Keep Settings dialogs attached to the viewport, not inside transformed/scrolling
+   settings cards. This prevents confirmation dialogs drifting off-center. */
+(function(){
+  function portalSettingsModals(){
+    document.querySelectorAll('main.wrap .modal').forEach(function(modal){
+      if(modal.parentElement!==document.body) document.body.appendChild(modal);
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',portalSettingsModals,{once:true});
+  else portalSettingsModals();
+})();
+</script>
 </body>
 </html>
