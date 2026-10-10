@@ -818,14 +818,44 @@ def reorder_settings():
             product=str(item.get("product","")).lower()
             groups.setdefault(product,[]).append(item_id)
 
+        # The legacy nozzles table and normalized dispensers/nozzles tables
+        # share human-readable codes. Keep all three in sync during reorder;
+        # stable UUIDs remain unchanged so existing shifts and sales still link.
+        normalized_by_legacy_id={}
+        physical_by_dispenser={}
+        if key=="dispensers":
+            ds,normalized=sb("dispensers",params={"select":"id,dispenser_code"})
+            if ds!=200:return jsonify({"error":"Could not load physical dispenser records"}),ds
+            normalized_by_code={str(x.get("dispenser_code","")):x for x in normalized}
+            dn,physical=sb("dispenser_nozzles",params={"select":"id,dispenser_id,nozzle_number,nozzle_code"})
+            if dn!=200:return jsonify({"error":"Could not load physical nozzle records"}),dn
+            for item_id in ordered:
+                old_code=str(by_id[item_id].get("nozzle_code",""))
+                normalized_row=normalized_by_code.get(old_code)
+                if not normalized_row:
+                    return jsonify({"error":"A physical dispenser record is missing for "+old_code+"; naming order was not changed."}),409
+                normalized_by_legacy_id[item_id]=normalized_row
+            for nozzle in physical:
+                physical_by_dispenser.setdefault(str(nozzle.get("dispenser_id")),[]).append(nozzle)
+
         # First move every affected code to a temporary unique value so the
-        # unique tank_code/nozzle_code constraint cannot collide mid-swap.
+        # unique constraints cannot collide mid-swap. Apply this to normalized
+        # physical records as well as the legacy display records.
         for item_id in ordered:
+            temp_code="__reorder__"+item_id
             if key=="tanks":
-                st,_=sb("tanks",method="PATCH",params={"id":"eq."+item_id},body={"tank_code":"__reorder__"+item_id},prefer="return=minimal")
+                st,_=sb("tanks",method="PATCH",params={"id":"eq."+item_id},body={"tank_code":temp_code},prefer="return=minimal")
             else:
-                st,_=sb("nozzles",method="PATCH",params={"id":"eq."+item_id},body={"nozzle_code":"__reorder__"+item_id},prefer="return=minimal")
-            if st>=400:return jsonify({"error":"Could not prepare item order change"}),st
+                st,_=sb("nozzles",method="PATCH",params={"id":"eq."+item_id},body={"nozzle_code":temp_code},prefer="return=minimal")
+                if st<400:
+                    normalized_row=normalized_by_legacy_id[item_id]
+                    st,_=sb("dispensers",method="PATCH",params={"id":"eq."+str(normalized_row["id"])},body={"dispenser_code":temp_code},prefer="return=minimal")
+                if st<400:
+                    for physical_nozzle in physical_by_dispenser.get(str(normalized_by_legacy_id[item_id]["id"]),[]):
+                        temp_nozzle_code=temp_code+"-N•"+str(physical_nozzle.get("nozzle_number") or 1)
+                        st,_=sb("dispenser_nozzles",method="PATCH",params={"id":"eq."+str(physical_nozzle["id"])},body={"nozzle_code":temp_nozzle_code},prefer="return=minimal")
+                        if st>=400:break
+            if st>=400:return jsonify({"error":"Could not prepare item order change across dispenser records"}),st
 
         for product,group in groups.items():
             code_name=code_by_product.get(product)
@@ -841,7 +871,25 @@ def reorder_settings():
                     count=int(item.get("nozzle_count") or 1)
                     nozzle_ids=[f"{final_code}-N•{i}" for i in range(1,count+1)]
                     st,res=sb("nozzles",method="PATCH",params={"id":"eq."+item_id},body={"nozzle_code":final_code,"nozzle_ids":nozzle_ids},prefer="return=minimal")
-                if st>=400:return jsonify({"error":"Could not save item naming order"}),st
+                    if st<400:
+                        normalized_row=normalized_by_legacy_id[item_id]
+                        st,_=sb("dispensers",method="PATCH",params={"id":"eq."+str(normalized_row["id"])},body={"dispenser_code":final_code},prefer="return=minimal")
+                    if st<400:
+                        physical_rows=physical_by_dispenser.get(str(normalized_by_legacy_id[item_id]["id"]),[])
+                        for physical_nozzle in physical_rows:
+                            nozzle_number=int(physical_nozzle.get("nozzle_number") or 1)
+                            if nozzle_number>count:
+                                # Preserve historical UUID references; only remove an extra physical
+                                # nozzle if it has never been referenced by a shift reading.
+                                rs,refs=sb("shift_nozzle_readings",params={"nozzle_id":"eq."+str(physical_nozzle["id"]),"select":"id","limit":"1"})
+                                if rs!=200 or refs:
+                                    st=409
+                                    break
+                                st,_=sb("dispenser_nozzles",method="DELETE",params={"id":"eq."+str(physical_nozzle["id"])},prefer="return=minimal")
+                            else:
+                                st,_=sb("dispenser_nozzles",method="PATCH",params={"id":"eq."+str(physical_nozzle["id"])},body={"nozzle_code":f"{final_code}-N•{nozzle_number}"},prefer="return=minimal")
+                            if st>=400:break
+                if st>=400:return jsonify({"error":"Could not save item naming order across dispenser records"}),st
 
     body={"item_orders":item_orders,"updated_at":datetime.now(timezone.utc).isoformat()}
     us,ur=sb("station_settings",method="PATCH",params={"id":"eq.true"},body=body,prefer="return=representation")
