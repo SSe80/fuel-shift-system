@@ -2644,8 +2644,8 @@ function createPurchaseReportPdf(r){
 }
 
 /* ---------- DSR (DAILY SALES REPORT) ---------- */
-async function downloadMonthlySalesReportPdf(data){
-  if(!data||!data.summary){toast('Monthly report data is still loading. Please try again.');return;}
+async function buildMonthlySalesReportPdfBlob(data){
+  if(!data||!data.summary){return null;}
   const prodRecs=await api('/api/products').catch(()=>[]),nozRecs=await api('/api/nozzles').catch(()=>[]);
   const s=data.summary,cur=window.stationCurrency||'ETB',num=v=>Number(v||0);
   const fmt=v=>num(v).toLocaleString('en-US',{maximumFractionDigits:2});
@@ -2689,9 +2689,13 @@ async function downloadMonthlySalesReportPdf(data){
       {label:'Report month',value:monthLabel(data.month)},{label:'Confirmed shifts',value:fmt(s.totalShifts)},
       {label:'Product count',value:String(products.length)},{label:'Attendant count',value:String(attendants.length)}]
   },msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,monthLabel,GREEN,totalSales,prodRecs,nozRecs)));
-  const url=URL.createObjectURL(blob),link=document.createElement('a');
-  link.href=url;link.download='MSR-'
-+String(data.month||'report').replace(/[^A-Za-z0-9_-]/g,'')+'-report.pdf';
+  return {blob,name:'MSR-'+String(data.month||'report').replace(/[^A-Za-z0-9_-]/g,'')+'-report.pdf'};
+}
+async function downloadMonthlySalesReportPdf(data){
+  const out=await buildMonthlySalesReportPdfBlob(data);
+  if(!out){toast('Monthly report data is still loading. Please try again.');return;}
+  const url=URL.createObjectURL(out.blob),link=document.createElement('a');
+  link.href=url;link.download=out.name;
   document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
   toast('MSR PDF downloaded');
 }
@@ -4912,10 +4916,10 @@ function selectDailyReportDate(date){
   openDailyHistoryReport(date);
 }
 
-function downloadDailyReportPdf(){
+function buildDailyReportPdfBlob(){
   const r=window.currentDailyReportData;
   const d=window.currentDailyReportDate||document.getElementById('report-date')?.value;
-  if(!r){toast('Open a DSR detail page first.');return;}
+  if(!r){return null;}
   const num=v=>Number.isFinite(Number(v))?Number(v):0;
   const fmtNum=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:2});
   const pct=v=>(v!=null&&Number.isFinite(Number(v)))?Number(v).toFixed(1)+'%':'-';
@@ -4999,8 +5003,13 @@ function downloadDailyReportPdf(){
       {label:'Average nozzle reconciliation',value:pct(avgNozzle)},{label:'Tank difference',value:signedL(tankDiff)},
       {label:'Shifts / attendants',value:num(perf.shift_count)+' / '+num(perf.attendant_count)},{label:'Dispensers / nozzles',value:num(perf.dispenser_count)+' / '+num(perf.nozzle_count)}]
   });
-  const url=URL.createObjectURL(blob),link=document.createElement('a');
-  link.href=url;link.download='DSR-'+String(d||'report').replace(/[^A-Za-z0-9_-]/g,'_')+'-report.pdf';
+  return {blob,name:'DSR-'+String(d||'report').replace(/[^A-Za-z0-9_-]/g,'_')+'-report.pdf'};
+}
+function downloadDailyReportPdf(){
+  const out=buildDailyReportPdfBlob();
+  if(!out){toast('Open a DSR detail page first.');return;}
+  const url=URL.createObjectURL(out.blob),link=document.createElement('a');
+  link.href=url;link.download=out.name;
   document.body.appendChild(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1500);
   toast('DSR PDF downloaded');
