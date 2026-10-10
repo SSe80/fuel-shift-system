@@ -5550,16 +5550,27 @@ const end=async e=>{
   const current=settingsOrderFromContainer(s.container);
   if(current.join('|')===s.original.join('|')){loadSettingsData();return;}
   const label=s.key==='products'?'products':s.key==='saleTypes'?'sale types':s.key==='employees'?'users':s.key==='tanks'?'fuel tanks':'fuel dispensers';
-  // Persist the order immediately on drop; the placeholder has already previewed
-  // the new position live while the user was dragging.
-  try{
-    await api('/api/settings/reorder',{method:'POST',body:JSON.stringify({key:s.key,ids:current})});
-    toast('New '+label+' positions saved');
-    await loadSettingsData();
-  }catch(err){
-    await loadSettingsData();
-    toast('Could not save '+label+' positions: '+err.message);
-  }
+  const cardLabel=id=>{
+    const item=[...s.container.querySelectorAll(':scope > .settings-item-card[data-settings-id]')].find(x=>String(x.dataset.settingsId)===String(id));
+    const heading=item?.querySelector('.top b,.dispenser-card-head b,.section-kicker,h3,h4,b');
+    return String(heading?.textContent||item?.dataset.settingsId||id).trim().replace(/\\s+/g,' ');
+  };
+  const orderList=(ids)=>'<ol class="settings-position-preview">'+ids.map(id=>'<li>'+h(cardLabel(id))+'</li>').join('')+'</ol>';
+  const details='<p>Review the '+h(label)+' arrangement before saving. Nothing will be saved until you confirm.</p>'+
+    '<div class="settings-position-comparison"><div><b>Before</b>'+orderList(s.original)+'</div><div><b>After</b>'+orderList(current)+'</div></div>';
+  window.pendingSettingsReorder={containerKey:s.key,originalOrder:s.original};
+  showSettingsConfirmation('Confirm Position Arrangement',details,async()=>{
+    try{
+      await api('/api/settings/reorder',{method:'POST',body:JSON.stringify({key:s.key,ids:current})});
+      window.pendingSettingsReorder=null;
+      await loadSettingsData();
+      return true;
+    }catch(err){
+      window.pendingSettingsReorder=null;
+      await loadSettingsData();
+      throw err;
+    }
+  },'Positions saved successfully','<p>The new '+h(label)+' positions have been saved.</p>'+details);
 };
 handle.addEventListener('pointerup',end);
 handle.addEventListener('pointercancel',()=>{if(state)cleanup();});
