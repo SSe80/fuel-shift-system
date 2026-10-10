@@ -194,7 +194,7 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div><nav class="admin-sidebar-nav">
 <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a><a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a><a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a><a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>DSR</b></a><a href="admin-monthly-report.html" data-admin-nav="monthly-report"><span>▦</span><b>MSR</b></a><a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside>
 <main class="wrap"><header class="msr-header"><div><span class="eyebrow">MONTHLY SALES REPORT</span><h1>Monthly Sales Report</h1><p id="msr-subtitle">Station-wide monthly performance and comparisons.</p></div><div class="msr-month-control"><label for="msr-month">REPORT MONTH</label><input id="msr-month" type="month"></div></header>
-<div class="msr-report-shell"><div class="msr-report-shell-head"><div class="msr-shell-heading"><span class="msr-report-kicker">MONTHLY REPORT</span><h2 id="msr-shell-title">Monthly performance</h2><p>All statistics and daily records for the selected month.</p><span class="msr-shell-month" id="msr-shell-month">Selected month</span></div><div class="msr-report-actions" aria-label="Report export actions"><button type="button" id="msr-export" class="msr-action-btn msr-action-primary"><span aria-hidden="true">⇩</span> Export CSV</button><button type="button" id="msr-print" class="msr-action-btn msr-action-secondary"><span aria-hidden="true">▤</span> Export PDF</button></div></div><section class="msr-panel"><div class="msr-panel-head"><div><h2 id="msr-overview-title">Monthly overview</h2><p>Confirmed DSR records only; figures are calculated from the station's daily reports.</p></div><span id="msr-status" class="msr-status">Loading…</span></div><div id="msr-kpis" class="msr-kpis"><div class="msr-empty">Loading monthly statistics…</div></div></section>
+<div class="msr-report-shell"><div class="msr-report-shell-head"><div class="msr-shell-heading"><span class="msr-report-kicker">MONTHLY REPORT</span><h2 id="msr-shell-title">Monthly performance</h2><p>All statistics and daily records for the selected month.</p><span class="msr-shell-month" id="msr-shell-month">Selected month</span></div><div class="msr-report-actions" aria-label="Report export actions"><button type="button" id="msr-export-xlsx" class="msr-action-btn msr-action-primary"><span aria-hidden="true">⇩</span> Export Excel</button><button type="button" id="msr-print" class="msr-action-btn msr-action-secondary"><span aria-hidden="true">▤</span> Export PDF</button></div></div><section class="msr-panel"><div class="msr-panel-head"><div><h2 id="msr-overview-title">Monthly overview</h2><p>Confirmed DSR records only; figures are calculated from the station's daily reports.</p></div><span id="msr-status" class="msr-status">Loading…</span></div><div id="msr-kpis" class="msr-kpis"><div class="msr-empty">Loading monthly statistics…</div></div></section>
 <section class="msr-panel msr-month-ranking-panel"><div class="msr-panel-head"><div><h2>Monthly performance ranking</h2><p>All available confirmed DSR months, ranked by average calculated sales per confirmed day. Total sales and fuel volume provide additional context.</p></div><span class="msr-ranking-method">AVG. SALES / DAY</span></div><div id="msr-month-ranking-summary" class="msr-month-ranking-summary"><div class="msr-empty">Building ranking from confirmed monthly reports…</div></div><div id="msr-month-ranking" class="msr-table-wrap"><div class="msr-empty">Loading monthly performance ranking…</div></div><p class="msr-ranking-note">The current month is provisional because additional DSRs may still be confirmed. Ranking uses confirmed report days only.</p></section><section class="msr-panel"><div class="msr-panel-head"><div><h2>Recent-month comparison</h2><p>Compare the report month with the previous three months to track the recent trend.</p></div></div><div id="msr-recent-comparison" class="msr-table-wrap"><div class="msr-empty">Loading recent-month comparison…</div></div></section>
 
 <section class="msr-panel msr-pdf-graph-panel"><div class="msr-panel-head"><div><h2>Sales performance graph</h2><p>Daily calculated sales across the selected month. Each point represents one confirmed DSR day.</p></div></div><div id="msr-pdf-graph" class="msr-pdf-graph"><div class="msr-empty">Preparing sales graph…</div></div></section>
@@ -349,25 +349,76 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
   const labels=pts.filter((p,i)=>i%labelStep===0||i===pts.length-1).map(p=>'<text x="'+p.x+'" y="'+(H-18)+'" text-anchor="middle" font-size="11" fill="#64748b">'+p.day+'</text>').join('');
   host.innerHTML='<div class="msr-pdf-graph-legend"><span><i></i> Daily sales ('+(window.stationCurrency||'ETB')+')</span><strong>'+money(days.reduce((sum,d)=>sum+(Number(d.amount)||0),0))+' total</strong></div><svg role="img" aria-label="Line graph of daily calculated sales" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">'+grid+line+dots+labels+'</svg>';
  }
- $('msr-export').addEventListener('click',()=>{
+ 
+ // ---- Excel export (shared writer in assets/xlsx-export.js) ----
+ const msrCurrency=()=>window.stationCurrency||'ETB';
+ const msrColourMaps=async()=>{
+  const prodRecs=await api('/api/products').catch(()=>[]);
+  const nozRecs=await api('/api/nozzles').catch(()=>[]);
+  const byCode={},byName={};
+  (Array.isArray(prodRecs)?prodRecs:[]).forEach(p=>{const rec={name:String(p.name||''),code:String(p.code_name||p.name||''),color:XlsxExport.hex(p.color)||''};byCode[rec.code.toLowerCase()]=rec;byName[rec.name.toLowerCase()]=rec;});
+  return {byCode,byName,nozzles:Array.isArray(nozRecs)?nozRecs:[]};
+ };
+ const msrRowsFor=async()=>{
+  const d=lastExportData, cur=msrCurrency(), maps=await msrColourMaps();
+  const recFor=code=>maps.byCode[String(code||'').trim().toLowerCase()]||maps.byName[String(code||'').trim().toLowerCase()]||null;
+  const n2=v=>Number.isFinite(Number(v))?Number(Number(v).toFixed(2)):'';
+  const n1=v=>Number.isFinite(Number(v))?Number(Number(v).toFixed(1)):'';
+  const int=v=>Number.isFinite(Number(v))?Math.round(Number(v)):'';
+  const rows=[];
+  const add=(kind,cells,tint)=>rows.push(tint?{kind,tint,cells}:{kind,cells});
+  const section=(title,headers,data,total)=>{add('title',[title]);add('head',headers);data.forEach(r=>add('data',r.cells||r,r.tint));if(total)add('total',total);add('blank',[]);};
+  add('title',['Monthly Sales Report']);
+  const gen=new Date(),pad=x=>String(x).padStart(2,'0');
+  add('data',['Month',monthLabel(d.month)]);
+  add('data',['Currency',cur]);
+  add('data',['Generated',gen.getFullYear()+'-'+pad(gen.getMonth()+1)+'-'+pad(gen.getDate())+' '+pad(gen.getHours())+':'+pad(gen.getMinutes())]);
+  add('note',['Figures use confirmed daily reports only. The current month is provisional until every day is confirmed.']);
+  add('blank',[]);
+  section('SUMMARY',['Metric','Value','Unit'],[
+    ['Confirmed DSR days',int(d.summary.confirmedDays),'days'],
+    ['Expected confirmed DSR days',int(d.summary.expectedDays),'days'],
+    ['Calculated sales',n2(d.summary.totalSales),cur],
+    ['Fuel sold',n1(d.summary.totalLiters),'L'],
+    ['Confirmed shifts',int(d.summary.totalShifts),'shifts'],
+    ['Average sales per confirmed day',n2(d.summary.averageDailySales),cur],
+    ['Entered payments',d.summary.enteredPayments==null?'':n2(d.summary.enteredPayments),d.summary.enteredPayments==null?'':cur],
+    ['Financial difference',d.summary.financialDifference==null?'':n2(d.summary.financialDifference),d.summary.financialDifference==null?'':cur]]);
+  const dL=d.daily.reduce((a,x)=>a+(Number(x.liters)||0),0),dS=d.daily.reduce((a,x)=>a+(Number(x.sales)||0),0),dSh=d.daily.reduce((a,x)=>a+(Number(x.shifts)||0),0);
+  const payAll=d.daily.every(x=>x.payments!=null),dP=d.daily.reduce((a,x)=>a+(Number(x.payments)||0),0);
+  section('DAILY SALES',['Date','Fuel sold (L)','Calculated sales ('+cur+')','Entered payments ('+cur+')','Confirmed shifts'],
+    d.daily.map(r=>[String(r.date||''),n1(r.liters),n2(r.sales),r.payments==null?'':n2(r.payments),int(r.shifts)]),
+    ['Total',n1(dL),n2(dS),payAll?n2(dP):'',int(dSh)]);
+  // Products
+  const pL=d.products.reduce((a,x)=>a+(Number(x.liters)||0),0),pS=d.products.reduce((a,x)=>a+(Number(x.sales)||0),0);
+  section('PRODUCTS',['Rank','Product code','Fuel sold (L)','Sales ('+cur+')','Share of sales (%)','Sales per litre ('+cur+')'],
+    d.products.map((r,i)=>[i+1,String(r.code||''),n1(r.liters),n2(r.sales),n2(r.sharePct),Number(r.liters)?n2((Number(r.sales)||0)/Number(r.liters)):'']),
+    ['','Total',n1(pL),n2(pS),n2(d.products.reduce((a,x)=>a+(Number(x.sharePct)||0),0)),pL?n2(pS/pL):'']);
+  const stT=(d.salesTypes||[]).reduce((a,x)=>a+(Number(x.sales)||0),0);
+  section('SALES BY TYPE',['Sale type','Total amount ('+cur+')','Share of monthly sales (%)'],
+    (d.salesTypes||[]).map(r=>[String(r.name||''),n2(r.sales),n2(r.sharePct)]),
+    (d.salesTypes||[]).length?['Total',n2(stT),'']:null);
+  section('SALES REQUIRING A REASON',['DSR date','Sale type','Amount ('+cur+')','Reason'],
+    (d.saleReasons||[]).map(r=>[String(r.date||''),String(r.type||''),n2(r.amount),r.reason||'Reason not recorded']));
+  const aT=d.attendants.reduce((a,x)=>a+(Number(x.sales)||0),0),aL=d.attendants.reduce((a,x)=>a+(Number(x.liters)||0),0),aSh=d.attendants.reduce((a,x)=>a+(Number(x.shiftCount)||0),0);
+  section('ATTENDANTS',['Rank','Attendant','Sales ('+cur+')','Fuel sold (L)','Shifts','Share of sales (%)'],
+    d.attendants.map((r,i)=>[i+1,String(r.attendant||'Unknown'),n2(r.sales),n1(r.liters),int(r.shiftCount),aT?n2((Number(r.sales)||0)/aT*100):'']),
+    ['Total',n2(aT),n1(aL),int(aSh),aT?'100.00':'']);
+  // Dispensers: nozzle code and its product
+  const dispRows=maps.nozzles.map(n=>{const rec=recFor(n.product)||{code:n.product};
+    return [String(n.nozzle_code||''),String(rec.code||n.product||''),int(n.nozzle_count||1)];});
+  section('DISPENSERS',['Dispenser','Product','Nozzles'],dispRows);
+  // Shifts
+  const shiftRows=d.shifts.map((r,i)=>[i+1,String(r.shiftDispenser||''),n2(r.sales),n1(r.liters),int(r.records)]);
+  section('SHIFTS AND DISPENSERS',['Rank','Shift / dispenser','Sales ('+cur+')','Fuel sold (L)','Records'],shiftRows);
+  section('MONTHLY RANKING',['Rank','Month','Total sales ('+cur+')','Average sales per confirmed day ('+cur+')','Fuel sold (L)','Confirmed days','Change vs previous month (%)'],
+    monthRankingData.map(r=>[int(r.rank),String(r.month||''),n2(r.amount),n2(r.avgAmount),n1(r.liters),int(r.days),r.changePct==null?'':n2(r.changePct)]));
+  return rows;
+ };
+ $('msr-export-xlsx').addEventListener('click',async()=>{
   if(!lastExportData||!lastExportData.daily.length){$('msr-status').textContent='No monthly rows available to export';return;}
-  const d=lastExportData, lines=[];
-  const esc=v=>{if(v==null||v==='')return '""';const s=typeof v==='number'&&Number.isFinite(v)?String(v):String(v);return '"'+s.replace(/"/g,'""')+'"';};
-  const section=(title,headers,rows)=>{lines.push(esc(title));lines.push(headers.map(esc).join(','));rows.forEach(row=>lines.push(row.map(esc).join(',')));lines.push('');};
-  lines.push(esc('MONTHLY SALES REPORT'),esc(monthLabel(d.month)),esc('Generated '+new Date().toLocaleString()),'');
-  section('MONTHLY SUMMARY',['Metric','Value'],[
-   ['Confirmed DSR days',d.summary.confirmedDays],['Expected confirmed DSR days',d.summary.expectedDays],['Calculated sales ('+(window.stationCurrency||'ETB')+')',d.summary.totalSales],['Fuel sold (L)',d.summary.totalLiters],['Confirmed shifts',d.summary.totalShifts],['Entered payments ('+(window.stationCurrency||'ETB')+')',d.summary.enteredPayments],['Financial difference ('+(window.stationCurrency||'ETB')+')',d.summary.financialDifference],['Average sales per confirmed day ('+(window.stationCurrency||'ETB')+')',d.summary.averageDailySales]
-  ]);
-  section('DAILY BREAKDOWN',['Date','Fuel sold (L)','Calculated sales ('+(window.stationCurrency||'ETB')+')','Entered payments ('+(window.stationCurrency||'ETB')+')','Confirmed shifts'],d.daily.map(r=>[r.date,r.liters,r.sales,r.payments,r.shifts]));
-  section('PRODUCT PERFORMANCE',['Rank','Product code','Fuel sold (L)','Calculated sales ('+(window.stationCurrency||'ETB')+')','Share of sales (%)'],d.products.map((r,i)=>[i+1,r.code,r.liters,r.sales,Number(r.sharePct.toFixed(2))]));
-  section('MONTHLY SALES BY TYPE',['Sale type','Total amount ('+(window.stationCurrency||'ETB')+')','Share of monthly sales (%)'],(d.salesTypes||[]).map(r=>[r.name,r.sales,Number(r.sharePct.toFixed(2))]));
-  section('REASONS REQUIRED FOR SALE',['DSR date','Sale type','Amount ('+(window.stationCurrency||'ETB')+')','Reason'],(d.saleReasons||[]).map(r=>[r.date,r.type,r.amount,r.reason||'Reason not recorded']));
-  section('ATTENDANT PERFORMANCE',['Rank','Attendant','Sales ('+(window.stationCurrency||'ETB')+')','Fuel sold (L)','Shifts'],d.attendants.map((r,i)=>[i+1,r.attendant,r.sales,r.liters,r.shiftCount]));
-  section('SHIFT / DISPENSER PERFORMANCE',['Rank','Shift / dispenser','Sales ('+(window.stationCurrency||'ETB')+')','Fuel sold (L)','Records'],d.shifts.map((r,i)=>[i+1,r.shiftDispenser,r.sales,r.liters,r.records]));
-  section('MONTHLY PERFORMANCE RANKING',['Rank','Month','Total sales ('+(window.stationCurrency||'ETB')+')','Average sales / confirmed day ('+(window.stationCurrency||'ETB')+')','Fuel sold (L)','Confirmed days','Change vs previous month (%)'],monthRankingData.map(r=>[r.rank,monthLabel(r.month),r.amount,r.avgAmount,r.liters,r.days,r.changePct==null?'':Number(r.changePct.toFixed(2))]));
-  const csv='\ufeff'+lines.join('\r\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='MSR-'+d.month+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const rows=await msrRowsFor();
+  XlsxExport.download(XlsxExport.build([{name:'MSR',rows}]),'MSR-'+lastExportData.month+'-report.xlsx');
  });
  $('msr-print').addEventListener('click',()=>{if(!lastExportData){$('msr-status').textContent='Monthly report is still loading. Please try again.';return;}if(typeof downloadMonthlySalesReportPdf!=='function'){$('msr-status').textContent='PDF download is unavailable. Reload the page and try again.';return;}downloadMonthlySalesReportPdf(lastExportData);});
  function renderMonthChips(){ $('msr-selected-months').innerHTML=selectedCompareMonths.slice().sort().map(m=>'<span class="msr-month-chip">'+h(monthLabel(m))+' <button type="button" data-remove-month="'+m+'" aria-label="Remove '+h(monthLabel(m))+'">×</button></span>').join('');$('msr-selected-months').querySelectorAll('[data-remove-month]').forEach(b=>b.addEventListener('click',()=>{selectedCompareMonths=selectedCompareMonths.filter(m=>m!==b.dataset.removeMonth);renderMonthChips();}));}
