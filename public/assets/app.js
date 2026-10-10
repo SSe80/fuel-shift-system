@@ -2035,18 +2035,20 @@ function filterAdminSales(){
   const pendingBox=document.getElementById('sales-confirmation-list');
   const historyBox=document.getElementById('sales-history-list');
   const pendingRows=(adminSalesData.pending||[]).filter(adminSalesMatches);
+  const progressingRows=(adminSalesData.progressing||[]).filter(adminSalesMatches);
   const allHistoryRows=(adminSalesData.history||[]).filter(adminSalesMatches);
   const historyRows=allHistoryRows.slice(0,3);
+  const progressingHtml=progressingRows.length?'<section class="admin-progressing-shifts"><div class="takeover-detail-heading">Progressing shifts <small>Set returned liters before the attendant records sales</small></div>'+progressingRows.map(renderAdminProgressingSaleCard).join('')+'</section>':'';
   if(pendingBox){
     if(!pendingRows.length){
-      pendingBox.innerHTML='<div class="card admin-sales-empty"><div class="empty-icon">✓</div><strong>No pending sales confirmations</strong><p class="muted">All submitted shift sales have been reviewed.</p></div>';
+      pendingBox.innerHTML=progressingHtml+'<div class="card admin-sales-empty"><div class="empty-icon">✓</div><strong>No pending sales confirmations</strong><p class="muted">Submitted sale cards will appear here after attendants record their sales.</p></div>';
     }else{
       const groups={};
       pendingRows.forEach(item=>{
         const dsrId=dailyReportIdFromTimestamp(item.takeover?.shift_started_at);
         (groups[dsrId]||(groups[dsrId]=[])).push(item);
       });
-      pendingBox.innerHTML=Object.keys(groups).map(dsrId=>
+      pendingBox.innerHTML=progressingHtml+Object.keys(groups).map(dsrId=>
         '<section class="admin-pending-dsr-group" data-dsr-id="'+h(dsrId)+'">'+
           '<button type="button" class="admin-pending-dsr-head" onclick="toggleAdminPendingDsrGroup(\''+h(dsrId)+'\')" aria-expanded="false">'+
             '<span class="admin-pending-dsr-title"><span class="section-kicker">DSR</span><strong>'+h(dsrId)+'</strong></span>'+
@@ -2095,6 +2097,34 @@ function toggleAdminPendingDsrGroup(dsrId){
   if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
   if(toggle)toggle.textContent=expanded?'⌃':'⌄';
 }
+function renderAdminProgressingSaleCard(item){
+  const t=item.takeover||{},dispenser=item.dispenser?.name||'Dispenser',shift=item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||'')),id=String(t.id||''),returned=Number(t.returned_liters||0);
+  const b=adminReturnedFuelBreakdown(t,returned);
+  return '<article class="card admin-sale-confirm-card admin-progressing-sale-card" data-takeover-id="'+h(id)+'" data-dsr-id="'+h(dailyReportIdFromTimestamp(t.shift_started_at))+'">'+
+    '<div class="admin-pending-sale-head"><span class="admin-pending-sale-title"><span class="section-kicker">PROGRESSING SHIFT</span><strong>'+h(dispenser)+'</strong><small>'+h(shift)+'</small></span><span class="pending-sale-badge">Awaiting attendant</span></div>'+
+    '<div class="admin-progressing-sale-body"><div class="admin-sale-context"><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at||t.created_at).toLocaleString()+'</strong></div><div><span>Gross liters dispensed</span><strong>'+liters(b.grossLiters)+' L</strong></div><div><span>Gross calculated sales</span><strong>'+money(b.grossAmount)+'</strong></div><div><span>Assigned tank</span><strong>'+h(item.tank?.name||'—')+'</strong></div></div>'+
+    '<label class="admin-returned-liters-field" style="display:flex;flex-direction:column;gap:6px;margin:12px 0;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc"><span style="font-weight:700;color:#172b4d">Returned liters to tank</span><small style="color:#64748b">Enter fuel used for inspection/operations and physically returned to the assigned tank. This will be carried into the confirmation card.</small><input style="width:100%;max-width:260px;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#111827" type="number" min="0" max="'+h(t.total_sales_liters)+'" step="0.01" inputmode="decimal" value="'+h(returned)+'" oninput="updateAdminReturnedPreview(\''+h(id)+'\')" data-returned-liters="'+h(id)+'" aria-label="Returned liters to tank"><small style="color:#64748b">Maximum: '+liters(t.total_sales_liters)+' L</small><div data-return-preview="'+h(id)+'"></div><div data-return-save-status="'+h(id)+'" style="font-size:12px;color:#64748b">'+(returned>0?'Saved return: '+liters(returned)+' L':'Not saved yet')+'</div></label>'+
+    '<div class="row admin-sale-actions"><button type="button" class="primary" onclick="saveAdminProgressingReturn(\''+h(id)+'\')">Save returned liters</button></div></div>'+
+  '</article>';
+}
+async function saveAdminProgressingReturn(id){
+  const input=document.querySelector('[data-returned-liters="'+id+'"]'),status=document.querySelector('[data-return-save-status="'+id+'"]');
+  if(!input)return;
+  const value=Number(input.value||0),max=Number(input.max||0);
+  if(!Number.isFinite(value)||value<0||value>max){toast('Enter returned liters between 0 and '+liters(max)+' L');return;}
+  const button=document.querySelector('[data-takeover-id="'+id+'"] .admin-sale-actions button');
+  if(button)button.disabled=true;
+  if(status)status.textContent='Saving…';
+  try{
+    const result=await api('/api/sales/progressing/'+encodeURIComponent(id)+'/returned-fuel',{method:'POST',body:JSON.stringify({returned_liters:value})});
+    const item=(adminSalesData.progressing||[]).find(x=>String(x.takeover?.id)===String(id));
+    if(item&&item.takeover){item.takeover.returned_liters=value;item.takeover.returned_amount=Number(result.returned_amount||0);}
+    if(status)status.textContent='Saved · '+liters(value)+' L · deduction '+money(result.returned_amount||0);
+    updateAdminReturnedPreview(id);
+    toast('Returned liters saved for this shift');
+  }catch(e){if(status)status.textContent='Not saved · '+e.message;toast(e.message);}
+  finally{if(button)button.disabled=false;}
+}
 function renderAdminPendingSaleCard(item){
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],dispenser=item.dispenser?.name||'Dispenser',shift=item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||''));
   const dsrId=dailyReportIdFromTimestamp(t.shift_started_at);
@@ -2109,7 +2139,7 @@ function renderAdminPendingSaleCard(item){
       '<div class="admin-sale-context"><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Gross liters dispensed</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Gross calculated amount</span><strong>'+money(calculated)+'</strong></div></div>'+
       '<div class="admin-sale-review-strip" data-admin-sale-review-strip="'+h(t.id)+'"><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(Math.abs(variance)<0.005?'match':'difference')+'">Gross difference <b>'+money(Math.abs(variance))+'</b></span></div>'+
       '<div class="admin-sale-check-section"><div class="takeover-detail-heading">Sales to check <small>Check every entry before confirming</small></div>'+checked+'</div>'+
-      '<label class="admin-returned-liters-field" style="display:flex;flex-direction:column;gap:6px;margin:12px 0;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc"><span style="font-weight:700;color:#172b4d">Returned liters to tank</span><small style="color:#64748b">Fuel used for inspection/operations and physically returned to this shift’s assigned tank. Enter 0 if none.</small><input style="width:100%;max-width:260px;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#111827" type="number" min="0" max="'+h(t.total_sales_liters)+'" step="0.01" inputmode="decimal" value="0" oninput="updateAdminReturnedPreview(\''+h(t.id)+'\')" data-returned-liters="'+h(t.id)+'" aria-label="Returned liters to tank"><small style="color:#64748b">Maximum: '+liters(t.total_sales_liters)+' L</small><div data-return-preview="'+h(t.id)+'"></div></label>'+
+      '<label class="admin-returned-liters-field" style="display:flex;flex-direction:column;gap:6px;margin:12px 0;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc"><span style="font-weight:700;color:#172b4d">Returned liters to tank</span><small style="color:#64748b">Fuel used for inspection/operations and physically returned to this shift’s assigned tank. Enter 0 if none.</small><input style="width:100%;max-width:260px;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#111827" type="number" min="0" max="'+h(t.total_sales_liters)+'" step="0.01" inputmode="decimal" value="'+h(Number(t.returned_liters||0))+'" oninput="updateAdminReturnedPreview(\''+h(t.id)+'\')" data-returned-liters="'+h(t.id)+'" aria-label="Returned liters to tank"><small style="color:#64748b">Maximum: '+liters(t.total_sales_liters)+' L</small><div data-return-preview="'+h(t.id)+'"></div></label>'+
       '<div class="admin-sale-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="row admin-sale-actions"><button type="button" onclick="cancelAdminSaleConfirmation(\''+t.id+'\')">Cancel</button><button type="button" class="primary" disabled data-confirm-sales="'+h(t.id)+'" onclick="confirmAdminSaleConfirmation(\''+t.id+'\')">Confirm sales</button></div>'+
     '</div></article>';
 }
@@ -2175,8 +2205,8 @@ async function adminSalesConfirmations(){
   try{
     const me=await currentUser();if(me.role!=='admin')return location.href='admin-login.html';
     await window.stationCurrencyReady;
-    const [list,history]=await Promise.all([api('/api/sales/confirmations'),api('/api/sales/history')]);
-    adminSalesData={pending:Array.isArray(list)?list:[],history:Array.isArray(history)?history:[]};
+    const [list,history,progressing]=await Promise.all([api('/api/sales/confirmations'),api('/api/sales/history'),api('/api/sales/progressing')]);
+    adminSalesData={pending:Array.isArray(list)?list:[],history:Array.isArray(history)?history:[],progressing:Array.isArray(progressing)?progressing:[]};
     renderAdminSalesSummary();filterAdminSales();
     const status=document.getElementById('sales-confirmation-status');if(status)status.textContent='';
   }catch(e){
@@ -3363,7 +3393,7 @@ function adminReturnedFuelBreakdown(t,returnedLiters){
   return {grossLiters,grossAmount,unitPrice:price,returnedAmount,netLiters:Math.max(0,grossLiters-Number(returnedLiters||0)),netAmount:Math.max(0,Math.round((grossAmount-returnedAmount+Number.EPSILON)*100)/100)};
 }
 function updateAdminReturnedPreview(id){
-  const item=(adminSalesData.pending||[]).find(x=>String(x.takeover?.id)===String(id));
+  const item=(adminSalesData.pending||[]).find(x=>String(x.takeover?.id)===String(id))||(adminSalesData.progressing||[]).find(x=>String(x.takeover?.id)===String(id));
   if(!item)return;
   const input=document.querySelector('[data-returned-liters="'+id+'"]');
   const value=Number(input?.value||0);
