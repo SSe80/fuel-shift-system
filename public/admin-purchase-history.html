@@ -266,7 +266,7 @@
 <div class="purchase-history-tools"><div class="purchase-history-search-wrap"><span aria-hidden="true">⌕</span><input id="purchase-history-search" type="search" placeholder="Search invoice or product…" oninput="renderFullPurchaseHistory()"></div><select id="purchase-history-period" onchange="renderFullPurchaseHistory()" aria-label="Purchase history date filter"><option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select><button type="button" class="purchase-history-refresh" onclick="loadFullPurchaseHistory()">↻ <span>Refresh</span></button></div>
 <div id="purchase-history-status" class="page-status"></div><div id="full-purchase-history-list" class="purchase-full-history-list"></div></section>
 <div id="purchase-detail-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="closePurchaseDetail()"></div><div class="modal-card purchase-detail-card"><div class="top"><div><span class="section-kicker">PURCHASE DETAILS</span><h3>Purchase Details</h3></div><button type="button" class="modal-close" onclick="closePurchaseDetail()">×</button></div><div id="purchase-detail-content" class="purchase-detail-content"></div><div class="purchase-detail-actions" id="purchase-detail-actions"><button type="button" class="purchase-detail-download" onclick="downloadPurchaseDetailPdf()">Download PDF</button><button type="button" onclick="closePurchaseDetail()">Close</button></div></div></div></main>
-<script src="assets/app.js?v=20261007-03"></script>
+<script src="assets/app.js?v=20261010-12"></script>
 <script>
 (function(){
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
