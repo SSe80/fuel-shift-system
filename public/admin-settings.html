@@ -1,14 +1,6 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Settings</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-03"><style>
-.reset-operational-action{background:#b42318!important;color:#fff!important;border:1px solid #b42318!important;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer;white-space:nowrap}
-.reset-operational-action:hover:not(:disabled){background:#912018!important}
-.reset-operational-action:disabled{opacity:.45;cursor:not-allowed}
-#reset-operational-data-section .section-heading{gap:18px}
-#reset-operational-data-section .section-heading>div{min-width:0}
-#operational-reset-modal .modal-card{max-height:90vh;overflow:auto}
-@media(max-width:640px){#reset-operational-data-section .section-heading{flex-direction:column}#reset-operational-data-section .reset-operational-action{width:100%}}
-</style></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Settings</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-03"></head>
 <body class="admin-shell admin-settings-page admin-control-ui" data-app-page="adminSettings">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
@@ -245,40 +237,7 @@
   <div class="settings-collapsible"><div id="sale-types"></div></div>
 </section>
 
-  <section id="reset-operational-data-section" class="settings-section card" style="border:1px solid #e4b6b6">
-  <div class="section-heading" style="align-items:flex-start">
-    <div>
-      <span class="section-kicker" style="color:#b42318">DANGER ZONE</span>
-      <h2>Reset Operational Data</h2>
-      <p>Clear DSRs, purchases, sales, inbox notifications, shifts, handovers, tank movements, payment records, and accounting-period history.</p>
-      <p class="muted">Your admin/attendant accounts, fuel products, prices, tanks, tank calibration, dispensers, nozzles, station settings, and current tank stock will be preserved. All nozzle shift activations will be cleared.</p>
-    </div>
-    <button type="button" class="reset-operational-action" onclick="openOperationalResetModal()">Reset Operational Data</button>
-  </div>
-</section>
-
-<div id="operational-reset-modal" class="modal" aria-hidden="true">
-  <div class="modal-backdrop" onclick="closeOperationalResetModal()"></div>
-  <div class="modal-card form" role="dialog" aria-modal="true" aria-labelledby="operational-reset-title" style="max-width:560px">
-    <div class="top">
-      <h3 id="operational-reset-title">Confirm Operational Reset</h3>
-      <button type="button" class="modal-close" onclick="closeOperationalResetModal()" aria-label="Close">×</button>
-    </div>
-    <p id="operational-reset-message">This permanently deletes operational history. Station setup and current tank stock remain unchanged. Make sure the current physical tank levels have been verified before starting new operations.</p>
-    <label id="operational-reset-confirm-label">Type <strong>RESET OPERATIONAL DATA</strong> to continue
-      <input id="operational-reset-confirm-input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="RESET OPERATIONAL DATA" oninput="updateOperationalResetButton()">
-    </label>
-    <div class="row" id="operational-reset-actions" style="justify-content:flex-end">
-      <button type="button" onclick="closeOperationalResetModal()">Cancel</button>
-      <button type="button" id="operational-reset-confirm-button" class="reset-operational-action" disabled onclick="confirmOperationalReset()">Permanently Reset Data</button>
-    </div>
-    <div id="operational-reset-success-actions" class="row" style="display:none;justify-content:flex-end">
-      <button type="button" class="primary" onclick="window.location.reload()">Reload Settings</button>
-    </div>
-  </div>
-</div>
-
-<div id="settings-confirm-modal" class="modal" aria-hidden="true">
+  <div id="settings-confirm-modal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" onclick="closeSettingsConfirmation()"></div>
     <div class="modal-card" style="max-width:520px">
       <div class="top">
@@ -309,59 +268,6 @@
       <div class="row" style="justify-content:flex-end;margin-top:14px"><button type="button" onclick="closeStationCurrencyModal()">Cancel</button><button type="submit" class="primary">Save</button></div>
     </form>
   </div>
-  <script>
-function openOperationalResetModal(){
-  const modal=document.getElementById('operational-reset-modal');
-  if(!modal)return;
-  const input=document.getElementById('operational-reset-confirm-input');
-  const message=document.getElementById('operational-reset-message');
-  const label=document.getElementById('operational-reset-confirm-label');
-  const actions=document.getElementById('operational-reset-actions');
-  const success=document.getElementById('operational-reset-success-actions');
-  document.getElementById('operational-reset-title').textContent='Confirm Operational Reset';
-  message.textContent='This permanently deletes operational history. Station setup and current tank stock remain unchanged. Make sure the current physical tank levels have been verified before starting new operations.';
-  label.style.display='';input.value='';input.disabled=false;
-  actions.style.display='flex';success.style.display='none';
-  updateOperationalResetButton();
-  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
-  setTimeout(()=>input.focus(),80);
-}
-function closeOperationalResetModal(){
-  const modal=document.getElementById('operational-reset-modal');
-  if(!modal)return;
-  if(modal.dataset.busy==='true')return;
-  modal.classList.remove('open');modal.setAttribute('aria-hidden','true');
-}
-function updateOperationalResetButton(){
-  const input=document.getElementById('operational-reset-confirm-input');
-  const button=document.getElementById('operational-reset-confirm-button');
-  if(button&&input)button.disabled=input.value.trim()!=='RESET OPERATIONAL DATA';
-}
-async function confirmOperationalReset(){
-  const input=document.getElementById('operational-reset-confirm-input');
-  const button=document.getElementById('operational-reset-confirm-button');
-  const modal=document.getElementById('operational-reset-modal');
-  const message=document.getElementById('operational-reset-message');
-  if(!input||input.value.trim()!=='RESET OPERATIONAL DATA')return;
-  if(modal.dataset.busy==='true')return;
-  modal.dataset.busy='true';button.disabled=true;button.textContent='Resetting…';
-  input.disabled=true;
-  try{
-    const result=await api('/api/admin/reset-operational-data',{method:'POST',body:JSON.stringify({confirmation:input.value.trim()})});
-    document.getElementById('operational-reset-title').textContent='✓ Operational Data Reset';
-    message.textContent='The database confirmed the reset. Operational records have been cleared; accounts, station configuration, calibration data, and current tank stock were preserved.';
-    document.getElementById('operational-reset-confirm-label').style.display='none';
-    document.getElementById('operational-reset-actions').style.display='none';
-    document.getElementById('operational-reset-success-actions').style.display='flex';
-    if(typeof toast==='function')toast('Operational data reset successfully');
-  }catch(error){
-    modal.dataset.busy='false';input.disabled=false;button.disabled=false;button.textContent='Permanently Reset Data';
-    message.textContent='Reset failed: '+(error&&error.message?error.message:'Unknown error')+'. No success was reported. Check the database before retrying.';
-    return;
-  }
-  modal.dataset.busy='false';
-}
-</script>
   <script src="assets/admin-control-ui.js?v=20261010-02"></script>
 </body>
 </html>

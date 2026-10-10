@@ -2359,7 +2359,7 @@ body.admin-control-ui.attendant-dashboard-page .page-heading .section-kicker {
   font-size: 10.5px !important;
   font-weight: 700 !important;
   letter-spacing: .12em;
-  color: var(--ac-brand) !important;
+  color: #dc2626 !important;
 }
 
 /* Section wrappers */
@@ -2409,7 +2409,7 @@ body.admin-control-ui.attendant-dashboard-page .dashboard-purchase-card.active-s
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 4px;
-  background: linear-gradient(180deg, #2563eb, #60a5fa);
+  background: linear-gradient(180deg, #dc2626, #f87171);
 }
 body.admin-control-ui.attendant-dashboard-page .active-shift-head {
   display: flex !important;
@@ -2436,7 +2436,7 @@ body.admin-control-ui.attendant-dashboard-page .active-shift-head .section-kicke
   font-size: 10px !important;
   font-weight: 700 !important;
   letter-spacing: .12em;
-  color: var(--ac-brand) !important;
+  color: #dc2626 !important;
 }
 body.admin-control-ui.attendant-dashboard-page .active-shift-badge {
   display: inline-flex !important;
@@ -2533,8 +2533,8 @@ body.admin-control-ui.attendant-dashboard-page .pending-nozzle-pill {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--ac-brand-soft);
-  color: #1d4ed8 !important;
+  background: #fef2f2;
+  color: #b91c1c !important;
   font-size: 10.5px !important;
   font-weight: 700;
 }
@@ -2565,11 +2565,11 @@ body.admin-control-ui.attendant-dashboard-page .btn {
   padding: 12px 18px !important;
   border: 0 !important;
   border-radius: 12px !important;
-  background: linear-gradient(180deg, #2563eb, #1d4ed8) !important;
+  background: linear-gradient(180deg, #dc2626, #b91c1c) !important;
   color: #fff !important;
   font-size: 14.5px !important;
   font-weight: 700 !important;
-  box-shadow: 0 1px 2px rgba(29, 78, 216, .25), 0 6px 14px -8px rgba(37, 99, 235, .6) !important;
+  box-shadow: 0 1px 2px rgba(185, 28, 28, .25), 0 6px 14px -8px rgba(220, 38, 38, .6) !important;
   cursor: pointer;
 }
 body.admin-control-ui.attendant-dashboard-page .active-handover-btn { width: 100% !important; }
@@ -2610,8 +2610,8 @@ body.admin-control-ui.attendant-dashboard-page .dashboard-section-cards {
 }
 body.admin-control-ui.attendant-dashboard-page header.settings-header ~ * a.active,
 body.admin-control-ui.attendant-dashboard-page a.active {
-  color: #93c5fd !important;
-  border-bottom-color: #60a5fa !important;
+  color: #fca5a5 !important;
+  border-bottom-color: #f87171 !important;
 }
 
 /* Same overrides again at page-attribute specificity: the legacy rules are
@@ -2628,8 +2628,8 @@ body.admin-control-ui[data-app-page].attendant-dashboard-page .dashboard-purchas
   display: block !important;
 }
 body.admin-control-ui[data-app-page].attendant-dashboard-page a.active {
-  color: #93c5fd !important;
-  border-bottom-color: #60a5fa !important;
+  color: #fca5a5 !important;
+  border-bottom-color: #f87171 !important;
   background: none !important;
 }
 
@@ -2638,11 +2638,11 @@ body.admin-control-ui[data-app-page].attendant-dashboard-page a.active {
 body.admin-control-ui[data-app-page].attendant-dashboard-page > .admin-sidebar .admin-sidebar-nav a.active,
 body.admin-control-ui[data-app-page].attendant-dashboard-page > .admin-sidebar .admin-sidebar-nav a.active b,
 body.admin-control-ui[data-app-page].attendant-dashboard-page > .admin-sidebar .admin-sidebar-nav a.active span {
-  color: #93c5fd !important;
+  color: #fca5a5 !important;
 }
 body.admin-control-ui[data-app-page].attendant-dashboard-page > .admin-sidebar .admin-sidebar-nav a.active {
-  border-bottom-color: #60a5fa !important;
-  text-decoration-color: #60a5fa !important;
+  border-bottom-color: #f87171 !important;
+  text-decoration-color: #f87171 !important;
 }
 
 /* Handover modal: titles in ink; only real problems (e.g. "Not recorded") stay red */
@@ -2664,4 +2664,21 @@ body.admin-control-ui.attendant-dashboard-page #handover-nozzle-readings > * {
 body.admin-control-ui.attendant-dashboard-page #handover-input-modal .modal-card,
 body.admin-control-ui.attendant-dashboard-page #handover-input-modal > div:not(.modal-backdrop) {
   border-radius: 20px;
+}
+
+/* Shift cards sit on one baseline: remove any legacy vertical offset */
+body.admin-control-ui[data-app-page].attendant-dashboard-page .dashboard-section-cards > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  position: relative !important;
+  top: 0 !important;
+  transform: none !important;
+}
+
+/* Legacy rule offsets every shift card after the first by 16px (:has selector).
+   Match it with the page prefix so the cards align. */
+body.admin-control-ui.attendant-dashboard-page .dashboard-section:has(.active-shift-card) .active-shift-card,
+body.admin-control-ui.attendant-dashboard-page .dashboard-section:has(.active-shift-card) .active-shift-card + .active-shift-card {
+  margin-top: 0 !important;
+  position: relative !important;
 }
