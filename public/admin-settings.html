@@ -1,6 +1,6 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Settings</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-03"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Settings</title><link rel="stylesheet" href="assets/style.css?v=20261010-01"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-03"></head>
 <body class="admin-shell admin-settings-page admin-control-ui" data-app-page="adminSettings">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
@@ -339,6 +339,14 @@
       modalStatus.className='operational-reset-status';modalStatus.textContent='Reset failed: '+(err&&err.message?err.message:String(err));
       confirmBtn.textContent=previous;confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA';
     }finally{input.disabled=false;cancelBtn.disabled=false;closeBtn.disabled=false;}
+  });
+})();
+</script>
+<script>
+// Move settings dialogs out of the animated .wrap so fixed positioning uses the viewport.
+(function(){
+  document.querySelectorAll('body.admin-settings-page .modal').forEach(function(modal){
+    if(modal.parentElement!==document.body)document.body.appendChild(modal);
   });
 })();
 </script>
