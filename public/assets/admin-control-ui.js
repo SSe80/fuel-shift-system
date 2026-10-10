@@ -150,6 +150,68 @@
     }
   }
 
+  /* ---- Admin settings: plus buttons, item state, subtitles and role groups ---- */
+  function enhanceSettingsV8(root) {
+    if (!document.body || !document.body.classList.contains('admin-settings-page')) return;
+    // 1) Add buttons: icon-only "+" with the label kept as tooltip and accessible name
+    var adds = root.querySelectorAll('.settings-section:not(.operational-reset-card) .section-heading .add-action');
+    for (var a = 0; a < adds.length; a++) {
+      var ab = adds[a];
+      if (ab.getAttribute('data-plus') === '1') continue;
+      var label = ab.textContent.replace(/^\s*[\uFF0B+]\s*/, '').trim();
+      ab.setAttribute('data-plus', '1');
+      ab.setAttribute('title', label);
+      ab.setAttribute('aria-label', label);
+      ab.textContent = '+';
+    }
+    // 2) Items: state (active / inactive), role, subtitle line, status chip
+    var items = root.querySelectorAll('.settings-item-card');
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      var t = it.textContent || '';
+      var state;
+      if (/\bInactive\b/i.test(t)) state = 'inactive';
+      else if (it.classList.contains('settings-active-card') || it.classList.contains('dispenser-active-card') || /\bActive\b/i.test(t)) state = 'active';
+      else state = 'inactive';
+      if (it.getAttribute('data-state') !== state) it.setAttribute('data-state', state);
+      var group = it.closest('.settings-user-role-group');
+      if (group) {
+        var role = group.classList.contains('settings-admin-user-group') ? 'admin' : 'attendant';
+        if (it.getAttribute('data-role') !== role) it.setAttribute('data-role', role);
+      }
+      if (it.getAttribute('data-si') === '1') continue;
+      it.setAttribute('data-si', '1');
+      var det = it.querySelector('.settings-card-details');
+      var head = it.querySelector('.top > div') || it.querySelector('.dispenser-card-head > div');
+      if (det && head && !head.querySelector('.si-sub')) {
+        var parts = [];
+        det.querySelectorAll(':scope > div').forEach(function (row) {
+          var lab = row.querySelector('span'), val = row.querySelector('b');
+          if (!val) return;
+          if (lab && /status/i.test(lab.textContent)) return;
+          parts.push(val.textContent.trim());
+        });
+        var sub = document.createElement('div');
+        sub.className = 'si-sub';
+        sub.textContent = parts.join('  \u00b7  ');
+        var nameEl = head.querySelector('b, h3');
+        (nameEl || head).insertAdjacentElement('afterend', sub);
+      }
+      // remove the legacy text pill on dispenser cards (the chip below replaces it)
+      it.querySelectorAll('span').forEach(function (sp) {
+        if (sp.classList.contains('si-status') || sp.classList.contains('section-kicker') || sp.closest('.settings-card-details')) return;
+        if (/^(Active|Inactive)$/.test((sp.textContent || '').trim())) sp.remove();
+      });
+      var host = it.querySelector('.top') || it.querySelector('.dispenser-card-head');
+      if (host && !host.querySelector('.si-status')) {
+        var chip = document.createElement('span');
+        chip.className = 'si-status ' + (state === 'active' ? 'is-on' : 'is-off');
+        chip.textContent = state === 'active' ? 'Active' : 'Inactive';
+        host.appendChild(chip);
+      }
+    }
+  }
+
   var scheduled = false;
   function run() {
     scheduled = false;
@@ -157,6 +219,7 @@
     addAvatars(document);
     enhanceDispensers(document);
     enhanceCharts(document);
+    enhanceSettingsV8(document);
   }
   function schedule() {
     if (scheduled) return;
