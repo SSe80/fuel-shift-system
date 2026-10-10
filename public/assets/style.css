@@ -5177,8 +5177,11 @@ body[data-app-page="admin-purchases"] .purchase-card-linked,
 /* Admin Settings: visually separate user accounts by role. */
 body.admin-settings-page #employees{display:grid;gap:18px}
 body.admin-settings-page #employees .settings-user-role-group{min-width:0}
-body.admin-settings-page #employees .settings-user-role-heading{display:flex;align-items:center;gap:9px;margin:0 0 10px;padding:0 0 9px;border-bottom:1px solid #e7edf5;color:#25364b;font-size:14px;font-weight:800;letter-spacing:.045em;text-transform:uppercase}
-body.admin-settings-page #employees .settings-user-role-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:#edf3fb;color:#2459a9;font-size:12px;font-weight:800;letter-spacing:0}
+body.admin-settings-page #employees .settings-user-role-heading{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:0 0 11px;border-bottom:1px solid #e7edf5;color:#344256;font-size:12px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;line-height:1.2}
+body.admin-settings-page #employees .settings-user-role-count{display:inline-flex;align-items:center;justify-content:center;min-width:29px;height:25px;padding:0 9px;border:1px solid #d8e4f5;border-radius:8px;background:#f1f6fd;color:#2459a9;font-size:12px;font-weight:800;letter-spacing:0;line-height:1;font-variant-numeric:tabular-nums}
+body.admin-settings-page #employees .settings-user-role-group:first-child .settings-user-role-heading{color:#2459a9}
+body.admin-settings-page #employees .settings-user-role-group:nth-child(2) .settings-user-role-heading{color:#b54735}
+body.admin-settings-page #employees .settings-user-role-group:nth-child(2) .settings-user-role-count{border-color:#f1dcd7;background:#fff4f1;color:#b54735}
 body.admin-settings-page #employees .settings-user-role-list{display:grid;gap:10px}
 body.admin-settings-page #employees .settings-user-role-list>.card{margin:0;padding:16px 17px;border:1px solid #e5eaf0;border-radius:15px;background:#fbfcfe;box-shadow:none}
 body.admin-settings-page #employees .settings-user-role-list>.card:hover{border-color:#cbd7e5;box-shadow:0 5px 16px #17202a0b}
