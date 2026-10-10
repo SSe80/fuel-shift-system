@@ -2483,7 +2483,7 @@ def confirm_sale_confirmation(takeover_id):
             return jsonify({"error":"Returned liters must be a valid non-negative number"}),400
     except (TypeError,ValueError):
         return jsonify({"error":"Returned liters must be a valid non-negative number"}),400
-    status,result=rpc("confirm_shift_takeover_sales_with_return",{
+    status,result=rpc("confirm_shift_takeover_sales_with_return_v2",{
         "p_takeover_id":takeover_id,
         "p_admin_id":session["employee_id"],
         "p_checked_sale_ids":checked,
