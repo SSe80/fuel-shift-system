@@ -2664,7 +2664,7 @@ function downloadMonthlySalesReportPdf(data){
   const attendantCards=attendants.map((x,i)=>{const share=totalSales?num(x.sales)/totalSales*100:0;
     return{name:'ATTENDANT '+(i+1)+' - '+(x.attendant||'Unknown'),sales:money(x.sales),liters:fmt(x.liters)+' L',shifts:String(num(x.shiftCount)),sharePct:share.toFixed(1)+'%',share:share};});
   const rankRows=ranking.slice(0,4).map((x,i)=>({label:(i+1)+'. '+monthLabel(x.month),value:money(x.avgAmount)+' / day'}));
-  const blob=createMsrReportPdf({
+  const blob=createMsrReportPdfV2(Object.assign({
     title:monthLabel(data.month),statusLabel:'Generated',footer:'Monthly sales report  \u00b7  '+monthLabel(data.month),
     key:[
       {label:'Calculated sales',value:money(s.totalSales),tone:'good'},
@@ -2685,9 +2685,10 @@ function downloadMonthlySalesReportPdf(data){
     notesRight:rankRows.length?rankRows:[
       {label:'Report month',value:monthLabel(data.month)},{label:'Confirmed shifts',value:fmt(s.totalShifts)},
       {label:'Product count',value:String(products.length)},{label:'Attendant count',value:String(attendants.length)}]
-  });
+  },msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,monthLabel,GREEN,totalSales)));
   const url=URL.createObjectURL(blob),link=document.createElement('a');
-  link.href=url;link.download='MSR-'+String(data.month||'report').replace(/[^A-Za-z0-9_-]/g,'')+'-report.pdf';
+  link.href=url;link.download='MSR-'
++String(data.month||'report').replace(/[^A-Za-z0-9_-]/g,'')+'-report.pdf';
   document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
   toast('MSR PDF downloaded');
 }
@@ -2742,6 +2743,145 @@ function createDsrReportPdf(r){
 /* ---------- MONTHLY SALES REPORT (MSR) ---------- */
 function msrNiceStep(max){const raw=Math.max(max,1)/4,p=Math.pow(10,Math.floor(Math.log10(raw)));for(const m of [1,2,2.5,5,10]){if(m*p>=raw)return m*p;}return 10*p;}
 function msrCompact(v){const a=Math.abs(v),t=x=>String(Number(x.toFixed(2)));return a>=1e6?t(v/1e6)+'M':a>=1e3?t(v/1e3)+'k':String(Math.round(v));}
+/* ===== MSR report, two-page layout (A4). Page 1: key figures, charts. Page 2: full detail. ===== */
+function msrShortMonth(v){const m=/^(\d{4})-(\d{2})/.exec(String(v||''));if(!m)return String(v||'');const d=new Date(Number(m[1]),Number(m[2])-1,1);return d.toLocaleDateString('en-US',{month:'short'})+' '+String(m[1]).slice(2);}
+function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,monthLabel,GREEN,totalSales){
+  const share=x=>totalSales?num(x)/totalSales*100:0;
+  const productChart=products.map(p=>({label:(p.code||'Product')+'  \u00b7  '+fmt(p.liters)+' L',pct:num(p.sharePct),valueLabel:money(p.sales)}));
+  const attendantChart=attendants.map((x,i)=>({label:(i+1)+'. '+(x.attendant||'Unknown'),pct:share(x.sales),valueLabel:money(x.sales)}));
+  const rankChart=(Array.isArray(ranking)?ranking:[]).filter(x=>x&&x.month).slice().sort((a,b)=>String(a.month).localeCompare(String(b.month)))
+    .map(x=>({label:msrShortMonth(x.month),value:num(x.avgAmount),current:String(x.month)===String(data.month)}));
+  const productRowsV2=products.map((p,i)=>({cells:[p.code||'Product code unavailable',fmt(p.liters)+' L',money(p.sales),num(p.sharePct).toFixed(1)+'%',money(num(p.liters)?num(p.sales)/num(p.liters):0),String(i+1)]}));
+  const attRowsV2=attendants.map((x,i)=>({cells:[(i+1)+'. '+(x.attendant||'Unknown'),money(x.sales),fmt(x.liters)+' L',String(num(x.shiftCount)),share(x.sales).toFixed(1)+'%',''],}));
+  const dailyRowsV2=daily.map(row=>({cells:[String(row.date||'\u2014'),fmt(row.liters)+' L',money(row.sales),row.payments==null?'\u2014':money(row.payments),String(num(row.shifts)),'Confirmed'],tones:[null,null,null,null,null,GREEN]}));
+  if(daily.length>1)dailyRowsV2.push({bold:true,cells:['Month total',fmt(daily.reduce((n,x)=>n+num(x.liters),0))+' L',money(daily.reduce((n,x)=>n+num(x.sales),0)),daily.every(x=>x.payments!=null)?money(daily.reduce((n,x)=>n+num(x.payments),0)):'\u2014',String(daily.reduce((n,x)=>n+num(x.shifts),0)),'']});
+  const notesStrip=[
+    {label:'Expected DSR days',value:String(num(s.expectedDays))},
+    {label:'Entered payments',value:s.enteredPayments==null?'Incomplete':money(s.enteredPayments)},
+    {label:'Financial difference',value:s.financialDifference==null?'Incomplete':money(s.financialDifference),tone:s.financialDifference==null?'warn':null},
+    {label:'Report generated',value:new Date().toLocaleDateString('en-US')}];
+  return {productChart,attendantChart,rankChart,productRowsV2,attRowsV2,dailyRowsV2,notesStrip,
+    dailyRows:[],productRows:[],attendants:[],notesLeft:[],notesRight:[],rightTitle:''};
+}
+function createMsrReportPdfV2(r){
+  const d=createPdfDoc(),M=d.M,C=d.C,CW=d.CW,W=595.28,BOTTOM=792;
+  const half=(CW-16)/2,RX=M+half+16;
+  // Horizontal share bars: label and value on the first line, a full-width bar below.
+  const hbars=(items,x,top,w,rowH)=>{
+    items.forEach((it,i)=>{
+      const y=top+i*rowH,pct=Math.min(100,Math.max(0,Number(it.pct)||0));
+      d.text(d.fit(it.label,9,true,w*0.55),x,y+13,9,true,C.INK);
+      d.text(d.fit(it.valueLabel,8.5,false,w*0.45),x+w,y+13,8.5,false,C.GRAY,'r');
+      d.box(x,y+rowH*0.5-2,w,9,C.LINE,4.5);
+      const fw=w*pct/100;
+      if(fw>0)d.box(x,y+rowH*0.5-2,Math.max(fw,4),9,it.color||C.BLUE,4.5);
+      d.text(pct.toFixed(1)+'%',x+w,y+rowH*0.5+12,7.5,false,C.GRAY,'r');
+    });
+  };
+  // ---------------- PAGE 1 ----------------
+  d.header({kicker:'MONTHLY SALES REPORT  \u00b7  STATION-WIDE PERFORMANCE',title:r.title,h:84,kBase:28,tBase:54,pillTop:31.5,pillBase:48.5,status:r.statusLabel,statusTone:'good'});
+  d.y=105.8;
+  d.section('Key figures',M,d.y);d.y+=24.2;
+  const kh=44,kg=8,kper=4;
+  const kitems=r.key.slice(0,8);
+  d.y+=d.cards(kitems,{top:d.y,perRow:kper,gap:kg,h:kh,pad:10,labelSize:7,labelBase:15,valBase:33,valSize:12.5})+14;
+  // daily trend (bars + average line)
+  d.section('Daily sales trend',M,d.y);d.y+=24;
+  {const top=d.y,h=130,days=r.chart||[];
+    d.box(M,top,CW,h,C.CARD,4.5);
+    d.box(M+14,top+10,7,7,C.BLUE,1.5);d.text('Daily calculated sales',M+26,top+16.5,8,false,C.GRAY);
+    const lx=M+26+d.tw('Daily calculated sales',8,false)+18;
+    d.line(lx,top+13.5,lx+14,top+13.5,C.AMBER,1.2,'3 2');
+    d.text('Average / confirmed day  '+r.avgLabel,lx+20,top+16.5,8,false,C.GRAY);
+    const px0=M+48,px1=M+CW-16,pTop=top+30,pBot=top+h-20,ph=pBot-pTop;
+    if(!days.length){d.text('No confirmed daily reports for this month.',M+CW/2,top+h/2+8,9,'i',C.GRAY,'c');}
+    else{
+      const mx=Math.max.apply(null,days.map(x=>x.sales).concat([1])),step=msrNiceStep(mx),axis=step*4;
+      for(let i=0;i<=4;i++){const yy=pBot-ph*i/4;d.line(px0,yy,px1,yy,i===0?C.GRAY:C.LINE,i===0?.6:.5);d.text(msrCompact(step*i),px0-6,yy+2.6,7,false,C.GRAY,'r');}
+      const n=days.length,slot=(px1-px0)/n,bw=Math.min(36,slot*.6);
+      days.forEach((x,i)=>{const bh=Math.max(0,x.sales/axis*ph),bx=px0+slot*i+(slot-bw)/2;
+        if(bh>0)d.box(bx,pBot-bh,bw,bh,C.BLUE,bw>8?2:0);
+        if(n<=14)d.text(msrCompact(x.sales),bx+bw/2,pBot-bh-3.5,7.5,true,C.INK,'c');
+        const every=n<=16?1:n<=24?2:3;
+        if(i%every===0)d.text(n<=10?String(x.date).slice(5):String(x.date).slice(8,10),bx+bw/2,pBot+11,7.5,false,C.GRAY,'c');});
+      if(r.avg>0&&r.avg<=axis){const ay=pBot-r.avg/axis*ph;d.line(px0,ay,px1,ay,C.AMBER,1.1,'3 2');}
+    }
+    d.y=top+h+14;
+  }
+  // product mix and attendant share, side by side
+  d.section('Product mix (share of sales)',M,d.y);d.section('Attendant share of sales',RX,d.y);d.y+=24;
+  {const top=d.y,h=160;
+    d.box(M,top,half,h,C.CARD,4.5);d.box(RX,top,half,h,C.CARD,4.5);
+    const prod=(r.productChart||[]).slice(0,6),att=(r.attendantChart||[]).slice(0,6);
+    if(prod.length)hbars(prod,M+14,top+12,half-28,(h-24)/Math.max(prod.length,1));
+    else d.text('No product totals available.',M+half/2,top+h/2,8.5,'i',C.GRAY,'c');
+    if(att.length)hbars(att,RX+14,top+12,half-28,(h-24)/Math.max(att.length,1));
+    else d.text('Attendant totals are not available.',RX+half/2,top+h/2,8.5,'i',C.GRAY,'c');
+    d.y=top+h+14;
+  }
+  // monthly ranking chart (average sales per confirmed day)
+  d.section('Monthly sales per confirmed day',M,d.y);d.y+=24;
+  {const top=d.y,h=96,rk=(r.rankChart||[]).slice(-12);
+    d.box(M,top,CW,h,C.CARD,4.5);
+    if(!rk.length){d.text('Monthly ranking appears when confirmed DSR months are available.',M+CW/2,top+h/2+4,9,'i',C.GRAY,'c');}
+    else{
+      const px0=M+44,px1=M+CW-14,pTop=top+12,pBot=top+h-20,ph=pBot-pTop;
+      const mx=Math.max.apply(null,rk.map(x=>x.value).concat([1])),step=msrNiceStep(mx),axis=step*4;
+      for(let i=0;i<=4;i++){const yy=pBot-ph*i/4;d.line(px0,yy,px1,yy,i===0?C.GRAY:C.LINE,i===0?.6:.5);d.text(msrCompact(step*i),px0-6,yy+2.6,7,false,C.GRAY,'r');}
+      const n=rk.length,slot=(px1-px0)/n,bw=Math.min(44,slot*.55);
+      rk.forEach((x,i)=>{const bh=Math.max(0,x.value/axis*ph),bx=px0+slot*i+(slot-bw)/2;
+        if(bh>0)d.box(bx,pBot-bh,bw,bh,x.current?C.BLUE:[147,197,253],bw>8?2:0);
+        d.text(msrCompact(x.value),bx+bw/2,pBot-bh-3.5,7.5,true,C.INK,'c');
+        d.text(x.label,bx+bw/2,pBot+11,7.5,false,C.GRAY,'c');});
+    }
+    d.y=top+h+10;
+  }
+  // ---------------- PAGE 2 ----------------
+  d.newPage();
+  d.box(0,0,W,40,C.NAVY);
+  d.text('MONTHLY SALES REPORT  \u00b7  DETAIL',M,20,8,true,[147,197,253]);
+  d.text(d.fit(r.title,15,true,380),M,35,15,true,[255,255,255]);
+  d.y=58;
+  // generic compact table with adaptive row height so the page never breaks
+  const table=(title,cols,rows,rowH,minH)=>{
+    d.section(title,M,d.y);d.y+=22;
+    const hh=18;d.box(M,d.y,CW,hh,C.NAVY,4);
+    cols.forEach(c=>d.text(d.clean(c.h).toUpperCase(),M+c.x,d.y+12,7,true,[255,255,255],c.a==='r'?'r':'l'));
+    d.y+=hh;
+    rows.forEach((row,ri)=>{
+      const bold=!!row.bold;
+      if(!bold&&ri%2===0)d.box(M,d.y,CW,rowH,C.CARD);
+      if(bold)d.box(M,d.y,CW,rowH,C.AMBERBG===undefined?C.LINE:[226,232,240]);
+      cols.forEach((c,ci)=>{const v=row.cells[ci];if(v==null)return;
+        const tone=(row.tones&&row.tones[ci])||C.INK;
+        d.text(d.fit(String(v),8,bold||c.b,c.max||200),M+c.x,d.y+rowH/2+2.8,8,bold||c.b,tone,c.a==='r'?'r':'l');});
+      d.hline(M,M+CW,d.y+rowH,C.LINE,.4);
+      d.y+=rowH;
+    });
+    d.y+=10;
+  };
+  const dailyCols=[{h:'Date',x:8},{h:'Fuel sold',x:150,a:'r'},{h:'Sales',x:270,a:'r'},{h:'Payments',x:380,a:'r'},{h:'Shifts',x:440,a:'r'},{h:'Status',x:CW-8,a:'r',b:true}];
+  const prodCols=[{h:'Product code',x:8,max:150},{h:'Fuel sold',x:200,a:'r'},{h:'Sales',x:310,a:'r'},{h:'Share',x:380,a:'r'},{h:'Sales / L',x:450,a:'r'},{h:'Rank',x:CW-8,a:'r'}];
+  const attCols=[{h:'Attendant',x:8,max:170},{h:'Sales',x:200,a:'r'},{h:'Fuel sold',x:290,a:'r'},{h:'Shifts',x:370,a:'r'},{h:'Share',x:440,a:'r'},{h:'',x:CW-8,a:'r'}];
+  const prodRows=r.productRowsV2||[],attRows=r.attRowsV2||[],dailyRows=r.dailyRowsV2||[];
+  // space left for the daily table after the other two tables and the notes strip
+  const fixed=(22+18+10)*3+ (prodRows.length*16)+(attRows.length*16)+ 56 + 24;
+  const avail=BOTTOM-d.y-fixed-(dailyRows.length*0);
+  const dRowH=Math.max(9.5,Math.min(14,avail/Math.max(1,dailyRows.length)));
+  table('Daily sales breakdown',dailyCols,dailyRows,dRowH);
+  table('Product performance',prodCols,prodRows,16);
+  table('Attendant performance',attCols,attRows,16);
+  // reconciliation strip
+  d.section('Reconciliation',M,d.y);d.y+=22;
+  const notes=r.notesStrip||[];
+  if(notes.length){d.box(M,d.y,CW,40,C.CARD,4.5);
+    const nw=CW/notes.length;notes.forEach((n,i)=>{const x=M+i*nw+12;
+      d.text(d.clean(n.label).toUpperCase(),x,d.y+14,7,false,C.GRAY);
+      d.text(d.fit(n.value,10,true,nw-24),x,d.y+30,10,true,n.tone==='warn'?C.AMBER:C.INK);});
+    d.y+=40;}
+  return d.finish(r.footer,'MSR - '+r.title);
+}
+
 function createMsrReportPdf(r){
   const d=createPdfDoc(),M=d.M,C=d.C,CW=d.CW;
   d.header({kicker:'MONTHLY SALES REPORT  \u00b7  STATION-WIDE PERFORMANCE',title:r.title,h:84,kBase:28,tBase:54,pillTop:31.5,pillBase:48.5,status:r.statusLabel,statusTone:'good'});
