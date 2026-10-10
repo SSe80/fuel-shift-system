@@ -2,6 +2,14 @@
 (function () {
   'use strict';
   function $(id) { return document.getElementById(id); }
+  function errText(x, status) {
+    var msg;
+    if (typeof x === 'string') msg = x;
+    else if (x && typeof x.message === 'string') msg = x.message;
+    else if (x && typeof x === 'object') { try { msg = JSON.stringify(x); } catch (e) { msg = 'unreadable error'; } }
+    else msg = '';
+    return (msg || 'No details returned') + (status ? ' [HTTP ' + status + ']' : '');
+  }
   function say(msg, bad) { var el = $('drive-status'); if (el) { el.textContent = msg; el.style.color = bad ? '#b91c1c' : ''; } }
   async function api(url, method, body) {
     var opts = { method: method || 'GET', credentials: 'same-origin', headers: { 'X-Fuel-Role': 'admin' } };
@@ -14,14 +22,14 @@
   }
   async function loadSettings() {
     var s = await api('/api/drive/settings');
-    if (s.status !== 200) return say('Could not load Drive settings (' + s.status + ').', true);
+    if (s.status !== 200) return say('Could not load Drive settings: ' + errText(s.body.error, s.status), true);
     if ($('drive-dsr-link')) $('drive-dsr-link').value = s.body.dsr_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.dsr_folder_id : '';
     if ($('drive-msr-link')) $('drive-msr-link').value = s.body.msr_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.msr_folder_id : '';
     say('Folder links loaded.');
   }
   async function saveSettings() {
     var s = await api('/api/drive/settings', 'PUT', { dsr_link: $('drive-dsr-link').value, msr_link: $('drive-msr-link').value });
-    if (s.status !== 200) return say(s.body.error || 'Save failed (' + s.status + ').', true);
+    if (s.status !== 200) return say('Save failed: ' + errText(s.body.error, s.status), true);
     say('Saved. Use "Test connection" to check access.');
   }
   async function testConnection() {
@@ -29,7 +37,7 @@
     var t = await api('/api/drive/test', 'POST', {});
     if (t.body && t.body.ok) return say('Connected. DSR and MSR folders are reachable and writable.');
     if (t.body && t.body.missing && t.body.missing.length) return say('Missing folder link for: ' + t.body.missing.join(', ').toUpperCase() + '.', true);
-    say((t.body && t.body.error) || 'Connection failed (' + t.status + ').', true);
+    say('Connection failed: ' + errText(t.body && t.body.error, t.status), true);
   }
   async function loadQueue() {
     var q = await api('/api/drive/queue');
