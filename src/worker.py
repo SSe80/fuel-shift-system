@@ -1349,26 +1349,8 @@ def update_tank(tank_id):
                     return jsonify({"error":"Product for this tank was not found"}),404
                 if not products[0].get("active"):
                     return jsonify({"error":"Tank cannot be activated because its product is inactive"}),400
-                if "opening_stock_liters" not in data:
-                    return jsonify({"error":"Opening stock reading is required when activating a tank"}),400
-                try:
-                    opening_stock = float(data["opening_stock_liters"])
-                except (TypeError,ValueError):
-                    return jsonify({"error":"Invalid opening stock reading"}),400
-                if opening_stock < 0:
-                    return jsonify({"error":"Opening stock reading cannot be negative"}),400
-                if opening_stock > float(tank.get("capacity_liters") or 0):
-                    return jsonify({"error":"Opening stock cannot exceed tank capacity"}),400
-                body["current_liters"] = opening_stock
-                body["opening_stock_liters"] = opening_stock
-                if data.get("opening_stock_mm") is not None:
-                    try:
-                        opening_mm=float(data.get("opening_stock_mm"))
-                    except (TypeError,ValueError):
-                        return jsonify({"error":"Invalid opening dip reading"}),400
-                    if opening_mm < 0:
-                        return jsonify({"error":"Opening dip cannot be negative"}),400
-                    body["current_mm"]=opening_mm
+                # Tank activation only changes its active status. Opening dip/stock
+                # readings are captured in the appropriate inventory or shift workflow.
                 body["active"] = True
             else:
                 body["active"] = False
