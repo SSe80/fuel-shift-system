@@ -2467,7 +2467,8 @@ function createPdfDoc(){
     cmd(col(color||C.INK)+' rg BT /F'+(bold?2:style==='i'?3:1)+' '+size+' Tf 1 0 0 1 '+n2(px)+' '+Y(base)+' Tm ('+esc(s)+') Tj ET\n');
   };
   const line=(x1,t1,x2,t2,color,wd,dash)=>cmd((dash?'['+dash+'] 0 d ':'')+col(color)+' RG '+(wd||.6)+' w '+n2(x1)+' '+Y(t1)+' m '+n2(x2)+' '+Y(t2)+' l S'+(dash?' [] 0 d':'')+'\n');
-  Object.assign(d,{clean,tw,fit,wrap,box,outline,hline,line,text});
+  const poly=(pts,color)=>cmd(col(color)+' rg '+pts.map((p,i)=>n2(p[0])+' '+Y(p[1])+(i?' l':' m')).join(' ')+' h f\n');
+  Object.assign(d,{clean,tw,fit,wrap,box,outline,hline,line,text,poly});
   d.newPage=()=>{pages.push([]);d.y=d.topY;};
   d.ensure=h=>{if(d.y+h>BOTTOM)d.newPage();};
   d.section=(title,x,t)=>{box(x,t,3,13.4,C.BLUE);text(clean(title).toUpperCase(),x+10,t+10.2,10.5,true,C.NAVY);};
@@ -2671,6 +2672,7 @@ function downloadMonthlySalesReportPdf(data){
       {label:'Fuel sold',value:fmt(s.totalLiters)+' L'},
       {label:'Confirmed days',value:String(num(s.confirmedDays)),size:16},
       {label:'Confirmed shifts',value:fmt(s.totalShifts),size:16},
+      {label:'Entered payments',value:s.enteredPayments==null?'Incomplete':money(s.enteredPayments),tone:s.enteredPayments==null?'warn':null},
       {label:'Average sales / day',value:money(s.averageDailySales)}
     ],
     chart:daily.map(x=>({date:String(x.date||''),sales:num(x.sales)})),avg:num(s.averageDailySales),avgLabel:money(s.averageDailySales),
@@ -2748,9 +2750,6 @@ function msrShortMonth(v){const m=/^(\d{4})-(\d{2})/.exec(String(v||''));if(!m)r
 function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,monthLabel,GREEN,totalSales){
   const share=x=>totalSales?num(x)/totalSales*100:0;
   const productChart=products.map(p=>({label:(p.code||'Product')+'  \u00b7  '+fmt(p.liters)+' L',pct:num(p.sharePct),valueLabel:money(p.sales)}));
-  const methodRows=Array.isArray(data.salesByMethod)?data.salesByMethod:[];
-  const methodTotal=methodRows.reduce((sum,x)=>sum+num(x.amount),0);
-  const salesMethodChart=methodRows.map(x=>({label:String(x.method||'Other'),pct:methodTotal?num(x.amount)/methodTotal*100:0,valueLabel:money(x.amount)}));
   const attendantChart=attendants.map((x,i)=>({label:(i+1)+'. '+(x.attendant||'Unknown'),pct:share(x.sales),valueLabel:money(x.sales)}));
   const rankChart=(Array.isArray(ranking)?ranking:[]).filter(x=>x&&x.month).slice().sort((a,b)=>String(a.month).localeCompare(String(b.month)))
     .map(x=>({label:msrShortMonth(x.month),value:num(x.avgAmount),current:String(x.month)===String(data.month)}));
@@ -2763,144 +2762,171 @@ function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,mont
     {label:'Entered payments',value:s.enteredPayments==null?'Incomplete':money(s.enteredPayments)},
     {label:'Financial difference',value:s.financialDifference==null?'Incomplete':money(s.financialDifference),tone:s.financialDifference==null?'warn':null},
     {label:'Report generated',value:new Date().toLocaleDateString('en-US')}];
-  return {productChart,attendantChart,rankChart,salesMethodChart,productRowsV2,attRowsV2,dailyRowsV2,notesStrip,
+  const withSales=daily.filter(x=>num(x.sales)>0);
+  const bestDay=withSales.length?withSales.reduce((a,b)=>num(b.sales)>num(a.sales)?b:a):null;
+  const lowDay=withSales.length?withSales.reduce((a,b)=>num(b.sales)<num(a.sales)?b:a):null;
+  const topAtt=attendants.length?attendants.reduce((a,b)=>num(b.sales)>num(a.sales)?b:a):null;
+  const topProd=products.length?products.reduce((a,b)=>num(b.sales)>num(a.sales)?b:a):null;
+  const highlights=[
+    {label:'Best day',value:bestDay?money(bestDay.sales):'—',sub:bestDay?bestDay.date:''},
+    {label:'Lowest day',value:lowDay?money(lowDay.sales):'—',sub:lowDay?lowDay.date:''},
+    {label:'Top attendant',value:topAtt?(topAtt.attendant||'Unknown'):'—',sub:topAtt?money(topAtt.sales):''},
+    {label:'Top product',value:topProd?(topProd.code||'Product'):'—',sub:topProd?money(topProd.sales):''}];
+  const totalL=products.reduce((n,p)=>n+num(p.liters),0);
+  return {productCentre:fmt(totalL),highlights,productChart,attendantChart,rankChart,productRowsV2,attRowsV2,dailyRowsV2,notesStrip,
     dailyRows:[],productRows:[],attendants:[],notesLeft:[],notesRight:[],rightTitle:''};
 }
+function msrNiceAxis(max){
+  // 5 gridlines; pick the smallest "nice" step so the top gridline clears the largest value
+  const top=Math.max(max,1),mag=Math.pow(10,Math.floor(Math.log10(top/5)));
+  for(const m of [1,1.2,1.5,2,2.5,3,4,5,6,8,10]){const step=m*mag;if(step*5>=top)return {step,axis:step*5};}
+  return {step:2*mag,axis:10*mag};
+}
 function createMsrReportPdfV2(r){
-  const d=createPdfDoc(),M=d.M,C=d.C,CW=d.CW,W=595.28,BOTTOM=792;
+  const d=createPdfDoc(),M=d.M,C=d.C,CW=d.CW,W=595.28,H=841.89;
   const half=(CW-16)/2,RX=M+half+16;
-  // Horizontal share bars: label and value on the first line, a full-width bar below.
+  const PAL=[[37,99,235],[16,185,129],[245,158,11],[139,92,246],[239,68,68],[14,165,233],[234,88,12],[100,116,139]];
+  const TOTAL_TEXT=(v)=>d.clean(v);
+  // Donut chart: items [{label,pct,color,sub}]; cx,cy = centre (top-down coordinates)
+  const donut=(items,cx,cy,R,rin,centreTop,centreSub)=>{
+    let a=0;
+    items.forEach(it=>{
+      const frac=Math.max(0,Math.min(100,it.pct))/100;if(frac<=0)return;
+      const a0=a,a1=a+frac*2*Math.PI;a=a1;
+      const n=Math.max(4,Math.ceil(frac*72));const pts=[];
+      for(let k=0;k<=n;k++){const t=a0+(a1-a0)*k/n;pts.push([cx+R*Math.sin(t),cy-R*Math.cos(t)]);}
+      for(let k=n;k>=0;k--){const t=a0+(a1-a0)*k/n;pts.push([cx+rin*Math.sin(t),cy-rin*Math.cos(t)]);}
+      d.poly(pts,it.color);
+    });
+    d.poly(Array.from({length:48},(_,k)=>{const t=2*Math.PI*k/48;return[cx+rin*Math.sin(t),cy-rin*Math.cos(t)];}),C.CARD);
+    if(centreTop){d.text(centreTop,cx,cy+3,12,true,C.INK,'c');}
+    if(centreSub){d.text(centreSub,cx,cy+15,7,false,C.GRAY,'c');}
+  };
   const hbars=(items,x,top,w,rowH)=>{
     items.forEach((it,i)=>{
       const y=top+i*rowH,pct=Math.min(100,Math.max(0,Number(it.pct)||0));
-      d.text(d.fit(it.label,9,true,w*0.55),x,y+13,9,true,C.INK);
-      d.text(d.fit(it.valueLabel,8.5,false,w*0.45),x+w,y+13,8.5,false,C.GRAY,'r');
-      d.box(x,y+rowH*0.5-2,w,9,C.LINE,4.5);
+      d.text(d.fit(it.label,9,true,w*0.6),x,y+13,9,true,C.INK);
+      d.text(d.fit(it.valueLabel,8.5,false,w*0.4),x+w,y+13,8.5,false,C.GRAY,'r');
+      d.box(x,y+rowH*0.5,w,8,C.LINE,4);
       const fw=w*pct/100;
-      if(fw>0)d.box(x,y+rowH*0.5-2,Math.max(fw,4),9,it.color||C.BLUE,4.5);
-      d.text(pct.toFixed(1)+'%',x+w,y+rowH*0.5+12,7.5,false,C.GRAY,'r');
+      if(fw>0)d.box(x,y+rowH*0.5,Math.max(fw,4),8,it.color||C.BLUE,4);
+      d.text(pct.toFixed(1)+'%',x+w,y+rowH*0.5+17,7.5,true,C.GRAY,'r');
     });
   };
-  // ---------------- PAGE 1 ----------------
+  // ================= PAGE 1 =================
   d.header({kicker:'MONTHLY SALES REPORT  \u00b7  STATION-WIDE PERFORMANCE',title:r.title,h:84,kBase:28,tBase:54,pillTop:31.5,pillBase:48.5,status:r.statusLabel,statusTone:'good'});
-  d.y=105.8;
-  d.section('Key figures',M,d.y);d.y+=24.2;
-  const kh=44,kg=8,kper=4;
-  const kitems=r.key.slice(0,8);
-  d.y+=d.cards(kitems,{top:d.y,perRow:kper,gap:kg,h:kh,pad:10,labelSize:7,labelBase:15,valBase:33,valSize:12.5})+14;
-  // daily trend (bars + average line)
+  d.y=102;
+  // KPI grid: 3 per row, two rows
+  d.section('Key figures',M,d.y);d.y+=24;
+  {const items=r.key.slice(0,6),per=3,gap=8,w=(CW-gap*(per-1))/per,h=42;
+    items.forEach((it,i)=>{const c=i%per,rw=Math.floor(i/per),x=M+c*(w+gap),t=d.y+rw*(h+gap);
+      d.box(x,t,w,h,it.tone==='good'?[236,253,245]:C.CARD,4.5);
+      d.box(x,t+8,3,h-16,it.tone==='good'?C.GREEN:C.BLUE,1.5);
+      d.text(d.clean(it.label).toUpperCase(),x+12,t+14,7,false,C.GRAY);
+      d.text(d.fit(it.value,it.size||12.5,true,w-22),x+12,t+30,it.size||12.5,true,it.tone==='good'?C.GREEN:C.INK);
+    });
+    d.y+=2*h+gap+12;}
+  // Highlights row
+  {const hl=r.highlights||[],per=hl.length||1,gap=8,w=(CW-gap*(per-1))/per,h=40;
+    hl.forEach((x,i)=>{const px=M+i*(w+gap);
+      d.box(px,d.y,w,h,C.NAVY,4.5);
+      d.text(d.clean(x.label).toUpperCase(),px+11,d.y+13,6.8,true,[147,197,253]);
+      d.text(d.fit(x.value,10,true,w-22),px+11,d.y+27.5,10,true,[255,255,255]);
+      if(x.sub)d.text(d.fit(x.sub,6.8,false,w-22),px+11,d.y+36,6.8,false,[203,213,225]);
+    });
+    d.y+=h+14;}
+  // Daily trend
   d.section('Daily sales trend',M,d.y);d.y+=24;
-  {const top=d.y,h=120,days=r.chart||[];
+  {const top=d.y,h=150,days=r.chart||[];
     d.box(M,top,CW,h,C.CARD,4.5);
-    d.box(M+14,top+10,7,7,C.BLUE,1.5);d.text('Daily calculated sales',M+26,top+16.5,8,false,C.GRAY);
-    const lx=M+26+d.tw('Daily calculated sales',8,false)+18;
-    d.line(lx,top+13.5,lx+14,top+13.5,C.AMBER,1.2,'3 2');
-    d.text('Average / confirmed day  '+r.avgLabel,lx+20,top+16.5,8,false,C.GRAY);
-    const px0=M+48,px1=M+CW-16,pTop=top+30,pBot=top+h-20,ph=pBot-pTop;
+    d.box(M+14,top+11,7,7,C.BLUE,1.5);d.text('Daily calculated sales',M+26,top+17.5,7.8,false,C.GRAY);
+    const lx=M+26+d.tw('Daily calculated sales',7.8,false)+18;
+    d.line(lx,top+14.5,lx+14,top+14.5,C.AMBER,1.2,'3 2');
+    d.text('Average per confirmed day  '+r.avgLabel,lx+20,top+17.5,7.8,false,C.GRAY);
+    const px0=M+46,px1=M+CW-14,pTop=top+34,pBot=top+h-22,ph=pBot-pTop;
     if(!days.length){d.text('No confirmed daily reports for this month.',M+CW/2,top+h/2+8,9,'i',C.GRAY,'c');}
     else{
-      const mx=Math.max.apply(null,days.map(x=>x.sales).concat([1])),step=msrNiceStep(mx),axis=step*4;
-      for(let i=0;i<=4;i++){const yy=pBot-ph*i/4;d.line(px0,yy,px1,yy,i===0?C.GRAY:C.LINE,i===0?.6:.5);d.text(msrCompact(step*i),px0-6,yy+2.6,7,false,C.GRAY,'r');}
-      const n=days.length,slot=(px1-px0)/n,bw=Math.min(36,slot*.6);
+      const mx=Math.max.apply(null,days.map(x=>x.sales).concat([1])),ax=msrNiceAxis(mx),axis=ax.axis,step=ax.step;
+      for(let i=0;i<=5;i++){const yy=pBot-ph*i/5;d.line(px0,yy,px1,yy,i===0?C.GRAY:C.LINE,i===0?.6:.4);d.text(msrCompact(step*i),px0-6,yy+2.6,7,false,C.GRAY,'r');}
+      const n=days.length,slot=(px1-px0)/n,bw=Math.min(30,slot*.62);
       days.forEach((x,i)=>{const bh=Math.max(0,x.sales/axis*ph),bx=px0+slot*i+(slot-bw)/2;
         if(bh>0)d.box(bx,pBot-bh,bw,bh,C.BLUE,bw>8?2:0);
-        if(n<=14)d.text(msrCompact(x.sales),bx+bw/2,pBot-bh-3.5,7.5,true,C.INK,'c');
+        if(n<=12)d.text(msrCompact(x.sales),bx+bw/2,pBot-bh-3.5,7,true,C.INK,'c');
         const every=n<=16?1:n<=24?2:3;
-        if(i%every===0)d.text(n<=10?String(x.date).slice(5):String(x.date).slice(8,10),bx+bw/2,pBot+11,7.5,false,C.GRAY,'c');});
+        if(i%every===0)d.text(String(x.date).slice(8,10),bx+bw/2,pBot+11,7.2,false,C.GRAY,'c');});
       if(r.avg>0&&r.avg<=axis){const ay=pBot-r.avg/axis*ph;d.line(px0,ay,px1,ay,C.AMBER,1.1,'3 2');}
     }
-    d.y=top+h+14;
-  }
-  // product mix and attendant share, side by side
-  d.section('Product mix (share of sales)',M,d.y);d.section('Attendant share of sales',RX,d.y);d.y+=24;
-  {const top=d.y,h=140;
+    d.y=top+h+14;}
+  // Product mix donut and attendant share
+  d.section('Product mix',M,d.y);d.section('Attendant share of sales',RX,d.y);d.y+=24;
+  {const top=d.y,h=138;
     d.box(M,top,half,h,C.CARD,4.5);d.box(RX,top,half,h,C.CARD,4.5);
-    const prod=(r.productChart||[]).slice(0,6),att=(r.attendantChart||[]).slice(0,6);
-    if(prod.length)hbars(prod,M+14,top+12,half-28,(h-24)/Math.max(prod.length,1));
-    else d.text('No product totals available.',M+half/2,top+h/2,8.5,'i',C.GRAY,'c');
-    if(att.length)hbars(att,RX+14,top+12,half-28,(h-24)/Math.max(att.length,1));
+    const prod=(r.productChart||[]).slice(0,6);
+    if(prod.length){
+      const items=prod.map((p,i)=>Object.assign({},p,{color:PAL[i%PAL.length]}));
+      donut(items,M+58,top+h/2,46,28,(r.productCentre||''),'LITRES');
+      items.forEach((p,i)=>{const ly=top+30+i*44;
+        d.box(M+120,ly+2,9,9,p.color,2);
+        d.text(d.fit(p.label,8.5,true,half-178),M+135,ly+10,8.5,true,C.INK);
+        d.text(p.pct.toFixed(1)+'%',M+half-12,ly+10,8.5,true,p.color,'r');
+        d.text(d.fit(p.valueLabel,7.6,false,half-150),M+135,ly+23,7.6,false,C.GRAY);});
+    }else d.text('No product totals available.',M+half/2,top+h/2,8.5,'i',C.GRAY,'c');
+    const att=(r.attendantChart||[]).slice(0,6);
+    if(att.length)hbars(att,RX+14,top+12,half-28,(h-22)/Math.max(att.length,1));
     else d.text('Attendant totals are not available.',RX+half/2,top+h/2,8.5,'i',C.GRAY,'c');
-    d.y=top+h+14;
-  }
-  // Monthly ranking chart (average sales per confirmed day), retained alongside the new method graph.
+    d.y=top+h+14;}
+  // Monthly ranking
   d.section('Monthly sales per confirmed day',M,d.y);d.y+=24;
-  {const top=d.y,h=80,rk=(r.rankChart||[]).slice(-12);
+  {const top=d.y,h=92,rk=(r.rankChart||[]).slice(-12);
     d.box(M,top,CW,h,C.CARD,4.5);
     if(!rk.length){d.text('Monthly ranking appears when confirmed DSR months are available.',M+CW/2,top+h/2+4,9,'i',C.GRAY,'c');}
     else{
-      const px0=M+44,px1=M+CW-14,pTop=top+8,pBot=top+h-17,ph=pBot-pTop;
-      const mx=Math.max.apply(null,rk.map(x=>x.value).concat([1])),step=msrNiceStep(mx),axis=step*4;
-      for(let j=0;j<=4;j++){const yy=pBot-ph*j/4;d.line(px0,yy,px1,yy,j===0?C.GRAY:C.LINE,j===0?.6:.5);d.text(msrCompact(step*j),px0-6,yy+2.6,7,false,C.GRAY,'r');}
-      const n=rk.length,slot=(px1-px0)/n,bw=Math.min(44,slot*.55);
-      rk.forEach((x,j)=>{const bh=Math.max(0,x.value/axis*ph),bx=px0+slot*j+(slot-bw)/2;
+      const px0=M+46,px1=M+CW-14,pTop=top+14,pBot=top+h-20,ph=pBot-pTop;
+      const mx=Math.max.apply(null,rk.map(x=>x.value).concat([1])),ax=msrNiceAxis(mx);
+      for(let i=0;i<=5;i++){const yy=pBot-ph*i/5;d.line(px0,yy,px1,yy,i===0?C.GRAY:C.LINE,i===0?.6:.4);d.text(msrCompact(ax.step*i),px0-6,yy+2.6,7,false,C.GRAY,'r');}
+      const n=rk.length,slot=(px1-px0)/n,bw=Math.min(40,slot*.5);
+      rk.forEach((x,i)=>{const bh=Math.max(0,x.value/ax.axis*ph),bx=px0+slot*i+(slot-bw)/2;
         if(bh>0)d.box(bx,pBot-bh,bw,bh,x.current?C.BLUE:[147,197,253],bw>8?2:0);
         d.text(msrCompact(x.value),bx+bw/2,pBot-bh-3.5,7.2,true,C.INK,'c');
-        d.text(x.label,bx+bw/2,pBot+10,7.2,false,C.GRAY,'c');});
+        d.text(x.label,bx+bw/2,pBot+11,7.2,false,C.GRAY,'c');});
     }
-    d.y=top+h+8;
-  }
-  // Sales by method uses confirmed payment-ledger entries for the selected month.
-  d.section('Sales by method',M,d.y);d.y+=24;
-  {const top=d.y,h=70,methods=(r.salesMethodChart||[]).slice(0,6);
-    d.box(M,top,CW,h,C.CARD,4.5);
-    if(!methods.length){d.text('No confirmed payment-method entries are available for this month.',M+CW/2,top+h/2+4,9,'i',C.GRAY,'c');}
-    else{
-      const rowH=(h-8)/methods.length;
-      methods.forEach((x,i)=>{
-        const yy=top+6+i*rowH,pct=Math.max(0,Math.min(100,Number(x.pct)||0));
-        d.text(d.fit(x.label,8.5,true,112),M+12,yy+rowH*.55,8.5,true,C.INK);
-        const bx=M+128,bw=CW-244;
-        d.box(bx,yy+rowH*.28,bw,6,C.LINE,3);
-        if(pct>0)d.box(bx,yy+rowH*.28,Math.max(3,bw*pct/100),6,C.BLUE,3);
-        d.text(pct.toFixed(1)+'%',M+CW-102,yy+rowH*.55,7.5,false,C.GRAY,'r');
-        d.text(d.fit(x.valueLabel,8,false,84),M+CW-8,yy+rowH*.55,8,false,C.INK,'r');
-      });
-    }
-    d.y=top+h+10;
-  }
-  // ---------------- PAGE 2 ----------------
+    d.y=top+h+4;}
+  // ================= PAGE 2 (no header band) =================
   d.newPage();
-  d.box(0,0,W,40,C.NAVY);
-  d.text('MONTHLY SALES REPORT  \u00b7  DETAIL',M,20,8,true,[147,197,253]);
-  d.text(d.fit(r.title,15,true,380),M,35,15,true,[255,255,255]);
-  d.y=58;
-  // generic compact table with adaptive row height so the page never breaks
-  const table=(title,cols,rows,rowH,minH)=>{
+  d.y=46;
+  const table=(title,cols,rows,rowH)=>{
     d.section(title,M,d.y);d.y+=22;
-    const hh=18;d.box(M,d.y,CW,hh,C.NAVY,4);
-    cols.forEach(c=>d.text(d.clean(c.h).toUpperCase(),M+c.x,d.y+12,7,true,[255,255,255],c.a==='r'?'r':'l'));
+    const hh=20;d.box(M,d.y,CW,hh,C.NAVY,4);
+    cols.forEach(c=>d.text(d.clean(c.h).toUpperCase(),M+c.x,d.y+13,7,true,[255,255,255],c.a==='r'?'r':'l'));
     d.y+=hh;
     rows.forEach((row,ri)=>{
       const bold=!!row.bold;
-      if(!bold&&ri%2===0)d.box(M,d.y,CW,rowH,C.CARD);
-      if(bold)d.box(M,d.y,CW,rowH,C.AMBERBG===undefined?C.LINE:[226,232,240]);
-      cols.forEach((c,ci)=>{const v=row.cells[ci];if(v==null)return;
+      if(bold)d.box(M,d.y,CW,rowH,[226,232,240]);
+      else if(ri%2===0)d.box(M,d.y,CW,rowH,C.CARD);
+      cols.forEach((c,ci)=>{const v=row.cells[ci];if(v==null||v==='')return;
         const tone=(row.tones&&row.tones[ci])||C.INK;
         d.text(d.fit(String(v),8,bold||c.b,c.max||200),M+c.x,d.y+rowH/2+2.8,8,bold||c.b,tone,c.a==='r'?'r':'l');});
       d.hline(M,M+CW,d.y+rowH,C.LINE,.4);
       d.y+=rowH;
     });
-    d.y+=10;
+    d.y+=12;
   };
   const dailyCols=[{h:'Date',x:8},{h:'Fuel sold',x:150,a:'r'},{h:'Sales',x:270,a:'r'},{h:'Payments',x:380,a:'r'},{h:'Shifts',x:440,a:'r'},{h:'Status',x:CW-8,a:'r',b:true}];
-  const prodCols=[{h:'Product code',x:8,max:150},{h:'Fuel sold',x:200,a:'r'},{h:'Sales',x:310,a:'r'},{h:'Share',x:380,a:'r'},{h:'Sales / L',x:450,a:'r'},{h:'Rank',x:CW-8,a:'r'}];
-  const attCols=[{h:'Attendant',x:8,max:170},{h:'Sales',x:200,a:'r'},{h:'Fuel sold',x:290,a:'r'},{h:'Shifts',x:370,a:'r'},{h:'Share',x:440,a:'r'},{h:'',x:CW-8,a:'r'}];
+  const prodCols=[{h:'Product',x:8,max:150},{h:'Fuel sold',x:200,a:'r'},{h:'Sales',x:310,a:'r'},{h:'Share',x:380,a:'r'},{h:'Sales / L',x:450,a:'r'},{h:'Rank',x:CW-8,a:'r'}];
+  const attCols=[{h:'Attendant',x:8,max:170},{h:'Sales',x:200,a:'r'},{h:'Fuel sold',x:290,a:'r'},{h:'Shifts',x:370,a:'r'},{h:'Share',x:CW-8,a:'r'}];
   const prodRows=r.productRowsV2||[],attRows=r.attRowsV2||[],dailyRows=r.dailyRowsV2||[];
-  // space left for the daily table after the other two tables and the notes strip
-  const fixed=(22+18+10)*3+ (prodRows.length*16)+(attRows.length*16)+ 56 + 24;
-  const avail=BOTTOM-d.y-fixed-(dailyRows.length*0);
-  const dRowH=Math.max(9.5,Math.min(14,avail/Math.max(1,dailyRows.length)));
+  const reserved=(22+20+12)*2+(prodRows.length*18)+(attRows.length*18)+(22+20+12)+ 84;
+  const dRowH=Math.max(9.5,Math.min(15,(H-40-d.y-reserved)/Math.max(1,dailyRows.length)));
   table('Daily sales breakdown',dailyCols,dailyRows,dRowH);
-  table('Product performance',prodCols,prodRows,16);
-  table('Attendant performance',attCols,attRows,16);
-  // reconciliation strip
+  table('Product performance',prodCols,prodRows,18);
+  table('Attendant performance',attCols,attRows,18);
   d.section('Reconciliation',M,d.y);d.y+=22;
   const notes=r.notesStrip||[];
-  if(notes.length){d.box(M,d.y,CW,40,C.CARD,4.5);
+  if(notes.length){d.box(M,d.y,CW,42,C.CARD,4.5);
     const nw=CW/notes.length;notes.forEach((n,i)=>{const x=M+i*nw+12;
       d.text(d.clean(n.label).toUpperCase(),x,d.y+14,7,false,C.GRAY);
-      d.text(d.fit(n.value,10,true,nw-24),x,d.y+30,10,true,n.tone==='warn'?C.AMBER:C.INK);});
-    d.y+=40;}
+      d.text(d.fit(n.value,10.5,true,nw-24),x,d.y+31,10.5,true,n.tone==='warn'?C.AMBER:C.INK);});
+    d.y+=42;}
   return d.finish(r.footer,'MSR - '+r.title);
 }
 
@@ -3431,10 +3457,7 @@ async function loadSettingsData(){
     saleBox.innerHTML=saleTypes.length?saleTypes.map(s=>'<div class="card settings-item-card '+(s.active?'settings-active-card':'')+'" data-settings-key="saleTypes" data-settings-id="'+h(s.id)+'" onclick="toggleSettingsItem(event,this)"><div class="top"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">⋮</button><div><b>'+h(s.name)+'</b><div class="settings-card-details"><div><span>Description:</span> <b>'+h(s.description||'No description')+'</b></div><div><span>Reason:</span> <b>'+(s.reason_required?'Required':'Optional')+'</b></div><div><span>Status:</span> <b>'+(s.active?'Active':'Inactive')+'</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleSaleType(\''+s.id+'\','+s.active+')">'+(s.active?'Deactivate':'Activate')+'</button><button type="button" onclick="openSaleTypeEdit(\''+s.id+'\')">Edit</button><button type="button" class="settings-remove-action" onclick="removeSaleType(\''+s.id+'\')">Remove</button></div></div></div>').join(''):'<p class="muted">No sales configured.</p>';
   }
   window.saleTypeRecords=saleTypes;
-  const renderSettingsUser=e=>`<div class="card settings-item-card ${e.active?'settings-active-card':''}" data-settings-key="employees" data-settings-id="${e.id}" onclick="toggleSettingsItem(event,this)"><div class="top"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">⋮</button><div><b>${h(e.name)}</b><div class="settings-card-details"><div><span>Operator ID:</span> <b>${h(e.operator_id)}</b></div><div><span>Phone:</span> <b>${h(e.phone)}</b></div><div><span>Role:</span> <b>${h(e.role)}</b></div><div><span>Status:</span> <b>${e.active?'Active':'Inactive'}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleUser('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button><button type="button" onclick="openUserEdit('${e.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeUser('${e.id}')">Remove</button></div></div></div>`;
-  const adminUsers=employees.filter(e=>String(e.role||'').toLowerCase()==='admin');
-  const attendantUsers=employees.filter(e=>String(e.role||'').toLowerCase()!=='admin');
-  document.getElementById('employees').innerHTML=`<section class="settings-user-role-group"><div class="settings-user-role-heading"><span>Admin</span><span class="settings-user-role-count">${adminUsers.length}</span></div><div class="settings-user-role-list">${adminUsers.length?adminUsers.map(renderSettingsUser).join(''):'<p class="muted">No admin users.</p>'}</div></section><section class="settings-user-role-group"><div class="settings-user-role-heading"><span>Attendant</span><span class="settings-user-role-count">${attendantUsers.length}</span></div><div class="settings-user-role-list">${attendantUsers.length?attendantUsers.map(renderSettingsUser).join(''):'<p class="muted">No attendant users.</p>'}</div></section>`;
+  document.getElementById('employees').innerHTML=employees.length?employees.map(e=>`<div class="card settings-item-card ${e.active?'settings-active-card':''}" data-settings-key="employees" data-settings-id="${e.id}" onclick="toggleSettingsItem(event,this)"><div class="top"><button type="button" class="settings-move-handle" title="Hold and drag to move" aria-label="Hold and drag to move" onclick="event.stopPropagation()">⋮</button><div><b>${h(e.name)}</b><div class="settings-card-details"><div><span>Operator ID:</span> <b>${h(e.operator_id)}</b></div><div><span>Phone:</span> <b>${h(e.phone)}</b></div><div><span>Role:</span> <b>${h(e.role)}</b></div><div><span>Status:</span> <b>${e.active?'Active':'Inactive'}</b></div></div></div><div class="row settings-card-actions"><button type="button" class="settings-toggle-action" onclick="toggleUser('${e.id}',${e.active})">${e.active?'Deactivate':'Activate'}</button><button type="button" onclick="openUserEdit('${e.id}')">Edit</button><button type="button" class="settings-remove-action" onclick="removeUser('${e.id}')">Remove</button></div></div></div>`).join(''):'<p class="muted">No users.</p>';
   window.employeeRecords=employees;
   const tankGroups=[];
   const tankGroupMap=new Map();
@@ -3874,6 +3897,7 @@ function openTankActivation(id){
   document.getElementById('activation-target-title').textContent='Activate Fuel Tank?';
   const priceBox=document.getElementById('product-activation-price'); if(priceBox)priceBox.style.display='none';
   const stockBox=document.getElementById('tank-activation-stock'); if(stockBox)stockBox.style.display='block';
+  const stockInput=document.getElementById('tank-opening-stock'); if(stockInput)stockInput.value=''; const stockEq=document.getElementById('tank-opening-stock-equivalent'); if(stockEq)stockEq.textContent='Enter a dip to calculate liters.';
   document.getElementById('activation-target-message').innerHTML='<b>'+h(t.tank_code)+'</b> — '+h(product?.code_name||t.product)+'<br><span class="muted">Tank capacity: '+h(liters(t.capacity_liters))+' L • Product: '+(product?.active?'Active':'Inactive')+'</span>';
   openGenericActivationModal();
 }
@@ -3946,6 +3970,15 @@ async function _confirmGenericActivation(){
       const price=priceFromParts('activation-price-major','activation-price-cents');
       if(price===null||price<=0){toast('Enter a valid selling price greater than zero');return false;}
       body.selling_price=price;
+    }
+    if(type==='tank'){
+      const stockInput=document.getElementById('tank-opening-stock');
+      const stock=stockInput?.value.trim()!==''?Number(stockInput.value):NaN;
+      const tank=(window.tankRecords||[]).find(x=>String(x.id)===String(id));
+      const stockLiters=tankLitersFromDip(tank,stock);
+      if(!Number.isFinite(stock)||stock<0||stockLiters===null){toast('Enter a valid opening dip and ensure calibration is set.');return false;}
+      body.opening_stock_liters=stockLiters;
+      body.opening_stock_mm=stock;
     }
     await api(path,{method:'PATCH',body:JSON.stringify(body)});
     closeGenericActivation();await loadSettingsData();
@@ -5344,7 +5377,13 @@ async function _confirmGenericActivationReview(){
     details+='<p style="margin:7px 0"><b>Selling price:</b> '+h(money(price))+'</p>';
     successDetails='<p><b>'+h(item?.code_name||item?.name||id)+'</b> is now active.</p>'+details;
   }
-  if(type==='tank') successDetails='<p><b>'+h(item?.tank_code||id)+'</b> activated successfully.</p>'+details;
+  if(type==='tank'){
+    const stock=document.getElementById('tank-opening-stock')?.value.trim()||'';
+    const stockNumber=stock===''?NaN:Number(stock);
+    if(!Number.isFinite(stockNumber)||stockNumber<0){toast('Enter a valid opening stock reading in liters');return;}
+    details+='<p style="margin:7px 0"><b>Opening liters:</b> '+h(liters(stockNumber))+' L</p>';
+    successDetails='<p><b>'+h(item?.tank_code||id)+'</b> activated successfully.</p>'+details;
+  }
   showSettingsConfirmation('Review '+label+' Activation',details,()=>_confirmGenericActivation(),
     label+' activated successfully',successDetails);
 }
