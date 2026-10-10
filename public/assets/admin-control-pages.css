@@ -3378,3 +3378,115 @@ body.admin-control-ui[data-app-page].attendant-shift-page section.content-sectio
   font-weight: 750 !important;
   letter-spacing: -.02em;
 }
+
+/* ==========================================================================
+   PENDING HANDOVERS (attendant panel)
+   ========================================================================== */
+body.admin-control-ui.attendant-page main.wrap {
+  max-width: 720px !important;
+  margin: 0 auto !important;
+  padding: 20px 20px 48px !important;
+}
+body.admin-control-ui.attendant-page main.wrap > .top {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 18px !important;
+  padding: 0 !important;
+}
+body.admin-control-ui.attendant-page main.wrap > .top h2 {
+  margin: 0 !important;
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em;
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-page main.wrap > .top a {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ac-line);
+  background: #fff;
+  color: var(--ac-body) !important;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: var(--ac-shadow-sm);
+}
+body.admin-control-ui.attendant-page #pending-list {
+  display: grid !important;
+  gap: 14px !important;
+}
+body.admin-control-ui.attendant-page #pending-list > .card {
+  position: relative;
+  margin: 0 !important;
+  padding: 18px 18px 18px 22px !important;
+  background: #fff !important;
+  border: 1px solid var(--ac-line) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--ac-shadow) !important;
+  overflow: hidden;
+}
+body.admin-control-ui.attendant-page #pending-list > .card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: #dc2626;
+}
+body.admin-control-ui.attendant-page #pending-list > .card h3 {
+  margin: 0 0 8px !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-page #pending-list > .card > p {
+  margin: 0 0 10px !important;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ac-body) !important;
+}
+body.admin-control-ui.attendant-page #pending-list > .card > p b {
+  color: var(--ac-ink) !important;
+}
+body.admin-control-ui.attendant-page #pending-list > .card form.form {
+  display: grid !important;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ac-line-soft);
+}
+body.admin-control-ui.attendant-page #pending-list > .card form.form label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.attendant-page #pending-list > .card form.form button {
+  justify-self: stretch;
+}
+
+/* ==========================================================================
+   ADMIN TOP NAV — phone width: scrollable with a visible fade and snapping
+   ========================================================================== */
+@media (max-width: 900px) {
+  body.admin-control-ui.admin-shell > .admin-sidebar .admin-sidebar-nav {
+    gap: 2px !important;
+    padding-right: 28px !important;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 84%, transparent);
+            mask-image: linear-gradient(90deg, #000 84%, transparent);
+  }
+  body.admin-control-ui.admin-shell > .admin-sidebar .admin-sidebar-nav::-webkit-scrollbar { display: none; }
+  body.admin-control-ui.admin-shell > .admin-sidebar .admin-sidebar-nav a {
+    padding: 8px 9px !important;
+    font-size: 11px !important;
+    letter-spacing: .02em;
+    scroll-snap-align: start;
+    white-space: nowrap;
+  }
+}
