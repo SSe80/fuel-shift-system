@@ -3374,7 +3374,8 @@ function updateAdminReturnedPreview(id){
   const submitted=(Array.isArray(item.sales)?item.sales:[]).reduce((sum,x)=>sum+Number(x.amount||0),0);
   const difference=Math.abs(submitted-b.netAmount);
   const strip=document.querySelector('[data-admin-sale-review-strip="'+id+'"]');
-  if(strip)strip.innerHTML='<span><b>'+(Array.isArray(item.sales)?item.sales.length:0)+'</b> sale entries</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(difference<=1?'match':'difference')+'">Net difference <b>'+money(difference)+'</b></span>';
+  const grossMatch=value>0&&Math.abs(submitted-b.grossAmount)<=1;
+  if(strip)strip.innerHTML='<span><b>'+(Array.isArray(item.sales)?item.sales.length:0)+'</b> sale entries</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(difference<=1||grossMatch?'match':'difference')+'">'+(grossMatch?'Return deduction − '+money(b.returnedAmount):'Net difference '+money(difference))+'</span>';
 }
 function openAdminSaleReview(id){
   const card=document.querySelector('.admin-sale-confirm-card[data-takeover-id="'+id+'"]');
