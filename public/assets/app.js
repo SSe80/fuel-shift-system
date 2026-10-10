@@ -5497,7 +5497,7 @@ handle.addEventListener('pointerdown',e=>{
   const afterActive=[...cardsAtStart].slice(cardIndex+1).find(x=>x.classList.contains('settings-active-card')&&sameGroupAtStart(x))||null;
   const isAfter=(a,b)=>cardsAtStart.indexOf(a)<cardsAtStart.indexOf(b);
   const isBefore=(a,b)=>cardsAtStart.indexOf(a)>-1&&cardsAtStart.indexOf(a)<cardsAtStart.indexOf(b);
-  state={card,container,key:handle.dataset.settingsKey,original:settingsOrderFromContainer(container),
+  state={card,container,key:card.dataset.settingsKey||handle.dataset.settingsKey||'',original:settingsOrderFromContainer(container),
     groupKey,beforeActive,afterActive,isAfter,isBefore,
     startY:e.clientY,startX:e.clientX,dragging:false,rect};
   pendingY=e.clientY;
