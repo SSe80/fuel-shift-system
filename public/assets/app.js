@@ -3412,7 +3412,7 @@ async function finalizeAdminSaleConfirmation(){
     const result=await api('/api/sales/confirmations/'+id+'/confirm',{method:'POST',body:JSON.stringify({checked_sale_ids:ids,returned_liters:returnedLiters})});
     closeAdminSaleReview();
     await adminSalesConfirmations();
-    showAdminSaleConfirmResult(true,'',`<div class="purchase-confirmation-row"><span>Confirmed sales</span><strong>${ids.length}</strong></div>`);
+    showAdminSaleConfirmResult(true,'',`<div class="purchase-confirmation-row"><span>Confirmed sales</span><strong>${ids.length}</strong></div>${returnedLiters>0?'<div class="purchase-confirmation-row"><span>Returned to tank</span><strong>'+liters(returnedLiters)+' L</strong></div><div class="purchase-confirmation-row"><span>Tank stock after return</span><strong>'+liters(result?.tank_stock_after_return)+' L</strong></div>':''}`);
   }catch(e){
     if(button)button.disabled=false;
     showAdminSaleConfirmResult(false,e.message);
