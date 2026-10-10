@@ -232,16 +232,18 @@ function updateTakeoverSaleConfirmation(){
   const total=sales.reduce((sum,x)=>sum+Number(x.amount||0),0);
   const calculated=Number(takeover.total_sales_amount||0);
   const difference=Math.abs(total-calculated);
-  const matches=difference<=1 && sales.length>0 && !missingReason;
+  const overCalculated=total>calculated+1;
+  const matches=!overCalculated && sales.length>0 && !missingReason;
   const status=document.getElementById('takeover-sale-match-status');
   if(status)status.innerHTML='<div class="takeover-confirm-sales">'+
     (sales.length?sales.map(x=>'<div class="takeover-confirm-sale-row"><span>'+h(x.name)+'</span><strong>'+money(x.amount)+'</strong></div>').join(''):'<div class="takeover-review-empty">No sale amounts entered.</div>')+
     '<div class="takeover-confirm-total"><span>Entered sales total</span><strong>'+money(total)+'</strong></div>'+
-    '<div class="takeover-confirm-check"><span>Calculated amount</span><b>'+money(calculated)+'</b><span>Difference</span><b>'+money(difference)+'</b></div></div>'+
+    '<div class="takeover-confirm-check"><span>Meter-calculated gross</span><b>'+money(calculated)+'</b><span>Difference to reconcile</span><b>'+money(difference)+'</b></div></div>'+
     (missingReason?'<div class="takeover-sale-mismatch">Reason required for '+h(missingReason)+'.</div>':
      !sales.length?'<div class="takeover-sale-mismatch">Enter at least one sale amount.</div>':
-     matches?'<div class="takeover-sale-match">Sales total is within the allowed ETB 1.00 difference.</div>':
-     '<div class="takeover-sale-mismatch">Sales total must be within ETB 1.00 of the calculated amount.</div>');
+     overCalculated?'<div class="takeover-sale-mismatch">Entered sales cannot exceed the meter-calculated gross by more than ETB 1.00.</div>':
+     difference<=1?'<div class="takeover-sale-match">Entered total matches the meter-calculated gross. The admin can confirm with 0 returned liters.</div>':
+     '<div class="takeover-sale-match">Lower collected total saved for admin reconciliation. The admin must account for returned fuel or another approved adjustment before confirming.</div>');
   const button=document.querySelector('#takeover-sale-confirm-modal button.confirm-sale-button');
   if(button)button.disabled=!matches;
 }
@@ -2107,7 +2109,7 @@ function renderAdminPendingSaleCard(item){
       '<div class="admin-sale-context"><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Calculated amount</span><strong>'+money(calculated)+'</strong></div></div>'+
       '<div class="admin-sale-review-strip"><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(Math.abs(variance)<0.005?'match':'difference')+'">'+(Math.abs(variance)<0.005?'Amount matches':'Amount difference')+' <b>'+money(Math.abs(variance))+'</b></span></div>'+
       '<div class="admin-sale-check-section"><div class="takeover-detail-heading">Sales to check <small>Check every entry before confirming</small></div>'+checked+'</div>'+
-      '<label class="admin-returned-liters-field" style="display:flex;flex-direction:column;gap:6px;margin:12px 0;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc"><span style="font-weight:700;color:#172b4d">Returned liters to tank</span><small style="color:#64748b">Fuel used for inspection/operations and physically returned to this shift’s assigned tank. Enter 0 if none.</small><input style="width:100%;max-width:260px;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#111827" type="number" min="0" max="'+h(t.total_sales_liters)+'" step="0.01" inputmode="decimal" value="0" data-returned-liters="'+h(t.id)+'" aria-label="Returned liters to tank"><small style="color:#64748b">Maximum: '+liters(t.total_sales_liters)+' L</small></label>'+
+      '<label class="admin-returned-liters-field" style="display:flex;flex-direction:column;gap:6px;margin:12px 0;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc"><span style="font-weight:700;color:#172b4d">Returned liters to tank</span><small style="color:#64748b">Fuel used for inspection/operations and physically returned to this shift’s assigned tank. Enter 0 if none.</small><input style="width:100%;max-width:260px;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#111827" type="number" min="0" max="'+h(t.total_sales_liters)+'" step="0.01" inputmode="decimal" value="0" oninput="updateAdminReturnedPreview(\''+h(t.id)+'\')" data-returned-liters="'+h(t.id)+'" aria-label="Returned liters to tank"><small style="color:#64748b">Maximum: '+liters(t.total_sales_liters)+' L</small><div data-return-preview="'+h(t.id)+'"></div></label>'+
       '<div class="admin-sale-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="row admin-sale-actions"><button type="button" onclick="cancelAdminSaleConfirmation(\''+t.id+'\')">Cancel</button><button type="button" class="primary" disabled data-confirm-sales="'+h(t.id)+'" onclick="confirmAdminSaleConfirmation(\''+t.id+'\')">Confirm sales</button></div>'+
     '</div></article>';
 }
@@ -3346,6 +3348,24 @@ async function openAdminSaleHistoryDetails(id){
 function closeAdminSaleHistoryDetails(){const modal=document.getElementById('admin-sale-history-details');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}}
 window.openAdminSaleHistoryDetails=openAdminSaleHistoryDetails;
 window.closeAdminSaleHistoryDetails=closeAdminSaleHistoryDetails;
+function adminReturnedFuelBreakdown(t,returnedLiters){
+  const grossLiters=Number(t?.total_sales_liters||0);
+  const grossAmount=Number(t?.total_sales_amount||0);
+  const rows=Array.isArray(t?.nozzle_sales_liters)?t.nozzle_sales_liters:[];
+  const price=Number(rows.find(x=>Number(x?.liters_sold||0)>0&&Number.isFinite(Number(x?.unit_price)))?.unit_price||0);
+  const returnedAmount=Math.round((Number(returnedLiters||0)*price+Number.EPSILON)*100)/100;
+  return {grossLiters,grossAmount,unitPrice:price,returnedAmount,netLiters:Math.max(0,grossLiters-Number(returnedLiters||0)),netAmount:Math.max(0,Math.round((grossAmount-returnedAmount+Number.EPSILON)*100)/100)};
+}
+function updateAdminReturnedPreview(id){
+  const item=(adminSalesData.pending||[]).find(x=>String(x.takeover?.id)===String(id));
+  if(!item)return;
+  const input=document.querySelector('[data-returned-liters="'+id+'"]');
+  const value=Number(input?.value||0);
+  const box=document.querySelector('[data-return-preview="'+id+'"]');
+  if(!box)return;
+  const b=adminReturnedFuelBreakdown(item.takeover,value);
+  box.innerHTML='<div style="display:grid;grid-template-columns:1fr auto;gap:6px 12px;margin-top:8px;padding-top:8px;border-top:1px solid #dbe3ec"><span>Shift selling price</span><strong>'+money(b.unitPrice)+' / L</strong><span>Returned fuel value</span><strong>− '+money(b.returnedAmount)+'</strong><span>Net liters sold</span><strong>'+liters(b.netLiters)+' L</strong><span>Net calculated sales</span><strong>'+money(b.netAmount)+'</strong></div>';
+}
 function openAdminSaleReview(id){
   const card=document.querySelector('.admin-sale-confirm-card[data-takeover-id="'+id+'"]');
   if(!card)return;
@@ -3354,11 +3374,11 @@ function openAdminSaleReview(id){
   if(!checked.length||checked.length!==checks.length){toast('Tick every sale before reviewing');return;}
   const item=(adminSalesData.pending||[]).find(x=>String(x.takeover?.id)===String(id));
   if(!item)return;
-  const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],submitted=sales.reduce((sum,x)=>sum+Number(x.amount||0),0),calculated=Number(t.total_sales_amount||0),variance=submitted-calculated;
-  const difference=Math.abs(variance);
-  const withinAllowedDifference=difference<=1;
+  const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],submitted=sales.reduce((sum,x)=>sum+Number(x.amount||0),0);
+  const returnedLiters=Number(document.querySelector('[data-returned-liters="'+id+'"]')?.value||0);
+  const b=adminReturnedFuelBreakdown(t,returnedLiters),variance=submitted-b.netAmount,difference=Math.abs(variance),withinAllowedDifference=difference<=1;
   const content=document.getElementById('admin-sale-review-content');
-  if(content)content.innerHTML='<div class="admin-sale-review-summary"><div><span>Dispenser</span><strong>'+h(item.dispenser?.name||'Dispenser')+'</strong></div><div><span>Shift</span><strong>'+h(item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||'')))+'</strong></div><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Returned to tank</span><strong>'+liters(document.querySelector('[data-returned-liters="'+id+'"]')?.value||0)+' L</strong></div><div><span>Calculated amount</span><strong>'+money(calculated)+'</strong></div></div><div class="admin-sale-review-list"><div class="takeover-detail-heading">Sales entries <small>'+sales.length+' checked</small></div>'+sales.map(s=>'<div class="admin-sale-review-entry"><div><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+(s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'')+(s.reason?'<small>Reason: '+h(s.reason)+'</small>':'')+'</div><strong>'+money(s.amount)+'</strong></div>').join('')+'</div><div class="admin-sale-review-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="admin-sale-review-check"><div><span>Calculated amount</span><strong>'+money(calculated)+'</strong></div><div><span>Difference</span><strong>'+money(Math.abs(variance))+'</strong></div></div><div class="'+(withinAllowedDifference?'admin-sale-review-ok':'admin-sale-review-warning')+'">'+(difference<0.005?'Amounts match the calculated sales amount.':withinAllowedDifference?'Amount difference is within the allowed ETB 1.00 tolerance.':'Amount difference exceeds the allowed ETB 1.00 tolerance. Confirmation is blocked.')+'</div>';
+  if(content)content.innerHTML='<div class="admin-sale-review-summary"><div><span>Dispenser</span><strong>'+h(item.dispenser?.name||'Dispenser')+'</strong></div><div><span>Shift</span><strong>'+h(item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||'')))+'</strong></div><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Gross liters dispensed</span><strong>'+liters(b.grossLiters)+' L</strong></div><div><span>Returned to tank</span><strong>'+liters(returnedLiters)+' L</strong></div><div><span>Shift selling price</span><strong>'+money(b.unitPrice)+' / L</strong></div><div><span>Returned fuel value</span><strong>− '+money(b.returnedAmount)+'</strong></div><div><span>Net liters sold</span><strong>'+liters(b.netLiters)+' L</strong></div><div><span>Gross calculated amount</span><strong>'+money(b.grossAmount)+'</strong></div><div><span>Net calculated amount</span><strong>'+money(b.netAmount)+'</strong></div></div><div class="admin-sale-review-list"><div class="takeover-detail-heading">Sales entries <small>'+sales.length+' checked</small></div>'+sales.map(s=>'<div class="admin-sale-review-entry"><div><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+(s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'')+(s.reason?'<small>Reason: '+h(s.reason)+'</small>':'')+'</div><strong>'+money(s.amount)+'</strong></div>').join('')+'</div><div class="admin-sale-review-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="admin-sale-review-check"><div><span>Net calculated amount</span><strong>'+money(b.netAmount)+'</strong></div><div><span>Difference</span><strong>'+money(difference)+'</strong></div></div><div class="'+(withinAllowedDifference?'admin-sale-review-ok':'admin-sale-review-warning')+'">'+(difference<0.005?'Submitted sales match net calculated sales.':withinAllowedDifference?'Net amount difference is within the allowed ETB 1.00 tolerance.':'Submitted sales do not match net calculated sales. Adjust returned liters or review the sale entries before confirming.')+'</div>';
   window.pendingAdminSaleReviewId=id;
   const modal=document.getElementById('admin-sale-review-modal');
   const finalButton=document.getElementById('admin-sale-final-confirm');
@@ -3412,7 +3432,7 @@ async function finalizeAdminSaleConfirmation(){
     const result=await api('/api/sales/confirmations/'+id+'/confirm',{method:'POST',body:JSON.stringify({checked_sale_ids:ids,returned_liters:returnedLiters})});
     closeAdminSaleReview();
     await adminSalesConfirmations();
-    showAdminSaleConfirmResult(true,'',`<div class="purchase-confirmation-row"><span>Confirmed sales</span><strong>${ids.length}</strong></div>${returnedLiters>0?'<div class="purchase-confirmation-row"><span>Returned to tank</span><strong>'+liters(returnedLiters)+' L</strong></div><div class="purchase-confirmation-row"><span>Tank stock after return</span><strong>'+liters(result?.tank_stock_after_return)+' L</strong></div>':''}`);
+    showAdminSaleConfirmResult(true,'',`<div class="purchase-confirmation-row"><span>Confirmed sales entries</span><strong>${ids.length}</strong></div><div class="purchase-confirmation-row"><span>Net liters sold</span><strong>${liters(result?.net_sales_liters ?? (result?.gross_sales_liters ?? 0)-returnedLiters)} L</strong></div><div class="purchase-confirmation-row"><span>Net sales amount</span><strong>${money(result?.net_sales_amount ?? result?.gross_sales_amount ?? 0)}</strong></div>${returnedLiters>0?'<div class="purchase-confirmation-row"><span>Returned to tank</span><strong>'+liters(returnedLiters)+' L</strong></div><div class="purchase-confirmation-row"><span>Shift selling price</span><strong>'+money(result?.return_unit_price)+' / L</strong></div><div class="purchase-confirmation-row"><span>Returned fuel value deducted</span><strong>− '+money(result?.returned_amount)+'</strong></div><div class="purchase-confirmation-row"><span>Tank stock after return</span><strong>'+liters(result?.tank_stock_after_return)+' L</strong></div>':''}`);
   }catch(e){
     if(button)button.disabled=false;
     showAdminSaleConfirmResult(false,e.message);
