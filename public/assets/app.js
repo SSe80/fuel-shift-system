@@ -2107,7 +2107,6 @@ function renderAdminPendingSaleCard(item){
       '<div class="admin-sale-context"><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Liters sold</span><strong>'+liters(t.total_sales_liters)+' L</strong></div><div><span>Calculated amount</span><strong>'+money(calculated)+'</strong></div></div>'+
       '<div class="admin-sale-review-strip"><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(Math.abs(variance)<0.005?'match':'difference')+'">'+(Math.abs(variance)<0.005?'Amount matches':'Amount difference')+' <b>'+money(Math.abs(variance))+'</b></span></div>'+
       '<div class="admin-sale-check-section"><div class="takeover-detail-heading">Sales to check <small>Check every entry before confirming</small></div>'+checked+'</div>'+
-      '<div class="admin-returned-fuel"><label for="returned-liters-'+h(t.id)+'">Returned liters (L) <small>Fuel taken from the dispenser for inspection or another purpose and returned to its tank</small></label><input id="returned-liters-'+h(t.id)+'" class="admin-returned-liters" data-returned-takeover="'+h(t.id)+'" type="number" min="0" max="'+h(String(Math.max(0,Number(t.total_sales_liters||0))))+'" step="0.01" value="0" inputmode="decimal" placeholder="0.00"><small>Returned fuel will be added back to the tank connected to this dispenser when confirmed.</small></div>'+
       '<div class="admin-sale-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="row admin-sale-actions"><button type="button" onclick="cancelAdminSaleConfirmation(\''+t.id+'\')">Cancel</button><button type="button" class="primary" disabled data-confirm-sales="'+h(t.id)+'" onclick="confirmAdminSaleConfirmation(\''+t.id+'\')">Confirm sales</button></div>'+
     '</div></article>';
 }
@@ -3405,14 +3404,7 @@ async function finalizeAdminSaleConfirmation(){
   const button=document.getElementById('admin-sale-final-confirm');
   if(button)button.disabled=true;
   try{
-    const returnedInput=card?.querySelector('.admin-returned-liters[data-returned-takeover="'+id+'"]');
-    const returnedLiters=Number(returnedInput?.value||0);
-    if(!Number.isFinite(returnedLiters)||returnedLiters<0||returnedLiters>Number(returnedInput?.max||0)){
-      if(button)button.disabled=false;
-      toast('Enter valid returned liters, not exceeding the shift liters');
-      return;
-    }
-    const result=await api('/api/sales/confirmations/'+id+'/confirm',{method:'POST',body:JSON.stringify({checked_sale_ids:ids,returned_liters:returnedLiters})});
+    const result=await api('/api/sales/confirmations/'+id+'/confirm',{method:'POST',body:JSON.stringify({checked_sale_ids:ids})});
     closeAdminSaleReview();
     await adminSalesConfirmations();
     showAdminSaleConfirmResult(true,'',`<div class="purchase-confirmation-row"><span>Confirmed sales</span><strong>${ids.length}</strong></div>`);
