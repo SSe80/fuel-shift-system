@@ -2754,6 +2754,7 @@ function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,mont
   const rankChart=(Array.isArray(ranking)?ranking:[]).filter(x=>x&&x.month).slice().sort((a,b)=>String(a.month).localeCompare(String(b.month)))
     .map(x=>({label:msrShortMonth(x.month),value:num(x.avgAmount),current:String(x.month)===String(data.month)}));
   const productRowsV2=products.map((p,i)=>({cells:[p.code||'Product code unavailable',fmt(p.liters)+' L',money(p.sales),num(p.sharePct).toFixed(1)+'%',money(num(p.liters)?num(p.sales)/num(p.liters):0),String(i+1)]}));
+  const saleTypeRowsV2=(Array.isArray(data.salesTypesForPdf)?data.salesTypesForPdf:[]).slice().sort((a,b)=>num(b.sales)-num(a.sales)).map((x,i)=>({cells:[(i+1)+'. '+String(x.name||'Sale type'),money(x.sales),num(x.sharePct).toFixed(1)+'%']}));
   const attRowsV2=attendants.map((x,i)=>({cells:[(i+1)+'. '+(x.attendant||'Unknown'),money(x.sales),fmt(x.liters)+' L',String(num(x.shiftCount)),share(x.sales).toFixed(1)+'%',''],}));
   const dailyRowsV2=daily.map(row=>({cells:[String(row.date||'\u2014'),fmt(row.liters)+' L',money(row.sales),row.payments==null?'\u2014':money(row.payments),String(num(row.shifts)),'Confirmed'],tones:[null,null,null,null,null,GREEN]}));
   if(daily.length>1)dailyRowsV2.push({bold:true,cells:['Month total',fmt(daily.reduce((n,x)=>n+num(x.liters),0))+' L',money(daily.reduce((n,x)=>n+num(x.sales),0)),daily.every(x=>x.payments!=null)?money(daily.reduce((n,x)=>n+num(x.payments),0)):'\u2014',String(daily.reduce((n,x)=>n+num(x.shifts),0)),'']});
@@ -2773,7 +2774,7 @@ function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,mont
     {label:'Top attendant',value:topAtt?(topAtt.attendant||'Unknown'):'—',sub:topAtt?money(topAtt.sales):''},
     {label:'Top product',value:topProd?(topProd.code||'Product'):'—',sub:topProd?money(topProd.sales):''}];
   const totalL=products.reduce((n,p)=>n+num(p.liters),0);
-  return {productCentre:fmt(totalL),highlights,productChart,attendantChart,rankChart,productRowsV2,attRowsV2,dailyRowsV2,notesStrip,
+  return {productCentre:fmt(totalL),highlights,productChart,attendantChart,rankChart,productRowsV2,saleTypeRowsV2,attRowsV2,dailyRowsV2,notesStrip,
     dailyRows:[],productRows:[],attendants:[],notesLeft:[],notesRight:[],rightTitle:''};
 }
 function msrNiceAxis(max){
@@ -2914,11 +2915,13 @@ function createMsrReportPdfV2(r){
   const dailyCols=[{h:'Date',x:8},{h:'Fuel sold',x:150,a:'r'},{h:'Sales',x:270,a:'r'},{h:'Payments',x:380,a:'r'},{h:'Shifts',x:440,a:'r'},{h:'Status',x:CW-8,a:'r',b:true}];
   const prodCols=[{h:'Product',x:8,max:150},{h:'Fuel sold',x:200,a:'r'},{h:'Sales',x:310,a:'r'},{h:'Share',x:380,a:'r'},{h:'Sales / L',x:450,a:'r'},{h:'Rank',x:CW-8,a:'r'}];
   const attCols=[{h:'Attendant',x:8,max:170},{h:'Sales',x:200,a:'r'},{h:'Fuel sold',x:290,a:'r'},{h:'Shifts',x:370,a:'r'},{h:'Share',x:CW-8,a:'r'}];
-  const prodRows=r.productRowsV2||[],attRows=r.attRowsV2||[],dailyRows=r.dailyRowsV2||[];
-  const reserved=(22+20+12)*2+(prodRows.length*18)+(attRows.length*18)+(22+20+12)+ 84;
+  const prodRows=r.productRowsV2||[],saleTypeRows=r.saleTypeRowsV2||[],attRows=r.attRowsV2||[],dailyRows=r.dailyRowsV2||[];
+  const reserved=(22+20+12)*3+(prodRows.length*18)+(saleTypeRows.length*18)+(attRows.length*18)+(22+20+12)+84;
   const dRowH=Math.max(9.5,Math.min(15,(H-40-d.y-reserved)/Math.max(1,dailyRows.length)));
   table('Daily sales breakdown',dailyCols,dailyRows,dRowH);
   table('Product performance',prodCols,prodRows,18);
+  table('Monthly sales by type (excluding reason-required sales)',[
+    {h:'Sale type',x:8,max:240},{h:'Monthly total ('+ (window.stationCurrency||'ETB') +')',x:390,a:'r'},{h:'Share',x:CW-8,a:'r'}],saleTypeRows.length?saleTypeRows:[{cells:['No eligible sale-type totals','—','—']}],18);
   table('Attendant performance',attCols,attRows,18);
   d.section('Reconciliation',M,d.y);d.y+=22;
   const notes=r.notesStrip||[];
