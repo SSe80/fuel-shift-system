@@ -3746,3 +3746,153 @@ body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .se
 }
 /* Legacy wide status bar on dispenser cards: replaced by the state chip */
 body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .dispenser-status { display: none !important; }
+
+/* ==========================================================================
+   ADMIN SETTINGS — v9: no chevron, "+" on the right side, compact item cards
+   ========================================================================== */
+/* 1) Remove the collapse glyph (clicking the header still expands/collapses) */
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section:not(.operational-reset-card) .section-heading::after {
+  content: none !important;
+  display: none !important;
+}
+/* 2) "+" sits on the right side of the header, centred vertically */
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section:not(.operational-reset-card) .section-heading {
+  padding: 16px 64px 16px 20px !important;
+  min-height: 70px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between;
+  gap: 16px;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section:not(.operational-reset-card) .section-heading > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section .section-heading > .add-action {
+  position: absolute !important;
+  top: 50% !important;
+  right: 16px !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+}
+/* 3) Compact item cards, text left-aligned, chip on the right */
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card.card {
+  padding: 9px 12px 9px 14px !important;
+  border-radius: 12px !important;
+  border-left-width: 3px !important;
+  box-shadow: none !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .top,
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .dispenser-card-head {
+  display: grid !important;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .settings-move-handle {
+  width: 14px !important;
+  height: 22px !important;
+  padding: 0 !important;
+  font-size: 13px !important;
+  line-height: 22px;
+  text-align: center;
+  color: #cbd5e1 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .top > div:not(.si-avatar),
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .dispenser-card-head > div:not(.settings-move-handle) {
+  min-width: 0;
+  text-align: left;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card b,
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card h3 {
+  display: block;
+  margin: 0 !important;
+  font-size: 13.5px !important;
+  line-height: 1.25 !important;
+  font-weight: 750 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .si-sub,
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .dispenser-product {
+  margin-top: 2px !important;
+  font-size: 11.5px !important;
+  line-height: 1.3;
+  color: var(--ac-muted) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .dispenser-product span { color: #94a3b8 !important; }
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .section-kicker {
+  display: block !important;
+  font-size: 9.5px !important;
+  letter-spacing: .08em;
+  margin: 0 0 1px !important;
+  text-align: left;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .si-status {
+  justify-self: end;
+  padding: 3px 8px !important;
+  font-size: 10.5px !important;
+  gap: 5px !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .si-status::before {
+  width: 5px !important;
+  height: 5px !important;
+}
+/* Admin / attendant avatars are not used here; keep the grid column but empty */
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .top > .si-avatar { display: none !important; }
+/* Compact spacing between cards and groups */
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section.expanded .settings-collapsible {
+  gap: 6px;
+  padding: 12px 16px 14px;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-user-role-group { gap: 6px; margin: 0 0 8px; }
+body.admin-control-ui[data-app-page].admin-settings-page .settings-user-role-heading { margin: 0 0 2px; }
+body.admin-control-ui[data-app-page].admin-settings-page .settings-product-group-label { margin: 6px 0 0 !important; }
+/* Dispenser cards: hide the expanded-only blocks' extra spacing when collapsed */
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card:not(.expanded) .dispenser-main-body { display: none !important; }
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .dispenser-card-actions { display: none !important; }
+@media (max-width: 640px) {
+  body.admin-control-ui[data-app-page].admin-settings-page .settings-section:not(.operational-reset-card) .section-heading { padding: 14px 56px 14px 14px !important; }
+  body.admin-control-ui[data-app-page].admin-settings-page .settings-section .section-heading > .add-action { right: 12px !important; }
+}
+/* Item rows: flex, name takes the free space, chip pinned right */
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .top,
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .dispenser-card-head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  grid-template-columns: none !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .top > div:not(.si-avatar),
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .dispenser-card-head > div:not(.settings-move-handle) {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .si-status {
+  margin-left: auto !important;
+  flex: 0 0 auto !important;
+}
+/* Product colour dot sits inline with the product name */
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card b > span:not(.si-status) {
+  display: inline-block !important;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card b > span.settings-product-group-color {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 50% !important;
+}
+/* Remove the stray gap under a product group label on dispensers */
+body.admin-control-ui[data-app-page].admin-settings-page #dispensers > .settings-product-group-label + * { margin-top: 0 !important; }
+body.admin-control-ui[data-app-page].admin-settings-page #dispensers > .settings-product-group-label { margin-bottom: 0 !important; }
