@@ -237,6 +237,49 @@
   <div class="settings-collapsible"><div id="sale-types"></div></div>
 </section>
 
+
+  <style>
+    .operational-reset-card{border:1px solid #ef4444!important;border-top:3px solid #dc2626!important}
+    .operational-reset-card .section-kicker{color:#dc2626;font-weight:800;letter-spacing:.08em}
+    .operational-reset-button{background:#b91c1c!important;color:#fff!important;border:1px solid #991b1b!important;font-weight:800}
+    .operational-reset-button:disabled{opacity:.55;cursor:not-allowed}
+    .operational-reset-note{background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:12px;margin:12px 0;color:#7f1d1d}
+    .operational-reset-input{width:100%;box-sizing:border-box;margin:8px 0 12px;padding:12px;border:1px solid #ef4444;border-radius:8px}
+    .operational-reset-status{margin-top:10px;white-space:pre-wrap}
+    #reset-operational-data-section .settings-collapsible{display:block!important;visibility:visible!important;height:auto!important;overflow:visible!important}
+    #reset-operational-data-section #open-operational-reset{display:inline-flex!important;align-items:center;justify-content:center;visibility:visible!important;min-height:44px;padding:12px 18px;border-radius:9px;cursor:pointer}
+    #operational-reset-modal.open{display:flex!important;visibility:visible!important;align-items:center;justify-content:center;position:fixed;inset:0;z-index:10000;padding:18px;overflow:auto}
+    #operational-reset-modal[aria-hidden="true"]{display:none!important}
+  </style>
+  <section id="reset-operational-data-section" class="settings-section card operational-reset-card">
+    <div class="section-heading">
+      <div><span class="section-kicker">DANGER ZONE</span><h2>Reset Operational Data</h2>
+      <p>Clear operational records to start a fresh operating period.</p></div>
+    </div>
+    <div class="settings-collapsible">
+      <div class="operational-reset-note"><strong>Warning:</strong> This permanently deletes operational history, including DSRs, purchases, sales, payment records, inbox notifications, shifts, handovers, tank movements, and accounting records. It also clears nozzle shift activations.</div>
+      <p><strong>Preserved:</strong> user accounts, products and prices, tanks and calibration, dispensers and nozzles, station settings, and current tank stock.</p>
+      <button type="button" id="open-operational-reset" class="operational-reset-button">Reset Operational Data</button>
+      <div id="operational-reset-status" class="operational-reset-status muted" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <div id="operational-reset-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="operational-reset-backdrop"></div>
+    <div class="modal-card form" role="dialog" aria-modal="true" aria-labelledby="operational-reset-title" style="max-width:520px">
+      <div class="top"><h3 id="operational-reset-title">Permanently Reset Operational Data?</h3><button type="button" class="modal-close" id="close-operational-reset" aria-label="Close">×</button></div>
+      <p>This action cannot be undone. Current tank stock and station configuration will remain unchanged.</p>
+      <label>Type <strong>RESET OPERATIONAL DATA</strong> to enable the reset.
+        <input id="operational-reset-confirmation" class="operational-reset-input" type="text" autocomplete="off" spellcheck="false" placeholder="RESET OPERATIONAL DATA">
+      </label>
+      <div class="row" style="justify-content:flex-end">
+        <button type="button" id="cancel-operational-reset">Cancel</button>
+        <button type="button" id="confirm-operational-reset" class="operational-reset-button" disabled>Permanently Reset Data</button>
+      </div>
+      <div id="operational-reset-modal-status" class="operational-reset-status muted" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
   <div id="settings-confirm-modal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" onclick="closeSettingsConfirmation()"></div>
     <div class="modal-card" style="max-width:520px">
@@ -258,7 +301,7 @@
 
   <div id="settings-status" class="settings-status muted"></div>
 </main>
-<script src="assets/app.js?v=20261010-10"></script>
+<script src="assets/app.js?v=20261010-12"></script>
 <script src="assets/tank-calibration.js?v=20261006-03"></script>
 <script src="assets/app-boot.js?v=20261004-02"></script><div id="station-currency-modal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" onclick="closeStationCurrencyModal()"></div>
@@ -269,5 +312,44 @@
     </form>
   </div>
   <script src="assets/admin-control-ui.js?v=20261010-02"></script>
+
+<script>
+(function(){
+  const openBtn=document.getElementById('open-operational-reset');
+  const modal=document.getElementById('operational-reset-modal');
+  const input=document.getElementById('operational-reset-confirmation');
+  const confirmBtn=document.getElementById('confirm-operational-reset');
+  const cancelBtn=document.getElementById('cancel-operational-reset');
+  const closeBtn=document.getElementById('close-operational-reset');
+  const backdrop=document.getElementById('operational-reset-backdrop');
+  const sectionStatus=document.getElementById('operational-reset-status');
+  const modalStatus=document.getElementById('operational-reset-modal-status');
+  if(!openBtn||!modal||typeof api!=='function') return;
+  function closeModal(){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  function openModal(){input.value='';confirmBtn.disabled=true;confirmBtn.textContent='Permanently Reset Data';modalStatus.textContent='';modalStatus.className='operational-reset-status muted';modal.classList.add('open');modal.setAttribute('aria-hidden','false');input.focus();}
+  openBtn.addEventListener('click',openModal);
+  [cancelBtn,closeBtn,backdrop].forEach(el=>el&&el.addEventListener('click',closeModal));
+  input.addEventListener('input',()=>{confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA';});
+  confirmBtn.addEventListener('click',async()=>{
+    if(input.value.trim()!=='RESET OPERATIONAL DATA'||confirmBtn.disabled)return;
+    const previous=confirmBtn.textContent;confirmBtn.disabled=true;confirmBtn.textContent='Resetting…';input.disabled=true;cancelBtn.disabled=true;closeBtn.disabled=true;
+    modalStatus.textContent='Reset in progress. Please keep this page open.';sectionStatus.textContent='';
+    try{
+      const result=await api('/api/admin/reset-operational-data',{method:'POST',body:JSON.stringify({confirmation:input.value.trim()})});
+      if(!result||result.ok!==true)throw new Error('The server did not confirm the reset.');
+      const counts=result.counts||{};
+      const summary=Object.entries(counts).map(([name,count])=>name.replaceAll('_',' ')+': '+count).join('\n');
+      modalStatus.className='operational-reset-status';modalStatus.textContent=(result.message||'Operational records cleared successfully.')+(summary?'\n\nDeleted records:\n'+summary:'');
+      sectionStatus.textContent='Reset completed successfully. Nozzle shift activations were cleared; station configuration and current tank stock were preserved.';
+      confirmBtn.textContent='Reset Complete';confirmBtn.disabled=true;
+      const done=document.createElement('button');done.type='button';done.className='primary';done.textContent='Close';done.addEventListener('click',closeModal);confirmBtn.parentElement.appendChild(done);
+    }catch(err){
+      modalStatus.className='operational-reset-status';modalStatus.textContent='Reset failed: '+(err&&err.message?err.message:String(err));
+      confirmBtn.textContent=previous;confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA';
+    }finally{input.disabled=false;cancelBtn.disabled=false;closeBtn.disabled=false;}
+  });
+})();
+</script>
+
 </body>
 </html>
