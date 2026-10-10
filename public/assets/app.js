@@ -5544,7 +5544,7 @@ handle.addEventListener('pointermove',e=>{
   scheduleDragUpdate();
 });
 
-const end=e=>{
+const end=async e=>{
   if(!state)return;
   if(timer){clearTimeout(timer);timer=null;}
   if(!state.dragging){cleanup();return;}
