@@ -894,6 +894,12 @@ def reorder_settings():
     body={"item_orders":item_orders,"updated_at":datetime.now(timezone.utc).isoformat()}
     us,ur=sb("station_settings",method="PATCH",params={"id":"eq.true"},body=body,prefer="return=representation")
     if us>=400:return jsonify(ur),us
+    # A fresh installation may not have a station_settings row yet. PATCHing
+    # an absent id returns an empty successful result, so create the row rather
+    # than reporting success while silently losing the saved order.
+    if not ur:
+        us,ur=sb("station_settings",method="POST",body={"id":True,"currency":"ETB",**body},prefer="return=representation")
+        if us>=400:return jsonify(ur),us
     return jsonify({"ok":True,"key":key,"ids":ordered,"item_orders":item_orders}),200
 
 @app.get("/api/products")
