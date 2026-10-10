@@ -2814,7 +2814,6 @@ body.admin-control-ui.msr-page .msr-header .msr-month-control {
    ========================================================================== */
 body.admin-control-ui.attendant-page button[type="submit"],
 body.admin-control-ui.attendant-page button.primary,
-body.admin-control-ui.attendant-page .btn:not(.secondary):not(.danger):not(.ghost),
 body.admin-control-ui.attendant-page .active-handover-btn,
 body.admin-control-ui.attendant-page [class~="primary"]:is(button, a) {
   display: inline-flex !important;
@@ -2845,3 +2844,189 @@ body.admin-control-ui.attendant-page .btn:disabled {
   transform: none !important;
 }
 body.admin-control-ui.attendant-page .active-handover-btn { width: 100% !important; }
+
+/* Secondary buttons (Cancel, Back and other plain .btn) stay white with a grey
+   border. Only primary, submit and Handover buttons are red. */
+body.admin-control-ui.attendant-page .btn:not(.primary):not(.active-handover-btn),
+body.admin-control-ui.attendant-page .btn.secondary {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  background-image: none !important;
+  color: var(--ac-body) !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  box-shadow: var(--ac-shadow-sm) !important;
+  cursor: pointer;
+}
+body.admin-control-ui.attendant-page .btn:not(.primary):not(.active-handover-btn):hover {
+  background: var(--ac-surface) !important;
+  color: var(--ac-ink) !important;
+  border-color: #94a3b8 !important;
+}
+body.admin-control-ui.attendant-page .btn.danger {
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fecaca !important;
+  box-shadow: none !important;
+}
+
+/* ==========================================================================
+   ADMIN SETTINGS — card alignment and the Danger Zone
+   ========================================================================== */
+/* Cards: title and action button share one centre line; no empty strip below */
+body.admin-control-ui.admin-settings-page .settings-section > .section-heading {
+  align-items: center !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  border-bottom: 0 !important;
+}
+body.admin-control-ui.admin-settings-page .settings-section:has(> .section-heading + .settings-collapsible:empty),
+body.admin-control-ui.admin-settings-page .settings-section:has(> .section-heading + .settings-collapsible:not(:has(*))) {
+  padding-bottom: 20px !important;
+}
+body.admin-control-ui.admin-settings-page .settings-section > .section-heading > div:first-child {
+  min-width: 0;
+}
+body.admin-control-ui.admin-settings-page .settings-section > .section-heading button {
+  flex: 0 0 auto;
+  align-self: center !important;
+}
+body.admin-control-ui.admin-settings-page .settings-collapsible:empty {
+  display: none !important;
+}
+
+/* Danger Zone card */
+body.admin-control-ui.admin-settings-page #reset-operational-data-section {
+  margin-top: 28px !important;
+  padding: 24px 24px 22px 26px !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fffafa 100%) !important;
+  border: 1px solid #fecaca !important;
+  border-left: 5px solid #dc2626 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 1px 2px rgba(127, 29, 29, .06), 0 10px 26px -18px rgba(185, 28, 28, .35) !important;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section .section-heading {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 14px;
+  padding: 0 0 16px !important;
+  margin: 0 !important;
+  border-bottom: 1px solid #fee2e2 !important;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section .section-kicker {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #fef2f2;
+  color: #b91c1c !important;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section .section-kicker::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, .18);
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section h2 {
+  margin: 8px 0 4px !important;
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em;
+  color: #7f1d1d !important;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section .section-heading p {
+  margin: 0 !important;
+  font-size: 13.5px;
+  color: #6b4b4b !important;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section .settings-collapsible {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  padding-top: 18px;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section .operational-reset-note {
+  margin: 0 !important;
+  padding: 14px 16px !important;
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 14px !important;
+  color: #7f1d1d !important;
+  font-size: 13.5px !important;
+  line-height: 1.55 !important;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section .operational-reset-note strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #b91c1c !important;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section .settings-collapsible > p {
+  margin: 0 !important;
+  padding: 14px 16px !important;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 13.5px !important;
+  line-height: 1.55 !important;
+  color: var(--ac-body) !important;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section .settings-collapsible > p strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section #open-operational-reset {
+  grid-column: 1 / -1;
+  justify-self: start;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px !important;
+  padding: 12px 22px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(180deg, #dc2626, #b91c1c) !important;
+  color: #fff !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 2px rgba(185, 28, 28, .3), 0 8px 18px -10px rgba(220, 38, 38, .7) !important;
+  cursor: pointer;
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section #open-operational-reset:hover {
+  filter: brightness(1.06);
+}
+body.admin-control-ui.admin-settings-page #reset-operational-data-section #operational-reset-status {
+  grid-column: 1 / -1;
+  margin: 0 !important;
+  font-size: 13px;
+}
+@media (max-width: 640px) {
+  body.admin-control-ui.admin-settings-page #reset-operational-data-section {
+    padding: 18px 16px 18px 18px !important;
+  }
+  body.admin-control-ui.admin-settings-page #reset-operational-data-section .settings-collapsible {
+    grid-template-columns: 1fr;
+  }
+}
