@@ -4,7 +4,7 @@
   function $(id) { return document.getElementById(id); }
   function say(msg, bad) { var el = $('drive-status'); if (el) { el.textContent = msg; el.style.color = bad ? '#b91c1c' : ''; } }
   async function api(url, method, body) {
-    var opts = { method: method || 'GET', credentials: 'same-origin', headers: {} };
+    var opts = { method: method || 'GET', credentials: 'same-origin', headers: { 'X-Fuel-Role': 'admin' } };
     if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
     var r = await fetch(url, opts), j = await r.json().catch(function () { return {}; });
     return { status: r.status, body: j };

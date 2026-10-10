@@ -14,7 +14,7 @@
   async function run(builders) {
     if (running) return; running = true;
     try {
-      var r = await fetch('/api/drive/queue', { credentials: 'same-origin' });
+      var r = await fetch('/api/drive/queue', { credentials: 'same-origin', headers: { 'X-Fuel-Role': 'admin' } });
       if (!r.ok) return;
       var items = await r.json();
       var todo = (Array.isArray(items) ? items : []).filter(function (i) { return i.status === 'pending' && (i.attempts || 0) < MAX_ATTEMPTS; });
@@ -25,7 +25,7 @@
         if (!out || !out.blob) continue;
         var buf = await out.blob.arrayBuffer();
         var up = await fetch('/api/drive/queue/' + encodeURIComponent(item.id) + '/upload', {
-          method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+          method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Fuel-Role': 'admin' },
           body: JSON.stringify({ pdf_base64: b64(buf) })
         });
         var body = await up.json().catch(function () { return {}; });
