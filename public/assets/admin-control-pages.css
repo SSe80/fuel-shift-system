@@ -2765,3 +2765,45 @@ body.admin-control-ui.msr-page .msr-panel-head small,
 body.admin-control-ui.msr-page .msr-panel-head .muted {
   text-align: left !important;
 }
+
+/* ==========================================================================
+   MSR header — one left edge for the title block and the month control, and
+   the control top-aligned with the title on desktop.
+   ========================================================================== */
+body.admin-control-ui.msr-page .msr-header {
+  padding: 0 !important;
+  align-items: flex-start !important;
+  gap: 16px 20px !important;
+}
+body.admin-control-ui.msr-page .msr-header > div:first-child {
+  padding: 0 !important;
+  margin: 0 !important;
+  min-width: 0;
+  flex: 1 1 320px;
+}
+body.admin-control-ui.msr-page .msr-header .msr-month-control {
+  margin: 0 !important;
+  padding: 10px 14px !important;
+  box-sizing: border-box;
+  align-self: flex-start;
+  max-width: 100%;
+}
+@media (max-width: 640px) {
+  body.admin-control-ui.msr-page .msr-header .msr-month-control {
+    width: 100% !important;
+    justify-content: space-between;
+  }
+  body.admin-control-ui.msr-page .msr-header .msr-month-control input {
+    width: auto !important;
+    min-width: 180px;
+  }
+}
+@media (max-width: 640px) {
+  body.admin-control-ui.msr-page .msr-header {
+    align-items: stretch !important;
+  }
+  body.admin-control-ui.msr-page .msr-header > div:first-child {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+}
