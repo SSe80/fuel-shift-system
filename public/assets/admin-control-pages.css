@@ -3859,7 +3859,9 @@ body.admin-control-ui[data-app-page].admin-settings-page .settings-user-role-hea
 body.admin-control-ui[data-app-page].admin-settings-page .settings-product-group-label { margin: 6px 0 0 !important; }
 /* Dispenser cards: hide the expanded-only blocks' extra spacing when collapsed */
 body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card:not(.expanded) .dispenser-main-body { display: none !important; }
-body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .dispenser-card-actions { display: none !important; }
+/* Dispenser actions (Activate, Deactivate, Edit, Remove): shown when the card is expanded */
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card:not(.expanded) .dispenser-card-actions { display: none !important; }
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card.expanded .dispenser-card-actions { display: flex !important; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--ac-line-soft); }
 @media (max-width: 640px) {
   body.admin-control-ui[data-app-page].admin-settings-page .settings-section:not(.operational-reset-card) .section-heading { padding: 14px 56px 14px 14px !important; }
   body.admin-control-ui[data-app-page].admin-settings-page .settings-section .section-heading > .add-action { right: 12px !important; }
