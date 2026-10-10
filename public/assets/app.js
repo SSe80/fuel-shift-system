@@ -5497,7 +5497,7 @@ handle.addEventListener('pointerdown',e=>{
   const afterActive=[...cardsAtStart].slice(cardIndex+1).find(x=>x.classList.contains('settings-active-card')&&sameGroupAtStart(x))||null;
   const isAfter=(a,b)=>cardsAtStart.indexOf(a)<cardsAtStart.indexOf(b);
   const isBefore=(a,b)=>cardsAtStart.indexOf(a)>-1&&cardsAtStart.indexOf(a)<cardsAtStart.indexOf(b);
-  state={card,container,key:card.dataset.settingsKey||handle.dataset.settingsKey||'',original:settingsOrderFromContainer(container),
+  state={card,container,key:handle.dataset.settingsKey,original:settingsOrderFromContainer(container),
     groupKey,beforeActive,afterActive,isAfter,isBefore,
     startY:e.clientY,startX:e.clientX,dragging:false,rect};
   pendingY=e.clientY;
@@ -5539,7 +5539,7 @@ handle.addEventListener('pointermove',e=>{
   scheduleDragUpdate();
 });
 
-const end=async e=>{
+const end=e=>{
   if(!state)return;
   if(timer){clearTimeout(timer);timer=null;}
   if(!state.dragging){cleanup();return;}
@@ -5553,16 +5553,14 @@ const end=async e=>{
   const current=settingsOrderFromContainer(s.container);
   if(current.join('|')===s.original.join('|')){loadSettingsData();return;}
   const label=s.key==='products'?'products':s.key==='saleTypes'?'sale types':s.key==='employees'?'users':s.key==='tanks'?'fuel tanks':'fuel dispensers';
-  // Persist the order immediately on drop; the placeholder has already previewed
-  // the new position live while the user was dragging.
-  try{
-    await api('/api/settings/reorder',{method:'POST',body:JSON.stringify({key:s.key,ids:current})});
-    toast('New '+label+' positions saved');
-    await loadSettingsData();
-  }catch(err){
-    await loadSettingsData();
-    toast('Could not save '+label+' positions: '+err.message);
-  }
+  window.pendingSettingsReorder={
+    containerKey:s.key,
+    originalOrder:[...s.original]
+  };
+  showSettingsConfirmation('Save New '+label+' Order','<p>The '+h(label)+' order was changed.</p><p><b>Save these new positions?</b></p>',async()=>{
+    try{await api('/api/settings/reorder',{method:'POST',body:JSON.stringify({key:s.key,ids:current})});await loadSettingsData();}
+    catch(err){await loadSettingsData();throw err;}
+  },'Order saved successfully','<p>The new '+h(label)+' positions have been saved.</p>');
 };
 handle.addEventListener('pointerup',end);
 handle.addEventListener('pointercancel',()=>{if(state)cleanup();});

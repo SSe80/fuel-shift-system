@@ -152,8 +152,8 @@
 
   /* ---- Admin settings: section accents, counts, summary, item avatars and status ---- */
   var SETTINGS_ACCENT = {
-    'ACCESS': '#2563eb', 'FUEL CATALOG': '#d97706', 'STORAGE': '#0891b2',
-    'FORECOURT': '#059669', 'SALES': '#7c3aed'
+    'ACCESS': '#475569', 'FUEL CATALOG': '#475569', 'STORAGE': '#475569',
+    'FORECOURT': '#475569', 'SALES': '#475569'
   };
   function settingsInitials(name) {
     var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -183,7 +183,7 @@
         var label = n + (n === 1 ? ' item' : ' items');
         if (chip.textContent !== label) chip.textContent = label;
       }
-      summary.push({ title: title, n: n, accent: accent || '#2563eb' });
+      summary.push({ title: title, n: n, accent: '#475569' });
       // items: initials avatar and status chip
       for (var j = 0; j < items.length; j++) {
         var it = items[j];
