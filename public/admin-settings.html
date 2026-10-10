@@ -1,0 +1,354 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Settings</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-03"></head>
+<body class="admin-shell admin-settings-page admin-control-ui" data-app-page="adminSettings">
+<button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
+  <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
+  <nav class="admin-sidebar-nav">
+    <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
+    <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
+    <a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a>
+    <a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>DSR</b></a>
+    <a href="admin-monthly-report.html" data-admin-nav="monthly-report"><span>▦</span><b>MSR</b></a>
+    <a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a>
+  </nav>
+  <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
+</aside><main class="wrap">
+  <header class="settings-header"><div><span class="eyebrow">STATION CONTROL</span><h1>Admin Settings</h1><p class="muted">Manage users, fuel products, tanks, and dispensers.</p></div></header>
+<div class="admin-page-body-card">
+
+  <section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">ACCESS</span><h2>Users</h2><p>Manage operator accounts, roles, PINs, and access.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-user-modal')">＋ Add user</button></div>
+
+    <div id="employee-edit-modal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" onclick="closeUserEdit()"></div>
+      <form id="employee-edit-form" class="modal-card form" onsubmit="saveUserEdit(event)">
+        <div class="top"><h3>Edit User</h3><button type="button" class="modal-close" onclick="closeUserEdit()" aria-label="Close">×</button></div>
+        <input id="edit-employee-id" type="hidden">
+        <label>Name<input id="edit-attendant-name" required></label>
+        <label>Phone number<input id="edit-attendant-phone" required></label>
+        <label>Role<select id="edit-attendant-role"><option value="attendant">Attendant</option><option value="admin">Admin</option></select></label>
+        <label>New PIN <span class="muted">(leave blank to keep current PIN)</span><input id="edit-attendant-pin" type="password" inputmode="numeric" minlength="4" placeholder="New PIN"></label>
+        <div class="row">
+          <button type="submit" class="primary">Save Changes</button>
+          <button type="button" onclick="closeUserEdit()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="settings-collapsible"><div id="employees"></div></div>
+  </section>
+
+  <section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">FUEL CATALOG</span><h2>Products</h2><p>Configure fuel names, codes, colors, and selling prices.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-product-modal')">＋ Add product</button></div>
+    <div class="settings-collapsible"><div class="row" style="margin-bottom:14px"><button type="button" class="primary" onclick="openStationCurrencyModal()">Currency</button></div><div id="products"></div></div>
+  </section>
+
+  <div id="add-user-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeAddModal('add-user-modal')"></div>
+    <form class="modal-card form" onsubmit="createUser(event)">
+      <div class="top"><h3>Add User</h3><button type="button" class="modal-close" onclick="closeAddModal('add-user-modal')" aria-label="Close">×</button></div>
+      <input id="attendant-name" placeholder="User name" required>
+      <input id="attendant-phone" placeholder="Phone number" required>
+      <input id="attendant-pin" type="password" inputmode="numeric" placeholder="PIN (4+ digits)" minlength="4" required>
+      <select id="attendant-role"><option value="attendant">Attendant</option><option value="admin">Admin</option></select>
+      <div class="row"><button type="submit" class="primary">Add user</button><button type="button" onclick="closeAddModal('add-user-modal')">Cancel</button></div>
+    </form>
+  </div>
+
+  <div id="add-product-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeAddModal('add-product-modal')"></div>
+    <form class="modal-card form" onsubmit="createProduct(event)">
+      <div class="top"><h3>Add Product</h3><button type="button" class="modal-close" onclick="closeAddModal('add-product-modal')" aria-label="Close">×</button></div>
+      <input id="product-name" placeholder="Product name (e.g. Petrol)" required>
+      <input id="product-code" placeholder="Code name (e.g. PMS)" maxlength="50" required>
+      <label>Product color<input id="product-color" type="color" value="#1264d8" required></label>
+      <div class="row"><button type="submit" class="primary">Add product</button><button type="button" onclick="closeAddModal('add-product-modal')">Cancel</button></div>
+    </form>
+  </div>
+
+  <div id="add-tank-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeAddModal('add-tank-modal')"></div>
+    <form class="modal-card form" onsubmit="createTank(event)">
+      <div class="top"><h3>Add Fuel Tank</h3><button type="button" class="modal-close" onclick="closeAddModal('add-tank-modal')" aria-label="Close">×</button></div>
+      <select id="tank-product" required><option value="">Select product</option></select>
+      <input id="tank-capacity" type="number" min="1" step="0.01" placeholder="Tank size (liters)" required>
+      <div class="row"><button type="submit" class="primary">Add tank</button><button type="button" onclick="closeAddModal('add-tank-modal')">Cancel</button></div>
+    </form>
+  </div>
+
+  <div id="add-dispenser-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeAddModal('add-dispenser-modal')"></div>
+    <form class="modal-card form" onsubmit="createDispenser(event)">
+      <div class="top"><h3>Add Fuel Dispenser</h3><button type="button" class="modal-close" onclick="closeAddModal('add-dispenser-modal')" aria-label="Close">×</button></div>
+      <select id="dispenser-product" required><option value="">Select product</option></select>
+      <select id="dispenser-tank" required><option value="">Select tank</option></select>
+      <select id="dispenser-nozzle-count" required>
+        <option value="">How many nozzles?</option>
+        <option value="1">1 nozzle</option><option value="2">2 nozzles</option><option value="3">3 nozzles</option><option value="4">4 nozzles</option>
+      </select>
+      <div class="row"><button type="submit" class="primary">Add dispenser</button><button type="button" onclick="closeAddModal('add-dispenser-modal')">Cancel</button></div>
+    </form>
+  </div>
+
+  <div id="generic-activation-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeGenericActivation()"></div>
+    <div class="modal-card">
+      <div class="top"><h3 id="activation-target-title">Activate?</h3><button type="button" class="modal-close" onclick="closeGenericActivation()" aria-label="Close">×</button></div>
+      <p id="activation-target-message">Confirm activation.</p>
+      <div id="product-activation-price" class="form" style="display:none">
+        <label>Selling price <span id="activation-product-currency" class="muted"></span></label>
+        <div class="row" style="align-items:center">
+          <input id="activation-price-major" type="text" inputmode="numeric" placeholder="0" aria-label="Price whole amount" style="flex:1">
+          <span style="font-weight:700">.</span>
+          <input id="activation-price-cents" type="text" inputmode="numeric" maxlength="2" placeholder="00" aria-label="Price cents" style="width:80px">
+        </div>
+        <small class="muted">Enter the whole amount and cents separately.</small>
+      </div>
+      <div id="tank-activation-stock" class="form" style="display:none">
+        <label>Opening tank dip (mm)
+          <input id="tank-opening-stock" type="number" min="0" step="0.1" placeholder="Enter opening dip in mm" inputmode="decimal" oninput="updateTankOpeningDip(this.value)">
+        </label>
+        <div id="tank-opening-stock-equivalent" class="muted">Enter a dip to calculate liters.</div>
+        <small class="muted">The tank can only be activated when its product is active.</small>
+      </div>
+      <input id="activation-target-id" type="hidden"><input id="activation-target-type" type="hidden">
+      <div class="row"><button type="button" onclick="closeGenericActivation()">Cancel</button><button type="button" class="primary" onclick="confirmGenericActivation()">Activate</button></div>
+    </div>
+  </div>
+
+  <div id="product-edit-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeProductEdit()"></div>
+    <form id="product-edit-form" class="modal-card form" onsubmit="saveProductEdit(event)">
+      <div class="top"><h3>Edit Product</h3><button type="button" class="modal-close" onclick="closeProductEdit()" aria-label="Close">×</button></div>
+      <input id="edit-product-id" type="hidden">
+      <label>Product name<input id="edit-product-name" required></label>
+      <label>Code name<input id="edit-product-code" maxlength="50" required></label>
+      <label>Product color<input id="edit-product-color" type="color" required></label>
+      <label>Selling price <span id="edit-product-currency" class="muted"></span></label>
+      <div class="row" style="align-items:center">
+        <input id="edit-product-price-major" type="text" inputmode="numeric" placeholder="0" aria-label="Price whole amount" style="flex:1">
+        <span style="font-weight:700">.</span>
+        <input id="edit-product-price-cents" type="text" inputmode="numeric" maxlength="2" placeholder="00" aria-label="Price cents" style="width:80px">
+      </div>
+      <div class="row">
+        <button type="submit" class="primary">Save Changes</button>
+        <button type="button" onclick="closeProductEdit()">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  
+<div id="add-sale-type-modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" onclick="closeAddModal('add-sale-type-modal')"></div>
+  <form class="modal-card form" onsubmit="createSaleType(event)">
+    <div class="top"><h3>Add Sale</h3><button type="button" class="modal-close" onclick="closeAddModal('add-sale-type-modal')" aria-label="Close">×</button></div>
+    <label>Sale name<input id="sale-type-name" placeholder="Sale name" required></label>
+    <label>Description<textarea id="sale-type-description" placeholder="Describe this sale" rows="4"></textarea></label>
+    <label class="settings-checkbox"><input id="sale-type-reason" type="checkbox"> Require a reason when attendants record this sale</label>
+    <div class="row"><button type="submit" class="primary">Add sale</button><button type="button" onclick="closeAddModal('add-sale-type-modal')">Cancel</button></div>
+  </form>
+</div>
+
+<div id="sale-type-edit-modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" onclick="closeSaleTypeEdit()"></div>
+  <form class="modal-card form" onsubmit="saveSaleTypeEdit(event)">
+    <div class="top"><h3>Edit Sale</h3><button type="button" class="modal-close" onclick="closeSaleTypeEdit()" aria-label="Close">×</button></div>
+    <input id="edit-sale-type-id" type="hidden">
+    <label>Sale name<input id="edit-sale-type-name" required></label>
+    <label>Description<textarea id="edit-sale-type-description" rows="4"></textarea></label>
+    <label class="settings-checkbox"><input id="edit-sale-type-reason" type="checkbox"> Require a reason when attendants record this sale</label>
+    <div class="row"><button type="submit" class="primary">Save Changes</button><button type="button" onclick="closeSaleTypeEdit()">Cancel</button></div>
+  </form>
+</div>
+
+<section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">STORAGE</span><h2>Fuel Tanks</h2><p>Manage tank capacity, stock readings, and activation.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-tank-modal')">＋ Add tank</button></div>
+    <div id="tank-edit-modal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" onclick="closeTankEdit()"></div>
+      <form id="tank-edit-form" class="modal-card form" onsubmit="saveTankEdit(event)">
+        <div class="top"><h3>Edit Fuel Tank</h3><button type="button" class="modal-close" onclick="closeTankEdit()" aria-label="Close">×</button></div>
+        <input id="edit-tank-id" type="hidden">
+        <label>Tank size (liters)<input id="edit-tank-capacity" type="number" min="1" step="0.01" required></label>
+        <div class="form" style="margin-top:4px">
+          <label>Tank calibration CSV
+            <input id="edit-tank-calibration-file" type="file" accept=".csv,text/csv" onchange="calibrationFileChanged(this)">
+          </label>
+          <small class="muted">Upload a two-column CSV: <b>height_mm,liters</b>. All measured calibration points are stored and used for interpolation.</small>
+          <small id="edit-tank-calibration-status" class="muted">No calibration CSV selected.</small>
+          <div id="edit-tank-calibration-verification" class="tank-calibration-verification" style="margin-top:8px;padding:10px;border:1px solid var(--border-color,#ddd);border-radius:10px;">
+            <div style="font-weight:700;margin-bottom:6px;">Calibration verification</div>
+            <div id="edit-tank-calibration-point-count" class="muted">No calibration loaded.</div>
+            <label style="margin-top:8px;">Test dip (mm)
+              <input id="edit-tank-calibration-test-mm" type="number" min="0" step="0.1" placeholder="e.g. 1600" oninput="verifyTankCalibrationDip(this.value)">
+            </label>
+            <div id="edit-tank-calibration-test-result" class="muted" style="margin-top:6px;">Enter a dip to verify the calibration.</div>
+          </div>
+        </div>
+        <div class="row">
+          <button type="submit" class="primary">Save Changes</button>
+          <button type="button" onclick="closeTankEdit()">Cancel</button>
+        </div>
+      </form>
+    </div>
+    <div class="settings-collapsible"><div id="tanks"></div></div>
+  </section>
+
+  <section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">FORECOURT</span><h2>Fuel Dispensers</h2><p>Connect dispensers to tanks and manage nozzle assignments.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-dispenser-modal')">＋ Add dispenser</button></div>
+    <div id="dispenser-edit-modal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" onclick="closeDispenserEdit()"></div>
+      <form id="dispenser-edit-form" class="modal-card form" onsubmit="saveDispenserEdit(event)">
+        <div class="top"><h3>Edit Fuel Dispenser</h3><button type="button" class="modal-close" onclick="closeDispenserEdit()" aria-label="Close">×</button></div>
+        <input id="edit-dispenser-id" type="hidden">
+        <label>Product<select id="edit-dispenser-product" required></select></label>
+        <label>Tank<select id="edit-dispenser-tank" required></select></label>
+        <label>Nozzles<select id="edit-dispenser-nozzle-count" required>
+          <option value="1">1 nozzle</option><option value="2">2 nozzles</option><option value="3">3 nozzles</option><option value="4">4 nozzles</option>
+        </select></label>
+        <div class="row">
+          <button type="submit" class="primary">Save Changes</button>
+          <button type="button" onclick="closeDispenserEdit()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="dispenser-activate-modal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" onclick="closeDispenserActivation()"></div>
+      <div class="modal-card">
+        <div class="top">
+          <h3>Activate Dispenser?</h3>
+          <button type="button" class="modal-close" onclick="closeDispenserActivation()" aria-label="Close">×</button>
+        </div>
+        <p id="dispenser-activate-message">Select the Attendant and enter the opening readings. This creates a pending shift assignment; the selected Attendant must confirm it with their PIN on the Attendant Dashboard.</p>
+        <div id="dispenser-nozzle-activation-list" class="form"></div>
+        <div class="form">
+          <label id="dispenser-activation-tank-label">Tank activation dip (mm)<input id="dispenser-activation-tank-dip" type="number" min="0" step="0.1" placeholder="Enter tank activation dip" inputmode="decimal" required oninput="updateDispenserActivationDip(this.value)"></label><div id="dispenser-activation-tank-equivalent" class="muted">Enter a dip to calculate liters.</div><input id="dispenser-activation-tank-liters" type="hidden"><small class="muted">The liter equivalent is calculated from the connected tank calibration.</small>
+          <label>Attendant<select id="dispenser-activation-employee" required><option value="">Select attendant</option></select></label>
+        </div>
+        <div id="dispenser-activation-review" style="margin-top:10px"></div>
+                <p id="dispenser-activate-error" class="muted" style="display:none"></p>
+        <div class="row">
+          <button type="button" onclick="closeDispenserActivation()">Cancel</button>
+          <button type="button" class="primary" onclick="confirmDispenserActivation()">Assign Shift</button>
+        </div>
+      </div>
+    </div>
+    <div class="settings-collapsible"><div id="dispensers"></div></div>
+  </section>
+
+<section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">SALES</span><h2>Sales</h2><p>Manage sale types that attendants can select when recording a shift handover sale.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-sale-type-modal')">＋ Add sale</button></div>
+  <div class="settings-collapsible"><div id="sale-types"></div></div>
+</section>
+
+
+  <style>
+    .operational-reset-card{border:1px solid #ef4444!important;border-top:3px solid #dc2626!important}
+    .operational-reset-card .section-kicker{color:#dc2626;font-weight:800;letter-spacing:.08em}
+    .operational-reset-button{background:#b91c1c!important;color:#fff!important;border:1px solid #991b1b!important;font-weight:800}
+    .operational-reset-button:disabled{opacity:.55;cursor:not-allowed}
+    .operational-reset-note{background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:12px;margin:12px 0;color:#7f1d1d}
+    .operational-reset-input{width:100%;box-sizing:border-box;margin:8px 0 12px;padding:12px;border:1px solid #ef4444;border-radius:8px}
+    .operational-reset-status{margin-top:10px;white-space:pre-wrap}
+    #reset-operational-data-section #open-operational-reset{display:inline-flex!important;align-items:center;justify-content:center;visibility:visible!important;min-height:44px;padding:12px 18px;border-radius:9px;cursor:pointer}
+    #operational-reset-modal.open{display:flex!important;visibility:visible!important;align-items:center;justify-content:center;position:fixed;inset:0;z-index:10000;padding:18px;overflow:auto}
+    #operational-reset-modal[aria-hidden="true"]{display:none!important}
+  </style>
+  <section id="reset-operational-data-section" class="settings-section card operational-reset-card">
+    <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0">
+      <div><span class="section-kicker">DANGER ZONE</span><h2>Reset Operational Data</h2>
+      <p>Clear operational records to start a fresh operating period.</p></div>
+    </div>
+    <div class="settings-collapsible">
+      <div class="operational-reset-note"><strong>Warning:</strong> This permanently deletes operational history, including DSRs, purchases, sales, payment records, inbox notifications, shifts, handovers, tank movements, and accounting records. It also clears nozzle shift activations.</div>
+      <p><strong>Preserved:</strong> user accounts, products and prices, tanks and calibration, dispensers and nozzles, station settings, and current tank stock.</p>
+      <button type="button" id="open-operational-reset" class="operational-reset-button">Reset Operational Data</button>
+      <div id="operational-reset-status" class="operational-reset-status muted" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <div id="operational-reset-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="operational-reset-backdrop"></div>
+    <div class="modal-card form" role="dialog" aria-modal="true" aria-labelledby="operational-reset-title" style="max-width:520px">
+      <div class="top"><h3 id="operational-reset-title">Permanently Reset Operational Data?</h3><button type="button" class="modal-close" id="close-operational-reset" aria-label="Close">×</button></div>
+      <p>This action cannot be undone. Current tank stock and station configuration will remain unchanged.</p>
+      <label>Type <strong>RESET OPERATIONAL DATA</strong> to enable the reset.
+        <input id="operational-reset-confirmation" class="operational-reset-input" type="text" autocomplete="off" spellcheck="false" placeholder="RESET OPERATIONAL DATA">
+      </label>
+      <div class="row" style="justify-content:flex-end">
+        <button type="button" id="cancel-operational-reset">Cancel</button>
+        <button type="button" id="confirm-operational-reset" class="operational-reset-button" disabled>Permanently Reset Data</button>
+      </div>
+      <div id="operational-reset-modal-status" class="operational-reset-status muted" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div id="settings-confirm-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeSettingsConfirmation()"></div>
+    <div class="modal-card" style="max-width:520px">
+      <div class="top">
+        <h3 id="settings-confirm-title">Confirm Change</h3>
+        <button type="button" class="modal-close" onclick="closeSettingsConfirmation()" aria-label="Close">×</button>
+      </div>
+      <div id="settings-confirm-details"></div>
+      <p id="settings-confirm-note" class="muted">Review the changes above before applying them.</p>
+      <div id="settings-confirm-actions" class="row">
+        <button type="button" onclick="closeSettingsConfirmation()">Cancel</button>
+        <button type="button" class="primary" onclick="confirmSettingsAction()">Confirm</button>
+      </div>
+      <div id="settings-success-actions" class="row" style="display:none;justify-content:flex-end">
+        <button type="button" class="primary" onclick="closeSettingsConfirmation()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settings-status" class="settings-status muted"></div>
+</main>
+<script src="assets/app.js?v=20261010-12"></script>
+<script src="assets/tank-calibration.js?v=20261006-03"></script>
+<script src="assets/app-boot.js?v=20261004-02"></script><div id="station-currency-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" onclick="closeStationCurrencyModal()"></div>
+    <form id="station-currency-form" class="modal-card form" onsubmit="saveStationCurrency(event)">
+      <div class="top"><h3>Edit Currency</h3><button type="button" class="modal-close" onclick="closeStationCurrencyModal()" aria-label="Close">×</button></div>
+      <label>Currency<input id="station-currency" type="text" maxlength="10" placeholder="ETB" autocomplete="off" required></label>
+      <div class="row" style="justify-content:flex-end;margin-top:14px"><button type="button" onclick="closeStationCurrencyModal()">Cancel</button><button type="submit" class="primary">Save</button></div>
+    </form>
+  </div>
+  <script src="assets/admin-control-ui.js?v=20261010-02"></script>
+
+<script>
+(function(){
+  const openBtn=document.getElementById('open-operational-reset');
+  const modal=document.getElementById('operational-reset-modal');
+  const input=document.getElementById('operational-reset-confirmation');
+  const confirmBtn=document.getElementById('confirm-operational-reset');
+  const cancelBtn=document.getElementById('cancel-operational-reset');
+  const closeBtn=document.getElementById('close-operational-reset');
+  const backdrop=document.getElementById('operational-reset-backdrop');
+  const sectionStatus=document.getElementById('operational-reset-status');
+  const modalStatus=document.getElementById('operational-reset-modal-status');
+  if(!openBtn||!modal||typeof api!=='function') return;
+  function closeModal(){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  function openModal(){input.value='';confirmBtn.disabled=true;confirmBtn.textContent='Permanently Reset Data';modalStatus.textContent='';modalStatus.className='operational-reset-status muted';modal.classList.add('open');modal.setAttribute('aria-hidden','false');input.focus();}
+  openBtn.addEventListener('click',openModal);
+  [cancelBtn,closeBtn,backdrop].forEach(el=>el&&el.addEventListener('click',closeModal));
+  input.addEventListener('input',()=>{confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA';});
+  confirmBtn.addEventListener('click',async()=>{
+    if(input.value.trim()!=='RESET OPERATIONAL DATA'||confirmBtn.disabled)return;
+    const previous=confirmBtn.textContent;confirmBtn.disabled=true;confirmBtn.textContent='Resetting…';input.disabled=true;cancelBtn.disabled=true;closeBtn.disabled=true;
+    modalStatus.textContent='Reset in progress. Please keep this page open.';sectionStatus.textContent='';
+    try{
+      const result=await api('/api/admin/reset-operational-data',{method:'POST',body:JSON.stringify({confirmation:input.value.trim()})});
+      if(!result||result.ok!==true)throw new Error('The server did not confirm the reset.');
+      const counts=result.counts||{};
+      const summary=Object.entries(counts).map(([name,count])=>name.replaceAll('_',' ')+': '+count).join('\n');
+      modalStatus.className='operational-reset-status';modalStatus.textContent=(result.message||'Operational records cleared successfully.')+(summary?'\n\nDeleted records:\n'+summary:'');
+      sectionStatus.textContent='Reset completed successfully. Nozzle shift activations were cleared; station configuration and current tank stock were preserved.';
+      confirmBtn.textContent='Reset Complete';confirmBtn.disabled=true;
+      const done=document.createElement('button');done.type='button';done.className='primary';done.textContent='Close';done.addEventListener('click',closeModal);confirmBtn.parentElement.appendChild(done);
+    }catch(err){
+      modalStatus.className='operational-reset-status';modalStatus.textContent='Reset failed: '+(err&&err.message?err.message:String(err));
+      confirmBtn.textContent=previous;confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA';
+    }finally{input.disabled=false;cancelBtn.disabled=false;closeBtn.disabled=false;}
+  });
+})();
+</script>
+
+</body>
+</html>
