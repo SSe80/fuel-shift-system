@@ -1,0 +1,72 @@
+/* ==========================================================================
+   Attendant panel theme: red accent, white secondary buttons.
+   Loaded only by the attendant dashboard, shift and login pages. The scope
+   below keeps these rules away from the shared admin pages.
+   ========================================================================== */
+
+body.attendant-dashboard-page,
+body.attendant-shift-page,
+body.attendant-login-page {
+  --ac-brand: #b4232f;
+  --ac-brand-soft: #fff0f1;
+}
+
+/* Primary actions (Continue, Send for Confirmation, Sign in): red */
+body.attendant-dashboard-page button.primary,
+body.attendant-shift-page button.primary,
+body.attendant-dashboard-page .primary:is(button, a),
+body.attendant-shift-page .primary:is(button, a) {
+  background: linear-gradient(180deg, #c92f38, #b4232f) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 1px 2px rgba(180, 35, 47, .25), 0 6px 14px -8px rgba(180, 35, 47, .6) !important;
+}
+body.attendant-dashboard-page button.primary:hover,
+body.attendant-shift-page button.primary:hover {
+  background: linear-gradient(180deg, #b4232f, #941f29) !important;
+}
+
+/* Secondary actions (Cancel, Back, Edit Sales): white */
+body.attendant-dashboard-page .btn:not(.primary):not(.danger),
+body.attendant-shift-page .btn:not(.primary):not(.danger) {
+  background: #fff !important;
+  color: #344054 !important;
+  border: 1px solid #d0d5dd !important;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .05) !important;
+}
+body.attendant-dashboard-page .btn:not(.primary):not(.danger):hover,
+body.attendant-shift-page .btn:not(.primary):not(.danger):hover {
+  background: #f9fafb !important;
+}
+
+/* Logout confirmation card: white Cancel, red Log out */
+body.attendant-dashboard-page .logout-cancel-button,
+body.attendant-shift-page .logout-cancel-button {
+  background: #fff !important;
+  color: #344054 !important;
+  border: 1px solid #d0d5dd !important;
+}
+
+/* Keyboard focus rings: red instead of the shared blue */
+body.attendant-dashboard-page button:focus-visible,
+body.attendant-shift-page button:focus-visible,
+body.attendant-login-page button:focus-visible {
+  outline-color: #e99ca3 !important;
+}
+
+/* Sidebar: red logo mark and red active/hover states */
+body.attendant-dashboard-page .admin-sidebar-mark,
+body.attendant-shift-page .admin-sidebar-mark {
+  background: #b4232f !important;
+  box-shadow: 0 4px 12px rgba(180, 35, 47, .3) !important;
+}
+body.attendant-dashboard-page .admin-sidebar-nav a:hover,
+body.attendant-shift-page .admin-sidebar-nav a:hover {
+  color: #fca5a5 !important;
+}
+body.attendant-shift-page .admin-sidebar-nav a.active,
+body.attendant-shift-page .admin-sidebar-nav a.active b,
+body.attendant-shift-page .admin-sidebar-nav a.active span {
+  color: #fca5a5 !important;
+  background: transparent !important;
+}
