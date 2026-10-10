@@ -3849,7 +3849,6 @@ function openTankActivation(id){
   document.getElementById('activation-target-title').textContent='Activate Fuel Tank?';
   const priceBox=document.getElementById('product-activation-price'); if(priceBox)priceBox.style.display='none';
   const stockBox=document.getElementById('tank-activation-stock'); if(stockBox)stockBox.style.display='block';
-  const stockInput=document.getElementById('tank-opening-stock'); if(stockInput)stockInput.value=''; const stockEq=document.getElementById('tank-opening-stock-equivalent'); if(stockEq)stockEq.textContent='Enter a dip to calculate liters.';
   document.getElementById('activation-target-message').innerHTML='<b>'+h(t.tank_code)+'</b> — '+h(product?.code_name||t.product)+'<br><span class="muted">Tank capacity: '+h(liters(t.capacity_liters))+' L • Product: '+(product?.active?'Active':'Inactive')+'</span>';
   openGenericActivationModal();
 }
@@ -3922,15 +3921,6 @@ async function _confirmGenericActivation(){
       const price=priceFromParts('activation-price-major','activation-price-cents');
       if(price===null||price<=0){toast('Enter a valid selling price greater than zero');return false;}
       body.selling_price=price;
-    }
-    if(type==='tank'){
-      const stockInput=document.getElementById('tank-opening-stock');
-      const stock=stockInput?.value.trim()!==''?Number(stockInput.value):NaN;
-      const tank=(window.tankRecords||[]).find(x=>String(x.id)===String(id));
-      const stockLiters=tankLitersFromDip(tank,stock);
-      if(!Number.isFinite(stock)||stock<0||stockLiters===null){toast('Enter a valid opening dip and ensure calibration is set.');return false;}
-      body.opening_stock_liters=stockLiters;
-      body.opening_stock_mm=stock;
     }
     await api(path,{method:'PATCH',body:JSON.stringify(body)});
     closeGenericActivation();await loadSettingsData();
@@ -5329,13 +5319,7 @@ async function _confirmGenericActivationReview(){
     details+='<p style="margin:7px 0"><b>Selling price:</b> '+h(money(price))+'</p>';
     successDetails='<p><b>'+h(item?.code_name||item?.name||id)+'</b> is now active.</p>'+details;
   }
-  if(type==='tank'){
-    const stock=document.getElementById('tank-opening-stock')?.value.trim()||'';
-    const stockNumber=stock===''?NaN:Number(stock);
-    if(!Number.isFinite(stockNumber)||stockNumber<0){toast('Enter a valid opening stock reading in liters');return;}
-    details+='<p style="margin:7px 0"><b>Opening liters:</b> '+h(liters(stockNumber))+' L</p>';
-    successDetails='<p><b>'+h(item?.tank_code||id)+'</b> activated successfully.</p>'+details;
-  }
+  if(type==='tank') successDetails='<p><b>'+h(item?.tank_code||id)+'</b> activated successfully.</p>'+details;
   showSettingsConfirmation('Review '+label+' Activation',details,()=>_confirmGenericActivation(),
     label+' activated successfully',successDetails);
 }
