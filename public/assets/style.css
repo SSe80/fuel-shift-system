@@ -5187,3 +5187,49 @@ body.admin-settings-page #employees .settings-user-role-list>.card{margin:0;padd
 body.admin-settings-page #employees .settings-user-role-list>.card:hover{border-color:#cbd7e5;box-shadow:0 5px 16px #17202a0b}
 body.admin-settings-page #employees .settings-users-empty{margin:0;padding:13px 15px;border:1px dashed #d9e1eb;border-radius:12px;color:#8994a4;font-size:12px}
 @media(max-width:600px){body.admin-settings-page #employees{gap:18px}body.admin-settings-page #employees .settings-user-role-list>.card{padding:14px}}
+
+
+/* Admin Settings popups: keep every dialog anchored to the viewport, not the animated page wrapper. */
+body.admin-settings-page > .modal{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100vh!important;
+  height:100dvh!important;
+  box-sizing:border-box!important;
+  margin:0!important;
+  padding:clamp(10px,3vh,24px)!important;
+  display:none;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  z-index:20000!important;
+}
+body.admin-settings-page > .modal.open{
+  display:flex!important;
+}
+body.admin-settings-page > .modal > .modal-card{
+  position:relative!important;
+  flex:0 1 auto!important;
+  margin:auto!important;
+  width:min(560px,100%)!important;
+  max-width:min(560px,100%)!important;
+  max-height:calc(100dvh - 2 * clamp(10px,3vh,24px))!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  box-sizing:border-box!important;
+}
+body.admin-settings-page > .modal > .modal-backdrop{
+  position:absolute!important;
+  inset:0!important;
+}
+@media(max-width:600px){
+  body.admin-settings-page > .modal{padding:12px!important}
+  body.admin-settings-page > .modal > .modal-card{
+    width:100%!important;
+    max-height:calc(100dvh - 24px)!important;
+    border-radius:16px!important;
+    padding:17px!important;
+  }
+}
