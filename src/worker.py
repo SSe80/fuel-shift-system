@@ -2454,6 +2454,33 @@ def shift_takeovers():
     if status!=200:return jsonify(rows),status
     return jsonify(rows),200
 
+@app.get("/api/sales/progressing")
+def progressing_sales_shifts():
+    auth=require_admin()
+    if auth:return auth
+    status,result=rpc("list_progressing_shift_takeovers_for_admin",{})
+    if status>=400:return jsonify(result),status
+    return jsonify(result if isinstance(result,list) else []),200
+
+@app.post("/api/sales/progressing/<takeover_id>/returned-fuel")
+def save_progressing_returned_fuel(takeover_id):
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    try:
+        returned_liters=float(data.get("returned_liters",0) or 0)
+        if not math.isfinite(returned_liters) or returned_liters<0:
+            return jsonify({"error":"Returned liters must be a valid non-negative number"}),400
+    except (TypeError,ValueError):
+        return jsonify({"error":"Returned liters must be a valid non-negative number"}),400
+    status,result=rpc("save_progressing_shift_return",{
+        "p_takeover_id":takeover_id,
+        "p_admin_id":session["employee_id"],
+        "p_returned_liters":returned_liters
+    })
+    if status>=400:return jsonify(result),status
+    return jsonify(result),200
+
 @app.get("/api/sales/confirmations")
 def sale_confirmations():
     auth=require_admin()
