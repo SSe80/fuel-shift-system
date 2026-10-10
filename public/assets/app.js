@@ -2748,6 +2748,9 @@ function msrShortMonth(v){const m=/^(\d{4})-(\d{2})/.exec(String(v||''));if(!m)r
 function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,monthLabel,GREEN,totalSales){
   const share=x=>totalSales?num(x)/totalSales*100:0;
   const productChart=products.map(p=>({label:(p.code||'Product')+'  \u00b7  '+fmt(p.liters)+' L',pct:num(p.sharePct),valueLabel:money(p.sales)}));
+  const methodRows=Array.isArray(data.salesByMethod)?data.salesByMethod:[];
+  const methodTotal=methodRows.reduce((sum,x)=>sum+num(x.amount),0);
+  const salesMethodChart=methodRows.map(x=>({label:String(x.method||'Other'),pct:methodTotal?num(x.amount)/methodTotal*100:0,valueLabel:money(x.amount)}));
   const attendantChart=attendants.map((x,i)=>({label:(i+1)+'. '+(x.attendant||'Unknown'),pct:share(x.sales),valueLabel:money(x.sales)}));
   const rankChart=(Array.isArray(ranking)?ranking:[]).filter(x=>x&&x.month).slice().sort((a,b)=>String(a.month).localeCompare(String(b.month)))
     .map(x=>({label:msrShortMonth(x.month),value:num(x.avgAmount),current:String(x.month)===String(data.month)}));
@@ -2760,7 +2763,7 @@ function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,mont
     {label:'Entered payments',value:s.enteredPayments==null?'Incomplete':money(s.enteredPayments)},
     {label:'Financial difference',value:s.financialDifference==null?'Incomplete':money(s.financialDifference),tone:s.financialDifference==null?'warn':null},
     {label:'Report generated',value:new Date().toLocaleDateString('en-US')}];
-  return {productChart,attendantChart,rankChart,productRowsV2,attRowsV2,dailyRowsV2,notesStrip,
+  return {productChart,attendantChart,rankChart,salesMethodChart,productRowsV2,attRowsV2,dailyRowsV2,notesStrip,
     dailyRows:[],productRows:[],attendants:[],notesLeft:[],notesRight:[],rightTitle:''};
 }
 function createMsrReportPdfV2(r){
@@ -2819,20 +2822,22 @@ function createMsrReportPdfV2(r){
     else d.text('Attendant totals are not available.',RX+half/2,top+h/2,8.5,'i',C.GRAY,'c');
     d.y=top+h+14;
   }
-  // monthly ranking chart (average sales per confirmed day)
-  d.section('Monthly sales per confirmed day',M,d.y);d.y+=24;
-  {const top=d.y,h=96,rk=(r.rankChart||[]).slice(-12);
+  // Sales by method uses confirmed payment-ledger entries for the selected month.
+  d.section('Sales by method',M,d.y);d.y+=24;
+  {const top=d.y,h=96,methods=(r.salesMethodChart||[]).slice(0,8);
     d.box(M,top,CW,h,C.CARD,4.5);
-    if(!rk.length){d.text('Monthly ranking appears when confirmed DSR months are available.',M+CW/2,top+h/2+4,9,'i',C.GRAY,'c');}
+    if(!methods.length){d.text('No confirmed payment-method entries are available for this month.',M+CW/2,top+h/2+4,9,'i',C.GRAY,'c');}
     else{
-      const px0=M+44,px1=M+CW-14,pTop=top+12,pBot=top+h-20,ph=pBot-pTop;
-      const mx=Math.max.apply(null,rk.map(x=>x.value).concat([1])),step=msrNiceStep(mx),axis=step*4;
-      for(let i=0;i<=4;i++){const yy=pBot-ph*i/4;d.line(px0,yy,px1,yy,i===0?C.GRAY:C.LINE,i===0?.6:.5);d.text(msrCompact(step*i),px0-6,yy+2.6,7,false,C.GRAY,'r');}
-      const n=rk.length,slot=(px1-px0)/n,bw=Math.min(44,slot*.55);
-      rk.forEach((x,i)=>{const bh=Math.max(0,x.value/axis*ph),bx=px0+slot*i+(slot-bw)/2;
-        if(bh>0)d.box(bx,pBot-bh,bw,bh,x.current?C.BLUE:[147,197,253],bw>8?2:0);
-        d.text(msrCompact(x.value),bx+bw/2,pBot-bh-3.5,7.5,true,C.INK,'c');
-        d.text(x.label,bx+bw/2,pBot+11,7.5,false,C.GRAY,'c');});
+      const rowH=(h-12)/methods.length;
+      methods.forEach((x,i)=>{
+        const yy=top+6+i*rowH,pct=Math.max(0,Math.min(100,Number(x.pct)||0));
+        d.text(d.fit(x.label,8.5,true,112),M+12,yy+rowH*.55,8.5,true,C.INK);
+        const bx=M+128,bw=CW-244;
+        d.box(bx,yy+rowH*.28,bw,6,C.LINE,3);
+        if(pct>0)d.box(bx,yy+rowH*.28,Math.max(3,bw*pct/100),6,C.BLUE,3);
+        d.text(pct.toFixed(1)+'%',M+CW-102,yy+rowH*.55,7.5,false,C.GRAY,'r');
+        d.text(d.fit(x.valueLabel,8,false,84),M+CW-8,yy+rowH*.55,8,false,C.INK,'r');
+      });
     }
     d.y=top+h+10;
   }
