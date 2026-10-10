@@ -2814,7 +2814,6 @@ body.admin-control-ui.msr-page .msr-header .msr-month-control {
    ========================================================================== */
 body.admin-control-ui.attendant-page button[type="submit"],
 body.admin-control-ui.attendant-page button.primary,
-body.admin-control-ui.attendant-page .btn:not(.secondary):not(.danger):not(.ghost),
 body.admin-control-ui.attendant-page .active-handover-btn,
 body.admin-control-ui.attendant-page [class~="primary"]:is(button, a) {
   display: inline-flex !important;
@@ -2845,3 +2844,34 @@ body.admin-control-ui.attendant-page .btn:disabled {
   transform: none !important;
 }
 body.admin-control-ui.attendant-page .active-handover-btn { width: 100% !important; }
+
+/* Secondary buttons (Cancel, Back and other plain .btn) stay white with a grey
+   border. Only primary, submit and Handover buttons are red. */
+body.admin-control-ui.attendant-page .btn:not(.primary):not(.active-handover-btn),
+body.admin-control-ui.attendant-page .btn.secondary {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  background-image: none !important;
+  color: var(--ac-body) !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  box-shadow: var(--ac-shadow-sm) !important;
+  cursor: pointer;
+}
+body.admin-control-ui.attendant-page .btn:not(.primary):not(.active-handover-btn):hover {
+  background: var(--ac-surface) !important;
+  color: var(--ac-ink) !important;
+  border-color: #94a3b8 !important;
+}
+body.admin-control-ui.attendant-page .btn.danger {
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fecaca !important;
+  box-shadow: none !important;
+}
