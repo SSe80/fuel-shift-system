@@ -1476,7 +1476,7 @@ def create_nozzle():
     except (TypeError,ValueError): nozzle_count=0
     if not product or not tank_id or nozzle_count not in (1,2,3,4):
         return jsonify({"error":"Product, tank and nozzle count (1-4) are required"}),400
-    ps,pr=sb("products",params={"name":"eq."+product,"select":"name,code_name,active","limit":"1"})
+    ps,pr=sb("products",params={"name":"eq."+product,"select":"id,name,code_name,active","limit":"1"})
     if ps!=200 or not pr:return jsonify({"error":"Product not found"}),404
     if not pr[0].get("active"):return jsonify({"error":"Product is inactive"}),400
     code_name=str(pr[0]["code_name"]).strip()
@@ -1494,8 +1494,35 @@ def create_nozzle():
         if m:max_order=max(max_order,int(m.group(1)))
     dispenser_code=f"{code_name}•DISPENSER {max_order+1}"
     nozzle_ids=[f"{dispenser_code}-N•{i}" for i in range(1, nozzle_count + 1)]
+
+    # Create both the legacy dispenser record and its normalized physical
+    # dispenser/nozzle records. Activation and shift readings use the latter.
     status,result=sb("nozzles",method="POST",body={"nozzle_code":dispenser_code,"nozzle_ids":nozzle_ids,"product":product,"tank_id":tank_id,"nozzle_count":nozzle_count,"active":False},prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
+    legacy=result[0] if isinstance(result,list) and result else {}
+    legacy_id=str(legacy.get("id",""))
+    ds,dispenser_rows=sb("dispensers",method="POST",body={"dispenser_code":dispenser_code,"active":False},prefer="return=representation")
+    if ds>=400 or not dispenser_rows:
+        if legacy_id:sb("nozzles",method="DELETE",params={"id":"eq."+legacy_id},prefer="return=minimal")
+        return jsonify({"error":"Could not create the physical dispenser record","details":dispenser_rows}),ds if ds>=400 else 500
+    physical_dispenser_id=str(dispenser_rows[0].get("id",""))
+    created_physical_ids=[]
+    for nozzle_number in range(1,nozzle_count+1):
+        ns,nresult=sb("dispenser_nozzles",method="POST",body={
+            "dispenser_id":physical_dispenser_id,
+            "nozzle_number":nozzle_number,
+            "nozzle_code":f"{dispenser_code}-N•{nozzle_number}",
+            "product_id":pr[0].get("id"),
+            "tank_id":tank_id,
+            "active":False
+        },prefer="return=representation")
+        if ns>=400 or not nresult:
+            for physical_id in created_physical_ids:
+                sb("dispenser_nozzles",method="DELETE",params={"id":"eq."+physical_id},prefer="return=minimal")
+            sb("dispensers",method="DELETE",params={"id":"eq."+physical_dispenser_id},prefer="return=minimal")
+            if legacy_id:sb("nozzles",method="DELETE",params={"id":"eq."+legacy_id},prefer="return=minimal")
+            return jsonify({"error":"Could not create all physical nozzle records","details":nresult}),ns if ns>=400 else 500
+        created_physical_ids.append(str(nresult[0].get("id","")))
     return jsonify(result),201
 
 @app.route("/api/nozzles/<nozzle_id>",methods=["DELETE"])
