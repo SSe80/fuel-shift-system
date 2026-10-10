@@ -5422,7 +5422,7 @@ async function cancelAdminPendingShift(id){
 }
 
 function initSettingsItemDrag(){
-document.querySelectorAll('.settings-item-card:not(.settings-active-card) .settings-move-handle:not([data-drag-bound])').forEach(handle=>{
+document.querySelectorAll('.settings-item-card:not([data-settings-key="tanks"]):not([data-settings-key="dispensers"]) .settings-move-handle:not([data-drag-bound]), .settings-item-card:not(.settings-active-card)[data-settings-key="tanks"] .settings-move-handle:not([data-drag-bound]), .settings-item-card:not(.settings-active-card)[data-settings-key="dispensers"] .settings-move-handle:not([data-drag-bound])').forEach(handle=>{
 handle.dataset.dragBound='1';
 let state=null,timer=null,raf=0,pendingY=0;
 
@@ -5443,9 +5443,9 @@ const updateDrag=()=>{
     state.ghost.style.transform='translate3d(0,'+(y-state.rect.top-state.offsetY)+'px,0)';
   }
   const cards=Array.from(state.container.querySelectorAll(':scope > .settings-item-card[data-settings-id]'));
-  const movable=cards.filter(x=>x!==state.card&&!x.classList.contains('settings-active-card'));
-  const beforeActive=state.beforeActive;
-  const afterActive=state.afterActive;
+  const movable=cards.filter(x=>x!==state.card&&(!state.groupKey||!x.classList.contains('settings-active-card')));
+  const beforeActive=state.groupKey?state.beforeActive:null;
+  const afterActive=state.groupKey?state.afterActive:null;
   const sameProductGroup=x=>!state.groupKey||x.dataset.dispenserProductGroup===state.groupKey||x.dataset.tankProductGroup===state.groupKey;
   const bounded=movable.filter(x=>{
     if(!sameProductGroup(x))return false;
@@ -5493,8 +5493,8 @@ handle.addEventListener('pointerdown',e=>{
     ?(card.dataset.tankProductGroup||card.dataset.dispenserProductGroup||'')
     :'';
   const sameGroupAtStart=x=>!groupKey||x.dataset.tankProductGroup===groupKey||x.dataset.dispenserProductGroup===groupKey;
-  const beforeActive=[...cardsAtStart].slice(0,cardIndex).reverse().find(x=>x.classList.contains('settings-active-card')&&sameGroupAtStart(x))||null;
-  const afterActive=[...cardsAtStart].slice(cardIndex+1).find(x=>x.classList.contains('settings-active-card')&&sameGroupAtStart(x))||null;
+  const beforeActive=groupKey?[...cardsAtStart].slice(0,cardIndex).reverse().find(x=>x.classList.contains('settings-active-card')&&sameGroupAtStart(x))||null:null;
+  const afterActive=groupKey?[...cardsAtStart].slice(cardIndex+1).find(x=>x.classList.contains('settings-active-card')&&sameGroupAtStart(x))||null:null;
   const isAfter=(a,b)=>cardsAtStart.indexOf(a)<cardsAtStart.indexOf(b);
   const isBefore=(a,b)=>cardsAtStart.indexOf(a)>-1&&cardsAtStart.indexOf(a)<cardsAtStart.indexOf(b);
   state={card,container,key:card.dataset.settingsKey||handle.dataset.settingsKey||'',original:settingsOrderFromContainer(container),
