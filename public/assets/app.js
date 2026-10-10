@@ -2790,7 +2790,7 @@ function createMsrReportPdfV2(r){
   d.y+=d.cards(kitems,{top:d.y,perRow:kper,gap:kg,h:kh,pad:10,labelSize:7,labelBase:15,valBase:33,valSize:12.5})+14;
   // daily trend (bars + average line)
   d.section('Daily sales trend',M,d.y);d.y+=24;
-  {const top=d.y,h=130,days=r.chart||[];
+  {const top=d.y,h=120,days=r.chart||[];
     d.box(M,top,CW,h,C.CARD,4.5);
     d.box(M+14,top+10,7,7,C.BLUE,1.5);d.text('Daily calculated sales',M+26,top+16.5,8,false,C.GRAY);
     const lx=M+26+d.tw('Daily calculated sales',8,false)+18;
@@ -2813,7 +2813,7 @@ function createMsrReportPdfV2(r){
   }
   // product mix and attendant share, side by side
   d.section('Product mix (share of sales)',M,d.y);d.section('Attendant share of sales',RX,d.y);d.y+=24;
-  {const top=d.y,h=160;
+  {const top=d.y,h=140;
     d.box(M,top,half,h,C.CARD,4.5);d.box(RX,top,half,h,C.CARD,4.5);
     const prod=(r.productChart||[]).slice(0,6),att=(r.attendantChart||[]).slice(0,6);
     if(prod.length)hbars(prod,M+14,top+12,half-28,(h-24)/Math.max(prod.length,1));
@@ -2822,13 +2822,30 @@ function createMsrReportPdfV2(r){
     else d.text('Attendant totals are not available.',RX+half/2,top+h/2,8.5,'i',C.GRAY,'c');
     d.y=top+h+14;
   }
+  // Monthly ranking chart (average sales per confirmed day), retained alongside the new method graph.
+  d.section('Monthly sales per confirmed day',M,d.y);d.y+=24;
+  {const top=d.y,h=80,rk=(r.rankChart||[]).slice(-12);
+    d.box(M,top,CW,h,C.CARD,4.5);
+    if(!rk.length){d.text('Monthly ranking appears when confirmed DSR months are available.',M+CW/2,top+h/2+4,9,'i',C.GRAY,'c');}
+    else{
+      const px0=M+44,px1=M+CW-14,pTop=top+8,pBot=top+h-17,ph=pBot-pTop;
+      const mx=Math.max.apply(null,rk.map(x=>x.value).concat([1])),step=msrNiceStep(mx),axis=step*4;
+      for(let j=0;j<=4;j++){const yy=pBot-ph*j/4;d.line(px0,yy,px1,yy,j===0?C.GRAY:C.LINE,j===0?.6:.5);d.text(msrCompact(step*j),px0-6,yy+2.6,7,false,C.GRAY,'r');}
+      const n=rk.length,slot=(px1-px0)/n,bw=Math.min(44,slot*.55);
+      rk.forEach((x,j)=>{const bh=Math.max(0,x.value/axis*ph),bx=px0+slot*j+(slot-bw)/2;
+        if(bh>0)d.box(bx,pBot-bh,bw,bh,x.current?C.BLUE:[147,197,253],bw>8?2:0);
+        d.text(msrCompact(x.value),bx+bw/2,pBot-bh-3.5,7.2,true,C.INK,'c');
+        d.text(x.label,bx+bw/2,pBot+10,7.2,false,C.GRAY,'c');});
+    }
+    d.y=top+h+8;
+  }
   // Sales by method uses confirmed payment-ledger entries for the selected month.
   d.section('Sales by method',M,d.y);d.y+=24;
-  {const top=d.y,h=96,methods=(r.salesMethodChart||[]).slice(0,8);
+  {const top=d.y,h=70,methods=(r.salesMethodChart||[]).slice(0,6);
     d.box(M,top,CW,h,C.CARD,4.5);
     if(!methods.length){d.text('No confirmed payment-method entries are available for this month.',M+CW/2,top+h/2+4,9,'i',C.GRAY,'c');}
     else{
-      const rowH=(h-12)/methods.length;
+      const rowH=(h-8)/methods.length;
       methods.forEach((x,i)=>{
         const yy=top+6+i*rowH,pct=Math.max(0,Math.min(100,Number(x.pct)||0));
         d.text(d.fit(x.label,8.5,true,112),M+12,yy+rowH*.55,8.5,true,C.INK);
