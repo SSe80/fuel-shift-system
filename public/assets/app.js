@@ -657,7 +657,7 @@ async function userDashboard(){
       const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
       return '<div class="card dashboard-purchase-card takeover shift-takeover-card main-record-sale-card">'+
         '<div class="main-record-sale-head"><div><span class="section-kicker">SHIFT HANDOVER</span><div class="takeover-card-title">Record Sale</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+'</div></div><span class="main-record-sale-status">Handover completed</span></div>'+
-        '<div class="main-record-sale-summary"><div><span>Net liters sold</span><strong>'+liters(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netLiters)+' L</strong></div><div><span>Gross sales amount</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+(Number(t.returned_liters||0)>0?'<div><span>Returned fuel deduction</span><strong>− '+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).returnedAmount)+'</strong></div>':'')+'<div><span>Net sales amount</span><strong>'+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netAmount)+'</strong></div></div>'+
+        '<div class="main-record-sale-summary"><div><span>Net liters sold</span><strong>'+liters(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netLiters)+' L</strong></div><div><span>Gross sales amount</span><strong>'+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).grossAmount)+'</strong></div>'+(Number(t.returned_liters||0)>0?'<div><span>Returned fuel deduction</span><strong>− '+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).returnedAmount)+'</strong></div>':'')+'<div><span>Net sales amount</span><strong>'+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netAmount)+'</strong></div></div>'+
         '<div class="main-record-sale-actions"><button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button><button class="btn" type="button" onclick="window.openTakeoverDetails(this.dataset.takeoverId)" data-takeover-id="'+h(t.id)+'">Details</button></div>'+
       '</div>';
     }).join('');
@@ -3388,8 +3388,8 @@ function closeAdminSaleHistoryDetails(){const modal=document.getElementById('adm
 window.openAdminSaleHistoryDetails=openAdminSaleHistoryDetails;
 window.closeAdminSaleHistoryDetails=closeAdminSaleHistoryDetails;
 function adminReturnedFuelBreakdown(t,returnedLiters){
-  const grossLiters=Number(t?.total_sales_liters||0);
-  const grossAmount=Number(t?.total_sales_amount||0);
+  const grossLiters=Number(t?.gross_sales_liters??t?.total_sales_liters??0);
+  const grossAmount=Number(t?.gross_sales_amount??t?.total_sales_amount??0);
   const rows=Array.isArray(t?.nozzle_sales_liters)?t.nozzle_sales_liters:[];
   const price=Number(rows.find(x=>Number(x?.liters_sold||0)>0&&Number.isFinite(Number(x?.unit_price)))?.unit_price||0);
   const returnedAmount=Math.round((Number(returnedLiters||0)*price+Number.EPSILON)*100)/100;
