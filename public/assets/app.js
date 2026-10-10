@@ -2644,8 +2644,9 @@ function createPurchaseReportPdf(r){
 }
 
 /* ---------- DSR (DAILY SALES REPORT) ---------- */
-function downloadMonthlySalesReportPdf(data){
+async function downloadMonthlySalesReportPdf(data){
   if(!data||!data.summary){toast('Monthly report data is still loading. Please try again.');return;}
+  const prodRecs=await api('/api/products').catch(()=>[]),nozRecs=await api('/api/nozzles').catch(()=>[]);
   const s=data.summary,cur=window.stationCurrency||'ETB',num=v=>Number(v||0);
   const fmt=v=>num(v).toLocaleString('en-US',{maximumFractionDigits:2});
   const money=v=>cur+' '+num(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -2687,7 +2688,7 @@ function downloadMonthlySalesReportPdf(data){
     notesRight:rankRows.length?rankRows:[
       {label:'Report month',value:monthLabel(data.month)},{label:'Confirmed shifts',value:fmt(s.totalShifts)},
       {label:'Product count',value:String(products.length)},{label:'Attendant count',value:String(attendants.length)}]
-  },msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,monthLabel,GREEN,totalSales)));
+  },msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,monthLabel,GREEN,totalSales,prodRecs,nozRecs)));
   const url=URL.createObjectURL(blob),link=document.createElement('a');
   link.href=url;link.download='MSR-'
 +String(data.month||'report').replace(/[^A-Za-z0-9_-]/g,'')+'-report.pdf';
@@ -2747,13 +2748,17 @@ function msrNiceStep(max){const raw=Math.max(max,1)/4,p=Math.pow(10,Math.floor(M
 function msrCompact(v){const a=Math.abs(v),t=x=>String(Number(x.toFixed(2)));return a>=1e6?t(v/1e6)+'M':a>=1e3?t(v/1e3)+'k':String(Math.round(v));}
 /* ===== MSR report, two-page layout (A4). Page 1: key figures, charts. Page 2: full detail. ===== */
 function msrShortMonth(v){const m=/^(\d{4})-(\d{2})/.exec(String(v||''));if(!m)return String(v||'');const d=new Date(Number(m[1]),Number(m[2])-1,1);return d.toLocaleDateString('en-US',{month:'short'})+' '+String(m[1]).slice(2);}
-function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,monthLabel,GREEN,totalSales){
+function msrHex(hex,fallback){const m=/^#?([0-9a-f]{6})$/i.exec(String(hex||'').trim());if(!m)return fallback;const n=parseInt(m[1],16);return[(n>>16)&255,(n>>8)&255,n&255];}
+function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,monthLabel,GREEN,totalSales,prodRecs,nozRecs){
+  const recByCode={},recByName={};(Array.isArray(prodRecs)?prodRecs:[]).forEach(r=>{recByCode[String(r.code_name||'').trim().toLowerCase()]=r;recByName[String(r.name||'').trim().toLowerCase()]=r;});
+  const nozList=Array.isArray(nozRecs)?nozRecs:[];
+  const productColor=p=>{const k=String(p.code||'').trim().toLowerCase();const rec=recByCode[k]||recByName[k];return{color:rec?msrHex(rec.color,[100,116,139]):[100,116,139],name:rec?rec.name:String(p.code||''),dispensers:rec?nozList.filter(n=>{const q=String(n.product||'').trim().toLowerCase();return q===String(rec.name||'').trim().toLowerCase()||q===String(rec.code_name||'').trim().toLowerCase();}).map(n=>String(n.nozzle_code||'')).filter(Boolean):[]};};
   const share=x=>totalSales?num(x)/totalSales*100:0;
-  const productChart=products.map(p=>({label:(p.code||'Product')+'  \u00b7  '+fmt(p.liters)+' L',pct:num(p.sharePct),valueLabel:money(p.sales)}));
+  const productChart=products.map(p=>{const pc=productColor(p);return{label:(p.code||'Product'),pct:num(p.sharePct),valueLabel:fmt(p.liters)+' L  \u00b7  '+money(p.sales),color:pc.color,dispensers:pc.dispensers,sales:num(p.sales),liters:num(p.liters),share:num(p.sharePct)};});
   const attendantChart=attendants.map((x,i)=>({label:(i+1)+'. '+(x.attendant||'Unknown'),pct:share(x.sales),valueLabel:money(x.sales)}));
   const rankChart=(Array.isArray(ranking)?ranking:[]).filter(x=>x&&x.month).slice().sort((a,b)=>String(a.month).localeCompare(String(b.month)))
     .map(x=>({label:msrShortMonth(x.month),value:num(x.avgAmount),current:String(x.month)===String(data.month)}));
-  const productRowsV2=products.map((p,i)=>({cells:[p.code||'Product code unavailable',fmt(p.liters)+' L',money(p.sales),num(p.sharePct).toFixed(1)+'%',money(num(p.liters)?num(p.sales)/num(p.liters):0),String(i+1)]}));
+  const productRowsV2=products.map((p,i)=>({dot:productColor(p).color,cells:[p.code||'Product code unavailable',fmt(p.liters)+' L',money(p.sales),num(p.sharePct).toFixed(1)+'%',money(num(p.liters)?num(p.sales)/num(p.liters):0),String(i+1)]}));
   // PDF intentionally excludes every sale type configured to require a reason.
   // Recalculate shares only across the included types and append a monthly total row.
   const salesTypesForPdf=(Array.isArray(data.salesTypesForPdf)?data.salesTypesForPdf:[]).slice().sort((a,b)=>num(b.sales)-num(a.sales));
@@ -2779,7 +2784,8 @@ function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,mont
     {label:'Top attendant',value:topAtt?(topAtt.attendant||'Unknown'):'—',sub:topAtt?money(topAtt.sales):''},
     {label:'Top product',value:topProd?(topProd.code||'Product'):'—',sub:topProd?money(topProd.sales):''}];
   const totalL=products.reduce((n,p)=>n+num(p.liters),0);
-  return {productCentre:fmt(totalL),highlights,productChart,attendantChart,rankChart,productRowsV2,saleTypeRowsV2,attRowsV2,dailyRowsV2,notesStrip,
+  const dispenserRowsV2=nozList.map(n=>{const q=String(n.product||'').trim().toLowerCase();const rec=recByName[q]||recByCode[q];const col=rec?msrHex(rec.color,[100,116,139]):[100,116,139];return{dot:col,cells:[String(n.nozzle_code||'Dispenser'),rec?(rec.code_name||rec.name):String(n.product||'—'),String(n.nozzle_count||1)]};});
+  return {dispenserRowsV2,productCentre:fmt(totalL),highlights,productChart,attendantChart,rankChart,productRowsV2,saleTypeRowsV2,attRowsV2,dailyRowsV2,notesStrip,
     dailyRows:[],productRows:[],attendants:[],notesLeft:[],notesRight:[],rightTitle:''};
 }
 function msrNiceAxis(max){
@@ -2789,152 +2795,157 @@ function msrNiceAxis(max){
   return {step:2*mag,axis:10*mag};
 }
 function createMsrReportPdfV2(r){
-  const d=createPdfDoc(),M=d.M,C=d.C,CW=d.CW,W=595.28,H=841.89;
+  const d=createPdfDoc(),M=d.M,CW=d.CW,W=595.28,H=841.89;
+  const P={navy:[15,23,42],ink:[15,23,42],mute:[100,116,139],line:[226,232,240],panel:[248,250,252],blue:[29,78,216],blueSoft:[219,234,254],teal:[15,118,110],amber:[202,138,4],slate:[71,85,105],white:[255,255,255]};
+  const ATT=[[29,78,216],[15,118,110],[202,138,4],[71,85,105],[14,116,144],[159,18,57]];
   const half=(CW-16)/2,RX=M+half+16;
-  const PAL=[[37,99,235],[16,185,129],[245,158,11],[139,92,246],[239,68,68],[14,165,233],[234,88,12],[100,116,139]];
-  const TOTAL_TEXT=(v)=>d.clean(v);
-  // Donut chart: items [{label,pct,color,sub}]; cx,cy = centre (top-down coordinates)
-  const donut=(items,cx,cy,R,rin,centreTop,centreSub)=>{
-    let a=0;
-    items.forEach(it=>{
-      const frac=Math.max(0,Math.min(100,it.pct))/100;if(frac<=0)return;
-      const a0=a,a1=a+frac*2*Math.PI;a=a1;
-      const n=Math.max(4,Math.ceil(frac*72));const pts=[];
+  const shade=c=>c.map(v=>Math.round(v*0.62));
+  const head=(t,x,y,w)=>{d.text(d.clean(t).toUpperCase(),x,y+10,8.5,true,P.ink);d.hline(x,x+w,y+16,P.line,.6);};
+  // Bar with a darker keyline so pale colours (e.g. yellow) stay visible on white
+  const bar=(x,y,w,h,c,rad)=>{if(w<=0)return;d.box(x,y,w,h,shade(c),rad);if(w>2&&h>2)d.box(x+.6,y+.6,w-1.2,h-1.2,c,Math.max(0,rad-.6));};
+  const donut=(items,cx,cy,R,rin,centreTop,centreSub)=>{let a=0;
+    items.forEach(it=>{const frac=Math.max(0,Math.min(100,it.pct))/100;if(frac<=0)return;
+      const a0=a,a1=a+frac*2*Math.PI;a=a1;const n=Math.max(4,Math.ceil(frac*72));const pts=[];
       for(let k=0;k<=n;k++){const t=a0+(a1-a0)*k/n;pts.push([cx+R*Math.sin(t),cy-R*Math.cos(t)]);}
       for(let k=n;k>=0;k--){const t=a0+(a1-a0)*k/n;pts.push([cx+rin*Math.sin(t),cy-rin*Math.cos(t)]);}
-      d.poly(pts,it.color);
-    });
-    d.poly(Array.from({length:48},(_,k)=>{const t=2*Math.PI*k/48;return[cx+rin*Math.sin(t),cy-rin*Math.cos(t)];}),C.CARD);
-    if(centreTop){d.text(centreTop,cx,cy+3,12,true,C.INK,'c');}
-    if(centreSub){d.text(centreSub,cx,cy+15,7,false,C.GRAY,'c');}
-  };
-  const hbars=(items,x,top,w,rowH)=>{
-    items.forEach((it,i)=>{
-      const y=top+i*rowH,pct=Math.min(100,Math.max(0,Number(it.pct)||0));
-      d.text(d.fit(it.label,9,true,w*0.6),x,y+13,9,true,C.INK);
-      d.text(d.fit(it.valueLabel,8.5,false,w*0.4),x+w,y+13,8.5,false,C.GRAY,'r');
-      d.box(x,y+rowH*0.5,w,8,C.LINE,4);
-      const fw=w*pct/100;
-      if(fw>0)d.box(x,y+rowH*0.5,Math.max(fw,4),8,it.color||C.BLUE,4);
-      d.text(pct.toFixed(1)+'%',x+w,y+rowH*0.5+17,7.5,true,C.GRAY,'r');
-    });
-  };
-  // ================= PAGE 1 =================
-  d.header({kicker:'MONTHLY SALES REPORT  \u00b7  STATION-WIDE PERFORMANCE',title:r.title,h:84,kBase:28,tBase:54,pillTop:31.5,pillBase:48.5,status:r.statusLabel,statusTone:'good'});
-  d.y=102;
-  // KPI grid: 3 per row, two rows
-  d.section('Key figures',M,d.y);d.y+=24;
-  {const items=r.key.slice(0,6),per=3,gap=8,w=(CW-gap*(per-1))/per,h=42;
-    items.forEach((it,i)=>{const c=i%per,rw=Math.floor(i/per),x=M+c*(w+gap),t=d.y+rw*(h+gap);
-      d.box(x,t,w,h,it.tone==='good'?[236,253,245]:C.CARD,4.5);
-      d.box(x,t+8,3,h-16,it.tone==='good'?C.GREEN:C.BLUE,1.5);
-      d.text(d.clean(it.label).toUpperCase(),x+12,t+14,7,false,C.GRAY);
-      d.text(d.fit(it.value,it.size||12.5,true,w-22),x+12,t+30,it.size||12.5,true,it.tone==='good'?C.GREEN:C.INK);
-    });
-    d.y+=2*h+gap+12;}
-  // Highlights row
-  {const hl=r.highlights||[],per=hl.length||1,gap=8,w=(CW-gap*(per-1))/per,h=40;
+      d.poly(pts,it.color);});
+    d.poly(Array.from({length:48},(_,k)=>{const t=2*Math.PI*k/48;return[cx+rin*Math.sin(t),cy-rin*Math.cos(t)];}),P.white);
+    if(centreTop)d.text(centreTop,cx,cy+3,12,true,P.ink,'c');
+    if(centreSub)d.text(centreSub,cx,cy+15,6.8,false,P.mute,'c');};
+  const table=(cols,rows,rowH,dotFirst)=>{
+    const hh=24;d.box(M,d.y,CW,hh,P.navy,4);
+    cols.forEach(c=>d.text(d.clean(c.h).toUpperCase(),M+c.x,d.y+14,7,true,P.white,c.a==='r'?'r':'l'));
+    d.y+=hh;
+    rows.forEach((row,ri)=>{const bold=!!row.bold;
+      if(bold)d.box(M,d.y,CW,rowH,[226,232,240]);else if(ri%2===0)d.box(M,d.y,CW,rowH,P.panel);
+      cols.forEach((c,ci)=>{const v=row.cells[ci];if(v==null||v==='')return;
+        let x=M+c.x;const tone=(row.tones&&row.tones[ci])||P.ink;
+        if(dotFirst&&ci===0&&row.dot){d.box(x,d.y+rowH/2-4,8,8,row.dot,2);x+=14;}
+        d.text(d.fit(String(v),8.2,bold||c.b,(c.max||200)-(dotFirst&&ci===0&&row.dot?14:0)),x,d.y+rowH/2+3,8.2,bold||c.b,tone,c.a==='r'?'r':'l');});
+      d.hline(M,M+CW,d.y+rowH,P.line,.4);d.y+=rowH;});
+    d.y+=14;};
+  // ================= PAGE 1: summary and tables =================
+  d.box(0,0,W,70,P.navy);
+  d.text('MONTHLY SALES REPORT',M,26,7.8,true,[147,197,253]);
+  d.text(d.fit(r.title,22,true,380),M,50,22,true,P.white);
+  {const lab=d.clean(r.statusLabel||'Generated').toUpperCase(),pw=Math.max(92,d.tw(lab,8,true)+22);
+    d.box(W-M-pw,24,pw,22,[220,252,231],11);d.text(lab,W-M-pw/2,38.5,8,true,[21,128,61],'c');}
+  let y=88;
+  {const items=r.key.slice(0,4),gap=8,w=(CW-gap*3)/4,h=58;
+    items.forEach((it,i)=>{const x=M+i*(w+gap);
+      d.box(x,y,w,h,P.panel,6);d.line(x,y+8,x,y+h-8,it.tone==='good'?P.teal:P.blue,2.2);
+      d.text(d.clean(it.label).toUpperCase(),x+12,y+17,6.9,true,P.mute);
+      let sz=it.size||14;while(sz>9&&d.tw(it.value,sz,true)>w-22)sz-=0.5;
+      d.text(d.fit(it.value,sz,true,w-22),x+12,y+41,sz,true,it.tone==='good'?P.teal:P.ink);});
+    y+=h+14;}
+  {const hl=r.highlights||[],gap=8,per=hl.length||1,w=(CW-gap*(per-1))/per,h=42;
     hl.forEach((x,i)=>{const px=M+i*(w+gap);
-      d.box(px,d.y,w,h,C.NAVY,4.5);
-      d.text(d.clean(x.label).toUpperCase(),px+11,d.y+13,6.8,true,[147,197,253]);
-      d.text(d.fit(x.value,10,true,w-22),px+11,d.y+27.5,10,true,[255,255,255]);
-      if(x.sub)d.text(d.fit(x.sub,6.8,false,w-22),px+11,d.y+36,6.8,false,[203,213,225]);
-    });
-    d.y+=h+14;}
-  // Daily trend
-  d.section('Daily sales trend',M,d.y);d.y+=24;
-  {const top=d.y,h=150,days=r.chart||[];
-    d.box(M,top,CW,h,C.CARD,4.5);
-    d.box(M+14,top+11,7,7,C.BLUE,1.5);d.text('Daily calculated sales',M+26,top+17.5,7.8,false,C.GRAY);
-    const lx=M+26+d.tw('Daily calculated sales',7.8,false)+18;
-    d.line(lx,top+14.5,lx+14,top+14.5,C.AMBER,1.2,'3 2');
-    d.text('Average per confirmed day  '+r.avgLabel,lx+20,top+17.5,7.8,false,C.GRAY);
-    const px0=M+46,px1=M+CW-14,pTop=top+34,pBot=top+h-22,ph=pBot-pTop;
-    if(!days.length){d.text('No confirmed daily reports for this month.',M+CW/2,top+h/2+8,9,'i',C.GRAY,'c');}
-    else{
-      const mx=Math.max.apply(null,days.map(x=>x.sales).concat([1])),ax=msrNiceAxis(mx),axis=ax.axis,step=ax.step;
-      for(let i=0;i<=5;i++){const yy=pBot-ph*i/5;d.line(px0,yy,px1,yy,i===0?C.GRAY:C.LINE,i===0?.6:.4);d.text(msrCompact(step*i),px0-6,yy+2.6,7,false,C.GRAY,'r');}
-      const n=days.length,slot=(px1-px0)/n,bw=Math.min(30,slot*.62);
-      days.forEach((x,i)=>{const bh=Math.max(0,x.sales/axis*ph),bx=px0+slot*i+(slot-bw)/2;
-        if(bh>0)d.box(bx,pBot-bh,bw,bh,C.BLUE,bw>8?2:0);
-        if(n<=12)d.text(msrCompact(x.sales),bx+bw/2,pBot-bh-3.5,7,true,C.INK,'c');
-        const every=n<=16?1:n<=24?2:3;
-        if(i%every===0)d.text(String(x.date).slice(8,10),bx+bw/2,pBot+11,7.2,false,C.GRAY,'c');});
-      if(r.avg>0&&r.avg<=axis){const ay=pBot-r.avg/axis*ph;d.line(px0,ay,px1,ay,C.AMBER,1.1,'3 2');}
-    }
-    d.y=top+h+14;}
-  // Product mix donut and attendant share
-  d.section('Product mix',M,d.y);d.section('Attendant share of sales',RX,d.y);d.y+=24;
-  {const top=d.y,h=138;
-    d.box(M,top,half,h,C.CARD,4.5);d.box(RX,top,half,h,C.CARD,4.5);
+      d.box(px,y,w,h,P.white,6);d.outline(px,y,w,h,6);
+      d.text(d.clean(x.label).toUpperCase(),px+10,y+13,6.6,true,P.mute);
+      d.text(d.fit(x.value,9.5,true,w-20),px+10,y+27,9.5,true,P.ink);
+      if(x.sub)d.text(d.fit(x.sub,7,false,w-20),px+10,y+37,7,false,P.mute);});
+    y+=h+16;}
+  d.y=y;
+  head('Product performance',M,d.y,CW);d.y+=24;
+  table([{h:'Product',x:8,max:150},{h:'Fuel sold',x:200,a:'r'},{h:'Sales',x:330,a:'r'},{h:'Share',x:400,a:'r'},{h:'Sales / L',x:470,a:'r'},{h:'Rank',x:CW-8,a:'r'}],
+    (r.productRowsV2||[]).length?r.productRowsV2:[{cells:['No product totals','—','—','—','—','—']}],26,true);
+  head('Attendant performance',M,d.y,CW);d.y+=24;
+  table([{h:'Attendant',x:8,max:170},{h:'Sales',x:240,a:'r'},{h:'Fuel sold',x:330,a:'r'},{h:'Shifts',x:410,a:'r'},{h:'Share',x:CW-8,a:'r'}],
+    (r.attRowsV2||[]).length?r.attRowsV2.map(x=>({cells:x.cells.slice(0,5)})):[{cells:['No attendant totals','—','—','—','—']}],26,false);
+  head('Monthly sales by type (excluding reason-required sales)',M,d.y,CW);d.y+=24;
+  table([{h:'Sale type',x:8,max:240},{h:'Monthly total ('+(window.stationCurrency||'ETB')+')',x:390,a:'r'},{h:'Share',x:CW-8,a:'r'}],
+    (r.saleTypeRowsV2||[]).length?r.saleTypeRowsV2:[{cells:['No eligible sale-type totals','—','—']}],26,false);
+  head('Dispensers',M,d.y,CW);d.y+=24;
+  table([{h:'Dispenser',x:8,max:180},{h:'Product',x:240,a:'l'},{h:'Nozzles',x:CW-8,a:'r'}],
+    (r.dispenserRowsV2||[]).length?r.dispenserRowsV2:[{cells:['No dispensers configured','—','—']}],26,true);
+  head('Reconciliation',M,d.y,CW);d.y+=24;
+  {const notes=r.notesStrip||[];
+    if(notes.length){d.box(M,d.y,CW,46,P.panel,6);const nw=CW/notes.length;
+      notes.forEach((n,i)=>{const x=M+i*nw+12;
+        d.text(d.clean(n.label).toUpperCase(),x,d.y+15,6.9,false,P.mute);
+        d.text(d.fit(n.value,10.5,true,nw-24),x,d.y+34,10.5,true,n.tone==='warn'?P.amber:P.ink);});
+      d.y+=46+14;}}
+  d.text('Figures use confirmed daily reports only. The current month is provisional until every day is confirmed.',M,d.y+6,7.4,'i',P.mute);
+  // ================= PAGE 2: charts =================
+  d.newPage();
+  let g=46;
+  // Daily sales: area line
+  head('Daily sales',M,g,CW);g+=24;
+  {const top=g,h=180,days=r.chart||[];
+    d.box(M,top,CW,h,P.panel,6);
+    const px0=M+44,px1=M+CW-16,pt=top+26,pb=top+h-20,ph=pb-pt;
+    d.text('Calculated sales per day',M+12,top+15,7.2,false,P.mute);
+    d.line(px1-150,top+11,px1-138,top+11,P.amber,1.2,'3 2');
+    d.text('Average per confirmed day  '+r.avgLabel,px1-134,top+14,7.2,false,P.mute);
+    if(!days.length)d.text('No confirmed daily reports for this month.',M+CW/2,top+h/2+6,9,'i',P.mute,'c');
+    else{const mx=Math.max.apply(null,days.map(x=>x.sales).concat([1])),ax=msrNiceAxis(mx),axis=ax.axis,step=ax.step;
+      for(let i=0;i<=5;i++){const yy=pb-ph*i/5;d.line(px0,yy,px1,yy,P.line,.5);d.text(msrCompact(step*i),px0-6,yy+2.6,6.8,false,P.mute,'r');}
+      const n=days.length,X=i=>n>1?px0+(px1-px0)*i/(n-1):(px0+px1)/2,Y=v=>pb-ph*Math.min(v,axis)/axis;
+      const pts=days.map((x,i)=>[X(i),Y(x.sales)]);
+      d.poly([[X(0),pb]].concat(pts).concat([[X(n-1),pb]]),P.blueSoft);
+      for(let i=1;i<n;i++)d.line(pts[i-1][0],pts[i-1][1],pts[i][0],pts[i][1],P.blue,1.6);
+      const every=n<=16?1:n<=24?2:4,dot=n<=20?2.6:1.6;
+      pts.forEach((q,i)=>{if(n<=40||i===n-1)d.box(q[0]-dot,q[1]-dot,dot*2,dot*2,P.blue,dot);
+        if(i%every===0||i===n-1)d.text(String(days[i].date).slice(8,10),q[0],pb+11,6.8,false,P.mute,'c');});
+      if(r.avg>0&&r.avg<=axis){const ay=Y(r.avg);d.line(px0,ay,px1,ay,P.amber,1.1,'3 2');}}
+    g=top+h+14;}
+  // Product mix (donut, product colours with dispenser list) and sales by product bars
+  head('Product mix',M,g,half);head('Sales by product',RX,g,half);g+=24;
+  {const top=g,h=170;d.box(M,top,half,h,P.panel,6);d.box(RX,top,half,h,P.panel,6);
     const prod=(r.productChart||[]).slice(0,6);
     if(prod.length){
-      const items=prod.map((p,i)=>Object.assign({},p,{color:PAL[i%PAL.length]}));
-      donut(items,M+58,top+h/2,46,28,(r.productCentre||''),'LITRES');
-      items.forEach((p,i)=>{const ly=top+30+i*44;
-        d.box(M+120,ly+2,9,9,p.color,2);
-        d.text(d.fit(p.label,8.5,true,half-178),M+135,ly+10,8.5,true,C.INK);
-        d.text(p.pct.toFixed(1)+'%',M+half-12,ly+10,8.5,true,p.color,'r');
-        d.text(d.fit(p.valueLabel,7.6,false,half-150),M+135,ly+23,7.6,false,C.GRAY);});
-    }else d.text('No product totals available.',M+half/2,top+h/2,8.5,'i',C.GRAY,'c');
+      donut(prod,M+56,top+h/2,46,28,(r.productCentre||''),'LITRES');
+      prod.forEach((p,i)=>{const ly=top+22+i*44;
+        d.box(M+118,ly+2,9,9,p.color,2);
+        d.text(d.fit(p.label,8.4,true,half-170),M+133,ly+10,8.4,true,P.ink);
+        d.text(p.pct.toFixed(1)+'%',M+half-12,ly+10,8.4,true,P.ink,'r');
+        d.text(d.fit(p.valueLabel,7.2,false,half-150),M+133,ly+22,7.2,false,P.mute);
+        if(p.dispensers&&p.dispensers.length){let cx=M+133;d.text('DISPENSERS',cx,ly+33,6,true,P.mute);cx+=d.tw('DISPENSERS',6,true)+6;
+          p.dispensers.forEach(code=>{const cw=d.tw(code,6.8,true)+10;if(cx+cw>M+half-10)return;bar(cx,ly+27,cw,11,p.color,2.5);d.text(code,cx+cw/2,ly+35,6.8,true,P.ink,'c');cx+=cw+4;});}});
+    }else d.text('No product totals available.',M+half/2,top+h/2,8.5,'i',P.mute,'c');
+    const bars=(r.productChart||[]).slice(0,6);
+    if(bars.length){const bx=RX+14,bw=half-28,maxS=Math.max.apply(null,bars.map(b=>b.sales||0).concat([1]));
+      bars.forEach((b,i)=>{const ry=top+18+i*24;
+        d.text(d.fit(b.label,8.4,true,80),RX+14,ry+10,8.4,true,P.ink);
+        const x0=RX+14+70,w=(bw-70-44)*(b.sales||0)/maxS;
+        bar(x0,ry+2,Math.max(w,3),12,b.color,3);
+        d.text(msrCompact(b.sales||0),RX+half-14,ry+10,7.2,true,P.ink,'r');});
+    }else d.text('No product sales for this month.',RX+half/2,top+h/2,8.5,'i',P.mute,'c');
+    g=top+h+14;}
+  // Attendant share (stacked) and sales by sale type (bars)
+  head('Attendant share',M,g,half);head('Sales by sale type',RX,g,half);g+=24;
+  {const top=g,h=150;d.box(M,top,half,h,P.panel,6);d.box(RX,top,half,h,P.panel,6);
     const att=(r.attendantChart||[]).slice(0,6);
-    if(att.length)hbars(att,RX+14,top+12,half-28,(h-22)/Math.max(att.length,1));
-    else d.text('Attendant totals are not available.',RX+half/2,top+h/2,8.5,'i',C.GRAY,'c');
-    d.y=top+h+14;}
-  // Monthly ranking
-  d.section('Monthly sales per confirmed day',M,d.y);d.y+=24;
-  {const top=d.y,h=92,rk=(r.rankChart||[]).slice(-12);
-    d.box(M,top,CW,h,C.CARD,4.5);
-    if(!rk.length){d.text('Monthly ranking appears when confirmed DSR months are available.',M+CW/2,top+h/2+4,9,'i',C.GRAY,'c');}
-    else{
-      const px0=M+46,px1=M+CW-14,pTop=top+14,pBot=top+h-20,ph=pBot-pTop;
+    if(att.length){const bx=M+14,bw=half-28,by=top+18;d.box(bx,by,bw,14,P.line,0);let x=bx;
+      att.forEach((a,i)=>{const w=bw*Math.max(0,Math.min(100,a.pct))/100;if(w>0)d.box(x,by,w,14,ATT[i%ATT.length],0);x+=w;});
+      att.forEach((a,i)=>{const ly=top+52+i*28;d.box(M+14,ly+2,8,8,ATT[i%ATT.length],2);
+        d.text(d.fit(a.label,8.4,true,half-130),M+28,ly+10,8.4,true,P.ink);
+        d.text(a.pct.toFixed(1)+'%',M+half-14,ly+10,8.4,true,P.ink,'r');
+        d.text(d.fit(a.valueLabel,7.2,false,half-120),M+28,ly+21,7.2,false,P.mute);});
+    }else d.text('Attendant totals are not available.',M+half/2,top+h/2,8.5,'i',P.mute,'c');
+    const st=(r.saleTypeRowsV2||[]).filter(x=>x.cells&&x.cells[0]&&!/^No /.test(x.cells[0])).slice(0,5);
+    if(st.length){st.forEach((x,i)=>{const ry=top+18+i*26;const pct=parseFloat(String(x.cells[2]||'0'))||0;
+        d.text(d.fit(x.cells[0],8.4,true,100),RX+14,ry+10,8.4,true,P.ink);
+        const x0=RX+118,w=(half-28-118-40)*Math.min(100,pct)/100;
+        bar(x0,ry+2,Math.max(w,3),12,ATT[(i+2)%ATT.length],3);
+        d.text(String(x.cells[2]||''),RX+half-14,ry+10,7.6,true,P.ink,'r');});
+    }else d.text('No eligible sale-type totals.',RX+half/2,top+h/2,8.5,'i',P.mute,'c');
+    g=top+h+14;}
+  // Monthly average: line chart
+  head('Monthly average per confirmed day',M,g,CW);g+=24;
+  {const top=g,h=104,rk=(r.rankChart||[]).slice(-12);d.box(M,top,CW,h,P.panel,6);
+    if(!rk.length)d.text('Monthly ranking appears when confirmed DSR months are available.',M+CW/2,top+h/2+4,9,'i',P.mute,'c');
+    else{const px0=M+44,px1=M+CW-22,pt=top+16,pb=top+h-20,ph=pb-pt;
       const mx=Math.max.apply(null,rk.map(x=>x.value).concat([1])),ax=msrNiceAxis(mx);
-      for(let i=0;i<=5;i++){const yy=pBot-ph*i/5;d.line(px0,yy,px1,yy,i===0?C.GRAY:C.LINE,i===0?.6:.4);d.text(msrCompact(ax.step*i),px0-6,yy+2.6,7,false,C.GRAY,'r');}
-      const n=rk.length,slot=(px1-px0)/n,bw=Math.min(40,slot*.5);
-      rk.forEach((x,i)=>{const bh=Math.max(0,x.value/ax.axis*ph),bx=px0+slot*i+(slot-bw)/2;
-        if(bh>0)d.box(bx,pBot-bh,bw,bh,x.current?C.BLUE:[147,197,253],bw>8?2:0);
-        d.text(msrCompact(x.value),bx+bw/2,pBot-bh-3.5,7.2,true,C.INK,'c');
-        d.text(x.label,bx+bw/2,pBot+11,7.2,false,C.GRAY,'c');});
-    }
-    d.y=top+h+4;}
-  // ================= PAGE 2 (no header band) =================
-  d.newPage();
-  d.y=46;
-  const table=(title,cols,rows,rowH)=>{
-    d.section(title,M,d.y);d.y+=22;
-    const hh=20;d.box(M,d.y,CW,hh,C.NAVY,4);
-    cols.forEach(c=>d.text(d.clean(c.h).toUpperCase(),M+c.x,d.y+13,7,true,[255,255,255],c.a==='r'?'r':'l'));
-    d.y+=hh;
-    rows.forEach((row,ri)=>{
-      const bold=!!row.bold;
-      if(bold)d.box(M,d.y,CW,rowH,[226,232,240]);
-      else if(ri%2===0)d.box(M,d.y,CW,rowH,C.CARD);
-      cols.forEach((c,ci)=>{const v=row.cells[ci];if(v==null||v==='')return;
-        const tone=(row.tones&&row.tones[ci])||C.INK;
-        d.text(d.fit(String(v),8,bold||c.b,c.max||200),M+c.x,d.y+rowH/2+2.8,8,bold||c.b,tone,c.a==='r'?'r':'l');});
-      d.hline(M,M+CW,d.y+rowH,C.LINE,.4);
-      d.y+=rowH;
-    });
-    d.y+=12;
-  };
-  const dailyCols=[{h:'Date',x:8},{h:'Fuel sold',x:150,a:'r'},{h:'Sales',x:270,a:'r'},{h:'Payments',x:380,a:'r'},{h:'Shifts',x:440,a:'r'},{h:'Status',x:CW-8,a:'r',b:true}];
-  const prodCols=[{h:'Product',x:8,max:150},{h:'Fuel sold',x:200,a:'r'},{h:'Sales',x:310,a:'r'},{h:'Share',x:380,a:'r'},{h:'Sales / L',x:450,a:'r'},{h:'Rank',x:CW-8,a:'r'}];
-  const attCols=[{h:'Attendant',x:8,max:170},{h:'Sales',x:200,a:'r'},{h:'Fuel sold',x:290,a:'r'},{h:'Shifts',x:370,a:'r'},{h:'Share',x:CW-8,a:'r'}];
-  const prodRows=r.productRowsV2||[],saleTypeRows=r.saleTypeRowsV2||[],attRows=r.attRowsV2||[],dailyRows=r.dailyRowsV2||[];
-  const reserved=(22+20+12)*3+(prodRows.length*18)+(saleTypeRows.length*18)+(attRows.length*18)+(22+20+12)+84;
-  const dRowH=Math.max(9.5,Math.min(15,(H-40-d.y-reserved)/Math.max(1,dailyRows.length)));
-  table('Daily sales breakdown',dailyCols,dailyRows,dRowH);
-  table('Product performance',prodCols,prodRows,18);
-  table('Monthly sales by type (excluding reason-required sales)',[
-    {h:'Sale type',x:8,max:240},{h:'Monthly total ('+ (window.stationCurrency||'ETB') +')',x:390,a:'r'},{h:'Share',x:CW-8,a:'r'}],saleTypeRows.length?saleTypeRows:[{cells:['No eligible sale-type totals','—','—']}],18);
-  table('Attendant performance',attCols,attRows,18);
-  d.section('Reconciliation',M,d.y);d.y+=22;
-  const notes=r.notesStrip||[];
-  if(notes.length){d.box(M,d.y,CW,42,C.CARD,4.5);
-    const nw=CW/notes.length;notes.forEach((n,i)=>{const x=M+i*nw+12;
-      d.text(d.clean(n.label).toUpperCase(),x,d.y+14,7,false,C.GRAY);
-      d.text(d.fit(n.value,10.5,true,nw-24),x,d.y+31,10.5,true,n.tone==='warn'?C.AMBER:C.INK);});
-    d.y+=42;}
+      for(let i=0;i<=5;i++){const yy=pb-ph*i/5;d.line(px0,yy,px1,yy,P.line,.5);d.text(msrCompact(ax.step*i),px0-6,yy+2.6,6.8,false,P.mute,'r');}
+      const n=rk.length,X=i=>n>1?px0+16+(px1-px0-32)*i/(n-1):(px0+px1)/2,Y=v=>pb-ph*Math.min(v,ax.axis)/ax.axis;
+      const pts=rk.map((x,i)=>[X(i),Y(x.value)]);
+      for(let i=1;i<n;i++)d.line(pts[i-1][0],pts[i-1][1],pts[i][0],pts[i][1],P.teal,1.8);
+      pts.forEach((q,i)=>{const cur=rk[i].current,rr=cur?3.6:2.6;
+        d.box(q[0]-rr,q[1]-rr,rr*2,rr*2,cur?P.teal:P.white,rr);if(!cur)d.outline(q[0]-rr,q[1]-rr,rr*2,rr*2,rr);
+        d.text(msrCompact(rk[i].value),q[0],q[1]-7,6.9,true,P.ink,'c');
+        d.text(rk[i].label,q[0],pb+11,6.8,false,P.mute,'c');});}
+    g=top+h;}
   return d.finish(r.footer,'MSR - '+r.title);
 }
 
