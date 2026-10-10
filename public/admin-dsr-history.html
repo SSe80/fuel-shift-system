@@ -1,0 +1,295 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DSR History</title><link rel="stylesheet" href="assets/style.css?v=20261005-20"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-03"><style>
+.dsr-history-page .dsr-history-month{overflow:hidden;border:1px solid #e4e9ef;border-radius:14px;background:#fff;box-shadow:0 3px 12px rgba(16,24,40,.055);margin-bottom:10px}
+.dsr-history-page .dsr-history-month-head{width:100%;min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px 11px 17px;border:0;background:#fff;color:#17202a;text-align:left;cursor:pointer}
+.dsr-history-page .dsr-history-month-head:hover{background:#fafbfd}
+.dsr-history-page .dsr-history-month-title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dsr-history-page .dsr-history-month-title span{font-size:9px;letter-spacing:.1em;font-weight:800;color:#98a2b3}
+.dsr-history-page .dsr-history-month-title strong{font-size:15px;line-height:1.2}
+.dsr-history-page .dsr-history-month-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.dsr-history-page .dsr-history-month-right small{color:#8a949e;font-size:10px}
+.dsr-history-page .dsr-history-month-toggle{width:27px;height:27px;display:grid;place-items:center;border:1px solid #dce3ea;border-radius:8px;background:#f8fafc;color:#667085;font-size:16px;font-weight:800}
+.dsr-history-page .dsr-history-month.expanded .dsr-history-month-toggle{background:#eef4ff;color:#2563eb;border-color:#c7d7fe}
+.dsr-history-page .dsr-history-month-body{padding:10px;border-top:1px solid #edf1f4;background:#fcfdff}
+.dsr-history-page .dsr-history-month-body[hidden]{display:none}
+</style><style>
+/* DSR History — match Purchase History typography, spacing and card language */
+.dsr-history-page .purchase-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:18px 4px 20px}
+.dsr-history-page .purchase-header .eyebrow,.dsr-history-page .purchase-section .section-kicker{display:block;font-size:11px;letter-spacing:.12em;font-weight:800;color:#64748b;margin-bottom:6px}
+.dsr-history-page .purchase-header h1{margin:0;font-size:32px;line-height:1.1;letter-spacing:-.03em}
+.dsr-history-page .purchase-header .muted{margin:7px 0 0;font-size:14px}
+.dsr-history-page .purchase-back{display:inline-flex;align-items:center;padding:10px 14px;border:1px solid #d8e0e8;border-radius:12px;background:#fff;color:#334155;font-weight:750;box-shadow:0 2px 8px #17202a0a;text-decoration:none}
+.dsr-history-page .purchase-section{margin:0 0 18px;padding:22px;border:1px solid #e1e8f0;border-radius:20px;background:#fff;box-shadow:0 7px 26px #17202a0d}
+.dsr-history-page .purchase-section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #edf1f5}
+.dsr-history-page .purchase-section h2{margin:0;font-size:21px;letter-spacing:-.02em}
+.dsr-history-page .purchase-section p{margin:5px 0 0;color:#718096;font-size:13px;line-height:1.45}
+.dsr-history-page .purchase-section .section-kicker{color:#1264d8}
+.dsr-history-page .daily-report-date-cards{display:grid;gap:10px}
+
+/* Month heads use the same visual language as Purchase History */
+.dsr-history-page .dsr-history-month{margin:0 0 16px;border:1px solid #4b83bd;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 2px 8px #17202a0a}
+.dsr-history-page .dsr-history-month-head{width:100%;min-height:62px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:0;border-bottom:1px solid #e5eaf0;background:#f7f9fb;color:#17202a;text-align:left;cursor:pointer}
+.dsr-history-page .dsr-history-month-head:hover{background:#f3f6f9}
+.dsr-history-page .dsr-history-month-title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dsr-history-page .dsr-history-month-title span{font-size:9px;letter-spacing:.1em;font-weight:800;color:#1264d8}
+.dsr-history-page .dsr-history-month-title strong{font-size:15px;line-height:1.2;font-weight:800}
+.dsr-history-page .dsr-history-month-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.dsr-history-page .dsr-history-month-right small{color:#667085;font-size:10px}
+.dsr-history-page .dsr-history-month-toggle{width:27px;height:27px;display:grid;place-items:center;border:1px solid #d8e0e8;border-radius:8px;background:#fff;color:#667085;font-size:16px;font-weight:800}
+.dsr-history-page .dsr-history-month.expanded .dsr-history-month-toggle{background:#eef4ff;color:#2563eb;border-color:#c7d7fe}
+.dsr-history-page .dsr-history-month-body{max-height:430px;overflow-y:auto;overflow-x:hidden;padding:12px;background:#fff;border-top:0;scrollbar-width:thin}
+.dsr-history-page .dsr-history-month-body[hidden]{display:none}
+
+/* DSR cards — same proportions, typography and interaction as Purchase History cards */
+.dsr-history-page .dsr-history-card{overflow:hidden;border:1px solid #e4e9ef;border-radius:14px;background:#fff;box-shadow:0 3px 12px rgba(16,24,40,.055);margin:0 0 10px;transition:box-shadow .18s ease,border-color .18s ease}
+.dsr-history-page .dsr-history-card:last-child{margin-bottom:0}
+.dsr-history-page .dsr-history-card.expanded{border-color:#cfd9e4;box-shadow:0 5px 16px rgba(16,24,40,.07)}
+.dsr-history-page .dsr-history-card-head{width:100%;min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px 13px 17px;border:0;background:#fff;color:#17202a;text-align:left;cursor:pointer}
+.dsr-history-page .dsr-history-card-head:hover{background:#fafbfd}
+.dsr-history-page .dsr-history-card-title{min-width:0;display:flex;flex-direction:column;gap:3px}
+.dsr-history-page .dsr-history-card-title strong{font-size:14px;line-height:1.2;font-weight:800;color:#17202a;overflow-wrap:anywhere}
+.dsr-history-page .dsr-history-card-title small{font-size:10px;line-height:1.25;color:#8a949e}
+.dsr-history-page .dsr-history-card-right{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.dsr-history-page .dsr-history-badge{margin:0;padding:4px 7px;border-radius:999px;background:#ecfdf3;color:#027a48;border:1px solid #abefc6;font-size:9px;font-weight:850;white-space:nowrap}
+.dsr-history-page .dsr-history-toggle{width:27px;height:27px;display:grid;place-items:center;border:1px solid #dce3ea;border-radius:8px;background:#f8fafc;color:#667085;font-size:16px;font-weight:800;line-height:1}
+.dsr-history-page .dsr-history-card.expanded .dsr-history-toggle{background:#eef4ff;color:#2563eb;border-color:#c7d7fe}
+.dsr-history-page .dsr-history-card-body{padding:0 14px 13px;border-top:1px solid #edf1f4;background:#fcfdff}
+.dsr-history-page .dsr-history-card-body[hidden]{display:none}
+.dsr-history-page .dsr-history-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.dsr-history-page .dsr-history-stat{padding:10px;border:1px solid #e8edf2;border-radius:10px;background:#fff;min-width:0}
+.dsr-history-page .dsr-history-stat span{display:block;font-size:9px;color:#8a949e;margin-bottom:3px}
+.dsr-history-page .dsr-history-stat strong{display:block;font-size:12px;color:#17202a;overflow-wrap:anywhere}
+.dsr-history-page .dsr-history-actions{margin-top:10px;display:flex;justify-content:flex-end}
+.dsr-history-page .dsr-history-actions button.primary{width:50%;min-height:38px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 12px;border:1px solid #4b83bd;border-radius:9px;background:#4b83bd;color:#fff;box-shadow:0 3px 9px rgba(75,131,189,.16);font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.dsr-history-page .dsr-history-actions button.primary:hover{background:#3f74aa;border-color:#3f74aa}
+.dsr-history-page .dsr-history-actions button.primary:active{transform:translateY(1px)}
+@media(max-width:600px){
+ .dsr-history-page .dsr-history-actions button.primary{width:50%}
+}
+@media(max-width:600px){
+ .dsr-history-page .purchase-header{padding:15px 4px 17px;align-items:flex-start}
+ .dsr-history-page .purchase-header h1{font-size:28px}
+ .dsr-history-page .purchase-back{padding:9px 12px;font-size:13px}
+ .dsr-history-page .purchase-section{padding:17px 16px;border-radius:18px}
+ .dsr-history-page .purchase-section-head{gap:10px;margin-bottom:15px;padding-bottom:13px}
+ .dsr-history-page .purchase-section h2{font-size:20px}
+ .dsr-history-page .dsr-history-month-body{max-height:360px;padding:9px}
+ .dsr-history-page .dsr-history-card-head{min-height:68px;padding:11px 11px 11px 14px}
+ .dsr-history-page .dsr-history-card-title strong{font-size:13px}
+ .dsr-history-page .dsr-history-card-title small{font-size:9px}
+ .dsr-history-page .dsr-history-stats{grid-template-columns:1fr 1fr;gap:6px}
+}
+</style><style>
+/* DSR History width/alignment fix */
+.dsr-history-page .purchase-section-head{
+ width:100%;
+ box-sizing:border-box;
+ flex-direction:row;
+ align-items:center;
+ justify-content:space-between;
+}
+.dsr-history-page .purchase-section-head>div{
+ width:auto;
+ min-width:0;
+}
+.dsr-history-page .admin-sales-section-count{
+ margin-left:auto;
+ align-self:center;
+ flex:0 0 auto;
+ white-space:nowrap;
+ margin-top:0;
+}
+.dsr-history-page .daily-report-date-cards{width:100%;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.dsr-history-page .dsr-history-month{width:100%;box-sizing:border-box}
+.dsr-history-page .dsr-history-month-body{width:100%;box-sizing:border-box}
+.dsr-history-page .dsr-history-card{width:100%;box-sizing:border-box}
+@media(max-width:600px){
+ .dsr-history-page .purchase-section-head{
+  flex-direction:row;
+  align-items:center;
+ }
+ .dsr-history-page .admin-sales-section-count{
+  margin-left:auto;
+  align-self:center;
+  margin-top:0;
+ }
+}
+</style>
+<style>
+/* Exact Purchase/Sales History search toolbar */
+.dsr-history-page .purchase-history-tools{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 150px auto!important;
+  align-items:center!important;
+  gap:9px!important;
+  margin:0 0 14px!important;
+  padding:9px!important;
+  border:1px solid #e1e7ed!important;
+  border-radius:14px!important;
+  background:#f8fafc!important;
+  box-sizing:border-box!important
+}
+.dsr-history-page .purchase-history-search-wrap{position:relative;min-width:0}
+.dsr-history-page .purchase-history-search-wrap>span{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  color:#7b8794;font-size:18px;line-height:1;pointer-events:none
+}
+.dsr-history-page .purchase-history-tools input,
+.dsr-history-page .purchase-history-tools select,
+.dsr-history-page .purchase-history-tools button{
+  box-sizing:border-box!important;
+  width:100%!important;
+  height:42px!important;
+  min-height:42px!important;
+  margin:0!important;
+  border:1px solid #d5dde5!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  color:#344054!important;
+  font:inherit!important;
+  font-size:12px!important;
+  font-weight:600!important
+}
+.dsr-history-page .purchase-history-tools input{
+  padding:0 12px 0 36px!important;
+  outline:none!important
+}
+.dsr-history-page .purchase-history-tools input:focus{
+  border-color:#4b83bd!important;
+  box-shadow:0 0 0 3px rgba(75,131,189,.12)!important
+}
+.dsr-history-page .purchase-history-tools select{
+  padding:0 30px 0 11px!important;
+  cursor:pointer!important
+}
+.dsr-history-page .purchase-history-tools button{
+  padding:0 14px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:5px!important;
+  background:#edf2f6!important;
+  cursor:pointer!important
+}
+.dsr-history-page .purchase-history-tools button:hover{background:#e4ebf1!important}
+@media(max-width:700px){
+  .dsr-history-page .purchase-history-tools{
+    grid-template-columns:minmax(0,1fr) 135px!important
+  }
+  .dsr-history-page .purchase-history-refresh{
+    grid-column:1 / -1!important
+  }
+}
+@media(max-width:460px){
+  .dsr-history-page .purchase-history-tools{
+    grid-template-columns:1fr 1fr!important;
+    gap:7px!important;
+    padding:8px!important
+  }
+  .dsr-history-page .purchase-history-search-wrap{
+    grid-column:1 / -1!important
+  }
+  .dsr-history-page .purchase-history-tools input,
+  .dsr-history-page .purchase-history-tools select,
+  .dsr-history-page .purchase-history-tools button{
+    height:40px!important;
+    min-height:40px!important
+  }
+  .dsr-history-page .purchase-history-refresh{
+    grid-column:auto!important
+  }
+}
+</style>
+<style>
+.dsr-detail-popup{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}
+.dsr-detail-popup.open{display:flex}
+.dsr-detail-popup-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.62);backdrop-filter:blur(4px)}
+.dsr-detail-popup-card{position:relative;z-index:1;width:min(1180px,96vw);height:min(92vh,900px);background:#f2f5f8;border:1px solid #d7e0ea;border-radius:20px;box-shadow:0 28px 90px rgba(15,23,42,.38);overflow:hidden}
+.dsr-detail-popup-card iframe{display:block;width:100%;height:100%;border:0;background:#f2f5f8}
+.dsr-detail-popup-close{position:absolute;right:12px;top:10px;z-index:5;width:36px;height:36px;border:1px solid #d7e0ea;border-radius:10px;background:#fff;color:#334155;font-size:25px;line-height:1;cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,.12)}
+.dsr-detail-popup-close:hover{background:#f8fafc}
+body.dsr-detail-popup-open{overflow:hidden!important}
+@media(max-width:650px){.dsr-detail-popup{padding:6px}.dsr-detail-popup-card{width:100%;height:96vh;border-radius:14px}.dsr-detail-popup-close{right:8px;top:8px;width:34px;height:34px}}
+</style>
+</head>
+<body class="admin-shell admin-purchases-page admin-purchase-history-page dsr-history-page admin-control-ui" data-app-page="adminDsrHistory">
+<button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
+<aside class="admin-sidebar" aria-label="Admin navigation">
+  <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
+  <nav class="admin-sidebar-nav">
+    <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
+    <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
+    <a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a>
+    <a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>DSR</b></a><a href="admin-monthly-report.html" data-admin-nav="monthly-report"><span>▦</span><b>MSR</b></a>
+    <a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a>
+  </nav>
+  <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
+</aside>
+<main class="wrap">
+<header class="purchase-header"><div><span class="eyebrow">REPORTING</span><h1>DSR History</h1><p class="muted">All confirmed daily sales reports.</p></div><a class="purchase-back" href="admin-daily-report.html">← DSR</a></header>
+<section class="purchase-section">
+  <div class="purchase-section-head"><div><span class="section-kicker">DSR</span><h2>DSR History</h2><p class="muted">Complete confirmed daily report history.</p></div><span class="admin-sales-section-count" id="dsr-history-count">0 confirmed</span></div>
+  <div class="purchase-history-tools"><div class="purchase-history-search-wrap"><span aria-hidden="true">⌕</span><input id="dsr-history-search" type="search" placeholder="Search DSR date…" oninput="filterDsrHistory()"></div><select id="dsr-history-period" onchange="filterDsrHistory()" aria-label="DSR history date filter"><option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select><button type="button" class="purchase-history-refresh" onclick="loadDsrHistory()">↻ <span>Refresh</span></button></div>
+  <div id="daily-report-date-cards" class="daily-report-date-cards"></div>
+</section>
+<div id="toast" class="toast"></div>
+</main>
+<script src="assets/app.js?v=20261010-12"></script>
+<script>
+(function(){
+ async function load(){
+  const box=document.getElementById('daily-report-date-cards'); if(!box)return;
+  try{
+   const me=await currentUser(); if(!me || me.role!=='admin')return location.href='admin-login.html';
+   const rows=await api('/api/reports/daily/confirmations');
+   window.dsrHistoryData=(Array.isArray(rows)?rows:[]).filter(x=>x.status==='confirmed').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+   filterDsrHistory();
+  }catch(e){
+   console.error(e);
+   box.innerHTML='<div class="card">Could not load DSR history: '+String(e.message||e)+'</div>';
+  }
+ }
+ window.addEventListener('load',load);
+})();
+window.filterDsrHistory=function(){
+ const box=document.getElementById('daily-report-date-cards'); if(!box)return;
+ const all=Array.isArray(window.dsrHistoryData)?window.dsrHistoryData:[];
+ const search=(document.getElementById('dsr-history-search')?.value||'').trim().toLowerCase();
+ const period=document.getElementById('dsr-history-period')?.value||'all';
+ const rows=all.filter(item=>{
+  const date=String(item.date||'');
+  const hay=[date,item.confirmed_at,item.dsr_id].filter(Boolean).join(' ').toLowerCase();
+  if(search&&!hay.includes(search))return false;
+  if(period!=='all'){
+   const raw=item.confirmed_at||item.date; const d=raw?new Date(raw):null;
+   if(!d||Number.isNaN(d.getTime()))return false;
+   const now=new Date();
+   if(period==='today'){if(d.toDateString()!==now.toDateString())return false;}
+   else {const days=Number(period);if(Number.isFinite(days)&&d<new Date(now.getTime()-days*86400000))return false;}
+  }
+  return true;
+ });
+ const count=document.getElementById('dsr-history-count'); if(count)count.textContent=rows.length+' confirmed';
+ if(!rows.length){box.innerHTML='<div class="card">No confirmed DSR reports found.</div>';return;}
+ const monthGroups={};
+ rows.forEach(item=>{const date=String(item.date||'');const monthKey=/^\d{4}-\d{2}/.test(date)?date.slice(0,7):'unknown';(monthGroups[monthKey]||(monthGroups[monthKey]=[])).push(item);});
+ const monthKeys=Object.keys(monthGroups).sort((a,b)=>b.localeCompare(a));
+ box.innerHTML=monthKeys.map(monthKey=>{const monthDate=new Date(monthKey+'-01T00:00:00');const monthLabel=Number.isNaN(monthDate.getTime())?monthKey:monthDate.toLocaleDateString(undefined,{month:'long',year:'numeric'});const items=monthGroups[monthKey];return '<section class="dsr-history-month" data-month-key="'+monthKey+'"><button type="button" class="dsr-history-month-head" onclick="toggleDsrMonth(this)" aria-expanded="false"><span class="dsr-history-month-title"><span>MONTH</span><strong>'+monthLabel+'</strong></span><span class="dsr-history-month-right"><small>'+items.length+' DSR'+(items.length===1?'':'s')+'</small><span class="dsr-history-month-toggle" aria-hidden="true">⌄</span></span></button><div class="dsr-history-month-body" hidden>'+items.map(renderDsrHistoryCard).join('')+'</div></section>';}).join('');
+};
+window.loadDsrHistory=function(){
+ const s=document.getElementById('dsr-history-search'),p=document.getElementById('dsr-history-period');if(s)s.value='';if(p)p.value='all';
+ const box=document.getElementById('daily-report-date-cards');if(box)box.innerHTML='<div class="card">Refreshing…</div>';
+ return (async()=>{try{const rows=await api('/api/reports/daily/confirmations');window.dsrHistoryData=(Array.isArray(rows)?rows:[]).filter(x=>x.status==='confirmed').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));filterDsrHistory();}catch(e){if(box)box.innerHTML='<div class="card">Could not load DSR history: '+String(e.message||e)+'</div>';}})();
+};
+window.toggleDsrMonth=function(button){
+ const section=button.closest('.dsr-history-month');if(!section)return;
+ const expanded=section.classList.toggle('expanded');
+ const body=section.querySelector('.dsr-history-month-body');
+ const toggle=section.querySelector('.dsr-history-month-toggle');
+ if(body)body.hidden=!expanded;
+ button.setAttribute('aria-expanded',expanded?'true':'false');
+ if(toggle)toggle.textContent=expanded?'⌃':'⌄';
+};
+</script><script src="assets/admin-control-ui.js?v=20261010-02"></script>
+</body></html>
