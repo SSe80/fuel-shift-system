@@ -2083,6 +2083,7 @@ function filterAdminSales(){
     }
   }
   bindAdminSaleChecks();
+  progressingRows.concat(pendingRows).forEach(item=>updateAdminReturnedPreview(String(item.takeover?.id||'')));
 }
 function toggleAdminPendingDsrGroup(dsrId){
   const groups=document.querySelectorAll('.admin-pending-dsr-group');
