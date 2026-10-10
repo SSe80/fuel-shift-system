@@ -3799,3 +3799,55 @@ body.admin-control-ui[data-app-page].admin-settings-page .settings-section .sect
 body.admin-control-ui[data-app-page].admin-settings-page .settings-section.expanded .section-heading::after {
   transform: rotate(180deg) !important;
 }
+
+/* ==========================================================================
+   ADMIN SETTINGS — plain, neutral palette (overrides the coloured version).
+   The Danger Zone keeps its red because it is a warning.
+   ========================================================================== */
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section.card {
+  border-left: 1px solid var(--ac-line) !important;
+  box-shadow: none !important;
+  --accent: #334155 !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section .section-kicker {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section .add-action {
+  background: #0f172a !important;
+  box-shadow: none !important;
+  color: #fff !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section.expanded .settings-collapsible {
+  background: #ffffff;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .si-summary-chip i { display: none; }
+body.admin-control-ui[data-app-page].admin-settings-page .si-summary-chip b { color: var(--ac-ink) !important; }
+body.admin-control-ui[data-app-page].admin-settings-page .si-avatar {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .si-status.is-on {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .si-status.is-on::before { background: #334155 !important; }
+body.admin-control-ui[data-app-page].admin-settings-page .si-status::before { background: #cbd5e1 !important; }
+body.admin-control-ui[data-app-page].admin-settings-page .settings-product-group-color { display: none !important; }
+body.admin-control-ui[data-app-page].admin-settings-page .settings-product-group-label { color: #64748b !important; }
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card.card.expanded {
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .settings-card-actions button.settings-toggle-action {
+  color: #334155 !important; background: #fff !important; border-color: var(--ac-line) !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card .settings-card-actions button.settings-remove-action {
+  color: #334155 !important; background: #fff !important; border-color: var(--ac-line) !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section .settings-collapsible > button.primary,
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section button[onclick*="openStationCurrencyModal"] {
+  background: #fff !important; color: #334155 !important; border: 1px solid var(--ac-line) !important;
+}
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card.card.dispenser-active-card,
+body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card.card.dispenser-settings-card { background: #fff !important; }
