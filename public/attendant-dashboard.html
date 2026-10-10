@@ -1,0 +1,1801 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Attendant Dashboard</title><link rel="stylesheet" href="assets/style.css?v=20261007-08"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-04"><style>
+/* Attendant Dashboard — use the same visual language as Admin Purchases */
+.attendant-dashboard-page{background:#f7f9fc;color:#182230}
+.attendant-dashboard-page .wrap{max-width:980px}
+.attendant-dashboard-page .purchase-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:18px 4px 20px}
+.attendant-dashboard-page .purchase-header h1{margin:0;font-size:31px;letter-spacing:-.035em}
+.attendant-dashboard-page .purchase-header p{margin:7px 0 0;font-size:14px}
+.attendant-dashboard-page .purchase-back{padding:10px 14px;border:1px solid #d8e0e8;border-radius:12px;background:#fff;color:#334155;font-weight:750;box-shadow:0 2px 8px rgba(23,34,42,.04)}
+.attendant-dashboard-page .nav{margin:0 0 14px}
+.attendant-dashboard-page .page-heading{margin:0 0 14px;padding:18px;border:1px solid #e1e8f0;border-radius:18px;background:#fff;box-shadow:0 6px 22px rgba(23,34,42,.04)}
+.attendant-dashboard-page .page-heading h2{margin:0;font-size:18px}
+.attendant-dashboard-page .page-heading p{margin:5px 0 0}
+.attendant-dashboard-page #shift{display:grid;gap:14px}
+.attendant-dashboard-page .dashboard-section{margin:0;padding:18px;border:1px solid #e1e8f0;border-radius:18px;background:#fff;box-shadow:0 6px 22px rgba(23,34,42,.045)}
+.attendant-dashboard-page .dashboard-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px;padding-bottom:11px;border-bottom:1px solid #edf1f5}
+.attendant-dashboard-page .dashboard-section-head h2{margin:0;font-size:18px;letter-spacing:-.02em}
+.attendant-dashboard-page .dashboard-section-head .section-kicker{margin:0}
+.attendant-dashboard-page .dashboard-section-cards{display:grid;gap:10px}
+.attendant-dashboard-page .dashboard-empty{padding:14px;text-align:center;color:#98a2b3;font-size:12px;border:1px dashed #dfe6ed;border-radius:12px;background:#fafbfd}
+.attendant-dashboard-page .dashboard-purchase-card{position:relative;overflow:hidden;border:1px solid #dce5ee!important;border-radius:14px!important;background:#fff!important;box-shadow:0 2px 8px rgba(16,24,40,.04)!important;margin:0!important}
+.attendant-dashboard-page .dashboard-purchase-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#d0d5dd}
+.attendant-dashboard-page .dashboard-purchase-card.pending::before{background:#f59e0b}
+.attendant-dashboard-page .dashboard-purchase-card.active::before{background:#12b76a}
+.attendant-dashboard-page .dashboard-purchase-card .pending-hero,
+.attendant-dashboard-page .dashboard-purchase-card .takeover-hero{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px 11px 18px;border-bottom:1px solid #edf1f4;background:#fbfcfe}
+.attendant-dashboard-page .dashboard-purchase-card .pending-hero>div:last-child,
+.attendant-dashboard-page .dashboard-purchase-card .takeover-hero>div:last-child{min-width:0}
+.attendant-dashboard-page .dashboard-purchase-card .pending-card-title,
+.attendant-dashboard-page .dashboard-purchase-card .takeover-card-title{font-size:14px;font-weight:850;color:#17202a}
+.attendant-dashboard-page .dashboard-purchase-card .pending-card-subtitle,
+.attendant-dashboard-page .dashboard-purchase-card .takeover-card-subtitle{margin-top:3px;font-size:10px;color:#8a949e;overflow-wrap:anywhere}
+.attendant-dashboard-page .dashboard-purchase-card .pending-hero-icon,
+.attendant-dashboard-page .dashboard-purchase-card .takeover-hero-icon{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;border:1px solid #e1e7ed;border-radius:9px;background:#fff;color:#667085;font-size:14px}
+.attendant-dashboard-page .dashboard-purchase-card .pending-shift-info{display:grid;grid-template-columns:1fr 1px 1fr;gap:12px;padding:12px 16px}
+.attendant-dashboard-page .dashboard-purchase-card .pending-info-divider{background:#edf1f4}
+.attendant-dashboard-page .dashboard-purchase-card .pending-info-block,
+.attendant-dashboard-page .dashboard-purchase-card .pending-tank-opening{display:flex;align-items:center;gap:8px;min-width:0}
+.attendant-dashboard-page .dashboard-purchase-card .pending-info-icon{display:none}
+.attendant-dashboard-page .dashboard-purchase-card .pending-label,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-main span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:#98a2b3;font-weight:800}
+.attendant-dashboard-page .dashboard-purchase-card .pending-info-block strong,
+.attendant-dashboard-page .dashboard-purchase-card .pending-tank-opening strong,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-main strong{display:block;margin-top:3px;font-size:13px;color:#344054;overflow-wrap:anywhere}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-section,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-section{padding:0 16px 10px}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-heading,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-title{padding:9px 0;border-top:1px solid #edf1f4;border-bottom:1px solid #edf1f4;font-size:11px;font-weight:850;color:#475467}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-reading,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-reading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #f0f2f5}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-reading:last-child,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-reading:last-child{border-bottom:0}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-number,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-reading strong{font-size:13px;font-weight:800;color:#17202a}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-code,
+.attendant-dashboard-page .dashboard-purchase-card .handover-pending-reading span{font-size:10px;color:#8a949e}
+.attendant-dashboard-page .dashboard-purchase-card .pending-nozzle-top{display:none}
+.attendant-dashboard-page .dashboard-purchase-card .form,
+.attendant-dashboard-page .dashboard-purchase-card .row{padding:0 16px 13px}
+.attendant-dashboard-page .dashboard-purchase-card .form input{min-height:42px;border-radius:10px}
+.attendant-dashboard-page .dashboard-purchase-card .row{display:flex;gap:8px;margin-top:0}
+.attendant-dashboard-page .dashboard-purchase-card .row button{flex:1;min-height:40px;border-radius:9px;font-size:12px;font-weight:800}
+.attendant-dashboard-page .dashboard-purchase-card .takeover-total-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#e8edf2}
+.attendant-dashboard-page .dashboard-purchase-card .takeover-total-grid>div{padding:11px 13px;background:#fff}
+.attendant-dashboard-page .dashboard-purchase-card .takeover-total-grid span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:#98a2b3;font-weight:800}
+.attendant-dashboard-page .dashboard-purchase-card .takeover-total-grid strong{display:block;margin-top:4px;font-size:14px;color:#344054}
+.attendant-dashboard-page .dashboard-purchase-card .takeover-sale-action{padding:10px 14px 13px;border-top:1px solid #edf1f4;background:#fff}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:13px 16px 12px 18px;border-bottom:1px solid #edf1f4;background:#fbfcfe}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-title-wrap{min-width:0}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-head .section-kicker{display:block;margin:0 0 4px;font-size:8px;letter-spacing:.08em;color:#98a2b3;font-weight:850}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-head .takeover-card-title{font-size:14px;line-height:1.2}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-head .takeover-card-subtitle{margin-top:4px}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-badge{flex:0 0 auto;padding:5px 8px;border:1px solid #f6d48b;border-radius:999px;background:#fff8e8;color:#9a6700;font-size:9px;font-weight:850;white-space:nowrap}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-status{display:flex;align-items:center;gap:9px;padding:10px 14px;border-bottom:1px solid #edf1f4;background:#fff}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-status-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#f59e0b;box-shadow:0 0 0 3px #fff3d6}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-status strong{display:block;font-size:11px;color:#344054}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-status small{display:block;margin-top:2px;font-size:9px;color:#98a2b3}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;border-top:1px solid #edf1f4;background:#fbfcfe}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-meta span{font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:#98a2b3;font-weight:800}
+.attendant-dashboard-page .dashboard-purchase-card .pending-record-sale-meta strong{font-size:10px;color:#667085;font-weight:750;text-align:right}
+.attendant-dashboard-page .dashboard-purchase-card.pending-takeover-sale-card .takeover-total-grid strong{font-size:14px}
+.attendant-dashboard-page .dashboard-purchase-card.pending-takeover-sale-card .takeover-sale-action{padding:9px 14px 12px}
+.attendant-dashboard-page .dashboard-purchase-card.active .active-shift-hero{background:#fbfefc}
+.attendant-dashboard-page .dashboard-purchase-card.active .active-shift-info{grid-template-columns:1fr 1px 1fr}
+.attendant-dashboard-page .dashboard-purchase-card.active .active-reading-section{padding-bottom:4px}
+@media(max-width:600px){
+ .attendant-dashboard-page .purchase-header{align-items:flex-start;padding:12px 4px 16px}
+ .attendant-dashboard-page .purchase-header h1{font-size:27px}
+ .attendant-dashboard-page .dashboard-section{padding:14px;border-radius:16px}
+ .attendant-dashboard-page .dashboard-purchase-card .pending-shift-info{grid-template-columns:1fr 1fr}
+ .attendant-dashboard-page .dashboard-purchase-card .pending-info-divider{display:none}
+ .attendant-dashboard-page .dashboard-purchase-card .pending-tank-opening{grid-column:1/-1;padding-top:9px;border-top:1px solid #edf1f4}
+}
+
+/* Attendant panel — align the shell, header and navigation with the Admin UI. */
+.attendant-dashboard-page{background:#f7f9fc;color:#182230}
+.attendant-dashboard-page .wrap{max-width:1180px}
+.attendant-dashboard-page .purchase-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:18px 4px 20px;border-bottom:0}
+.attendant-dashboard-page .purchase-header .eyebrow{display:block;margin-bottom:5px}
+.attendant-dashboard-page .purchase-header h1{margin:0;font-size:32px;line-height:1.1;letter-spacing:-.035em;color:#182230}
+.attendant-dashboard-page .purchase-header p{margin:7px 0 0;font-size:13px;color:#667085}
+.attendant-dashboard-page .purchase-header .purchase-back{min-height:40px;padding:0 14px;border:1px solid #d8e0e8;border-radius:11px;background:#fff;color:#344054;font-weight:750;box-shadow:0 2px 8px rgba(23,34,42,.04)}
+.attendant-dashboard-page .nav{display:flex;align-items:center;gap:5px;margin:0 0 18px;padding:5px;border:1px solid #e1e7ef;border-radius:13px;background:#fff;box-shadow:0 4px 16px rgba(16,24,40,.04)}
+.attendant-dashboard-page .nav a{display:flex;align-items:center;justify-content:center;min-height:38px;padding:0 16px;border-radius:9px;color:#667085;text-decoration:none;font-size:12px;font-weight:750;transition:.18s ease}
+.attendant-dashboard-page .nav a:hover{background:#f5f7fa;color:#344054}
+.attendant-dashboard-page .nav a.active{background:#e9f1ff;color:#1264d8}
+.attendant-dashboard-page .page-heading{margin:0 0 14px;padding:18px 20px;border:1px solid #e1e8f0;border-radius:16px;background:#fff;box-shadow:0 6px 22px rgba(23,34,42,.04)}
+.attendant-dashboard-page .page-heading h2{margin:0;font-size:18px;letter-spacing:-.02em}
+.attendant-dashboard-page .page-heading p{margin:5px 0 0;font-size:12px;color:#667085}
+@media(max-width:600px){
+ .attendant-dashboard-page .purchase-header{padding:12px 4px 16px}
+ .attendant-dashboard-page .purchase-header h1{font-size:27px}
+ .attendant-dashboard-page .purchase-header .purchase-back{min-height:38px}
+ .attendant-dashboard-page .nav{margin-bottom:14px;overflow-x:auto}
+ .attendant-dashboard-page .nav a{flex:1;min-width:110px;padding:0 12px}
+}
+
+/* Final Admin-style attendant shell */
+body.attendant-dashboard-page{background:#f7f9fc!important;color:#182230!important}
+body.attendant-dashboard-page>.wrap{max-width:1180px!important;margin:0 auto!important;padding:0 22px 40px!important;box-sizing:border-box}
+body.attendant-dashboard-page .purchase-header{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:20px!important;padding:24px 0 22px!important;margin:0!important;border:0!important;background:transparent!important}
+body.attendant-dashboard-page .purchase-header>div:first-child{min-width:0!important}
+body.attendant-dashboard-page .purchase-header .eyebrow{display:block!important;margin:0 0 6px!important;font-size:10px!important;font-weight:800!important;letter-spacing:.12em!important;color:#b4232f!important}
+body.attendant-dashboard-page .purchase-header h1{margin:0!important;font-size:30px!important;line-height:1.1!important;letter-spacing:-.035em!important;font-weight:800!important;color:#182230!important}
+body.attendant-dashboard-page .purchase-header p{margin:7px 0 0!important;font-size:13px!important;line-height:1.45!important;color:#667085!important}
+body.attendant-dashboard-page .purchase-header .purchase-back{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:40px!important;padding:0 15px!important;border:1px solid #d8e0e8!important;border-radius:11px!important;background:#fff!important;color:#344054!important;font-size:12px!important;font-weight:750!important;box-shadow:0 2px 8px rgba(23,34,42,.04)!important}
+body.attendant-dashboard-page .nav{display:flex!important;align-items:center!important;gap:6px!important;margin:0 0 18px!important;padding:5px!important;border:1px solid #e1e7ef!important;border-radius:13px!important;background:#fff!important;box-shadow:0 4px 16px rgba(16,24,40,.04)!important}
+body.attendant-dashboard-page .nav a{flex:0 0 auto!important;display:flex!important;align-items:center!important;justify-content:center!important;min-height:38px!important;padding:0 18px!important;border-radius:9px!important;color:#667085!important;text-decoration:none!important;font-size:12px!important;font-weight:750!important}
+body.attendant-dashboard-page .nav a.active{background:#fff0f1!important;color:#b4232f!important;box-shadow:0 4px 12px rgba(180,35,47,.14)!important}
+body.attendant-dashboard-page .page-heading{margin:0 0 16px!important;padding:18px 20px!important;border:1px solid #e1e8f0!important;border-radius:16px!important;background:#fff!important;box-shadow:0 6px 22px rgba(23,34,42,.04)!important}
+body.attendant-dashboard-page .page-heading .section-kicker{display:block!important;margin-bottom:5px!important;font-size:10px!important;font-weight:800!important;letter-spacing:.08em!important;color:#667085!important}
+body.attendant-dashboard-page .page-heading h2{margin:0!important;font-size:19px!important;font-weight:800!important;letter-spacing:-.02em!important;color:#182230!important}
+body.attendant-dashboard-page .page-heading p{margin:5px 0 0!important;font-size:12px!important;color:#667085!important}
+@media(max-width:600px){body.attendant-dashboard-page>.wrap{padding:0 12px 28px!important}body.attendant-dashboard-page .purchase-header{padding:16px 0 18px!important}body.attendant-dashboard-page .purchase-header h1{font-size:27px!important}body.attendant-dashboard-page .nav{overflow-x:auto}body.attendant-dashboard-page .nav a{flex:1 0 110px!important}}
+
+/* Pending shift confirmation review */
+body.attendant-dashboard-page .pending-handover-actions{
+  padding:11px 14px 14px!important;
+  border-top:1px solid #f1d9dd!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-shift-actions{display:flex!important;gap:8px!important;padding:11px 14px 14px!important;border-top:1px solid #f1d9dd!important;background:#fff!important;}\nbody.attendant-dashboard-page .pending-confirmation-card .pending-shift-actions button{flex:1!important;min-height:42px!important;border-radius:10px!important;font-size:12px!important;font-weight:850!important;}\nbody.attendant-dashboard-page .pending-confirmation-card .pending-shift-actions .pending-cancel-btn{flex:0 0 auto!important;min-width:105px!important;background:#fff!important;border:1px solid #e2d4d6!important;color:#7f1d1d!important;}\nbody.attendant-dashboard-page .pending-confirmation-card .pending-shift-actions .primary{background:#b4232f!important;border-color:#b4232f!important;color:#fff!important;}\nbody.attendant-dashboard-page .pending-confirmation-card .pending-handover-actions button{
+  min-height:42px!important;
+  border-radius:10px!important;
+  font-size:12px!important;
+  font-weight:850!important;
+}
+body.attendant-dashboard-page .pending-handover-review-modal{
+  position:fixed!important;
+  inset:0!important;
+  z-index:5100!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:14px!important;
+  background:rgba(15,23,42,.58)!important;
+}
+body.attendant-dashboard-page .pending-handover-review-modal.open{
+  display:flex!important;
+}
+body.attendant-dashboard-page .pending-handover-review-backdrop{
+  position:absolute!important;
+  inset:0!important;
+}
+body.attendant-dashboard-page .pending-handover-review-card{
+  position:relative!important;
+  width:min(500px,calc(100vw - 24px))!important;
+  max-height:84vh!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+  border:1px solid #ead9dc!important;
+  border-radius:18px!important;
+  background:#fff!important;
+  box-shadow:0 22px 60px rgba(16,24,40,.25)!important;
+}
+body.attendant-dashboard-page .pending-handover-review-head{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:16px 17px 13px!important;
+  background:#fff8f8!important;
+  border-bottom:1px solid #f1d9dd!important;
+}
+body.attendant-dashboard-page .pending-handover-review-kicker{
+  display:block!important;
+  margin-bottom:4px!important;
+  font-size:10px!important;
+  font-weight:850!important;
+  letter-spacing:.12em!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .pending-handover-review-head h2{
+  margin:0!important;
+  font-size:19px!important;
+  line-height:1.2!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .pending-handover-review-head p{
+  margin:5px 0 0!important;
+  font-size:11px!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .pending-handover-review-close{
+  width:34px!important;
+  height:34px!important;
+  flex:0 0 34px!important;
+  border:1px solid #f0c4c8!important;
+  border-radius:9px!important;
+  background:#fff0f1!important;
+  color:#b4232f!important;
+  font-size:22px!important;
+  line-height:1!important;
+}
+body.attendant-dashboard-page .pending-handover-review-body{
+  overflow:auto!important;
+  padding:14px 17px!important;
+}
+body.attendant-dashboard-page .pending-handover-review-grid{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:1px!important;
+  margin-bottom:12px!important;
+  border:1px solid #e8edf2!important;
+  border-radius:11px!important;
+  overflow:hidden!important;
+}
+body.attendant-dashboard-page .pending-handover-review-grid>div{
+  padding:11px 12px!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .pending-handover-review-grid span,
+body.attendant-dashboard-page .pending-handover-review-main span{
+  display:block!important;
+  font-size:9px!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  font-weight:850!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .pending-handover-review-grid strong,
+body.attendant-dashboard-page .pending-handover-review-main strong{
+  display:block!important;
+  margin-top:4px!important;
+  font-size:15px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .pending-handover-review-section{
+  margin-bottom:12px!important;
+  border:1px solid #e8edf2!important;
+  border-radius:11px!important;
+  overflow:hidden!important;
+}
+body.attendant-dashboard-page .pending-handover-review-section-title{
+  padding:10px 12px!important;
+  background:#fbfcfe!important;
+  border-bottom:1px solid #e8edf2!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  color:#8f1d27!important;
+}
+body.attendant-dashboard-page .pending-handover-review-nozzle{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:10px 12px!important;
+  border-bottom:1px solid #f0f2f5!important;
+}
+body.attendant-dashboard-page .pending-handover-review-nozzle:last-child{
+  border-bottom:0!important;
+}
+body.attendant-dashboard-page .pending-handover-review-nozzle b{
+  display:block!important;
+  font-size:12px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .pending-handover-review-nozzle small{
+  display:block!important;
+  margin-top:3px!important;
+  font-size:10px!important;
+  font-weight:750!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .pending-handover-review-nozzle strong{
+  font-size:18px!important;
+  font-weight:850!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .pending-handover-review-main{
+  padding:11px 12px!important;
+  margin-bottom:12px!important;
+  border:1px solid #e8edf2!important;
+  border-radius:11px!important;
+}
+body.attendant-dashboard-page .pending-handover-review-pin{
+  display:block!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .pending-handover-review-pin input{
+  display:block!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  min-height:45px!important;
+  margin-top:6px!important;
+  padding:0 12px!important;
+  border:1px solid #d8e0e8!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  font-size:15px!important;
+}
+body.attendant-dashboard-page .pending-handover-review-pin input:focus{
+  outline:none!important;
+  border-color:#b4232f!important;
+  background:#fff!important;
+  background-color:#fff!important;
+  color:#182230!important;
+  -webkit-text-fill-color:#182230!important;
+  box-shadow:0 0 0 3px rgba(180,35,47,.10)!important;
+  -webkit-appearance:none!important;
+  appearance:none!important;
+}
+body.attendant-dashboard-page .pending-handover-review-pin input:-webkit-autofill,
+body.attendant-dashboard-page .pending-handover-review-pin input:-webkit-autofill:hover,
+body.attendant-dashboard-page .pending-handover-review-pin input:-webkit-autofill:focus{
+  background:#fff!important;
+  background-color:#fff!important;
+  -webkit-text-fill-color:#182230!important;
+  -webkit-box-shadow:0 0 0 1000px #fff inset,0 0 0 3px rgba(180,35,47,.10)!important;
+  box-shadow:0 0 0 1000px #fff inset,0 0 0 3px rgba(180,35,47,.10)!important;
+}
+body.attendant-dashboard-page .pending-handover-review-actions{
+  display:flex!important;
+  gap:8px!important;
+  padding:10px 14px 13px!important;
+  border-top:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page .pending-handover-review-actions button{
+  flex:1!important;
+  min-height:42px!important;
+  border-radius:10px!important;
+  font-size:12px!important;
+  font-weight:850!important;
+}
+body.attendant-dashboard-page .pending-handover-review-actions .primary{
+  background:#b4232f!important;
+  border-color:#b4232f!important;
+  color:#fff!important;
+  box-shadow:0 5px 12px rgba(180,35,47,.20)!important;
+}
+body.attendant-dashboard-page .pending-handover-review-actions .secondary{
+  background:#fff!important;
+  border:1px solid #e2d4d6!important;
+  color:#7f1d1d!important;
+}
+\n/* Pending shift card follows active shift card */
+body.attendant-dashboard-page .pending-shift-card{
+  border-color:#ead9dc!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-head{
+  background:#fff8f8!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-head .section-kicker{
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-head h3{
+  color:#8f1d27!important;
+}
+body.attendant-dashboard-page .pending-shift-badge{
+  background:#fff0f1!important;
+  color:#b4232f!important;
+  border-color:#f0c4c8!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-meta>div{
+  padding:15px 16px!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-readings{
+  padding-bottom:8px!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-reading-list .pending-nozzle-reading{
+  min-height:58px!important;
+  padding:11px 4px!important;
+}
+body.attendant-dashboard-page .pending-shift-card .pending-nozzle-number{
+  font-size:17px!important;
+  font-weight:850!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .pending-shift-card .pending-nozzle-code{
+  font-size:11px!important;
+  font-weight:750!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .pending-shift-actions{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  padding:11px 16px 14px!important;
+  border-top:1px solid #f1d9dd!important;
+}
+body.attendant-dashboard-page .pending-shift-actions .active-handover-btn{
+  flex:1!important;
+  background:#b4232f!important;
+  border-color:#b4232f!important;
+  color:#fff!important;
+  box-shadow:0 5px 12px rgba(180,35,47,.20)!important;
+}
+body.attendant-dashboard-page .pending-shift-actions .pending-cancel-btn{
+  min-width:86px!important;
+  background:#fff!important;
+  border:1px solid #e2d4d6!important;
+  color:#7f1d1d!important;
+}
+\n/* Pending shift has a distinct amber state from active */
+body.attendant-dashboard-page .pending-shift-card{
+  border-color:#f1d7a6!important;
+  box-shadow:0 7px 22px rgba(180,110,20,.08)!important;
+}
+body.attendant-dashboard-page .pending-shift-card::before{
+  background:#d88912!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-head{
+  background:#fffaf0!important;
+  border-bottom-color:#f3dfbb!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-head .section-kicker{
+  color:#b86b00!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-head h3{
+  color:#8a5200!important;
+}
+body.attendant-dashboard-page .pending-shift-badge{
+  background:#fff3d6!important;
+  color:#a85d00!important;
+  border-color:#edcf96!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-meta>div:nth-child(3){
+  border-top-color:#f3dfbb!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-readings{
+  border-top-color:#f3dfbb!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-readings-head{
+  border-bottom-color:#f3dfbb!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-readings-head span{
+  color:#8a5200!important;
+}
+body.attendant-dashboard-page .pending-shift-card .pending-nozzle-number{
+  color:#a85d00!important;
+}
+body.attendant-dashboard-page .pending-shift-card .active-shift-reading-list .pending-nozzle-reading{
+  border-top-color:#f3dfbb!important;
+}
+body.attendant-dashboard-page .pending-shift-actions{
+  border-top-color:#f3dfbb!important;
+  background:#fffdf8!important;
+}
+body.attendant-dashboard-page .pending-shift-actions .active-handover-btn{
+  background:#d88912!important;
+  border-color:#d88912!important;
+  box-shadow:0 5px 12px rgba(180,110,20,.20)!important;
+}
+body.attendant-dashboard-page .pending-shift-actions .active-handover-btn:hover{
+  background:#b96f08!important;
+  border-color:#b96f08!important;
+}
+body.attendant-dashboard-page .pending-shift-actions .pending-cancel-btn{
+  border-color:#ead6b5!important;
+  color:#8a5200!important;
+}
+/* Pending handover card refinement */
+body.attendant-dashboard-page .pending-confirmation-card{
+  border-color:#ead9dc!important;
+  box-shadow:0 7px 22px rgba(16,24,40,.06)!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card::before{
+  background:#b4232f!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-hero{
+  background:#fff8f8!important;
+  border-bottom-color:#f1d9dd!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-hero-icon{
+  background:#fff0f1!important;
+  border-color:#f0c4c8!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-card-title{
+  color:#8f1d27!important;
+  font-size:15px!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-card-subtitle{
+  color:#7f6a6d!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-info-block strong,
+body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening strong{
+  font-size:15px!important;
+  font-weight:850!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening{
+  background:#fffafa!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-heading{
+  color:#8f1d27!important;
+  border-top-color:#f1d9dd!important;
+  border-bottom-color:#f1d9dd!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-reading{
+  min-height:54px!important;
+  padding:10px 3px!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-number{
+  font-size:18px!important;
+  font-weight:850!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-code{
+  font-size:11px!important;
+  font-weight:750!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .form{
+  padding-top:2px!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .form input{
+  min-height:45px!important;
+  border-color:#e2d4d6!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .form input:focus{
+  border-color:#b4232f!important;
+  box-shadow:0 0 0 3px rgba(180,35,47,.10)!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .row button.primary{
+  background:#b4232f!important;
+  border-color:#b4232f!important;
+  color:#fff!important;
+  box-shadow:0 5px 12px rgba(180,35,47,.20)!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .row button.primary:hover{
+  background:#941f29!important;
+  border-color:#941f29!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .row button:not(.primary){
+  border:1px solid #e2d4d6!important;
+  background:#fff!important;
+  color:#7f1d1d!important;
+}
+\n/* Dashboard active readings and handover result cards */
+body.attendant-dashboard-page .active-shift-meta>div{
+  padding:15px 16px!important;
+}
+body.attendant-dashboard-page .active-shift-meta>div>span{
+  display:block!important;
+  margin-bottom:5px!important;
+  font-size:10px!important;
+  text-transform:uppercase!important;
+  letter-spacing:.06em!important;
+  font-weight:800!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .active-shift-meta>div>strong{
+  display:block!important;
+  font-size:17px!important;
+  line-height:1.25!important;
+  font-weight:850!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .active-shift-meta>div:nth-child(3){
+  grid-column:1/-1!important;
+  border-top:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page .active-shift-readings{
+  padding:0 16px 8px!important;
+}
+body.attendant-dashboard-page .active-shift-readings-head{
+  padding:12px 0 9px!important;
+}
+body.attendant-dashboard-page .active-shift-readings-head span{
+  font-size:11px!important;
+  font-weight:850!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .active-shift-readings-head small{
+  font-size:11px!important;
+  font-weight:800!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-reading{
+  min-height:58px!important;
+  padding:11px 4px!important;
+  border-top:1px solid #f0f2f5!important;
+}
+body.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-number{
+  font-size:20px!important;
+  line-height:1.15!important;
+  font-weight:850!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-code{
+  font-size:11px!important;
+  font-weight:750!important;
+  color:#8a949e!important;
+}
+body.attendant-dashboard-page .handover-nozzle-input{
+  padding:10px 0!important;
+}
+body.attendant-dashboard-page .handover-nozzle-input>span{
+  font-size:13px!important;
+  font-weight:800!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .handover-nozzle-input>.muted{
+  display:block!important;
+  margin:5px 0 7px!important;
+  font-size:16px!important;
+  line-height:1.25!important;
+  font-weight:850!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page #handover-to-employee{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker{
+  position:relative!important;
+  margin-top:7px!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-button{
+  width:100%!important;
+  min-height:48px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:0 14px!important;
+  border:1px solid #d8e0e8!important;
+  border-radius:11px!important;
+  background:#fff!important;
+  color:#344054!important;
+  font-size:14px!important;
+  font-weight:750!important;
+  text-align:left!important;
+  box-sizing:border-box!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-button:focus,
+body.attendant-dashboard-page .handover-attendant-picker.open .handover-attendant-picker-button{
+  border-color:#b4232f!important;
+  box-shadow:0 0 0 3px rgba(180,35,47,.10)!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-arrow{
+  font-size:16px!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-list{
+  display:none!important;
+  position:absolute!important;
+  z-index:30!important;
+  left:0!important;
+  right:0!important;
+  top:calc(100% + 6px)!important;
+  max-height:210px!important;
+  overflow:auto!important;
+  padding:6px!important;
+  border:1px solid #e1e7ef!important;
+  border-radius:13px!important;
+  background:#fff!important;
+  box-shadow:0 14px 34px rgba(16,24,40,.16)!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker.open .handover-attendant-picker-list{
+  display:grid!important;
+  gap:3px!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-option{
+  width:100%!important;
+  min-height:43px!important;
+  padding:9px 11px!important;
+  border:0!important;
+  border-radius:9px!important;
+  background:#fff!important;
+  color:#344054!important;
+  font-size:13px!important;
+  font-weight:700!important;
+  text-align:left!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-option:hover,
+body.attendant-dashboard-page .handover-attendant-picker-option.selected{
+  background:#fff0f1!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .handover-attendant-picker-option.placeholder{
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .handover-nozzle-input input{
+  min-height:44px!important;
+  font-size:15px!important;
+}
+body.attendant-dashboard-page .handover-review-row{
+  padding:12px 0!important;
+}
+body.attendant-dashboard-page .handover-review-row>span{
+  font-size:12px!important;
+  font-weight:750!important;
+}
+body.attendant-dashboard-page .handover-review-row>strong{
+  font-size:19px!important;
+  font-weight:850!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .handover-review-row small{
+  display:block!important;
+  margin-top:3px!important;
+  font-size:11px!important;
+  line-height:1.25!important;
+  color:#98a2b3!important;
+  font-weight:750!important;
+}
+body.attendant-dashboard-page .handover-review-main strong{
+  font-size:17px!important;
+}
+body.attendant-dashboard-page .attendant-action-result-modal{
+  position:fixed!important;
+  inset:0!important;
+  z-index:5000!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:18px!important;
+  background:rgba(15,23,42,.58)!important;
+}
+body.attendant-dashboard-page .attendant-action-result-modal.open{
+  display:flex!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card{
+  width:min(430px,calc(100vw - 30px))!important;
+  box-sizing:border-box!important;
+  padding:24px 22px 20px!important;
+  border:1px solid #e1e7ef!important;
+  border-radius:20px!important;
+  background:#fff!important;
+  box-shadow:0 20px 55px rgba(16,24,40,.22)!important;
+  text-align:center!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.success{
+  border-color:#cde8d8!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.failed{
+  border-color:#f0c4c8!important;
+}
+body.attendant-dashboard-page .attendant-action-result-icon{
+  width:54px!important;
+  height:54px!important;
+  margin:0 auto 13px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:50%!important;
+  font-size:27px!important;
+  font-weight:900!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.success .attendant-action-result-icon{
+  background:#eaf8ef!important;
+  color:#18864b!important;
+  border:1px solid #cde8d8!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.failed .attendant-action-result-icon{
+  background:#fff0f1!important;
+  color:#b4232f!important;
+  border:1px solid #f0c4c8!important;
+}
+body.attendant-dashboard-page .attendant-action-result-kicker{
+  display:block!important;
+  margin-bottom:5px!important;
+  font-size:10px!important;
+  font-weight:850!important;
+  letter-spacing:.12em!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.success .attendant-action-result-kicker{
+  color:#18864b!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card.failed .attendant-action-result-kicker{
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card h3{
+  margin:0!important;
+  font-size:22px!important;
+  line-height:1.2!important;
+  font-weight:850!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .attendant-action-result-card p{
+  margin:9px 0 18px!important;
+  font-size:13px!important;
+  line-height:1.55!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .attendant-action-result-actions button{
+  width:100%!important;
+  min-height:44px!important;
+  border:1px solid #b4232f!important;
+  border-radius:10px!important;
+  background:#b4232f!important;
+  color:#fff!important;
+  font-size:13px!important;
+  font-weight:850!important;
+  box-shadow:0 5px 14px rgba(180,35,47,.22)!important;
+}
+body.attendant-dashboard-page .attendant-action-result-actions button:hover{
+  background:#941f29!important;
+  border-color:#941f29!important;
+}
+@media(max-width:600px){
+  body.attendant-dashboard-page .active-shift-meta>div>strong{font-size:16px!important}
+  body.attendant-dashboard-page .active-shift-reading-list .pending-nozzle-number{font-size:17px!important}
+  body.attendant-dashboard-page .attendant-action-result-card{padding:22px 18px 18px!important}
+}
+\n/* Attendant red theme */
+body.attendant-dashboard-page .nav a.active,
+body.attendant-dashboard-page .admin-sidebar-nav a.active{
+  background:#b4232f!important;
+  color:#fff!important;
+  box-shadow:0 4px 12px rgba(180,35,47,.28)!important
+}
+body.attendant-dashboard-page .nav a:hover,
+body.attendant-dashboard-page .admin-sidebar-nav a:hover{
+  background:#3a2026!important;
+  color:#fff!important
+}
+body.attendant-dashboard-page .settings-header .eyebrow,
+body.attendant-dashboard-page .purchase-header .eyebrow{
+  color:#b4232f!important
+}
+body.attendant-dashboard-page .settings-header .muted,
+body.attendant-dashboard-page .settings-header .muted b{
+  font-size:16px!important;
+  line-height:1.5!important
+}
+\nbody.attendant-dashboard-page.admin-shell .admin-sidebar .admin-sidebar-nav a.active{background:#b4232f!important;color:#fff!important;box-shadow:0 4px 12px rgba(180,35,47,.28)!important}\nbody.attendant-dashboard-page.admin-shell .admin-sidebar .admin-sidebar-nav a:hover{background:#3a2026!important;color:#fff!important}\n\nbody.attendant-dashboard-page .settings-header .eyebrow{color:#b4232f!important}\nbody.attendant-dashboard-page .settings-header>div>p.muted{font-size:16px!important;line-height:1.5!important;color:#667085!important}\nbody.attendant-dashboard-page .settings-header>div>p.muted b{font-size:16px!important;font-weight:800!important;color:#182230!important}\n
+body.attendant-dashboard-page .admin-sidebar-nav a.active{background:#b4232f!important;color:#fff!important;box-shadow:0 4px 12px rgba(180,35,47,.28)!important}
+body.attendant-dashboard-page .admin-sidebar-nav a:hover{background:#3a2026!important;color:#fff!important}
+body.attendant-dashboard-page .purchase-header .eyebrow{color:#b4232f!important}
+body.attendant-dashboard-page .logout-confirm-card{border-color:#f0c4c8!important}
+body.attendant-dashboard-page .logout-confirm-card .section-kicker{color:#b4232f!important}
+body.attendant-dashboard-page .logout-confirm-icon{background:#fff0f1!important;color:#b4232f!important;border-color:#f0c4c8!important}
+body.attendant-dashboard-page .logout-confirm-button{background:#b4232f!important;border-color:#b4232f!important;box-shadow:0 5px 12px rgba(180,35,47,.25)!important}
+body.attendant-dashboard-page .logout-confirm-button:hover{background:#941f29!important;border-color:#941f29!important}
+body.attendant-dashboard-page .logout-cancel-button{border-color:#e3c5c8!important;color:#7f1d1d!important}
+body.attendant-dashboard-page .logout-confirm-backdrop{background:rgba(68,10,18,.62)!important}
+
+/* Record Sale input/review/detail cards */
+body.attendant-dashboard-page .takeover-action-modal{
+  width:min(440px,calc(100vw - 32px))!important;
+  max-height:78vh!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  border-radius:15px!important;
+}
+body.attendant-dashboard-page .takeover-action-modal .top{
+  padding:12px 14px 10px!important;
+  min-height:0!important;
+}
+body.attendant-dashboard-page .takeover-action-modal .top h3{
+  font-size:16px!important;
+  line-height:1.2!important;
+}
+body.attendant-dashboard-page .takeover-action-modal .top .section-kicker{
+  margin-bottom:3px!important;
+  font-size:8px!important;
+}
+body.attendant-dashboard-page .takeover-action-modal .modal-close{
+  width:30px!important;
+  height:30px!important;
+  min-width:30px!important;
+  border-radius:8px!important;
+  font-size:19px!important;
+}
+body.attendant-dashboard-page .takeover-sale-summary,
+body.attendant-dashboard-page .takeover-confirm-summary{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:1px!important;
+  margin:0 12px 10px!important;
+  border:1px solid #e6ebf0!important;
+  border-radius:10px!important;
+  overflow:hidden!important;
+}
+body.attendant-dashboard-page .takeover-sale-summary>div,
+body.attendant-dashboard-page .takeover-confirm-summary>div{
+  padding:8px 10px!important;
+  background:#fbfcfe!important;
+}
+body.attendant-dashboard-page .takeover-sale-summary span,
+body.attendant-dashboard-page .takeover-confirm-summary span{
+  display:block!important;
+  font-size:8px!important;
+  text-transform:uppercase!important;
+  letter-spacing:.04em!important;
+  color:#98a2b3!important;
+  font-weight:800!important;
+}
+body.attendant-dashboard-page .takeover-sale-summary strong,
+body.attendant-dashboard-page .takeover-confirm-summary strong{
+  display:block!important;
+  margin-top:3px!important;
+  font-size:13px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .takeover-sales-entry-section{
+  margin:0 12px!important;
+  max-height:43vh!important;
+  overflow:auto!important;
+  border:1px solid #e6ebf0!important;
+  border-radius:10px!important;
+}
+body.attendant-dashboard-page .takeover-sales-entry-title{
+  padding:8px 10px!important;
+  border-bottom:1px solid #e6ebf0!important;
+  background:#fbfcfe!important;
+  font-size:10px!important;
+  font-weight:850!important;
+  color:#475467!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry{
+  padding:9px 10px!important;
+  border-bottom:1px solid #eef1f4!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry:last-child{border-bottom:0!important}
+body.attendant-dashboard-page .takeover-sale-entry-head{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 128px!important;
+  align-items:center!important;
+  gap:8px!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry-head strong{
+  display:block!important;
+  font-size:12px!important;
+  line-height:1.25!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry-head small{
+  display:block!important;
+  margin-top:2px!important;
+  font-size:9px!important;
+  line-height:1.3!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page .takeover-sale-entry input{
+  width:100%!important;
+  min-height:36px!important;
+  padding:0 9px!important;
+  box-sizing:border-box!important;
+  border:1px solid #d8e0e8!important;
+  border-radius:8px!important;
+  font-size:12px!important;
+}
+body.attendant-dashboard-page .takeover-sale-reason-label{
+  display:block!important;
+  margin-top:7px!important;
+  font-size:9px!important;
+  font-weight:800!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .takeover-sale-reason{
+  width:100%!important;
+  margin-top:4px!important;
+  padding:7px 8px!important;
+  box-sizing:border-box!important;
+  border:1px solid #d8e0e8!important;
+  border-radius:8px!important;
+  font-size:11px!important;
+  resize:vertical!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row,
+body.attendant-dashboard-page .takeover-details-modal>.row{
+  display:flex!important;
+  gap:7px!important;
+  margin:0!important;
+  padding:10px 12px 12px!important;
+  border-top:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row button,
+body.attendant-dashboard-page .takeover-details-modal>.row button{
+  flex:1 1 0!important;
+  min-width:0!important;
+  min-height:37px!important;
+  padding:0 10px!important;
+  border-radius:8px!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  box-sizing:border-box!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row button.primary{
+  background:#b4232f!important;
+  border-color:#b4232f!important;
+  color:#fff!important;
+  box-shadow:0 4px 10px rgba(180,35,47,.18)!important;
+}
+body.attendant-dashboard-page .takeover-action-modal>.row button.primary:disabled{
+  background:#d0d5dd!important;
+  border-color:#d0d5dd!important;
+  color:#667085!important;
+  box-shadow:none!important;
+  cursor:not-allowed!important;
+}
+body.attendant-dashboard-page .takeover-details-modal{
+  width:min(500px,calc(100vw - 32px))!important;
+  max-height:78vh!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  border-radius:15px!important;
+}
+body.attendant-dashboard-page #takeover-details-content{
+  max-height:62vh!important;
+  overflow:auto!important;
+  padding:0 12px 4px!important;
+}
+body.attendant-dashboard-page .takeover-details-modal>.top{
+  padding:12px 14px 10px!important;
+}
+body.attendant-dashboard-page .takeover-details-modal>.row{
+  justify-content:flex-end!important;
+}
+body.attendant-dashboard-page .takeover-details-modal>.row button{
+  flex:0 0 110px!important;
+}
+
+
+/* Recorded Sale details — keep metadata and sale rows separated and readable. */
+body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-meta{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:0!important;
+  padding:0!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-meta>div{
+  min-width:0!important;
+  padding:10px 12px!important;
+  border-right:1px solid #edf1f4!important;
+  box-sizing:border-box!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-meta>div:last-child{border-right:0!important}
+body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-meta span{
+  display:block!important;
+  margin:0 0 4px!important;
+  font-size:8px!important;
+  line-height:1.2!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  color:#98a2b3!important;
+  font-weight:800!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-meta strong{
+  display:block!important;
+  margin:0!important;
+  font-size:10px!important;
+  line-height:1.35!important;
+  color:#344054!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:10px 0!important;
+  border-bottom:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-row>div{
+  min-width:0!important;
+  flex:1 1 auto!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-row>div strong{
+  display:block!important;
+  font-size:11px!important;
+  line-height:1.25!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-row>div small,
+body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-row>div em{
+  display:block!important;
+  margin-top:3px!important;
+  font-size:9px!important;
+  line-height:1.3!important;
+  color:#98a2b3!important;
+  font-style:normal!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-row>strong{
+  flex:0 0 auto!important;
+  font-size:11px!important;
+  line-height:1.2!important;
+  color:#344054!important;
+  white-space:nowrap!important;
+}
+@media(max-width:600px){
+  body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-meta{
+    grid-template-columns:1fr!important;
+  }
+  body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-meta>div{
+    border-right:0!important;
+    border-bottom:1px solid #edf1f4!important;
+  }
+  body.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-meta>div:last-child{border-bottom:0!important}
+}
+
+/* Keep dashboard cards in normal page flow so the navigation never overlays them. */
+ so the navigation never overlays them. */
+body.attendant-dashboard-page>.wrap{position:relative!important;z-index:1!important}
+body.attendant-dashboard-page>.admin-sidebar{z-index:0!important}
+
+/* SHIFT HANDOVER — Review Sale card: compact, readable, and contained. */
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-action-modal{
+  width:min(460px,calc(100vw - 28px))!important;
+  max-height:82vh!important;
+  display:flex!important;
+  flex-direction:column!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-action-modal>.top{
+  flex:0 0 auto!important;
+  padding:13px 15px 11px!important;
+  border-bottom:1px solid #edf1f4!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal #takeover-sale-confirm-content{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow:auto!important;
+  padding:10px 12px 2px!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-confirm-summary{
+  margin:0 0 9px!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-sales-entry-section{
+  margin:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-sales-entry-title{
+  font-size:10px!important;
+  padding:8px 10px!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-sale-entry{
+  padding:8px 10px!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-sale-entry-head{
+  grid-template-columns:minmax(0,1fr) 112px!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal #takeover-sale-match-status{
+  margin-top:9px!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-confirm-sales{
+  border:1px solid #e6ebf0!important;
+  border-radius:10px!important;
+  overflow:hidden!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-confirm-sale-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  padding:8px 10px!important;
+  border-bottom:1px solid #eef1f4!important;
+  font-size:11px!important;
+  color:#475467!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-confirm-sale-row strong{
+  font-size:12px!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-confirm-total{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  padding:9px 10px!important;
+  background:#fbfcfe!important;
+  border-bottom:1px solid #e6ebf0!important;
+  font-size:10px!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-confirm-total strong{
+  font-size:13px!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-confirm-check{
+  display:grid!important;
+  grid-template-columns:1fr auto!important;
+  gap:6px 12px!important;
+  padding:9px 10px!important;
+  font-size:10px!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-confirm-check b{
+  font-size:11px!important;
+  color:#344054!important;
+  text-align:right!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-sale-match,
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-sale-mismatch{
+  margin-top:8px!important;
+  padding:8px 10px!important;
+  border-radius:9px!important;
+  font-size:10px!important;
+  line-height:1.4!important;
+  font-weight:800!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-sale-match{
+  border:1px solid #cde8d8!important;
+  background:#effaf3!important;
+  color:#18794e!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-sale-mismatch{
+  border:1px solid #f0c4c8!important;
+  background:#fff5f5!important;
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-review-empty{
+  padding:10px!important;
+  font-size:10px!important;
+  color:#98a2b3!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal>.modal-card>.row{
+  flex:0 0 auto!important;
+  padding:9px 12px 11px!important;
+  background:#fff!important;
+}
+@media(max-width:600px){
+  body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-action-modal{
+    width:calc(100vw - 20px)!important;
+    max-height:84vh!important;
+  }
+  body.attendant-dashboard-page #takeover-sale-confirm-modal .takeover-sale-entry-head{
+    grid-template-columns:minmax(0,1fr) 100px!important;
+  }
+}
+
+/* Record Sale dialogs: compact and above the unchanged Shift-style sidebar. */
+body.attendant-dashboard-page #takeover-sale-modal,
+body.attendant-dashboard-page #takeover-sale-confirm-modal,
+body.attendant-dashboard-page #takeover-details-modal{z-index:1100!important}
+
+/* Active Shift cards: red border */
+body.attendant-dashboard-page .dashboard-section:has(.active-shift-card) .active-shift-card{
+  border:1px solid #d92d3a!important;
+  box-shadow:0 5px 18px rgba(180,35,47,.07)!important;
+}
+
+/* Add clear line separators between Active Shift cards */
+body.attendant-dashboard-page .dashboard-section:has(.active-shift-card) .dashboard-section-cards{
+  gap:0!important;
+}
+body.attendant-dashboard-page .dashboard-section:has(.active-shift-card) .active-shift-card{
+  position:relative!important;
+  margin:0!important;
+}
+body.attendant-dashboard-page .dashboard-section:has(.active-shift-card) .active-shift-card + .active-shift-card{
+  margin-top:16px!important;
+}
+body.attendant-dashboard-page .dashboard-section:has(.active-shift-card) .active-shift-card + .active-shift-card::before{
+  content:""!important;
+  position:absolute!important;
+  top:-9px!important;
+  left:16px!important;
+  right:16px!important;
+  height:1px!important;
+  background:#dfe4ea!important;
+}
+/* Pending Shift Confirmation: red header */
+body.attendant-dashboard-page .pending-confirmation-card .pending-hero{
+  color:#b4232f!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-card-title{
+  color:#b4232f!important;
+}
+</style><style>
+.attendant-dashboard-page .takeover-details-modal{max-width:760px;border-radius:18px;overflow:hidden}
+.attendant-dashboard-page .takeover-details-modal>.top{padding:16px 18px;border-bottom:1px solid #e8edf2;background:#fff}
+.attendant-dashboard-page .takeover-details-modal>.top h3{margin:2px 0 0;font-size:17px;line-height:1.2}
+.attendant-dashboard-page .takeover-details-modal>.top .section-kicker{font-size:8px;letter-spacing:.1em;font-weight:850;color:#98a2b3}
+.attendant-dashboard-page #takeover-details-content{padding:14px 16px;max-height:65vh;overflow:auto}
+.attendant-dashboard-page #takeover-details-modal>.modal-card>.row:last-child{padding:0 16px 16px}
+.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-card{border:1px solid #e5eaf0;border-radius:14px;box-shadow:0 4px 14px rgba(16,24,40,.05)}
+.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-head{padding:14px 15px;background:#f8fafc;border-bottom:1px solid #e8edf2}
+.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-head h4{font-size:15px;margin:2px 0 0}
+.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-meta{background:#fff}
+.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-list{padding:10px 14px 12px}
+.attendant-dashboard-page #takeover-details-modal .takeover-recorded-sale-row{padding:10px 0}
+</style><style>
+/* Pending dispenser deactivation — compact action card */
+body.attendant-dashboard-page .pending-deactivation-card{
+  border:1px solid #eadfbe!important;
+  border-radius:15px!important;
+  background:#fff!important;
+  box-shadow:0 4px 14px rgba(16,24,40,.055)!important;
+}
+body.attendant-dashboard-page .pending-deactivation-card::before{
+  width:4px!important;
+  background:#f59e0b!important;
+}
+body.attendant-dashboard-page .pending-deactivation-head{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:14px 15px 12px 17px!important;
+  background:#fffdf7!important;
+  border-bottom:1px solid #f1ead7!important;
+}
+body.attendant-dashboard-page .pending-deactivation-head-main{
+  min-width:0!important;
+}
+body.attendant-dashboard-page .pending-deactivation-kicker{
+  margin:0 0 4px!important;
+  font-size:9px!important;
+  line-height:1.2!important;
+  letter-spacing:.1em!important;
+  font-weight:900!important;
+  color:#a16207!important;
+}
+body.attendant-dashboard-page .pending-deactivation-card .pending-card-title{
+  font-size:15px!important;
+  line-height:1.25!important;
+  font-weight:850!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .pending-deactivation-card .pending-card-subtitle{
+  max-width:620px!important;
+  margin-top:5px!important;
+  font-size:10px!important;
+  line-height:1.45!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .pending-deactivation-status{
+  flex:0 0 auto!important;
+  padding:5px 8px!important;
+  border:1px solid #f1d38b!important;
+  border-radius:999px!important;
+  background:#fff8e7!important;
+  color:#9a6700!important;
+  font-size:9px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  white-space:nowrap!important;
+}
+body.attendant-dashboard-page .pending-deactivation-summary{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:1px!important;
+  margin:11px 14px 0!important;
+  overflow:hidden!important;
+  border:1px solid #e8edf2!important;
+  border-radius:10px!important;
+  background:#e8edf2!important;
+}
+body.attendant-dashboard-page .pending-deactivation-summary>div{
+  min-width:0!important;
+  padding:9px 11px!important;
+  background:#fbfcfe!important;
+}
+body.attendant-dashboard-page .pending-deactivation-summary span{
+  display:block!important;
+  margin:0!important;
+  font-size:8px!important;
+  line-height:1.2!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  color:#98a2b3!important;
+  font-weight:850!important;
+}
+body.attendant-dashboard-page .pending-deactivation-summary strong{
+  display:block!important;
+  margin-top:4px!important;
+  overflow-wrap:anywhere!important;
+  font-size:12px!important;
+  line-height:1.25!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .pending-deactivation-readings{
+  margin:10px 14px 0!important;
+  overflow:hidden!important;
+  border:1px solid #e8edf2!important;
+  border-radius:10px!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .pending-deactivation-section-title{
+  padding:8px 10px!important;
+  border-bottom:1px solid #e8edf2!important;
+  background:#fbfcfe!important;
+  font-size:9px!important;
+  line-height:1.2!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
+  font-weight:850!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .pending-deactivation-reading-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  min-width:0!important;
+  padding:8px 10px!important;
+  border-bottom:1px solid #eef1f4!important;
+}
+body.attendant-dashboard-page .pending-deactivation-reading-row:last-child{
+  border-bottom:0!important;
+}
+body.attendant-dashboard-page .pending-deactivation-reading-row>div:first-child{
+  display:flex!important;
+  align-items:baseline!important;
+  gap:8px!important;
+  min-width:0!important;
+}
+body.attendant-dashboard-page .pending-deactivation-reading-index{
+  flex:0 0 auto!important;
+  font-size:8px!important;
+  color:#98a2b3!important;
+  font-weight:750!important;
+}
+body.attendant-dashboard-page .pending-deactivation-reading-row>div:first-child strong{
+  min-width:0!important;
+  overflow-wrap:anywhere!important;
+  font-size:11px!important;
+  line-height:1.25!important;
+  color:#344054!important;
+}
+body.attendant-dashboard-page .pending-deactivation-opening{
+  flex:0 0 auto!important;
+  text-align:right!important;
+}
+body.attendant-dashboard-page .pending-deactivation-opening span{
+  display:block!important;
+  font-size:8px!important;
+  color:#98a2b3!important;
+  line-height:1.1!important;
+}
+body.attendant-dashboard-page .pending-deactivation-opening strong{
+  display:block!important;
+  margin-top:2px!important;
+  font-size:12px!important;
+  line-height:1.1!important;
+  color:#182230!important;
+}
+body.attendant-dashboard-page .pending-deactivation-action{
+  padding:10px 14px 13px!important;
+}
+body.attendant-dashboard-page .pending-deactivation-action button{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  width:100%!important;
+  min-height:40px!important;
+  padding:0 12px!important;
+  border-radius:9px!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  box-shadow:none!important;
+}
+body.attendant-dashboard-page .pending-deactivation-action button span:last-child{
+  font-size:15px!important;
+  line-height:1!important;
+  opacity:.8!important;
+}
+@media(max-width:600px){
+  body.attendant-dashboard-page .pending-deactivation-head{
+    padding:13px 13px 11px 15px!important;
+  }
+  body.attendant-dashboard-page .pending-deactivation-status{
+    padding:5px 7px!important;
+  }
+  body.attendant-dashboard-page .pending-deactivation-summary{
+    grid-template-columns:1fr 1fr!important;
+    margin-left:12px!important;
+    margin-right:12px!important;
+  }
+  body.attendant-dashboard-page .pending-deactivation-readings{
+    margin-left:12px!important;
+    margin-right:12px!important;
+  }
+  body.attendant-dashboard-page .pending-deactivation-action{
+    padding-left:12px!important;
+    padding-right:12px!important;
+  }
+}
+
+/* FINAL — Attendant Shift History / View Details card */
+body.attendant-dashboard-page #takeover-details-modal{z-index:1200!important;padding:14px!important;box-sizing:border-box!important}
+body.attendant-dashboard-page #takeover-details-modal .takeover-details-modal{
+  width:min(620px,calc(100vw - 24px))!important;
+  max-width:620px!important;
+  max-height:88vh!important;
+  display:flex!important;
+  flex-direction:column!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:1px solid #e2e8f0!important;
+  border-radius:18px!important;
+  background:#fff!important;
+  box-shadow:0 24px 70px rgba(16,24,40,.22)!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-details-modal>.top{
+  flex:0 0 auto!important;
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:15px 17px 13px!important;
+  border-bottom:1px solid #e8edf2!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-details-modal>.top .section-kicker{
+  display:block!important;margin:0 0 4px!important;font-size:9px!important;line-height:1.2!important;
+  letter-spacing:.11em!important;font-weight:900!important;color:#b4232f!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-details-modal>.top h3{
+  margin:0!important;font-size:18px!important;line-height:1.2!important;font-weight:850!important;color:#182230!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .takeover-details-modal>.top .modal-close{
+  width:34px!important;height:34px!important;flex:0 0 34px!important;padding:0!important;border:1px solid #e2e8f0!important;
+  border-radius:9px!important;background:#f8fafc!important;color:#475467!important;font-size:21px!important;line-height:1!important;
+}
+body.attendant-dashboard-page #takeover-details-modal #takeover-details-content{
+  flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:auto!important;padding:12px 14px 14px!important;
+  background:#f8fafc!important;scrollbar-width:thin!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-loading{
+  padding:34px 12px!important;text-align:center!important;color:#667085!important;font-size:12px!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-error{
+  margin:8px!important;padding:12px!important;border:1px solid #f0c4c8!important;border-radius:10px!important;background:#fff5f5!important;color:#b4232f!important;font-size:11px!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-hero{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;
+  padding:14px 15px!important;border:1px solid #e4e9ef!important;border-radius:13px!important;background:#fff!important;
+  box-shadow:0 2px 7px rgba(16,24,40,.035)!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-hero>div{min-width:0!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-hero .section-kicker{display:block!important;margin:0 0 4px!important;font-size:8px!important;letter-spacing:.1em!important;font-weight:900!important;color:#98a2b3!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-hero h4{margin:0!important;font-size:16px!important;line-height:1.2!important;color:#182230!important;font-weight:850!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-hero p{margin:4px 0 0!important;font-size:10px!important;line-height:1.3!important;color:#667085!important;overflow-wrap:anywhere!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-status{
+  flex:0 0 auto!important;padding:6px 9px!important;border:1px solid #b7e1c8!important;border-radius:999px!important;background:#effaf3!important;color:#18794e!important;
+  font-size:9px!important;font-weight:850!important;white-space:nowrap!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-grid{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:1px!important;margin-top:10px!important;
+  overflow:hidden!important;border:1px solid #e2e8f0!important;border-radius:12px!important;background:#e2e8f0!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-grid>div{min-width:0!important;padding:10px 11px!important;background:#fff!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-grid span,
+body.attendant-dashboard-page #takeover-details-modal .shift-details-metrics span{
+  display:block!important;margin:0!important;font-size:8px!important;line-height:1.2!important;text-transform:uppercase!important;letter-spacing:.05em!important;color:#98a2b3!important;font-weight:850!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-grid strong{
+  display:block!important;margin-top:4px!important;font-size:10px!important;line-height:1.35!important;color:#344054!important;overflow-wrap:anywhere!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-section{
+  margin-top:10px!important;border:1px solid #e2e8f0!important;border-radius:12px!important;background:#fff!important;overflow:hidden!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-section-title{
+  padding:9px 11px!important;border-bottom:1px solid #e8edf2!important;background:#fbfcfe!important;font-size:10px!important;line-height:1.2!important;
+  font-weight:850!important;color:#344054!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-metrics{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:1px!important;background:#e8edf2!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-metrics>div{min-width:0!important;padding:10px 11px!important;background:#fff!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-metrics strong{display:block!important;margin-top:4px!important;font-size:12px!important;line-height:1.2!important;color:#182230!important;overflow-wrap:anywhere!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-metrics small{display:block!important;margin-top:3px!important;font-size:8px!important;color:#98a2b3!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row{
+  display:grid!important;grid-template-columns:minmax(110px,1.25fr) repeat(3,minmax(72px,1fr))!important;align-items:center!important;gap:8px!important;
+  padding:9px 10px!important;border-bottom:1px solid #edf1f4!important;background:#fff!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row:last-child{border-bottom:0!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row>div{min-width:0!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row>div:first-child strong{display:block!important;font-size:10px!important;line-height:1.25!important;color:#344054!important;overflow-wrap:anywhere!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row>div:first-child small{display:block!important;margin-top:3px!important;font-size:8px!important;line-height:1.2!important;color:#b4232f!important;font-weight:750!important;overflow-wrap:anywhere!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row span{display:block!important;font-size:8px!important;color:#98a2b3!important;line-height:1.15!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row b{display:block!important;margin-top:3px!important;font-size:10px!important;line-height:1.2!important;color:#344054!important;white-space:nowrap!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;padding:9px 11px!important;border-bottom:1px solid #edf1f4!important;background:#fff!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row:last-of-type{border-bottom:0!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row>div{min-width:0!important;flex:1 1 auto!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row>div strong{display:block!important;font-size:10px!important;line-height:1.25!important;color:#344054!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row>div small,
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row>div em{display:block!important;margin-top:3px!important;font-size:8px!important;line-height:1.3!important;color:#98a2b3!important;font-style:normal!important;overflow-wrap:anywhere!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-sale-row>strong{flex:0 0 auto!important;font-size:11px!important;color:#182230!important;white-space:nowrap!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;padding:10px 11px!important;border-top:1px solid #e2e8f0!important;background:#fbfcfe!important;
+}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total span{font-size:9px!important;font-weight:800!important;color:#667085!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total strong{font-size:12px!important;color:#182230!important;white-space:nowrap!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total.calculated{margin-top:10px!important;border:1px solid #d7e4f7!important;border-radius:12px!important;background:#eef5ff!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total.calculated span{color:#526b8a!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total.calculated strong:first-of-type{margin-left:auto!important;color:#1264d8!important}
+body.attendant-dashboard-page #takeover-details-modal .shift-details-total.calculated strong:last-of-type{color:#182230!important}
+body.attendant-dashboard-page #takeover-details-modal .muted{font-size:10px!important}
+body.attendant-dashboard-page #takeover-details-modal>.modal-card>.row{
+  flex:0 0 auto!important;display:flex!important;justify-content:flex-end!important;gap:8px!important;margin:0!important;padding:9px 14px 12px!important;border-top:1px solid #e8edf2!important;background:#fff!important;
+}
+body.attendant-dashboard-page #takeover-details-modal>.modal-card>.row button{flex:0 0 92px!important;min-height:38px!important;border-radius:9px!important;font-size:11px!important;font-weight:850!important}
+@media(max-width:600px){
+ body.attendant-dashboard-page #takeover-details-modal{padding:10px!important}
+ body.attendant-dashboard-page #takeover-details-modal .takeover-details-modal{width:calc(100vw - 20px)!important;max-height:90vh!important;border-radius:16px!important}
+ body.attendant-dashboard-page #takeover-details-modal #takeover-details-content{padding:10px!important}
+ body.attendant-dashboard-page #takeover-details-modal .shift-details-grid{grid-template-columns:1fr 1fr!important}
+ body.attendant-dashboard-page #takeover-details-modal .shift-details-metrics{grid-template-columns:1fr 1fr!important}
+ body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row{grid-template-columns:minmax(90px,1.1fr) repeat(3,minmax(55px,1fr))!important;gap:5px!important;padding:8px 7px!important}
+ body.attendant-dashboard-page #takeover-details-modal .shift-details-reading-row b{font-size:9px!important}
+ body.attendant-dashboard-page #takeover-details-modal .shift-details-hero{padding:12px!important}
+}
+</style><style>
+/* FINAL — Attendant Shift History sales-details card matches Shift Details */
+body.attendant-dashboard-page #admin-sale-history-details{position:fixed!important;inset:0!important;z-index:1300!important;display:none!important;align-items:center!important;justify-content:center!important;padding:14px!important;box-sizing:border-box!important;background:rgba(15,23,42,.62)!important}
+body.attendant-dashboard-page #admin-sale-history-details.open{display:flex!important}
+body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card{position:relative!important;width:min(620px,calc(100vw - 24px))!important;max-width:620px!important;max-height:88vh!important;height:auto!important;margin:0!important;padding:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;box-sizing:border-box!important;border:1px solid #e2e8f0!important;border-radius:18px!important;background:#fff!important;box-shadow:0 24px 70px rgba(16,24,40,.22)!important}
+body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card>.top{flex:0 0 auto!important;display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:12px!important;padding:15px 17px 13px!important;border-bottom:1px solid #e8edf2!important;background:#fff!important}
+body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card>.top>div:first-child{min-width:0!important}
+body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card>.top .section-kicker{display:block!important;margin:0 0 4px!important;font-size:9px!important;line-height:1.2!important;letter-spacing:.11em!important;font-weight:900!important;color:#b4232f!important}
+body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card>.top h3{margin:0!important;font-size:18px!important;line-height:1.2!important;font-weight:850!important;color:#182230!important}
+body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card>.top p{margin:5px 0 0!important;font-size:10px!important;line-height:1.35!important;color:#667085!important}
+body.attendant-dashboard-page #admin-sale-history-details .admin-sale-history-detail-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:7px!important;flex:0 0 auto!important}
+body.attendant-dashboard-page #admin-sale-history-details .admin-sale-history-download,body.attendant-dashboard-page #admin-sale-history-details .modal-close{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;flex:0 0 34px!important;padding:0!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;border-radius:9px!important;font-size:12px!important;line-height:1!important}
+body.attendant-dashboard-page #admin-sale-history-details .admin-sale-history-download{width:70px!important;flex-basis:70px!important;border:1px solid #d7e4f7!important;background:#eef5ff!important;color:#1264d8!important;font-weight:850!important}
+body.attendant-dashboard-page #admin-sale-history-details .admin-sale-history-download:hover{background:#e4efff!important;border-color:#bfd5f3!important}
+body.attendant-dashboard-page #admin-sale-history-details .modal-close{border:1px solid #e2e8f0!important;background:#f8fafc!important;color:#475467!important;font-size:21px!important}
+body.attendant-dashboard-page #admin-sale-history-details .modal-close:hover{background:#f1f5f9!important}
+body.attendant-dashboard-page #admin-sale-history-details #admin-sale-history-details-content{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:auto!important;padding:12px 14px 14px!important;box-sizing:border-box!important;background:#f8fafc!important;scrollbar-width:thin!important}
+body.attendant-dashboard-page #admin-sale-history-details .history-detail-overview,body.attendant-dashboard-page #admin-sale-history-details .history-detail-section{box-sizing:border-box!important}
+body.attendant-dashboard-page #admin-sale-history-details .history-detail-overview{margin:0!important}
+body.attendant-dashboard-page #admin-sale-history-details .history-detail-section{margin-top:10px!important}
+body.attendant-dashboard-page #admin-sale-history-details .history-detail-section:first-child{margin-top:0!important}
+body.attendant-dashboard-page .attendant-action-result-backdrop{position:absolute!important;inset:0!important;background:rgba(15,23,42,.62)!important}
+body.attendant-dashboard-page .attendant-action-result-modal{z-index:1400!important}
+body.attendant-dashboard-page .attendant-action-result-card{position:relative!important;z-index:1!important;width:min(430px,calc(100vw - 30px))!important;max-height:82vh!important;overflow:auto!important}
+@media(max-width:600px){body.attendant-dashboard-page #admin-sale-history-details{padding:10px!important}body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card{width:calc(100vw - 20px)!important;max-height:90vh!important;border-radius:16px!important}body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card>.top{padding:14px 14px 12px!important}body.attendant-dashboard-page #admin-sale-history-details #admin-sale-history-details-content{padding:10px!important}body.attendant-dashboard-page #admin-sale-history-details .admin-sale-history-download{width:66px!important;flex-basis:66px!important}}
+/* FINAL — Pending Shift Confirmation card redesign */
+body.attendant-dashboard-page .pending-confirmation-card{border:1px solid #e3e8ef!important;border-radius:16px!important;background:#fff!important;box-shadow:0 5px 18px rgba(16,24,40,.055)!important}
+body.attendant-dashboard-page .pending-confirmation-card::before{width:4px!important;background:#b4232f!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-hero{padding:15px 16px 14px 18px!important;background:linear-gradient(180deg,#fffafa 0%,#fff 100%)!important;border-bottom:1px solid #edf0f3!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-hero-icon{width:34px!important;height:34px!important;flex:0 0 34px!important;border:1px solid #f0cdd1!important;border-radius:10px!important;background:#fff0f1!important;color:#b4232f!important;font-size:15px!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-card-title{font-size:15px!important;font-weight:900!important;color:#182230!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-card-subtitle{margin-top:4px!important;font-size:10px!important;color:#7a8594!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-shift-badge{align-self:flex-start!important;padding:5px 9px!important;border:1px solid #f2d39a!important;border-radius:999px!important;background:#fff8e8!important;color:#9a6700!important;font-size:9px!important;font-weight:900!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-shift-info{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:0!important;padding:12px 16px!important;border-bottom:1px solid #edf0f3!important;background:#fff!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-info-block,body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening{min-width:0!important;padding:3px 12px!important;display:block!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-info-block:first-child,body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening{border-left:1px solid #edf0f3!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-info-block:first-child{border-left:0!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-info-divider{display:none!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-label{font-size:8px!important;letter-spacing:.08em!important;color:#98a2b3!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-info-block strong,body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening strong{margin-top:5px!important;font-size:12px!important;font-weight:850!important;color:#344054!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening small{font-size:9px!important;color:#98a2b3!important;font-weight:750!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-section{padding:0 16px 4px!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-heading{display:flex!important;align-items:center!important;gap:6px!important;padding:10px 0 8px!important;border:0!important;font-size:9px!important;text-transform:uppercase!important;letter-spacing:.06em!important;color:#667085!important;font-weight:900!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-section-icon{width:18px!important;height:18px!important;display:grid!important;place-items:center!important;border-radius:6px!important;background:#f3f5f7!important;color:#667085!important;font-size:10px!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-reading{display:grid!important;grid-template-columns:auto 1fr auto!important;align-items:center!important;gap:9px!important;padding:8px 10px!important;margin-bottom:6px!important;border:1px solid #edf0f3!important;border-radius:9px!important;background:#fafbfc!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-number{grid-column:3!important;grid-row:1!important;font-size:13px!important;font-weight:900!important;color:#182230!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-code{grid-column:2!important;grid-row:1!important;font-size:9px!important;color:#667085!important;overflow-wrap:anywhere!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-top{display:block!important;grid-column:1!important;grid-row:1!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-pill{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:42px!important;padding:4px 6px!important;border-radius:6px!important;background:#fff0f1!important;color:#b4232f!important;font-size:8px!important;font-weight:900!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-shift-actions{display:flex!important;gap:8px!important;padding:11px 14px 14px!important;border-top:1px solid #edf0f3!important;background:#fff!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-shift-actions button{min-height:40px!important;border-radius:9px!important;font-size:11px!important;font-weight:850!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-shift-actions .primary{flex:1!important;background:#b4232f!important;border-color:#b4232f!important;color:#fff!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-shift-actions .pending-cancel-btn{flex:0 0 112px!important;min-width:112px!important;background:#fff!important;border:1px solid #e2e6eb!important;color:#667085!important}
+@media(max-width:600px){
+body.attendant-dashboard-page .pending-confirmation-card .pending-hero{padding:13px 13px 12px 16px!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-shift-info{grid-template-columns:1fr 1fr!important;padding:11px 13px!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-info-block,body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening{padding:4px 9px!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening{grid-column:1/-1!important;border-left:0!important;border-top:1px solid #edf0f3!important;margin-top:7px!important;padding-top:10px!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-shift-actions{padding:10px 12px 12px!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-shift-actions .pending-cancel-btn{flex:0 0 96px!important;min-width:96px!important}
+}/* Pending shift: red card border + active-shift-style readings */
+body.attendant-dashboard-page .pending-confirmation-card{
+  border:1px solid #d92d3a!important;
+  box-shadow:0 5px 18px rgba(180,35,47,.07)!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card::before{width:0!important;background:transparent!important}
+body.attendant-dashboard-page .pending-confirmation-card .pending-shift-info{
+  grid-template-columns:1fr 1px 1fr!important;
+  gap:12px!important;
+  padding:12px 16px!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-info-block,
+body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  min-width:0!important;
+  padding:3px 0!important;
+  border-left:0!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-info-icon{
+  display:none!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-info-divider{
+  display:block!important;
+  background:#edf1f4!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-label{
+  display:block!important;
+  font-size:9px!important;
+  text-transform:uppercase!important;
+  letter-spacing:.04em!important;
+  color:#98a2b3!important;
+  font-weight:800!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-info-block strong,
+body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening strong{
+  display:block!important;
+  margin-top:3px!important;
+  font-size:13px!important;
+  color:#344054!important;
+  font-weight:850!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-section{
+  padding:0 16px 10px!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-heading{
+  padding:9px 0!important;
+  border-top:1px solid #edf1f4!important;
+  border-bottom:1px solid #edf1f4!important;
+  font-size:11px!important;
+  text-transform:none!important;
+  letter-spacing:0!important;
+  color:#475467!important;
+  font-weight:850!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-section-icon{
+  width:auto!important;height:auto!important;
+  background:none!important;
+  color:#667085!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-reading{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  padding:8px 0!important;
+  margin:0!important;
+  border:0!important;
+  border-bottom:1px solid #f0f2f5!important;
+  border-radius:0!important;
+  background:#fff!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-reading:last-child{
+  border-bottom:0!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-top{
+  display:none!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-code{
+  order:1!important;
+  font-size:10px!important;
+  color:#8a949e!important;
+}
+body.attendant-dashboard-page .pending-confirmation-card .pending-nozzle-number{
+  order:2!important;
+  font-size:13px!important;
+  font-weight:800!important;
+  color:#17202a!important;
+}
+@media(max-width:600px){
+  body.attendant-dashboard-page .pending-confirmation-card .pending-shift-info{
+    grid-template-columns:1fr 1fr!important;
+  }
+  body.attendant-dashboard-page .pending-confirmation-card .pending-info-divider{
+    display:none!important;
+  }
+  body.attendant-dashboard-page .pending-confirmation-card .pending-tank-opening{
+    grid-column:1/-1!important;
+    padding-top:9px!important;
+    margin-top:0!important;
+    border-top:1px solid #edf1f4!important;
+  }
+}</style></head><body class="attendant-page attendant-dashboard-page admin-shell admin-control-ui" data-app-page="userDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div><div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing dip (mm)<input id="handover-closing-dip" type="number" min="0" step="0.1" placeholder="Enter tank closing dip" required oninput="updateHandoverClosingDip(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter a dip to calculate liters.</div><input id="handover-closing-liters" type="hidden"><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="takeover-sale-modal" class="modal" aria-hidden="true">
+<div class="modal-backdrop" onclick="closeTakeoverSaleModal()"></div>
+<div class="modal-card takeover-action-modal">
+<div class="top"><div><span class="section-kicker">SHIFT HANDOVER</span><h3>Record Sale</h3></div><button type="button" class="modal-close" onclick="closeTakeoverSaleModal()" aria-label="Close">×</button></div>
+<div id="takeover-sale-summary" class="takeover-sale-summary"></div>
+<div class="takeover-sales-entry-section"><div class="takeover-sales-entry-title">Sales</div><div id="takeover-sale-type-list"></div></div>
+<div class="row"><button type="button" class="btn" onclick="closeTakeoverSaleModal()">Cancel</button><button type="button" class="primary" onclick="continueTakeoverSale()">Continue</button></div>
+</div></div>
+<div id="takeover-sale-confirm-modal" class="modal" aria-hidden="true">
+<div class="modal-backdrop" onclick="closeTakeoverSaleConfirm()"></div>
+<div class="modal-card takeover-action-modal">
+<div class="top"><div><span class="section-kicker">SHIFT HANDOVER</span><h3>Review Sale</h3></div><button type="button" class="modal-close" onclick="closeTakeoverSaleConfirm()" aria-label="Close">×</button></div>
+<div id="takeover-sale-confirm-content"></div>
+<div class="row"><button type="button" class="btn" onclick="backToTakeoverSaleEntry()">Back</button><button type="button" class="btn" onclick="editTakeoverSaleEntries()">Edit Sales</button><button type="button" class="primary confirm-sale-button" onclick="confirmTakeoverSale()" disabled>Confirm</button></div>
+</div></div><div id="takeover-details-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="closeTakeoverDetails()"></div><div class="modal-card takeover-details-modal"><div class="top"><div><span class="section-kicker">SHIFT HISTORY</span><h3>Shift Details</h3></div><button type="button" class="modal-close" onclick="closeTakeoverDetails()" aria-label="Close">×</button></div><div id="takeover-details-content"></div><div class="row"><button type="button" class="primary" onclick="closeTakeoverDetails()">Close</button></div></div></div><div id="admin-sale-history-details" class="modal purchase-modal" aria-hidden="true"><div class="modal-backdrop" onclick="closeAdminSaleHistoryDetails()"></div><div class="modal-card admin-sale-review-card takeover-details-modal"><div class="top"><div><span class="section-kicker">SHIFT HISTORY</span><h3>Shift Details</h3><p class="muted">View the complete confirmed sales record.</p></div><div class="admin-sale-history-detail-actions"><button type="button" class="secondary admin-sale-history-download" id="admin-sale-history-download" onclick="downloadAdminSaleHistoryDetails(this.dataset.takeoverId)" title="Download PDF">⇩ PDF</button><button type="button" class="modal-close" onclick="closeAdminSaleHistoryDetails()">×</button></div></div><div id="admin-sale-history-details-content"></div></div></div><div id="toast" class="toast"></div><div id="employee-status" class="page-status"></div></main><script src="assets/app.js?v=20261010-12"></script><script src="assets/app-boot.js?v=20261008-02"></script><script src="assets/admin-control-ui.js?v=20261010-02"></script>
+</body></html>
