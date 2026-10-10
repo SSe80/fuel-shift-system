@@ -2477,10 +2477,14 @@ def confirm_sale_confirmation(takeover_id):
     data=request.get_json(silent=True) or {}
     checked=data.get("checked_sale_ids",[])
     if not isinstance(checked,list):return jsonify({"error":"Invalid checked sales"}),400
-    status,result=rpc("confirm_shift_takeover_sales",{
+    try: returned_liters=float(data.get("returned_liters",0) or 0)
+    except (TypeError,ValueError):return jsonify({"error":"Returned liters must be a valid number"}),400
+    if not (returned_liters>=0 and returned_liters<1e12):return jsonify({"error":"Returned liters must be zero or greater"}),400
+    status,result=rpc("confirm_shift_takeover_sales_with_return",{
         "p_takeover_id":takeover_id,
         "p_admin_id":session["employee_id"],
-        "p_checked_sale_ids":checked
+        "p_checked_sale_ids":checked,
+        "p_returned_liters":returned_liters
     })
     if status>=400:return jsonify(result),status
 
