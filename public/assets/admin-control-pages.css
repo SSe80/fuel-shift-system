@@ -2682,3 +2682,86 @@ body.admin-control-ui.attendant-dashboard-page .dashboard-section:has(.active-sh
   margin-top: 0 !important;
   position: relative !important;
 }
+
+/* Attendant panel: remaining blue text. The shared header eyebrow and the
+   sale-history PDF button are painted blue by their own rules. */
+body.admin-control-ui[data-app-page].attendant-dashboard-page header .eyebrow,
+body.admin-control-ui[data-app-page].attendant-dashboard-page .eyebrow {
+  color: #dc2626 !important;
+}
+body.admin-control-ui[data-app-page].attendant-dashboard-page .eyebrow::before {
+  background: #dc2626 !important;
+}
+body.admin-control-ui[data-app-page].attendant-dashboard-page #admin-sale-history-download,
+body.admin-control-ui[data-app-page].attendant-dashboard-page button.admin-sale-history-download {
+  color: #b91c1c !important;
+  border-color: #fecaca !important;
+  background: #fff !important;
+}
+
+/* ==========================================================================
+   MSR — text alignment fixes
+   ========================================================================== */
+/* Remove the 3px accent border on panel headings; it sat off the text line */
+body.admin-control-ui.msr-page .msr-panel-head {
+  border-left: 0 !important;
+  padding-left: 0 !important;
+  align-items: flex-start !important;
+}
+/* Header rows: start everything on the same top line */
+body.admin-control-ui.msr-page .msr-report-shell-head,
+body.admin-control-ui.msr-page .msr-panel-head,
+body.admin-control-ui.msr-page .msr-month-control {
+  align-items: flex-start !important;
+}
+body.admin-control-ui.msr-page .msr-report-actions {
+  align-items: flex-start !important;
+  align-self: flex-start !important;
+}
+/* KPI tiles: label block reserves two lines so every value lines up */
+body.admin-control-ui.msr-page .msr-kpi {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  text-align: left !important;
+}
+body.admin-control-ui.msr-page .msr-kpi > span {
+  display: block !important;
+  min-height: 2.5em !important;
+  line-height: 1.25 !important;
+  font-size: 10.5px !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase;
+  color: var(--ac-muted) !important;
+}
+body.admin-control-ui.msr-page .msr-kpi > strong {
+  display: block !important;
+  margin: 6px 0 4px !important;
+  font-size: 22px !important;
+  line-height: 1.15 !important;
+}
+body.admin-control-ui.msr-page .msr-kpi > small {
+  display: block !important;
+  font-size: 11.5px !important;
+  line-height: 1.4 !important;
+  min-height: 2.8em;
+}
+/* Tables: body-size text so numbers and labels read at the same size */
+body.admin-control-ui.msr-page table th,
+body.admin-control-ui.msr-page table td {
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  vertical-align: middle;
+}
+body.admin-control-ui.msr-page table th { font-size: 10.5px !important; }
+body.admin-control-ui.msr-page table td:first-child,
+body.admin-control-ui.msr-page table th:first-child { text-align: left; }
+body.admin-control-ui.msr-page table th:not(:first-child),
+body.admin-control-ui.msr-page table td:not(:first-child) { text-align: right; }
+/* Notes under panel headings: left aligned, not floating right */
+body.admin-control-ui.msr-page .msr-panel-head p,
+body.admin-control-ui.msr-page .msr-panel-head small,
+body.admin-control-ui.msr-page .msr-panel-head .muted {
+  text-align: left !important;
+}
