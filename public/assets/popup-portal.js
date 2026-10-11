@@ -29,6 +29,9 @@
       /* The shift-history dialog has legacy card-level centering rules. Anchor this card directly to the viewport so parent flex/transform rules cannot push it halfway down. */
       'body.attendant-dashboard-page #takeover-details-modal.modal.open > .modal-backdrop + .modal-card.takeover-details-modal { position:fixed!important; top:max(8px,env(safe-area-inset-top))!important; right:auto!important; bottom:auto!important; left:50%!important; transform:translateX(-50%)!important; margin:0!important; width:min(620px,calc(100vw - 16px))!important; max-width:620px!important; max-height:calc(100dvh - max(16px,env(safe-area-inset-top) + env(safe-area-inset-bottom)))!important; }',
       'body.attendant-dashboard-page #takeover-details-modal.modal.open > .modal-backdrop + .modal-card.takeover-details-modal > #takeover-details-content { min-height:0!important; max-height:none!important; overflow-x:hidden!important; overflow-y:auto!important; }',
+      /* The attendant's View Details action also renders through admin-sale-history-details; pin that card to the viewport too. */
+      'body.attendant-dashboard-page #admin-sale-history-details.modal.open > .modal-backdrop + .modal-card { position:fixed!important; top:max(8px,env(safe-area-inset-top))!important; right:auto!important; bottom:auto!important; left:50%!important; transform:translateX(-50%)!important; margin:0!important; width:min(620px,calc(100vw - 16px))!important; max-width:620px!important; max-height:calc(100dvh - max(16px,env(safe-area-inset-top) + env(safe-area-inset-bottom)))!important; }',
+      'body.attendant-dashboard-page #admin-sale-history-details.modal.open > .modal-backdrop + .modal-card > #admin-sale-history-details-content { min-height:0!important; max-height:none!important; overflow-x:hidden!important; overflow-y:auto!important; -webkit-overflow-scrolling:touch!important; }',
     ].join('\n');
     document.head.appendChild(style);
   }
