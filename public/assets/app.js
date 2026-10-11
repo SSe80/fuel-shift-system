@@ -2057,7 +2057,7 @@ function filterAdminSales(){
         const group=groups[dsrId],pendingCount=group.pending.length,progressingCount=group.progressing.length;
         const summary=[pendingCount?pendingCount+' pending confirmation'+(pendingCount===1?'':'s'):'',progressingCount?progressingCount+' progressing shift'+(progressingCount===1?'':'s'):''].filter(Boolean).join(' · ');
         return '<section class="admin-pending-dsr-group" data-dsr-id="'+h(dsrId)+'">'+
-          '<button type="button" class="admin-pending-dsr-head" onclick="toggleAdminPendingDsrGroup(\\''+h(dsrId)+'\\')" aria-expanded="false">'+
+          '<button type="button" class="admin-pending-dsr-head" onclick="toggleAdminPendingDsrGroup(\''+h(dsrId)+'\')" aria-expanded="false">'+
             '<span class="admin-pending-dsr-title"><span class="section-kicker">DSR</span><strong>'+h(dsrId)+'</strong></span>'+
             '<span class="admin-pending-dsr-right"><small>'+summary+'</small><span class="admin-pending-dsr-toggle" aria-hidden="true">⌄</span></span>'+
           '</button>'+
