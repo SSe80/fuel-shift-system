@@ -749,10 +749,10 @@ def accounting_open_period():
 def get_settings():
     auth=require_login()
     if auth:return auth
-    status,result=sb("station_settings",params={"id":"eq.true","select":"currency,item_orders,updated_at","limit":"1"})
+    status,result=sb("station_settings",params={"id":"eq.true","select":"currency,item_orders,sales_difference_tolerance,updated_at","limit":"1"})
     if status!=200:return jsonify(result),status
     if not result:
-        return jsonify({"currency":"ETB","item_orders":{}}),200
+        return jsonify({"currency":"ETB","item_orders":{},"sales_difference_tolerance":1.00}),200
     return jsonify(result[0]),200
 
 @app.patch("/api/settings")
@@ -760,15 +760,31 @@ def update_settings():
     auth=require_admin()
     if auth:return auth
     data=request.get_json(silent=True) or {}
+    tolerance_value=data.get("sales_difference_tolerance",None)
+    tolerance=None
+    if tolerance_value is not None:
+        try:
+            tolerance=float(tolerance_value)
+        except (TypeError,ValueError):
+            return jsonify({"error":"Sales difference tolerance must be a number"}),400
+        if not math.isfinite(tolerance) or tolerance < 0 or tolerance > 100000:
+            return jsonify({"error":"Sales difference tolerance must be between 0 and 100000"}),400
+        tolerance=round(tolerance,2)
     currency=str(data.get("currency","")).strip().upper()
-    if not currency or len(currency)>10:
-        return jsonify({"error":"Currency is required and must be 1-10 characters"}),400
-    if not all(ch.isalnum() or ch in " _-₿$€£¥" for ch in currency):
+    if not currency and tolerance is None:
+        return jsonify({"error":"Provide a currency or sales difference tolerance"}),400
+    if currency and len(currency)>10:
+        return jsonify({"error":"Currency must be 1-10 characters"}),400
+    if currency and not all(ch.isalnum() or ch in " _-₿$€£¥" for ch in currency):
         return jsonify({"error":"Currency contains unsupported characters"}),400
-    status,result=sb("station_settings",method="PATCH",params={"id":"eq.true"},body={"currency":currency,"updated_at":datetime.now(timezone.utc).isoformat()},prefer="return=representation")
+    update_body={"updated_at":datetime.now(timezone.utc).isoformat()}
+    if currency: update_body["currency"]=currency
+    if tolerance is not None: update_body["sales_difference_tolerance"]=tolerance
+    status,result=sb("station_settings",method="PATCH",params={"id":"eq.true"},body=update_body,prefer="return=representation")
     if status>=400:return jsonify(result),status
     if not result:
-        status,result=sb("station_settings",method="POST",body={"id":True,"currency":currency},prefer="return=representation")
+        insert_body={"id":True,"currency":currency or "ETB","sales_difference_tolerance":1.00 if tolerance is None else tolerance}
+        status,result=sb("station_settings",method="POST",body=insert_body,prefer="return=representation")
         if status>=400:return jsonify(result),status
     return jsonify(result[0] if isinstance(result,list) else result),200
 
