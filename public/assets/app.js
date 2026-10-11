@@ -2040,7 +2040,7 @@ function filterAdminSales(){
   const progressingRows=(adminSalesData.progressing||[]).filter(adminSalesMatches);
   const allHistoryRows=(adminSalesData.history||[]).filter(adminSalesMatches);
   const historyRows=allHistoryRows.slice(0,3);
-  const progressingHtml=progressingRows.length?'<section class="admin-progressing-shifts"><div class="takeover-detail-heading">Progressing shifts <small>Set returned liters before the attendant records sales</small></div>'+progressingRows.map(renderAdminProgressingSaleCard).join('')+'</section>':'';
+  const progressingHtml=progressingRows.length?'<section class="admin-progressing-shifts"><button type="button" class="admin-progressing-shifts-head" onclick="toggleAdminProgressingShifts(this)" aria-expanded="false"><span><strong>Progressing shifts</strong><small>Set returned liters before the attendant records sales · '+progressingRows.length+' shift'+(progressingRows.length===1?'':'s')+'</small></span><span class="admin-progressing-shifts-chevron" aria-hidden="true">⌄</span></button><div class="admin-progressing-shifts-content" hidden>'+progressingRows.map(renderAdminProgressingSaleCard).join('')+'</div></section>':'';
   if(pendingBox){
     if(!pendingRows.length){
       pendingBox.innerHTML=progressingHtml+'<div class="card admin-sales-empty"><div class="empty-icon">✓</div><strong>No pending sales confirmations</strong><p class="muted">Submitted sale cards will appear here after attendants record their sales.</p></div>';
@@ -2099,6 +2099,16 @@ function toggleAdminPendingDsrGroup(dsrId){
   if(cards)cards.hidden=!expanded;
   if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
   if(toggle)toggle.textContent=expanded?'⌃':'⌄';
+}
+function toggleAdminProgressingShifts(button){
+  const section=button?.closest('.admin-progressing-shifts');
+  const content=section?.querySelector('.admin-progressing-shifts-content');
+  if(!section||!content)return;
+  const expanded=section.classList.toggle('expanded');
+  content.hidden=!expanded;
+  button.setAttribute('aria-expanded',expanded?'true':'false');
+  const chevron=button.querySelector('.admin-progressing-shifts-chevron');
+  if(chevron)chevron.textContent=expanded?'⌃':'⌄';
 }
 function renderAdminProgressingSaleCard(item){
   const t=item.takeover||{},dispenser=item.dispenser?.name||'Dispenser',shift=item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||'')),id=String(t.id||''),returned=Number(t.returned_liters||0);
