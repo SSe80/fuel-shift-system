@@ -2247,7 +2247,7 @@ function createGenericReportPdf(report){
   const W=595,H=842,compact=!!report.singlePage,M=compact?26:38,CONTENT_W=W-M*2,TOP=compact?94:116,BOTTOM=compact?24:48;
   // Keep all PDF offsets byte-accurate; the generated PDF is ASCII only.
   const clean=v=>String(v==null?'':v).replace(/[•·]/g,' - ').replace(/[→➜]/g,' -> ').replace(/—/g,'-').replace(/[^ -~]/g,'');
-  const esc=v=>clean(v).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  const esc=v=>clean(v).replace(/\\/g,'\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
   const wrap=(value,maxChars)=>{
     const words=clean(value).split(/\s+/),out=[];let line='';
     words.forEach(word=>{
@@ -2371,7 +2371,7 @@ function createStyledReportPdf(report){
   if(!report.sales)return createGenericReportPdf(report);
   const W=595,H=842,M=36,CONTENT_W=W-M*2,HEADER_H=92,FOOTER_Y=24,NAVY=[18,37,63],BLUE=[37,99,235],GREEN=[34,139,85],TEXT=[31,41,55],MUTED=[100,116,139],LINE=[226,232,240],WARN=[255,246,194],WARN_TEXT=[168,91,0];
   const clean=v=>String(v==null?'':v).replace(/[•·]/g,' - ').replace(/[→➜]/g,' -> ').replace(/—/g,'-').replace(/[^ -~]/g,'');
-  const esc=v=>clean(v).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  const esc=v=>clean(v).replace(/\\/g,'\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
   const rgb=(r,g,b)=>String(r/255)+' '+String(g/255)+' '+String(b/255);
   const pages=[[]];let y=H-HEADER_H-24;
   const cmd=s=>pages[pages.length-1].push(s);
@@ -2501,7 +2501,7 @@ function createPdfDoc(){
   const d={W,H,M,CW,BOTTOM,C,y:0,topY:40};
   const pages=[[]];
   const clean=v=>String(v==null?'':v).replace(/\u2022/g,'\u00b7').replace(/[\u2192\u279c]/g,'->').replace(/[\u2013\u2014\u2212]/g,'-').replace(/[\u00a0\u202f]/g,' ').replace(/[^ -~\u00b7]/g,'');
-  const esc=v=>clean(v).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)').replace(/\u00b7/g,'\\267');
+  const esc=v=>clean(v).replace(/\\/g,'\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)').replace(/\u00b7/g,'\\267');
   const tw=(v,size,bold)=>{const t=bold?WB:WR;let n=0;clean(v).split('').forEach(c=>{const k=c.charCodeAt(0);n+=k===183?278:(t[k-32]||556);});return n*size/1000;};
   const fit=(v,size,bold,max)=>{let s=clean(v);if(tw(s,size,bold)<=max)return s;while(s.length>1&&tw(s+'...',size,bold)>max)s=s.slice(0,-1);return s+'...';};
   const wrap=(v,size,bold,max)=>{const out=[];let line='';clean(v).split(/\s+/).forEach(word=>{if(!word)return;
