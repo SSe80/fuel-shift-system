@@ -2966,7 +2966,8 @@ def confirm_daily_report(report_date):
     final_snap,final_err,final_status=_daily_confirmation_snapshot(report_day)
     if final_err:return jsonify(final_err),final_status
     now=datetime.now(timezone.utc).isoformat()
-    us,updated=sb("daily_report_confirmations",method="PATCH",params={"report_date":"eq."+report_date},body={
+    us,updated=sb("daily_report_confirmations",method="POST",params={"on_conflict":"report_date"},body={
+        "report_date":report_date,
         "total_sales_liters":final_snap["total_sales_liters"],
         "total_sales_amount":final_snap["total_sales_amount"],
         "sales_by_method":final_snap["sales_by_method"],
@@ -2975,7 +2976,7 @@ def confirm_daily_report(report_date):
         "confirmed_at":now,
         "confirmed_by":session["employee_id"],
         "updated_at":now
-    },prefer="return=representation")
+    },prefer="resolution=merge-duplicates,return=representation")
     if us>=400:return jsonify(updated),us
     _drive_after_dsr_confirm(report_day)
     return jsonify({
