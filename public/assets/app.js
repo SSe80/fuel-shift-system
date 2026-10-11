@@ -189,9 +189,13 @@ function collectTakeoverSaleEntries(){
   });
   return sales;
 }
-function continueTakeoverSale(){
+async function continueTakeoverSale(){
   const takeover=window.pendingTakeoverRecord;
   if(!takeover)return;
+  try{
+    const settings=await api('/api/settings');
+    window.stationSalesDifferenceTolerance=Math.max(0,Number(settings?.sales_difference_tolerance??1));
+  }catch(e){}
   const sales=collectTakeoverSaleEntries();
   window.pendingTakeoverSales=sales;
   const modal=document.getElementById('takeover-sale-modal');
