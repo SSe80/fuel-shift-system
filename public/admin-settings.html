@@ -368,5 +368,33 @@
 
 <script src="assets/drive-settings.js?v=20261011-d1"></script>
 <script src="assets/popup-portal.js?v=20261011-p1"></script>
+
+<style id="admin-settings-result-and-confirmation-style">
+/* Admin Settings: action result cards and confirmation review */
+body.admin-settings-page .attendant-action-result-modal{position:fixed!important;inset:0!important;z-index:1100!important;display:none;align-items:center!important;justify-content:center!important;padding:16px!important;box-sizing:border-box!important}
+body.admin-settings-page .attendant-action-result-modal.open{display:flex!important}
+body.admin-settings-page .attendant-action-result-backdrop{position:absolute!important;inset:0!important;background:rgba(15,23,42,.45)!important;backdrop-filter:blur(3px)}
+body.admin-settings-page .attendant-action-result-card{position:relative!important;z-index:1!important;box-sizing:border-box!important;width:min(100%,400px)!important;max-height:calc(100vh - 32px)!important;max-height:calc(100svh - 32px)!important;overflow-y:auto!important;margin:0 auto!important;padding:22px 20px 18px!important;border:1px solid #e2e8f0!important;border-radius:20px!important;background:#fff!important;box-shadow:0 24px 60px -24px rgba(15,23,42,.45)!important;text-align:center!important}
+body.admin-settings-page .attendant-action-result-icon{width:52px!important;height:52px!important;margin:0 auto 10px!important;border-radius:50%!important;display:grid!important;place-items:center!important;font-size:24px!important;font-weight:800!important;line-height:1!important;background:#eff6ff!important;color:#2563eb!important}
+body.admin-settings-page .attendant-action-result-card.success .attendant-action-result-icon{background:#ecfdf5!important;color:#059669!important}
+body.admin-settings-page .attendant-action-result-card.failed .attendant-action-result-icon{background:#fef2f2!important;color:#dc2626!important}
+body.admin-settings-page .attendant-action-result-kicker{display:block!important;font-size:10px!important;font-weight:800!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:#64748b!important}
+body.admin-settings-page .attendant-action-result-card h3{margin:6px 0 4px!important;font-size:18px!important;font-weight:750!important;line-height:1.25!important;color:#0f172a!important}
+body.admin-settings-page .attendant-action-result-card p{margin:0 0 16px!important;font-size:13.5px!important;line-height:1.45!important;color:#64748b!important}
+body.admin-settings-page .attendant-action-result-actions{display:block!important}
+body.admin-settings-page .attendant-action-result-actions button{width:100%!important;min-height:44px!important;border:0!important;border-radius:12px!important;background:#2563eb!important;color:#fff!important;font-size:14px!important;font-weight:700!important;box-shadow:0 6px 14px -8px rgba(37,99,235,.7)!important}
+@media(max-width:640px){body.admin-settings-page .attendant-action-result-modal{align-items:flex-end!important;padding:0!important}body.admin-settings-page .attendant-action-result-card{width:100%!important;max-height:88vh!important;max-height:88svh!important;border-radius:20px 20px 0 0!important;padding-bottom:calc(18px + env(safe-area-inset-bottom))!important}}
+body.admin-settings-page #settings-confirm-modal .modal-card{padding:0!important;overflow-x:hidden!important}
+body.admin-settings-page #settings-confirm-modal .modal-card>.top{padding:14px 16px 12px!important;margin:0!important}
+body.admin-settings-page #settings-confirm-modal .modal-card>.top h3{margin:0!important;font-size:16px!important;font-weight:750!important}
+body.admin-settings-page #settings-confirm-details{box-sizing:border-box!important;margin:14px 16px 10px!important;padding:12px 14px!important;border:1px solid #e2e8f0!important;border-radius:12px!important;background:#f8fafc!important;font-size:13.5px!important;line-height:1.45!important;color:#334155!important;overflow-wrap:anywhere!important}
+body.admin-settings-page #settings-confirm-details>*{margin:0!important;padding:0!important;border:0!important;background:transparent!important}
+body.admin-settings-page #settings-confirm-note{margin:0 16px 14px!important;font-size:12.5px!important;line-height:1.4!important}
+body.admin-settings-page #settings-confirm-actions.row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important;padding:12px 16px calc(14px + env(safe-area-inset-bottom))!important;margin:0!important;border-top:1px solid #e2e8f0!important}
+body.admin-settings-page #settings-confirm-actions.row>button{min-height:44px!important;width:100%!important;border-radius:12px!important;font-size:14px!important;font-weight:700!important}
+body.admin-settings-page #settings-confirm-actions.row>button:not(.primary){border:1px solid #cbd5e1!important;background:#fff!important;color:#334155!important}
+body.admin-settings-page #settings-confirm-actions.row>button.primary{border:0!important;background:#2563eb!important;color:#fff!important}
+</style>
+
 </body>
 </html>
