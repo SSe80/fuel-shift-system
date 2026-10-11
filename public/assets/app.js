@@ -3336,8 +3336,11 @@ async function openAdminSaleHistoryDetails(id){
   const adminHistorySource=(typeof adminSalesData!=='undefined'&&Array.isArray(adminSalesData.history))
     ?adminSalesData.history
     :[];
-  const source=historySource.length?historySource:adminHistorySource;
-  const item=source.find(function(x){return String((x&&x.takeover&&x.takeover.id)||'')===String(id);})||((window.__attendantTakeoverDetailsItem&&String(window.__attendantTakeoverDetailsItem.takeover?.id)===String(id))?window.__attendantTakeoverDetailsItem:null);
+  // Search both sources independently: a non-empty attendant history must not
+  // prevent a matching admin history record from being found.
+  const item=historySource.find(function(x){return String((x&&x.takeover&&x.takeover.id)||'')===String(id);})
+    ||adminHistorySource.find(function(x){return String((x&&x.takeover&&x.takeover.id)||'')===String(id);})
+    ||((window.__attendantTakeoverDetailsItem&&String(window.__attendantTakeoverDetailsItem.takeover?.id)===String(id))?window.__attendantTakeoverDetailsItem:null);
   const modal=document.getElementById('admin-sale-history-details');
   const box=document.getElementById('admin-sale-history-details-content');
   const download=document.getElementById('admin-sale-history-download');
