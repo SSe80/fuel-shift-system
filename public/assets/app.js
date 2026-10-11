@@ -234,8 +234,8 @@ function updateTakeoverSaleConfirmation(){
   const total=sales.reduce((sum,x)=>sum+Number(x.amount||0),0);
   const calculated=adminReturnedFuelBreakdown(takeover,Number(takeover.returned_liters||0)).netAmount;
   const difference=Math.abs(total-calculated);
-  const overCalculated=total>calculated+1;
-  const matches=difference<=1 && sales.length>0 && !missingReason;
+  const overCalculated=total>calculated+0.01;
+  const matches=difference<=0.01 && sales.length>0 && !missingReason;
   const status=document.getElementById('takeover-sale-match-status');
   if(status)status.innerHTML='<div class="takeover-confirm-sales">'+
     (sales.length?sales.map(x=>'<div class="takeover-confirm-sale-row"><span>'+h(x.name)+'</span><strong>'+money(x.amount)+'</strong></div>').join(''):'<div class="takeover-review-empty">No sale amounts entered.</div>')+
@@ -243,8 +243,8 @@ function updateTakeoverSaleConfirmation(){
     '<div class="takeover-confirm-check"><span>Net calculated sales</span><b>'+money(calculated)+'</b><span>Difference to reconcile</span><b>'+money(difference)+'</b></div></div>'+
     (missingReason?'<div class="takeover-sale-mismatch">Reason required for '+h(missingReason)+'.</div>':
      !sales.length?'<div class="takeover-sale-mismatch">Enter at least one sale amount.</div>':
-     overCalculated?'<div class="takeover-sale-mismatch">Entered sales cannot exceed net calculated sales after the returned-fuel deduction by more than ETB 1.00.</div>':
-     difference<=1?'<div class="takeover-sale-match">Entered total matches the net calculated sales after any saved returned-fuel deduction.</div>':
+     overCalculated?'<div class="takeover-sale-mismatch">Entered sales must match the net calculated amount within ETB 0.01. Adjust the sale entries.</div>':
+     difference<=0.01?'<div class="takeover-sale-match">Entered total matches the net calculated sales after any saved returned-fuel deduction.</div>':
      '<div class="takeover-sale-match">Entered total differs from net calculated sales after the saved returned-fuel deduction. Review the sale entries.</div>');
   const button=document.querySelector('#takeover-sale-confirm-modal button.confirm-sale-button');
   if(button)button.disabled=!matches;
