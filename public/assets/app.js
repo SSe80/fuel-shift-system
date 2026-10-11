@@ -2046,30 +2046,39 @@ function filterAdminSales(){
   const allHistoryRows=(adminSalesData.history||[]).filter(adminSalesMatches);
   const historyRows=allHistoryRows.slice(0,3);
   if(pendingBox){
-    const groups={};
-    progressingRows.forEach(item=>{
-      const dsrId=dailyReportIdFromTimestamp(item.takeover?.shift_started_at);
-      (groups[dsrId]||(groups[dsrId]={pending:[],progressing:[]})).progressing.push(item);
-    });
-    pendingRows.forEach(item=>{
-      const dsrId=dailyReportIdFromTimestamp(item.takeover?.shift_started_at);
-      (groups[dsrId]||(groups[dsrId]={pending:[],progressing:[]})).pending.push(item);
-    });
-    if(!Object.keys(groups).length){
-      pendingBox.innerHTML='<div class="card admin-sales-empty"><div class="empty-icon">✓</div><strong>No pending sales confirmations</strong><p class="muted">Submitted sale cards will appear here after attendants record their sales.</p></div>';
-    }else{
-      pendingBox.innerHTML=Object.keys(groups).sort().reverse().map(dsrId=>{
-        const group=groups[dsrId],pendingCount=group.pending.length,progressingCount=group.progressing.length;
-        const summary=[pendingCount?pendingCount+' pending confirmation'+(pendingCount===1?'':'s'):'',progressingCount?progressingCount+' progressing shift'+(progressingCount===1?'':'s'):''].filter(Boolean).join(' · ');
-        return '<section class="admin-pending-dsr-group" data-dsr-id="'+h(dsrId)+'">'+
-          '<button type="button" class="admin-pending-dsr-head" onclick="toggleAdminPendingDsrGroup(\''+h(dsrId)+'\')" aria-expanded="false">'+
+    const renderDsrGroups=(rows,type)=>{
+      if(!rows.length){
+        const isProgressing=type==='progressing';
+        return '<div class="card admin-sales-empty admin-sales-subsection-empty"><div class="empty-icon">'+(isProgressing?'◷':'✓')+'</div><strong>'+(isProgressing?'No progressing shifts':'No pending confirmations')+'</strong><p class="muted">'+(isProgressing?'Shifts waiting for attendants to record sales will appear here.':'Submitted sales awaiting admin review will appear here.')+'</p></div>';
+      }
+      const groups={};
+      rows.forEach(item=>{
+        const dsrId=dailyReportIdFromTimestamp(item.takeover?.shift_started_at);
+        (groups[dsrId]||(groups[dsrId]=[])).push(item);
+      });
+      return Object.keys(groups).sort().reverse().map(dsrId=>{
+        const entries=groups[dsrId];
+        const count=entries.length;
+        const label=type==='progressing'?'progressing shift':'pending confirmation';
+        const cardMarkup=type==='progressing'?entries.map(renderAdminProgressingSaleCard).join(''):entries.map(renderAdminPendingSaleCard).join('');
+        return '<section class="admin-pending-dsr-group" data-dsr-id="'+h(dsrId)+'" data-dsr-type="'+h(type)+'">'+
+          '<button type="button" class="admin-pending-dsr-head" onclick="toggleAdminPendingDsrGroup(\''+h(dsrId)+'\',\''+h(type)+'\')" aria-expanded="false">'+
             '<span class="admin-pending-dsr-title"><span class="section-kicker">DSR</span><strong>'+h(dsrId)+'</strong></span>'+
-            '<span class="admin-pending-dsr-right"><small>'+summary+'</small><span class="admin-pending-dsr-toggle" aria-hidden="true">⌄</span></span>'+
+            '<span class="admin-pending-dsr-right"><small>'+count+' '+label+(count===1?'':'s')+'</small><span class="admin-pending-dsr-toggle" aria-hidden="true">⌄</span></span>'+
           '</button>'+
-          '<div class="admin-pending-dsr-cards" hidden>'+group.progressing.map(renderAdminProgressingSaleCard).join('')+group.pending.map(renderAdminPendingSaleCard).join('')+'</div>'+
+          '<div class="admin-pending-dsr-cards" hidden>'+cardMarkup+'</div>'+
         '</section>';
       }).join('');
-    }
+    };
+    pendingBox.innerHTML=
+      '<section class="admin-sales-subsection admin-sales-progressing-section">'+
+        '<div class="admin-sales-subsection-heading"><div><span class="section-kicker">IN PROGRESS</span><h3>Progressing Shifts</h3><p>Shifts awaiting attendant sales recording.</p></div><span class="admin-sales-subsection-count">'+progressingRows.length+'</span></div>'+
+        '<div class="admin-sales-subsection-list">'+renderDsrGroups(progressingRows,'progressing')+'</div>'+
+      '</section>'+
+      '<section class="admin-sales-subsection admin-sales-pending-confirmation-section">'+
+        '<div class="admin-sales-subsection-heading"><div><span class="section-kicker">ACTION REQUIRED</span><h3>Pending Confirmation</h3><p>Review submitted sales and confirm completed shifts.</p></div><span class="admin-sales-subsection-count">'+pendingRows.length+'</span></div>'+
+        '<div class="admin-sales-subsection-list">'+renderDsrGroups(pendingRows,'pending')+'</div>'+
+      '</section>';
   }
   if(historyBox){
     if(!historyRows.length){
@@ -2097,10 +2106,12 @@ function filterAdminSales(){
   bindAdminSaleChecks();
   progressingRows.concat(pendingRows).forEach(item=>updateAdminReturnedPreview(String(item.takeover?.id||'')));
 }
-function toggleAdminPendingDsrGroup(dsrId){
+function toggleAdminPendingDsrGroup(dsrId,type){
   const groups=document.querySelectorAll('.admin-pending-dsr-group');
   let group=null;
-  groups.forEach(el=>{if(String(el.getAttribute('data-dsr-id'))===String(dsrId))group=el;});
+  groups.forEach(el=>{
+    if(String(el.getAttribute('data-dsr-id'))===String(dsrId)&&(!type||String(el.getAttribute('data-dsr-type'))===String(type)))group=el;
+  });
   if(!group)return;
   const cards=group.querySelector('.admin-pending-dsr-cards');
   const head=group.querySelector('.admin-pending-dsr-head');
