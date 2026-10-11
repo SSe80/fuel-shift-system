@@ -5296,3 +5296,21 @@ body[class*="admin-"] .modal-backdrop{
     border-radius:16px!important;
   }
 }
+
+
+/* Trigger-aware admin popup placement (coordinates are set by app.js). */
+body[data-app-page^="admin"] .modal.admin-popup-near-trigger,
+body.admin-page .modal.admin-popup-near-trigger,
+body[class*="admin-"] .modal.admin-popup-near-trigger{
+  align-items:flex-start!important;
+  justify-content:flex-start!important;
+}
+body[data-app-page^="admin"] .modal.admin-popup-near-trigger .modal-card,
+body.admin-page .modal.admin-popup-near-trigger .modal-card,
+body[class*="admin-"] .modal.admin-popup-near-trigger .modal-card{
+  position:fixed!important;
+  top:var(--admin-popup-top,50%)!important;
+  left:var(--admin-popup-left,50%)!important;
+  margin:0!important;
+  transform:none!important;
+}
