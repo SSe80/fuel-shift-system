@@ -2670,7 +2670,7 @@ function createPdfDoc(){
 /* ---------- SALES REPORT ---------- */
 function createSalesReportPdf(r){
   const d=createPdfDoc(),M=d.M;
-  d.header({kicker:'SALES REPORT  \u00b7  CONFIRMED SHIFT SALES DETAIL',title:r.title,subtitle:r.subtitle,h:84,kBase:28,tBase:54,sBase:71,pillTop:31.5,pillBase:48.5,status:r.statusLabel});
+  d.header({kicker:'SALES REPORT  \u00b7  SHIFT SALES DETAIL',title:r.title,subtitle:r.subtitle,h:84,kBase:28,tBase:54,sBase:71,pillTop:31.5,pillBase:48.5,status:r.statusLabel});
   d.y=105.8;
   d.section('Overview',M,d.y);d.y+=24.5;
   d.y+=d.cards(r.overview,{top:d.y,perRow:4,h:50,labelBase:17.7,valBase:38.7})+20;
