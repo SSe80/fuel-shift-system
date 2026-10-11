@@ -354,9 +354,10 @@ async function openTakeoverDetails(id){
   const shift=shifts.find(s=>String(s.id)===String(takeover.shift_id));
   const nozzle=nozzles.find(n=>String(n.id)===String(shift?.nozzle_id));
   const employee=employees.find(e=>String(e.id)===String(takeover.to_employee_id));
+  const fromEmployee=employees.find(e=>String(e.id)===String(takeover.from_employee_id));
   const tank=tanks.find(t=>String(t.id)===String(takeover.tank_id||nozzle?.tank_id));
   const product=products.find(p=>String(p.id)===String(tank?.product_id)||String(p.name||'').toLowerCase()===String(tank?.product||'').toLowerCase());
-  const item={takeover:takeover,sales:[],dispenser:nozzle?{nozzle_code:nozzle.nozzle_code,nozzle_id:nozzle.id,name:nozzle.nozzle_code}:null,tank:tank||null,product:product||null,to_employee:employee||null,shift:shift||null};
+  const item={takeover:takeover,sales:[],dispenser:nozzle?{nozzle_code:nozzle.nozzle_code,nozzle_id:nozzle.id,name:nozzle.nozzle_code}:null,tank:tank||null,product:product||null,from_employee:fromEmployee||null,to_employee:employee||null,shift:shift||null};
   window.__attendantTakeoverDetailsItem=item;
   if(typeof adminSalesHistoryData!=='undefined')adminSalesHistoryData={history:[item]};
   await ensureTakeoverDetailsStyle();
@@ -3136,7 +3137,8 @@ async function downloadAdminSaleHistoryDetails(id){
   const shift=shifts.find(x=>String(x.id)===String(t.shift_id));
   const nozzleId=shift?.nozzle_id||t.nozzle_id||item.dispenser?.nozzle_id;
   const nozzle=nozzles.find(x=>String(x.id)===String(nozzleId));
-  const employee=employees.find(x=>String(x.id)===String(t.to_employee_id));
+  const employee=employees.find(x=>String(x.id)===String(t.from_employee_id));
+  const receiver=employees.find(x=>String(x.id)===String(t.to_employee_id));
   const tankId=t.tank_id||nozzle?.tank_id||item.tank?.id||item.tank_id;
   const tank=tanks.find(x=>String(x.id)===String(tankId));
   const productId=tank?.product_id||item.product?.id||item.product_id;
@@ -3156,21 +3158,23 @@ async function downloadAdminSaleHistoryDetails(id){
   const productCode=product?.code_name||item.product?.code_name||item.product_code||t.product_code||tank?.product_code||'—';
   const tankCode=tank?.tank_code||item.tank?.tank_code||item.tank_code||t.tank_code||'—';
   const dispenserCode=nozzle?.nozzle_code||item.dispenser?.nozzle_code||item.dispenser?.code||t.dispenser_code||'Dispenser';
-  const attendant=employee?.name||item.to_employee?.name||t.to_employee_name||item.to_employee_id||'—';
-  const fromEmployee=employees.find(x=>String(x.id)===String(t.from_employee_id));
-  const fromName=item.from_employee?.name||t.from_employee_name||fromEmployee?.name||'Attendant';
-  const shiftName=shift?.name||item.shift?.name||(fromName+' → '+(item.to_employee?.name||t.to_employee_name||attendant));
+  const attendant=employee?.name||item.from_employee?.name||t.from_employee_name||'—';
+  const fromName=item.from_employee?.name||t.from_employee_name||employee?.name||'Attendant';
+  const toName=receiver?.name||item.to_employee?.name||t.to_employee_name||'Attendant';
+  const shiftName=shift?.name||item.shift?.name||(fromName+' → '+toName);
   const dsrId=item.dsr_id||item.dsr?.id||t.dsr_id||t.dsr?.id||dailyReportIdFromTimestamp(t.shift_started_at||shift?.start_time);
   const submittedAt=t.sales_submitted_at||initial.sales_submitted_at;
   const confirmedAt=t.sales_confirmed_at||initial.sales_confirmed_at;
   const startedAt=t.shift_started_at||shift?.start_time;
   const endedAt=t.shift_ended_at||shift?.end_time;
-  const totalAmount=Number(t.total_sales_amount||initial.total_sales_amount||0);
-  const totalLiters=Number(t.total_sales_liters||initial.total_sales_liters||0);
+  const totalAmount=Number(t.total_sales_amount??initial.total_sales_amount??0);
+  const totalLiters=Number(t.total_sales_liters??initial.total_sales_liters??0);
   // Tank stock is recorded on shift activation/handover. Historical sales records
   // may expose it through either the takeover or normalized shift fields.
-  const tankOpening=Number(t.tank_opening_liters ?? t.opening_tank_liters ?? shift?.tank_opening_liters ?? shift?.opening_tank_liters ?? shift?.opening_liters);
-  const tankClosing=Number(t.tank_closing_liters ?? t.closing_tank_liters ?? shift?.tank_closing_liters ?? shift?.closing_liters ?? shift?.closing_tank_liters);
+  const tankOpeningRaw=t.tank_opening_liters ?? t.opening_tank_liters ?? shift?.tank_opening_liters ?? shift?.opening_tank_liters ?? shift?.opening_liters;
+  const tankClosingRaw=t.tank_closing_liters ?? t.closing_tank_liters ?? shift?.tank_closing_liters ?? shift?.closing_liters ?? shift?.closing_tank_liters;
+  const tankOpening=tankOpeningRaw==null||tankOpeningRaw===''?NaN:Number(tankOpeningRaw);
+  const tankClosing=tankClosingRaw==null||tankClosingRaw===''?NaN:Number(tankClosingRaw);
   const recordedTankSales=Number(t.tank_sales_liters ?? t.total_sales_liters ?? totalLiters);
   const tankSold=Number.isFinite(recordedTankSales)?recordedTankSales:totalLiters;
   const status=String(t.sales_status||'confirmed').replace(/_/g,' ');
@@ -3183,8 +3187,14 @@ async function downloadAdminSaleHistoryDetails(id){
     const nn=nozzles.find(x=>String(x.id)===String(nid))||nozzle;
     const openVal=o.opening_reading??o.reading;
     const closeVal=cl.closing_reading??cl.reading;
-    const soldVal=ss.liters_sold??(Number.isFinite(Number(openVal))&&Number.isFinite(Number(closeVal))?Number(closeVal)-Number(openVal):0);
-    return [nn?.nozzle_code||ss.nozzle_id||('Nozzle '+(i+1)),productCode,tankCode,reading(openVal),reading(closeVal),liters(soldVal)+' L'];
+    const validOpen=openVal!==null&&openVal!==undefined&&openVal!==''&&Number.isFinite(Number(openVal));
+    const validClose=closeVal!==null&&closeVal!==undefined&&closeVal!==''&&Number.isFinite(Number(closeVal));
+    const soldVal=ss.liters_sold??(validOpen&&validClose?Number(closeVal)-Number(openVal):null);
+    const rawProduct=String(ss.product_code||ss.product||ss.product_name||'').trim();
+    const rowProduct=products.find(p=>String(p.name||'').toLowerCase()===rawProduct.toLowerCase()||String(p.code_name||'').toLowerCase()===rawProduct.toLowerCase());
+    const shownProduct=rowProduct?.code_name||rawProduct||productCode;
+    const shownNozzle=ss.nozzle_code||ss.nozzle_id||o.nozzle_id||cl.nozzle_id||nn?.nozzle_code||('Nozzle '+(i+1));
+    return [shownNozzle,shownProduct,ss.tank_code||tankCode,reading(openVal),reading(closeVal),soldVal!=null&&Number.isFinite(Number(soldVal))?liters(soldVal)+' L':'—'];
   });
   const finalReadingRows=readingRows.length?readingRows:[['—',productCode,tankCode,'—','—',liters(totalLiters)+' L']];
   const saleRows=sales.map((x,i)=>[
@@ -3358,15 +3368,27 @@ async function openAdminSaleHistoryDetails(id){
     if(data&&Array.isArray(data.sales))sales=data.sales;
   }catch(e){}
 
+  let detailTanks=Array.isArray(window.dashboardTankRecords)?window.dashboardTankRecords:[];
+  let detailProducts=Array.isArray(window.dashboardProductRecords)?window.dashboardProductRecords:[];
+  if(!item.product || !item.tank?.product_id){
+    const related=await Promise.allSettled([api('/api/tanks'),api('/api/products')]);
+    if(related[0].status==='fulfilled'&&Array.isArray(related[0].value))detailTanks=related[0].value;
+    if(related[1].status==='fulfilled'&&Array.isArray(related[1].value))detailProducts=related[1].value;
+  }
+
   try{
     const dispenser=(item.dispenser&&(
       item.dispenser.nozzle_code||item.dispenser.code||item.dispenser.name
     ))||t.dispenser_code||'Dispenser';
-    const productCode=(item.product&&(item.product.code_name||item.product.product_code||item.product.name||item.product.product_name))||item.product_code||item.product_name||t.product_code||t.product_name||(t.product&&(t.product.code_name||t.product.product_code||t.product.name||t.product.product_name))||(item.dispenser&&(item.dispenser.product_code||item.dispenser.product_name))||'—';
-    const tankCode=(item.tank&&(item.tank.tank_code||item.tank.code||item.tank.name||item.tank.tank_name))||item.tank_code||item.tank_name||t.tank_code||t.tank_name||(t.tank&&(t.tank.tank_code||t.tank.code||t.tank.name||t.tank.tank_name))||(item.dispenser&&(item.dispenser.tank_code||item.dispenser.tank_name))||'—';
-    const attendant=(item.to_employee&&item.to_employee.name)||t.to_employee_name||item.to_employee_id||'—';
+    const relatedTankId=t.tank_id||item.tank?.id||item.dispenser?.tank_id;
+    const relatedTank=detailTanks.find(function(x){return String(x.id)===String(relatedTankId);})||item.tank||t.tank||null;
+    const relatedProductId=relatedTank?.product_id||item.product?.id||item.product_id;
+    const relatedProduct=detailProducts.find(function(x){return String(x.id)===String(relatedProductId)||String(x.name||'').toLowerCase()===String(relatedTank?.product||'').toLowerCase()||String(x.code_name||'').toLowerCase()===String(relatedTank?.product||'').toLowerCase();})||item.product||t.product||null;
+    const productCode=(relatedProduct&&(relatedProduct.code_name||relatedProduct.product_code||relatedProduct.name||relatedProduct.product_name))||item.product_code||item.product_name||t.product_code||t.product_name||(item.dispenser&&(item.dispenser.product_code||item.dispenser.product_name||item.dispenser.product))||relatedTank?.product||'—';
+    const tankCode=(relatedTank&&(relatedTank.tank_code||relatedTank.code||relatedTank.name||relatedTank.tank_name))||item.tank_code||item.tank_name||t.tank_code||t.tank_name||(item.dispenser&&(item.dispenser.tank_code||item.dispenser.tank_name))||'—';
     const from=(item.from_employee&&item.from_employee.name)||t.from_employee_name||'';
-    const to=(item.to_employee&&item.to_employee.name)||t.to_employee_name||attendant;
+    const to=(item.to_employee&&item.to_employee.name)||t.to_employee_name||'';
+    const attendant=from||'—';
     const shiftName=(item.shift&&item.shift.name)||((from||'Attendant')+' → '+(to||'Attendant'));
     const dsrId=item.dsr_id||(item.dsr&&item.dsr.id)||t.dsr_id||dailyReportIdFromTimestamp(t.shift_started_at);
     const submittedAt=t.sales_submitted_at||item.sales_submitted_at;
@@ -3380,12 +3402,19 @@ async function openAdminSaleHistoryDetails(id){
     const grossLiters=Number(t.gross_sales_liters??(totalLiters+returnedLiters));
     const grossAmount=Number(t.gross_sales_amount??(totalAmount+returnedAmount));
     const returnUnitPrice=Number((Array.isArray(t.nozzle_sales_liters)?t.nozzle_sales_liters:[]).find(x=>Number(x?.liters_sold||0)>0&&Number.isFinite(Number(x?.unit_price)))?.unit_price||0);
-    const status=String(t.sales_status||'confirmed').replace(/_/g,' ');
+    const status=String(t.sales_status||(t.sales_confirmed_at?'confirmed':(t.sales_submitted_at?'pending_admin':'unknown'))).replace(/_/g,' ');
     const statusLabel=status.replace(/\b\w/g,function(m){return m.toUpperCase();});
 
     const opening=Array.isArray(t.nozzle_opening_readings)?t.nozzle_opening_readings:[];
     const closing=Array.isArray(t.nozzle_closing_readings)?t.nozzle_closing_readings:[];
     const nozzleSales=Array.isArray(t.nozzle_sales_liters)?t.nozzle_sales_liters:[];
+    const nozzleProductLabels=[...new Set(nozzleSales.map(function(x){
+      const raw=String(x?.product_code||x?.product||x?.product_name||'').trim();
+      if(!raw)return '';
+      const match=detailProducts.find(function(p){return String(p.name||'').toLowerCase()===raw.toLowerCase()||String(p.code_name||'').toLowerCase()===raw.toLowerCase();});
+      return match?.code_name||raw;
+    }).filter(Boolean))];
+    const displayProductCode=nozzleProductLabels.length>1?'Multiple products':(nozzleProductLabels[0]||productCode);
     const ids=[];
     opening.concat(closing,nozzleSales).forEach(function(x){
       const n=x&&(x.nozzle_uuid||x.nozzle_id);
@@ -3400,25 +3429,31 @@ async function openAdminSaleHistoryDetails(id){
       const s=nozzleSales.find(function(x){return String((x&&x.nozzle_uuid)||x&&x.nozzle_id)===String(nid);})||nozzleSales[i]||{};
       const openVal=o.opening_reading!=null?o.opening_reading:o.reading;
       const closeVal=cl.closing_reading!=null?cl.closing_reading:cl.reading;
-      const soldVal=s.liters_sold!=null?s.liters_sold:(Number.isFinite(Number(openVal))&&Number.isFinite(Number(closeVal))?Number(closeVal)-Number(openVal):0);
-      const nozzleCode=(s.nozzle_id||o.nozzle_id||cl.nozzle_id||s.nozzle_code||o.nozzle_code||cl.nozzle_code||String(nid));
-      return '<div class="history-detail-reading-row"><div><strong>'+h(nozzleCode)+'</strong><small>'+h(productCode)+'</small></div><div><span>Opening</span><b>'+reading(openVal)+'</b></div><div><span>Closing</span><b>'+reading(closeVal)+'</b></div><div><span>Sold</span><b>'+liters(soldVal)+' L</b></div></div>';
+      const validOpen=openVal!==null&&openVal!==undefined&&openVal!==''&&Number.isFinite(Number(openVal));
+      const validClose=closeVal!==null&&closeVal!==undefined&&closeVal!==''&&Number.isFinite(Number(closeVal));
+      const soldVal=s.liters_sold!=null?s.liters_sold:(validOpen&&validClose?Number(closeVal)-Number(openVal):null);
+      const nozzleCode=(s.nozzle_code||o.nozzle_code||cl.nozzle_code||s.nozzle_id||o.nozzle_id||cl.nozzle_id||String(nid));
+      const rowProductRaw=String(s.product_code||s.product||s.product_name||'').trim();
+      const rowProductRecord=detailProducts.find(function(p){return String(p.name||'').toLowerCase()===rowProductRaw.toLowerCase()||String(p.code_name||'').toLowerCase()===rowProductRaw.toLowerCase();});
+      const rowProduct=rowProductRecord?.code_name||rowProductRaw||productCode;
+      const rowTank=s.tank_code||tankCode;
+      return '<div class="history-detail-reading-row"><div><strong>'+h(nozzleCode)+'</strong><small>'+h(rowProduct)+' · '+h(rowTank)+'</small></div><div><span>Opening</span><b>'+reading(openVal)+'</b></div><div><span>Closing</span><b>'+reading(closeVal)+'</b></div><div><span>Sold</span><b>'+(soldVal!=null&&Number.isFinite(Number(soldVal))?liters(soldVal)+' L':'—')+'</b></div></div>';
     }).join('');
 
     const saleRows=sales.map(function(s,i){
       return '<div class="history-detail-sale"><span class="history-detail-sale-number">'+(i+1)+'</span><div class="history-detail-sale-name"><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+(s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'')+(s.reason?'<small class="reason">Reason: '+h(s.reason)+'</small>':'')+(s.submitted_amount!=null&&Math.abs(Number(s.submitted_amount)-Number(s.amount))>0.005?'<small>Submitted before return deduction: '+money(s.submitted_amount)+'</small>':'')+'</div><strong class="history-detail-sale-value">'+money(s.amount)+'</strong></div>';
     }).join('');
     const entryTotal=sales.reduce(function(sum,s){return sum+Number(s.amount||0);},0);
-    const tankOpening=Number(t.tank_opening_liters);
-    const tankClosing=Number(t.tank_closing_liters);
+    const tankOpening=t.tank_opening_liters==null||t.tank_opening_liters===''?NaN:Number(t.tank_opening_liters);
+    const tankClosing=t.tank_closing_liters==null||t.tank_closing_liters===''?NaN:Number(t.tank_closing_liters);
 
     const content=[
-      '<div class="history-detail-overview"><div class="history-detail-main"><span class="section-kicker">SHIFT DETAILS</span><h4>'+h(dispenser)+'</h4><p>'+h(productCode)+' · '+h(tankCode)+'</p></div><div class="history-detail-amount"><span>'+h(statusLabel)+' · NET SALES</span><strong>'+money(totalAmount)+'</strong><small>'+liters(totalLiters)+' L net sold</small></div></div>',
-      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">SHIFT</span><h4>Shift information</h4></div></div><div class="history-detail-info-grid"><div><span>Attendant</span><strong>'+h(attendant)+'</strong></div><div><span>Shift</span><strong>'+h(shiftName)+'</strong></div><div><span>Started</span><strong>'+h(startedAt?new Date(startedAt).toLocaleString():'—')+'</strong></div><div><span>Ended</span><strong>'+h(endedAt?new Date(endedAt).toLocaleString():'—')+'</strong></div><div><span>Dispenser / Nozzle</span><strong>'+h(dispenser)+'</strong></div><div><span>Tank</span><strong>'+h(tankCode)+'</strong></div><div><span>Product</span><strong>'+h(productCode)+'</strong></div><div><span>DSR ID</span><strong class="mono">'+h(dsrId||'—')+'</strong></div><div class="wide"><span>Shift ID</span><strong class="mono">'+h(t.shift_id||'—')+'</strong></div></div></div>',
+      '<div class="history-detail-overview"><div class="history-detail-main"><span class="section-kicker">SHIFT DETAILS</span><h4>'+h(dispenser)+'</h4><p>'+h(displayProductCode)+' · '+h(tankCode)+'</p></div><div class="history-detail-amount"><span>'+h(statusLabel)+' · NET SALES</span><strong>'+money(totalAmount)+'</strong><small>'+liters(totalLiters)+' L net sold</small></div></div>',
+      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">SHIFT</span><h4>Shift information</h4></div></div><div class="history-detail-info-grid"><div><span>Attendant</span><strong>'+h(attendant)+'</strong></div><div><span>Shift</span><strong>'+h(shiftName)+'</strong></div><div><span>Started</span><strong>'+h(startedAt?new Date(startedAt).toLocaleString():'—')+'</strong></div><div><span>Ended</span><strong>'+h(endedAt?new Date(endedAt).toLocaleString():'—')+'</strong></div><div><span>Dispenser / Nozzle</span><strong>'+h(dispenser)+'</strong></div><div><span>Tank</span><strong>'+h(tankCode)+'</strong></div><div><span>Product</span><strong>'+h(displayProductCode)+'</strong></div><div><span>DSR ID</span><strong class="mono">'+h(dsrId||'—')+'</strong></div><div class="wide"><span>Shift ID</span><strong class="mono">'+h(t.shift_id||'—')+'</strong></div></div></div>',
       '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">READINGS</span><h4>Opening & closing meter readings</h4></div></div><div class="history-detail-readings">'+(rows||'<div class="history-detail-empty">No nozzle readings were recorded.</div>')+'</div><div class="history-detail-total-row"><span>Gross dispenser liters</span><strong>'+liters(grossLiters)+' L</strong></div><div class="history-detail-total-row"><span>Returned to tank</span><strong>'+liters(returnedLiters)+' L</strong></div><div class="history-detail-total-row"><span>Net liters sold</span><strong>'+liters(totalLiters)+' L</strong></div></div>',
-      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">TANK STOCK</span><h4>Tank opening & closing stock</h4></div></div><div class="history-detail-info-grid"><div><span>Opening stock</span><strong>'+(Number.isFinite(tankOpening)?liters(tankOpening):'—')+' L</strong></div><div><span>Closing stock</span><strong>'+(Number.isFinite(tankClosing)?liters(tankClosing):'—')+' L</strong></div><div><span>Tank sales</span><strong>'+liters(t.tank_sales_liters)+' L</strong></div><div><span>Stock variance</span><strong>'+liters(t.tank_variance_liters)+' L</strong></div></div></div>',
+      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">TANK STOCK</span><h4>Recorded tank stock · '+h(tankCode)+'</h4></div></div><div class="history-detail-info-grid"><div><span>Opening stock</span><strong>'+(Number.isFinite(tankOpening)?liters(tankOpening)+' L':'—')+'</strong></div><div><span>Closing stock</span><strong>'+(Number.isFinite(tankClosing)?liters(tankClosing)+' L':'—')+'</strong></div><div><span>Tank sales</span><strong>'+(t.tank_sales_liters!=null&&Number.isFinite(Number(t.tank_sales_liters))?liters(t.tank_sales_liters)+' L':'—')+'</strong></div><div><span>Stock variance</span><strong>'+(t.tank_variance_liters!=null&&Number.isFinite(Number(t.tank_variance_liters))?liters(t.tank_variance_liters)+' L':'—')+'</strong></div></div></div>',
       (returnedLiters>0?'<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">RETURNED FUEL</span><h4>Return deduction</h4></div></div><div class="history-detail-info-grid"><div><span>Shift selling price</span><strong>'+money(returnUnitPrice)+' / L</strong></div><div><span>Returned liters</span><strong>'+liters(returnedLiters)+' L</strong></div><div><span>Returned fuel value</span><strong>− '+money(returnedAmount)+'</strong></div><div><span>Gross calculated sales</span><strong>'+money(grossAmount)+'</strong></div><div><span>Net calculated sales</span><strong>'+money(totalAmount)+'</strong></div></div></div>':'')+
-      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">SALES</span><h4>Recorded sales</h4></div><span class="history-detail-count">'+sales.length+' '+(sales.length===1?'entry':'entries')+'</span></div><div class="history-detail-sales">'+(saleRows||'<div class="history-detail-empty">No sale entries were recorded.</div>')+'</div><div class="history-detail-total-row"><span>Entries total</span><strong>'+money(entryTotal)+'</strong></div></div>',
+      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">SALES</span><h4>Recorded sales</h4></div><span class="history-detail-count">'+sales.length+' '+(sales.length===1?'entry':'entries')+'</span></div><div class="history-detail-sales">'+(saleRows||'<div class="history-detail-empty">No sale entries were recorded.</div>')+'</div><div class="history-detail-total-row"><span>Entries total</span><strong>'+money(entryTotal)+'</strong></div><div class="history-detail-total-row"><span>Difference vs net sales</span><strong>'+money(entryTotal-totalAmount)+'</strong></div></div>',
       '<div class="history-detail-section"><div class="history-detail-info-grid"><div><span>Submitted</span><strong>'+h(submittedAt?new Date(submittedAt).toLocaleString():'—')+'</strong></div><div><span>Confirmed</span><strong>'+h(confirmedAt?new Date(confirmedAt).toLocaleString():'—')+'</strong></div></div></div>'
     ].join('');
     if(box)box.innerHTML=content;
