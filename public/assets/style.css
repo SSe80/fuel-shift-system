@@ -5233,3 +5233,66 @@ body.admin-settings-page > .modal > .modal-backdrop{
     padding:17px!important;
   }
 }
+
+
+/* Admin-wide popup positioning: consistent viewport centering and safe scrolling. */
+body[data-app-page^="admin"] .modal,
+body.admin-page .modal,
+body[class*="admin-"] .modal{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  max-width:100vw!important;
+  height:100vh!important;
+  height:100dvh!important;
+  box-sizing:border-box!important;
+  margin:0!important;
+  padding:clamp(12px,3vh,24px)!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  z-index:20000!important;
+}
+body[data-app-page^="admin"] .modal.open,
+body.admin-page .modal.open,
+body[class*="admin-"] .modal.open{
+  display:flex!important;
+}
+body[data-app-page^="admin"] .modal-card,
+body.admin-page .modal-card,
+body[class*="admin-"] .modal-card{
+  position:relative!important;
+  flex:0 1 auto!important;
+  min-width:0!important;
+  width:min(600px,100%)!important;
+  max-width:min(600px,100%)!important;
+  max-height:calc(100dvh - 2 * clamp(12px,3vh,24px))!important;
+  margin:auto!important;
+  box-sizing:border-box!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+}
+body[data-app-page^="admin"] .modal-backdrop,
+body.admin-page .modal-backdrop,
+body[class*="admin-"] .modal-backdrop{
+  position:absolute!important;
+  inset:0!important;
+}
+@media(max-width:600px){
+  body[data-app-page^="admin"] .modal,
+  body.admin-page .modal,
+  body[class*="admin-"] .modal{
+    padding:12px!important;
+  }
+  body[data-app-page^="admin"] .modal-card,
+  body.admin-page .modal-card,
+  body[class*="admin-"] .modal-card{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:calc(100dvh - 24px)!important;
+    border-radius:16px!important;
+  }
+}
