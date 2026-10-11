@@ -1039,8 +1039,13 @@ async function loadStationNotifications(){
   const pendingDsr=arr(dsrs).filter(x=>x.status==='pending'||x.status==='waiting');
   if(pendingDsr.length){
    const ready=pendingDsr.filter(x=>x.status==='pending'&&x.report_day_closed!==false&&x.all_shifts_complete&&x.all_handover_recorded&&x.all_sales_recorded);
-   const latestPendingDate=pendingDsr.map(x=>x.date).filter(Boolean).sort().slice(-1)[0]||null;
-   add('pending-dsr',ready.length?'warning':'info',ready.length?'DSR ready for confirmation':'DSR completion or confirmation pending',ready.length?ready.length+' daily report'+(ready.length===1?' is':'s are')+' ready for admin review and confirmation.':pendingDsr.length+' DSR record'+(pendingDsr.length===1?' needs':'s need')+' completion checks or confirmation.','admin-daily-report.html'+(latestPendingDate?'#dsr-'+encodeURIComponent(latestPendingDate):''),pendingDsr.slice(0,5).map(x=>dailyReportIdLabel(x.date)+' · '+(x.status==='waiting'?'Awaiting completion':'Awaiting confirmation')).join(' | '),latestPendingDate);
+   // Only surface the DSR inbox alert when at least one report is fully ready
+   // for admin confirmation. Reports still progressing through shift/sales
+   // completion must not create the aggregate DSR inbox notification.
+   if(ready.length){
+    const latestReadyDate=ready.map(x=>x.date).filter(Boolean).sort().slice(-1)[0]||null;
+    add('pending-dsr','warning','DSR ready for confirmation',ready.length+' daily report'+(ready.length===1?' is':'s are')+' ready for admin review and confirmation.','admin-daily-report.html'+(latestReadyDate?'#dsr-'+encodeURIComponent(latestReadyDate):''),ready.slice(0,5).map(x=>dailyReportIdLabel(x.date)+' · Ready for confirmation').join(' | '),latestReadyDate);
+   }
    const missing=[];
    pendingDsr.forEach(report=>{
     const sourceRows=[];
