@@ -5301,7 +5301,7 @@ body[class*="admin-"] .modal-backdrop{
 /* Position admin popup cards close to their triggering control while keeping them on-screen. */
 body[data-app-page^="admin"] .modal.admin-popup-near-button,
 body.admin-page .modal.admin-popup-near-button,
-body[class*="admin-"] .modal.admin-popup-near-button{
+body[data-app-page^="admin"] .modal.admin-popup-near-button{
   align-items:flex-start!important;
   justify-content:flex-start!important;
 }
@@ -5313,10 +5313,10 @@ body.admin-page .modal.admin-popup-near-button .modal-card,
 body.admin-page .modal.admin-popup-near-button [role="dialog"],
 body.admin-page .modal.admin-popup-near-button .dialog-card,
 body.admin-page .modal.admin-popup-near-button .popup-card,
-body[class*="admin-"] .modal.admin-popup-near-button .modal-card,
-body[class*="admin-"] .modal.admin-popup-near-button [role="dialog"],
-body[class*="admin-"] .modal.admin-popup-near-button .dialog-card,
-body[class*="admin-"] .modal.admin-popup-near-button .popup-card{
+body[data-app-page^="admin"] .modal.admin-popup-near-button .modal-card,
+body[data-app-page^="admin"] .modal.admin-popup-near-button [role="dialog"],
+body[data-app-page^="admin"] .modal.admin-popup-near-button .dialog-card,
+body[data-app-page^="admin"] .modal.admin-popup-near-button .popup-card{
   position:fixed!important;
   top:var(--admin-popup-top,12px)!important;
   left:var(--admin-popup-left,12px)!important;
@@ -5326,7 +5326,7 @@ body[class*="admin-"] .modal.admin-popup-near-button .popup-card{
 @media(max-width:639px){
   body[data-app-page^="admin"] .modal.admin-popup-near-button .modal-card,
   body.admin-page .modal.admin-popup-near-button .modal-card,
-  body[class*="admin-"] .modal.admin-popup-near-button .modal-card{
+  body[data-app-page^="admin"] .modal.admin-popup-near-button .modal-card{
     width:calc(100vw - 24px)!important;
     max-width:calc(100vw - 24px)!important;
     max-height:calc(100dvh - 24px)!important;
@@ -5367,16 +5367,16 @@ body[class*="admin-"] .modal .popup-card{
 }
 body[data-app-page^="admin"] .modal.admin-popup-near-button .modal-card,
 body.admin-page .modal.admin-popup-near-button .modal-card,
-body[class*="admin-"] .modal.admin-popup-near-button .modal-card,
+body[data-app-page^="admin"] .modal.admin-popup-near-button .modal-card,
 body[data-app-page^="admin"] .modal.admin-popup-near-button [role="dialog"],
 body.admin-page .modal.admin-popup-near-button [role="dialog"],
-body[class*="admin-"] .modal.admin-popup-near-button [role="dialog"],
+body[data-app-page^="admin"] .modal.admin-popup-near-button [role="dialog"],
 body[data-app-page^="admin"] .modal.admin-popup-near-button .dialog-card,
 body.admin-page .modal.admin-popup-near-button .dialog-card,
-body[class*="admin-"] .modal.admin-popup-near-button .dialog-card,
+body[data-app-page^="admin"] .modal.admin-popup-near-button .dialog-card,
 body[data-app-page^="admin"] .modal.admin-popup-near-button .popup-card,
 body.admin-page .modal.admin-popup-near-button .popup-card,
-body[class*="admin-"] .modal.admin-popup-near-button .popup-card{
+body[data-app-page^="admin"] .modal.admin-popup-near-button .popup-card{
   width:min(600px,calc(100vw - 24px))!important;
   max-width:calc(100vw - 24px)!important;
   max-height:calc(100dvh - 24px)!important;
