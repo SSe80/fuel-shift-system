@@ -2182,7 +2182,7 @@ function renderAdminPendingSaleCard(item){
     '</button>'+
     '<div class="admin-pending-sale-body" hidden>'+
       '<div class="admin-sale-context"><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Net liters sold</span><strong>'+liters(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netLiters)+' L</strong></div><div><span>Gross calculated amount</span><strong>'+money(t.total_sales_amount)+'</strong></div><div><span>Net calculated amount</span><strong>'+money(calculated)+'</strong></div></div>'+
-      '<div class="admin-sale-review-strip" data-admin-sale-review-strip="'+h(t.id)+'"><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(Math.abs(variance)<=1?'match':'difference')+'">Net difference <b>'+money(Math.abs(variance))+'</b></span></div>'+
+      '<div class="admin-sale-review-strip" data-admin-sale-review-strip="'+h(t.id)+'"><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(Math.abs(variance)<=getSalesDifferenceTolerance()?'match':'difference')+'">Net difference <b>'+money(Math.abs(variance))+'</b></span></div>'+
       '<div class="admin-sale-check-section"><div class="takeover-detail-heading">Sales to check <small>Check every entry before confirming</small></div>'+checked+'</div>'+
       (Number(t.returned_liters||0)>0?'<div class="admin-returned-liters-field" style="margin:12px 0;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc"><strong style="color:#172b4d">Saved returned fuel</strong><div style="display:grid;grid-template-columns:1fr auto;gap:6px 12px;margin-top:8px"><span>Returned liters</span><b>'+liters(t.returned_liters)+' L</b><span>Shift selling price</span><b>'+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).unitPrice)+' / L</b><span>Returned fuel deduction</span><b>− '+money(t.returned_amount??adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).returnedAmount)+'</b></div></div>':'')+
       '<div class="admin-sale-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="row admin-sale-actions"><button type="button" onclick="cancelAdminSaleConfirmation(\''+t.id+'\')">Cancel</button><button type="button" class="primary" disabled data-confirm-sales="'+h(t.id)+'" onclick="confirmAdminSaleConfirmation(\''+t.id+'\')">Confirm sales</button></div>'+
@@ -3454,7 +3454,7 @@ function updateAdminReturnedPreview(id){
   const submitted=(Array.isArray(item.sales)?item.sales:[]).reduce((sum,x)=>sum+Number(x.amount||0),0);
   const difference=Math.abs(submitted-b.netAmount);
   const strip=document.querySelector('[data-admin-sale-review-strip="'+id+'"]');
-  if(strip)strip.innerHTML='<span><b>'+(Array.isArray(item.sales)?item.sales.length:0)+'</b> sale entries</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(difference<=1?'match':'difference')+'">Net difference '+money(difference)+'</span>';
+  if(strip)strip.innerHTML='<span><b>'+(Array.isArray(item.sales)?item.sales.length:0)+'</b> sale entries</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(difference<=getSalesDifferenceTolerance()?'match':'difference')+'">Net difference '+money(difference)+'</span>';
 }
 async function openAdminSaleReview(id){
   try{
