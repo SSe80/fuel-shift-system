@@ -3780,22 +3780,31 @@ function closeProductEdit(){
 }
 async function saveSalesDifferenceTolerance(event){
   event.preventDefault();
+  const form=event.currentTarget;
   const input=document.getElementById('sales-difference-tolerance');
   const status=document.getElementById('sales-difference-tolerance-status');
+  const button=form?.querySelector('button[type="submit"]');
   const value=Number(input?.value);
   if(!Number.isFinite(value)||value<0||value>100000){
     if(status)status.textContent='Enter a value from ETB 0.00 to ETB 100,000.00.';
+    if(input)input.focus();
     return;
   }
+  const normalized=Math.round(value*100)/100;
+  const originalLabel=button?.textContent||'Save tolerance';
+  if(button){button.disabled=true;button.textContent='Saving…';}
+  if(status)status.textContent='Saving sales difference tolerance…';
   try{
-    const saved=await api('/api/settings',{method:'PATCH',body:JSON.stringify({sales_difference_tolerance:Math.round(value*100)/100})});
-    window.stationSalesDifferenceTolerance=Number(saved.sales_difference_tolerance??value);
-    if(input)input.value=window.stationSalesDifferenceTolerance.toFixed(2);
-    if(status)status.textContent='Sales difference tolerance saved: ETB '+window.stationSalesDifferenceTolerance.toFixed(2)+'.';
-    toast('Sales difference tolerance saved');
+    const saved=await api('/api/settings',{method:'PATCH',body:JSON.stringify({sales_difference_tolerance:normalized})});
+    const savedValue=Number(saved?.sales_difference_tolerance??normalized);
+    window.stationSalesDifferenceTolerance=savedValue;
+    if(input)input.value=savedValue.toFixed(2);
+    if(status)status.textContent='Saved successfully. Allowed difference: ETB '+savedValue.toFixed(2)+'.';
+    if(typeof toast==='function')toast('Sales difference tolerance saved');
   }catch(e){
-    if(status)status.textContent='Could not save tolerance: '+e.message;
-    throw e;
+    if(status)status.textContent='Could not save tolerance: '+String(e?.message||e||'Unknown error');
+  }finally{
+    if(button){button.disabled=false;button.textContent=originalLabel;}
   }
 }
 function getSalesDifferenceTolerance(){
