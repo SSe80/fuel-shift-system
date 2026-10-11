@@ -2670,7 +2670,7 @@ function createPdfDoc(){
 /* ---------- SALES REPORT ---------- */
 function createSalesReportPdf(r){
   const d=createPdfDoc(),M=d.M;
-  d.header({kicker:'SALES REPORT  \u00b7  CONFIRMED SHIFT SALES DETAIL',title:r.title,subtitle:r.subtitle,h:84,kBase:28,tBase:54,sBase:71,pillTop:31.5,pillBase:48.5,status:r.statusLabel});
+  d.header({kicker:'SALES REPORT  \u00b7  SHIFT SALES DETAIL',title:r.title,subtitle:r.subtitle,h:84,kBase:28,tBase:54,sBase:71,pillTop:31.5,pillBase:48.5,status:r.statusLabel});
   d.y=105.8;
   d.section('Overview',M,d.y);d.y+=24.5;
   d.y+=d.cards(r.overview,{top:d.y,perRow:4,h:50,labelBase:17.7,valBase:38.7})+20;
@@ -3177,7 +3177,7 @@ async function downloadAdminSaleHistoryDetails(id){
   const tankClosing=tankClosingRaw==null||tankClosingRaw===''?NaN:Number(tankClosingRaw);
   const recordedTankSales=Number(t.tank_sales_liters ?? t.total_sales_liters ?? totalLiters);
   const tankSold=Number.isFinite(recordedTankSales)?recordedTankSales:totalLiters;
-  const status=String(t.sales_status||'confirmed').replace(/_/g,' ');
+  const status=String(t.sales_status||(t.sales_confirmed_at?'confirmed':(t.sales_submitted_at?'pending_admin':'unknown'))).replace(/_/g,' ');
   const statusLabel=status.replace(/\b\w/g,m=>m.toUpperCase());
 
   const readingRows=ids.map((nid,i)=>{
@@ -3196,23 +3196,34 @@ async function downloadAdminSaleHistoryDetails(id){
     const shownNozzle=ss.nozzle_code||ss.nozzle_id||o.nozzle_id||cl.nozzle_id||nn?.nozzle_code||('Nozzle '+(i+1));
     return [shownNozzle,shownProduct,ss.tank_code||tankCode,reading(openVal),reading(closeVal),soldVal!=null&&Number.isFinite(Number(soldVal))?liters(soldVal)+' L':'—'];
   });
-  const finalReadingRows=readingRows.length?readingRows:[['—',productCode,tankCode,'—','—',liters(totalLiters)+' L']];
+  const finalReadingRows=readingRows.length?readingRows:[['—',productCode,tankCode,'—','—',Number.isFinite(totalLiters)?liters(totalLiters)+' L':'—']];
+  const distinctLabels=values=>[...new Set(values.map(v=>String(v||'').trim()).filter(v=>v&&v!=='—'))];
+  const readingProducts=distinctLabels(readingRows.map(row=>row[1]));
+  const readingTanks=distinctLabels(readingRows.map(row=>row[2]));
+  const displayProductCode=readingProducts.length>1?'Multiple products':(readingProducts[0]||productCode);
+  const displayTankCode=readingTanks.length>1?'Multiple tanks':(readingTanks[0]||tankCode);
   const saleRows=sales.map((x,i)=>[
     String(i+1),x.sale_type_name||'Sale',money(x.amount),
     x.reason||x.sale_type_description||'—'
   ]);
   const entryTotal=sales.reduce((sum,x)=>sum+Number(x.amount||0),0);
 
-  const tankExpected=Number.isFinite(tankOpening)?tankOpening-totalLiters:NaN;
-  const tankDiff=Number.isFinite(tankOpening)&&Number.isFinite(tankClosing)?tankClosing-tankExpected:NaN;
+  // Only reconcile a single tank from total shift liters. With multiple tanks,
+  // use explicit tank-specific sales/variance fields or mark the derived value unavailable.
+  const hasMultipleReadingTanks=readingTanks.length>1;
+  const hasRecordedTankSales=t.tank_sales_liters!=null&&t.tank_sales_liters!==''&&Number.isFinite(Number(t.tank_sales_liters));
+  const reconciledTankSold=hasRecordedTankSales?Number(t.tank_sales_liters):(hasMultipleReadingTanks?NaN:totalLiters);
+  const tankExpected=Number.isFinite(tankOpening)&&Number.isFinite(reconciledTankSold)?tankOpening-reconciledTankSold:NaN;
+  const tankDiff=Number.isFinite(tankOpening)&&Number.isFinite(tankClosing)&&Number.isFinite(tankExpected)?tankClosing-tankExpected:NaN;
   const variancePct=Number.isFinite(tankOpening)&&tankOpening>0&&Number.isFinite(tankDiff)?tankDiff/tankOpening*100:NaN;
   const tankOpeningLabel=Number.isFinite(tankOpening)?liters(tankOpening)+' L':'—';
   const tankClosingLabel=Number.isFinite(tankClosing)?liters(tankClosing)+' L':'—';
   const tankDiffLabel=Number.isFinite(tankDiff)?(tankDiff>=0?'+':'')+liters(tankDiff)+' L':'—';
   const varianceLabel=Number.isFinite(variancePct)?(variancePct>=0?'+':'')+variancePct.toFixed(2)+'%':'—';
   const entryTotalLabel=money(entryTotal);
-  const differenceValue=Math.abs(totalAmount-entryTotal);
+  const differenceValue=entryTotal-totalAmount;
   const differenceLabel=money(differenceValue);
+  const hasDifference=Math.abs(differenceValue)>=0.005;
   const fmtDate=v=>{if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('en-US');};
   const fmtNum=v=>{const n=Number(v);return Number.isFinite(n)?n.toLocaleString('en-US',{maximumFractionDigits:2}):'—';};
   const fmtMoney=v=>currencyLabel()+' '+Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -3223,7 +3234,7 @@ async function downloadAdminSaleHistoryDetails(id){
   const varLiters=(t.tank_variance_liters!=null&&Number.isFinite(storedVar))?storedVar:tankDiff;
   const varPct=(t.tank_variance_pct!=null&&Number.isFinite(storedPct))?storedPct:variancePct;
   const varTone=Number.isFinite(varLiters)&&Math.abs(varLiters)>=0.005?WARN:[21,128,61];
-  const tankRow=[tankCode,hasTank?fmtNum(tankOpening)+' L':'—',hasTank?fmtNum(tankClosing)+' L':'—',fmtNum(tankSold)+' L',
+  const tankRow=[tankCode,hasTank?fmtNum(tankOpening)+' L':'—',hasTank?fmtNum(tankClosing)+' L':'—',Number.isFinite(reconciledTankSold)?fmtNum(reconciledTankSold)+' L':'—',
     Number.isFinite(varLiters)?(varLiters>0?'+':'')+fmtNum(varLiters)+' L':'—',
     Number.isFinite(varPct)?(varPct>0?'+':'')+varPct.toFixed(2)+'%':'—'];
   tankRow.tone=[0,0,0,0,varTone,varTone];
@@ -3234,12 +3245,12 @@ async function downloadAdminSaleHistoryDetails(id){
     subtitle:'Shift: '+shiftName,
     statusLabel:statusLabel,
     overview:[
-      {label:'Dispenser',value:dispenserCode},{label:'Product',value:productCode},{label:'Tank',value:tankCode},
+      {label:'Dispenser',value:dispenserCode},{label:'Product',value:displayProductCode},{label:'Tank',value:displayTankCode},
       {label:'Liters sold',value:fmtNum(totalLiters)+' L',size:14,tone:'good'}
     ],
     leftTitle:'Shift details',rightTitle:'Timing & reference',
     left:[
-      {label:'Dispenser',value:dispenserCode},{label:'Product',value:productCode},{label:'Tank',value:tankCode},
+      {label:'Dispenser',value:dispenserCode},{label:'Product',value:displayProductCode},{label:'Tank',value:displayTankCode},
       {label:'Attendant',value:attendant},{label:'Shift',value:shiftName}
     ],
     right:[
@@ -3253,7 +3264,7 @@ async function downloadAdminSaleHistoryDetails(id){
       {label:'Total liters sold',value:fmtNum(totalLiters)+' L',size:11.5},
       {label:'Calculated amount',value:fmtMoney(totalAmount),size:11.5},
       {label:'Entries total',value:fmtMoney(entryTotal),size:11.5},
-      {label:'Difference',value:fmtMoney(differenceValue),size:11.5,tone:differenceValue>=0.005?'warn':undefined}
+      {label:'Difference vs net sales',value:(differenceValue>0?'+':'')+fmtMoney(differenceValue),size:11.5,tone:hasDifference?'warn':undefined}
     ],
     totals2:[
       {label:'Status',value:statusLabel,size:11.5,tone:/confirmed/i.test(statusLabel)?'good':undefined},
@@ -3266,7 +3277,7 @@ async function downloadAdminSaleHistoryDetails(id){
   link.download='sales-'+String(t.shift_id||id).slice(0,8)+'-report.pdf';
   document.body.appendChild(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
-  showAttendantActionResult('success','PDF downloaded','The confirmed sales PDF has been downloaded successfully.');
+  showAttendantActionResult('success','PDF downloaded','The sales PDF has been downloaded successfully.');
 }
 function downloadPurchaseDetailPdf(){
   const id=window.currentPurchaseDetailId;
