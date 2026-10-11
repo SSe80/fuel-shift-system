@@ -4011,3 +4011,76 @@ body.admin-control-ui main.wrap:has(.modal.open) {
   transform: none !important;
   will-change: auto !important;
 }
+
+/* ==========================================================================
+   POPUP CONTENT — one inset for the whole sheet
+   Phone: the sheet is full width, its scrollbar is hidden (it still scrolls by touch),
+   and the header and the body share the same 16px inset so their edges line up.
+   Desktop: a thin scrollbar only when the content is taller than the dialog.
+   ========================================================================== */
+body.admin-control-ui .modal.open > .modal-card {
+  scrollbar-width: thin;
+}
+@media (max-width: 640px) {
+  body.admin-control-ui .modal.open {
+    padding: 0 !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    scrollbar-width: none;
+  }
+  body.admin-control-ui .modal.open > .modal-card::-webkit-scrollbar {
+    display: none;
+  }
+  body.admin-control-ui .modal.open > .modal-card > .top {
+    padding: 16px 16px 12px !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card > :not(.top) {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card .history-detail-section {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+/* The shift and sales pages size this popup by its ID, which outranks class rules.
+   On phones it becomes a full-width sheet like every other popup. */
+@media (max-width: 640px) {
+  body.admin-control-ui #admin-sale-history-details.modal.open {
+    padding: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100% !important;
+    align-items: flex-end !important;
+    justify-content: stretch !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card {
+    scrollbar-width: none;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card::-webkit-scrollbar {
+    display: none;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > .top {
+    padding: 16px 16px 12px !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > :not(.top) {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open #admin-sale-history-details-content {
+    padding: 0 16px 14px !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .takeover-details-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+}
+/* Shift details: the empty cell in the information grid is plain white, not grey */
+body.admin-control-ui #admin-sale-history-details .history-detail-info-grid > * {
+  background: #ffffff !important;
+}
