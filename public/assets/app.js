@@ -6192,3 +6192,50 @@ document.addEventListener('click',event=>{
 
 
 
+
+
+/* Place admin modal cards beside the control that opened them without observing DOM mutations. */
+(function(){
+  if(window.__adminPopupNearButtonInstalled)return;
+  window.__adminPopupNearButtonInstalled=true;
+
+  function positionNearButton(trigger,before){
+    if(!trigger||!trigger.isConnected)return;
+    const open=[...document.querySelectorAll('body[data-app-page^="admin"] .modal.open, body.admin-page .modal.open, body[class*="admin-"] .modal.open')]
+      .filter(function(modal){return getComputedStyle(modal).display!=='none'&&modal.getAttribute('aria-hidden')!=='true';});
+    if(!open.length)return;
+    const added=open.filter(function(modal){return !before.has(modal);});
+    const modal=added[added.length-1]||open[open.length-1];
+    if(!modal)return;
+    if(!added.length&&trigger.closest('.modal')===modal)return;
+    const card=modal.querySelector('.modal-card,[role="dialog"],.dialog-card,.popup-card');
+    if(!card)return;
+
+    const viewport=document.documentElement;
+    const vw=viewport.clientWidth||window.innerWidth;
+    const vh=viewport.clientHeight||window.innerHeight;
+    const rect=trigger.getBoundingClientRect();
+    const gap=10,margin=12;
+    const box=card.getBoundingClientRect();
+    const width=Math.min(Math.max(box.width||560,Math.min(280,vw-2*margin)),vw-2*margin);
+    const height=Math.min(Math.max(card.scrollHeight||box.height||360,120),vh-2*margin);
+    let left=Math.max(margin,Math.min(rect.left,vw-width-margin));
+    if(vw<640)left=margin;
+    let top=rect.bottom+gap;
+    if(top+height>vh-margin)top=rect.top-height-gap;
+    if(top<margin)top=Math.max(margin,Math.min(rect.bottom+gap,vh-height-margin));
+    card.style.setProperty('--admin-popup-top',Math.round(top)+'px');
+    card.style.setProperty('--admin-popup-left',Math.round(left)+'px');
+    modal.classList.add('admin-popup-near-button');
+  }
+
+  document.addEventListener('click',function(event){
+    const target=event.target;
+    const trigger=target&&target.closest?target.closest('button,[role="button"],[data-action],a'):null;
+    if(!trigger)return;
+    const before=new Set(document.querySelectorAll('body[data-app-page^="admin"] .modal.open, body.admin-page .modal.open, body[class*="admin-"] .modal.open'));
+    [60,220,520].forEach(function(delay){
+      setTimeout(function(){positionNearButton(trigger,before);},delay);
+    });
+  },true);
+})();
