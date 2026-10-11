@@ -3392,8 +3392,12 @@ function adminReturnedFuelBreakdown(t,returnedLiters){
   const grossAmount=Number(t?.gross_sales_amount??t?.total_sales_amount??0);
   const rows=Array.isArray(t?.nozzle_sales_liters)?t.nozzle_sales_liters:[];
   const price=Number(rows.find(x=>Number(x?.liters_sold||0)>0&&Number.isFinite(Number(x?.unit_price)))?.unit_price||0);
-  const returnedAmount=Math.round((Number(returnedLiters||0)*price+Number.EPSILON)*100)/100;
   const returned=Number(returnedLiters||0);
+  const savedReturned=Number(t?.returned_liters||0);
+  const savedAmount=Number(t?.returned_amount);
+  const returnedAmount=(Number.isFinite(savedAmount)&&savedAmount>=0&&Math.abs(savedReturned-returned)<0.0001)
+    ?Math.round((savedAmount+Number.EPSILON)*100)/100
+    :Math.round((Number(returnedLiters||0)*price+Number.EPSILON)*100)/100;
   return {grossLiters,grossAmount,unitPrice:price,returnedLiters:returned,returnedAmount,netLiters:Math.max(0,grossLiters-returned),netAmount:Math.max(0,Math.round((grossAmount-returnedAmount+Number.EPSILON)*100)/100)};
 }
 function updateAdminReturnedPreview(id){
