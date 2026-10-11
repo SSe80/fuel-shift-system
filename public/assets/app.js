@@ -3441,7 +3441,7 @@ function updateAdminReturnedPreview(id){
   const strip=document.querySelector('[data-admin-sale-review-strip="'+id+'"]');
   if(strip)strip.innerHTML='<span><b>'+(Array.isArray(item.sales)?item.sales.length:0)+'</b> sale entries</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(difference<=1?'match':'difference')+'">Net difference '+money(difference)+'</span>';
 }
-async function openAdminSaleReview(id){
+async async function openAdminSaleReview(id){
   try{
     const settings=await api('/api/settings');
     window.stationSalesDifferenceTolerance=Math.max(0,Number(settings?.sales_difference_tolerance??1));
