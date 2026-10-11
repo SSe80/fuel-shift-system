@@ -6283,7 +6283,7 @@ document.addEventListener('click',event=>{
 
   function positionNearButton(trigger,before){
     if(!trigger||!trigger.isConnected)return;
-    const open=[...document.querySelectorAll('body[data-app-page^="admin"] .modal.open, body.admin-page .modal.open, body[class*="admin-"] .modal.open')]
+    const open=[...document.querySelectorAll('body[data-app-page^="admin"] .modal.open, body.admin-page .modal.open')]
       .filter(function(modal){return getComputedStyle(modal).display!=='none'&&modal.getAttribute('aria-hidden')!=='true';});
     if(!open.length)return;
     const added=open.filter(function(modal){return !before.has(modal);});
@@ -6315,7 +6315,7 @@ document.addEventListener('click',event=>{
     const target=event.target;
     const trigger=target&&target.closest?target.closest('button,[role="button"],[data-action],a'):null;
     if(!trigger)return;
-    const before=new Set(document.querySelectorAll('body[data-app-page^="admin"] .modal.open, body.admin-page .modal.open, body[class*="admin-"] .modal.open'));
+    const before=new Set(document.querySelectorAll('body[data-app-page^="admin"] .modal.open, body.admin-page .modal.open'));
     [60,220,520].forEach(function(delay){
       setTimeout(function(){positionNearButton(trigger,before);},delay);
     });
