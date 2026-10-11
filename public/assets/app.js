@@ -234,7 +234,7 @@ function updateTakeoverSaleConfirmation(){
   const total=sales.reduce((sum,x)=>sum+Number(x.amount||0),0);
   const calculated=adminReturnedFuelBreakdown(takeover,Number(takeover.returned_liters||0)).netAmount;
   const difference=Math.abs(total-calculated);
-  const allowedDifference=1.00;
+  const allowedDifference=getSalesDifferenceTolerance();
   const overCalculated=total>calculated+allowedDifference;
   const matches=difference<=allowedDifference && sales.length>0 && !missingReason;
   const status=document.getElementById('takeover-sale-match-status');
@@ -244,9 +244,9 @@ function updateTakeoverSaleConfirmation(){
     '<div class="takeover-confirm-check"><span>Net calculated sales</span><b>'+money(calculated)+'</b><span>Difference to reconcile</span><b>'+money(difference)+'</b></div></div>'+
     (missingReason?'<div class="takeover-sale-mismatch">Reason required for '+h(missingReason)+'.</div>':
      !sales.length?'<div class="takeover-sale-mismatch">Enter at least one sale amount.</div>':
-     overCalculated?'<div class="takeover-sale-mismatch">Entered sales exceed the net calculated amount by more than the allowed ETB 1.00 tolerance. Adjust the sale entries.</div>':
+     overCalculated?'<div class="takeover-sale-mismatch">Entered sales exceed the configured tolerance of ETB '+money(allowedDifference)+'. Adjust the sale entries.</div>':
      difference<=0.005?'<div class="takeover-sale-match">Entered total matches the net calculated sales after any saved returned-fuel deduction.</div>':
-     '<div class="takeover-sale-match">Difference is within the allowed ETB 1.00 tolerance. You can continue with confirmation.</div>');
+     '<div class="takeover-sale-match">Difference is within the configured ETB '+money(allowedDifference)+' tolerance. You can continue with confirmation.</div>');
   const button=document.querySelector('#takeover-sale-confirm-modal button.confirm-sale-button');
   if(button)button.disabled=!matches;
 }
@@ -3451,7 +3451,7 @@ function openAdminSaleReview(id){
   if(!item)return;
   const t=item.takeover||{},sales=Array.isArray(item.sales)?item.sales:[],submitted=sales.reduce((sum,x)=>sum+Number(x.amount||0),0);
   const returnedLiters=Number(t.returned_liters||0);
-  const b=adminReturnedFuelBreakdown(t,returnedLiters),variance=submitted-b.netAmount,difference=Math.abs(variance),withinAllowedDifference=difference<=1;
+  const b=adminReturnedFuelBreakdown(t,returnedLiters),variance=submitted-b.netAmount,difference=Math.abs(variance),withinAllowedDifference=difference<=getSalesDifferenceTolerance();
   const canConfirm=withinAllowedDifference;
   const content=document.getElementById('admin-sale-review-content');
   if(content)content.innerHTML='<div class="admin-sale-review-summary"><div><span>Dispenser</span><strong>'+h(item.dispenser?.name||'Dispenser')+'</strong></div><div><span>Shift</span><strong>'+h(item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||'')))+'</strong></div><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Gross liters dispensed</span><strong>'+liters(b.grossLiters)+' L</strong></div><div><span>Returned to tank</span><strong>'+liters(returnedLiters)+' L</strong></div><div><span>Shift selling price</span><strong>'+money(b.unitPrice)+' / L</strong></div><div><span>Returned fuel value</span><strong>− '+money(b.returnedAmount)+'</strong></div><div><span>Net liters sold</span><strong>'+liters(b.netLiters)+' L</strong></div><div><span>Gross calculated amount</span><strong>'+money(b.grossAmount)+'</strong></div><div><span>Net calculated amount</span><strong>'+money(b.netAmount)+'</strong></div></div><div class="admin-sale-review-list"><div class="takeover-detail-heading">Sales entries <small>'+sales.length+' checked</small></div>'+sales.map(s=>'<div class="admin-sale-review-entry"><div><strong>'+h(s.sale_type_name||'Sale')+'</strong>'+(s.sale_type_description?'<small>'+h(s.sale_type_description)+'</small>':'')+(s.reason?'<small>Reason: '+h(s.reason)+'</small>':'')+'</div><strong>'+money(s.amount)+'</strong></div>').join('')+'</div><div class="admin-sale-review-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="admin-sale-review-check"><div><span>Net calculated amount</span><strong>'+money(b.netAmount)+'</strong></div><div><span>Difference</span><strong>'+money(difference)+'</strong></div></div><div class="'+(canConfirm?'admin-sale-review-ok':'admin-sale-review-warning')+'">'+(difference<0.005?'Submitted sales match net calculated sales after the saved returned-fuel deduction.':withinAllowedDifference?'Net amount difference is within the allowed ETB 1.00 tolerance.':'Submitted sales do not match net calculated sales after the saved returned-fuel deduction. Review the sale entries before confirming.')+'</div>';
@@ -3554,6 +3554,9 @@ async function _cancelAdminPendingShift(id){
 async function loadSettingsData(){
   let [employees,tanks,dispensers,products,shifts,saleTypes,stationSettings,deactivationRequests]=await Promise.all([api('/api/users'),api('/api/tanks'),api('/api/nozzles'),api('/api/products'),api('/api/shifts'),api('/api/sale-types'),api('/api/settings'),api('/api/dispenser-deactivation-requests').catch(()=>[])]);
   const savedOrders=stationSettings?.item_orders||{};
+  window.stationSalesDifferenceTolerance=Math.max(0,Number(stationSettings?.sales_difference_tolerance??1));
+  const toleranceInput=document.getElementById('sales-difference-tolerance');
+  if(toleranceInput)toleranceInput.value=Number(window.stationSalesDifferenceTolerance).toFixed(2);
   products=applySavedSettingsOrder(products,'products',savedOrders);saleTypes=applySavedSettingsOrder(saleTypes,'saleTypes',savedOrders);employees=applySavedSettingsOrder(employees,'employees',savedOrders);tanks=applySavedSettingsOrder(tanks,'tanks',savedOrders);dispensers=applySavedSettingsOrder(dispensers,'dispensers',savedOrders);
   const stationCurrency=String(stationSettings?.currency||'ETB').trim();
   window.stationCurrency=stationCurrency;
@@ -3766,6 +3769,30 @@ function closeProductEdit(){
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden','true');
   document.getElementById('product-edit-form').reset();
+}
+async function saveSalesDifferenceTolerance(event){
+  event.preventDefault();
+  const input=document.getElementById('sales-difference-tolerance');
+  const status=document.getElementById('sales-difference-tolerance-status');
+  const value=Number(input?.value);
+  if(!Number.isFinite(value)||value<0||value>100000){
+    if(status)status.textContent='Enter a value from ETB 0.00 to ETB 100,000.00.';
+    return;
+  }
+  try{
+    const saved=await api('/api/settings',{method:'PATCH',body:JSON.stringify({sales_difference_tolerance:Math.round(value*100)/100})});
+    window.stationSalesDifferenceTolerance=Number(saved.sales_difference_tolerance??value);
+    if(input)input.value=window.stationSalesDifferenceTolerance.toFixed(2);
+    if(status)status.textContent='Sales difference tolerance saved: ETB '+window.stationSalesDifferenceTolerance.toFixed(2)+'.';
+    toast('Sales difference tolerance saved');
+  }catch(e){
+    if(status)status.textContent='Could not save tolerance: '+e.message;
+    throw e;
+  }
+}
+function getSalesDifferenceTolerance(){
+  const value=Number(window.stationSalesDifferenceTolerance);
+  return Number.isFinite(value)&&value>=0?value:1.00;
 }
 function openStationCurrencyModal(){
   const modal=document.getElementById('station-currency-modal');
