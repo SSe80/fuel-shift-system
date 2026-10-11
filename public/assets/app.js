@@ -6190,3 +6190,67 @@ document.addEventListener('click',event=>{
 
 
 
+
+
+/* Keep admin dialogs visually connected to the control that opened them.
+   The dialog stays inside the viewport and falls back to centered placement
+   when the trigger cannot be identified. */
+(function(){
+  if(window.__adminPopupAnchorFixInstalled)return;
+  window.__adminPopupAnchorFixInstalled=true;
+  let lastTrigger=null;
+  document.addEventListener('click',function(event){
+    const trigger=event.target&&event.target.closest
+      ? event.target.closest('button,[role="button"],[data-action],a')
+      : null;
+    if(trigger)lastTrigger=trigger;
+  },true);
+
+  function placeDialog(modal){
+    if(!modal||!modal.classList.contains('open'))return;
+    const card=modal.querySelector('.modal-card,[role="dialog"],.dialog-card,.popup-card');
+    if(!card)return;
+    const trigger=lastTrigger;
+    if(!trigger||!trigger.isConnected||modal.contains(trigger)){
+      card.style.removeProperty('--admin-popup-top');
+      card.style.removeProperty('--admin-popup-left');
+      modal.classList.remove('admin-popup-near-trigger');
+      return;
+    }
+    const r=trigger.getBoundingClientRect();
+    const vw=document.documentElement.clientWidth;
+    const vh=document.documentElement.clientHeight;
+    const gap=12, margin=12;
+    const width=Math.min(card.getBoundingClientRect().width||560,vw-margin*2);
+    const height=Math.min(card.scrollHeight||card.getBoundingClientRect().height||420,vh-margin*2);
+    let left=Math.min(Math.max(margin,r.left),vw-width-margin);
+    let top=r.bottom+gap;
+    if(top+height>vh-margin)top=r.top-height-gap;
+    if(top<margin)top=Math.max(margin,Math.min(r.top,vh-height-margin));
+    card.style.setProperty('--admin-popup-top',Math.round(top)+'px');
+    card.style.setProperty('--admin-popup-left',Math.round(left)+'px');
+    modal.classList.add('admin-popup-near-trigger');
+  }
+
+  const observer=new MutationObserver(function(records){
+    records.forEach(function(record){
+      if(record.type==='attributes'&&record.target.classList.contains('open')){
+        placeDialog(record.target);
+      }
+      record.addedNodes&&record.addedNodes.forEach(function(node){
+        if(node.nodeType!==1)return;
+        if(node.matches&&node.matches('.modal.open'))placeDialog(node);
+        node.querySelectorAll&&node.querySelectorAll('.modal.open').forEach(placeDialog);
+      });
+    });
+  });
+  function start(){
+    document.querySelectorAll('.modal').forEach(function(modal){
+      observer.observe(modal,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
+      if(modal.classList.contains('open'))placeDialog(modal);
+    });
+    observer.observe(document.body,{childList:true,subtree:true});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+  else start();
+})();
