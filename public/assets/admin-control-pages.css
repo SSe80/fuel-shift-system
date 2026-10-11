@@ -3898,3 +3898,116 @@ body.admin-control-ui[data-app-page].admin-settings-page .settings-item-card b >
 /* Remove the stray gap under a product group label on dispensers */
 body.admin-control-ui[data-app-page].admin-settings-page #dispensers > .settings-product-group-label + * { margin-top: 0 !important; }
 body.admin-control-ui[data-app-page].admin-settings-page #dispensers > .settings-product-group-label { margin-bottom: 0 !important; }
+
+/* ==========================================================================
+   POPUP POSITIONING — admin and attendant panels
+   Desktop: centred dialog, scrolls inside itself, header stays visible.
+   Phone (<=640px): bottom sheet across the full width, above the safe area.
+   Scope: body.admin-control-ui (every admin and attendant page).
+   ========================================================================== */
+body.admin-control-ui .modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1000 !important;
+  display: none;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)) !important;
+  overflow: hidden !important;
+}
+body.admin-control-ui .modal.open { display: flex !important; }
+body.admin-control-ui .modal > .modal-backdrop {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  background: rgba(15, 23, 42, .45) !important;
+  backdrop-filter: blur(3px);
+}
+body.admin-control-ui .modal > .modal-card {
+  position: relative !important;
+  z-index: 1 !important;
+  box-sizing: border-box !important;
+  width: min(100%, 560px) !important;
+  max-width: 100% !important;
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  margin: 0 auto !important;
+  border-radius: 20px !important;
+  -webkit-overflow-scrolling: touch;
+}
+/* Wide dialogs (tables, review and details screens) use more of the desktop width */
+body.admin-control-ui .modal > .modal-card.takeover-details-modal,
+body.admin-control-ui .modal > .modal-card.admin-sale-review-card,
+body.admin-control-ui .modal > .modal-card.handover-modal-card {
+  width: min(100%, 640px) !important;
+}
+/* Header stays visible while the content scrolls */
+body.admin-control-ui .modal > .modal-card > .top {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+  background: #ffffff !important;
+}
+/* Phone: bottom sheet */
+@media (max-width: 640px) {
+  body.admin-control-ui .modal {
+    align-items: flex-end !important;
+    justify-content: stretch !important;
+    padding: 0 !important;
+  }
+  body.admin-control-ui .modal > .modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 88dvh !important;
+    margin: 0 !important;
+    border-radius: 22px 22px 0 0 !important;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+    animation: fsSheetUp .22s ease-out;
+  }
+}
+@keyframes fsSheetUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+/* Phone sheets fill the full width (flex children must not shrink) */
+@media (max-width: 640px) {
+  body.admin-control-ui .modal > .modal-card {
+    flex: 0 0 100% !important;
+    box-sizing: border-box !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+  body.admin-control-ui .modal {
+    justify-content: center !important;
+    align-items: flex-end !important;
+  }
+}
+/* The popup wrapper never scrolls: only the card does. This wins over older page rules
+   that gave the wrapper its own scrollbar (which took 15px off the sheet width). */
+body.admin-control-ui .modal.open {
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none;
+}
+body.admin-control-ui .modal.open::-webkit-scrollbar { display: none; }
+/* The popup layer covers the whole viewport. Older page rules that offset it from the top
+   (to clear the navigation bar) pushed the phone sheet off the bottom of the screen. */
+body.admin-control-ui .modal.open {
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  height: 100% !important;
+}
+/* The page content slide-in leaves a transform on the content wrapper, and a fixed popup inside
+   it is then positioned relative to that wrapper (offset from the top, and off the bottom of a
+   phone sheet). While a popup is open the wrapper's transform is removed, so the popup is anchored
+   to the screen. The slide-in has already finished when a popup opens, so nothing visibly moves. */
+body.admin-control-ui main.wrap:has(.modal.open) {
+  animation: none !important;
+  transform: none !important;
+  will-change: auto !important;
+}
