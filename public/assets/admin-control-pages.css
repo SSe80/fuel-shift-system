@@ -4390,3 +4390,44 @@ body.admin-control-ui #admin-sale-history-details .history-detail-info-grid > * 
     font-size: 14px !important;
   }
 }
+
+/* ===== Popup sheet: locked width, long values wrap or scroll inside, never push the sheet ===== */
+@media (max-width: 640px) {
+  body.admin-control-ui .modal.open,
+  body.admin-control-ui #admin-sale-history-details.modal.open {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .takeover-details-modal {
+    left: auto !important;
+    right: auto !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    transform: none !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card *,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open .history-detail-reading-row,
+  body.admin-control-ui .modal.open .history-detail-reading-row {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open .history-detail-info-grid > *,
+  body.admin-control-ui #admin-sale-history-details.modal.open .history-detail-info-grid strong {
+    min-width: 0 !important;
+    overflow-wrap: anywhere !important;
+  }
+}
