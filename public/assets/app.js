@@ -4290,8 +4290,7 @@ async function _confirmDispenserActivation(){
   const employeeId=employeeSelect?.value||'';
   const attendantName=employeeSelect?.selectedOptions?.[0]?.textContent||'Selected attendant';
   const tank=(window.tankRecords||[]).find(x=>String(x.id)===String(d.tank_id));
-  const openingTankMm=Number(document.getElementById('dispenser-activation-tank-dip')?.value);
-  const openingTankLiters=tankLitersFromDip(tank,openingTankMm);
+  const openingTankLiters=Number(tank?.current_liters ?? tank?.opening_stock_liters);
   const selected=[];
   ids.forEach((nozzleId,i)=>{
     const box=document.getElementById('nozzle-activation-input-'+i);
@@ -4303,7 +4302,7 @@ async function _confirmDispenserActivation(){
   const error=document.getElementById('dispenser-activate-error');
   const review=document.getElementById('dispenser-activation-review');
   if(!Number.isFinite(openingTankLiters)||openingTankLiters<0){
-    error.textContent='Enter a valid tank opening dip and ensure calibration is set.';
+    error.textContent='This tank has no recorded stock balance. Record its opening stock in Tank Settings before assigning a shift.';
     error.style.display='block'; return false;
   }
   if(!employeeId){
@@ -4327,10 +4326,7 @@ async function _confirmDispenserActivation(){
         '<div><span class="muted" style="font-size:11px">ATTENDANT</span><b style="display:block;margin-top:3px">'+h(attendantName)+'</b></div>'+
         '<div><span class="muted" style="font-size:11px">TANK</span><b style="display:block;margin-top:3px">'+h(tankCode)+'</b></div>'+
       '</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
-        '<div><span class="muted" style="font-size:11px">TANK OPENING DIP</span><b style="display:block;margin-top:3px">'+h(reading(openingTankMm))+' mm</b></div>'+
-        '<div><span class="muted" style="font-size:11px">TANK OPENING VOLUME</span><b style="display:block;margin-top:3px">'+h(liters(openingTankLiters))+' L</b></div>'+
-      '</div>'+
+
       '<div><span class="muted" style="font-size:11px">OPENING NOZZLE READINGS</span><div style="margin-top:4px">'+nozzleReadings+'</div></div>'+
       '<p class="muted" style="margin:2px 0 0">Review these details before assigning the shift. Nothing will be assigned until you press Confirm.</p>'+
     '</div>';
@@ -4339,7 +4335,6 @@ async function _confirmDispenserActivation(){
     id,
     employeeId,
     attendantName,
-    openingTankMm,
     openingTankLiters,
     selected,
     productCode,
