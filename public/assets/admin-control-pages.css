@@ -4749,3 +4749,33 @@ body.admin-sales-page.admin-control-ui #admin-sale-review-modal.modal.open > .mo
     max-height: calc(100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) !important;
   }
 }
+
+
+/* Sales detail: make the whole details panel scrollable on mobile, not just a nested content box. */
+body.admin-sales-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card,
+body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+}
+body.admin-sales-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card > .top,
+body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card > .top {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 3 !important;
+  flex: 0 0 auto !important;
+  background: #fff !important;
+}
+body.admin-sales-page.admin-control-ui #admin-sale-history-details-content,
+body.admin-sales-history-page.admin-control-ui #admin-sale-history-details-content {
+  display: block !important;
+  flex: 0 0 auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  touch-action: pan-y !important;
+}
