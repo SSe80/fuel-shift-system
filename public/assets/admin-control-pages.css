@@ -4084,3 +4084,309 @@ body.admin-control-ui .modal.open > .modal-card {
 body.admin-control-ui #admin-sale-history-details .history-detail-info-grid > * {
   background: #ffffff !important;
 }
+
+/* ===== Popup layer (positioning, content, compact phone) — appended, safe to re-apply ===== */
+/* ==========================================================================
+   POPUP POSITIONING — admin and attendant panels
+   Desktop: centred dialog, scrolls inside itself, header stays visible.
+   Phone (<=640px): bottom sheet across the full width, above the safe area.
+   Scope: body.admin-control-ui (every admin and attendant page).
+   ========================================================================== */
+body.admin-control-ui .modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1000 !important;
+  display: none;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)) !important;
+  overflow: hidden !important;
+}
+body.admin-control-ui .modal.open { display: flex !important; }
+body.admin-control-ui .modal > .modal-backdrop {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  background: rgba(15, 23, 42, .45) !important;
+  backdrop-filter: blur(3px);
+}
+body.admin-control-ui .modal > .modal-card {
+  position: relative !important;
+  z-index: 1 !important;
+  box-sizing: border-box !important;
+  width: min(100%, 560px) !important;
+  max-width: 100% !important;
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  margin: 0 auto !important;
+  border-radius: 20px !important;
+  -webkit-overflow-scrolling: touch;
+}
+/* Wide dialogs (tables, review and details screens) use more of the desktop width */
+body.admin-control-ui .modal > .modal-card.takeover-details-modal,
+body.admin-control-ui .modal > .modal-card.admin-sale-review-card,
+body.admin-control-ui .modal > .modal-card.handover-modal-card {
+  width: min(100%, 640px) !important;
+}
+/* Header stays visible while the content scrolls */
+body.admin-control-ui .modal > .modal-card > .top {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+  background: #ffffff !important;
+}
+/* Phone: bottom sheet */
+@media (max-width: 640px) {
+  body.admin-control-ui .modal {
+    align-items: flex-end !important;
+    justify-content: stretch !important;
+    padding: 0 !important;
+  }
+  body.admin-control-ui .modal > .modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 88dvh !important;
+    margin: 0 !important;
+    border-radius: 22px 22px 0 0 !important;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+    animation: fsSheetUp .22s ease-out;
+  }
+}
+@keyframes fsSheetUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+/* Phone sheets fill the full width (flex children must not shrink) */
+@media (max-width: 640px) {
+  body.admin-control-ui .modal > .modal-card {
+    flex: 0 0 100% !important;
+    box-sizing: border-box !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+  body.admin-control-ui .modal {
+    justify-content: center !important;
+    align-items: flex-end !important;
+  }
+}
+/* The popup wrapper never scrolls: only the card does. This wins over older page rules
+   that gave the wrapper its own scrollbar (which took 15px off the sheet width). */
+body.admin-control-ui .modal.open {
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none;
+}
+body.admin-control-ui .modal.open::-webkit-scrollbar { display: none; }
+/* The popup layer covers the whole viewport. Older page rules that offset it from the top
+   (to clear the navigation bar) pushed the phone sheet off the bottom of the screen. */
+body.admin-control-ui .modal.open {
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  height: 100% !important;
+}
+/* The page content slide-in leaves a transform on the content wrapper, and a fixed popup inside
+   it is then positioned relative to that wrapper (offset from the top, and off the bottom of a
+   phone sheet). While a popup is open the wrapper's transform is removed, so the popup is anchored
+   to the screen. The slide-in has already finished when a popup opens, so nothing visibly moves. */
+body.admin-control-ui main.wrap:has(.modal.open) {
+  animation: none !important;
+  transform: none !important;
+  will-change: auto !important;
+}
+
+/* ==========================================================================
+   POPUP CONTENT — one inset for the whole sheet
+   Phone: the sheet is full width, its scrollbar is hidden (it still scrolls by touch),
+   and the header and the body share the same 16px inset so their edges line up.
+   Desktop: a thin scrollbar only when the content is taller than the dialog.
+   ========================================================================== */
+body.admin-control-ui .modal.open > .modal-card {
+  scrollbar-width: thin;
+}
+@media (max-width: 640px) {
+  body.admin-control-ui .modal.open {
+    padding: 0 !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    scrollbar-width: none;
+  }
+  body.admin-control-ui .modal.open > .modal-card::-webkit-scrollbar {
+    display: none;
+  }
+  body.admin-control-ui .modal.open > .modal-card > .top {
+    padding: 16px 16px 12px !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card > :not(.top) {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card .history-detail-section {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+/* The shift and sales pages size this popup by its ID, which outranks class rules.
+   On phones it becomes a full-width sheet like every other popup. */
+@media (max-width: 640px) {
+  body.admin-control-ui #admin-sale-history-details.modal.open {
+    padding: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100% !important;
+    align-items: flex-end !important;
+    justify-content: stretch !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card {
+    scrollbar-width: none;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card::-webkit-scrollbar {
+    display: none;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > .top {
+    padding: 16px 16px 12px !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > :not(.top) {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open #admin-sale-history-details-content {
+    padding: 0 16px 14px !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .takeover-details-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+}
+/* Shift details: the empty cell in the information grid is plain white, not grey */
+body.admin-control-ui #admin-sale-history-details .history-detail-info-grid > * {
+  background: #ffffff !important;
+}
+
+/* ==========================================================================
+   PHONE POPUPS — fit the visible screen and stay compact
+   Sizes use svh (the smallest visible height), so the sheet stays above the
+   browser's bottom bar and address bar, whether they are showing or hidden.
+   ========================================================================== */
+@media (max-width: 640px) {
+  body.admin-control-ui .modal.open,
+  body.admin-control-ui #admin-sale-history-details.modal.open {
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    height: 100vh !important;
+    height: 100svh !important;
+    align-items: flex-end !important;
+    justify-content: stretch !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .takeover-details-modal {
+    max-height: calc(100vh - 12px - env(safe-area-inset-top)) !important;
+    max-height: calc(100svh - 12px - env(safe-area-inset-top)) !important;
+    border-radius: 18px 18px 0 0 !important;
+    padding: 0 !important;
+  }
+  /* header: compact, one inset */
+  body.admin-control-ui .modal.open > .modal-card > .top,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > .top {
+    padding: 12px 14px 10px !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card > .top h2,
+  body.admin-control-ui .modal.open > .modal-card > .top h3,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > .top h2,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > .top h3 {
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+    margin: 2px 0 0 !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card > .top p,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > .top p {
+    font-size: 11.5px !important;
+    line-height: 1.3 !important;
+    margin: 3px 0 0 !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card > .top .section-kicker,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > .top .section-kicker {
+    font-size: 9px !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card > .top button,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > .top button {
+    min-height: 34px !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    border-radius: 10px !important;
+  }
+  /* body: scrolls, one inset, compact spacing */
+  body.admin-control-ui .modal.open > .modal-card > :not(.top),
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > :not(.top) {
+    padding: 0 12px calc(12px + env(safe-area-inset-bottom)) !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open #admin-sale-history-details-content {
+    padding: 0 12px calc(12px + env(safe-area-inset-bottom)) !important;
+    gap: 8px !important;
+  }
+  body.admin-control-ui .modal.open .history-detail-section,
+  body.admin-control-ui #admin-sale-history-details.modal.open .history-detail-section {
+    margin: 0 0 8px !important;
+    border-radius: 12px !important;
+  }
+  body.admin-control-ui .modal.open .history-detail-section-head,
+  body.admin-control-ui #admin-sale-history-details.modal.open .history-detail-section-head {
+    padding: 8px 10px !important;
+  }
+  body.admin-control-ui .modal.open .history-detail-section-head strong,
+  body.admin-control-ui .modal.open .history-detail-section-head h3,
+  body.admin-control-ui #admin-sale-history-details.modal.open .history-detail-section-head strong,
+  body.admin-control-ui #admin-sale-history-details.modal.open .history-detail-section-head h3 {
+    font-size: 12.5px !important;
+    margin: 2px 0 0 !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open .history-detail-info-grid > * {
+    padding: 7px 9px !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open .history-detail-info-grid span {
+    font-size: 8.5px !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open .history-detail-info-grid strong {
+    font-size: 12px !important;
+    margin-top: 2px !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open .history-detail-total-row {
+    padding: 8px 10px !important;
+    font-size: 11.5px !important;
+  }
+  body.admin-control-ui #admin-sale-history-details.modal.open .history-detail-total-row strong {
+    font-size: 13px !important;
+  }
+  /* footer buttons */
+  body.admin-control-ui .modal.open > .modal-card > .row,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > .row {
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom)) !important;
+    gap: 8px !important;
+  }
+  body.admin-control-ui .modal.open > .modal-card > .row button,
+  body.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > .row button {
+    min-height: 40px !important;
+    padding: 9px 12px !important;
+    font-size: 13px !important;
+  }
+  /* form inputs in popups */
+  body.admin-control-ui .modal.open > .modal-card input:not([type=checkbox]):not([type=radio]),
+  body.admin-control-ui .modal.open > .modal-card select,
+  body.admin-control-ui .modal.open > .modal-card textarea {
+    min-height: 38px !important;
+    padding: 8px 10px !important;
+    font-size: 14px !important;
+  }
+}
