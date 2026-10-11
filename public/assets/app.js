@@ -1037,7 +1037,7 @@ async function loadStationNotifications(){
   if(low.length)add('low-tanks','warning','Low tank stock',low.length+' tank'+(low.length===1?' is':'s are')+' at or below 10% capacity: '+low.slice(0,4).map(t=>t.tank_code||'Tank').join(', ')+(low.length>4?' and '+(low.length-4)+' more':''),'admin-inventory.html'+(low[0]?.id?'#tank-'+encodeURIComponent(low[0].id):''),low.slice(0,6).map(t=>(t.tank_code||'Tank')+' · '+codeFor(t.product)+' · '+liters(t.current_liters)+' L left').join(' | '));
   if(high.length)add('high-tanks','info','High tank level',high.length+' tank'+(high.length===1?' is':'s are')+' at or above 90% capacity: '+high.slice(0,4).map(t=>t.tank_code||'Tank').join(', ')+(high.length>4?' and '+(high.length-4)+' more':''),'admin-inventory.html'+(high[0]?.id?'#tank-'+encodeURIComponent(high[0].id):''),high.slice(0,6).map(t=>(t.tank_code||'Tank')+' · '+Math.round(Number(t.current_liters)/Number(t.capacity_liters)*100)+'% full').join(' | '));
   const pendingDsr=arr(dsrs).filter(x=>x.status==='pending'||x.status==='waiting');
-  if(pendingDsr.length){
+  if(arr(dsrs).length){
    const ready=pendingDsr.filter(x=>x.status==='pending'&&x.report_day_closed!==false&&x.all_shifts_complete&&x.all_handover_recorded&&x.all_sales_recorded);
    // Only surface the DSR inbox alert when at least one report is fully ready
    // for admin confirmation. Reports still progressing through shift/sales
@@ -1047,7 +1047,9 @@ async function loadStationNotifications(){
     add('pending-dsr','warning','DSR ready for confirmation',ready.length+' daily report'+(ready.length===1?' is':'s are')+' ready for admin review and confirmation.','admin-daily-report.html'+(latestReadyDate?'#dsr-'+encodeURIComponent(latestReadyDate):''),ready.slice(0,5).map(x=>dailyReportIdLabel(x.date)+' · Ready for confirmation').join(' | '),latestReadyDate);
    }
    const missing=[];
-   pendingDsr.forEach(report=>{
+   // Scan every unconfirmed DSR date for missing sales, including a closed report day
+   // that cannot become confirmation-ready because one or more attendants have not recorded sales.
+   arr(dsrs).filter(report=>report.status!=='confirmed').forEach(report=>{
     const sourceRows=[];
     arr(report.missing_sales_shift_details).forEach(shift=>sourceRows.push({...shift,issue:'missing-sales'}));
     arr(report.unsubmitted_sales_shift_details).forEach(shift=>sourceRows.push({...shift,issue:'unsubmitted-sales'}));
