@@ -2448,7 +2448,22 @@ def shift_takeovers():
             "p_employee_id":session["employee_id"]
         })
         if status>=400:return jsonify(result),status
-        return jsonify(result if isinstance(result,list) else []),200
+        rows=result if isinstance(result,list) else []
+        # The attendant-safe JSON RPC may omit newly added return fields.
+        # Enrich only those fields from the canonical takeover rows so the
+        # Record Sale card can display the return saved by Admin.
+        ids=[str(row.get("id")) for row in rows if isinstance(row,dict) and row.get("id")]
+        if ids:
+            qs={"select":"id,returned_liters,returned_amount","id":"in.("+",".join(ids)+")"}
+            rs,canonical=sb("shift_takeovers",params=qs)
+            if rs==200 and isinstance(canonical,list):
+                return_by_id={str(item.get("id")):item for item in canonical}
+                for row in rows:
+                    saved=return_by_id.get(str(row.get("id")))
+                    if saved:
+                        row["returned_liters"]=saved.get("returned_liters") or 0
+                        row["returned_amount"]=saved.get("returned_amount") or 0
+        return jsonify(rows),200
     params={"select":"*","order":"shift_ended_at.desc","limit":"50"}
     status,rows=sb("shift_takeovers",params=params)
     if status!=200:return jsonify(rows),status
