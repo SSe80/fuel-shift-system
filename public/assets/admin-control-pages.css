@@ -4659,3 +4659,93 @@ body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.ope
     max-height: calc(100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) !important;
   }
 }
+
+
+/* Admin Sales page: override the mobile bottom-sheet rules for its actual review/details dialogs. */
+body.admin-sales-page.admin-control-ui #admin-sale-review-modal.modal.open,
+body.admin-sales-page.admin-control-ui #admin-sale-history-details.modal.open,
+body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+body.admin-sales-page.admin-control-ui #admin-sale-review-modal.modal.open > .modal-card.admin-sale-review-card,
+body.admin-sales-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card,
+body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  flex: 0 0 auto !important;
+  align-self: center !important;
+  width: min(620px, 100%) !important;
+  min-width: 0 !important;
+  max-width: 620px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  border-radius: 14px !important;
+}
+body.admin-sales-page.admin-control-ui #admin-sale-review-modal.modal.open > .modal-card > .top,
+body.admin-sales-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > .top,
+body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card > .top {
+  position: relative !important;
+  top: auto !important;
+  flex: 0 0 auto !important;
+}
+body.admin-sales-page.admin-control-ui #admin-sale-review-content,
+body.admin-sales-page.admin-control-ui #admin-sale-history-details-content,
+body.admin-sales-history-page.admin-control-ui #admin-sale-history-details-content {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  box-sizing: border-box !important;
+}
+body.admin-sales-page.admin-control-ui #admin-sale-review-modal.modal.open > .modal-card > .row {
+  flex: 0 0 auto !important;
+}
+@media (max-width: 640px) {
+  body.admin-sales-page.admin-control-ui #admin-sale-review-modal.modal.open,
+  body.admin-sales-page.admin-control-ui #admin-sale-history-details.modal.open,
+  body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open {
+    align-items: center !important;
+    justify-content: flex-start !important;
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)) !important;
+  }
+  body.admin-sales-page.admin-control-ui #admin-sale-review-modal.modal.open > .modal-card.admin-sale-review-card,
+  body.admin-sales-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card,
+  body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card {
+    width: 100% !important;
+    max-width: 620px !important;
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) !important;
+  }
+}
