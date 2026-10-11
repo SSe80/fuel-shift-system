@@ -2040,25 +2040,30 @@ function filterAdminSales(){
   const progressingRows=(adminSalesData.progressing||[]).filter(adminSalesMatches);
   const allHistoryRows=(adminSalesData.history||[]).filter(adminSalesMatches);
   const historyRows=allHistoryRows.slice(0,3);
-  const progressingHtml=progressingRows.length?'<section class="admin-progressing-shifts"><button type="button" class="admin-progressing-shifts-head" onclick="toggleAdminProgressingShifts(this)" aria-expanded="false"><span><strong>Progressing shifts</strong><small>Set returned liters before the attendant records sales · '+progressingRows.length+' shift'+(progressingRows.length===1?'':'s')+'</small></span><span class="admin-progressing-shifts-chevron" aria-hidden="true">⌄</span></button><div class="admin-progressing-shifts-content" hidden>'+progressingRows.map(renderAdminProgressingSaleCard).join('')+'</div></section>':'';
   if(pendingBox){
-    if(!pendingRows.length){
-      pendingBox.innerHTML=progressingHtml+'<div class="card admin-sales-empty"><div class="empty-icon">✓</div><strong>No pending sales confirmations</strong><p class="muted">Submitted sale cards will appear here after attendants record their sales.</p></div>';
+    const groups={};
+    progressingRows.forEach(item=>{
+      const dsrId=dailyReportIdFromTimestamp(item.takeover?.shift_started_at);
+      (groups[dsrId]||(groups[dsrId]={pending:[],progressing:[]})).progressing.push(item);
+    });
+    pendingRows.forEach(item=>{
+      const dsrId=dailyReportIdFromTimestamp(item.takeover?.shift_started_at);
+      (groups[dsrId]||(groups[dsrId]={pending:[],progressing:[]})).pending.push(item);
+    });
+    if(!Object.keys(groups).length){
+      pendingBox.innerHTML='<div class="card admin-sales-empty"><div class="empty-icon">✓</div><strong>No pending sales confirmations</strong><p class="muted">Submitted sale cards will appear here after attendants record their sales.</p></div>';
     }else{
-      const groups={};
-      pendingRows.forEach(item=>{
-        const dsrId=dailyReportIdFromTimestamp(item.takeover?.shift_started_at);
-        (groups[dsrId]||(groups[dsrId]=[])).push(item);
-      });
-      pendingBox.innerHTML=progressingHtml+Object.keys(groups).map(dsrId=>
-        '<section class="admin-pending-dsr-group" data-dsr-id="'+h(dsrId)+'">'+
-          '<button type="button" class="admin-pending-dsr-head" onclick="toggleAdminPendingDsrGroup(\''+h(dsrId)+'\')" aria-expanded="false">'+
+      pendingBox.innerHTML=Object.keys(groups).sort().reverse().map(dsrId=>{
+        const group=groups[dsrId],pendingCount=group.pending.length,progressingCount=group.progressing.length;
+        const summary=[pendingCount?pendingCount+' pending confirmation'+(pendingCount===1?'':'s'):'',progressingCount?progressingCount+' progressing shift'+(progressingCount===1?'':'s'):''].filter(Boolean).join(' · ');
+        return '<section class="admin-pending-dsr-group" data-dsr-id="'+h(dsrId)+'">'+
+          '<button type="button" class="admin-pending-dsr-head" onclick="toggleAdminPendingDsrGroup(\\''+h(dsrId)+'\\')" aria-expanded="false">'+
             '<span class="admin-pending-dsr-title"><span class="section-kicker">DSR</span><strong>'+h(dsrId)+'</strong></span>'+
-            '<span class="admin-pending-dsr-right"><small>'+groups[dsrId].length+' pending sale'+(groups[dsrId].length===1?'':'s')+'</small><span class="admin-pending-dsr-toggle" aria-hidden="true">⌄</span></span>'+
+            '<span class="admin-pending-dsr-right"><small>'+summary+'</small><span class="admin-pending-dsr-toggle" aria-hidden="true">⌄</span></span>'+
           '</button>'+
-          '<div class="admin-pending-dsr-cards" hidden>'+groups[dsrId].map(renderAdminPendingSaleCard).join('')+'</div>'+
-        '</section>'
-      ).join('');
+          '<div class="admin-pending-dsr-cards" hidden>'+group.progressing.map(renderAdminProgressingSaleCard).join('')+group.pending.map(renderAdminPendingSaleCard).join('')+'</div>'+
+        '</section>';
+      }).join('');
     }
   }
   if(historyBox){
@@ -2100,6 +2105,17 @@ function toggleAdminPendingDsrGroup(dsrId){
   if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
   if(toggle)toggle.textContent=expanded?'⌃':'⌄';
 }
+function toggleAdminProgressingSaleCard(id){
+  const card=document.querySelector('.admin-progressing-sale-card[data-takeover-id="'+id+'"]');
+  if(!card)return;
+  const expanded=card.classList.toggle('expanded');
+  const body=card.querySelector('.admin-progressing-sale-body');
+  const head=card.querySelector('.admin-progressing-sale-head');
+  const toggle=card.querySelector('.admin-pending-sale-toggle');
+  if(body)body.hidden=!expanded;
+  if(head)head.setAttribute('aria-expanded',expanded?'true':'false');
+  if(toggle)toggle.textContent=expanded?'⌃':'⌄';
+}
 function toggleAdminProgressingShifts(button){
   const section=button?.closest('.admin-progressing-shifts');
   const content=section?.querySelector('.admin-progressing-shifts-content');
@@ -2114,10 +2130,10 @@ function renderAdminProgressingSaleCard(item){
   const t=item.takeover||{},dispenser=item.dispenser?.name||'Dispenser',shift=item.shift?.name||((item.from_employee?.name||'')+' → '+(item.to_employee?.name||'')),id=String(t.id||''),returned=Number(t.returned_liters||0);
   const b=adminReturnedFuelBreakdown(t,returned);
   return '<article class="card admin-sale-confirm-card admin-progressing-sale-card" data-takeover-id="'+h(id)+'" data-dsr-id="'+h(dailyReportIdFromTimestamp(t.shift_started_at))+'">'+
-    '<div class="admin-pending-sale-head"><span class="admin-pending-sale-title"><span class="section-kicker">PROGRESSING SHIFT</span><strong>'+h(dispenser)+'</strong><small>'+h(shift)+'</small></span><span class="pending-sale-badge">Awaiting attendant</span></div>'+
-    '<div class="admin-progressing-sale-body"><div class="admin-sale-context"><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at||t.created_at).toLocaleString()+'</strong></div><div><span>Gross liters dispensed</span><strong>'+liters(b.grossLiters)+' L</strong></div><div><span>Gross calculated sales</span><strong>'+money(b.grossAmount)+'</strong></div><div><span>Assigned tank</span><strong>'+h(item.tank?.name||'—')+'</strong></div></div>'+
-    '<label class="admin-returned-liters-field"><span class="admin-returned-liters-title">Returned liters to tank</span><small class="admin-returned-liters-help">Enter fuel used for inspection/operations and physically returned to the assigned tank. This will be carried into the confirmation card.</small><input class="admin-returned-liters-input" type="number" min="0" max="'+h(t.total_sales_liters)+'" step="0.01" inputmode="decimal" value="'+h(returned)+'" oninput="updateAdminReturnedPreview(\''+h(id)+'\')" data-returned-liters="'+h(id)+'" aria-label="Returned liters to tank"><small class="admin-returned-liters-max">Maximum: '+liters(t.total_sales_liters)+' L</small><div class="admin-returned-preview" data-return-preview="'+h(id)+'"></div><div class="admin-return-save-status" data-return-save-status="'+h(id)+'">'+(returned>0?'Saved return: '+liters(returned)+' L':'Not saved yet')+'</div></label>'+
-    '<div class="row admin-sale-actions"><button type="button" class="primary" onclick="saveAdminProgressingReturn(\''+h(id)+'\')">Save returned liters</button></div></div>'+
+    '<button type="button" class="admin-pending-sale-head admin-progressing-sale-head" onclick="toggleAdminProgressingSaleCard(\\''+h(id)+'\\')" aria-expanded="false"><span class="admin-pending-sale-title"><span class="section-kicker">PROGRESSING SHIFT</span><strong>'+h(dispenser)+'</strong><small>'+h(shift)+'</small></span><span class="admin-pending-sale-right"><span class="pending-sale-badge">Awaiting attendant</span><span class="admin-pending-sale-toggle" aria-hidden="true">⌄</span></span></button>'+
+    '<div class="admin-progressing-sale-body" hidden><div class="admin-sale-context"><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at||t.created_at).toLocaleString()+'</strong></div><div><span>Gross liters dispensed</span><strong>'+liters(b.grossLiters)+' L</strong></div><div><span>Gross calculated sales</span><strong>'+money(b.grossAmount)+'</strong></div><div><span>Assigned tank</span><strong>'+h(item.tank?.name||'—')+'</strong></div></div>'+
+    '<label class="admin-returned-liters-field"><span class="admin-returned-liters-title">Returned liters to tank</span><small class="admin-returned-liters-help">Enter fuel used for inspection/operations and physically returned to the assigned tank. This will be carried into the confirmation card.</small><input class="admin-returned-liters-input" type="number" min="0" max="'+h(t.total_sales_liters)+'" step="0.01" inputmode="decimal" value="'+h(returned)+'" oninput="updateAdminReturnedPreview(\\''+h(id)+'\\')" data-returned-liters="'+h(id)+'" aria-label="Returned liters to tank"><small class="admin-returned-liters-max">Maximum: '+liters(t.total_sales_liters)+' L</small><div class="admin-returned-preview" data-return-preview="'+h(id)+'"></div><div class="admin-return-save-status" data-return-save-status="'+h(id)+'">'+(returned>0?'Saved return: '+liters(returned)+' L':'Not saved yet')+'</div></label>'+
+    '<div class="row admin-sale-actions"><button type="button" class="primary" onclick="saveAdminProgressingReturn(\\''+h(id)+'\\')">Save returned liters</button></div></div>'+
   '</article>';
 }
 async function saveAdminProgressingReturn(id){
