@@ -2439,6 +2439,79 @@ def shift_takeover_sale_record(takeover_id):
         typ=type_map.get(str(sale.get("sale_type_id")),{})
         sale["sale_type_name"]=typ.get("name") or "Sale"
         sale["sale_type_description"]=typ.get("description")
+
+    # Enrich meter-reading rows with the actual physical nozzle, product and tank.
+    # A dispenser may contain multiple nozzle rows; per-nozzle relations are the
+    # reliable source for the labels shown in Admin and Attendant sales details.
+    reading_keys=("nozzle_opening_readings","nozzle_closing_readings","nozzle_sales_liters")
+    reading_ids=set()
+    for key in reading_keys:
+        values=takeover.get(key)
+        if not isinstance(values,list):
+            continue
+        for row in values:
+            if not isinstance(row,dict):
+                continue
+            candidate=str(row.get("nozzle_uuid") or "")
+            if not candidate and str(row.get("nozzle_id") or "").count("-")==4:
+                candidate=str(row.get("nozzle_id"))
+            if candidate and candidate.count("-")==4:
+                reading_ids.add(candidate)
+
+    nozzle_map={}
+    if reading_ids:
+        ns,nozzle_rows=sb("dispenser_nozzles",params={
+            "id":"in.("+",".join(sorted(reading_ids))+")",
+            "select":"id,nozzle_code,product_id,tank_id",
+            "limit":"1000"
+        })
+        if ns==200 and isinstance(nozzle_rows,list):
+            nozzle_map={str(row.get("id")):row for row in nozzle_rows if row.get("id")}
+
+    tank_ids=sorted({str(row.get("tank_id")) for row in nozzle_map.values() if row.get("tank_id")})
+    tank_map={}
+    if tank_ids:
+        ts,tank_rows=sb("tanks",params={
+            "id":"in.("+",".join(tank_ids)+")",
+            "select":"id,tank_code,product,product_id",
+            "limit":"1000"
+        })
+        if ts==200 and isinstance(tank_rows,list):
+            tank_map={str(row.get("id")):row for row in tank_rows if row.get("id")}
+
+    product_ids=sorted({str(row.get("product_id") or tank_map.get(str(row.get("tank_id")), {}).get("product_id")) for row in nozzle_map.values() if row.get("product_id") or tank_map.get(str(row.get("tank_id")), {}).get("product_id")})
+    product_map={}
+    if product_ids:
+        ps,product_rows=sb("products",params={
+            "id":"in.("+",".join(product_ids)+")",
+            "select":"id,name,code_name",
+            "limit":"1000"
+        })
+        if ps==200 and isinstance(product_rows,list):
+            product_map={str(row.get("id")):row for row in product_rows if row.get("id")}
+
+    for key in reading_keys:
+        values=takeover.get(key)
+        if not isinstance(values,list):
+            continue
+        for row in values:
+            if not isinstance(row,dict):
+                continue
+            candidate=str(row.get("nozzle_uuid") or "")
+            if not candidate and str(row.get("nozzle_id") or "").count("-")==4:
+                candidate=str(row.get("nozzle_id"))
+            physical=nozzle_map.get(candidate)
+            if not physical:
+                continue
+            tank=tank_map.get(str(physical.get("tank_id")), {})
+            product=product_map.get(str(physical.get("product_id") or tank.get("product_id")), {})
+            row["nozzle_code"]=physical.get("nozzle_code") or row.get("nozzle_code")
+            row["tank_id"]=physical.get("tank_id") or row.get("tank_id")
+            row["tank_code"]=tank.get("tank_code") or row.get("tank_code")
+            row["product_id"]=physical.get("product_id") or tank.get("product_id") or row.get("product_id")
+            row["product_code"]=product.get("code_name") or row.get("product_code")
+            row["product"]=row.get("product") or product.get("name") or tank.get("product")
+
     return jsonify({"takeover":takeover,"sales":sales}),200
 
 @app.post("/api/shift-takeovers/<takeover_id>/cancel-sale")
