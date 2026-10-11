@@ -4831,12 +4831,15 @@ function updateDailyDsrConfirmButton(card){
   const selectAll=card.querySelector('.daily-dsr-select-all');
   const button=card.querySelector('[data-confirm-dsr]');
   const dayClosed=card.dataset.dayClosed==='true';
-  const ready=dayClosed&&checks.length>0&&checks.every(x=>x.checked);
+  const allSelected=checks.length>0&&checks.every(x=>x.checked);
+  const someSelected=checks.some(x=>x.checked);
   if(selectAll){
-    selectAll.checked=ready;
-    selectAll.indeterminate=checks.some(x=>x.checked)&&!ready;
+    selectAll.checked=allSelected;
+    selectAll.indeterminate=someSelected&&!allSelected;
   }
-  if(button)button.disabled=!dayClosed||checks.length===0||!ready;
+  // Payment-method checkboxes are for review, not a second approval gate.
+  // The server's readiness state controls whether confirmation is available.
+  if(button)button.disabled=card.dataset.canConfirm!=='true';
 }
 function bindDailyDsrChecks(){
   document.querySelectorAll('.daily-confirm-card').forEach(card=>{
@@ -4993,6 +4996,7 @@ function renderDailyHistoryCard(item){ return renderDsrHistoryCard(item); }
 function renderDailyPendingConfirmationCard(item){
   const waiting=item.status==='waiting';
   const dayClosed=item.report_day_closed!==false;
+  const canConfirm=!waiting&&dayClosed&&item.all_shifts_complete===true&&item.all_handover_recorded===true&&item.all_sales_recorded===true;
   const dayClosedMessage=!dayClosed?'This DSR can be reviewed, but confirmation stays locked until '+h(dailyReportIdLabel(item.date))+' has ended.':'';
   const methodEntries=Object.entries(item.sales_by_method||{}).sort((a,b)=>Number(b[1])-Number(a[1]));
   const methods=methodEntries.map(([method,amount])=>
@@ -5025,13 +5029,13 @@ function renderDailyPendingConfirmationCard(item){
   const readiness=waiting
     ?'<div class="daily-dsr-readiness"><div class="daily-confirm-label">'+(!dayClosed?'Confirmation locked until day end':'Completion required')+'</div>'+(dayClosed?'':('<div class="daily-dsr-readiness-row"><span>•</span><strong>'+dayClosedMessage+'</strong></div>'))+missing.map(x=>'<div class="daily-dsr-readiness-row"><span>•</span><strong>'+h(x)+'</strong></div>').join('')+'</div>'
     :'';
-  return '<article class="card daily-confirm-card '+(waiting?'is-waiting':'')+'" data-report-date="'+h(item.date)+'" data-dsr-id="'+h(dailyReportIdLabel(item.date))+'" data-day-closed="'+(dayClosed?'true':'false')+'">'+
+  return '<article class="card daily-confirm-card '+(waiting?'is-waiting':'')+'" data-report-date="'+h(item.date)+'" data-dsr-id="'+h(dailyReportIdLabel(item.date))+'" data-day-closed="'+(dayClosed?'true':'false')+'" data-can-confirm="'+(canConfirm?'true':'false')+'">'+
     '<div class="daily-confirm-head"><div><span class="section-kicker">'+(!dayClosed?'DSR NOT READY':(waiting?'DSR NOT READY':'DSR READY FOR CONFIRMATION'))+'</span><h3>'+h(dailyReportIdLabel(item.date))+'</h3><p class="muted">'+Number(item.dispenser_count||0)+' dispenser(s) • '+Number(item.shift_count||0)+' shift(s)</p></div><span class="pending-sale-badge">'+(!dayClosed?'Day in progress':(waiting?'Waiting':'Pending'))+'</span></div>'+
     '<div class="daily-confirm-summary"><div><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div><span>Calculated sales</span><strong>'+money(item.total_sales_amount)+'</strong></div></div>'+
     readiness+
     '<div class="daily-confirm-methods"><div class="daily-confirm-label"><span>Sales awaiting confirmation</span><small>'+(waiting?'Sales will appear after recording is complete.':methodCount+' payment method'+(methodCount===1?'':'s')+' recorded')+'</small></div>'+methodControls+(methods||'<div class="daily-empty">'+(waiting?'Sales will appear here after they are recorded.':'No recorded sale methods.')+'</div>')+'</div>'+
     '<div class="daily-confirm-note">'+(!dayClosed?dayClosedMessage:(waiting?'This report is not ready yet. Complete all shifts, record the required handovers, and finish sales recording before confirmation.':'Review each recorded sales method, then confirm the DSR. Confirmation finalizes the linked shift sales for this report date.'))+'</div>'+
-    '<div class="row daily-confirm-actions"><button type="button" '+(waiting?'disabled':'')+' onclick="selectDailyReportDate(\''+item.date+'\')">Review DSR</button><button type="button" class="primary" '+(waiting?'disabled ':'')+'disabled data-confirm-dsr="'+h(item.date)+'" onclick="confirmDailyReport(\''+item.date+'\')">Confirm DSR</button></div>'+
+    '<div class="row daily-confirm-actions"><button type="button" '+(waiting?'disabled':'')+' onclick="selectDailyReportDate(\''+item.date+'\')">Review DSR</button><button type="button" class="primary" '+(!canConfirm?'disabled ':'')+'data-confirm-dsr="'+h(item.date)+'" onclick="confirmDailyReport(\''+item.date+'\')">Confirm DSR</button></div>'+
   '</article>';
 }
 async function confirmDailyReport(reportDate){
