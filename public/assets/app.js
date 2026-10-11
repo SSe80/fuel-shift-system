@@ -3362,8 +3362,8 @@ async function openAdminSaleHistoryDetails(id){
     const dispenser=(item.dispenser&&(
       item.dispenser.nozzle_code||item.dispenser.code||item.dispenser.name
     ))||t.dispenser_code||'Dispenser';
-    const productCode=(item.product&&item.product.code_name)||item.product_code||t.product_code||'—';
-    const tankCode=(item.tank&&item.tank.tank_code)||item.tank_code||t.tank_code||'—';
+    const productCode=(item.product&&(item.product.code_name||item.product.product_code||item.product.name||item.product.product_name))||item.product_code||item.product_name||t.product_code||t.product_name||(t.product&&(t.product.code_name||t.product.product_code||t.product.name||t.product.product_name))||(item.dispenser&&(item.dispenser.product_code||item.dispenser.product_name))||'—';
+    const tankCode=(item.tank&&(item.tank.tank_code||item.tank.code||item.tank.name||item.tank.tank_name))||item.tank_code||item.tank_name||t.tank_code||t.tank_name||(t.tank&&(t.tank.tank_code||t.tank.code||t.tank.name||t.tank.tank_name))||(item.dispenser&&(item.dispenser.tank_code||item.dispenser.tank_name))||'—';
     const attendant=(item.to_employee&&item.to_employee.name)||t.to_employee_name||item.to_employee_id||'—';
     const from=(item.from_employee&&item.from_employee.name)||t.from_employee_name||'';
     const to=(item.to_employee&&item.to_employee.name)||t.to_employee_name||attendant;
