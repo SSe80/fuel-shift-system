@@ -4779,3 +4779,71 @@ body.admin-sales-history-page.admin-control-ui #admin-sale-history-details-conte
   overflow: visible !important;
   touch-action: pan-y !important;
 }
+
+
+/* Attendant Shift History details: the backdrop is a sibling before the card,
+   so target the card as a descendant rather than a direct child. */
+body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.open {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+  padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)) !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.open > .modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+}
+body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.open .modal-card.takeover-details-modal {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  flex: 0 0 auto !important;
+  width: min(620px, 100%) !important;
+  max-width: 620px !important;
+  max-height: calc(100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) !important;
+  min-height: 0 !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+  box-sizing: border-box !important;
+}
+body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.open .modal-card.takeover-details-modal > .top {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 3 !important;
+  flex: 0 0 auto !important;
+  background: #fff !important;
+}
+body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.open #takeover-details-content {
+  display: block !important;
+  flex: 0 0 auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  touch-action: pan-y !important;
+}
+@media (max-width: 640px) {
+  body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.open .modal-card.takeover-details-modal {
+    width: 100% !important;
+    max-width: 620px !important;
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) !important;
+  }
+}
