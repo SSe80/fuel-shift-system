@@ -4571,3 +4571,91 @@ body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal
     border-radius: 14px !important;
   }
 }
+
+ 
+/* Final viewport anchoring fix: target the actual Shift History modal used by both pages. */
+body.attendant-dashboard-page.admin-control-ui #admin-sale-history-details.modal.open,
+body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open,
+body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.open {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)) !important;
+  display: flex !important;
+  flex-flow: column nowrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+body.attendant-dashboard-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card,
+body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card,
+body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.open > .modal-card.takeover-details-modal {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  flex: 0 0 auto !important;
+  align-self: center !important;
+  width: min(620px, 100%) !important;
+  min-width: 0 !important;
+  max-width: 620px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  border-radius: 14px !important;
+}
+body.attendant-dashboard-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card > .top,
+body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card > .top,
+body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.open > .modal-card.takeover-details-modal > .top {
+  position: relative !important;
+  top: auto !important;
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+}
+body.attendant-dashboard-page.admin-control-ui #admin-sale-history-details.modal.open #admin-sale-history-details-content,
+body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open #admin-sale-history-details-content,
+body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.open #takeover-details-content {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  box-sizing: border-box !important;
+}
+@media (max-width: 640px) {
+  body.attendant-dashboard-page.admin-control-ui #admin-sale-history-details.modal.open,
+  body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open,
+  body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.open {
+    align-items: center !important;
+    justify-content: flex-start !important;
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)) !important;
+  }
+  body.attendant-dashboard-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card,
+  body.admin-sales-history-page.admin-control-ui #admin-sale-history-details.modal.open > .modal-card.admin-sale-review-card,
+  body.attendant-dashboard-page.admin-control-ui #takeover-details-modal.modal.open > .modal-card.takeover-details-modal {
+    width: 100% !important;
+    max-width: 620px !important;
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) !important;
+  }
+}
