@@ -4431,3 +4431,66 @@ body.admin-control-ui #admin-sale-history-details .history-detail-info-grid > * 
     overflow-wrap: anywhere !important;
   }
 }
+/* ==========================================================================
+   ATTENDANT SALE SUMMARY — Record Sale and Review Sale cards (one design)
+   Four tiles: Net liters sold, Gross sales amount, Returned fuel deduction, Net sales amount.
+   Two columns, equal tile heights, values on one line, labels reserve two lines.
+   ========================================================================== */
+body.admin-control-ui.attendant-dashboard-page :is(.main-record-sale-summary, .takeover-confirm-summary, .takeover-sale-summary) {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+  margin: 10px 0 14px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body.admin-control-ui.attendant-dashboard-page :is(.main-record-sale-summary, .takeover-confirm-summary, .takeover-sale-summary) > div {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  padding: 11px 12px !important;
+  border: 1px solid var(--ac-line, #e2e8f0) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+body.admin-control-ui.attendant-dashboard-page :is(.main-record-sale-summary, .takeover-confirm-summary, .takeover-sale-summary) > div:last-child {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+body.admin-control-ui.attendant-dashboard-page :is(.main-record-sale-summary, .takeover-confirm-summary, .takeover-sale-summary) > div > span {
+  display: block !important;
+  min-height: 2.5em !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: .05em !important;
+  text-transform: uppercase !important;
+  color: #64748b !important;
+  overflow-wrap: normal !important;
+}
+body.admin-control-ui.attendant-dashboard-page :is(.main-record-sale-summary, .takeover-confirm-summary, .takeover-sale-summary) > div > strong {
+  display: block !important;
+  font-size: clamp(13px, 3.9vw, 15px) !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  color: #0f172a !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-variant-numeric: tabular-nums !important;
+}
+/* Returned fuel deduction (third tile) is shown as a deduction */
+body.admin-control-ui.attendant-dashboard-page :is(.main-record-sale-summary, .takeover-confirm-summary, .takeover-sale-summary) > div:nth-child(3) > strong {
+  color: #b91c1c !important;
+}
+@media (max-width: 340px) {
+  body.admin-control-ui.attendant-dashboard-page :is(.main-record-sale-summary, .takeover-confirm-summary, .takeover-sale-summary) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
