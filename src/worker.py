@@ -185,6 +185,18 @@ def _audit_record_locator(path, payload=None):
         return "station_settings", {"id": "eq.true"}
     if parts == ["api", "drive", "settings"]:
         return "drive_settings", {"id": "eq.1"}
+    # Collection routes have no pre-existing row; their created ID is read
+    # from the successful response and used for the after-snapshot.
+    if parts == ["api", "products"]:
+        return "products", None
+    if parts in (["api", "users"], ["api", "employees"]):
+        return "employees", None
+    if parts == ["api", "tanks"]:
+        return "tanks", None
+    if parts == ["api", "nozzles"]:
+        return "nozzles", None
+    if parts == ["api", "sale-types"]:
+        return "sale_types", None
     if len(parts) >= 3 and parts[:2] == ["api", "products"] and parts[2] not in ("",):
         return "products", {"id": "eq." + parts[2]}
     if len(parts) >= 3 and parts[:2] in (["api", "users"], ["api", "employees"]):
