@@ -12,9 +12,12 @@ body.admin-settings-page .settings-group-heading{margin:30px 0 16px!important;pa
 body.admin-settings-page .settings-section.card{margin-top:0!important;margin-bottom:20px!important}
 body.admin-settings-page .settings-group-heading p{margin-top:4px!important;font-size:.86rem!important;line-height:1.35!important}
 /* Keep card header titles and descriptions in the same position across the requested cards. */
-body.admin-settings-page .configuration-settings-card .section-heading{
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section.configuration-settings-card .section-heading{
   box-sizing:border-box!important;
   display:block!important;
+  align-items:initial!important;
+  justify-content:initial!important;
+  min-height:0!important;
   padding:18px 112px 18px 20px!important;
 }
 body.admin-settings-page #sales-difference-tolerance-section .section-heading,
@@ -23,13 +26,13 @@ body.admin-settings-page #drive-settings-section>.section-heading{
   display:block!important;
   padding:18px 20px!important;
 }
-body.admin-settings-page .configuration-settings-card .section-heading>div:first-child,
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section.configuration-settings-card .section-heading>div:first-child,
 body.admin-settings-page #sales-difference-tolerance-section .section-heading>div:first-child,
 body.admin-settings-page #drive-settings-section>.section-heading>div:first-child{
   display:block!important;
   min-width:0!important;
 }
-body.admin-settings-page .configuration-settings-card .section-heading h2,
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section.configuration-settings-card .section-heading h2,
 body.admin-settings-page #sales-difference-tolerance-section .section-heading h2,
 body.admin-settings-page #drive-settings-section .section-heading h2{
   margin:8px 0 2px!important;
@@ -37,7 +40,7 @@ body.admin-settings-page #drive-settings-section .section-heading h2{
   line-height:normal!important;
   font-weight:750!important;
 }
-body.admin-settings-page .configuration-settings-card .section-heading p,
+body.admin-control-ui[data-app-page].admin-settings-page .settings-section.configuration-settings-card .section-heading p,
 body.admin-settings-page #sales-difference-tolerance-section .section-heading p,
 body.admin-settings-page #drive-settings-section .section-heading p{
   margin:0!important;
@@ -46,7 +49,7 @@ body.admin-settings-page #drive-settings-section .section-heading p{
   max-width:none!important;
 }
 @media(max-width:640px){
-  body.admin-settings-page .configuration-settings-card .section-heading{
+  body.admin-control-ui[data-app-page].admin-settings-page .settings-section.configuration-settings-card .section-heading{
     padding:14px 56px 14px 14px!important;
   }
   body.admin-settings-page #sales-difference-tolerance-section .section-heading,
