@@ -215,6 +215,7 @@ SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets"
 
 async def _append_audit(token, folder_id, sheet_id, row):
     """Append one audit event. Create the spreadsheet in the chosen folder on first use."""
+    await check_folder(token, folder_id)
     created = False
     if not sheet_id:
         metadata = json.dumps({
@@ -251,5 +252,4 @@ def append_audit_row(e, folder_id, sheet_id, row):
     if not folder_id:
         raise DriveError("Admin audit folder is not configured", 400)
     token = access_token(e)
-    check_folder(token, folder_id)
     return run_sync(_append_audit(token, folder_id, sheet_id, row))
