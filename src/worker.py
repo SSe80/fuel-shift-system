@@ -455,7 +455,50 @@ def audit_admin_settings_mutations(response):
             resource_label = "Google Drive Settings"
         elif resource_key == "settings":
             resource_label = "Station Settings"
-        action = "{} {}".format(method_action, resource_label)
+
+        # Turn field-level state changes into plain-language audit actions.
+        # Ignore timestamp-only metadata when deciding what the action means.
+        changes = details.get("changed_fields")
+        meaningful_changes = {
+            str(key): value for key, value in changes.items()
+            if str(key).lower() not in ("updated_at", "created_at")
+        } if isinstance(changes, dict) else {}
+        active_change = meaningful_changes.get("active")
+        if isinstance(active_change, dict) and "before" in active_change and "after" in active_change:
+            before_active, after_active = active_change.get("before"), active_change.get("after")
+            if before_active is True and after_active is False:
+                action = "Deactivated {}".format(resource_label)
+            elif before_active is False and after_active is True:
+                action = "Activated {}".format(resource_label)
+            else:
+                action = "{} {}".format(method_action, resource_label)
+        elif request.method == "POST":
+            action = "Created {}".format(resource_label)
+        elif request.method == "DELETE":
+            action = "Deleted {}".format(resource_label)
+        elif request.method in ("PUT", "PATCH") and len(meaningful_changes) == 1:
+            field_key = next(iter(meaningful_changes))
+            field_label = _audit_display_label(field_key)
+            action_field_labels = {
+                "selling_price": "Selling Price",
+                "purchase_price": "Purchase Price",
+                "price": "Price",
+                "name": "Name",
+                "phone": "Phone Number",
+                "role": "Role",
+                "operator_id": "Operator ID",
+                "tank_code": "Tank Code",
+                "nozzle_code": "Dispenser Code",
+                "active": "Status",
+                "description": "Description",
+                "reason_required": "Reason Requirement",
+            }
+            field_label = action_field_labels.get(field_key.lower(), field_label)
+            action = "Changed {} {}".format(resource_label, field_label)
+        elif request.method in ("PUT", "PATCH") and meaningful_changes:
+            action = "Updated {} Details".format(resource_label)
+        else:
+            action = "{} {}".format(method_action, resource_label)
 
         # Prefer a meaningful record name/code over a route UUID. Collection
         # routes use the created response/snapshot; record routes use the
