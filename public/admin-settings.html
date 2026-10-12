@@ -24,9 +24,9 @@
   <header class="settings-header"><div><span class="eyebrow">STATION CONTROL</span><h1>Admin Settings</h1><p class="muted">Manage users, fuel products, tanks, and dispensers.</p></div></header>
 <div class="admin-page-body-card">
 
-  <section class="settings-group-heading" aria-labelledby="station-configuration-heading"><span class="section-kicker">STATION SETUP</span><h2 id="station-configuration-heading">Configuration</h2><p>Manage users, products, fuel tanks, dispensers, and sales.</p></section>
+  <section class="settings-group-heading" aria-labelledby="station-configuration-heading"><span class="section-kicker">STATION SETUP</span><h2 id="station-configuration-heading">Configuration</h2><p>Manage station setup.</p></section>
 
-  <section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">ACCESS</span><h2>Users</h2><p>Manage operator accounts, roles, PINs, and access.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-user-modal')">＋ Add user</button></div>
+  <section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">ACCESS</span><h2>Users</h2><p>Manage accounts and access.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-user-modal')">＋ Add user</button></div>
 
     <div id="employee-edit-modal" class="modal" aria-hidden="true">
       <div class="modal-backdrop" onclick="closeUserEdit()"></div>
@@ -47,7 +47,7 @@
     <div class="settings-collapsible"><div id="employees"></div></div>
   </section>
 
-  <section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">FUEL CATALOG</span><h2>Products</h2><p>Configure fuel names, codes, colors, and selling prices.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-product-modal')">＋ Add product</button></div>
+  <section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">FUEL CATALOG</span><h2>Products</h2><p>Manage fuel products and prices.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-product-modal')">＋ Add product</button></div>
     <div class="settings-collapsible"><div class="row" style="margin-bottom:14px"><button type="button" class="primary" onclick="openStationCurrencyModal()">Currency</button></div><div id="products"></div></div>
   </section>
 
@@ -162,7 +162,7 @@
   </form>
 </div>
 
-<section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">STORAGE</span><h2>Fuel Tanks</h2><p>Manage tank capacity, stock readings, and activation.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-tank-modal')">＋ Add tank</button></div>
+<section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">STORAGE</span><h2>Fuel Tanks</h2><p>Manage tank capacity and stock.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-tank-modal')">＋ Add tank</button></div>
     <div id="tank-edit-modal" class="modal" aria-hidden="true">
       <div class="modal-backdrop" onclick="closeTankEdit()"></div>
       <form id="tank-edit-form" class="modal-card form" onsubmit="saveTankEdit(event)">
@@ -193,7 +193,7 @@
     <div class="settings-collapsible"><div id="tanks"></div></div>
   </section>
 
-  <section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">FORECOURT</span><h2>Fuel Dispensers</h2><p>Connect dispensers to tanks and manage nozzle assignments.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-dispenser-modal')">＋ Add dispenser</button></div>
+  <section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">FORECOURT</span><h2>Fuel Dispensers</h2><p>Manage dispenser and nozzle setup.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-dispenser-modal')">＋ Add dispenser</button></div>
     <div id="dispenser-edit-modal" class="modal" aria-hidden="true">
       <div class="modal-backdrop" onclick="closeDispenserEdit()"></div>
       <form id="dispenser-edit-form" class="modal-card form" onsubmit="saveDispenserEdit(event)">
@@ -237,13 +237,14 @@
 
 
 
-<section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">SALES</span><h2>Sales</h2><p>Manage sale types that attendants can select when recording a shift handover sale.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-sale-type-modal')">＋ Add sale</button></div>
+<section class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">SALES</span><h2>Sales</h2><p>Manage sale types.</p></div><button type="button" class="primary add-action" onclick="openAddModal('add-sale-type-modal')">＋ Add sale</button></div>
   <div class="settings-collapsible"><div id="sale-types"></div></div>
 </section>
 
 
   <style>
-    .operational-reset-card{border:1px solid #ef4444!important;border-top:3px solid #dc2626!important}
+    .operational-reset-card{border:1px solid #ef4444!important;border-top:3px solid #dc2626!important;margin-top:24px!important}
+body.admin-settings-page #drive-settings-section{margin-bottom:24px!important}
     .operational-reset-card .section-kicker{color:#dc2626;font-weight:800;letter-spacing:.08em}
     .operational-reset-button{background:#b91c1c!important;color:#fff!important;border:1px solid #991b1b!important;font-weight:800}
     .operational-reset-button:disabled{opacity:.55;cursor:not-allowed}
@@ -254,11 +255,26 @@
     #operational-reset-modal.open{display:flex!important;visibility:visible!important;align-items:center;justify-content:center;position:fixed;inset:0;z-index:10000;padding:18px;overflow:auto}
     #operational-reset-modal[aria-hidden="true"]{display:none!important}
   </style>
-  <section id="drive-settings-section" class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">EXPORTS</span><h2>Google Drive</h2><p>Folder links for automatic DSR, MSR, and purchase-record PDF storage.</p></div></div><div class="settings-collapsible"><label class="drive-field">DSR folder link<input id="drive-dsr-link" type="url" placeholder="https://drive.google.com/drive/folders/…"></label><label class="drive-field">MSR folder link<input id="drive-msr-link" type="url" placeholder="https://drive.google.com/drive/folders/…"></label><label class="drive-field">Purchases PDF folder link<input id="drive-purchase-link" type="url" placeholder="https://drive.google.com/drive/folders/…"></label><label class="drive-field">Admin Actions Audit Log folder link<input id="drive-audit-link" type="url" placeholder="https://drive.google.com/drive/folders/…"></label><label class="drive-field">Admin Actions Audit spreadsheet link<input id="drive-audit-sheet-link" type="url" placeholder="https://docs.google.com/spreadsheets/d/…/edit"></label><p class="muted">Create the spreadsheet in the folder above and share it with the app’s Google service account as Editor. The app appends admin name, ID, action, and change details to this existing spreadsheet; it will not create another spreadsheet.</p><div class="drive-actions"><button type="button" class="primary" id="drive-save-btn">Save links</button><button type="button" class="secondary" id="drive-test-btn">Test connection</button></div><p id="drive-status" class="muted"></p><h3 class="drive-queue-title">Upload queue</h3><div id="drive-queue-list"><p class="muted">Loading…</p></div></div></section>
-<section class="settings-group-heading" aria-labelledby="tolerance-settings-heading"><span class="section-kicker">OPERATIONAL CONTROLS</span><h2 id="tolerance-settings-heading">Tolerance Settings</h2><p>Set the warning thresholds for sales reconciliation, shift handover tank differences, and purchase discharge tank differences.</p></section>
+  <section id="drive-settings-section" class="settings-section card"><div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">EXPORTS</span><h2>Google Drive</h2><p>Set folders for report and purchase PDFs.</p></div></div><div class="settings-collapsible"><label class="drive-field">DSR folder link<input id="drive-dsr-link" type="url" placeholder="https://drive.google.com/drive/folders/…"></label><label class="drive-field">MSR folder link<input id="drive-msr-link" type="url" placeholder="https://drive.google.com/drive/folders/…"></label><label class="drive-field">Purchases PDF folder link<input id="drive-purchase-link" type="url" placeholder="https://drive.google.com/drive/folders/…"></label><label class="drive-field">Admin Actions Audit Log folder link<input id="drive-audit-link" type="url" placeholder="https://drive.google.com/drive/folders/…"></label><label class="drive-field">Admin Actions Audit spreadsheet link<input id="drive-audit-sheet-link" type="url" placeholder="https://docs.google.com/spreadsheets/d/…/edit"></label><p class="muted">Create the spreadsheet in the folder above and share it with the app’s Google service account as Editor. The app appends admin name, ID, action, and change details to this existing spreadsheet; it will not create another spreadsheet.</p><div class="drive-actions"><button type="button" class="primary" id="drive-save-btn">Save links</button><button type="button" class="secondary" id="drive-test-btn">Test connection</button></div><p id="drive-status" class="muted"></p><h3 class="drive-queue-title">Upload queue</h3><div id="drive-queue-list"><p class="muted">Loading…</p></div></div></section>
+<section id="reset-operational-data-section" class="settings-section card operational-reset-card">
+    <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0">
+      <div><span class="section-kicker">DANGER ZONE</span><h2>Reset Operational Data</h2>
+      <p>Clear records for a fresh operating period.</p></div>
+    </div>
+    <div class="settings-collapsible">
+      <div class="operational-reset-note"><strong>Warning:</strong> Permanently deletes operational records and clears nozzle shift activations and the Google Drive upload queue. PDFs already uploaded to Drive are kept.</div>
+      <p><strong>Kept:</strong> accounts, products, tanks, dispensers, settings, and current tank stock.</p>
+      <button type="button" id="open-operational-reset" class="operational-reset-button">Reset Operational Data</button>
+      <div id="operational-reset-status" class="operational-reset-status muted" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+
+
+<section class="settings-group-heading" aria-labelledby="tolerance-settings-heading"><span class="section-kicker">OPERATIONAL CONTROLS</span><h2 id="tolerance-settings-heading">Tolerance Settings</h2><p>Configure difference warning limits.</p></section>
 
 <section class="settings-section card" id="sales-difference-tolerance-section">
-  <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">SALES VALIDATION</span><h2>Sales Difference Tolerance</h2><p>Set the maximum allowed difference between entered sales and calculated net sales during shift handover.</p></div></div>
+  <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">SALES VALIDATION</span><h2>Sales Difference Tolerance</h2><p>Allowed sales total difference at handover.</p></div></div>
   <div class="settings-collapsible">
     <form class="form" onsubmit="saveSalesDifferenceTolerance(event)" style="max-width:520px">
       <label>Allowed difference (ETB)<input id="sales-difference-tolerance" type="number" min="0" max="100000" step="0.01" inputmode="decimal" value="1.00" required></label>
@@ -270,7 +286,7 @@
 </section>
 
 <section class="settings-section card" id="shift-handover-tank-tolerance-section">
-  <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">TANK RECONCILIATION</span><h2>Shift Handover Tank Difference Tolerance</h2><p>Maximum allowed difference, in liters, between expected tank stock and the physical closing dip at shift handover.</p></div></div>
+  <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">TANK RECONCILIATION</span><h2>Shift Handover Tank Difference Tolerance</h2><p>Allowed tank-stock difference at handover.</p></div></div>
   <div class="settings-collapsible">
     <form class="form" onsubmit="saveTankDifferenceTolerance(event,'shift_handover_tank_difference_tolerance')" style="max-width:520px">
       <label>Allowed tank difference (L)<input id="shift-handover-tank-tolerance" type="number" min="0" max="100000" step="0.01" inputmode="decimal" value="10" required></label>
@@ -282,7 +298,7 @@
 </section>
 
 <section class="settings-section card" id="purchase-discharge-tank-tolerance-section">
-  <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">PURCHASE VALIDATION</span><h2>Purchase Discharge Tank Difference Tolerance</h2><p>Maximum allowed difference, in liters, between system stock and the physical tank reading before purchase discharge.</p></div></div>
+  <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">PURCHASE VALIDATION</span><h2>Purchase Discharge Tank Difference Tolerance</h2><p>Allowed tank-stock difference before discharge.</p></div></div>
   <div class="settings-collapsible">
     <form class="form" onsubmit="saveTankDifferenceTolerance(event,'purchase_discharge_tank_difference_tolerance')" style="max-width:520px">
       <label>Allowed tank difference (L)<input id="purchase-discharge-tank-tolerance" type="number" min="0" max="100000" step="0.01" inputmode="decimal" value="10" required></label>
@@ -292,19 +308,6 @@
     </form>
   </div>
 </section>
-
-<section id="reset-operational-data-section" class="settings-section card operational-reset-card">
-    <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0">
-      <div><span class="section-kicker">DANGER ZONE</span><h2>Reset Operational Data</h2>
-      <p>Clear operational records to start a fresh operating period.</p></div>
-    </div>
-    <div class="settings-collapsible">
-      <div class="operational-reset-note"><strong>Warning:</strong> This permanently deletes operational history, including DSRs, purchases, sales, payment records, inbox notifications, shifts, handovers, tank movements, and accounting records. It also clears nozzle shift activations and the Google Drive PDF upload queue (pending, failed, and completed queue entries). Files already uploaded to Google Drive are not deleted.</div>
-      <p><strong>Preserved:</strong> user accounts, products and prices, tanks and calibration, dispensers and nozzles, station settings, and current tank stock.</p>
-      <button type="button" id="open-operational-reset" class="operational-reset-button">Reset Operational Data</button>
-      <div id="operational-reset-status" class="operational-reset-status muted" role="status" aria-live="polite"></div>
-    </div>
-  </section>
 
   <div id="operational-reset-modal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" id="operational-reset-backdrop"></div>
