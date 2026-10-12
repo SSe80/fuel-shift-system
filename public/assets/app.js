@@ -2558,8 +2558,9 @@ function createPdfDoc(){
   const line=(x1,t1,x2,t2,color,wd,dash)=>cmd((dash?'['+dash+'] 0 d ':'')+col(color)+' RG '+(wd||.6)+' w '+n2(x1)+' '+Y(t1)+' m '+n2(x2)+' '+Y(t2)+' l S'+(dash?' [] 0 d':'')+'\n');
   const poly=(pts,color)=>cmd(col(color)+' rg '+pts.map((p,i)=>n2(p[0])+' '+Y(p[1])+(i?' l':' m')).join(' ')+' h f\n');
   Object.assign(d,{clean,tw,fit,wrap,box,outline,hline,line,text,poly});
-  d.newPage=()=>{pages.push([]);d.y=d.topY;};
-  d.ensure=h=>{if(d.y+h>BOTTOM)d.newPage();};
+  d.singlePage=false;
+  d.newPage=()=>{if(d.singlePage)return;pages.push([]);d.y=d.topY;};
+  d.ensure=h=>{if(!d.singlePage&&d.y+h>BOTTOM)d.newPage();};
   d.section=(title,x,t)=>{box(x,t,3,13.4,C.BLUE);text(clean(title).toUpperCase(),x+10,t+10.2,10.5,true,C.NAVY);};
 
   d.header=o=>{
@@ -2624,7 +2625,8 @@ function createPdfDoc(){
 
   // Table with section bar. cols:[{h,x,a:'r',b,max,wrap}], rows: arrays of string | {t,b,tone,sub}; row.tone=[...] optional
   d.table=(title,cols,rows,o)=>{
-    o=Object.assign({hdrH:24,hdrGap:25.9,hdrBase:15,minH:30,baseOff:19,numOff:19,nameOff:13,subOff:24,rowLine:true,zebra:false,lineW:.6,after:20},o||{});
+    const compactRows=d.singlePage?{hdrGap:21,minH:22,rowPad:10,baseOff:14.5,numOff:14.5,nameOff:10,subOff:20,after:12}:{};
+    o=Object.assign({hdrH:24,hdrGap:25.9,hdrBase:15,minH:30,baseOff:19,numOff:19,nameOff:13,subOff:24,rowLine:true,zebra:false,lineW:.6,after:20},compactRows,o||{});
     d.ensure(o.hdrGap+o.hdrH+o.minH+10);
     d.section(title,M,d.y);d.y+=o.hdrGap;
     const head=()=>{box(M,d.y,CW,o.hdrH,C.NAVY,6);cols.forEach(c=>text(clean(c.h).toUpperCase(),M+c.x,d.y+o.hdrBase,7.5,true,[255,255,255],c.a==='r'?'r':'l'));d.y+=o.hdrH;};
@@ -2634,7 +2636,7 @@ function createPdfDoc(){
       const hasSub=cells.some(c=>c.sub!=null);
       const lines=cells.map((c,i)=>cols[i].wrap?wrap(c.t,9.5,!!(c.b||cols[i].b),cols[i].wrap):[fit(c.t,hasSub&&c.sub!=null?9:9.5,!!(c.b||cols[i].b),cols[i].max||200)]);
       const n=Math.max.apply(null,lines.map(l=>l.length)),rh=Math.max(o.minH,n*11.5+(o.rowPad==null?18.5:o.rowPad));
-      if(d.y+rh>BOTTOM){d.newPage();head();}
+      if(!d.singlePage&&d.y+rh>BOTTOM){d.newPage();head();}
       if(!o.zebra||ri%2===0)box(M,d.y,CW,rh,C.CARD);
       cells.forEach((c,i)=>{
         const align=cols[i].a==='r'?'r':'l',bx=M+cols[i].x,bold=!!(c.b||cols[i].b),tone=(row.tone&&row.tone[i])||c.tone||C.INK;
@@ -2651,6 +2653,14 @@ function createPdfDoc(){
 
   d.pageCount=()=>pages.length;
   d.finish=(footerLeft,title)=>{
+    if(d.singlePage){
+      const s=Math.min(1,(BOTTOM-2)/Math.max(1,d.y));
+      if(s<1){
+        const tx=W*(1-s)/2,ty=H*(1-s);
+        pages[0].unshift('q '+n2(s)+' 0 0 '+n2(s)+' '+n2(tx)+' '+n2(ty)+' cm\n');
+        pages[0].push('Q\n');
+      }
+    }
     const objs=[],kids=[];let next=7;
     pages.forEach((cmds,pi)=>{
       const pid=next++,cid=next++;kids.push(pid+' 0 R');
@@ -2680,6 +2690,7 @@ function createPdfDoc(){
 /* ---------- SALES REPORT ---------- */
 function createSalesReportPdf(r){
   const d=createPdfDoc(),M=d.M;
+  d.singlePage=true;
   d.header({kicker:'SALES REPORT  \u00b7  SHIFT SALES DETAIL',title:r.title,subtitle:r.subtitle,h:84,kBase:28,tBase:54,sBase:71,pillTop:31.5,pillBase:48.5,status:r.statusLabel});
   d.y=105.8;
   d.section('Overview',M,d.y);d.y+=24.5;
