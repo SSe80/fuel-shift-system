@@ -66,11 +66,11 @@ function openEditWizard(id){const truck=getTrucks().find(item=>item.id===id);if(
 function resetWizardTitle(){document.querySelector('.wizard-kicker').textContent='TRUCK REGISTRATION';$('wizardTitle').textContent='Add truck';$('wizardSubtitle').textContent='Enter driver and truck information to begin.'}
 function closeWizard(){overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true');document.body.style.overflow='';editingTruckId=null;editingTruck=null;resetWizardTitle();$('wizardNext').textContent='Next'}
 function parseCalibrationCsv(text){
- const lines=String(text||'').replace(/^\\uFEFF/,'').split(/\\r?\\n/).map(line=>line.trim()).filter(Boolean);
+ const lines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
  if(!lines.length)throw new Error('The CSV file is empty.');
- const first=lines[0],delimiter=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?';':((first.match(/\\t/g)||[]).length>(first.match(/,/g)||[]).length?'\\t':',');
+ const first=lines[0],delimiter=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?';':((first.match(/\t/g)||[]).length>(first.match(/,/g)||[]).length?'\t':',');
  const points=[];
- for(const line of lines){const cells=line.split(delimiter).map(cell=>cell.trim().replace(/^["']|["']$/g,''));if(cells.length<2)continue;const volume=Number(cells[0].replace(/\\s/g,'')),height=Number(cells[1].replace(/\\s/g,''));if(Number.isFinite(volume)&&Number.isFinite(height)&&volume>=0&&height>=0)points.push({litres:volume,mm:height})}
+ for(const line of lines){const cells=line.split(delimiter).map(cell=>cell.trim().replace(/^["']|["']$/g,''));if(cells.length<2)continue;const volume=Number(cells[0].replace(/\s/g,'')),height=Number(cells[1].replace(/\s/g,''));if(Number.isFinite(volume)&&Number.isFinite(height)&&volume>=0&&height>=0)points.push({litres:volume,mm:height})}
  const unique=new Map();points.forEach(point=>unique.set(point.mm,point));const table=Array.from(unique.values()).sort((a,b)=>a.mm-b.mm);
  if(table.length<2)throw new Error('Could not find at least two numeric rows. CSV must have volume (L) in column 1 and height (mm) in column 2.');
  return table;
