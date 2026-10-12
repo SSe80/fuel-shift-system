@@ -207,3 +207,49 @@ async def _check_both(sa, folders):
 
 def test_folders(e, folders):
     return run_sync(_check_both(service_account(e), folders))
+
+
+# Google Sheets-backed admin audit log. Uses the existing service-account Drive access.
+SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets"
+
+
+async def _append_audit(token, folder_id, sheet_id, row):
+    """Append one audit event. Create the spreadsheet in the chosen folder on first use."""
+    created = False
+    if not sheet_id:
+        metadata = json.dumps({
+            "name": "Admin Actions Audit Log",
+            "mimeType": "application/vnd.google-apps.spreadsheet",
+            "parents": [folder_id]
+        })
+        status, data = await _http(DRIVE_API + "?supportsAllDrives=true&fields=id,name,mimeType",
+                                  "POST", dict(_auth(token), **{"Content-Type": "application/json"}), metadata)
+        if status >= 400 or not isinstance(data, dict) or not data.get("id"):
+            raise _gerr("Create admin audit spreadsheet", status, data)
+        sheet_id = data["id"]
+        created = True
+    if created:
+        header_url = SHEETS_API + "/" + sheet_id + "/values/Sheet1%21A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS"
+        header = json.dumps({"values": [[
+            "Timestamp (UTC)", "Admin Name", "Admin ID", "Action", "Target",
+            "Changes / Details", "Result", "API Path"
+        ]]})
+        status, data = await _http(header_url, "POST", dict(_auth(token), **{"Content-Type": "application/json"}), header)
+        if status >= 400:
+            raise _gerr("Initialize admin audit spreadsheet", status, data)
+    append_url = SHEETS_API + "/" + sheet_id + "/values/Sheet1%21A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS"
+    payload = json.dumps({"values": [row]})
+    status, data = await _http(append_url, "POST", dict(_auth(token), **{"Content-Type": "application/json"}), payload)
+    if status >= 400:
+        raise _gerr("Append admin audit row", status, data)
+    return sheet_id
+
+
+def append_audit_row(e, folder_id, sheet_id, row):
+    """Append a row to the audit sheet, creating the sheet inside folder_id if necessary.
+    Returns the spreadsheet ID (new or existing)."""
+    if not folder_id:
+        raise DriveError("Admin audit folder is not configured", 400)
+    token = access_token(e)
+    check_folder(token, folder_id)
+    return run_sync(_append_audit(token, folder_id, sheet_id, row))
