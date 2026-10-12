@@ -264,8 +264,8 @@ def _audit_safe_details(value):
 
 @app.after_request
 def audit_admin_settings_mutations(response):
-    """Best-effort audit trail for successful Admin Settings mutations.
-    The application action remains successful even if Google Sheets is temporarily unavailable.
+    """Best-effort audit trail for admin mutation attempts, including before/after state.
+    The application response is preserved even if snapshots or Google Sheets are unavailable.
     """
     try:
         if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
