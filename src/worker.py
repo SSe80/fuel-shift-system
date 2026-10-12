@@ -237,7 +237,7 @@ def snapshot_admin_mutation_before():
         table, filters = _audit_record_locator(path)
         request.environ["fuel_audit_table"] = table
         request.environ["fuel_audit_filters"] = filters
-        request.environ["fuel_audit_before"] = _audit_fetch_record(table, filters) if table else None
+        request.environ["fuel_audit_before"] = _audit_fetch_record(table, filters) if table and filters else None
     except Exception:
         app.logger.exception("Admin audit pre-mutation snapshot failed")
 
@@ -248,7 +248,7 @@ def _audit_safe_details(value):
         out = {}
         for key, item in value.items():
             low = str(key).lower()
-            if any(term in low for term in ("pin", "password", "secret", "token", "hash", "credential")):
+            if any(term in low for term in ("pin", "password", "secret", "token", "hash", "credential", "private", "api_key", "authorization", "service_account")):
                 out[str(key)] = "[redacted]"
             else:
                 out[str(key)] = _audit_safe_details(item)
@@ -333,9 +333,8 @@ def audit_admin_settings_mutations(response):
                 created = response_payload[0] if isinstance(response_payload, list) and response_payload else response_payload
                 if isinstance(created, dict) and created.get("id"):
                     after_filters = {"id": "eq." + str(created["id"])}
-            if 200 <= response.status_code < 300:
-                after = _audit_fetch_record(table, after_filters)
-        elif request.method == "POST" and isinstance(response_payload, (dict, list)):
+            after = _audit_fetch_record(table, after_filters)
+        elif request.method == "POST" and 200 <= response.status_code < 300 and isinstance(response_payload, (dict, list)):
             created = response_payload[0] if isinstance(response_payload, list) and response_payload else response_payload
             if isinstance(created, dict) and created.get("id"):
                 table, filters = _audit_record_locator(path)
