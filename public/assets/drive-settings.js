@@ -26,17 +26,18 @@
     if ($('drive-dsr-link')) $('drive-dsr-link').value = s.body.dsr_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.dsr_folder_id : '';
     if ($('drive-msr-link')) $('drive-msr-link').value = s.body.msr_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.msr_folder_id : '';
     if ($('drive-purchase-link')) $('drive-purchase-link').value = s.body.purchase_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.purchase_folder_id : '';
+    if ($('drive-audit-link')) $('drive-audit-link').value = s.body.admin_audit_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.admin_audit_folder_id : '';
     say('Folder links loaded.');
   }
   async function saveSettings() {
-    var s = await api('/api/drive/settings', 'PUT', { dsr_link: $('drive-dsr-link').value, msr_link: $('drive-msr-link').value, purchase_link: $('drive-purchase-link').value });
+    var s = await api('/api/drive/settings', 'PUT', { dsr_link: $('drive-dsr-link').value, msr_link: $('drive-msr-link').value, purchase_link: $('drive-purchase-link').value, admin_audit_link: $('drive-audit-link').value });
     if (s.status !== 200) return say('Save failed: ' + errText(s.body.error, s.status), true);
     say('Saved. Use "Test connection" to check access.');
   }
   async function testConnection() {
     say('Testing…');
     var t = await api('/api/drive/test', 'POST', {});
-    if (t.body && t.body.ok) return say('Connected. DSR, MSR, and Purchases folders are reachable and writable.');
+    if (t.body && t.body.ok) return say('Connected. DSR, MSR, Purchases, and configured Admin Audit folders are reachable and writable.');
     if (t.body && t.body.missing && t.body.missing.length) return say('Missing folder link for: ' + t.body.missing.join(', ').toUpperCase() + '.', true);
     say('Connection failed: ' + errText(t.body && t.body.error, t.status), true);
   }
