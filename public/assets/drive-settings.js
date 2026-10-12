@@ -24,7 +24,8 @@
     var s = await api('/api/drive/settings');
     if (s.status !== 200) return say('Could not load Drive settings: ' + errText(s.body.error, s.status), true);
     if ($('drive-dsr-link')) $('drive-dsr-link').value = s.body.dsr_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.dsr_folder_id : '';
-    if ($('drive-msr-link')) $('drive-msr-link').value = s.body.msr_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.msr_folder_id : '';\n    if ($('drive-purchase-link')) $('drive-purchase-link').value = s.body.purchase_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.purchase_folder_id : '';
+    if ($('drive-msr-link')) $('drive-msr-link').value = s.body.msr_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.msr_folder_id : '';
+    if ($('drive-purchase-link')) $('drive-purchase-link').value = s.body.purchase_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.purchase_folder_id : '';
     say('Folder links loaded.');
   }
   async function saveSettings() {
