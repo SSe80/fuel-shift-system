@@ -179,6 +179,38 @@ body.daily-preview-open{overflow:hidden}
 
   <div id="toast" class="toast"></div>
 </main>
-<script src="assets/app.js?v=20261012-dsr-confirm-button"></script><script src="assets/admin-control-ui.js?v=20261010-02"></script>
+<script src="assets/app.js?v=20261012-dsr-confirm-button"></script>
+<script src="assets/drive-queue.js?v=20261012-dsr-pdf"></script>
+<script src="assets/admin-control-ui.js?v=20261010-02"></script>
 <script src="assets/popup-portal.js?v=20261011-p1"></script>
+<script>
+(function () {
+  'use strict';
+  if (!window.DriveQueue) return;
+  DriveQueue.start({
+    dsr: async function (key) {
+      if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(key || ''))) return null;
+      try {
+        const [report, products] = await Promise.all([
+          api('/api/reports/daily?date=' + encodeURIComponent(key)),
+          api('/api/products')
+        ]);
+        if (!report || !report.report_ready) return null;
+        window.currentDailyReportData = report;
+        window.currentDailyReportDate = key;
+        window.currentDsrProductInfo = Object.fromEntries((products || []).map(function (p) {
+          return [String(p.name || '').toLowerCase(), {
+            code: p.code_name || p.name || 'Unknown',
+            name: p.name || 'Unknown',
+            color: p.color || ''
+          }];
+        }));
+        return buildDailyReportPdfBlob();
+      } catch (e) {
+        return null;
+      }
+    }
+  }, 30000);
+})();
+</script>
 </body></html>
