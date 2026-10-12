@@ -242,6 +242,84 @@ def snapshot_admin_mutation_before():
         app.logger.exception("Admin audit pre-mutation snapshot failed")
 
 
+def _audit_display_label(key):
+    return str(key).replace("_", " ").strip().title()
+
+
+def _audit_display_value(key, value):
+    """Format common audit values for a readable spreadsheet cell."""
+    low = str(key).lower()
+    if value is None:
+        return "—"
+    if isinstance(value, bool):
+        return "Yes" if value else "No"
+    if isinstance(value, (int, float)) and any(term in low for term in ("price", "amount", "total", "cost", "balance")):
+        return "ETB {:,.2f}".format(value)
+    if isinstance(value, str):
+        text = value
+        if "T" in text and (text.endswith("Z") or "+" in text[10:] or text[10:].count(":") >= 2):
+            try:
+                parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+                if parsed.tzinfo is not None:
+                    text = parsed.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+            except Exception:
+                pass
+        return text
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False, indent=2)
+    return str(value)
+
+
+def _audit_format_details(details):
+    """Render audit details as labeled, wrapped-friendly text instead of compact JSON."""
+    lines = []
+    submitted = details.get("submitted_changes")
+    if submitted not in (None, {}, []):
+        lines.append("SUBMITTED VALUES")
+        if isinstance(submitted, dict):
+            for key, value in submitted.items():
+                lines.append("{}: {}".format(_audit_display_label(key), _audit_display_value(key, value)))
+        else:
+            lines.append(_audit_display_value("submitted_changes", submitted))
+
+    changes = details.get("changed_fields")
+    if isinstance(changes, dict) and changes:
+        if lines:
+            lines.append("")
+        lines.append("CHANGED FIELDS (BEFORE → AFTER)")
+        for key, change in changes.items():
+            label = _audit_display_label(key)
+            if isinstance(change, dict) and ("before" in change or "after" in change):
+                before = _audit_display_value(key, change.get("before"))
+                after = _audit_display_value(key, change.get("after"))
+                lines.append("{}: {} → {}".format(label, before, after))
+            else:
+                lines.append("{}: {}".format(label, _audit_display_value(key, change)))
+
+    if "error" in details:
+        if lines:
+            lines.append("")
+        lines.append("ERROR")
+        error = details["error"]
+        lines.append(error if isinstance(error, str) else json.dumps(error, ensure_ascii=False, indent=2))
+
+    # Keep full snapshots available for investigations, but visually separate
+    # them from the concise summary above.
+    for key, heading in (("before", "BEFORE RECORD"), ("after", "AFTER RECORD")):
+        if details.get(key) is not None:
+            if lines:
+                lines.append("")
+            lines.append(heading)
+            snapshot = details[key]
+            if isinstance(snapshot, dict):
+                for field, value in snapshot.items():
+                    lines.append("{}: {}".format(_audit_display_label(field), _audit_display_value(field, value)))
+            else:
+                lines.append(_audit_display_value(key, snapshot))
+
+    return "\n".join(lines)[:45000]
+
+
 def _audit_safe_details(value):
     """Remove credentials and PIN material before sending admin change details to Sheets."""
     if isinstance(value, dict):
@@ -363,7 +441,7 @@ def audit_admin_settings_mutations(response):
         action = method_action + " " + path.strip("/").replace("/", " ")
         timestamp = datetime.now(timezone.utc).isoformat()
         row = [timestamp, actor_name, actor_id, action, target,
-               json.dumps(details, ensure_ascii=False, separators=(",", ":")),
+               _audit_format_details(details),
                result_label + " (HTTP " + str(response.status_code) + ")", path]
         sheet_id = drive.append_audit_row(env(), folder_id, config.get("admin_audit_sheet_id"), row)
         if not config.get("admin_audit_sheet_id") and sheet_id:
