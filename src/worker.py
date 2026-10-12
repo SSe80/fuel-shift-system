@@ -367,13 +367,18 @@ def audit_admin_settings_mutations(response):
         if not folder_id:
             return response
 
-        actor_id = str(session.get("employee_id"))
-        actor_name = actor_id
+        actor_record_id = str(session.get("employee_id"))
+        actor_id = actor_record_id
+        actor_name = actor_record_id
         actor_status, actor_rows = sb("employees", params={
-            "id": "eq." + actor_id, "select": "id,name,role", "limit": "1"
+            "id": "eq." + actor_record_id, "select": "id,name,operator_id,role", "limit": "1"
         })
         if actor_status == 200 and actor_rows:
-            actor_name = str(actor_rows[0].get("name") or actor_id)
+            actor = actor_rows[0]
+            actor_name = str(actor.get("name") or actor_record_id)
+            # The audit sheet's Admin ID column should show the human-facing
+            # operator ID, not the internal employee UUID.
+            actor_id = str(actor.get("operator_id") or actor_record_id)
 
         raw = request.get_json(silent=True)
         submitted = _audit_safe_details(raw if isinstance(raw, (dict, list)) else {})
@@ -432,9 +437,58 @@ def audit_admin_settings_mutations(response):
                 details["changed_fields"] = {"record": {"before": before, "after": None}}
 
         details = _audit_safe_details(details)
-        method_action = {"POST": "Created/Executed", "PUT": "Updated", "PATCH": "Updated", "DELETE": "Deleted"}.get(request.method, request.method)
-        target = path.rsplit("/", 1)[-1] or "settings"
-        action = method_action + " " + path.strip("/").replace("/", " ")
+        method_action = {"POST": "Created", "PUT": "Updated", "PATCH": "Updated", "DELETE": "Deleted"}.get(request.method, request.method.title())
+        parts = [part for part in path.strip("/").split("/") if part]
+        resource_key = parts[1] if len(parts) > 1 and parts[0] == "api" else (parts[0] if parts else "settings")
+        resource_labels = {
+            "settings": "Station Settings",
+            "drive": "Google Drive Settings",
+            "products": "Product",
+            "users": "User",
+            "employees": "Employee",
+            "tanks": "Tank",
+            "nozzles": "Dispenser",
+            "sale-types": "Sale Type",
+        }
+        resource_label = resource_labels.get(resource_key, _audit_display_label(resource_key))
+        if resource_key == "drive":
+            resource_label = "Google Drive Settings"
+        elif resource_key == "settings":
+            resource_label = "Station Settings"
+        action = "{} {}".format(method_action, resource_label)
+
+        # Prefer a meaningful record name/code over a route UUID. Collection
+        # routes use the created response/snapshot; record routes use the
+        # persisted before/after snapshot, then submitted values as fallback.
+        target = {
+            "settings": "Station Configuration",
+            "drive": "Drive Configuration",
+        }.get(resource_key)
+        record_candidates = [after, before]
+        if isinstance(response_payload, dict):
+            record_candidates.append(response_payload)
+        if isinstance(submitted, dict):
+            record_candidates.append(submitted)
+        identity_fields = (
+            "name", "product_name", "employee_name", "tank_code", "nozzle_code",
+            "sale_type_name", "code_name", "operator_id", "phone"
+        )
+        for candidate in record_candidates:
+            if not isinstance(candidate, dict):
+                continue
+            identity = next((str(candidate.get(key)).strip() for key in identity_fields
+                             if candidate.get(key) not in (None, "")), "")
+            if identity:
+                target = identity
+                code_name = candidate.get("code_name")
+                if code_name and str(code_name).strip() != identity:
+                    target = "{} ({})".format(identity, str(code_name).strip())
+                break
+        if not target:
+            if len(parts) >= 3 and parts[2]:
+                target = "{} record".format(resource_label)
+            else:
+                target = resource_label
         timestamp = datetime.now(timezone.utc).isoformat()
         row = [timestamp, actor_name, actor_id, action, target,
                _audit_format_details(details),
