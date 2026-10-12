@@ -397,5 +397,127 @@ body.admin-settings-page #settings-confirm-actions.row>button:not(.primary){bord
 body.admin-settings-page #settings-confirm-actions.row>button.primary{border:0!important;background:#2563eb!important;color:#fff!important}
 </style>
 
+<style id="google-drive-card-style">
+
+/* Google Drive storage card: scoped visual refresh */
+body.admin-settings-page #drive-settings-section{
+  overflow:hidden;
+  border:1px solid #dbe5f1;
+  border-radius:18px;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  box-shadow:0 10px 28px rgba(15,23,42,.06);
+}
+body.admin-settings-page #drive-settings-section>.section-heading{
+  padding:20px 22px;
+  border-bottom:1px solid #e5edf6;
+  background:linear-gradient(110deg,#eef5ff 0%,#ffffff 72%);
+}
+body.admin-settings-page #drive-settings-section .section-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  color:#1d4ed8;
+  font-weight:800;
+  letter-spacing:.12em;
+}
+body.admin-settings-page #drive-settings-section .section-kicker:before{
+  content:"";
+  width:8px;height:8px;border-radius:50%;background:#4285f4;
+  box-shadow:0 0 0 4px rgba(66,133,244,.12);
+}
+body.admin-settings-page #drive-settings-section .section-heading h2{
+  margin:6px 0;
+  color:#14213d;
+  font-size:21px;
+  letter-spacing:-.025em;
+}
+body.admin-settings-page #drive-settings-section .section-heading p{
+  margin:0;
+  max-width:620px;
+  line-height:1.5;
+}
+body.admin-settings-page #drive-settings-section .settings-collapsible{
+  padding:20px 22px 22px;
+}
+body.admin-settings-page #drive-settings-section .drive-field{
+  display:block;
+  margin:0 0 16px;
+  color:#334155;
+  font-size:13px;
+  font-weight:750;
+}
+body.admin-settings-page #drive-settings-section .drive-field input{
+  display:block;
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  margin-top:7px;
+  min-height:46px;
+  padding:11px 13px;
+  border:1px solid #cbd5e1;
+  border-radius:11px;
+  background:#fff;
+  color:#0f172a;
+  font:inherit;
+  font-weight:500;
+  box-shadow:inset 0 1px 2px rgba(15,23,42,.025);
+  transition:border-color .18s ease,box-shadow .18s ease;
+}
+body.admin-settings-page #drive-settings-section .drive-field input::placeholder{color:#94a3b8}
+body.admin-settings-page #drive-settings-section .drive-field input:focus{
+  outline:none;
+  border-color:#4285f4;
+  box-shadow:0 0 0 3px rgba(66,133,244,.15);
+}
+body.admin-settings-page #drive-settings-section .muted{
+  color:#64748b;
+  font-size:12.5px;
+  line-height:1.55;
+}
+body.admin-settings-page #drive-settings-section .drive-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin:18px 0 10px;
+}
+body.admin-settings-page #drive-settings-section .drive-actions button{
+  min-height:44px;
+  padding:11px 17px;
+  border-radius:11px;
+  font-weight:750;
+}
+body.admin-settings-page #drive-settings-section #drive-test-btn{
+  border:1px solid #cbd5e1;
+  background:#fff;
+  color:#334155;
+}
+body.admin-settings-page #drive-settings-section #drive-status{
+  min-height:18px;
+  margin:10px 0 18px;
+  overflow-wrap:anywhere;
+}
+body.admin-settings-page #drive-settings-section .drive-queue-title{
+  margin:20px 0 10px;
+  padding-top:17px;
+  border-top:1px solid #e2e8f0;
+  color:#1e293b;
+  font-size:15px;
+  font-weight:800;
+}
+body.admin-settings-page #drive-settings-section #drive-queue-list{
+  padding:12px;
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  background:rgba(255,255,255,.85);
+  overflow-wrap:anywhere;
+}
+@media(max-width:640px){
+  body.admin-settings-page #drive-settings-section>.section-heading{padding:17px 16px}
+  body.admin-settings-page #drive-settings-section .settings-collapsible{padding:16px}
+  body.admin-settings-page #drive-settings-section .drive-actions{display:grid;grid-template-columns:1fr}
+  body.admin-settings-page #drive-settings-section .drive-actions button{width:100%}
+}
+</style>
+
 </body>
 </html>
