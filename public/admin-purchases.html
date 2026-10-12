@@ -1016,7 +1016,21 @@ window.downloadPurchaseDetailPdf=async function(){
     const lines=wrap(remark,CW-8,7).slice(0,6),rh=Math.max(18,10+lines.length*4.2);box(M,y,CW,rh);lines.forEach((ln,i)=>T(ln,M+4,y+7+i*4.2,7,muted));y+=rh+7;
     if(y>H-22){footer();doc.addPage();header();}
     T('Record ID',M,y,5,muted,'bold');T(String(p.id||'—'),M,y+5.5,5.5,navy);footer();
-    const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);doc.save('purchase_'+safe+'.pdf');
+    const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);
+    const fileName='purchase_'+safe+'.pdf';
+    const pdfBlob=doc.output('blob');
+    doc.save(fileName);
+    // Store the same generated purchase PDF in the configured Google Drive folder.
+    try{
+      const bytes=new Uint8Array(await pdfBlob.arrayBuffer());
+      let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));
+      const response=await fetch('/api/drive/purchases/upload',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify({pdf_base64:btoa(binary),file_name:fileName,purchase_date:String(p.purchase_datetime||p.created_at||'').slice(0,10)})});
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok||!result.ok)throw new Error(result.error||('HTTP '+response.status));
+      if(typeof window.toast==='function')window.toast('Purchase PDF saved to Google Drive: '+(result.path||fileName));
+    }catch(uploadError){
+      if(typeof window.toast==='function')window.toast('PDF downloaded, but Drive storage failed: '+(uploadError.message||'unknown error'));
+    }
   }catch(e){fail(e.message||'Unable to create the PDF.');}
   finally{if(btn){btn.disabled=false;btn.textContent='Download PDF';}}
 }
