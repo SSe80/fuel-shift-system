@@ -4439,9 +4439,15 @@ def drive_put_settings():
                 if not fid:
                     return jsonify({"error": "Paste a Google Drive folder link or folder ID for " + field}), 400
                 update[key] = fid
-            if field == "admin_audit_link" and update.get(key) != current_settings.get(key):
-                # A changed destination must start a new sheet inside the selected folder.
-                update["admin_audit_sheet_id"] = None
+    if "admin_audit_sheet_link" in data:
+        raw_sheet = str(data.get("admin_audit_sheet_link") or "").strip()
+        if not raw_sheet:
+            update["admin_audit_sheet_id"] = None
+        else:
+            sheet_id = drive.parse_spreadsheet_id(raw_sheet)
+            if not sheet_id:
+                return jsonify({"error": "Paste a Google Sheets spreadsheet link or spreadsheet ID"}), 400
+            update["admin_audit_sheet_id"] = sheet_id
     st, out = sb("drive_settings", method="PATCH", params={"id": "eq.1"}, body=update, prefer="return=representation")
     if st >= 400:
         return jsonify({"error": out}), st
@@ -4458,7 +4464,9 @@ def drive_test():
     except drive.DriveError as err:
         return jsonify({"ok": False, "error": str(err)}), err.status
     missing = [k for k, v in folders.items() if k != "admin_audit" and not v]
-    return jsonify({"ok": not missing, "folders": result, "missing": missing, "admin_audit_configured": bool(folders.get("admin_audit"))}), 200
+    return jsonify({"ok": not missing, "folders": result, "missing": missing,
+                    "admin_audit_configured": bool(folders.get("admin_audit")),
+                    "admin_audit_sheet_configured": bool(row.get("admin_audit_sheet_id"))}), 200
 
 @app.get("/api/drive/queue")
 def drive_queue():

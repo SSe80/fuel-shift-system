@@ -46,6 +46,19 @@ def parse_folder_id(text):
     return None
 
 
+def parse_spreadsheet_id(text):
+    """Accept a Google Sheets URL or bare spreadsheet ID."""
+    text = (text or "").strip()
+    if not text:
+        return None
+    m = re.search(r"/spreadsheets/d/([A-Za-z0-9_-]{10,})", text)
+    if m:
+        return m.group(1)
+    if re.fullmatch(r"[A-Za-z0-9_-]{10,}", text):
+        return text
+    return None
+
+
 def _b64url(data):
     if isinstance(data, str):
         data = data.encode()
@@ -214,22 +227,18 @@ SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets"
 
 
 async def _append_audit(token, folder_id, sheet_id, row):
-    """Append one audit event. Create the spreadsheet in the chosen folder on first use."""
+    """Append an event to the configured spreadsheet, without creating Drive files."""
     await check_folder(token, folder_id)
-    created = False
     if not sheet_id:
-        metadata = json.dumps({
-            "name": "Admin Actions Audit Log",
-            "mimeType": "application/vnd.google-apps.spreadsheet",
-            "parents": [folder_id]
-        })
-        status, data = await _http(DRIVE_API + "?supportsAllDrives=true&fields=id,name,mimeType",
-                                  "POST", dict(_auth(token), **{"Content-Type": "application/json"}), metadata)
-        if status >= 400 or not isinstance(data, dict) or not data.get("id"):
-            raise _gerr("Create admin audit spreadsheet", status, data)
-        sheet_id = data["id"]
-        created = True
-    if created:
+        raise DriveError("Admin audit spreadsheet link is not configured", 400)
+
+    # Initialize the header only if the existing spreadsheet's first row is empty.
+    values_url = SHEETS_API + "/" + sheet_id + "/values/Sheet1%21A1%3AH1"
+    status, data = await _http(values_url, "GET", _auth(token))
+    if status >= 400:
+        raise _gerr("Read admin audit spreadsheet", status, data)
+    values = data.get("values", []) if isinstance(data, dict) else []
+    if not values or not any(str(cell).strip() for cell in (values[0] if values else [])):
         header_url = SHEETS_API + "/" + sheet_id + "/values/Sheet1%21A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS"
         header = json.dumps({"values": [[
             "Timestamp (UTC)", "Admin Name", "Admin ID", "Action", "Target",
@@ -238,6 +247,7 @@ async def _append_audit(token, folder_id, sheet_id, row):
         status, data = await _http(header_url, "POST", dict(_auth(token), **{"Content-Type": "application/json"}), header)
         if status >= 400:
             raise _gerr("Initialize admin audit spreadsheet", status, data)
+
     append_url = SHEETS_API + "/" + sheet_id + "/values/Sheet1%21A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS"
     payload = json.dumps({"values": [row]})
     status, data = await _http(append_url, "POST", dict(_auth(token), **{"Content-Type": "application/json"}), payload)
@@ -247,9 +257,10 @@ async def _append_audit(token, folder_id, sheet_id, row):
 
 
 def append_audit_row(e, folder_id, sheet_id, row):
-    """Append a row to the audit sheet, creating the sheet inside folder_id if necessary.
-    Returns the spreadsheet ID (new or existing)."""
+    """Append a row to the manually created spreadsheet selected in Admin Settings."""
     if not folder_id:
         raise DriveError("Admin audit folder is not configured", 400)
+    if not sheet_id:
+        raise DriveError("Admin audit spreadsheet link is not configured", 400)
     token = access_token(e)
     return run_sync(_append_audit(token, folder_id, sheet_id, row))
