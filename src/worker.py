@@ -4813,7 +4813,7 @@ def drive_purchase_upload():
         purchase_day = date.fromisoformat(raw_date)
     except Exception:
         purchase_day = datetime.now(timezone.utc).date()
-    sub = purchase_day.strftime("%Y-%m")
+    sub = purchase_day.strftime("%B %Y")
     try:
         file_id, link = drive.store_pdf(env(), root, sub, name, pdf)
         return jsonify({"ok": True, "file_id": file_id, "url": link,
