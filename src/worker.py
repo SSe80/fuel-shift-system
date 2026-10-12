@@ -767,8 +767,10 @@ def get_tank_difference_alerts():
     })
     if settings_status!=200:return jsonify({"error":"Unable to load tank tolerance settings","details":settings}),settings_status
     config=(settings or [{}])[0]
-    handover_tolerance=float(config.get("shift_handover_tank_difference_tolerance") or 10)
-    purchase_tolerance=float(config.get("purchase_discharge_tank_difference_tolerance") or 10)
+    handover_value=config.get("shift_handover_tank_difference_tolerance")
+    handover_tolerance=float(10 if handover_value is None else handover_value)
+    purchase_value=config.get("purchase_discharge_tank_difference_tolerance")
+    purchase_tolerance=float(10 if purchase_value is None else purchase_value)
     hs,handovers=sb("shift_takeovers",params={
         "select":"id,shift_id,tank_id,tank_variance_liters,shift_ended_at,created_at",
         "order":"created_at.desc","limit":"5000"
