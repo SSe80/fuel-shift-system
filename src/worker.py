@@ -4448,13 +4448,13 @@ def drive_test():
     auth = require_admin()
     if auth: return auth
     row = _drive_settings() or {}
-    folders = {"dsr": row.get("dsr_folder_id"), "msr": row.get("msr_folder_id"), "purchases": row.get("purchase_folder_id")}
+    folders = {"dsr": row.get("dsr_folder_id"), "msr": row.get("msr_folder_id"), "purchases": row.get("purchase_folder_id"), "admin_audit": row.get("admin_audit_folder_id")}
     try:
         result = drive.test_folders(env(), folders)
     except drive.DriveError as err:
         return jsonify({"ok": False, "error": str(err)}), err.status
-    missing = [k for k, v in folders.items() if not v]
-    return jsonify({"ok": not missing, "folders": result, "missing": missing}), 200
+    missing = [k for k, v in folders.items() if k != "admin_audit" and not v]
+    return jsonify({"ok": not missing, "folders": result, "missing": missing, "admin_audit_configured": bool(folders.get("admin_audit"))}), 200
 
 @app.get("/api/drive/queue")
 def drive_queue():
