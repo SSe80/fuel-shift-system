@@ -317,7 +317,7 @@ def _audit_format_details(details):
             else:
                 lines.append(_audit_display_value(key, snapshot))
 
-    return "\\n".join(lines)[:45000]
+    return "\n".join(lines)[:45000]
 
 
 def _audit_safe_details(value):
