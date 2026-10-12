@@ -178,13 +178,77 @@ def _set_role_cookie(response, role, employee_id):
 def _clear_role_cookie(response, role):
     response.delete_cookie(ROLE_SESSION_COOKIE[role], path="/")
 
+def _audit_record_locator(path, payload=None):
+    """Return a safe table/filter pair for tracked records that can be compared around a mutation."""
+    parts = [p for p in (path or "").strip("/").split("/") if p]
+    if len(parts) >= 2 and parts[:2] == ["api", "settings"]:
+        return "station_settings", {"id": "eq.true"}
+    if parts == ["api", "drive", "settings"]:
+        return "drive_settings", {"id": "eq.1"}
+    # Collection routes have no pre-existing row; their created ID is read
+    # from the successful response and used for the after-snapshot.
+    if parts == ["api", "products"]:
+        return "products", None
+    if parts in (["api", "users"], ["api", "employees"]):
+        return "employees", None
+    if parts == ["api", "tanks"]:
+        return "tanks", None
+    if parts == ["api", "nozzles"]:
+        return "nozzles", None
+    if parts == ["api", "sale-types"]:
+        return "sale_types", None
+    if len(parts) >= 3 and parts[:2] == ["api", "products"] and parts[2] not in ("",):
+        return "products", {"id": "eq." + parts[2]}
+    if len(parts) >= 3 and parts[:2] in (["api", "users"], ["api", "employees"]):
+        return "employees", {"id": "eq." + parts[2]}
+    if len(parts) >= 3 and parts[:2] == ["api", "tanks"]:
+        return "tanks", {"id": "eq." + parts[2]}
+    if len(parts) >= 3 and parts[:2] == ["api", "nozzles"]:
+        return "nozzles", {"id": "eq." + parts[2]}
+    if len(parts) >= 3 and parts[:2] == ["api", "sale-types"]:
+        return "sale_types", {"id": "eq." + parts[2]}
+    return None, None
+
+
+def _audit_fetch_record(table, filters):
+    """Fetch one current record for audit comparison; never allow lookup errors to affect the request."""
+    try:
+        status, rows = sb(table, params=dict(filters, **{"select": "*", "limit": "1"}))
+        if status == 200 and rows:
+            return _audit_safe_details(rows[0])
+    except Exception:
+        app.logger.exception("Audit record snapshot failed for %s", table)
+    return None
+
+
+@app.before_request
+def snapshot_admin_mutation_before():
+    """Capture the current record before an authenticated admin mutation."""
+    try:
+        if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
+            return
+        if session.get("role") != "admin" or not session.get("employee_id"):
+            return
+        path = request.path or ""
+        tracked = ("/api/settings", "/api/users", "/api/employees", "/api/products",
+                   "/api/tanks", "/api/nozzles", "/api/sale-types", "/api/drive/settings")
+        if not any(path == prefix or path.startswith(prefix + "/") for prefix in tracked):
+            return
+        table, filters = _audit_record_locator(path)
+        request.environ["fuel_audit_table"] = table
+        request.environ["fuel_audit_filters"] = filters
+        request.environ["fuel_audit_before"] = _audit_fetch_record(table, filters) if table and filters else None
+    except Exception:
+        app.logger.exception("Admin audit pre-mutation snapshot failed")
+
+
 def _audit_safe_details(value):
     """Remove credentials and PIN material before sending admin change details to Sheets."""
     if isinstance(value, dict):
         out = {}
         for key, item in value.items():
             low = str(key).lower()
-            if any(term in low for term in ("pin", "password", "secret", "token", "hash", "credential")):
+            if any(term in low for term in ("pin", "password", "secret", "token", "hash", "credential", "private", "api_key", "authorization", "service_account")):
                 out[str(key)] = "[redacted]"
             else:
                 out[str(key)] = _audit_safe_details(item)
@@ -200,8 +264,8 @@ def _audit_safe_details(value):
 
 @app.after_request
 def audit_admin_settings_mutations(response):
-    """Best-effort audit trail for successful Admin Settings mutations.
-    The application action remains successful even if Google Sheets is temporarily unavailable.
+    """Best-effort audit trail for admin mutation attempts, including before/after state.
+    The application response is preserved even if snapshots or Google Sheets are unavailable.
     """
     try:
         if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
@@ -252,6 +316,47 @@ def audit_admin_settings_mutations(response):
                 details["error"] = _audit_safe_details(error_payload)
             else:
                 details["error"] = "Request failed; response body unavailable"
+
+        # Compare persisted state before and after the request. For create routes,
+        # discover the new record ID from the API response and then fetch it.
+        table = request.environ.get("fuel_audit_table")
+        filters = request.environ.get("fuel_audit_filters")
+        before = request.environ.get("fuel_audit_before")
+        after = None
+        try:
+            response_payload = response.get_json(silent=True)
+        except Exception:
+            response_payload = None
+        if table and filters:
+            after_filters = filters
+            if request.method == "POST" and not any(k == "id" for k in filters):
+                created = response_payload[0] if isinstance(response_payload, list) and response_payload else response_payload
+                if isinstance(created, dict) and created.get("id"):
+                    after_filters = {"id": "eq." + str(created["id"])}
+            after = _audit_fetch_record(table, after_filters)
+        elif request.method == "POST" and 200 <= response.status_code < 300 and isinstance(response_payload, (dict, list)):
+            created = response_payload[0] if isinstance(response_payload, list) and response_payload else response_payload
+            if isinstance(created, dict) and created.get("id"):
+                table, filters = _audit_record_locator(path)
+                if table:
+                    after = _audit_fetch_record(table, {"id": "eq." + str(created["id"])})
+
+        if before is not None or after is not None:
+            details["before"] = before
+            details["after"] = after
+            if isinstance(before, dict) and isinstance(after, dict):
+                keys = sorted(set(before) | set(after))
+                changes = {}
+                for key in keys:
+                    if before.get(key) != after.get(key):
+                        changes[key] = {"before": before.get(key), "after": after.get(key)}
+                if changes:
+                    details["changed_fields"] = changes
+            elif before is None and after is not None:
+                details["changed_fields"] = {"record": {"before": None, "after": after}}
+            elif before is not None and after is None and request.method == "DELETE" and 200 <= response.status_code < 300:
+                details["changed_fields"] = {"record": {"before": before, "after": None}}
+
         details = _audit_safe_details(details)
         method_action = {"POST": "Created/Executed", "PUT": "Updated", "PATCH": "Updated", "DELETE": "Deleted"}.get(request.method, request.method)
         target = path.rsplit("/", 1)[-1] or "settings"
