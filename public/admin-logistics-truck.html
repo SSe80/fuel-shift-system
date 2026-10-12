@@ -1,0 +1,171 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Truck | Admin Logistics</title><link rel="stylesheet" href="assets/style.css?v=20261011-popup2"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-01"></head>
+<body class="admin-shell admin-control-ui" data-app-page="adminDashboard"><style>:root{color-scheme:light}.logistics-layout{display:flex;min-height:100vh;background:#f3f6fb;color:#182230}.logistics-sidebar{width:244px;flex:0 0 244px;background:#fff;border-right:1px solid #dce5ef;padding:24px 14px;position:sticky;top:0;height:100vh;overflow:auto}.logistics-brand{display:flex;align-items:center;gap:10px;padding:0 9px 22px;border-bottom:1px solid #dce5ef}.logistics-mark{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;color:#b45309;font-weight:900}.logistics-brand strong{display:block;font-size:12px;letter-spacing:.4px}.logistics-brand small{display:block;color:#667085;font-size:11px;margin-top:4px}.logistics-nav{display:grid;gap:5px;padding-top:17px}.logistics-nav a{display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;text-decoration:none;color:#475467;font-size:13px}.logistics-nav a:hover,.logistics-nav a.active{background:#eff6ff;color:#1d4ed8}.logistics-nav a span{width:22px;text-align:center}.logistics-main{min-width:0;flex:1}.logistics-main .wrap{max-width:none;padding:26px;background:#f3f6fb}.logistics-main .admin-page-body-card,.logistics-main .stat,.logistics-main .card,.logistics-main .station-notifications-card,.logistics-main .station-reconciliation-alerts,.logistics-main .station-glimpse-card{background:#fff;color:#182230;border-color:#dce5ef}@media(max-width:760px){.logistics-layout{display:block}.logistics-sidebar{position:relative;width:100%;height:auto;padding:12px}.logistics-brand{padding-bottom:12px}.logistics-nav{display:flex;overflow-x:auto;padding-top:10px}.logistics-nav a{white-space:nowrap}.logistics-main .wrap{padding:15px}}</style>
+<div class="logistics-layout"><aside class="logistics-sidebar" aria-label="Logistics navigation"><div class="logistics-brand"><span class="logistics-mark">AL</span><div><strong>ADMIN LOGISTICS</strong><small>Fuel Shift System</small></div></div><nav class="logistics-nav"><a class="active" href="admin-logistics-truck.html"><span>🚚</span><b>Truck</b></a><a href="admin-logistics-dashboard.html"><span>⌂</span><b>Dashboard</b></a><a href="admin-inventory.html"><span>▤</span><b>Fuel Inventory</b></a><a href="admin-purchases.html"><span>▣</span><b>Purchases</b></a><a href="admin-sales.html"><span>↗</span><b>Sales Records</b></a><a href="admin-daily-report.html"><span>▤</span><b>Daily Report</b></a><a href="admin-monthly-report.html"><span>▦</span><b>Monthly Report</b></a><a href="admin-settings.html"><span>⚙</span><b>Settings</b></a></nav></aside><div class="logistics-main"><main class="wrap">
+
+<header class="settings-header control-page-header"><div><span class="eyebrow">ADMIN LOGISTICS</span><h1>Truck</h1><p class="muted">Truck operations overview.</p></div></header>
+<div class="admin-page-body-card">
+<p id="dashboard-status" class="muted control-status-line"></p>
+<section class="statgrid station-control-metrics" aria-label="Station overview"><div class="stat station-metric-sales"><span class="station-metric-label">Sales today</span><b id="sales">0</b><small id="sales-total">ETB 0.00</small></div><div class="stat station-metric-shifts"><span class="station-metric-label">Active shifts</span><b id="active-shifts">0</b><small>Currently running</small></div><div class="stat station-metric-tanks"><span class="station-metric-label">Activated tanks</span><b id="tank-count">0</b><small>Active storage tanks</small></div><div class="stat station-metric-alerts"><span class="station-metric-label">Low tank alerts</span><b id="alerts">0</b><small>At or below 10% capacity</small></div><div class="stat station-metric-products"><span class="station-metric-label">Activated products</span><b id="product-count">0</b><small>Available fuel products</small></div></section>
+<section class="station-notifications-card" aria-labelledby="station-notifications-title">
+<div class="station-notifications-head"><div class="station-notifications-heading"><span class="station-alert-kicker">STATION INBOX</span><div class="station-notifications-title-row"><h2 id="station-notifications-title">Notifications <span id="station-notifications-count" class="station-notifications-count">0</span></h2><a class="station-inbox-inline-link" href="admin-inbox.html" aria-label="Open full inbox"><span>Open inbox</span><span class="station-inbox-arrow" aria-hidden="true">→</span></a></div><p>Important items that need your attention.</p><span class="station-notifications-status" id="station-notifications-status">Checking updates…</span></div></div>
+<div id="station-notifications-list" class="station-notifications-list" aria-live="polite"><div class="station-notification-empty">Checking station records…</div></div>
+</section>
+<section class="station-reconciliation-alerts" aria-labelledby="station-reconciliation-alerts-title"><div class="station-reconciliation-alerts-head"><div><span class="station-alert-kicker">ACCOUNTING CONTROL</span><h2 id="station-reconciliation-alerts-title">Reconciliation Alerts</h2><p>Items that need attention before stock and shift records are reconciled.</p></div><a href="admin-accounting-control.html">Open accounting control <span aria-hidden="true">→</span></a></div><div id="station-reconciliation-alert-list" class="station-reconciliation-alert-list" aria-live="polite"><div class="station-reconciliation-loading">Checking reconciliation status…</div></div></section>
+<div class="station-inventory-glimpses">
+  <section class="station-glimpse-card" aria-labelledby="station-products-title"><div class="station-glimpse-head"><div><span class="station-alert-kicker">PRODUCTS</span><h2 id="station-products-title">Activated Products</h2><p>Quick view of active fuel products and selling prices.</p></div><a href="admin-fuel-configuration.html">View products <span aria-hidden="true">→</span></a></div><div id="products" class="station-product-glimpse-list" aria-live="polite"><div class="station-reconciliation-loading">Loading products…</div></div></section>
+  <section class="station-glimpse-card" aria-labelledby="station-tanks-title"><div class="station-glimpse-head"><div><span class="station-alert-kicker">TANK INVENTORY</span><h2 id="station-tanks-title">Tank Stock</h2><p>Current stock levels and tank capacity at a glance.</p></div><a href="admin-inventory.html">View inventory <span aria-hidden="true">→</span></a></div><div id="tanks" class="station-tank-glimpse-list" aria-live="polite"><div class="station-reconciliation-loading">Loading tank stock…</div></div></section>
+</div>
+<section class="card station-activity-card" aria-labelledby="station-activity-title"><div class="section-heading"><div><span class="section-kicker">TODAY</span><h2 id="station-activity-title">Recent Activity</h2><p class="muted">Latest sales, purchases and active shifts recorded today.</p></div></div><div id="activity" class="station-activity-list" aria-live="polite"><div class="station-reconciliation-loading">Loading activity…</div></div></section>
+</div>
+</main></div></div><script src="assets/app.js?v=20261011-popup1"></script><script src="assets/accounting-closing.js?v=20261007-04"></script><script src="assets/app-boot.js?v=20261008-02"></script><script src="assets/admin-control-ui.js?v=20261010-01"></script>
+<script src="assets/popup-portal.js?v=20261011-p1"></script>
+<script src="assets/drive-queue.js?v=20261012-auto-export"></script>
+<script>
+(function () {
+  'use strict';
+  if (!window.DriveQueue || typeof buildDailyReportPdfBlob !== 'function' ||
+      typeof buildMonthlySalesReportPdfBlob !== 'function') return;
+
+  const arr = value => Array.isArray(value) ? value : [];
+  const num = value => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const firstNumber = values => {
+    for (const value of values) {
+      if (value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))) return Number(value);
+    }
+    return 0;
+  };
+  const dateMatches = (value, pattern) => pattern.test(String(value || ''));
+
+  async function getReport(date) {
+    return api('/api/reports/daily?date=' + encodeURIComponent(date));
+  }
+
+  async function buildDsr(key) {
+    if (!dateMatches(key, /^\d{4}-\d{2}-\d{2}$/)) return null;
+    const [report, products] = await Promise.all([
+      getReport(key),
+      api('/api/products')
+    ]);
+    if (!report || !report.report_ready) return null;
+    window.currentDailyReportData = report;
+    window.currentDailyReportDate = key;
+    window.currentDsrProductInfo = Object.fromEntries(arr(products).map(function (p) {
+      return [String(p.name || '').toLowerCase(), {
+        code: p.code_name || p.name || 'Unknown',
+        name: p.name || 'Unknown',
+        color: p.color || ''
+      }];
+    }));
+    return buildDailyReportPdfBlob();
+  }
+
+  async function buildMsr(month) {
+    if (!dateMatches(month, /^\d{4}-\d{2}$/)) return null;
+    const confirmations = await api('/api/reports/daily/confirmations');
+    const dates = [...new Set(arr(confirmations)
+      .filter(row => row && row.status === 'confirmed' && String(row.date || '').slice(0, 7) === month)
+      .map(row => String(row.date).slice(0, 10))
+      .filter(date => dateMatches(date, /^\d{4}-\d{2}-\d{2}$/)))].sort();
+    if (!dates.length) return null;
+
+    const reports = await Promise.all(dates.map(async date => {
+      try { return [date, await getReport(date)]; }
+      catch (_) { return [date, null]; }
+    }));
+    const days = reports.filter(entry => entry[1]).map(([date, report]) => {
+      const performance = report.dsr_performance || report.performance || {};
+      const summary = report.summary || {};
+      const salesSummary = report.dsr_sales_summary || report.sales_summary || {};
+      const sales = firstNumber([
+        performance.calculated_sales_amount, performance.total_sales_amount,
+        summary.sales_amount, salesSummary.total_amount, report.total_sales_amount
+      ]);
+      const liters = firstNumber([
+        performance.total_sales_liters, summary.sales_liters,
+        salesSummary.total_liters, report.total_sales_liters
+      ]);
+      const payment = performance.entered_payment_amount ??
+        performance.entered_payments_amount ?? summary.entered_payment_amount ?? null;
+      const shiftCount = firstNumber([performance.shift_count, summary.shift_count, report.shift_count]);
+      return {
+        date, report, sales, liters,
+        payments: payment == null || !Number.isFinite(Number(payment)) ? null : Number(payment),
+        shifts: shiftCount
+      };
+    });
+    if (!days.length) return null;
+
+    const totalSales = days.reduce((sum, day) => sum + day.sales, 0);
+    const totalLiters = days.reduce((sum, day) => sum + day.liters, 0);
+    const totalShifts = days.reduce((sum, day) => sum + day.shifts, 0);
+    const allPaymentsPresent = days.every(day => day.payments !== null);
+    const financialValues = days.map(day => {
+      const value = (day.report.dsr_performance || day.report.performance || {}).financial_difference;
+      return value == null || !Number.isFinite(Number(value)) ? null : Number(value);
+    });
+    const allFinancialValuesPresent = financialValues.every(value => value !== null);
+    const productTotals = new Map();
+    const salesTypeTotals = new Map();
+
+    days.forEach(day => {
+      const salesSummary = day.report.dsr_sales_summary || day.report.sales_summary || {};
+      arr(salesSummary.by_product).forEach(item => {
+        const code = String(item.product_code || item.code_name || item.product_code_name || item.product || item.name || 'Unknown product');
+        const liters = firstNumber([item.total_liters, item.sales_liters, item.liters]);
+        const amount = firstNumber([item.total_amount, item.sales_amount, item.amount]);
+        const current = productTotals.get(code) || { code, liters: 0, sales: 0 };
+        current.liters += liters; current.sales += amount; productTotals.set(code, current);
+      });
+      const typeRows = arr(salesSummary.by_type).length
+        ? arr(salesSummary.by_type)
+        : arr((day.report.dsr_performance || {}).sales_method_performance);
+      typeRows.forEach(item => {
+        const name = String(item.type || item.name || item.sale_type_name || 'Other');
+        const value = firstNumber([item.amount, item.sales_amount, item.total_amount, item.total_sales_amount]);
+        salesTypeTotals.set(name, (salesTypeTotals.get(name) || 0) + value);
+      });
+    });
+
+    const typeTotal = [...salesTypeTotals.values()].reduce((sum, value) => sum + value, 0);
+    const salesTypes = [...salesTypeTotals.entries()].map(([name, sales]) => ({
+      name, sales, sharePct: typeTotal ? sales / typeTotal * 100 : 0
+    })).sort((a, b) => b.sales - a.sales);
+    const products = [...productTotals.values()].map(item => ({
+      ...item, sharePct: totalSales ? item.sales / totalSales * 100 : 0
+    })).sort((a, b) => b.sales - a.sales);
+    const data = {
+      month,
+      summary: {
+        confirmedDays: days.length,
+        expectedDays: days.length,
+        totalSales,
+        totalLiters,
+        totalShifts,
+        enteredPayments: allPaymentsPresent ? days.reduce((sum, day) => sum + day.payments, 0) : null,
+        financialDifference: allFinancialValuesPresent ? financialValues.reduce((sum, value) => sum + value, 0) : null,
+        averageDailySales: totalSales / days.length
+      },
+      daily: days.map(day => ({
+        date: day.date, sales: day.sales, liters: day.liters,
+        payments: day.payments, shifts: day.shifts
+      })),
+      salesTypes,
+      salesTypesForPdf: salesTypes,
+      saleReasons: [],
+      products,
+      attendants: [],
+      shifts: [],
+      monthRanking: []
+    };
+    return buildMonthlySalesReportPdfBlob(data);
+  }
+
+  DriveQueue.start({ dsr: buildDsr, msr: buildMsr }, 30000);
+})();
+</script>
+</body></html>
