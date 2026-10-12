@@ -756,6 +756,67 @@ def update_station_inbox_state(notification_key):
     if status>=400:return jsonify({"error":"Unable to save inbox state","details":result}),status
     return jsonify({"ok":True,"is_read":bool(read_at),"is_favorite":bool(favorited_at)}),200
 
+@app.get("/api/tank-difference-alerts")
+def get_tank_difference_alerts():
+    auth=require_admin()
+    if auth:return auth
+    settings_status,settings=sb("station_settings",params={
+        "id":"eq.true",
+        "select":"shift_handover_tank_difference_tolerance,purchase_discharge_tank_difference_tolerance",
+        "limit":"1"
+    })
+    if settings_status!=200:return jsonify({"error":"Unable to load tank tolerance settings","details":settings}),settings_status
+    config=(settings or [{}])[0]
+    handover_tolerance=float(config.get("shift_handover_tank_difference_tolerance") or 10)
+    purchase_tolerance=float(config.get("purchase_discharge_tank_difference_tolerance") or 10)
+    hs,handovers=sb("shift_takeovers",params={
+        "select":"id,shift_id,tank_id,tank_variance_liters,shift_ended_at,created_at",
+        "order":"created_at.desc","limit":"5000"
+    })
+    if hs!=200:return jsonify({"error":"Unable to check shift tank differences","details":handovers}),hs
+    ps,purchases=sb("purchases",params={
+        "select":"id,invoice_number,product,discharge_history,purchase_date",
+        "order":"purchase_date.desc","limit":"5000"
+    })
+    if ps!=200:return jsonify({"error":"Unable to check purchase discharge tank differences","details":purchases}),ps
+    alerts=[]
+    for row in handovers or []:
+        try:difference=float(row.get("tank_variance_liters") or 0)
+        except (TypeError,ValueError):continue
+        if abs(difference)<=handover_tolerance:continue
+        record_id=str(row.get("id") or "")
+        alerts.append({
+            "key":"tank-handover-difference:"+record_id,
+            "level":"warning",
+            "title":"Shift handover tank difference exceeds tolerance",
+            "detail":"Physical closing stock differs from expected stock by "+str(round(abs(difference),2))+" L; configured tolerance is "+str(round(handover_tolerance,2))+" L. Review the handover and tank reconciliation.",
+            "href":"admin-sales.html",
+            "meta":"Difference "+("+" if difference>0 else "")+str(round(difference,2))+" L · Allowed "+str(round(handover_tolerance,2))+" L",
+            "date":row.get("shift_ended_at") or row.get("created_at")
+        })
+    for purchase in purchases or []:
+        history=purchase.get("discharge_history")
+        if not isinstance(history,list):continue
+        for index,event in enumerate(history):
+            if not isinstance(event,dict) or not event.get("tank_stock_recorded"):continue
+            try:difference=float(event.get("tank_stock_difference_liters"))
+            except (TypeError,ValueError):continue
+            if abs(difference)<=purchase_tolerance:continue
+            record_id=str(purchase.get("id") or "")
+            invoice=str(purchase.get("invoice_number") or "")
+            label=("Invoice "+invoice) if invoice else ("Purchase "+record_id[:8])
+            alerts.append({
+                "key":"purchase-tank-difference:"+record_id+":"+str(index),
+                "level":"warning",
+                "title":"Purchase discharge tank difference exceeds tolerance",
+                "detail":label+" physical tank reading differs from the expected post-discharge stock by "+str(round(abs(difference),2))+" L; configured tolerance is "+str(round(purchase_tolerance,2))+" L. Review the dip reading and discharge record.",
+                "href":"admin-purchases.html"+("#purchase-"+record_id if record_id else ""),
+                "meta":"Difference "+("+" if difference>0 else "")+str(round(difference,2))+" L · Allowed "+str(round(purchase_tolerance,2))+" L",
+                "date":event.get("tank_stock_recorded_at") or event.get("discharge_datetime") or purchase.get("purchase_date")
+            })
+    alerts.sort(key=lambda x:str(x.get("date") or ""),reverse=True)
+    return jsonify({"items":alerts[:300],"count":len(alerts)}),200
+
 @app.get("/api/health")
 def health():
     try:
