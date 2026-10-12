@@ -57,7 +57,7 @@ function showStep(next){
  step=Math.max(0,Math.min(2,next));cards.forEach((card,i)=>card.classList.toggle('active',i===step));
  indicators.forEach((el,i)=>{el.classList.toggle('active',i===step);el.classList.toggle('done',i<step);el.querySelector('i').textContent=i<step?'✓':String(i+1)});
  $('wizardBack').hidden=false;$('wizardBack').textContent=step===0?'Close':'Back';$('wizardCount').textContent='Step '+(step+1)+' of 3';
- $('wizardNext').textContent=step===0?'Next':step===1?'Next':'Confirm & add truck';
+ $('wizardNext').textContent=step<2?'Next':(editingTruck?'Save changes':'Confirm & add truck');
  $('wizardViewport').scrollTop=0;clearErrors();
  if(step===1)renderCalibrationInputs();if(step===2)renderReview();
 }
