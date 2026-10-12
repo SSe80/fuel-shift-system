@@ -206,7 +206,9 @@ def audit_admin_settings_mutations(response):
     try:
         if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
             return response
-        if response.status_code < 200 or response.status_code >= 300:
+        # Record both successful changes and rejected/failed mutation attempts.
+        # Requests that never reached a valid admin session are intentionally excluded.
+        if response.status_code < 200:
             return response
         if session.get("role") != "admin" or not session.get("employee_id"):
             return response
@@ -236,14 +238,28 @@ def audit_admin_settings_mutations(response):
             actor_name = str(actor_rows[0].get("name") or actor_id)
 
         raw = request.get_json(silent=True)
-        details = _audit_safe_details(raw if isinstance(raw, (dict, list)) else {})
+        submitted = _audit_safe_details(raw if isinstance(raw, (dict, list)) else {})
+        details = {"submitted_changes": submitted}
+        result_label = "Success" if 200 <= response.status_code < 300 else "Failed"
+        if result_label == "Failed":
+            # Capture a sanitized API error for investigation, without changing
+            # the original response or allowing audit logging to affect the request.
+            try:
+                error_payload = response.get_json(silent=True)
+            except Exception:
+                error_payload = None
+            if isinstance(error_payload, (dict, list)):
+                details["error"] = _audit_safe_details(error_payload)
+            else:
+                details["error"] = "Request failed; response body unavailable"
+        details = _audit_safe_details(details)
         method_action = {"POST": "Created/Executed", "PUT": "Updated", "PATCH": "Updated", "DELETE": "Deleted"}.get(request.method, request.method)
         target = path.rsplit("/", 1)[-1] or "settings"
         action = method_action + " " + path.strip("/").replace("/", " ")
         timestamp = datetime.now(timezone.utc).isoformat()
         row = [timestamp, actor_name, actor_id, action, target,
                json.dumps(details, ensure_ascii=False, separators=(",", ":")),
-               "Success (HTTP " + str(response.status_code) + ")", path]
+               result_label + " (HTTP " + str(response.status_code) + ")", path]
         sheet_id = drive.append_audit_row(env(), folder_id, config.get("admin_audit_sheet_id"), row)
         if not config.get("admin_audit_sheet_id") and sheet_id:
             sb("drive_settings", method="PATCH", params={"id": "eq.1"},
