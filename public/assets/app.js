@@ -1029,8 +1029,8 @@ async function loadStationNotifications(){
  const esc=v=>h(String(v==null?'':v));let items=[];const add=(key,level,title,detail,href,meta='',date=null)=>items.push({key,level,title,detail,href,meta,date:date||null});
  const arr=v=>Array.isArray(v)?v:[],first=(o,keys)=>{for(const k of keys)if(o&&o[k]!=null&&o[k]!=='')return o[k];return null;};
  try{
-  const results=await Promise.allSettled([api('/api/reports/daily/confirmations'),api('/api/tanks'),api('/api/products'),api('/api/purchases'),api('/api/accounting/reconciliation')]);
-  const val=i=>results[i].status==='fulfilled'?results[i].value:null,dsrs=val(0),tankData=val(1),productData=val(2),purchaseData=val(3),recon=val(4),products=arr(productData);
+  const results=await Promise.allSettled([api('/api/reports/daily/confirmations'),api('/api/tanks'),api('/api/products'),api('/api/purchases'),api('/api/accounting/reconciliation'),api('/api/tank-difference-alerts')]);
+  const val=i=>results[i].status==='fulfilled'?results[i].value:null,dsrs=val(0),tankData=val(1),productData=val(2),purchaseData=val(3),recon=val(4),tankDifferenceAlerts=val(5),products=arr(productData);
   const productByName=Object.fromEntries(products.map(p=>[String(p.name||'').trim().toLowerCase(),p])),codeFor=p=>productByName[String(p||'').trim().toLowerCase()]?.code_name||p||'Unknown product';
   const tanks=arr(tankData).filter(t=>t.active!==false),low=[],high=[];
   tanks.forEach(t=>{const cap=Number(t.capacity_liters),stock=Number(t.current_liters);if(!(cap>0)||!Number.isFinite(stock))return;if(stock/cap<=.10)low.push(t);else if(stock/cap>=.90)high.push(t);});
@@ -1111,6 +1111,9 @@ async function loadStationNotifications(){
      'Delivered '+liters(total)+' L · Discharged '+liters(Math.min(done,total))+' L';
    add(key,'warning',isPartial?'Partial purchase discharge · '+label:'Purchase awaiting discharge · '+label,
      detail,'admin-purchases.html'+(id?'#purchase-'+encodeURIComponent(id):''),meta,date);
+  });
+  arr(tankDifferenceAlerts?.items).forEach(alert=>{
+   add(alert.key,alert.level||'warning',alert.title||'Tank difference exceeds tolerance',alert.detail||'A tank difference exceeded its configured tolerance. Review the record.',alert.href||'admin-accounting-control.html',alert.meta||'',alert.date||null);
   });
   const differences=[];if(recon?.open===true)arr(recon.tanks).forEach(t=>{
     const expectedRaw=first(t,['expected_closing_liters','expected_liters']);
