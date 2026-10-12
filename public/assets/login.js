@@ -12,7 +12,7 @@
     }
   }
 
-  function login(role) {
+  function login(role, successUrl) {
     var operator = document.getElementById('operator-id');
     var pin = document.getElementById('pin');
     if (!operator || !pin) return;
@@ -37,7 +37,7 @@
         throw new Error('This account is not valid for the selected login');
       }
       try { window.sessionStorage.setItem('fuelRole', role); } catch (_) {}
-      window.location.replace(role === 'admin' ? 'admin-dashboard.html' : 'attendant-dashboard.html');
+      window.location.replace(successUrl || (role === 'admin' ? 'admin-dashboard.html' : 'attendant-dashboard.html'));
     })
     .catch(function (error) {
       showMessage(error && error.message ? error.message : 'Login failed');
@@ -49,7 +49,7 @@
     if (!form) return;
     form.addEventListener('submit', function (event) {
       event.preventDefault();
-      login(form.getAttribute('data-role'));
+      login(form.getAttribute('data-role'), form.getAttribute('data-success-url'));
     });
   });
 
