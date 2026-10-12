@@ -189,7 +189,7 @@ body.daily-preview-open{overflow:hidden}
   if (!window.DriveQueue) return;
   DriveQueue.start({
     dsr: async function (key) {
-      if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(key || ''))) return null;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(key || ''))) return null;
       try {
         const [report, products] = await Promise.all([
           api('/api/reports/daily?date=' + encodeURIComponent(key)),
