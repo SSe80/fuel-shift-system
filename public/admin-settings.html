@@ -258,6 +258,30 @@
   </div>
 </section>
 
+<section class="settings-section card" id="shift-handover-tank-tolerance-section">
+  <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">TANK RECONCILIATION</span><h2>Shift Handover Tank Difference Tolerance</h2><p>Maximum allowed difference, in liters, between expected tank stock and the physical closing dip at shift handover.</p></div></div>
+  <div class="settings-collapsible">
+    <form class="form" onsubmit="saveTankDifferenceTolerance(event,'shift_handover_tank_difference_tolerance')" style="max-width:520px">
+      <label>Allowed tank difference (L)<input id="shift-handover-tank-tolerance" type="number" min="0" max="100000" step="0.01" inputmode="decimal" value="10" required></label>
+      <p class="muted">Default: 10 L. A handover with a larger difference is blocked so the tank reading can be checked.</p>
+      <div class="row"><button type="submit" class="primary">Save tolerance</button></div>
+      <p id="shift-handover-tank-tolerance-status" class="muted" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+</section>
+
+<section class="settings-section card" id="purchase-discharge-tank-tolerance-section">
+  <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0"><div><span class="section-kicker">PURCHASE VALIDATION</span><h2>Purchase Discharge Tank Difference Tolerance</h2><p>Maximum allowed difference, in liters, between system stock and the physical tank reading before purchase discharge.</p></div></div>
+  <div class="settings-collapsible">
+    <form class="form" onsubmit="saveTankDifferenceTolerance(event,'purchase_discharge_tank_difference_tolerance')" style="max-width:520px">
+      <label>Allowed tank difference (L)<input id="purchase-discharge-tank-tolerance" type="number" min="0" max="100000" step="0.01" inputmode="decimal" value="10" required></label>
+      <p class="muted">Default: 10 L. A discharge with a larger difference is blocked so the physical stock can be checked.</p>
+      <div class="row"><button type="submit" class="primary">Save tolerance</button></div>
+      <p id="purchase-discharge-tank-tolerance-status" class="muted" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+</section>
+
 <section id="reset-operational-data-section" class="settings-section card operational-reset-card">
     <div class="section-heading settings-toggle" onclick="toggleSettingsSection(event,this.closest('.settings-section'))" role="button" tabindex="0">
       <div><span class="section-kicker">DANGER ZONE</span><h2>Reset Operational Data</h2>

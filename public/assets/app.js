@@ -3629,6 +3629,10 @@ async function loadSettingsData(){
   window.stationSalesDifferenceTolerance=Math.max(0,Number(stationSettings?.sales_difference_tolerance??1));
   const toleranceInput=document.getElementById('sales-difference-tolerance');
   if(toleranceInput)toleranceInput.value=Number(window.stationSalesDifferenceTolerance).toFixed(2);
+  const shiftTankTolerance=document.getElementById('shift-handover-tank-tolerance');
+  if(shiftTankTolerance)shiftTankTolerance.value=String(Number(stationSettings?.shift_handover_tank_difference_tolerance??10));
+  const purchaseTankTolerance=document.getElementById('purchase-discharge-tank-tolerance');
+  if(purchaseTankTolerance)purchaseTankTolerance.value=String(Number(stationSettings?.purchase_discharge_tank_difference_tolerance??10));
   products=applySavedSettingsOrder(products,'products',savedOrders);saleTypes=applySavedSettingsOrder(saleTypes,'saleTypes',savedOrders);employees=applySavedSettingsOrder(employees,'employees',savedOrders);tanks=applySavedSettingsOrder(tanks,'tanks',savedOrders);dispensers=applySavedSettingsOrder(dispensers,'dispensers',savedOrders);
   const stationCurrency=String(stationSettings?.currency||'ETB').trim();
   window.stationCurrency=stationCurrency;
@@ -3865,6 +3869,39 @@ async function saveSalesDifferenceTolerance(event){
     if(input)input.value=savedValue.toFixed(2);
     if(status)status.textContent='Saved successfully. Allowed difference: ETB '+savedValue.toFixed(2)+'.';
     if(typeof toast==='function')toast('Sales difference tolerance saved');
+  }catch(e){
+    if(status)status.textContent='Could not save tolerance: '+String(e?.message||e||'Unknown error');
+  }finally{
+    if(button){button.disabled=false;button.textContent=originalLabel;}
+  }
+}
+async function saveTankDifferenceTolerance(event, settingKey){
+  event.preventDefault();
+  const config={
+    shift_handover_tank_difference_tolerance:{input:'shift-handover-tank-tolerance',status:'shift-handover-tank-tolerance-status',label:'Shift handover tank difference'},
+    purchase_discharge_tank_difference_tolerance:{input:'purchase-discharge-tank-tolerance',status:'purchase-discharge-tank-tolerance-status',label:'Purchase discharge tank difference'}
+  }[settingKey];
+  if(!config)return;
+  const input=document.getElementById(config.input);
+  const status=document.getElementById(config.status);
+  const form=event.currentTarget;
+  const button=form?.querySelector('button[type="submit"]');
+  const value=Number(input?.value);
+  if(!Number.isFinite(value)||value<0||value>100000){
+    if(status)status.textContent='Enter a value from 0 to 100,000 liters.';
+    if(input)input.focus();
+    return;
+  }
+  const normalized=Math.round(value*100)/100;
+  const originalLabel=button?.textContent||'Save tolerance';
+  if(button){button.disabled=true;button.textContent='Saving…';}
+  if(status)status.textContent='Saving tank difference tolerance…';
+  try{
+    const saved=await api('/api/settings',{method:'PATCH',body:JSON.stringify({[settingKey]:normalized})});
+    const savedValue=Number(saved?.[settingKey]??normalized);
+    if(input)input.value=String(savedValue);
+    if(status)status.textContent='Saved successfully. Allowed difference: '+savedValue.toLocaleString(undefined,{maximumFractionDigits:2})+' L.';
+    if(typeof toast==='function')toast('Tank difference tolerance saved');
   }catch(e){
     if(status)status.textContent='Could not save tolerance: '+String(e?.message||e||'Unknown error');
   }finally{
