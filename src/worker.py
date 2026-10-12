@@ -181,7 +181,7 @@ def _clear_role_cookie(response, role):
 def _audit_record_locator(path, payload=None):
     """Return a safe table/filter pair for tracked records that can be compared around a mutation."""
     parts = [p for p in (path or "").strip("/").split("/") if p]
-    if parts == ["api", "settings"]:
+    if len(parts) >= 2 and parts[:2] == ["api", "settings"]:
         return "station_settings", {"id": "eq.true"}
     if parts == ["api", "drive", "settings"]:
         return "drive_settings", {"id": "eq.1"}
