@@ -313,7 +313,7 @@ def _audit_format_details(details):
     if not lines:
         lines.append("No persisted field changes detected")
 
-    return "\\n".join(lines)[:12000]
+    return "\n".join(lines)[:12000]
 
 
 def _audit_safe_details(value):
