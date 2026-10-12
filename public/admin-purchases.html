@@ -944,13 +944,14 @@ window.ensurePurchasePdfEngine=async function(){
   return window.jspdf.jsPDF;
 };
 
-window.downloadPurchaseDetailPdf=async function(){
+window.downloadPurchaseDetailPdf=async function(options){
+  options=options||{};
   const p=window.currentPurchaseDetailData;
-  const fail=(msg)=>{if(typeof window.openPurchaseFailed==='function')window.openPurchaseFailed(msg,'PDF Download Failed');else alert(msg);};
+  const fail=(msg)=>{if(options.uploadOnly&&typeof window.toast==='function')window.toast(msg);else if(typeof window.openPurchaseFailed==='function')window.openPurchaseFailed(msg,'PDF Download Failed');else alert(msg);};
   if(!p){fail('Purchase details are not available.');return;}
   const n=v=>Number(v||0), L=v=>n(v).toLocaleString(undefined,{maximumFractionDigits:2})+' L';
   const dt=v=>{try{return v?new Date(v).toLocaleString():'—';}catch(_){return '—';}};
-  const btn=document.querySelector('.purchase-detail-download');
+  const btn=options.uploadOnly?null:document.querySelector('.purchase-detail-download');
   try{
     if(btn){btn.disabled=true;btn.textContent='Preparing PDF…';}
     const jsPDF=await window.ensurePurchasePdfEngine();
@@ -1019,8 +1020,8 @@ window.downloadPurchaseDetailPdf=async function(){
     const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);
     const fileName='purchase_'+safe+'.pdf';
     const pdfBlob=doc.output('blob');
-    doc.save(fileName);
-    // Store the same generated purchase PDF in the configured Google Drive folder.
+    if(!options.uploadOnly)doc.save(fileName);
+    // Store the generated purchase PDF in the configured Google Drive folder.
     try{
       const bytes=new Uint8Array(await pdfBlob.arrayBuffer());
       let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));
@@ -1029,10 +1030,16 @@ window.downloadPurchaseDetailPdf=async function(){
       if(!response.ok||!result.ok)throw new Error(result.error||('HTTP '+response.status));
       if(typeof window.toast==='function')window.toast('Purchase PDF saved to Google Drive: '+(result.path||fileName));
     }catch(uploadError){
-      if(typeof window.toast==='function')window.toast('PDF downloaded, but Drive storage failed: '+(uploadError.message||'unknown error'));
+      if(typeof window.toast==='function')window.toast((options.uploadOnly?'Purchase PDF could not be saved to Drive: ':'PDF downloaded, but Drive storage failed: ')+(uploadError.message||'unknown error'));
     }
   }catch(e){fail(e.message||'Unable to create the PDF.');}
   finally{if(btn){btn.disabled=false;btn.textContent='Download PDF';}}
+};
+window.uploadPurchaseDetailPdf=async function(purchase){
+  if(!purchase){if(typeof window.toast==='function')window.toast('Purchase saved, but its PDF record could not be located for Drive storage.');return;}
+  window.currentPurchaseDetailData=purchase;
+  window.currentPurchaseDetailTanks=window.currentPurchaseDetailTanks||[];
+  return window.downloadPurchaseDetailPdf({uploadOnly:true});
 }
 </script>
 <script src="assets/app.js?v=20261011-popup1"></script><script>
@@ -1785,6 +1792,12 @@ window.downloadPurchaseDetailPdf=async function(){
       const container=document.getElementById('purchase-compartment-liters');if(container)container.innerHTML='';
       closePurchaseModal();
       await loadPurchases();
+      const savedPurchase=purchaseDetailData?.find(function(item){return String(item.invoice_number||'').trim()===String(invoice).trim();});
+      if(savedPurchase&&typeof window.uploadPurchaseDetailPdf==='function'){
+        try{await window.uploadPurchaseDetailPdf(savedPurchase);}catch(pdfError){if(typeof window.toast==='function')window.toast('Purchase was recorded, but automatic PDF storage failed: '+(pdfError.message||'unknown error'));}
+      }else if(typeof window.toast==='function'){
+        window.toast('Purchase was recorded. Open its details and download PDF to store it in Drive.');
+      }
       openPurchaseSuccess('purchase',summary);
     }catch(e){
       const message=e.message||'Failed to confirm purchase.';

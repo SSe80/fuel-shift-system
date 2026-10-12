@@ -40,11 +40,33 @@
     if (t.body && t.body.missing && t.body.missing.length) return say('Missing folder link for: ' + t.body.missing.join(', ').toUpperCase() + '.', true);
     say('Connection failed: ' + errText(t.body && t.body.error, t.status), true);
   }
+  var reportWorkers = {};
+  function maintainReportWorkers(items) {
+    ['dsr', 'msr'].forEach(function (kind) {
+      var waiting = items.some(function (item) {
+        return item.kind === kind && item.status === 'pending' && (item.attempts || 0) < 3;
+      });
+      if (waiting && !reportWorkers[kind]) {
+        var frame = document.createElement('iframe');
+        frame.title = 'Background ' + kind.toUpperCase() + ' PDF export';
+        frame.setAttribute('aria-hidden', 'true');
+        frame.tabIndex = -1;
+        frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;';
+        frame.src = kind === 'dsr' ? 'admin-daily-report.html?drive-export-worker=1' : 'admin-monthly-report.html?drive-export-worker=1';
+        document.body.appendChild(frame);
+        reportWorkers[kind] = frame;
+      } else if (!waiting && reportWorkers[kind]) {
+        reportWorkers[kind].remove();
+        delete reportWorkers[kind];
+      }
+    });
+  }
   async function loadQueue() {
     var q = await api('/api/drive/queue');
     var box = $('drive-queue-list');
     if (!box) return;
     if (q.status !== 200 || !Array.isArray(q.body)) { box.textContent = 'Queue unavailable.'; return; }
+    maintainReportWorkers(q.body);
     if (!q.body.length) { box.innerHTML = '<p class="muted">Nothing waiting. Every confirmed report is saved to Drive.</p>'; return; }
     box.innerHTML = q.body.map(function (i) {
       var state = i.status === 'failed' ? 'Failed' : 'Waiting';
@@ -65,6 +87,8 @@
       $('drive-save-btn').addEventListener('click', saveSettings);
       $('drive-test-btn').addEventListener('click', testConnection);
       window.DriveSettings.load();
+      // Keep queue status fresh and wake the report-page PDF builders while admin settings is open.
+      window.setInterval(loadQueue, 30000);
     }
   });
 })();
