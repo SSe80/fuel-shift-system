@@ -4331,7 +4331,7 @@ def _drive_after_dsr_confirm(report_day):
         app.logger.exception("drive enqueue failed")
 
 def _drive_settings():
-    st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,updated_at"})
+    st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,purchase_folder_id,updated_at"})
     if st >= 400:
         return None
     return (rows or [{}])[0]
@@ -4344,7 +4344,7 @@ def drive_get_settings():
     if row is None:
         return jsonify({"error": "Drive settings unavailable"}), 500
     return jsonify({"dsr_folder_id": row.get("dsr_folder_id"), "msr_folder_id": row.get("msr_folder_id"),
-                    "updated_at": row.get("updated_at")}), 200
+                    "purchase_folder_id": row.get("purchase_folder_id"), "updated_at": row.get("updated_at")}), 200
 
 @app.put("/api/drive/settings")
 def drive_put_settings():
@@ -4352,7 +4352,7 @@ def drive_put_settings():
     if auth: return auth
     data = request.get_json(silent=True) or {}
     update = {"updated_at": datetime.now(timezone.utc).isoformat()}
-    for field, key in (("dsr_link", "dsr_folder_id"), ("msr_link", "msr_folder_id")):
+    for field, key in (("dsr_link", "dsr_folder_id"), ("msr_link", "msr_folder_id"), ("purchase_link", "purchase_folder_id")):
         if field in data:
             raw = str(data.get(field) or "").strip()
             if not raw:
@@ -4372,7 +4372,7 @@ def drive_test():
     auth = require_admin()
     if auth: return auth
     row = _drive_settings() or {}
-    folders = {"dsr": row.get("dsr_folder_id"), "msr": row.get("msr_folder_id")}
+    folders = {"dsr": row.get("dsr_folder_id"), "msr": row.get("msr_folder_id"), "purchases": row.get("purchase_folder_id")}
     try:
         result = drive.test_folders(env(), folders)
     except drive.DriveError as err:
@@ -4399,6 +4399,41 @@ def drive_retry(item_id):
                  body={"status": "pending", "attempts": 0, "last_error": None,
                        "updated_at": datetime.now(timezone.utc).isoformat()}, prefer="return=minimal")
     return jsonify({"ok": st < 400}), (200 if st < 400 else st)
+
+
+@app.post("/api/drive/purchases/upload")
+def drive_purchase_upload():
+    auth = require_admin()
+    if auth: return auth
+    data = request.get_json(silent=True) or {}
+    try:
+        pdf = base64.b64decode(str(data.get("pdf_base64") or ""), validate=True)
+    except Exception:
+        return jsonify({"error": "pdf_base64 is not valid base64"}), 400
+    if not pdf.startswith(b"%PDF"):
+        return jsonify({"error": "Not a PDF"}), 400
+    if len(pdf) > DRIVE_MAX_PDF_BYTES:
+        return jsonify({"error": "PDF is too large"}), 413
+    settings = _drive_settings() or {}
+    root = settings.get("purchase_folder_id")
+    if not root:
+        return jsonify({"error": "Set the Purchases PDF folder link in Admin Settings first"}), 409
+    raw_name = str(data.get("file_name") or "purchase-record.pdf").strip()
+    name = re.sub(r"[^A-Za-z0-9_.-]+", "_", raw_name).strip("._")[:100]
+    if not name.lower().endswith(".pdf"):
+        name = (name or "purchase-record") + ".pdf"
+    raw_date = str(data.get("purchase_date") or "")[:10]
+    try:
+        purchase_day = date.fromisoformat(raw_date)
+    except Exception:
+        purchase_day = datetime.now(timezone.utc).date()
+    sub = purchase_day.strftime("%Y-%m")
+    try:
+        file_id, link = drive.store_pdf(env(), root, sub, name, pdf)
+        return jsonify({"ok": True, "file_id": file_id, "url": link,
+                        "path": "PURCHASES/%s/%s" % (sub, name)}), 200
+    except drive.DriveError as err:
+        return jsonify({"ok": False, "error": str(err)}), err.status
 
 @app.post("/api/drive/queue/<item_id>/upload")
 def drive_upload(item_id):
