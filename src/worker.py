@@ -271,30 +271,37 @@ def _audit_display_value(key, value):
 
 
 def _audit_format_details(details):
-    """Render audit details as labeled, wrapped-friendly text instead of compact JSON."""
+    """Keep spreadsheet audit cells concise: list only meaningful field changes."""
     lines = []
-    submitted = details.get("submitted_changes")
-    if submitted not in (None, {}, []):
+    changes = details.get("changed_fields")
+    ignored_fields = {"updated_at", "created_at"}
+
+    if isinstance(changes, dict):
+        meaningful = [(key, value) for key, value in changes.items()
+                      if str(key).lower() not in ignored_fields]
+        if meaningful:
+            lines.append("CHANGED FIELDS")
+            for key, change in meaningful:
+                label = _audit_display_label(key)
+                if isinstance(change, dict) and ("before" in change or "after" in change):
+                    before = _audit_display_value(key, change.get("before"))
+                    after = _audit_display_value(key, change.get("after"))
+                    lines.append("Field: {}".format(label))
+                    lines.append("Before: {}".format(before))
+                    lines.append("After: {}".format(after))
+                else:
+                    lines.append("{}: {}".format(label, _audit_display_value(key, change)))
+
+    # Failed attempts may not produce a changed-field diff. Keep the submitted
+    # values only in that case, so successful updates do not repeat the same data.
+    if not lines and details.get("submitted_changes") not in (None, {}, []):
+        submitted = details["submitted_changes"]
         lines.append("SUBMITTED VALUES")
         if isinstance(submitted, dict):
             for key, value in submitted.items():
                 lines.append("{}: {}".format(_audit_display_label(key), _audit_display_value(key, value)))
         else:
             lines.append(_audit_display_value("submitted_changes", submitted))
-
-    changes = details.get("changed_fields")
-    if isinstance(changes, dict) and changes:
-        if lines:
-            lines.append("")
-        lines.append("CHANGED FIELDS (BEFORE → AFTER)")
-        for key, change in changes.items():
-            label = _audit_display_label(key)
-            if isinstance(change, dict) and ("before" in change or "after" in change):
-                before = _audit_display_value(key, change.get("before"))
-                after = _audit_display_value(key, change.get("after"))
-                lines.append("{}: {} → {}".format(label, before, after))
-            else:
-                lines.append("{}: {}".format(label, _audit_display_value(key, change)))
 
     if "error" in details:
         if lines:
@@ -303,21 +310,10 @@ def _audit_format_details(details):
         error = details["error"]
         lines.append(error if isinstance(error, str) else json.dumps(error, ensure_ascii=False, indent=2))
 
-    # Keep full snapshots available for investigations, but visually separate
-    # them from the concise summary above.
-    for key, heading in (("before", "BEFORE RECORD"), ("after", "AFTER RECORD")):
-        if details.get(key) is not None:
-            if lines:
-                lines.append("")
-            lines.append(heading)
-            snapshot = details[key]
-            if isinstance(snapshot, dict):
-                for field, value in snapshot.items():
-                    lines.append("{}: {}".format(_audit_display_label(field), _audit_display_value(field, value)))
-            else:
-                lines.append(_audit_display_value(key, snapshot))
+    if not lines:
+        lines.append("No persisted field changes detected")
 
-    return "\n".join(lines)[:45000]
+    return "\n".join(lines)[:12000]
 
 
 def _audit_safe_details(value):
