@@ -4427,6 +4427,7 @@ def drive_put_settings():
     auth = require_admin()
     if auth: return auth
     data = request.get_json(silent=True) or {}
+    current_settings = _drive_settings() or {}
     update = {"updated_at": datetime.now(timezone.utc).isoformat()}
     for field, key in (("dsr_link", "dsr_folder_id"), ("msr_link", "msr_folder_id"), ("purchase_link", "purchase_folder_id"), ("admin_audit_link", "admin_audit_folder_id")):
         if field in data:
@@ -4438,6 +4439,9 @@ def drive_put_settings():
                 if not fid:
                     return jsonify({"error": "Paste a Google Drive folder link or folder ID for " + field}), 400
                 update[key] = fid
+            if field == "admin_audit_link" and update.get(key) != current_settings.get(key):
+                # A changed destination must start a new sheet inside the selected folder.
+                update["admin_audit_sheet_id"] = None
     st, out = sb("drive_settings", method="PATCH", params={"id": "eq.1"}, body=update, prefer="return=representation")
     if st >= 400:
         return jsonify({"error": out}), st
