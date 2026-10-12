@@ -178,6 +178,81 @@ def _set_role_cookie(response, role, employee_id):
 def _clear_role_cookie(response, role):
     response.delete_cookie(ROLE_SESSION_COOKIE[role], path="/")
 
+def _audit_safe_details(value):
+    """Remove credentials and PIN material before sending admin change details to Sheets."""
+    if isinstance(value, dict):
+        out = {}
+        for key, item in value.items():
+            low = str(key).lower()
+            if any(term in low for term in ("pin", "password", "secret", "token", "hash", "credential")):
+                out[str(key)] = "[redacted]"
+            else:
+                out[str(key)] = _audit_safe_details(item)
+        return out
+    if isinstance(value, list):
+        return [_audit_safe_details(item) for item in value[:100]]
+    if isinstance(value, str):
+        return value[:500]
+    if value is None or isinstance(value, (int, float, bool)):
+        return value
+    return str(value)[:500]
+
+
+@app.after_request
+def audit_admin_settings_mutations(response):
+    """Best-effort audit trail for successful Admin Settings mutations.
+    The application action remains successful even if Google Sheets is temporarily unavailable.
+    """
+    try:
+        if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
+            return response
+        if response.status_code < 200 or response.status_code >= 300:
+            return response
+        if session.get("role") != "admin" or not session.get("employee_id"):
+            return response
+        path = request.path or ""
+        tracked = ("/api/settings", "/api/users", "/api/employees", "/api/products",
+                   "/api/tanks", "/api/nozzles", "/api/sale-types", "/api/drive/settings")
+        if not any(path == prefix or path.startswith(prefix + "/") for prefix in tracked):
+            return response
+
+        config_status, config_rows = sb("drive_settings", params={
+            "id": "eq.1",
+            "select": "admin_audit_folder_id,admin_audit_sheet_id"
+        })
+        if config_status >= 400 or not config_rows:
+            return response
+        config = config_rows[0]
+        folder_id = config.get("admin_audit_folder_id")
+        if not folder_id:
+            return response
+
+        actor_id = str(session.get("employee_id"))
+        actor_name = actor_id
+        actor_status, actor_rows = sb("employees", params={
+            "id": "eq." + actor_id, "select": "id,name,role", "limit": "1"
+        })
+        if actor_status == 200 and actor_rows:
+            actor_name = str(actor_rows[0].get("name") or actor_id)
+
+        raw = request.get_json(silent=True)
+        details = _audit_safe_details(raw if isinstance(raw, (dict, list)) else {})
+        method_action = {"POST": "Created/Executed", "PUT": "Updated", "PATCH": "Updated", "DELETE": "Deleted"}.get(request.method, request.method)
+        target = path.rsplit("/", 1)[-1] or "settings"
+        action = method_action + " " + path.strip("/").replace("/", " ")
+        timestamp = datetime.now(timezone.utc).isoformat()
+        row = [timestamp, actor_name, actor_id, action, target,
+               json.dumps(details, ensure_ascii=False, separators=(",", ":")),
+               "Success (HTTP " + str(response.status_code) + ")", path]
+        sheet_id = drive.append_audit_row(env(), folder_id, config.get("admin_audit_sheet_id"), row)
+        if not config.get("admin_audit_sheet_id") and sheet_id:
+            sb("drive_settings", method="PATCH", params={"id": "eq.1"},
+               body={"admin_audit_sheet_id": sheet_id, "updated_at": timestamp})
+    except Exception:
+        app.logger.exception("Admin audit sheet append failed")
+    return response
+
+
 def require_login():
     role = _requested_role()
     if not role or not session.get("employee_id") or session.get("role") != role:
@@ -4331,7 +4406,7 @@ def _drive_after_dsr_confirm(report_day):
         app.logger.exception("drive enqueue failed")
 
 def _drive_settings():
-    st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,purchase_folder_id,updated_at"})
+    st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,purchase_folder_id,admin_audit_folder_id,admin_audit_sheet_id,updated_at"})
     if st >= 400:
         return None
     return (rows or [{}])[0]
@@ -4344,15 +4419,17 @@ def drive_get_settings():
     if row is None:
         return jsonify({"error": "Drive settings unavailable"}), 500
     return jsonify({"dsr_folder_id": row.get("dsr_folder_id"), "msr_folder_id": row.get("msr_folder_id"),
-                    "purchase_folder_id": row.get("purchase_folder_id"), "updated_at": row.get("updated_at")}), 200
+                    "purchase_folder_id": row.get("purchase_folder_id"), "admin_audit_folder_id": row.get("admin_audit_folder_id"),
+                    "admin_audit_sheet_id": row.get("admin_audit_sheet_id"), "updated_at": row.get("updated_at")}), 200
 
 @app.put("/api/drive/settings")
 def drive_put_settings():
     auth = require_admin()
     if auth: return auth
     data = request.get_json(silent=True) or {}
+    current_settings = _drive_settings() or {}
     update = {"updated_at": datetime.now(timezone.utc).isoformat()}
-    for field, key in (("dsr_link", "dsr_folder_id"), ("msr_link", "msr_folder_id"), ("purchase_link", "purchase_folder_id")):
+    for field, key in (("dsr_link", "dsr_folder_id"), ("msr_link", "msr_folder_id"), ("purchase_link", "purchase_folder_id"), ("admin_audit_link", "admin_audit_folder_id")):
         if field in data:
             raw = str(data.get(field) or "").strip()
             if not raw:
@@ -4362,6 +4439,9 @@ def drive_put_settings():
                 if not fid:
                     return jsonify({"error": "Paste a Google Drive folder link or folder ID for " + field}), 400
                 update[key] = fid
+            if field == "admin_audit_link" and update.get(key) != current_settings.get(key):
+                # A changed destination must start a new sheet inside the selected folder.
+                update["admin_audit_sheet_id"] = None
     st, out = sb("drive_settings", method="PATCH", params={"id": "eq.1"}, body=update, prefer="return=representation")
     if st >= 400:
         return jsonify({"error": out}), st
@@ -4372,13 +4452,13 @@ def drive_test():
     auth = require_admin()
     if auth: return auth
     row = _drive_settings() or {}
-    folders = {"dsr": row.get("dsr_folder_id"), "msr": row.get("msr_folder_id"), "purchases": row.get("purchase_folder_id")}
+    folders = {"dsr": row.get("dsr_folder_id"), "msr": row.get("msr_folder_id"), "purchases": row.get("purchase_folder_id"), "admin_audit": row.get("admin_audit_folder_id")}
     try:
         result = drive.test_folders(env(), folders)
     except drive.DriveError as err:
         return jsonify({"ok": False, "error": str(err)}), err.status
-    missing = [k for k, v in folders.items() if not v]
-    return jsonify({"ok": not missing, "folders": result, "missing": missing}), 200
+    missing = [k for k, v in folders.items() if k != "admin_audit" and not v]
+    return jsonify({"ok": not missing, "folders": result, "missing": missing, "admin_audit_configured": bool(folders.get("admin_audit"))}), 200
 
 @app.get("/api/drive/queue")
 def drive_queue():
