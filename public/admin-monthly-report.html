@@ -420,7 +420,20 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
   const rows=await msrRowsFor();
   XlsxExport.download(XlsxExport.build([{name:'MSR',rows}]),'MSR-'+lastExportData.month+'-report.xlsx');
  });
- window.addEventListener('load',function(){if(window.DriveQueue)DriveQueue.start({msr:key=>(lastExportData&&lastExportData.month===key&&lastExportData.daily&&lastExportData.daily.length)?buildMonthlySalesReportPdfBlob(lastExportData):null},30000);},{once:true});
+ window.addEventListener('load',function(){
+  if(!window.DriveQueue)return;
+  DriveQueue.start({
+    msr: async function(key){
+      if(!/^\\d{4}-\\d{2}$/.test(String(key||'')))return null;
+      if(!lastExportData||lastExportData.month!==key||!lastExportData.daily||!lastExportData.daily.length){
+        $('msr-month').value=key;
+        await load();
+      }
+      if(!lastExportData||lastExportData.month!==key||!lastExportData.daily||!lastExportData.daily.length)return null;
+      return await buildMonthlySalesReportPdfBlob(lastExportData);
+    }
+  },30000);
+},{once:true});
  $('msr-print').addEventListener('click',()=>{if(!lastExportData){$('msr-status').textContent='Monthly report is still loading. Please try again.';return;}if(typeof downloadMonthlySalesReportPdf!=='function'){$('msr-status').textContent='PDF download is unavailable. Reload the page and try again.';return;}downloadMonthlySalesReportPdf(lastExportData);});
  function renderMonthChips(){ $('msr-selected-months').innerHTML=selectedCompareMonths.slice().sort().map(m=>'<span class="msr-month-chip">'+h(monthLabel(m))+' <button type="button" data-remove-month="'+m+'" aria-label="Remove '+h(monthLabel(m))+'">×</button></span>').join('');$('msr-selected-months').querySelectorAll('[data-remove-month]').forEach(b=>b.addEventListener('click',()=>{selectedCompareMonths=selectedCompareMonths.filter(m=>m!==b.dataset.removeMonth);renderMonthChips();}));}
  $('msr-compare-month').value=currentMonth;renderMonthChips();
