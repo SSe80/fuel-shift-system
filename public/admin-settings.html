@@ -376,9 +376,17 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
       <p>Clear operational records to start a fresh operating period.</p></div>
     </div>
     <div class="settings-collapsible">
-      <div class="operational-reset-note"><strong>Warning:</strong> Permanently deletes operational records and clears nozzle shift activations and the Google Drive upload queue. PDFs already uploaded to Drive are kept.</div>
-      <p><strong>Kept:</strong> accounts, products, tanks, dispensers, settings, and current tank stock.</p>
-      <button type="button" id="open-operational-reset" class="operational-reset-button">Reset Operational Data</button>
+      <div class="operational-reset-note">This action cannot be undone. Tank stock readings will be reset to 0 L and 0 mm. Station configuration and calibration will remain.</div>
+      <label>Type RESET OPERATIONAL DATA to enable the reset.
+        <input id="operational-reset-confirmation" class="operational-reset-input" type="text" autocomplete="off" spellcheck="false" placeholder="RESET OPERATIONAL DATA" required>
+      </label>
+      <label>Admin PIN
+        <input id="operational-reset-admin-pin" class="operational-reset-input" type="password" name="operational-reset-admin-pin" inputmode="numeric" autocomplete="new-password" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" required placeholder="Enter your admin PIN">
+      </label>
+      <div class="row operational-reset-actions">
+        <button type="button" id="cancel-operational-reset" class="secondary">Cancel</button>
+        <button type="button" id="confirm-operational-reset" class="operational-reset-button" disabled>Permanently Reset Data</button>
+      </div>
       <div id="operational-reset-status" class="operational-reset-status muted" role="status" aria-live="polite"></div>
     </div>
   </section>
@@ -386,21 +394,6 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
 
 
 
-
-  <div id="operational-reset-modal" class="modal" aria-hidden="true">
-    <div class="modal-backdrop" id="operational-reset-backdrop"></div>
-    <div class="modal-card form operational-reset-action-card" role="dialog" aria-modal="true" aria-labelledby="operational-reset-title">
-      <div class="top"><div><span class="section-kicker">DANGER ZONE</span><h3 id="operational-reset-title">Permanently Reset Data</h3></div></div>
-      <input id="operational-reset-confirmation" type="hidden" value="RESET OPERATIONAL DATA">
-      <label>Admin PIN
-        <input id="operational-reset-admin-pin" class="operational-reset-input" type="password" name="operational-reset-admin-pin" inputmode="numeric" autocomplete="new-password" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" readonly required placeholder="Enter your admin PIN">
-      </label>
-      <div class="row operational-reset-actions" style="justify-content:flex-end">
-        <button type="button" id="confirm-operational-reset" class="operational-reset-button" disabled>Permanently Reset Data</button>
-      </div>
-      <div id="operational-reset-modal-status" class="operational-reset-status muted" role="status" aria-live="polite"></div>
-    </div>
-  </div>
 
   <div id="settings-confirm-modal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" onclick="closeSettingsConfirmation()"></div>
@@ -437,43 +430,60 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
 
 <script>
 (function(){
-  const openBtn=document.getElementById('open-operational-reset');
-  const modal=document.getElementById('operational-reset-modal');
+  const section=document.getElementById('reset-operational-data-section');
   const input=document.getElementById('operational-reset-confirmation');
   const pinInput=document.getElementById('operational-reset-admin-pin');
   const confirmBtn=document.getElementById('confirm-operational-reset');
-  const backdrop=document.getElementById('operational-reset-backdrop');
+  const cancelBtn=document.getElementById('cancel-operational-reset');
   const sectionStatus=document.getElementById('operational-reset-status');
-  const modalStatus=document.getElementById('operational-reset-modal-status');
-  if(!openBtn||!modal||typeof api!=='function') return;
-  function closeModal(){pinInput.value='';pinInput.setAttribute('readonly','readonly');updateResetButton();modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  function updateResetButton(){confirmBtn.disabled=!pinInput.value.trim();}
-  function openModal(){input.value='RESET OPERATIONAL DATA';pinInput.value='';pinInput.setAttribute('readonly','readonly');confirmBtn.disabled=true;confirmBtn.textContent='Permanently Reset Data';modalStatus.textContent='';modalStatus.className='operational-reset-status muted';modal.classList.add('open');modal.setAttribute('aria-hidden','false');pinInput.focus();}
-  pinInput.addEventListener('focus',()=>pinInput.removeAttribute('readonly'));
-  openBtn.addEventListener('click',openModal);
-  backdrop.addEventListener('click',closeModal);
+  if(!section||!input||!pinInput||!confirmBtn||!cancelBtn||typeof api!=='function') return;
+  function updateResetButton(){
+    confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA'||!pinInput.value.trim();
+  }
+  function clearResetForm(){
+    input.value='';
+    pinInput.value='';
+    confirmBtn.disabled=true;
+    confirmBtn.textContent='Permanently Reset Data';
+    sectionStatus.textContent='';
+    sectionStatus.className='operational-reset-status muted';
+  }
   input.addEventListener('input',updateResetButton);
   pinInput.addEventListener('input',updateResetButton);
+  cancelBtn.addEventListener('click',clearResetForm);
   confirmBtn.addEventListener('click',async()=>{
-    if(confirmBtn.textContent==='Done'){closeModal();return;}
-    if(!pinInput.value.trim()||confirmBtn.disabled)return;
-    const previous=confirmBtn.textContent;confirmBtn.disabled=true;confirmBtn.textContent='Resetting…';input.disabled=true;pinInput.disabled=true;
-    modalStatus.textContent='Verifying admin PIN and resetting data. Please keep this page open.';sectionStatus.textContent='';
+    if(confirmBtn.textContent==='Done'){clearResetForm();return;}
+    if(input.value.trim()!=='RESET OPERATIONAL DATA'||!pinInput.value.trim())return;
+    const previous=confirmBtn.textContent;
+    confirmBtn.disabled=true;
+    confirmBtn.textContent='Resetting…';
+    input.disabled=true;
+    pinInput.disabled=true;
+    cancelBtn.disabled=true;
+    sectionStatus.textContent='Verifying admin PIN and resetting data. Please keep this page open.';
+    sectionStatus.className='operational-reset-status muted';
     try{
       const result=await api('/api/admin/reset-operational-data',{method:'POST',body:JSON.stringify({confirmation:input.value.trim(),pin:pinInput.value})});
       if(!result||result.ok!==true)throw new Error('The server did not confirm the reset.');
       const counts=result.counts||{};
       const summary=Object.entries(counts).map(([name,count])=>name.replaceAll('_',' ')+': '+count).join('\n');
-      modalStatus.className='operational-reset-status operational-reset-success';modalStatus.textContent=(result.message||'Operational data reset successfully.')+(summary?'\n\nDeleted records:\n'+summary:'');
-      sectionStatus.textContent='Operational data reset completed successfully.';
-      confirmBtn.textContent='Done';confirmBtn.disabled=false;confirmBtn.onclick=closeModal;
+      sectionStatus.className='operational-reset-status operational-reset-success';
+      sectionStatus.textContent=(result.message||'Operational data reset successfully.')+(summary?'\n\nDeleted records:\n'+summary:'');
+      confirmBtn.textContent='Done';
+      confirmBtn.disabled=false;
     }catch(err){
-      modalStatus.className='operational-reset-status';modalStatus.textContent='Reset failed: '+(err&&err.message?err.message:String(err));
-      confirmBtn.textContent=previous;confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA';
-    }finally{input.disabled=false;pinInput.disabled=false;if(confirmBtn.textContent!=='Done')updateResetButton();}
+      sectionStatus.className='operational-reset-status';
+      sectionStatus.textContent='Reset failed: '+(err&&err.message?err.message:String(err));
+      confirmBtn.textContent=previous;
+    }finally{
+      input.disabled=false;
+      pinInput.disabled=false;
+      cancelBtn.disabled=false;
+      if(confirmBtn.textContent!=='Done')updateResetButton();
+    }
   });
 })();
-</script>
+</script>>
 <script>
 // Move settings dialogs out of the animated .wrap so fixed positioning uses the viewport.
 (function(){
