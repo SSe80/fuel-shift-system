@@ -935,6 +935,32 @@
   .purchase-compartment-card .purchase-compartment-conversion{font-size:13px!important;padding:10px!important}
 }
 </style>
+
+<style>
+/* Match the truck calibration dip-to-volume result panel */
+.purchase-compartment-card .purchase-compartment-conversion{
+  display:flex;
+  align-items:center;
+  min-height:40px;
+  box-sizing:border-box;
+  margin:0!important;
+  padding:10px 12px!important;
+  border:1px solid #dbeafe!important;
+  border-radius:9px!important;
+  background:#eff6ff!important;
+  color:#1d4ed8!important;
+  font-size:12px!important;
+  line-height:1.45!important;
+  font-weight:750!important;
+}
+.purchase-compartment-card .purchase-compartment-conversion:before{display:none!important;content:none!important}
+.purchase-compartment-card .purchase-compartment-conversion.warning{
+  border-color:#fed7aa!important;
+  background:#fff7ed!important;
+  color:#b54708!important;
+}
+.purchase-compartment-card .purchase-compartment-conversion:empty{display:none!important}
+</style>
 </head><body class="admin-shell admin-purchases-page admin-control-ui" data-app-page="adminPurchases"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
   <nav class="admin-sidebar-nav">
