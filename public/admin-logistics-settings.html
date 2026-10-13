@@ -44,7 +44,12 @@ body{background:#f7f9fc!important;color:#182230!important;font-family:Inter,"Seg
 </head>
 <body class="admin-shell admin-control-ui" data-app-page="adminDashboard">
 <div class="logistics-layout">
-<aside class="logistics-sidebar" aria-label="Logistics navigation"><div class="logistics-brand"><span class="logistics-mark">AL</span><div><strong>ADMIN LOGISTICS</strong><small>Fuel Shift System</small></div></div><nav class="logistics-nav"><a href="admin-logistics-truck.html"><span>🚚</span><b>Truck</b></a><a href="admin-logistics-dashboard.html"><span>⌂</span><b>Dashboard</b></a><a class="active" href="admin-logistics-settings.html"><span>⚙</span><b>Settings</b></a></nav><button class="logistics-logout sidebar-logout" type="button" data-logistics-logout><span aria-hidden="true">↪</span> Log out</button></aside>
+<aside class="logistics-sidebar" aria-label="Logistics navigation"><div class="logistics-brand"><span class="logistics-mark">AL</span><div><strong>ADMIN LOGISTICS</strong><small>Fuel Shift System</small></div></div><nav class="logistics-nav">
+<a href="admin-logistics-dashboard.html"><span aria-hidden="true">⌂</span><b>Dashboard</b></a>
+<a href="admin-logistics-truck.html"><span aria-hidden="true">🚚</span><b>Truck</b></a>
+<a href="admin-logistics-deliveries.html"><span aria-hidden="true">📦</span><b>Deliveries</b></a>
+<a href="admin-logistics-settings.html" class="active" aria-current="page"><span aria-hidden="true">⚙</span><b>Settings</b></a>
+</nav><button class="logistics-logout sidebar-logout" type="button" data-logistics-logout><span aria-hidden="true">↪</span> Log out</button></aside>
 <div class="logistics-main"><main class="wrap">
 <header class="settings-header control-page-header"><div><span class="eyebrow">LOGISTICS SETTINGS</span><h1>Logistics Settings</h1><p class="truck-muted">Manage truck registrations and compartment calibration files separately from the main Admin Settings.</p></div></header>
 <section class="truck-panel truck-management-card" aria-labelledby="truckListTitle"><div class="truck-panel-head"><div class="truck-panel-title"><span class="truck-card-icon" aria-hidden="true">🚚</span><div><h2 id="truckListTitle">Truck Management</h2><p class="truck-muted">Add trucks, update details, and manage compartment calibration.</p></div></div><div class="truck-panel-actions"><span class="truck-count" id="truckCount">0 trucks</span><button class="truck-primary" id="addTruckBtn" type="button">＋ Add truck</button></div></div><div class="truck-list-wrap"><div id="truckList" class="truck-empty">No trucks added yet. Select <b>Add truck</b> to register the first truck and its compartment calibration.</div></div></section>
