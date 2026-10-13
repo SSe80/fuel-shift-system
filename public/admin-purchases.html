@@ -1196,7 +1196,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     const phone=document.getElementById('purchase-driver-phone')?.value.trim()||'—';
     const plate=document.getElementById('purchase-plate-number')?.value.trim()||'—';
     const count=Number(document.getElementById('purchase-truck-compartments')?.value||0);
-    const truckType=document.getElementById('purchase-truck-type')?.value||'';
+    const truckType=purchaseTruckType;
     const truckTypeLabel=truckType==='contracted'?'Contracted':truckType==='non_contracted'?'Non-contracted':'—';
     const registeredTruckLabel=selectedPurchaseTruck?(selectedPurchaseTruck.plate||selectedPurchaseTruck.truck_code||selectedPurchaseTruck.registration_number||'Registered truck'):'—';
     const inputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
