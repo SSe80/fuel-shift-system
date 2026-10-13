@@ -2522,29 +2522,12 @@ def create_purchase():
     auth=require_admin()
     if auth:return auth
     data=request.get_json(silent=True) or {}
-    product,tank_id=str(data.get("product","")).strip(),str(data.get("tank_id","")).strip()
+    product=str(data.get("product","")).strip()
     try: qty=float(data.get("quantity_liters",0))
     except (TypeError,ValueError):return jsonify({"error":"Invalid quantity"}),400
     try: ordered=float(data.get("ordered_quantity_liters")) if data.get("ordered_quantity_liters") is not None else None
     except (TypeError,ValueError):return jsonify({"error":"Invalid ordered quantity"}),400
-    if not product or not tank_id or qty<=0:return jsonify({"error":"Product, tank and positive quantity are required"}),400
-
-    # A purchase must use an explicitly selected active tank matching the product.
-    # Never silently assign the first tank for a product.
-    tank_status,tank_rows=sb("tanks",params={
-        "select":"id,tank_code,product,product_id,active",
-        "id":"eq."+tank_id,
-        "limit":"1"
-    })
-    if tank_status!=200:
-        return jsonify({"error":"Unable to validate the selected tank"}),tank_status
-    if not tank_rows:
-        return jsonify({"error":"Selected tank was not found"}),404
-    selected_tank=tank_rows[0]
-    if selected_tank.get("active") is False:
-        return jsonify({"error":"Selected tank is inactive"}),409
-    if str(selected_tank.get("product") or "").strip().lower()!=product.lower():
-        return jsonify({"error":"Selected tank does not match the selected product"}),409
+    if not product or qty<=0:return jsonify({"error":"Product and positive quantity are required"}),400
 
     compartments=data.get("truck_compartments")
     try: compartments=int(compartments) if compartments is not None else None
@@ -2552,7 +2535,7 @@ def create_purchase():
     status,result=rpc("record_pending_fuel_purchase",{
         "p_product":product,
         "p_quantity_liters":qty,
-        "p_tank_id":tank_id,
+        "p_tank_id":None,
         "p_invoice_number":data.get("invoice_number",""),
         "p_created_by":session["employee_id"],
         "p_ordered_quantity_liters":ordered,
