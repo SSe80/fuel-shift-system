@@ -1460,7 +1460,7 @@ def logistics_save_truck():
         details={"calibrationTable":points,"fileName":cal.get("fileName"),"fileType":cal.get("fileType"),
                  "fileSize":cal.get("fileSize"),"verifiedMm":cal.get("verifiedMm"),"verifiedLitres":cal.get("verifiedLitres")}
         rows.append({"truck_id":truck_id,"compartment_number":int(cal.get("compartment") or index+1),
-                     "capacity_liters":max(1,float(data.get("compartmentCapacities",{}).get(str(index+1),1))) if isinstance(data.get("compartmentCapacities"),dict) else 1,
+                     "capacity_liters":max(1.0,max([float(point.get("litres") or 0) for point in points if isinstance(point,dict)] or [1.0])),
                      "calibration_points":details,"calibration_verified":cal.get("verifiedMm") is not None,
                      "calibration_verified_at":now if cal.get("verifiedMm") is not None else None,
                      "calibration_verified_by":str(session.get("employee_id") or "") if cal.get("verifiedMm") is not None else None})
