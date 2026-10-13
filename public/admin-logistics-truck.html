@@ -1,179 +1,56 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f3f6fb"><title>Truck | Admin Logistics</title>
-<link rel="stylesheet" href="assets/style.css?v=20261011-popup2"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-01">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f3f6fb">
+<title>Truck | Admin Logistics</title>
+<link rel="stylesheet" href="assets/style.css?v=20261011-popup2">
+<link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-01">
 <style>
-:root{color-scheme:light;--lg-ink:#182230;--lg-muted:#667085;--lg-line:#dce5ef;--lg-blue:#2563eb}
-.logistics-layout{display:flex;min-height:100vh;background:#f3f6fb;color:var(--lg-ink)}.logistics-sidebar{width:244px;flex:0 0 244px;background:#fff;border-right:1px solid var(--lg-line);padding:24px 14px;position:sticky;top:0;height:100vh;overflow:auto}.logistics-brand{display:flex;align-items:center;gap:10px;padding:0 9px 22px;border-bottom:1px solid var(--lg-line)}.logistics-mark{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;color:#b45309;font-weight:900}.logistics-brand strong{display:block;font-size:12px;letter-spacing:.4px}.logistics-brand small{display:block;color:var(--lg-muted);font-size:11px;margin-top:4px}.logistics-nav{display:grid;gap:5px;padding-top:17px}.logistics-nav a{display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;text-decoration:none;color:#475467;font-size:13px}.logistics-nav a:hover,.logistics-nav a.active{background:#eff6ff;color:#1d4ed8}.logistics-nav a span{width:22px;text-align:center}.logistics-main{min-width:0;flex:1}.logistics-main .wrap{max-width:none;padding:28px;background:#f3f6fb}.control-page-header{display:flex!important;justify-content:space-between;align-items:center;gap:16px}.control-page-header h1{margin-bottom:4px!important}.truck-primary,.wizard-btn{border:0;border-radius:10px;padding:11px 16px;font-size:13px;font-weight:750;cursor:pointer}.truck-primary,.wizard-btn.primary{background:#2563eb;color:white;box-shadow:0 3px 8px #2563eb24}.wizard-btn.secondary{background:#eff6ff;color:#1d4ed8}.wizard-btn:disabled{opacity:.4;cursor:not-allowed}.truck-panel{background:#fff;border:1px solid var(--lg-line);border-radius:16px;padding:22px;box-shadow:0 5px 20px #0f172a08}.truck-panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.truck-panel h2{font-size:17px;margin:0}.truck-muted{font-size:13px;color:var(--lg-muted);line-height:1.5}.truck-empty{padding:32px 12px;border:1px dashed #cbd5e1;background:#f8fafc;border-radius:12px;text-align:center;color:var(--lg-muted);font-size:13px}.truck-list{display:grid;gap:12px}.truck-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 14px;padding:0;border:1px solid #e1e8f0;border-radius:14px;background:#fff;overflow:hidden;transition:border-color .18s,box-shadow .18s}.truck-row:hover{border-color:#c5d5e8;box-shadow:0 4px 14px #0f172a08}.truck-row.inactive{background:#f8fafc}.truck-row-main{display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:0;padding:16px;cursor:pointer}.truck-row-main:focus-visible{outline:3px solid #bfdbfe;outline-offset:-3px}.truck-info{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px}.truck-info .truck-plate{order:0}.truck-info strong{order:1}.truck-info small{order:2;margin-top:0}.truck-row strong{display:block;font-size:14px;font-weight:800;color:#182230;overflow-wrap:anywhere}.truck-row small{display:block;margin-top:5px;color:var(--lg-muted);font-size:12px;line-height:1.5;overflow-wrap:anywhere}.truck-row-side{display:flex;align-items:center;gap:9px;padding:16px 16px 16px 0}.truck-plate{font-size:11px;font-weight:850;background:#eff6ff;color:#1d4ed8;padding:8px 10px;border-radius:8px;white-space:nowrap;overflow-wrap:anywhere}.truck-status{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;background:#ecfdf3;color:#027a48;font-size:10px;font-weight:800;white-space:nowrap}.truck-status:before{content:'';width:6px;height:6px;border-radius:50%;background:#12b76a}.truck-status.off{background:#f2f4f7;color:#667085}.truck-status.off:before{background:#98a2b3}.truck-expand-icon{color:#667085;font-size:17px;transition:transform .18s}.truck-row.expanded .truck-expand-icon{transform:rotate(180deg)}.truck-details{grid-column:1/-1;display:none;padding:0 16px 16px;border-top:1px solid #eef2f6}.truck-row.expanded .truck-details{display:block}.truck-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px 0}.truck-detail{min-width:0;padding:10px 11px;background:#f8fafc;border:1px solid #edf1f6;border-radius:9px}.truck-detail span{display:block;color:#667085;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.truck-detail strong{display:block;font-size:12px;margin-top:5px;overflow-wrap:anywhere}.truck-calibration-summary{font-size:11px;color:#667085;line-height:1.5;margin-bottom:12px}.truck-actions{display:flex;flex-wrap:wrap;gap:8px}.truck-action{border:1px solid #d0d5dd;background:#fff;color:#344054;border-radius:9px;padding:8px 12px;font-size:12px;font-weight:750;cursor:pointer}.truck-action:hover{background:#f8fafc}.truck-action.edit{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}.truck-action.deactivate{border-color:#fed7aa;background:#fff7ed;color:#b54708}.truck-action.remove{border-color:#fecdca;background:#fff5f4;color:#b42318}.truck-row.inactive .truck-plate{background:#f2f4f7;color:#667085}
-.wizard-overlay{position:fixed;inset:0;z-index:1500;display:none;align-items:center;justify-content:center;padding:14px;background:#10182899;overscroll-behavior:contain}.wizard-overlay.open{display:flex}.wizard-dialog{width:min(680px,100%);max-height:calc(100dvh - 28px);background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 24px 80px #10182844;display:flex;flex-direction:column;overflow:hidden}.wizard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:21px 22px 16px;border-bottom:1px solid #eef2f7}.wizard-kicker{font-size:10px;letter-spacing:.13em;font-weight:800;color:#2563eb;text-transform:uppercase}.wizard-top h2{font-size:21px;margin:5px 0 4px;letter-spacing:-.03em}.wizard-top p{font-size:12px;color:var(--lg-muted);margin:0;line-height:1.45}.wizard-close{border:0;background:#f1f5f9;color:#475467;width:34px;height:34px;border-radius:10px;font-size:20px;cursor:pointer;flex-shrink:0}.wizard-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 22px 0}.wizard-step{display:flex;align-items:center;gap:8px;color:#98a2b3;font-size:11px;font-weight:750}.wizard-step i{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#f1f5f9;font-style:normal}.wizard-step.active{color:#1d4ed8}.wizard-step.active i,.wizard-step.done i{background:#dbeafe;color:#1d4ed8}.wizard-viewport{padding:18px 22px;overflow-y:auto;overscroll-behavior:contain;min-height:0;touch-action:pan-y}.wizard-card{display:none;animation:slideIn .2s ease}.wizard-card.active{display:block}.wizard-card h3{font-size:16px;margin:0 0 5px}.wizard-card .helper{font-size:12px;color:var(--lg-muted);margin:0 0 18px;line-height:1.5}.wizard-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.wizard-section{min-width:0}.wizard-section.full{grid-column:1/-1}.wizard-section-heading{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:850;color:#475467;margin:0 0 10px;padding-bottom:7px;border-bottom:1px solid #e2e8f0}.wizard-section-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.wizard-section-fields.driver-fields{grid-template-columns:1fr}.wizard-field{display:grid;gap:7px;min-width:0}.wizard-field.full{grid-column:1/-1}.wizard-field label{font-size:12px;font-weight:750;color:#344054}.wizard-field input,.wizard-field select{width:100%;min-width:0;border:1px solid #cfd8e3;border-radius:10px;padding:12px;background:#fff;color:#182230;font:inherit;font-size:14px;outline:none}.wizard-field input:focus,.wizard-field select:focus{border-color:#60a5fa;box-shadow:0 0 0 3px #dbeafe}.compartment-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.compartment-choice{position:relative;display:block;cursor:pointer}.compartment-choice input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}.compartment-choice span{display:flex;align-items:center;justify-content:center;gap:7px;min-height:52px;border:1px solid #cfd8e3;border-radius:11px;background:#fff;color:#475467;font-size:13px;font-weight:750;transition:background .15s,border-color .15s,box-shadow .15s}.compartment-choice input:checked+span{border-color:#2563eb;background:#eff6ff;color:#1d4ed8;box-shadow:inset 0 0 0 1px #2563eb}.compartment-choice input:focus-visible+span{outline:3px solid #bfdbfe;outline-offset:2px}.compartment-choice em{font-style:normal;font-size:10px;font-weight:600;color:inherit;opacity:.8}.wizard-field input[type=file]{padding:10px;font-size:12px;background:#f8fafc}.wizard-error{display:none;margin-top:13px;color:#b42318;background:#fef3f2;border:1px solid #fecdca;border-radius:9px;padding:10px 12px;font-size:12px}.wizard-error.show{display:block}.calibration-list{display:grid;gap:10px}.calibration-item{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px;padding:13px;border:1px solid #e2e8f0;border-radius:12px;background:#fbfdff}.calibration-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;grid-column:1/-1}.calibration-heading strong{display:block;font-size:13px}.calibration-heading small{display:block;color:var(--lg-muted);font-size:11px;margin-top:4px}.calibration-upload{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:34px;flex:0 0 auto;margin:0;padding:0 10px;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;color:#1d4ed8;font-size:12px;line-height:1.2;font-weight:750;white-space:nowrap;cursor:pointer}.calibration-upload:hover{background:#dbeafe}.calibration-upload:focus-visible{outline:3px solid #bfdbfe;outline-offset:2px}.calibration-upload{position:relative;overflow:hidden}.calibration-file-input{position:absolute!important;inset:0;width:100%;height:100%;opacity:0;display:block!important;cursor:pointer;margin:0;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important}.calibration-fields{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}.calibration-fields .wizard-field input{width:100%;min-width:0;box-sizing:border-box}.calibration-example{display:block;margin-top:2px;color:var(--lg-muted);font-size:11px;line-height:1.45}.calibration-result{grid-column:1/-1;display:flex;align-items:center;min-height:40px;box-sizing:border-box;padding:10px 12px;border:1px solid #dbeafe;border-radius:9px;background:#eff6ff;color:#1d4ed8;font-size:12px;line-height:1.45;font-weight:750}.calibration-result.warning{border-color:#fed7aa;background:#fff7ed;color:#b54708}.calibration-item .wizard-field{gap:6px}.review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.review-item{padding:13px;border:1px solid #e2e8f0;border-radius:11px;background:#f8fafc;min-width:0}.review-item small{display:block;color:var(--lg-muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:800}.review-item strong{display:block;font-size:13px;margin-top:6px;overflow-wrap:anywhere}.review-calibrations{margin-top:15px}.review-calibrations h4{font-size:12px;margin:0 0 9px}.review-cal-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eef2f7;font-size:12px}.review-cal-row span:last-child{color:#475467;text-align:right;overflow-wrap:anywhere}.wizard-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 22px;border-top:1px solid #eef2f7;background:#fff}.wizard-footer .right-actions{display:flex;gap:8px}.wizard-count{font-size:11px;color:var(--lg-muted);font-weight:700}@keyframes slideIn{from{opacity:.6;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
-@media(max-width:760px){.calibration-fields{grid-template-columns:1fr}.logistics-layout{display:block}.logistics-sidebar{position:relative;width:100%;height:auto;padding:12px}.logistics-brand{padding-bottom:12px}.logistics-nav{display:flex;overflow-x:auto;padding-top:10px}.logistics-nav a{white-space:nowrap}.logistics-main .wrap{padding:17px 13px}.truck-panel{padding:16px}.control-page-header{align-items:flex-start!important;flex-direction:column}.wizard-overlay{padding:8px;align-items:center}.wizard-dialog{max-height:calc(100dvh - 16px);border-radius:15px}.wizard-top{padding:17px 16px 13px}.wizard-steps{padding:12px 16px 0;gap:5px}.wizard-step{font-size:10px;gap:5px}.wizard-step i{width:23px;height:23px;flex-shrink:0}.wizard-viewport{padding:16px}.wizard-footer{padding:12px 16px}.wizard-form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.wizard-section-heading{font-size:10px;margin-bottom:9px}.wizard-section-fields{gap:9px}.wizard-field.full{grid-column:1/-1}.wizard-field{gap:5px}.wizard-field label{font-size:10px;line-height:1.35}.wizard-field input,.wizard-field select{padding:9px 8px;font-size:12px;border-radius:8px}.wizard-field input::placeholder{font-size:11px}.calibration-item{grid-template-columns:1fr;gap:10px}.review-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:560px){.truck-row-main{align-items:flex-start;flex-direction:column;gap:10px;padding:13px}.truck-row-side{width:100%;justify-content:space-between;padding:0 13px 13px}.truck-details{padding:0 13px 13px}.truck-detail-grid{gap:8px}.truck-detail{padding:9px}.truck-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.truck-action{padding:9px 7px}.truck-action.remove{grid-column:1/-1}}@media(max-width:380px){.wizard-step{flex-direction:column;align-items:flex-start}.wizard-footer{align-items:flex-start}.wizard-count{padding-top:11px}.review-grid{grid-template-columns:1fr}.truck-detail-grid{grid-template-columns:1fr 1fr}}
+:root{color-scheme:light;--lg-ink:#182230;--lg-muted:#667085;--lg-line:#dce5ef}
+*{box-sizing:border-box}
+.logistics-layout{display:flex;min-height:100vh;background:#f3f6fb;color:var(--lg-ink)}
+.logistics-sidebar{width:244px;flex:0 0 244px;background:#fff;border-right:1px solid var(--lg-line);padding:24px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.logistics-brand{display:flex;align-items:center;gap:10px;padding:0 9px 22px;border-bottom:1px solid var(--lg-line)}
+.logistics-mark{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;color:#b45309;font-weight:900}
+.logistics-brand strong{display:block;font-size:12px;letter-spacing:.4px}
+.logistics-brand small{display:block;color:var(--lg-muted);font-size:11px;margin-top:4px}
+.logistics-nav{display:grid;gap:5px;padding-top:17px}
+.logistics-nav a{display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;text-decoration:none;color:#475467;font-size:13px}
+.logistics-nav a:hover,.logistics-nav a.active{background:#eff6ff;color:#1d4ed8}
+.logistics-nav a span{width:22px;text-align:center}
+.logistics-main{min-width:0;flex:1}
+.logistics-main .wrap{max-width:900px;margin:0 auto;padding:36px 28px}
+.truck-panel{background:#fff;border:1px solid var(--lg-line);border-radius:16px;padding:28px;box-shadow:0 5px 20px #0f172a08}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:1.4px;color:#2563eb}
+h1{font-size:clamp(28px,4vw,38px);margin:9px 0 10px;letter-spacing:-.8px}
+p{font-size:14px;line-height:1.7;color:var(--lg-muted);max-width:650px}
+.truck-primary{display:inline-flex;align-items:center;justify-content:center;margin-top:10px;border:0;border-radius:10px;padding:12px 16px;background:#2563eb;color:#fff;text-decoration:none;font-size:13px;font-weight:800}
+.truck-primary:hover{background:#1d4ed8}
+@media(max-width:760px){.logistics-layout{display:block}.logistics-sidebar{position:relative;width:100%;height:auto;padding:12px}.logistics-brand{padding-bottom:12px}.logistics-nav{display:flex;overflow-x:auto;padding-top:10px}.logistics-nav a{white-space:nowrap}.logistics-main .wrap{padding:22px 13px}.truck-panel{padding:20px}}
 </style>
 </head>
-<body class="admin-shell admin-control-ui" data-app-page="adminDashboard">
+<body class="admin-shell admin-control-ui" data-app-page="adminLogisticsTruck">
 <div class="logistics-layout">
-<aside class="logistics-sidebar" aria-label="Logistics navigation"><div class="logistics-brand"><span class="logistics-mark">AL</span><div><strong>ADMIN LOGISTICS</strong><small>Fuel Shift System</small></div></div><nav class="logistics-nav"><a class="active" href="admin-logistics-truck.html"><span>🚚</span><b>Truck</b></a><a href="admin-logistics-dashboard.html"><span>⌂</span><b>Dashboard</b></a><a href="admin-logistics-settings.html"><span>⚙</span><b>Settings</b></a></nav></aside>
-<div class="logistics-main"><main class="wrap">
-<header class="settings-header control-page-header"><div><span class="eyebrow">ADMIN LOGISTICS</span><h1>Truck</h1><p class="truck-muted">Manage truck details and compartment calibration documents.</p></div><button class="truck-primary" id="addTruckBtn" type="button">＋ Add truck</button></header>
-<section class="truck-panel" aria-labelledby="truckListTitle"><div class="truck-panel-head"><h2 id="truckListTitle">Trucks</h2><span class="truck-muted" id="truckCount">0 trucks</span></div><div id="truckList" class="truck-empty">No trucks added yet. Select <b>Add truck</b> to register a truck and its tank calibration.</div></section>
-</main></div></div>
-
-<div class="wizard-overlay" id="truckWizard" aria-hidden="true">
-<section class="wizard-dialog" role="dialog" aria-modal="true" aria-labelledby="wizardTitle">
-<header class="wizard-top"><div><div class="wizard-kicker">Truck registration</div><h2 id="wizardTitle">Add truck</h2><p id="wizardSubtitle">Enter driver and truck information to begin.</p></div><button class="wizard-close" id="closeWizard" type="button" aria-label="Close">×</button></header>
-<div class="wizard-steps" aria-label="Registration steps"><div class="wizard-step active" data-step-indicator="0"><i>1</i><span>Driver / Truck</span></div><div class="wizard-step" data-step-indicator="1"><i>2</i><span>Tank calibration</span></div><div class="wizard-step" data-step-indicator="2"><i>3</i><span>Review</span></div></div>
-<div class="wizard-viewport" id="wizardViewport">
-<form id="truckForm" novalidate>
-<section class="wizard-card active" data-card="0"><h3>Driver / Truck</h3><p class="helper">Add the driver contact, plate number, and number of compartments.</p><div class="wizard-form-grid">
-<div class="wizard-section full"><div class="wizard-section-heading">DRIVER</div><div class="wizard-section-fields driver-fields">
-<div class="wizard-field"><label for="driverName">Driver name</label><input id="driverName" name="driverName" autocomplete="name" placeholder="Enter full driver name" required></div>
-<div class="wizard-field"><label for="driverPhone">Driver phone number</label><input id="driverPhone" name="driverPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Enter phone number" required></div>
-</div></div>
-<div class="wizard-section full"><div class="wizard-section-heading">TRUCK</div><div class="wizard-section-fields">
-<div class="wizard-field"><label for="truckPlate">Truck plate number</label><input id="truckPlate" name="truckPlate" placeholder="e.g. AA-3-12345" required></div>
-<div class="wizard-field"><label for="trailerPlate">Trailer plate number <span style="font-weight:500;color:#667085">(optional)</span></label><input id="trailerPlate" name="trailerPlate" placeholder="Enter trailer plate"></div>
-<div class="wizard-field full"><label>Truck compartments</label><input id="compartmentCount" name="compartmentCount" type="hidden" value="2" required><div class="compartment-choices" role="radiogroup" aria-label="Number of truck compartments"><label class="compartment-choice"><input type="radio" name="compartmentChoice" value="2" checked><span>2 <em>compartments</em></span></label><label class="compartment-choice"><input type="radio" name="compartmentChoice" value="3"><span>3 <em>compartments</em></span></label><label class="compartment-choice"><input type="radio" name="compartmentChoice" value="4"><span>4 <em>compartments</em></span></label></div></div>
-</div></div>
-</div><div class="wizard-error" id="stepError0" role="alert"></div></section>
-<section class="wizard-card" data-card="1"><h3>Tank calibration</h3><p class="helper">Upload each compartment’s CSV table (volume in column 1, height in mm in column 2), then enter the measured height to calculate litres automatically.</p><div class="truck-muted" style="margin-bottom:12px">Compartments selected: <b id="selectedCompartmentCount">0</b></div><div class="calibration-list" id="calibrationList"></div><div class="wizard-error" id="stepError1" role="alert"></div></section>
-<section class="wizard-card" data-card="2"><h3>Review and confirmation</h3><p class="helper">Check the truck details and make sure each compartment has a calibration document before confirming.</p><div class="review-grid" id="reviewDetails"></div><div class="review-calibrations" id="reviewCalibrations"></div><div class="wizard-error" id="stepError2" role="alert"></div></section>
-</form>
+<aside class="logistics-sidebar" aria-label="Logistics navigation">
+<div class="logistics-brand"><span class="logistics-mark">AL</span><div><strong>ADMIN LOGISTICS</strong><small>Fuel Shift System</small></div></div>
+<nav class="logistics-nav">
+<a class="active" href="admin-logistics-truck.html"><span>🚚</span><b>Truck</b></a>
+<a href="admin-logistics-dashboard.html"><span>⌂</span><b>Dashboard</b></a>
+<a href="admin-logistics-settings.html"><span>⚙</span><b>Settings</b></a>
+</nav>
+</aside>
+<div class="logistics-main">
+<main class="wrap">
+<section class="truck-panel">
+<span class="eyebrow">ADMIN LOGISTICS</span>
+<h1>Truck</h1>
+<p>The Truck page is kept available for navigation. Adding trucks, editing truck details, managing registered trucks, and maintaining compartment calibration files are now handled from Logistics Settings.</p>
+<a class="truck-primary" href="admin-logistics-settings.html">Open Logistics Settings →</a>
+</section>
+</main>
 </div>
-<footer class="wizard-footer"><span class="wizard-count" id="wizardCount">Step 1 of 3</span><div class="right-actions"><button class="wizard-btn secondary" id="wizardBack" type="button" hidden>Back</button><button class="wizard-btn primary" id="wizardNext" type="button">Next: calibration</button></div></footer>
-</section></div>
-<script>
-(function(){
-'use strict';
-const $=id=>document.getElementById(id);
-const overlay=$('truckWizard'),form=$('truckForm'),cards=[...document.querySelectorAll('[data-card]')],indicators=[...document.querySelectorAll('[data-step-indicator]')];
-let step=0,calibrationFiles=[],calibrationTables=[],editingTruckId=null,editingTruck=null;
-const STORAGE_KEY='adminLogisticsTrucksV1';
-function getTrucks(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){return[]}}
-function setError(index,message){const el=$('stepError'+index);el.textContent=message;el.classList.toggle('show',!!message)}
-function clearErrors(){[0,1,2].forEach(i=>setError(i,''))}
-function showStep(next){
- step=Math.max(0,Math.min(2,next));cards.forEach((card,i)=>card.classList.toggle('active',i===step));
- indicators.forEach((el,i)=>{el.classList.toggle('active',i===step);el.classList.toggle('done',i<step);el.querySelector('i').textContent=i<step?'✓':String(i+1)});
- $('wizardBack').hidden=false;$('wizardBack').textContent=step===0?'Close':'Back';$('wizardCount').textContent='Step '+(step+1)+' of 3';
- $('wizardNext').textContent=step<2?'Next':(editingTruck?'Save changes':'Confirm & add truck');
- $('wizardViewport').scrollTop=0;clearErrors();
- if(step===1)renderCalibrationInputs();if(step===2)renderReview();
-}
-function openWizard(){editingTruckId=null;editingTruck=null;form.reset();calibrationFiles=[];calibrationTables=[];$('wizardNext').textContent='Next';showStep(0);overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';setTimeout(()=>$('driverName').focus(),40)}
-function openEditWizard(id){const truck=getTrucks().find(item=>item.id===id);if(!truck)return;editingTruckId=id;editingTruck=truck;form.reset();$('driverName').value=truck.driverName||'';$('driverPhone').value=truck.driverPhone||'';$('truckPlate').value=truck.plate||'';$('trailerPlate').value=truck.trailerPlate||'';$('compartmentCount').value=String(truck.compartmentCount||2);document.querySelectorAll('input[name="compartmentChoice"]').forEach(choice=>{choice.checked=choice.value===$('compartmentCount').value});calibrationFiles=Array.from({length:Number($('compartmentCount').value)},()=>null);calibrationTables=Array.from({length:Number($('compartmentCount').value)},(_,i)=>Array.isArray(truck.calibrations?.[i]?.calibrationTable)?truck.calibrations[i].calibrationTable:null);$('wizardNext').textContent='Save changes';showStep(0);$('wizardNext').textContent='Next';document.querySelector('.wizard-kicker').textContent='EDIT TRUCK';$('wizardTitle').textContent='Edit truck';$('wizardSubtitle').textContent='Update driver, truck and calibration details.';overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';setTimeout(()=>$('driverName').focus(),40)}
-function resetWizardTitle(){document.querySelector('.wizard-kicker').textContent='TRUCK REGISTRATION';$('wizardTitle').textContent='Add truck';$('wizardSubtitle').textContent='Enter driver and truck information to begin.'}
-function closeWizard(){overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true');document.body.style.overflow='';editingTruckId=null;editingTruck=null;resetWizardTitle();$('wizardNext').textContent='Next'}
-function parseCalibrationCsv(text){
- const lines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
- if(!lines.length)throw new Error('The CSV file is empty.');
- const first=lines[0],delimiter=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?';':((first.match(/\t/g)||[]).length>(first.match(/,/g)||[]).length?'\t':',');
- const points=[];
- for(const line of lines){
-  const cells=line.split(delimiter).map(cell=>cell.trim().replace(/^["']|["']$/g,''));
-  if(cells.length<2)continue;
-  // Some calibration exports write thousands separators without quoting them
-  // (for example 129,901,785). Treat the last field as height and join the
-  // preceding fields as the volume, so these rows are read as 129901 L, 785 mm.
-  const volumeText=(delimiter===','&&cells.length>2?cells.slice(0,-1).join(''):cells[0]).replace(/[\s,]/g,'');
-  const heightText=cells[cells.length-1].replace(/[\s,]/g,'');
-  const volume=Number(volumeText),height=Number(heightText);
-  if(Number.isFinite(volume)&&Number.isFinite(height)&&volume>=0&&height>=0)points.push({litres:volume,mm:height});
- }
- const unique=new Map();points.forEach(point=>unique.set(point.mm,point));const table=Array.from(unique.values()).sort((a,b)=>a.mm-b.mm);
- if(table.length<2)throw new Error('Could not find at least two numeric rows. CSV must have volume (L) in column 1 and height (mm) in column 2.');
- return table;
-}
-function volumeAtHeight(table,mm){
- if(!Array.isArray(table)||table.length<2||!Number.isFinite(mm))return{ok:false,message:'Upload a valid calibration CSV to calculate litres.'};
- if(mm<table[0].mm||mm>table[table.length-1].mm)return{ok:false,message:'Height is outside this calibration table range ('+formatNumber(table[0].mm)+'–'+formatNumber(table[table.length-1].mm)+' mm).'};
- for(let i=0;i<table.length;i++)if(mm===table[i].mm)return{ok:true,litres:table[i].litres};
- for(let i=1;i<table.length;i++){const lower=table[i-1],upper=table[i];if(mm>lower.mm&&mm<upper.mm)return{ok:true,litres:lower.litres+(mm-lower.mm)*(upper.litres-lower.litres)/(upper.mm-lower.mm)}}
- return{ok:false,message:'Could not calculate a volume for this height.'};
-}
-function formatNumber(value){return Number(value).toLocaleString(undefined,{maximumFractionDigits:2})}
-function renderCalibrationInputs(){
- const count=Number($('compartmentCount').value||0);$('selectedCompartmentCount').textContent=count;
- const enteredValues=Array.from(document.querySelectorAll('[data-verification-compartment]'),input=>input.value);
- const oldFiles=calibrationFiles.slice(0,count);calibrationFiles=Array.from({length:count},(_,i)=>oldFiles[i]||null);
- calibrationTables=Array.from({length:count},(_,i)=>calibrationTables[i]||editingTruck?.calibrations?.[i]?.calibrationTable||null);
- $('calibrationList').innerHTML='';
- for(let i=0;i<count;i++){
-  const oldCalibration=editingTruck?.calibrations?.[i]||null;
-  const item=document.createElement('div');item.className='calibration-item';
-  const heading=document.createElement('div');heading.className='calibration-heading';const label=document.createElement('div');
-  const title=document.createElement('strong');title.textContent='Compartment '+(i+1);const hint=document.createElement('small');hint.textContent='CSV columns: volume (L), then height (mm)';const status=document.createElement('small');status.textContent=calibrationFiles[i]?.name||oldCalibration?.fileName||'No CSV selected';label.append(title,hint,status);
-  const fileInput=document.createElement('input');fileInput.type='file';fileInput.accept='.csv,text/csv';fileInput.className='calibration-file-input';fileInput.id='calibrationFile'+i;fileInput.setAttribute('aria-label','Choose calibration CSV file for compartment '+(i+1));
-  const upload=document.createElement('label');upload.className='calibration-upload';upload.append(document.createTextNode('Add Calibration'));upload.title='Choose calibration CSV';upload.append(fileInput);heading.append(label,upload);
-  fileInput.addEventListener('change',async()=>{const file=fileInput.files&&fileInput.files[0];if(!file)return;if(!/[.]csv$/i.test(file.name)){fileInput.value='';calibrationFiles[i]=null;calibrationTables[i]=null;status.textContent='Only .csv files are accepted';updateCalibrationResult(i);setError(1,'Choose a calibration file with the .csv extension. Other file types are not accepted.');return}calibrationFiles[i]=file;status.textContent='Reading '+file.name+'…';try{const table=parseCalibrationCsv(await file.text());calibrationTables[i]=table;status.textContent=file.name+' · '+table.length+' calibration points';updateCalibrationResult(i);setError(1,'')}catch(error){calibrationTables[i]=null;status.textContent=file.name+' · could not read calibration table';updateCalibrationResult(i);setError(1,error.message||'Could not read the calibration CSV.')}});
-  const fields=document.createElement('div');fields.className='calibration-fields';
-  const valueField=document.createElement('div');valueField.className='wizard-field';const valueLabel=document.createElement('label');valueLabel.textContent='Measured height (mm)';const valueInput=document.createElement('input');valueInput.type='number';valueInput.min='0';valueInput.step='any';valueInput.inputMode='decimal';valueInput.placeholder='Enter height in mm';valueInput.value=enteredValues[i]!==undefined&&enteredValues[i]!==''?enteredValues[i]:(oldCalibration?.verifiedMm??'');valueInput.required=false;valueInput.dataset.verificationCompartment=String(i);valueInput.setAttribute('aria-label','Measured height in millimetres for compartment '+(i+1));valueInput.addEventListener('input',()=>{updateCalibrationResult(i);setError(1,'')});const example=document.createElement('small');example.className='calibration-example';example.textContent='Example: 317 mm → 2,000 L (from the uploaded table).';valueField.append(valueLabel,valueInput,example);
-  const result=document.createElement('div');result.className='calibration-result';result.dataset.calibrationResult=String(i);result.textContent=oldCalibration?.verifiedLitres!==undefined?'Saved result: '+formatNumber(oldCalibration.verifiedLitres)+' L':'Enter height to calculate volume.';
-  fields.append(valueField,result);item.append(heading,fields);$('calibrationList').append(item);updateCalibrationResult(i);
- }
- if(!count){const empty=document.createElement('div');empty.className='truck-empty';empty.textContent='Go back and select the number of truck compartments first.';$('calibrationList').append(empty)}
-}
-function updateCalibrationResult(index){
- const result=document.querySelector('[data-calibration-result="'+index+'"]');const input=document.querySelector('[data-verification-compartment="'+index+'"]');if(!result||!input)return;
- if(input.value.trim()===''){result.classList.remove('warning');result.textContent='Enter height to calculate volume.';return}
- const conversion=volumeAtHeight(calibrationTables[index],Number(input.value));
- if(conversion.ok){result.classList.remove('warning');result.textContent='Calculated volume: '+formatNumber(conversion.litres)+' L'}else{result.classList.add('warning');result.textContent=conversion.message}
-}
-function validateStep(){
- if(step===0){
-  if(!$('driverName').value.trim()||!$('driverPhone').value.trim()||!$('truckPlate').value.trim()||!$('compartmentCount').value){setError(0,'Complete all driver and truck fields before continuing.');return false}
-  if(!$('driverPhone').value.trim().replace(/[\s()+-]/g,'').match(/^\d{7,15}$/)){setError(0,'Enter a valid phone number (7–15 digits).');return false}
-  const plate=$('truckPlate').value.trim().toUpperCase();if(getTrucks().some(t=>String(t.plate).toUpperCase()===plate&&t.id!==editingTruckId)){setError(0,'A truck with this plate number is already registered.');return false}
-  return true;
- }
- if(step===1){const count=Number($('compartmentCount').value);const missingTable=Array.from({length:count},(_,i)=>!Array.isArray(calibrationTables[i])||calibrationTables[i].length<2);if(!count||missingTable.some(Boolean)){setError(1,'Upload a readable calibration CSV for every compartment. The first column must be volume (L) and the second height (mm).');return false}const inputs=Array.from(document.querySelectorAll('[data-verification-compartment]'));const invalidHeight=inputs.find(input=>input.value.trim()!==''&&(!Number.isFinite(Number(input.value))||Number(input.value)<0));if(invalidHeight){setError(1,'If you enter a measured height, use a valid non-negative number. You may leave this field blank to review the calibration data only.');invalidHeight.focus({preventScroll:true});return false}const outOfRange=inputs.some((input,i)=>input.value.trim()!==''&&!volumeAtHeight(calibrationTables[i],Number(input.value)).ok);if(outOfRange){setError(1,'One or more entered heights are outside the uploaded calibration table range. Correct the height or clear it to skip volume verification.');return false}return true}
- return true;
-}
-function addReviewItem(label,value){const item=document.createElement('div');item.className='review-item';const small=document.createElement('small');small.textContent=label;const strong=document.createElement('strong');strong.textContent=value;item.append(small,strong);$('reviewDetails').append(item)}
-function renderReview(){
- $('reviewDetails').innerHTML='';addReviewItem('Driver name',$('driverName').value.trim());addReviewItem('Phone number',$('driverPhone').value.trim());addReviewItem('Truck plate',$('truckPlate').value.trim().toUpperCase());addReviewItem('Trailer plate',$('trailerPlate').value.trim().toUpperCase()||'Not provided');addReviewItem('Compartments',$('compartmentCount').value);
- const section=$('reviewCalibrations');section.innerHTML='';const heading=document.createElement('h4');heading.textContent='Compartment calibration files';section.append(heading);
- calibrationFiles.forEach((file,i)=>{const row=document.createElement('div');row.className='review-cal-row';const a=document.createElement('span');a.textContent='Compartment '+(i+1);const b=document.createElement('span');const old=editingTruck?.calibrations?.[i];const table=calibrationTables[i]||old?.calibrationTable;const hasTable=Array.isArray(table)&&table.length>=2;const fileLabel=file?.name||old?.fileName||'Missing CSV';const tableLabel=hasTable?table.length+' calibration points':'Calibration data missing';b.textContent=fileLabel+' · '+tableLabel;row.append(a,b);section.append(row)});
-}
-function detail(label,value){const box=document.createElement('div');box.className='truck-detail';const caption=document.createElement('span');caption.textContent=label;const val=document.createElement('strong');val.textContent=value||'—';box.append(caption,val);return box}
-function actionButton(label,style,handler){const button=document.createElement('button');button.type='button';button.className='truck-action '+style;button.textContent=label;button.addEventListener('click',e=>{e.stopPropagation();handler()});return button}
-function renderTrucks(){
- const trucks=getTrucks();$('truckCount').textContent=trucks.length+' '+(trucks.length===1?'truck':'trucks');const list=$('truckList');list.innerHTML='';
- if(!trucks.length){list.className='truck-empty';list.textContent='No trucks added yet. Select Add truck to register a truck and its tank calibration.';return}
- list.className='truck-list';
- trucks.slice().reverse().forEach(truck=>{
-  const row=document.createElement('article');row.className='truck-row'+(truck.isActive===false?' inactive':'');row.dataset.truckId=truck.id;
-  const main=document.createElement('div');main.className='truck-row-main';main.tabIndex=0;main.setAttribute('role','button');main.setAttribute('aria-expanded','false');main.setAttribute('aria-label','Expand truck '+(truck.plate||'record'));
-  const info=document.createElement('div');info.className='truck-info';
-  const plate=document.createElement('span');plate.className='truck-plate';plate.textContent=(truck.plate||'No plate')+(truck.trailerPlate?' / '+truck.trailerPlate:'');
-  const name=document.createElement('strong');name.textContent=truck.driverName||'Unnamed driver';info.append(plate,name);main.append(info);
-  const side=document.createElement('div');side.className='truck-row-side';const status=document.createElement('span');status.className='truck-status'+(truck.isActive===false?' off':'');status.textContent=truck.isActive===false?'Inactive':'Active';const chevron=document.createElement('span');chevron.className='truck-expand-icon';chevron.textContent='⌄';side.append(status,chevron);
-  const details=document.createElement('div');details.className='truck-details';const grid=document.createElement('div');grid.className='truck-detail-grid';grid.append(detail('Driver',truck.driverName),detail('Phone',truck.driverPhone),detail('Truck plate',truck.plate),detail('Trailer plate',truck.trailerPlate||'Not provided'),detail('Compartments',String(truck.compartmentCount)),detail('Registered',truck.createdAt?new Date(truck.createdAt).toLocaleDateString():'—'));details.append(grid);
-  const actions=document.createElement('div');actions.className='truck-actions';actions.append(actionButton('Edit','edit',()=>openEditWizard(truck.id)));actions.append(actionButton(truck.isActive===false?'Activate':'Deactivate','deactivate',()=>toggleTruckActive(truck.id)));actions.append(actionButton('Remove','remove',()=>removeTruck(truck.id)));details.append(actions);
-  const toggle=()=>{const expanded=row.classList.toggle('expanded');main.setAttribute('aria-expanded',String(expanded))};main.addEventListener('click',toggle);main.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}});
-  row.append(main,side,details);list.append(row);
- })
-}
-function toggleTruckActive(id){const trucks=getTrucks();const index=trucks.findIndex(item=>item.id===id);if(index<0)return;trucks[index].isActive=trucks[index].isActive===false;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));renderTrucks();const row=$('truckList').querySelector('[data-truck-id="'+id+'"]');if(row){row.classList.add('expanded');row.querySelector('.truck-row-main').setAttribute('aria-expanded','true')}}catch(e){alert('Could not update this truck in this browser storage.')}}
-function removeTruck(id){const trucks=getTrucks();const truck=trucks.find(item=>item.id===id);if(!truck)return;if(!confirm('Remove truck '+(truck.plate||'record')+'? This cannot be undone.'))return;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks.filter(item=>item.id!==id)));renderTrucks()}catch(e){alert('Could not remove this truck in this browser storage.')}}
-
-function confirmTruck(){
- if(!validateStep())return;
- const count=Number($('compartmentCount').value);
- const calibrations=Array.from({length:count},(_,i)=>{const file=calibrationFiles[i];const old=editingTruck?.calibrations?.[i];const heightInput=document.querySelector('[data-verification-compartment="'+i+'"]');const heightValue=heightInput?.value?.trim()??'';const verifiedMm=heightValue===''?(old?.verifiedMm??null):Number(heightValue);const conversion=heightValue===''?null:volumeAtHeight(calibrationTables[i],verifiedMm);return (file||old)?{...(old||{}),compartment:i+1,fileName:file?.name||old?.fileName,fileType:file?.type||old?.fileType||'text/csv',fileSize:file?.size??old?.fileSize,verifiedMm,verifiedLitres:conversion?.ok?conversion.litres:(heightValue===''?(old?.verifiedLitres??null):old?.verifiedLitres),calibrationTable:calibrationTables[i]}:null}).filter(Boolean);
- const record={...(editingTruck||{}),id:editingTruckId||'truck-'+Date.now(),driverName:$('driverName').value.trim(),driverPhone:$('driverPhone').value.trim(),plate:$('truckPlate').value.trim().toUpperCase(),trailerPlate:$('trailerPlate').value.trim().toUpperCase(),compartmentCount:count,calibrations,createdAt:editingTruck?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),isActive:editingTruck?.isActive!==false};
- try{const trucks=getTrucks();const index=trucks.findIndex(item=>item.id===record.id);if(index>=0)trucks[index]=record;else trucks.push(record);localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));closeWizard();renderTrucks()}catch(e){setError(2,'Could not save this truck in this browser. Storage may be full or unavailable.');}
-}
-$('addTruckBtn').addEventListener('click',()=>{resetWizardTitle();openWizard()});$('closeWizard').addEventListener('click',closeWizard);$('wizardBack').addEventListener('click',()=>{if(step===0)closeWizard();else showStep(step-1)});
-$('wizardNext').addEventListener('click',()=>{if(step<2){if(validateStep())showStep(step+1)}else confirmTruck()});
-document.querySelectorAll('input[name="compartmentChoice"]').forEach(choice=>choice.addEventListener('change',()=>{$('compartmentCount').value=choice.value;calibrationFiles=[];calibrationTables=[];renderCalibrationInputs()}));
-overlay.addEventListener('click',e=>{if(e.target===overlay)closeWizard()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.contains('open'))closeWizard()});
-let touchStartX=0,touchStartY=0;
-$('wizardViewport').addEventListener('touchstart',e=>{const t=e.touches[0];touchStartX=t.clientX;touchStartY=t.clientY},{passive:true});
-$('wizardViewport').addEventListener('touchend',e=>{const t=e.changedTouches[0],dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;if(Math.abs(dx)>85&&Math.abs(dx)>Math.abs(dy)*1.25){if(dx<0&&step<2){if(validateStep())showStep(step+1)}else if(dx>0&&step>0)showStep(step-1)}},{passive:true});
-renderTrucks();
-})();
-</script>
-</body></html>
+</div>
+</body>
+</html>
