@@ -391,11 +391,15 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
     <div class="modal-backdrop" id="operational-reset-backdrop"></div>
     <div class="modal-card form operational-reset-action-card" role="dialog" aria-modal="true" aria-labelledby="operational-reset-title">
       <div class="top"><div><span class="section-kicker">DANGER ZONE</span><h3 id="operational-reset-title">Permanently Reset Data</h3></div></div>
-      <input id="operational-reset-confirmation" type="hidden" value="RESET OPERATIONAL DATA">
+      <div class="operational-reset-note"><strong>Warning:</strong> This action cannot be undone. Tank stock readings will be reset to 0 L and 0 mm. Station configuration and calibration will remain.</div>
+      <label>Type RESET OPERATIONAL DATA to enable the reset
+        <input id="operational-reset-confirmation" class="operational-reset-input" type="text" name="operational-reset-confirmation" autocomplete="off" autocapitalize="characters" spellcheck="false" required placeholder="RESET OPERATIONAL DATA">
+      </label>
       <label>Admin PIN
         <input id="operational-reset-admin-pin" class="operational-reset-input" type="password" name="operational-reset-admin-pin" inputmode="numeric" autocomplete="new-password" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" readonly required placeholder="Enter your admin PIN">
       </label>
       <div class="row operational-reset-actions" style="justify-content:flex-end">
+        <button type="button" id="cancel-operational-reset" class="secondary">Cancel</button>
         <button type="button" id="confirm-operational-reset" class="operational-reset-button" disabled>Permanently Reset Data</button>
       </div>
       <div id="operational-reset-modal-status" class="operational-reset-status muted" role="status" aria-live="polite"></div>
@@ -442,16 +446,18 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
   const input=document.getElementById('operational-reset-confirmation');
   const pinInput=document.getElementById('operational-reset-admin-pin');
   const confirmBtn=document.getElementById('confirm-operational-reset');
+  const cancelBtn=document.getElementById('cancel-operational-reset');
   const backdrop=document.getElementById('operational-reset-backdrop');
   const sectionStatus=document.getElementById('operational-reset-status');
   const modalStatus=document.getElementById('operational-reset-modal-status');
-  if(!openBtn||!modal||typeof api!=='function') return;
-  function closeModal(){pinInput.value='';pinInput.setAttribute('readonly','readonly');updateResetButton();modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  function updateResetButton(){confirmBtn.disabled=!pinInput.value.trim();}
-  function openModal(){input.value='RESET OPERATIONAL DATA';pinInput.value='';pinInput.setAttribute('readonly','readonly');confirmBtn.disabled=true;confirmBtn.textContent='Permanently Reset Data';modalStatus.textContent='';modalStatus.className='operational-reset-status muted';modal.classList.add('open');modal.setAttribute('aria-hidden','false');pinInput.focus();}
+  if(!openBtn||!modal||!input||!pinInput||!confirmBtn||typeof api!=='function') return;
+  function closeModal(){input.value='';pinInput.value='';input.disabled=false;pinInput.disabled=false;pinInput.setAttribute('readonly','readonly');updateResetButton();modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  function updateResetButton(){confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA'||!pinInput.value.trim();}
+  function openModal(){input.value='';pinInput.value='';input.disabled=false;pinInput.disabled=false;pinInput.setAttribute('readonly','readonly');confirmBtn.disabled=true;confirmBtn.textContent='Permanently Reset Data';modalStatus.textContent='';modalStatus.className='operational-reset-status muted';modal.classList.add('open');modal.setAttribute('aria-hidden','false');input.focus();}
   pinInput.addEventListener('focus',()=>pinInput.removeAttribute('readonly'));
   openBtn.addEventListener('click',openModal);
   backdrop.addEventListener('click',closeModal);
+  if(cancelBtn)cancelBtn.addEventListener('click',closeModal);
   input.addEventListener('input',updateResetButton);
   pinInput.addEventListener('input',updateResetButton);
   confirmBtn.addEventListener('click',async()=>{
@@ -469,7 +475,7 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
       confirmBtn.textContent='Done';confirmBtn.disabled=false;confirmBtn.onclick=closeModal;
     }catch(err){
       modalStatus.className='operational-reset-status';modalStatus.textContent='Reset failed: '+(err&&err.message?err.message:String(err));
-      confirmBtn.textContent=previous;confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA';
+      confirmBtn.textContent=previous;confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA'||!pinInput.value.trim();
     }finally{input.disabled=false;pinInput.disabled=false;if(confirmBtn.textContent!=='Done')updateResetButton();}
   });
 })();
