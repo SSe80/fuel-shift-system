@@ -15,7 +15,7 @@
 .truck-success-card p{margin:9px 0 22px;color:#667085;font-size:13px;line-height:1.65}
 .truck-success-card strong{color:#344054;font-weight:800}
 .truck-success-close{width:100%;min-height:43px;border:0;border-radius:11px;background:#087443;color:#fff;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 3px 8px #08744320}
-.truck-success-close:hover{background:#06653a}.truck-success-close:focus-visible{outline:3px solid #a6f4c5;outline-offset:3px}
+.truck-success-close:hover{background:#06653a}.truck-success-close:focus-visible{outline:3px solid #a6f4c5;outline-offset:3px}.truck-confirm-icon{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 15px;border-radius:50%;background:#fff7ed;color:#b54708;border:1px solid #fed7aa;font-size:29px;font-weight:900}.truck-confirm-card h2{margin:0;color:#101828;font-size:20px;letter-spacing:-.025em}.truck-confirm-card p{margin:9px 0 22px;color:#667085;font-size:13px;line-height:1.65}.truck-confirm-actions{display:flex;gap:10px}.truck-confirm-actions button{flex:1;min-height:43px;border-radius:11px;font-size:13px;font-weight:800;cursor:pointer}.truck-confirm-cancel{border:1px solid #d0d5dd;background:#fff;color:#344054}.truck-confirm-proceed{border:0;background:#b54708;color:#fff}.truck-confirm-proceed.danger{background:#b42318}.truck-confirm-proceed:disabled{opacity:.6;cursor:wait}
 @keyframes truckSuccessFade{from{opacity:0}to{opacity:1}}@keyframes truckSuccessPop{from{opacity:.7;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){.truck-success-overlay.open,.truck-success-card{animation:none}}
 .wizard-overlay{position:fixed;inset:0;z-index:1500;display:none;align-items:center;justify-content:center;padding:14px;background:#10182899;overscroll-behavior:contain}.wizard-overlay.open{display:flex}.wizard-dialog{width:min(680px,100%);max-height:calc(100dvh - 28px);background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 24px 80px #10182844;display:flex;flex-direction:column;overflow:hidden}.wizard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:21px 22px 16px;border-bottom:1px solid #eef2f7}.wizard-kicker{font-size:10px;letter-spacing:.13em;font-weight:800;color:#2563eb;text-transform:uppercase}.wizard-top h2{font-size:21px;margin:5px 0 4px;letter-spacing:-.03em}.wizard-top p{font-size:12px;color:var(--lg-muted);margin:0;line-height:1.45}.wizard-close{border:0;background:#f1f5f9;color:#475467;width:34px;height:34px;border-radius:10px;font-size:20px;cursor:pointer;flex-shrink:0}.wizard-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 22px 0}.wizard-step{display:flex;align-items:center;gap:8px;color:#98a2b3;font-size:11px;font-weight:750}.wizard-step i{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#f1f5f9;font-style:normal}.wizard-step.active{color:#1d4ed8}.wizard-step.active i,.wizard-step.done i{background:#dbeafe;color:#1d4ed8}.wizard-viewport{padding:18px 22px;overflow-y:auto;overscroll-behavior:contain;min-height:0;touch-action:pan-y}.wizard-card{display:none;animation:slideIn .2s ease}.wizard-card.active{display:block}.wizard-card h3{font-size:16px;margin:0 0 5px}.wizard-card .helper{font-size:12px;color:var(--lg-muted);margin:0 0 18px;line-height:1.5}.wizard-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.wizard-section{min-width:0}.wizard-section.full{grid-column:1/-1}.wizard-section-heading{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:850;color:#475467;margin:0 0 10px;padding-bottom:7px;border-bottom:1px solid #e2e8f0}.wizard-section-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.wizard-section-fields.driver-fields{grid-template-columns:1fr}.wizard-field{display:grid;gap:7px;min-width:0}.wizard-field.full{grid-column:1/-1}.wizard-field label{font-size:12px;font-weight:750;color:#344054}.wizard-field input,.wizard-field select{width:100%;min-width:0;border:1px solid #cfd8e3;border-radius:10px;padding:12px;background:#fff;color:#182230;font:inherit;font-size:14px;outline:none}.wizard-field input:focus,.wizard-field select:focus{border-color:#60a5fa;box-shadow:0 0 0 3px #dbeafe}.compartment-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.compartment-choice{position:relative;display:block;cursor:pointer}.compartment-choice input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}.compartment-choice span{display:flex;align-items:center;justify-content:center;gap:7px;min-height:52px;border:1px solid #cfd8e3;border-radius:11px;background:#fff;color:#475467;font-size:13px;font-weight:750;transition:background .15s,border-color .15s,box-shadow .15s}.compartment-choice input:checked+span{border-color:#2563eb;background:#eff6ff;color:#1d4ed8;box-shadow:inset 0 0 0 1px #2563eb}.compartment-choice input:focus-visible+span{outline:3px solid #bfdbfe;outline-offset:2px}.compartment-choice em{font-style:normal;font-size:10px;font-weight:600;color:inherit;opacity:.8}.wizard-field input[type=file]{padding:10px;font-size:12px;background:#f8fafc}.wizard-error{display:none;margin-top:13px;color:#b42318;background:#fef3f2;border:1px solid #fecdca;border-radius:9px;padding:10px 12px;font-size:12px}.wizard-error.show{display:block}.calibration-list{display:grid;gap:10px}.calibration-item{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px;padding:13px;border:1px solid #e2e8f0;border-radius:12px;background:#fbfdff}.calibration-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;grid-column:1/-1}.calibration-heading strong{display:block;font-size:13px}.calibration-heading small{display:block;color:var(--lg-muted);font-size:11px;margin-top:4px}.calibration-upload{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:34px;flex:0 0 auto;margin:0;padding:0 10px;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;color:#1d4ed8;font-size:12px;line-height:1.2;font-weight:750;white-space:nowrap;cursor:pointer}.calibration-upload:hover{background:#dbeafe}.calibration-upload:focus-visible{outline:3px solid #bfdbfe;outline-offset:2px}.calibration-upload{position:relative;overflow:hidden}.calibration-file-input{position:absolute!important;inset:0;width:100%;height:100%;opacity:0;display:block!important;cursor:pointer;margin:0;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important}.calibration-fields{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}.calibration-fields .wizard-field input{width:100%;min-width:0;box-sizing:border-box}.calibration-example{display:block;margin-top:2px;color:var(--lg-muted);font-size:11px;line-height:1.45}.calibration-result{grid-column:1/-1;display:flex;align-items:center;min-height:40px;box-sizing:border-box;padding:10px 12px;border:1px solid #dbeafe;border-radius:9px;background:#eff6ff;color:#1d4ed8;font-size:12px;line-height:1.45;font-weight:750}.calibration-result.warning{border-color:#fed7aa;background:#fff7ed;color:#b54708}.calibration-item .wizard-field{gap:6px}.review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.review-item{padding:13px;border:1px solid #e2e8f0;border-radius:11px;background:#f8fafc;min-width:0}.review-item small{display:block;color:var(--lg-muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:800}.review-item strong{display:block;font-size:13px;margin-top:6px;overflow-wrap:anywhere}.review-calibrations{margin-top:15px}.review-calibrations h4{font-size:12px;margin:0 0 9px}.review-cal-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eef2f7;font-size:12px}.review-cal-row span:last-child{color:#475467;text-align:right;overflow-wrap:anywhere}.wizard-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 22px;border-top:1px solid #eef2f7;background:#fff}.wizard-footer .right-actions{display:flex;gap:8px}.wizard-count{font-size:11px;color:var(--lg-muted);font-weight:700}@keyframes slideIn{from{opacity:.6;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
@@ -52,7 +52,7 @@ body{background:#f7f9fc!important;color:#182230!important;font-family:Inter,"Seg
 
 </main></div></div>
 
-<div class="truck-success-overlay" id="truckSuccessOverlay" aria-hidden="true"><section class="truck-success-card" role="dialog" aria-modal="true" aria-labelledby="truckSuccessTitle" aria-describedby="truckSuccessMessage"><div class="truck-success-icon" aria-hidden="true">✓</div><h2 id="truckSuccessTitle">Truck added successfully</h2><p id="truckSuccessMessage">The truck details and calibration information have been saved.</p><button class="truck-success-close" id="truckSuccessClose" type="button">Done</button></section></div>
+<div class="truck-success-overlay" id="truckSuccessOverlay" aria-hidden="true"><section class="truck-success-card" role="dialog" aria-modal="true" aria-labelledby="truckSuccessTitle" aria-describedby="truckSuccessMessage"><div class="truck-success-icon" aria-hidden="true">✓</div><h2 id="truckSuccessTitle">Truck added successfully</h2><p id="truckSuccessMessage">The truck details and calibration information have been saved.</p><button class="truck-success-close" id="truckSuccessClose" type="button">Done</button></section></div><div class="truck-success-overlay" id="truckConfirmOverlay" aria-hidden="true"><section class="truck-success-card truck-confirm-card" role="dialog" aria-modal="true" aria-labelledby="truckConfirmTitle" aria-describedby="truckConfirmMessage"><div class="truck-confirm-icon" aria-hidden="true">!</div><h2 id="truckConfirmTitle">Confirm truck action</h2><p id="truckConfirmMessage">Please confirm this action.</p><div class="truck-confirm-actions"><button class="truck-confirm-cancel" id="truckConfirmCancel" type="button">Cancel</button><button class="truck-confirm-proceed" id="truckConfirmProceed" type="button">Confirm</button></div></section></div>
 
 <div class="wizard-overlay" id="truckWizard" aria-hidden="true">
 <section class="wizard-dialog" role="dialog" aria-modal="true" aria-labelledby="wizardTitle">
@@ -189,24 +189,36 @@ function renderTrucks(){
   row.append(main,side,details);list.append(row);
  })
 }
-async function toggleTruckActive(id){
- const trucks=getTrucks(),index=trucks.findIndex(item=>item.id===id);if(index<0)return;
- const updated={...trucks[index],isActive:trucks[index].isActive===false,updatedAt:new Date().toISOString()};
- try{
-  const response=await fetch('/api/logistics/trucks',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify(updated)});
-  const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Database save failed.');
-  trucks[index]={...updated,...result};localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));renderTrucks();
-  const row=$('truckList').querySelector('[data-truck-id="'+id+'"]');if(row){row.classList.add('expanded');row.querySelector('.truck-row-main').setAttribute('aria-expanded','true')}
- }catch(error){alert('Could not update truck in the database. No changes were made. '+(error.message||''))}
+let pendingTruckAction=null;
+function openTruckConfirmation(action,id){
+ const truck=getTrucks().find(item=>String(item.id)===String(id));if(!truck)return;
+ pendingTruckAction={action,id:String(id),truck};
+ const removing=action==='remove',deactivating=action==='deactivate';
+ $('truckConfirmTitle').textContent=removing?'Remove truck?':deactivating?'Deactivate truck?':'Activate truck?';
+ $('truckConfirmMessage').textContent=removing?'Are you sure you want to permanently remove truck '+(truck.plate||'record')+'? This action cannot be undone.':deactivating?'Deactivate truck '+(truck.plate||'record')+'? It will remain registered but will no longer be active.':'Activate truck '+(truck.plate||'record')+' again?';
+ $('truckConfirmProceed').textContent=removing?'Remove truck':deactivating?'Deactivate':'Activate';
+ $('truckConfirmProceed').classList.toggle('danger',removing);
+ const el=$('truckConfirmOverlay');el.classList.add('open');el.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';$('truckConfirmCancel').focus();
 }
-async function removeTruck(id){
- const trucks=getTrucks(),truck=trucks.find(item=>item.id===id);if(!truck)return;
- if(!confirm('Remove truck '+(truck.plate||'record')+'? This cannot be undone.'))return;
+function closeTruckConfirmation(){const el=$('truckConfirmOverlay');el.classList.remove('open');el.setAttribute('aria-hidden','true');document.body.style.overflow='';pendingTruckAction=null;}
+async function toggleTruckActive(id){const truck=getTrucks().find(item=>String(item.id)===String(id));if(!truck)return;openTruckConfirmation(truck.isActive===false?'activate':'deactivate',id);}
+async function removeTruck(id){openTruckConfirmation('remove',id);}
+async function performTruckAction(){
+ if(!pendingTruckAction)return;const pending=pendingTruckAction,button=$('truckConfirmProceed');button.disabled=true;button.textContent='Processing…';
  try{
-  const response=await fetch('/api/logistics/trucks/'+encodeURIComponent(id),{method:'DELETE',credentials:'same-origin',headers:{Accept:'application/json','X-Fuel-Role':'admin'}});
-  const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Database delete failed.');
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks.filter(item=>item.id!==id)));renderTrucks();
- }catch(error){alert('Could not remove this truck from the database. No changes were made. '+(error.message||''))}
+  const trucks=getTrucks(),index=trucks.findIndex(item=>String(item.id)===pending.id);if(index<0)throw new Error('Truck record could not be found.');
+  if(pending.action==='remove'){
+   const response=await fetch('/api/logistics/trucks/'+encodeURIComponent(pending.id),{method:'DELETE',credentials:'same-origin',headers:{Accept:'application/json','X-Fuel-Role':'admin'}});
+   const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Database delete failed.');
+   localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks.filter(item=>String(item.id)!==pending.id)));renderTrucks();closeTruckConfirmation();showTruckSuccess('removed',pending.truck.plate);
+  }else{
+   const updated={...trucks[index],isActive:pending.action==='activate',updatedAt:new Date().toISOString()};
+   const response=await fetch('/api/logistics/trucks',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify(updated)});
+   const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Database save failed.');
+   trucks[index]={...updated,...result};localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));renderTrucks();closeTruckConfirmation();const row=$('truckList').querySelector('[data-truck-id="'+pending.id+'"]');if(row){row.classList.add('expanded');row.querySelector('.truck-row-main').setAttribute('aria-expanded','true')}showTruckSuccess(pending.action,pending.truck.plate);
+  }
+ }catch(error){closeTruckConfirmation();alert('Could not '+(pending.action==='remove'?'remove':pending.action==='deactivate'?'deactivate':'activate')+' this truck. No changes were confirmed. '+(error.message||''));}
+ finally{button.disabled=false;button.textContent='Confirm';}
 }
 async function syncTrucksWithDatabase(){
  try{
@@ -226,13 +238,16 @@ async function syncTrucksWithDatabase(){
  }
 }
 
-function showTruckSuccess(isEdit,plate){
- const successOverlay=$('truckSuccessOverlay');
- $('truckSuccessTitle').textContent=isEdit?'Truck updated successfully':'Truck added successfully';
- $('truckSuccessMessage').textContent=(isEdit?'Changes to truck ':'Truck ')+(plate||'details')+(isEdit?' have been saved successfully.':' has been registered successfully, including its compartment calibration details.');
+function showTruckSuccess(action,plate){
+ const successOverlay=$('truckSuccessOverlay'),title=$('truckSuccessTitle'),message=$('truckSuccessMessage');
+ if(action==='removed'){title.textContent='Truck Removed';message.textContent='Truck '+(plate||'record')+' has been removed successfully.'}
+ else if(action==='deactivate'){title.textContent='Truck Deactivated';message.textContent='Truck '+(plate||'record')+' has been deactivated successfully.'}
+ else if(action==='activate'){title.textContent='Truck Activated';message.textContent='Truck '+(plate||'record')+' has been activated successfully.'}
+ else if(action===true){title.textContent='Truck updated successfully';message.textContent='Changes to truck '+(plate||'details')+' have been saved successfully.'}
+ else{title.textContent='Truck added successfully';message.textContent='Truck '+(plate||'details')+' has been registered successfully, including its compartment calibration details.'}
  successOverlay.classList.add('open');successOverlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';$('truckSuccessClose').focus();
 }
-function closeTruckSuccess(){const successOverlay=$('truckSuccessOverlay');successOverlay.classList.remove('open');successOverlay.setAttribute('aria-hidden','true');document.body.style.overflow='';$('addTruckBtn').focus()}
+function closeTruckSuccess(){const successOverlay=$('truckSuccessOverlay');successOverlay.classList.remove('open');successOverlay.setAttribute('aria-hidden','true');document.body.style.overflow='';document.body.style.overflow='';$('addTruckBtn').focus()}
 async function confirmTruck(){
  if(!validateStep())return;
  const count=Number($('compartmentCount').value);
@@ -253,11 +268,11 @@ async function confirmTruck(){
  }finally{$('wizardNext').disabled=false;}
 }
 
-$('addTruckBtn').addEventListener('click',()=>{resetWizardTitle();openWizard()});$('truckSuccessClose').addEventListener('click',closeTruckSuccess);$('truckSuccessOverlay').addEventListener('click',e=>{if(e.target===$('truckSuccessOverlay'))closeTruckSuccess()});$('closeWizard').addEventListener('click',closeWizard);$('wizardBack').addEventListener('click',()=>{if(step===0)closeWizard();else showStep(step-1)});
+$('addTruckBtn').addEventListener('click',()=>{resetWizardTitle();openWizard()});$('truckSuccessClose').addEventListener('click',closeTruckSuccess);$('truckSuccessOverlay').addEventListener('click',e=>{if(e.target===$('truckSuccessOverlay'))closeTruckSuccess()});$('truckConfirmCancel').addEventListener('click',closeTruckConfirmation);$('truckConfirmProceed').addEventListener('click',performTruckAction);$('truckConfirmOverlay').addEventListener('click',e=>{if(e.target===$('truckConfirmOverlay'))closeTruckConfirmation()});$('closeWizard').addEventListener('click',closeWizard);$('wizardBack').addEventListener('click',()=>{if(step===0)closeWizard();else showStep(step-1)});
 $('wizardNext').addEventListener('click',()=>{if(step<2){if(validateStep())showStep(step+1)}else confirmTruck()});
 document.querySelectorAll('input[name="compartmentChoice"]').forEach(choice=>choice.addEventListener('change',()=>{$('compartmentCount').value=choice.value;calibrationFiles=[];calibrationTables=[];renderCalibrationInputs()}));
 overlay.addEventListener('click',e=>{if(e.target===overlay)closeWizard()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.contains('open'))closeWizard();else if(e.key==='Escape'&&$('truckSuccessOverlay').classList.contains('open'))closeTruckSuccess()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.contains('open'))closeWizard();else if(e.key==='Escape'&&$('truckSuccessOverlay').classList.contains('open'))closeTruckSuccess();else if(e.key==='Escape'&&$('truckConfirmOverlay').classList.contains('open'))closeTruckConfirmation()});
 let touchStartX=0,touchStartY=0;
 $('wizardViewport').addEventListener('touchstart',e=>{const t=e.touches[0];touchStartX=t.clientX;touchStartY=t.clientY},{passive:true});
 $('wizardViewport').addEventListener('touchend',e=>{const t=e.changedTouches[0],dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;if(Math.abs(dx)>85&&Math.abs(dx)>Math.abs(dy)*1.25){if(dx<0&&step<2){if(validateStep())showStep(step+1)}else if(dx>0&&step>0)showStep(step-1)}},{passive:true});
