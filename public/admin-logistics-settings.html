@@ -174,8 +174,42 @@ function renderTrucks(){
   row.append(main,side,details);list.append(row);
  })
 }
-function toggleTruckActive(id){const trucks=getTrucks();const index=trucks.findIndex(item=>item.id===id);if(index<0)return;trucks[index].isActive=trucks[index].isActive===false;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));renderTrucks();const row=$('truckList').querySelector('[data-truck-id="'+id+'"]');if(row){row.classList.add('expanded');row.querySelector('.truck-row-main').setAttribute('aria-expanded','true')}}catch(e){alert('Could not update this truck in this browser storage.')}}
-function removeTruck(id){const trucks=getTrucks();const truck=trucks.find(item=>item.id===id);if(!truck)return;if(!confirm('Remove truck '+(truck.plate||'record')+'? This cannot be undone.'))return;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks.filter(item=>item.id!==id)));renderTrucks()}catch(e){alert('Could not remove this truck in this browser storage.')}}
+async function toggleTruckActive(id){
+ const trucks=getTrucks(),index=trucks.findIndex(item=>item.id===id);if(index<0)return;
+ const updated={...trucks[index],isActive:trucks[index].isActive===false,updatedAt:new Date().toISOString()};
+ try{
+  const response=await fetch('/api/logistics/trucks',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify(updated)});
+  const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Database save failed.');
+  trucks[index]={...updated,...result};localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));renderTrucks();
+  const row=$('truckList').querySelector('[data-truck-id="'+id+'"]');if(row){row.classList.add('expanded');row.querySelector('.truck-row-main').setAttribute('aria-expanded','true')}
+ }catch(error){alert('Could not update truck in the database. No changes were made. '+(error.message||''))}
+}
+async function removeTruck(id){
+ const trucks=getTrucks(),truck=trucks.find(item=>item.id===id);if(!truck)return;
+ if(!confirm('Remove truck '+(truck.plate||'record')+'? This cannot be undone.'))return;
+ try{
+  const response=await fetch('/api/logistics/trucks/'+encodeURIComponent(id),{method:'DELETE',credentials:'same-origin',headers:{Accept:'application/json','X-Fuel-Role':'admin'}});
+  const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Database delete failed.');
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks.filter(item=>item.id!==id)));renderTrucks();
+ }catch(error){alert('Could not remove this truck from the database. No changes were made. '+(error.message||''))}
+}
+async function syncTrucksWithDatabase(){
+ try{
+  const response=await fetch('/api/logistics/trucks',{credentials:'same-origin',headers:{Accept:'application/json','X-Fuel-Role':'admin'}});
+  const data=await response.json();if(!response.ok||!Array.isArray(data))throw new Error(data.error||'Unable to load trucks from database.');
+  const local=getTrucks(),server=data.slice(),knownIds=new Set(server.map(x=>String(x.id))),knownPlates=new Set(server.map(x=>String(x.plate||'').toUpperCase()));
+  for(const old of local){
+   if(knownIds.has(String(old.id))||knownPlates.has(String(old.plate||'').toUpperCase()))continue;
+   const save=await fetch('/api/logistics/trucks',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify(old)});
+   const result=await save.json().catch(()=>({}));
+   if(!save.ok)throw new Error(result.error||'A saved local truck could not be migrated.');
+   server.push({...old,...result});knownIds.add(String(result.id||old.id));knownPlates.add(String(result.plate||old.plate||'').toUpperCase());
+  }
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(server));renderTrucks();
+ }catch(error){
+  console.warn('Logistics database sync failed; keeping local truck backup.',error);
+ }
+}
 
 function showTruckSuccess(isEdit,plate){
  const successOverlay=$('truckSuccessOverlay');
@@ -184,13 +218,26 @@ function showTruckSuccess(isEdit,plate){
  successOverlay.classList.add('open');successOverlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';$('truckSuccessClose').focus();
 }
 function closeTruckSuccess(){const successOverlay=$('truckSuccessOverlay');successOverlay.classList.remove('open');successOverlay.setAttribute('aria-hidden','true');document.body.style.overflow='';$('addTruckBtn').focus()}
-function confirmTruck(){
+async function confirmTruck(){
  if(!validateStep())return;
  const count=Number($('compartmentCount').value);
  const calibrations=Array.from({length:count},(_,i)=>{const file=calibrationFiles[i];const old=editingTruck?.calibrations?.[i];const heightInput=document.querySelector('[data-verification-compartment="'+i+'"]');const heightValue=heightInput?.value?.trim()??'';const verifiedMm=heightValue===''?(old?.verifiedMm??null):Number(heightValue);const conversion=heightValue===''?null:volumeAtHeight(calibrationTables[i],verifiedMm);return (file||old)?{...(old||{}),compartment:i+1,fileName:file?.name||old?.fileName,fileType:file?.type||old?.fileType||'text/csv',fileSize:file?.size??old?.fileSize,verifiedMm,verifiedLitres:conversion?.ok?conversion.litres:(heightValue===''?(old?.verifiedLitres??null):old?.verifiedLitres),calibrationTable:calibrationTables[i]}:null}).filter(Boolean);
  const record={...(editingTruck||{}),id:editingTruckId||'truck-'+Date.now(),driverName:$('driverName').value.trim(),driverPhone:$('driverPhone').value.trim(),plate:$('truckPlate').value.trim().toUpperCase(),trailerPlate:$('trailerPlate').value.trim().toUpperCase(),compartmentCount:count,calibrations,createdAt:editingTruck?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),isActive:editingTruck?.isActive!==false};
- try{const trucks=getTrucks();const index=trucks.findIndex(item=>item.id===record.id);const wasEditing=index>=0;if(wasEditing)trucks[index]=record;else trucks.push(record);localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));closeWizard();renderTrucks();showTruckSuccess(wasEditing,record.plate)}catch(e){setError(2,'Could not save this truck in this browser. Storage may be full or unavailable.');}
+ $('wizardNext').disabled=true;
+ try{
+  const response=await fetch('/api/logistics/trucks',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify(record)});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||'Database save failed ('+response.status+').');
+  const trucks=getTrucks(),index=trucks.findIndex(item=>item.id===record.id||String(item.plate).toUpperCase()===record.plate);
+  if(index>=0)trucks[index]={...record,...result};else trucks.push({...record,...result});
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));
+  closeWizard();renderTrucks();showTruckSuccess(index>=0,record.plate);
+ }catch(error){
+  try{const trucks=getTrucks(),index=trucks.findIndex(item=>item.id===record.id);if(index>=0)trucks[index]=record;else trucks.push(record);localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));}catch(_){}
+  setError(2,(error.message||'Could not save truck to the database.')+' Your entry was kept in this browser as a backup; retry after reconnecting.');
+ }finally{$('wizardNext').disabled=false;}
 }
+
 $('addTruckBtn').addEventListener('click',()=>{resetWizardTitle();openWizard()});$('truckSuccessClose').addEventListener('click',closeTruckSuccess);$('truckSuccessOverlay').addEventListener('click',e=>{if(e.target===$('truckSuccessOverlay'))closeTruckSuccess()});$('closeWizard').addEventListener('click',closeWizard);$('wizardBack').addEventListener('click',()=>{if(step===0)closeWizard();else showStep(step-1)});
 $('wizardNext').addEventListener('click',()=>{if(step<2){if(validateStep())showStep(step+1)}else confirmTruck()});
 document.querySelectorAll('input[name="compartmentChoice"]').forEach(choice=>choice.addEventListener('change',()=>{$('compartmentCount').value=choice.value;calibrationFiles=[];calibrationTables=[];renderCalibrationInputs()}));
@@ -200,6 +247,7 @@ let touchStartX=0,touchStartY=0;
 $('wizardViewport').addEventListener('touchstart',e=>{const t=e.touches[0];touchStartX=t.clientX;touchStartY=t.clientY},{passive:true});
 $('wizardViewport').addEventListener('touchend',e=>{const t=e.changedTouches[0],dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;if(Math.abs(dx)>85&&Math.abs(dx)>Math.abs(dy)*1.25){if(dx<0&&step<2){if(validateStep())showStep(step+1)}else if(dx>0&&step>0)showStep(step-1)}},{passive:true});
 renderTrucks();
+syncTrucksWithDatabase();
 // Delivery fees follow the product catalogue managed in main Admin Settings.
 const FEE_STORAGE_KEY='adminLogisticsProductFeesV1';
 let feeRates=[],stationProducts=[],feeRatesLoaded=false;
@@ -209,8 +257,37 @@ function readSavedFeeRates(){try{const saved=JSON.parse(localStorage.getItem(FEE
 function renderFeeRates(){const list=$('feeRateList');list.innerHTML='';if(!stationProducts.length){const empty=document.createElement('div');empty.className='fee-empty';empty.textContent=feeRatesLoaded?'No products were found in main Admin Settings. Add products there first.':'Could not load products. Use Refresh products to try again.';list.append(empty);return;}stationProducts.forEach((product,index)=>{const key=feeProductKey(product),item=feeRates.find(x=>x.productKey===key)||{productKey:key,product:feeProductLabel(product),rate:''};const row=document.createElement('div');row.className='fee-rate-row';const name=document.createElement('div');name.className='fee-product-name';name.textContent=feeProductLabel(product);const hint=document.createElement('small');hint.textContent=(product.name&&product.code_name&&product.name!==product.code_name?product.name+' · ':'')+(product.active===false?'Inactive in main settings':'From main Admin Settings');name.append(hint);const field=document.createElement('div');field.className='fee-rate-field';const label=document.createElement('label');label.textContent='Fee per litre (ETB)';label.htmlFor='feeRate'+index;const input=document.createElement('input');input.id='feeRate'+index;input.type='number';input.min='0';input.step='0.01';input.inputMode='decimal';input.placeholder='e.g. 3.14';input.value=item.rate;input.setAttribute('aria-label',feeProductLabel(product)+' fee per litre in ETB');input.addEventListener('input',()=>{let saved=feeRates.find(x=>x.productKey===key);if(!saved){saved={productKey:key,product:feeProductLabel(product),rate:''};feeRates.push(saved)}saved.product=feeProductLabel(product);saved.rate=input.value;hideFeeFeedback()});field.append(label,input);row.append(name,field);list.append(row);});}
 function showFeeFeedback(message,type){const el=$('feeFeedback');el.textContent=message;el.className='fee-feedback show '+type;}
 function hideFeeFeedback(){const el=$('feeFeedback');el.textContent='';el.className='fee-feedback';}
-async function refreshFeeProducts(){const status=$('feeProductSyncStatus');status.textContent='Loading products from Admin Settings…';$('refreshFeeProducts').disabled=true;try{const response=await fetch('/api/products',{credentials:'same-origin',headers:{Accept:'application/json'}});if(!response.ok)throw new Error('Product request failed ('+response.status+').');const data=await response.json();const products=Array.isArray(data)?data:(Array.isArray(data.products)?data.products:null);if(!products)throw new Error('Unexpected product list response.');stationProducts=products;const saved=readSavedFeeRates();feeRates=stationProducts.map(product=>{const key=feeProductKey(product),label=feeProductLabel(product);const match=saved.find(x=>String(x.productKey??'')===key)||saved.find(x=>String(x.product||'').toLowerCase()===label.toLowerCase())||saved.find(x=>String(x.product||'').toLowerCase()===String(product.name||'').toLowerCase());return {productKey:key,product:label,rate:match&&match.rate!==undefined?String(match.rate):''};});feeRatesLoaded=true;renderFeeRates();status.textContent=stationProducts.length+' product'+(stationProducts.length===1?'':'s')+' synced from main Admin Settings.';hideFeeFeedback();}catch(error){feeRatesLoaded=false;stationProducts=[];renderFeeRates();status.textContent='Unable to sync products from main Admin Settings.';showFeeFeedback(error.message||'Could not load products.','error');}finally{$('refreshFeeProducts').disabled=false;}}
-function saveFeeRates(){if(!feeRatesLoaded){showFeeFeedback('Load the products from main Admin Settings before saving.','error');return;}const normalized=stationProducts.map(product=>{const key=feeProductKey(product),item=feeRates.find(x=>x.productKey===key)||{};return {productKey:key,product:feeProductLabel(product),rate:String(item.rate??'').trim()};});if(normalized.some(item=>!item.product||(item.rate!==''&&(!Number.isFinite(Number(item.rate))||Number(item.rate)<0)))){showFeeFeedback('Check the fee rates: enter a valid non-negative amount for each product.','error');return;}try{localStorage.setItem(FEE_STORAGE_KEY,JSON.stringify(normalized));feeRates=normalized;showFeeFeedback('Delivery fee rates saved successfully on this device.','success');}catch(e){showFeeFeedback('Could not save the fee rates in this browser. Check available storage and try again.','error');}}
+async function refreshFeeProducts(){
+ const status=$('feeProductSyncStatus');status.textContent='Loading products and saved delivery rates…';$('refreshFeeProducts').disabled=true;
+ try{
+  const headers={Accept:'application/json','X-Fuel-Role':'admin'};
+  const productResponse=await fetch('/api/products',{credentials:'same-origin',headers});
+  if(!productResponse.ok)throw new Error('Product request failed ('+productResponse.status+').');
+  const feeResponse=await fetch('/api/logistics/product-fees',{credentials:'same-origin',headers});
+  if(!feeResponse.ok)throw new Error('Saved delivery rates request failed ('+feeResponse.status+').');
+  const data=await productResponse.json(),dbFees=await feeResponse.json();
+  const products=Array.isArray(data)?data:(Array.isArray(data.products)?data.products:null);if(!products)throw new Error('Unexpected product list response.');
+  stationProducts=products;const local=readSavedFeeRates();
+  feeRates=stationProducts.map(product=>{
+   const key=feeProductKey(product),label=feeProductLabel(product);
+   const db=(Array.isArray(dbFees)?dbFees:[]).find(x=>String(x.product_id||'')===String(product.id))||(Array.isArray(dbFees)?dbFees:[]).find(x=>String(x.product_name||'').toLowerCase()===label.toLowerCase());
+   const saved=local.find(x=>String(x.productKey??'')===key)||local.find(x=>String(x.product||'').toLowerCase()===label.toLowerCase());
+   return {productKey:key,product:label,rate:db?String(db.fee_per_liter??0):(saved&&saved.rate!==undefined?String(saved.rate):'')};
+  });
+  feeRatesLoaded=true;renderFeeRates();if((!Array.isArray(dbFees)||!dbFees.length)&&local.length){const items=stationProducts.map(product=>{const item=feeRates.find(x=>x.productKey===feeProductKey(product))||{};return {product_id:product.id,product_name:feeProductLabel(product),fee_per_liter:Number(String(item.rate??'').trim()||0)};});const migrate=await fetch('/api/logistics/product-fees',{method:'POST',credentials:'same-origin',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({items})});if(!migrate.ok)throw new Error('Local fee rates are visible, but their migration to the database failed ('+migrate.status+').');}status.textContent=stationProducts.length+' product'+(stationProducts.length===1?'':'s')+' synced from Admin Settings. Rates load from the shared database.';hideFeeFeedback();
+ }catch(error){feeRatesLoaded=false;stationProducts=[];renderFeeRates();status.textContent='Unable to sync products or delivery rates.';showFeeFeedback(error.message||'Could not load products.','error');}
+ finally{$('refreshFeeProducts').disabled=false;}
+}
+async function saveFeeRates(){
+ if(!feeRatesLoaded){showFeeFeedback('Load the products from main Admin Settings before saving.','error');return;}
+ const normalized=stationProducts.map(product=>{const key=feeProductKey(product),item=feeRates.find(x=>x.productKey===key)||{};return {productKey:key,product:feeProductLabel(product),rate:String(item.rate??'').trim(),product_id:product.id,product_name:feeProductLabel(product),fee_per_liter:Number(String(item.rate??'').trim()||0)};});
+ if(normalized.some(item=>!item.product||(item.rate!==''&&(!Number.isFinite(Number(item.rate))||Number(item.rate)<0)))){showFeeFeedback('Check the fee rates: enter a valid non-negative amount for each product.','error');return;}
+ try{
+  const response=await fetch('/api/logistics/product-fees',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify({items:normalized.map(item=>({product_id:item.product_id,product_name:item.product_name,fee_per_liter:item.fee_per_liter}))})});
+  const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Database save failed ('+response.status+').');
+  localStorage.setItem(FEE_STORAGE_KEY,JSON.stringify(normalized));feeRates=normalized;showFeeFeedback('Delivery fee rates saved to the shared database.','success');
+ }catch(error){try{localStorage.setItem(FEE_STORAGE_KEY,JSON.stringify(normalized));}catch(_){}showFeeFeedback((error.message||'Could not save delivery fees.')+' A local backup was kept, but database saving failed.','error');}
+}
 $('refreshFeeProducts').addEventListener('click',refreshFeeProducts);$('saveFeeRates').addEventListener('click',saveFeeRates);refreshFeeProducts();
 })();
 </script>
