@@ -308,6 +308,17 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
     .operational-reset-note{background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:12px;margin:12px 0;color:#7f1d1d}
     .operational-reset-input{width:100%;box-sizing:border-box;margin:8px 0 12px;padding:12px;border:1px solid #ef4444;border-radius:8px}
     .operational-reset-status{margin-top:10px;white-space:pre-wrap}
+    #operational-reset-modal .operational-reset-action-card{width:min(100%,460px);max-height:calc(100dvh - 36px);overflow:auto;box-sizing:border-box;padding:24px;border:1px solid #fecaca;border-top:4px solid #b91c1c;border-radius:16px;background:var(--card-bg,#fff);box-shadow:0 24px 70px rgba(15,23,42,.28);gap:14px}
+    #operational-reset-modal .operational-reset-action-card .top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:2px}
+    #operational-reset-modal .operational-reset-action-card .section-kicker{display:block;color:#b91c1c;font-size:.72rem;font-weight:800;letter-spacing:.1em;margin-bottom:5px}
+    #operational-reset-modal .operational-reset-action-card h3{margin:0;font-size:1.25rem;line-height:1.3}
+    #operational-reset-modal .operational-reset-input{margin:2px 0 4px;border-color:#d0d5dd;border-radius:10px;min-height:48px;background:var(--input-bg,#fff);color:var(--text-color,inherit)}
+    #operational-reset-modal .operational-reset-actions{gap:10px;margin-top:4px}
+    #operational-reset-modal .operational-reset-actions button{min-height:44px;border-radius:10px;padding:10px 16px}
+    #operational-reset-modal .operational-reset-button{box-shadow:0 2px 4px rgba(185,28,28,.18)}
+    #operational-reset-modal .operational-reset-status{padding:0;line-height:1.5}
+    #operational-reset-modal .operational-reset-success{padding:12px;border:1px solid #a7f3d0;border-radius:10px;background:#ecfdf5;color:#065f46}
+    @media(max-width:480px){#operational-reset-modal .operational-reset-action-card{padding:18px;border-radius:14px}#operational-reset-modal .operational-reset-actions{flex-direction:column-reverse;align-items:stretch}#operational-reset-modal .operational-reset-actions button{width:100%}}
     #reset-operational-data-section #open-operational-reset{display:inline-flex!important;align-items:center;justify-content:center;visibility:visible!important;min-height:44px;padding:12px 18px;border-radius:9px;cursor:pointer}
     #operational-reset-modal.open{display:flex!important;visibility:visible!important;align-items:center;justify-content:center;position:fixed;inset:0;z-index:10000;padding:18px;overflow:auto}
     #operational-reset-modal[aria-hidden="true"]{display:none!important}
@@ -378,16 +389,13 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
 
   <div id="operational-reset-modal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" id="operational-reset-backdrop"></div>
-    <div class="modal-card form" role="dialog" aria-modal="true" aria-labelledby="operational-reset-title" style="max-width:520px">
-      <div class="top"><h3 id="operational-reset-title">Permanently Reset Operational Data?</h3><button type="button" class="modal-close" id="close-operational-reset" aria-label="Close">×</button></div>
-      <p>This action cannot be undone. Tank stock readings will be reset to 0 L and 0 mm. Station configuration and calibration will remain.</p>
-      <label>Type <strong>RESET OPERATIONAL DATA</strong> to enable the reset.
-        <input id="operational-reset-confirmation" class="operational-reset-input" type="text" autocomplete="off" spellcheck="false" placeholder="RESET OPERATIONAL DATA">
-      </label>
+    <div class="modal-card form operational-reset-action-card" role="dialog" aria-modal="true" aria-labelledby="operational-reset-title">
+      <div class="top"><div><span class="section-kicker">DANGER ZONE</span><h3 id="operational-reset-title">Permanently Reset Data</h3></div><button type="button" class="modal-close" id="close-operational-reset" aria-label="Close">×</button></div>
+      <input id="operational-reset-confirmation" type="hidden" value="RESET OPERATIONAL DATA">
       <label>Admin PIN
         <input id="operational-reset-admin-pin" class="operational-reset-input" type="password" name="operational-reset-admin-pin" inputmode="numeric" autocomplete="new-password" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" readonly required placeholder="Enter your admin PIN">
       </label>
-      <div class="row" style="justify-content:flex-end">
+      <div class="row operational-reset-actions" style="justify-content:flex-end">
         <button type="button" id="cancel-operational-reset">Cancel</button>
         <button type="button" id="confirm-operational-reset" class="operational-reset-button" disabled>Permanently Reset Data</button>
       </div>
@@ -442,15 +450,16 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
   const modalStatus=document.getElementById('operational-reset-modal-status');
   if(!openBtn||!modal||typeof api!=='function') return;
   function closeModal(){pinInput.value='';pinInput.setAttribute('readonly','readonly');updateResetButton();modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  function updateResetButton(){confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA'||!pinInput.value.trim();}
-  function openModal(){input.value='';pinInput.value='';pinInput.setAttribute('readonly','readonly');confirmBtn.disabled=true;confirmBtn.textContent='Permanently Reset Data';modalStatus.textContent='';modalStatus.className='operational-reset-status muted';modal.classList.add('open');modal.setAttribute('aria-hidden','false');input.focus();}
+  function updateResetButton(){confirmBtn.disabled=!pinInput.value.trim();}
+  function openModal(){input.value='RESET OPERATIONAL DATA';pinInput.value='';pinInput.setAttribute('readonly','readonly');confirmBtn.disabled=true;confirmBtn.textContent='Permanently Reset Data';cancelBtn.hidden=false;modalStatus.textContent='';modalStatus.className='operational-reset-status muted';modal.classList.add('open');modal.setAttribute('aria-hidden','false');pinInput.focus();}
   pinInput.addEventListener('focus',()=>pinInput.removeAttribute('readonly'));
   openBtn.addEventListener('click',openModal);
   [cancelBtn,closeBtn,backdrop].forEach(el=>el&&el.addEventListener('click',closeModal));
   input.addEventListener('input',updateResetButton);
   pinInput.addEventListener('input',updateResetButton);
   confirmBtn.addEventListener('click',async()=>{
-    if(input.value.trim()!=='RESET OPERATIONAL DATA'||!pinInput.value.trim()||confirmBtn.disabled)return;
+    if(confirmBtn.textContent==='Done'){closeModal();return;}
+    if(!pinInput.value.trim()||confirmBtn.disabled)return;
     const previous=confirmBtn.textContent;confirmBtn.disabled=true;confirmBtn.textContent='Resetting…';input.disabled=true;pinInput.disabled=true;cancelBtn.disabled=true;closeBtn.disabled=true;
     modalStatus.textContent='Verifying admin PIN and resetting data. Please keep this page open.';sectionStatus.textContent='';
     try{
@@ -458,14 +467,13 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
       if(!result||result.ok!==true)throw new Error('The server did not confirm the reset.');
       const counts=result.counts||{};
       const summary=Object.entries(counts).map(([name,count])=>name.replaceAll('_',' ')+': '+count).join('\n');
-      modalStatus.className='operational-reset-status';modalStatus.textContent=(result.message||'Operational records cleared successfully.')+(summary?'\n\nDeleted records:\n'+summary:'');
-      sectionStatus.textContent='Reset completed successfully. Nozzle shift activations were cleared; station configuration and current tank stock were preserved.';
-      confirmBtn.textContent='Reset Complete';confirmBtn.disabled=true;
-      const done=document.createElement('button');done.type='button';done.className='primary';done.textContent='Close';done.addEventListener('click',closeModal);confirmBtn.parentElement.appendChild(done);
+      modalStatus.className='operational-reset-status operational-reset-success';modalStatus.textContent=(result.message||'Operational data reset successfully.')+(summary?'\n\nDeleted records:\n'+summary:'');
+      sectionStatus.textContent='Operational data reset completed successfully.';
+      confirmBtn.textContent='Done';confirmBtn.disabled=false;confirmBtn.onclick=closeModal;cancelBtn.hidden=true;closeBtn.setAttribute('aria-label','Close reset result');
     }catch(err){
       modalStatus.className='operational-reset-status';modalStatus.textContent='Reset failed: '+(err&&err.message?err.message:String(err));
       confirmBtn.textContent=previous;confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA';
-    }finally{input.disabled=false;pinInput.disabled=false;cancelBtn.disabled=false;closeBtn.disabled=false;updateResetButton();}
+    }finally{input.disabled=false;pinInput.disabled=false;cancelBtn.disabled=false;closeBtn.disabled=false;if(confirmBtn.textContent!=='Done')updateResetButton();}
   });
 })();
 </script>
