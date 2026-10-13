@@ -13,8 +13,144 @@
 </head>
 <body>
 <div class="app-layout"><aside class="sidebar" aria-label="Logistics navigation"><div class="side-brand"><span class="side-mark">AL</span><div>ADMIN LOGISTICS<small>Fuel Shift System</small></div></div><nav class="side-nav"><a href="admin-logistics-truck.html"><span class="nav-icon">🚚</span><span>Truck</span></a><a class="active" href="admin-logistics-dashboard.html"><span class="nav-icon">⌂</span><span>Dashboard</span></a><a href="admin-logistics-settings.html"><span class="nav-icon">⚙</span><span>Settings</span></a></nav></aside><div class="main-area"><main class="shell">
-<header class="top"><div class="brand"><div class="mark" aria-hidden="true">AL</div><div><strong>ADMIN LOGISTICS</strong><small>Fuel Shift System</small></div></div></header>
+<header class="top"><div class="brand"><div class="mark" aria-hidden="true">AL</div><div><strong>ADMIN LOGISTICS</strong><small>Shared delivery records</small></div></div><button id="refreshDeliveries" type="button">Refresh</button></header>
+<div class="eyebrow">DELIVERY MANAGEMENT</div><h1>Deliveries</h1><p class="intro">Record fuel deliveries, track quantities and fees, and review delivery history saved in the shared database.</p>
+<div id="deliveryMessage" class="note" role="status" hidden></div>
+<section class="card" style="min-height:0;margin-bottom:26px">
+<div class="section-head" style="margin-top:0"><div><h2>Record a delivery</h2><p>Delivery details are saved to the station database.</p></div></div>
+<form id="deliveryForm" class="delivery-form">
+<div class="delivery-grid">
+<label>Delivery date and time<input id="deliveryDate" type="datetime-local" required></label>
+<label>Supplier<input id="supplierName" maxlength="160" placeholder="Supplier name"></label>
+<label>Truck and driver<select id="deliveryTruck"><option value="">No truck selected</option></select></label>
+<label>Fuel product<select id="deliveryProduct" required><option value="">Loading products…</option></select></label>
+<label>Ordered quantity (L)<input id="orderedLiters" type="number" min="0" step="0.001" placeholder="Optional"></label>
+<label>Delivered quantity (L)<input id="deliveredLiters" type="number" min="0" step="0.001" value="0" required></label>
+<label>Delivery fee per litre (ETB)<input id="deliveryFee" type="number" min="0" step="0.0001" value="0" required></label>
+<label>Destination tank<select id="deliveryTank"><option value="">Not specified</option></select></label>
+<label>Tank opening stock (L)<input id="tankOpening" type="number" min="0" step="0.001" placeholder="Optional"></label>
+<label>Tank closing stock (L)<input id="tankClosing" type="number" min="0" step="0.001" placeholder="Optional"></label>
+<label>Status<select id="deliveryStatus"><option value="draft">Draft</option><option value="in_progress">In progress</option><option value="completed">Completed</option></select></label>
+<label class="delivery-wide">Notes<textarea id="deliveryNotes" rows="2" maxlength="2000" placeholder="Invoice number, observations, or other details"></textarea></label>
+</div>
+<div class="delivery-actions"><button class="primary" id="saveDelivery" type="submit">Save delivery</button><span class="muted" id="deliveryFeePreview">Estimated fee: ETB 0.00</span></div>
+</form>
+</section>
+<section>
+<div class="section-head"><div><h2>Delivery history</h2><p id="deliveryCount">Loading records…</p></div></div>
+<div id="deliveryHistory" class="delivery-history"><div class="card">Loading delivery records…</div></div>
+</section>
+</main>
+<style>
+.delivery-form label{display:grid;gap:6px;font-size:12px;font-weight:700;color:#344054}
+.delivery-form input,.delivery-form select,.delivery-form textarea{width:100%;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--text);font:inherit;font-weight:500}
+.delivery-form input:focus,.delivery-form select:focus,.delivery-form textarea:focus{outline:2px solid #bfdbfe;border-color:#60a5fa}
+.delivery-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.delivery-wide{grid-column:1/-1}
+.delivery-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+.delivery-actions button,#refreshDeliveries{border:1px solid var(--line);border-radius:9px;padding:11px 16px;background:#fff;color:var(--text);font-weight:750;cursor:pointer}
+.delivery-actions button.primary{background:var(--accent);border-color:var(--accent);color:white}
+.delivery-actions button:disabled{opacity:.55;cursor:wait}
+.muted{color:var(--muted);font-size:12px}
+.delivery-history{display:grid;gap:12px}
+.delivery-record{padding:17px 19px;background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:0 4px 14px rgba(15,23,42,.04)}
+.delivery-record-head{display:flex;justify-content:space-between;gap:12px;align-items:start}
+.delivery-record h3{font-size:14px;margin:0 0 5px}
+.delivery-record p{font-size:12px;color:var(--muted);margin:4px 0;line-height:1.5}
+.delivery-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.delivery-stat{padding:10px;background:var(--panel2);border-radius:9px;min-width:0}
+.delivery-stat small{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}
+.delivery-stat strong{font-size:13px;overflow-wrap:anywhere}
+.delivery-status{font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;border-radius:999px;padding:6px 8px;background:#eef2ff;color:#3730a3;white-space:nowrap}
+.delivery-status.completed{background:#dcfce7;color:#166534}.delivery-status.cancelled{background:#fee2e2;color:#991b1b}
+.delivery-note{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:520px){.delivery-grid{grid-template-columns:1fr}.delivery-wide{grid-column:auto}.delivery-stats{grid-template-columns:1fr 1fr}.delivery-record-head{align-items:start}}
+</style>
 
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id),headers={Accept:'application/json','X-Fuel-Role':'admin'};
+let products=[],trucks=[],tanks=[],fees=[],deliveries=[];
+function message(text,isError){const el=$('deliveryMessage');el.hidden=!text;el.textContent=text||'';el.style.borderColor=isError?'#fca5a5':'var(--line)';el.style.color=isError?'#991b1b':'var(--muted)'}
+function money(value){return 'ETB '+Number(value||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+function liters(value){return Number(value||0).toLocaleString(undefined,{maximumFractionDigits:3})+' L'}
+async function request(url,options){const response=await fetch(url,{credentials:'same-origin',headers:{...headers,...(options&&options.headers||{})},...(options||{})});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Request failed ('+response.status+').');return data}
+function fillSelect(id,items,placeholder,label){const select=$(id);select.innerHTML='';const first=document.createElement('option');first.value='';first.textContent=placeholder;select.append(first);items.forEach(item=>{const opt=document.createElement('option');opt.value=item.id;opt.textContent=label(item);select.append(opt)})}
+function selectedProduct(){return products.find(p=>String(p.id)===$('deliveryProduct').value)}
+function updateFeePreview(){const qty=Number($('deliveredLiters').value||0),rate=Number($('deliveryFee').value||0);$('deliveryFeePreview').textContent='Estimated fee: '+money(qty*rate)}
+function setDefaultDate(){const now=new Date();now.setMinutes(now.getMinutes()-now.getTimezoneOffset());$('deliveryDate').value=now.toISOString().slice(0,16)}
+function renderHistory(){
+ const list=$('deliveryHistory');list.innerHTML='';$('deliveryCount').textContent=deliveries.length+' saved record'+(deliveries.length===1?'':'s');
+ if(!deliveries.length){const empty=document.createElement('div');empty.className='card';empty.style.minHeight='0';empty.textContent='No delivery records yet. Use the form above to record the first delivery.';list.append(empty);return}
+ deliveries.forEach(item=>{
+  const card=document.createElement('article');card.className='delivery-record';
+  const head=document.createElement('div');head.className='delivery-record-head';const titleWrap=document.createElement('div');const title=document.createElement('h3');title.textContent=item.delivery_reference||item.product_name||'Fuel delivery';const sub=document.createElement('p');sub.textContent=new Date(item.delivery_date).toLocaleString()+(item.supplier_name?' · '+item.supplier_name:'');titleWrap.append(title,sub);
+  const badge=document.createElement('span');badge.className='delivery-status '+String(item.status||'draft');badge.textContent=String(item.status||'draft').replace('_',' ');head.append(titleWrap,badge);card.append(head);
+  const stats=document.createElement('div');stats.className='delivery-stats';
+  [[ 'Delivered',liters(item.delivered_liters) ],[ 'Fee per litre',money(item.fee_per_liter) ],[ 'Total fee',money(item.total_fee??Number(item.delivered_liters||0)*Number(item.fee_per_liter||0)) ]].forEach(([label,value])=>{const box=document.createElement('div');box.className='delivery-stat';const small=document.createElement('small');small.textContent=label;const strong=document.createElement('strong');strong.textContent=value;box.append(small,strong);stats.append(box)});card.append(stats);
+  const details=document.createElement('p');details.textContent='Product: '+(item.product_name||'—')+' · Truck: '+(item.truck_code_snapshot||'Not assigned')+' · Driver: '+(item.driver_name_snapshot||'—');card.append(details);
+  if(item.ordered_liters!==null&&item.ordered_liters!==undefined){const ordered=document.createElement('p');ordered.textContent='Ordered: '+liters(item.ordered_liters);card.append(ordered)}
+  if(item.tank_id){const tank=document.createElement('p');tank.textContent='Tank stock: '+(item.tank_opening_liters??'—')+' L → '+(item.tank_closing_liters??'—')+' L';card.append(tank)}
+  if(item.notes){const notes=document.createElement('p');notes.className='delivery-note';notes.textContent=item.notes;card.append(notes)}
+  if(item.status!=='completed'&&item.status!=='cancelled'){const actions=document.createElement('div');actions.className='delivery-actions';const status=document.createElement('select');[['draft','Draft'],['in_progress','In progress'],['completed','Completed'],['cancelled','Cancelled']].forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;o.selected=v===item.status;status.append(o)});const save=document.createElement('button');save.type='button';save.textContent='Update status';save.addEventListener('click',async()=>{save.disabled=true;try{await request('/api/logistics/deliveries/'+encodeURIComponent(item.id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:status.value})});await loadDeliveries();message('Delivery status updated.',false)}catch(e){message(e.message,true)}finally{save.disabled=false}});actions.append(status,save);card.append(actions)}
+  list.append(card);
+ });
+}
+async function loadDeliveries(){deliveries=await request('/api/logistics/deliveries');renderHistory()}
+async function loadSetup(){
+ const [p,t,k,f]=await Promise.all([
+  request('/api/products'),request('/api/logistics/trucks'),request('/api/tanks'),request('/api/logistics/product-fees')
+ ]);
+ products=Array.isArray(p)?p:[];trucks=Array.isArray(t)?t:[];tanks=Array.isArray(k)?k:[];
+ fees=Array.isArray(f)?f:[];
+ fillSelect('deliveryProduct',products,'Choose product',x=>(x.code_name||x.name)+(x.active===false?' (inactive)':''));
+ fillSelect('deliveryTruck',trucks,'No truck selected',x=>(x.plate||x.truck_code||'Truck')+' · '+(x.driverName||x.driver_name||''));
+ fillSelect('deliveryTank',tanks,'Not specified',x=>(x.tank_code||x.name||'Tank')+(x.product?' · '+x.product:''));
+}
+$('deliveryProduct').addEventListener('change',()=>{const p=selectedProduct();const fee=fees.find(x=>String(x.product_id||'')===String(p?.id))||fees.find(x=>String(x.product_name||'').toLowerCase()===String(p?.code_name||p?.name||'').toLowerCase());if(fee)$('deliveryFee').value=fee.fee_per_liter;updateFeePreview()});
+$('deliveredLiters').addEventListener('input',updateFeePreview);$('deliveryFee').addEventListener('input',updateFeePreview);
+$('deliveryForm').addEventListener('submit',async e=>{
+ e.preventDefault();const p=selectedProduct();if(!p){message('Choose a fuel product.',true);return}
+ const truck=trucks.find(x=>String(x.id)=== $('deliveryTruck').value);
+ const payload={delivery_date:new Date($('deliveryDate').value).toISOString(),supplier_name:$('supplierName').value.trim(),truck_id:truck?(truck.databaseId||truck.id):null,product_id:p.id,product_name:p.code_name||p.name,ordered_liters:$('orderedLiters').value===''?null:Number($('orderedLiters').value),delivered_liters:Number($('deliveredLiters').value),fee_per_liter:Number($('deliveryFee').value||0),tank_id:$('deliveryTank').value||null,tank_opening_liters:$('tankOpening').value===''?null:Number($('tankOpening').value),tank_closing_liters:$('tankClosing').value===''?null:Number($('tankClosing').value),notes:$('deliveryNotes').value.trim(),status:$('deliveryStatus').value};
+ if(payload.tank_opening_liters!==null&&payload.tank_closing_liters!==null)payload.tank_difference_liters=payload.tank_closing_liters-payload.tank_opening_liters;
+ $('saveDelivery').disabled=true;
+ try{await request('/api/logistics/deliveries',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});$('deliveryForm').reset();setDefaultDate();$('deliveredLiters').value='0';$('deliveryFee').value='0';updateFeePreview();await loadDeliveries();message('Delivery saved to the shared database.',false)}
+ catch(error){message(error.message||'Could not save delivery.',true)}
+ finally{$('saveDelivery').disabled=false}
+});
+$('refreshDeliveries').addEventListener('click',async()=>{try{await loadSetup();await loadDeliveries();message('Delivery records refreshed from the database.',false)}catch(e){message(e.message,true)}});
+setDefaultDate();updateFeePreview();
+Promise.all([loadSetup(),loadDeliveries()]).catch(error=>message(error.message||'Could not load logistics data. Confirm that you are signed in as an admin.',true));
+})();
+</script>refreshDeliveries" type="button">Refresh</button></header>
+<div class="eyebrow">DELIVERY MANAGEMENT</div><h1>Deliveries</h1><p class="intro">Record fuel deliveries, track quantities and fees, and review delivery history saved in the shared database.</p>
+<div id="deliveryMessage" class="note" role="status" hidden></div>
+<section class="card" style="min-height:0;margin-bottom:26px">
+<div class="section-head" style="margin-top:0"><div><h2>Record a delivery</h2><p>Delivery details are saved to the station database.</p></div></div>
+<form id="deliveryForm" class="delivery-form">
+<div class="delivery-grid">
+<label>Delivery date and time<input id="deliveryDate" type="datetime-local" required></label>
+<label>Supplier<input id="supplierName" maxlength="160" placeholder="Supplier name"></label>
+<label>Truck and driver<select id="deliveryTruck"><option value="">No truck selected</option></select></label>
+<label>Fuel product<select id="deliveryProduct" required><option value="">Loading products…</option></select></label>
+<label>Ordered quantity (L)<input id="orderedLiters" type="number" min="0" step="0.001" placeholder="Optional"></label>
+<label>Delivered quantity (L)<input id="deliveredLiters" type="number" min="0" step="0.001" value="0" required></label>
+<label>Delivery fee per litre (ETB)<input id="deliveryFee" type="number" min="0" step="0.0001" value="0" required></label>
+<label>Destination tank<select id="deliveryTank"><option value="">Not specified</option></select></label>
+<label>Tank opening stock (L)<input id="tankOpening" type="number" min="0" step="0.001" placeholder="Optional"></label>
+<label>Tank closing stock (L)<input id="tankClosing" type="number" min="0" step="0.001" placeholder="Optional"></label>
+<label>Status<select id="deliveryStatus"><option value="draft">Draft</option><option value="in_progress">In progress</option><option value="completed">Completed</option></select></label>
+<label class="delivery-wide">Notes<textarea id="deliveryNotes" rows="2" maxlength="2000" placeholder="Invoice number, observations, or other details"></textarea></label>
+</div>
+<div class="delivery-actions"><button class="primary" id="saveDelivery" type="submit">Save delivery</button><span class="muted" id="deliveryFeePreview">Estimated fee: ETB 0.00</span></div>
+</form>
+</section>
+<section>
+<div class="section-head"><div><h2>Delivery history</h2><p id="deliveryCount">Loading records…</p></div></div>
+<div id="deliveryHistory" class="delivery-history"><div class="card">Loading delivery records…</div></div>
+</section>
 </main></div></div>
 </body>
 </html>
