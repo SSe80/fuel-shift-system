@@ -48,7 +48,7 @@ body{background:#f7f9fc!important;color:#182230!important;font-family:Inter,"Seg
 <div class="logistics-main"><main class="wrap">
 <header class="settings-header control-page-header"><div><span class="eyebrow">LOGISTICS SETTINGS</span><h1>Logistics Settings</h1><p class="truck-muted">Manage truck registrations and compartment calibration files separately from the main Admin Settings.</p></div></header>
 <section class="truck-panel truck-management-card" aria-labelledby="truckListTitle"><div class="truck-panel-head"><div class="truck-panel-title"><span class="truck-card-icon" aria-hidden="true">🚚</span><div><h2 id="truckListTitle">Truck Management</h2><p class="truck-muted">Add trucks, update details, and manage compartment calibration.</p></div></div><div class="truck-panel-actions"><span class="truck-count" id="truckCount">0 trucks</span><button class="truck-primary" id="addTruckBtn" type="button">＋ Add truck</button></div></div><div class="truck-list-wrap"><div id="truckList" class="truck-empty">No trucks added yet. Select <b>Add truck</b> to register the first truck and its compartment calibration.</div></div></section>
-<section class="truck-panel logistics-fees-card" aria-labelledby="logisticsFeesTitle"><div class="logistics-fees-head"><span class="truck-card-icon" aria-hidden="true">🧾</span><div><h2 id="logisticsFeesTitle">Logistics Fees</h2><p class="truck-muted">Products are synced from the main Admin Settings. Set a delivery fee per litre for each listed product.</p></div></div><div class="logistics-fees-body"><div class="fee-product-toolbar"><span id="feeProductSyncStatus" class="truck-muted" role="status">Loading products from Admin Settings…</span><button type="button" class="fee-add" id="refreshFeeProducts">↻ Refresh products</button></div><div class="fee-rate-list" id="feeRateList" aria-live="polite"></div><div class="fee-actions"><button type="button" class="fee-save" id="saveFeeRates">Save fee rates</button></div><div class="fee-feedback" id="feeFeedback" role="status"></div><div class="fee-formula"><strong>Calculation:</strong> delivery fee = delivered litres × that product’s fee per litre.<br>Example: 1,000 L × ETB 3.14/L = <strong>ETB 3,140.00</strong>. Enter each product’s actual rate below; the example is illustrative.</div></div></section>
+<section class="truck-panel logistics-fees-card" aria-labelledby="logisticsFeesTitle"><div class="logistics-fees-head"><span class="truck-card-icon" aria-hidden="true">🧾</span><div><h2 id="logisticsFeesTitle">Logistics Fees</h2><p class="truck-muted">Products are synced from the main Admin Settings. Set a delivery fee per litre for each listed product.</p></div></div><div class="logistics-fees-body"><span id="feeProductSyncStatus" role="status" hidden></span><div class="fee-rate-list" id="feeRateList" aria-live="polite"></div><div class="fee-actions"><button type="button" class="fee-save" id="saveFeeRates">Save fee rates</button></div><div class="fee-feedback" id="feeFeedback" role="status"></div><div class="fee-formula"><strong>Calculation:</strong> delivery fee = delivered litres × that product’s fee per litre.<br>Example: 1,000 L × ETB 3.14/L = <strong>ETB 3,140.00</strong>. Enter each product’s actual rate below; the example is illustrative.</div></div></section>
 
 </main></div></div>
 
@@ -273,7 +273,7 @@ function renderFeeRates(){const list=$('feeRateList');list.innerHTML='';if(!stat
 function showFeeFeedback(message,type){const el=$('feeFeedback');el.textContent=message;el.className='fee-feedback show '+type;}
 function hideFeeFeedback(){const el=$('feeFeedback');el.textContent='';el.className='fee-feedback';}
 async function refreshFeeProducts(){
- const status=$('feeProductSyncStatus');status.textContent='Loading products and saved delivery rates…';$('refreshFeeProducts').disabled=true;
+ const status=$('feeProductSyncStatus');status.textContent='Loading products and saved delivery rates…';
  try{
   const headers={Accept:'application/json','X-Fuel-Role':'admin'};
   const productResponse=await fetch('/api/products',{credentials:'same-origin',headers});
@@ -289,9 +289,9 @@ async function refreshFeeProducts(){
    const saved=local.find(x=>String(x.productKey??'')===key)||local.find(x=>String(x.product||'').toLowerCase()===label.toLowerCase());
    return {productKey:key,product:label,rate:db?String(db.fee_per_liter??0):(saved&&saved.rate!==undefined?String(saved.rate):'')};
   });
-  feeRatesLoaded=true;renderFeeRates();if((!Array.isArray(dbFees)||!dbFees.length)&&local.length){const items=stationProducts.map(product=>{const item=feeRates.find(x=>x.productKey===feeProductKey(product))||{};return {product_id:product.id,product_name:feeProductLabel(product),fee_per_liter:Number(String(item.rate??'').trim()||0)};});const migrate=await fetch('/api/logistics/product-fees',{method:'POST',credentials:'same-origin',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({items})});if(!migrate.ok)throw new Error('Local fee rates are visible, but their migration to the database failed ('+migrate.status+').');}status.textContent=stationProducts.length+' product'+(stationProducts.length===1?'':'s')+' synced from Admin Settings. Rates load from the shared database.';hideFeeFeedback();
+  feeRatesLoaded=true;renderFeeRates();if((!Array.isArray(dbFees)||!dbFees.length)&&local.length){const items=stationProducts.map(product=>{const item=feeRates.find(x=>x.productKey===feeProductKey(product))||{};return {product_id:product.id,product_name:feeProductLabel(product),fee_per_liter:Number(String(item.rate??'').trim()||0)};});const migrate=await fetch('/api/logistics/product-fees',{method:'POST',credentials:'same-origin',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({items})});if(!migrate.ok)throw new Error('Local fee rates are visible, but their migration to the database failed ('+migrate.status+').');}status.textContent='';hideFeeFeedback();
  }catch(error){feeRatesLoaded=false;stationProducts=[];renderFeeRates();status.textContent='Unable to sync products or delivery rates.';showFeeFeedback(error.message||'Could not load products.','error');}
- finally{$('refreshFeeProducts').disabled=false;}
+ finally{}
 }
 async function saveFeeRates(){
  if(!feeRatesLoaded){showFeeFeedback('Load the products from main Admin Settings before saving.','error');return;}
@@ -303,7 +303,7 @@ async function saveFeeRates(){
   localStorage.setItem(FEE_STORAGE_KEY,JSON.stringify(normalized));feeRates=normalized;showFeeFeedback('Delivery fee rates saved to the shared database.','success');
  }catch(error){try{localStorage.setItem(FEE_STORAGE_KEY,JSON.stringify(normalized));}catch(_){}showFeeFeedback((error.message||'Could not save delivery fees.')+' A local backup was kept, but database saving failed.','error');}
 }
-$('refreshFeeProducts').addEventListener('click',refreshFeeProducts);$('saveFeeRates').addEventListener('click',saveFeeRates);refreshFeeProducts();
+$('saveFeeRates').addEventListener('click',saveFeeRates);refreshFeeProducts();
 })();
 </script>
 </body></html>
