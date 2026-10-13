@@ -380,9 +380,12 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
     <div class="modal-backdrop" id="operational-reset-backdrop"></div>
     <div class="modal-card form" role="dialog" aria-modal="true" aria-labelledby="operational-reset-title" style="max-width:520px">
       <div class="top"><h3 id="operational-reset-title">Permanently Reset Operational Data?</h3><button type="button" class="modal-close" id="close-operational-reset" aria-label="Close">×</button></div>
-      <p>This action cannot be undone. Current tank stock and station configuration will remain unchanged.</p>
+      <p>This action cannot be undone. Tank stock readings will be reset to 0 L and 0 mm. Station configuration and calibration will remain.</p>
       <label>Type <strong>RESET OPERATIONAL DATA</strong> to enable the reset.
         <input id="operational-reset-confirmation" class="operational-reset-input" type="text" autocomplete="off" spellcheck="false" placeholder="RESET OPERATIONAL DATA">
+      </label>
+      <label>Admin PIN
+        <input id="operational-reset-admin-pin" class="operational-reset-input" type="password" inputmode="numeric" autocomplete="current-password" required placeholder="Enter your admin PIN">
       </label>
       <div class="row" style="justify-content:flex-end">
         <button type="button" id="cancel-operational-reset">Cancel</button>
@@ -430,6 +433,7 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
   const openBtn=document.getElementById('open-operational-reset');
   const modal=document.getElementById('operational-reset-modal');
   const input=document.getElementById('operational-reset-confirmation');
+  const pinInput=document.getElementById('operational-reset-admin-pin');
   const confirmBtn=document.getElementById('confirm-operational-reset');
   const cancelBtn=document.getElementById('cancel-operational-reset');
   const closeBtn=document.getElementById('close-operational-reset');
@@ -438,16 +442,18 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
   const modalStatus=document.getElementById('operational-reset-modal-status');
   if(!openBtn||!modal||typeof api!=='function') return;
   function closeModal(){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  function openModal(){input.value='';confirmBtn.disabled=true;confirmBtn.textContent='Permanently Reset Data';modalStatus.textContent='';modalStatus.className='operational-reset-status muted';modal.classList.add('open');modal.setAttribute('aria-hidden','false');input.focus();}
+  function updateResetButton(){confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA'||!pinInput.value.trim();}
+  function openModal(){input.value='';pinInput.value='';confirmBtn.disabled=true;confirmBtn.textContent='Permanently Reset Data';modalStatus.textContent='';modalStatus.className='operational-reset-status muted';modal.classList.add('open');modal.setAttribute('aria-hidden','false');input.focus();}
   openBtn.addEventListener('click',openModal);
   [cancelBtn,closeBtn,backdrop].forEach(el=>el&&el.addEventListener('click',closeModal));
-  input.addEventListener('input',()=>{confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA';});
+  input.addEventListener('input',updateResetButton);
+  pinInput.addEventListener('input',updateResetButton);
   confirmBtn.addEventListener('click',async()=>{
-    if(input.value.trim()!=='RESET OPERATIONAL DATA'||confirmBtn.disabled)return;
-    const previous=confirmBtn.textContent;confirmBtn.disabled=true;confirmBtn.textContent='Resetting…';input.disabled=true;cancelBtn.disabled=true;closeBtn.disabled=true;
-    modalStatus.textContent='Reset in progress. Please keep this page open.';sectionStatus.textContent='';
+    if(input.value.trim()!=='RESET OPERATIONAL DATA'||!pinInput.value.trim()||confirmBtn.disabled)return;
+    const previous=confirmBtn.textContent;confirmBtn.disabled=true;confirmBtn.textContent='Resetting…';input.disabled=true;pinInput.disabled=true;cancelBtn.disabled=true;closeBtn.disabled=true;
+    modalStatus.textContent='Verifying admin PIN and resetting data. Please keep this page open.';sectionStatus.textContent='';
     try{
-      const result=await api('/api/admin/reset-operational-data',{method:'POST',body:JSON.stringify({confirmation:input.value.trim()})});
+      const result=await api('/api/admin/reset-operational-data',{method:'POST',body:JSON.stringify({confirmation:input.value.trim(),pin:pinInput.value})});
       if(!result||result.ok!==true)throw new Error('The server did not confirm the reset.');
       const counts=result.counts||{};
       const summary=Object.entries(counts).map(([name,count])=>name.replaceAll('_',' ')+': '+count).join('\n');
@@ -458,7 +464,7 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
     }catch(err){
       modalStatus.className='operational-reset-status';modalStatus.textContent='Reset failed: '+(err&&err.message?err.message:String(err));
       confirmBtn.textContent=previous;confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA';
-    }finally{input.disabled=false;cancelBtn.disabled=false;closeBtn.disabled=false;}
+    }finally{input.disabled=false;pinInput.disabled=false;cancelBtn.disabled=false;closeBtn.disabled=false;updateResetButton();}
   });
 })();
 </script>

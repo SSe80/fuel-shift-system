@@ -4669,6 +4669,23 @@ def admin_reset_operational_data():
     if data.get("confirmation") != "RESET OPERATIONAL DATA":
         return jsonify({"error": "Type RESET OPERATIONAL DATA exactly to confirm this reset."}), 400
 
+    pin = str(data.get("pin", ""))
+    if not pin:
+        return jsonify({"error": "Enter your admin PIN to confirm this reset."}), 400
+
+    # Re-check the PIN for the currently authenticated admin on the server.
+    # A client-side prompt alone is not an authorization check.
+    employee_status, employees = sb("employees", params={
+        "id": "eq." + str(session.get("employee_id")),
+        "active": "eq.true",
+        "role": "eq.admin",
+        "select": "id,pin_hash"
+    })
+    if employee_status != 200 or not employees:
+        return jsonify({"error": "Could not verify the active admin account. Please sign in again."}), 401
+    if not verify_pin(pin, employees[0].get("pin_hash", "")):
+        return jsonify({"error": "Invalid admin PIN. Operational data was not reset."}), 401
+
     try:
         status, result = rpc("reset_operational_data", {})
     except Exception:
