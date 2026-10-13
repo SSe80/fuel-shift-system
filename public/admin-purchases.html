@@ -799,8 +799,8 @@
       <div class="purchase-wizard-actions"><button type="button" onclick="closePurchaseModal()">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(1)">Continue</button></div>
     </section>
     <section class="purchase-wizard-step" data-purchase-step="2">
-      <div class="purchase-field"><label for="purchase-truck-type">Truck type</label><select id="purchase-truck-type" required><option value="">Select truck type</option><option value="contracted">Contracted truck</option><option value="non_contracted">Non-contracted truck</option></select></div>
-      <div id="purchase-contracted-truck-fields" hidden><div class="purchase-field"><label for="purchase-registered-truck">Registered truck</label><select id="purchase-registered-truck"><option value="">Select a registered Logistics truck</option></select></div><p class="muted" id="purchase-registered-truck-help">Choose a truck registered in Admin Logistics Settings.</p></div>
+      <div class="purchase-field"><label>Truck type</label><div id="purchase-truck-type-options" class="purchase-choice-grid" role="group" aria-label="Truck type"><button type="button" class="purchase-choice" data-truck-type="contracted" aria-pressed="false">Contracted truck</button><button type="button" class="purchase-choice" data-truck-type="non_contracted" aria-pressed="false">Non-contracted truck</button></div></div>
+      <div id="purchase-contracted-truck-fields" hidden><div class="purchase-field"><label>Registered Logistics truck</label><div id="purchase-registered-truck-options" class="purchase-truck-list" role="group" aria-label="Registered trucks"><p class="muted">Loading registered trucks…</p></div></div><p class="muted" id="purchase-registered-truck-help">Choose a truck registered in Admin Logistics Settings.</p></div>
       <div id="purchase-non-contracted-fields" hidden>
         <div class="purchase-field"><label for="purchase-driver-name">Driver name</label><input id="purchase-driver-name" type="text" placeholder="Driver name" autocomplete="name" required></div>
         <div class="purchase-field"><label for="purchase-driver-phone">Driver phone number</label><input id="purchase-driver-phone" type="tel" inputmode="tel" placeholder="Driver phone number" autocomplete="tel" required></div>
@@ -1070,9 +1070,9 @@ window.uploadPurchaseDetailPdf=async function(purchase){
   }
   const bindQuantityFormatting=input=>{if(!input)return;input.addEventListener('input',()=>{const raw=input.value.replace(/[^0-9.]/g,'');const parts=raw.split('.');const normalized=parts.shift()+(parts.length?'.'+parts.join(''):''),digits=normalized.split('.'),integer=digits[0]||'',fraction=digits[1]!==undefined?digits[1].slice(0,2):'';input.value=integer?Number(integer).toLocaleString()+ (digits.length>1?'.'+fraction:''):'';});input.addEventListener('blur',()=>{if(input.value)input.value=formatQuantity(input.value);});};
   bindQuantityFormatting(orderedQuantityInput); document.getElementById('purchase-truck-compartments')?.addEventListener('change',renderCompartmentInputs);
-  const truckTypeSelect=document.getElementById('purchase-truck-type');
-  const registeredTruckSelect=document.getElementById('purchase-registered-truck');
   function setTruckMode(mode){
+    purchaseTruckType=mode||'';
+    document.querySelectorAll('[data-truck-type]').forEach(button=>{const active=button.dataset.truckType===purchaseTruckType;button.classList.toggle('selected',active);button.setAttribute('aria-pressed',String(active));});
     const contracted=mode==='contracted',nonContracted=mode==='non_contracted';
     const contractedFields=document.getElementById('purchase-contracted-truck-fields');
     const nonContractedFields=document.getElementById('purchase-non-contracted-fields');
@@ -1081,14 +1081,14 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     ['purchase-driver-name','purchase-driver-phone','purchase-plate-number','purchase-truck-compartments'].forEach(id=>{const input=document.getElementById(id);if(input)input.required=nonContracted;});
     if(!contracted){
       selectedPurchaseTruck=null;
-      if(registeredTruckSelect)registeredTruckSelect.value='';
+      selectedRegisteredTruckId='';
       if(nonContracted){
         ['purchase-driver-name','purchase-driver-phone','purchase-plate-number'].forEach(id=>{const input=document.getElementById(id);if(input){input.readOnly=false;input.value='';}});
         const count=document.getElementById('purchase-truck-compartments');if(count){count.disabled=false;count.value='';}
         renderCompartmentInputs();
       }
-    }else if(registeredTruckSelect?.value){
-      const truck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===String(registeredTruckSelect.value));
+    }else if(selectedRegisteredTruckId){
+      const truck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===String(selectedRegisteredTruckId));
       if(truck)applySelectedPurchaseTruck(truck);
     }
   }
@@ -1101,14 +1101,21 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     if(countSelect){let option=Array.from(countSelect.options).find(o=>Number(o.value)===count);if(count>0&&!option){option=document.createElement('option');option.value=String(count);option.textContent=count+' compartments';countSelect.append(option);}countSelect.value=count>0?String(count):'';countSelect.disabled=true;}
     renderCompartmentInputs();
   }
-  truckTypeSelect?.addEventListener('change',()=>setTruckMode(truckTypeSelect.value));
-  registeredTruckSelect?.addEventListener('change',()=>{const truck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===String(registeredTruckSelect.value));if(truck)applySelectedPurchaseTruck(truck);else selectedPurchaseTruck=null;});
+  document.querySelectorAll('[data-truck-type]').forEach(button=>button.addEventListener('click',()=>setTruckMode(button.dataset.truckType)));
+  function selectRegisteredTruck(id){
+    selectedRegisteredTruckId=String(id||'');
+    const truck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===selectedRegisteredTruckId);
+    document.querySelectorAll('[data-registered-truck]').forEach(button=>{const active=button.dataset.registeredTruck===selectedRegisteredTruckId;button.classList.toggle('selected',active);button.setAttribute('aria-pressed',String(active));});
+    if(truck)applySelectedPurchaseTruck(truck);else selectedPurchaseTruck=null;
+  }
   const status=document.getElementById('purchase-status');
   const list=document.getElementById('purchase-list');
   let purchaseTanks=[];
   let purchaseProducts=[];
   let purchaseTrucks=[];
   let selectedPurchaseTruck=null;
+  let purchaseTruckType='';
+  let selectedRegisteredTruckId='';
   let purchaseShifts=[];
   let purchaseEmployees=[];
   let purchaseStep=1;
@@ -1156,10 +1163,10 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       if(!Number.isFinite(orderedQuantity)||orderedQuantity<=0){setStatus('Enter a valid ordered quantity before continuing.',true);return;}
     }
     if(step===2){
-      const type=document.getElementById('purchase-truck-type')?.value||'';
+      const type=purchaseTruckType;
       if(!type){setStatus('Select contracted or non-contracted truck before continuing.',true);return;}
       if(type==='contracted'){
-        selectedPurchaseTruck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===String(document.getElementById('purchase-registered-truck')?.value||''))||null;
+        selectedPurchaseTruck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===String(selectedRegisteredTruckId))||null;
         if(!selectedPurchaseTruck){setStatus('Select a registered Logistics truck.',true);return;}
         applySelectedPurchaseTruck(selectedPurchaseTruck);
       }else{
@@ -1351,8 +1358,8 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       const [tanks,productsData,pending,history,shifts,employees,trucksData]=await Promise.all([purchaseApi('/api/tanks'),purchaseApi('/api/products'),purchaseApi('/api/purchases?status=pending_discharge'),purchaseApi('/api/purchases?status=discharged'),purchaseApi('/api/shifts'),purchaseApi('/api/employees'),purchaseApi('/api/logistics/trucks').catch(()=>[])]);
       if(!Array.isArray(tanks)||!Array.isArray(productsData)||!Array.isArray(pending)||!Array.isArray(history)||!Array.isArray(shifts)||!Array.isArray(employees)||!Array.isArray(trucksData))throw new Error('Unable to load purchase data');
       purchaseTanks=tanks; purchaseDetailTanks=tanks; purchaseProducts=productsData; purchaseTrucks=trucksData.filter(t=>t.isActive!==false&&t.active!==false); purchaseShifts=shifts; purchaseEmployees=employees; purchaseDetailData=[...pending,...history.filter(h=>!pending.some(p=>String(p.id)===String(h.id)))];
-      const registeredSelect=document.getElementById('purchase-registered-truck');
-      if(registeredSelect){const previous=registeredSelect.value;registeredSelect.innerHTML='<option value="">'+(purchaseTrucks.length?'Select a registered Logistics truck':'No active Logistics trucks registered')+'</option>'+purchaseTrucks.map(t=>{const id=t.databaseId||t.id;const plate=t.plate||t.truck_code||t.registration_number||'Truck';const driver=t.driverName||t.driver_name||'';const count=Number(t.compartmentCount||t.compartment_count||(Array.isArray(t.calibrations)?t.calibrations.length:0)||0);return '<option value="'+purchaseH(id)+'">'+purchaseH(plate)+' · '+purchaseH(driver)+' · '+count+' compartments</option>';}).join('');if(purchaseTrucks.some(t=>String(t.databaseId||t.id)===String(previous)))registeredSelect.value=previous;}
+      const registeredList=document.getElementById('purchase-registered-truck-options');
+      if(registeredList){registeredList.innerHTML=purchaseTrucks.length?purchaseTrucks.map(t=>{const id=String(t.databaseId||t.id);const plate=t.plate||t.truck_code||t.registration_number||'Truck';const driver=t.driverName||t.driver_name||'';const count=Number(t.compartmentCount||t.compartment_count||(Array.isArray(t.calibrations)?t.calibrations.length:0)||0);return '<button type="button" class="purchase-choice purchase-truck-choice'+(id===selectedRegisteredTruckId?' selected':'')+'" data-registered-truck="'+purchaseH(id)+'" aria-pressed="'+String(id===selectedRegisteredTruckId)+'"><strong>'+purchaseH(plate)+'</strong><span>'+purchaseH(driver||'Driver not listed')+' · '+count+' compartments</span></button>';}).join(''):'<p class="muted">No active Logistics trucks registered.</p>';registeredList.querySelectorAll('[data-registered-truck]').forEach(button=>button.addEventListener('click',()=>selectRegisteredTruck(button.dataset.registeredTruck)));}
       const activeProducts=productsData.filter(p=>p.active!==false);
       const productSelect=document.getElementById('purchase-product');
       if(productSelect)productSelect.innerHTML='<option value="">Select product</option>'+activeProducts.sort((a,b)=>String(a.code_name||a.name).localeCompare(String(b.code_name||b.name))).map(p=>'<option value="'+purchaseH(p.name)+'">'+purchaseH(p.code_name||p.name)+'</option>').join('');
@@ -1825,8 +1832,8 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       document.getElementById('purchase-plate-number').value='';
       document.getElementById('purchase-truck-compartments').disabled=false;
       document.getElementById('purchase-truck-compartments').value='';
-      document.getElementById('purchase-truck-type').value='';
-      document.getElementById('purchase-registered-truck').value='';
+      selectedRegisteredTruckId='';
+      document.querySelectorAll('[data-registered-truck]').forEach(button=>{button.classList.remove('selected');button.setAttribute('aria-pressed','false');});
       setTruckMode('');
       document.getElementById('purchase-product').value='';
       document.getElementById('purchase-invoice').value='';
@@ -2023,4 +2030,11 @@ window.uploadPurchaseDetailPdf=async function(purchase){
 .purchase-wizard-step[data-purchase-step="4"] .purchase-review-row strong{font-size:13px;color:#101828;max-width:60%;overflow-wrap:anywhere}
 .purchase-wizard-step[data-purchase-step="4"] .purchase-review-difference{padding:9px 11px;font-size:13px;line-height:1.35}
 .purchase-wizard-step[data-purchase-step="4"] .purchase-review-difference strong{color:#101828}
+
+  .purchase-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .purchase-choice{display:flex;flex-direction:column;align-items:flex-start;gap:5px;width:100%;padding:13px 14px;border:1px solid var(--border-color,#d1d5db);border-radius:12px;background:var(--card-bg,#fff);color:inherit;text-align:left;cursor:pointer}
+  .purchase-choice.selected{border-color:var(--primary,#2563eb);box-shadow:0 0 0 2px color-mix(in srgb,var(--primary,#2563eb) 18%,transparent);background:var(--surface-muted,#eff6ff)}
+  .purchase-choice span{font-size:.88em;opacity:.8}
+  .purchase-truck-list{display:grid;gap:8px}
+  @media(max-width:520px){.purchase-choice-grid{grid-template-columns:1fr}}
 </style>
