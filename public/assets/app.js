@@ -3316,6 +3316,7 @@ function downloadPurchaseDetailPdf(){
   const productName=p.product||p.product_name||p.product_code||'—';
   const rawStatus=String(p.status||'recorded').replace(/_/g,' '),statusLabel=rawStatus.charAt(0).toUpperCase()+rawStatus.slice(1);
   const invoice=String(p.invoice_number||'—');
+  const displayPlate=(()=>{const plate=String(p.plate_number||p.plate||p.truck_plate||'').trim();const trailer=String(p.trailer_plate||p.trailerPlate||'').trim();if(!plate)return '—';const parts=plate.split('/').map(x=>x.trim());return trailer&&!parts.includes(trailer)?plate+' / '+trailer:plate;})();
   const purchaseDate=fmtDate(p.purchase_date||p.created_at);
   const entries=history.map(e=>{
     const qty=firstNum(e.quantity_liters,e.discharged_quantity_liters)||0;
@@ -3353,7 +3354,7 @@ function downloadPurchaseDetailPdf(){
     ],
     note:noteParts.join(' '),
     order:[{label:'Invoice number',value:invoice},{label:'Purchase date',value:purchaseDate},{label:'Product',value:productName},{label:'Status',value:statusLabel}],
-    truck:[{label:'Driver',value:p.driver_name||'—'},{label:'Driver phone',value:p.driver_phone||'—'},{label:'Plate number',value:p.plate_number||p.truck_plate||'—'},{label:'Compartments',value:String(p.truck_compartments||compartments.length||'—')}],
+    truck:[{label:'Driver',value:p.driver_name||'—'},{label:'Driver phone',value:p.driver_phone||'—'},{label:'Plate number',value:displayPlate},{label:'Compartments',value:String(p.truck_compartments||compartments.length||'—')}],
     compartments:compCards,
     dischargeRows:dischargeRows,
     info:info,
