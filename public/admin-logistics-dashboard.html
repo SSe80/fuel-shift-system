@@ -12,28 +12,37 @@
 </style>
 <script src="assets/logistics-auth.js?v=20261013-01"></script>
 <style id="logistics-admin-theme">
-/* Align Logistics with the main Admin panel: dark horizontal navigation, light workspace. */
+/* Match the main Admin panel's sidebar, workspace, cards, and responsive layout. */
 body{background:#f7f9fc!important;color:#182230!important;font-family:Inter,"Segoe UI",Arial,sans-serif!important}
-.app-layout{display:block!important;min-height:100vh}
-.sidebar{position:relative!important;top:auto!important;width:100%!important;height:74px!important;min-height:74px!important;padding:0 18px!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:18px!important;background:#111827!important;color:#e5e7eb!important;border:0!important;border-bottom:1px solid #253047!important;box-shadow:0 4px 18px #10182818!important;overflow:visible!important}
-.side-brand{flex:0 0 auto!important;padding:0!important;border:0!important;color:#f9fafb!important}.side-brand small{color:#9ca3af!important}.side-mark{background:#1f2937!important;border:1px solid #374151!important;color:#fbbf24!important}
-.side-nav{flex:1 1 auto!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;padding:0!important;overflow-x:auto!important;scrollbar-width:none}.side-nav::-webkit-scrollbar{display:none}
-.side-nav a{flex:0 0 auto!important;white-space:nowrap!important;color:#d1d5db!important;padding:12px 13px!important;border-radius:10px!important;font-size:14px!important}.side-nav a:hover,.side-nav a.active{background:#273449!important;color:#fff!important}.side-nav .nav-icon{font-size:16px!important}
-.sidebar-logout{flex:0 0 auto!important;width:auto!important;margin:0!important;padding:11px 13px!important;background:#111827!important;border-color:#7f1d1d!important;color:#fecaca!important;white-space:nowrap}
-.main-area{width:100%!important;min-width:0!important}.shell{max-width:1180px!important;padding:28px 22px 44px!important}.top{padding-bottom:18px;border-bottom:1px solid #e5eaf1;margin-bottom:26px!important}
-.brand .mark{background:#fff7ed;border-color:#fed7aa;color:#b45309}.card,.delivery-record{border-color:#e1e8f0!important;border-radius:16px!important;box-shadow:0 5px 20px #0f172a08!important}
-@media(max-width:760px){.sidebar{height:64px!important;min-height:64px!important;padding:0 10px!important;gap:8px!important}.side-brand{display:none!important}.side-nav{justify-content:flex-start!important;gap:4px!important}.side-nav a{padding:11px!important;font-size:12px!important}.side-nav .nav-icon{display:none!important}.sidebar-logout{padding:10px!important;font-size:12px!important}.shell{padding:20px 15px 32px!important}.top{margin-bottom:24px!important}}
-@media(max-width:480px){.sidebar{height:58px!important;min-height:58px!important;padding:0 7px!important}.side-nav a{padding:10px!important;font-size:11px!important}.sidebar-logout{padding:9px!important;font-size:11px!important}.shell{padding:16px 12px 28px!important}}
-/* Product choices replace the native dropdown with selectable cards. */
-.delivery-product-picker{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:2px}
+.app-layout{display:flex!important;min-height:100vh}
+.sidebar{position:sticky!important;top:0!important;align-self:flex-start!important;width:244px!important;min-width:244px!important;height:100vh!important;min-height:100vh!important;padding:24px 14px!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:0!important;background:#fff!important;color:#182230!important;border:0!important;border-right:1px solid #dce5ef!important;box-shadow:none!important;overflow-y:auto!important}
+.side-brand{flex:0 0 auto!important;padding:0 10px 24px!important;border-bottom:1px solid #dce5ef!important;color:#182230!important}
+.side-brand small{color:#667085!important}
+.side-mark{background:#fff7ed!important;border:1px solid #fed7aa!important;color:#b45309!important}
+.side-nav{flex:1 1 auto!important;width:100%!important;min-width:0!important;display:grid!important;align-items:stretch!important;justify-content:stretch!important;gap:6px!important;padding:18px 0 0!important;overflow:visible!important}
+.side-nav a{display:flex!important;flex:0 0 auto!important;white-space:nowrap!important;color:#475467!important;padding:12px 13px!important;border-radius:10px!important;font-size:13px!important}
+.side-nav a:hover,.side-nav a.active{background:#eff6ff!important;color:#1d4ed8!important}
+.side-nav .nav-icon{display:inline-block!important;font-size:17px!important}
+.sidebar-logout{flex:0 0 auto!important;width:100%!important;margin:auto 0 0!important;padding:12px 14px!important;background:#fff!important;border:1px solid #fecaca!important;border-radius:9px!important;color:#b91c1c!important;white-space:nowrap}
+.main-area{flex:1 1 auto!important;width:auto!important;min-width:0!important}
+.shell{width:100%!important;max-width:1180px!important;margin:0 auto!important;padding:28px 22px 44px!important}
+.top{padding-bottom:18px;border-bottom:1px solid #e5eaf1;margin-bottom:26px!important}
+.brand .mark{background:#fff7ed;border-color:#fed7aa;color:#b45309}
+.card,.delivery-record{border-color:#e1e8f0!important;border-radius:16px!important;box-shadow:0 5px 20px #0f172a08!important}
+.delivery-product-picker{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin-top:2px}
 .delivery-product-choice{position:relative;display:flex;align-items:center;gap:10px;min-width:0;min-height:58px;padding:12px;border:1px solid #d0d9e5;border-radius:12px;background:#fff;color:#182230;text-align:left;font:inherit;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}
-.delivery-product-choice:hover{border-color:#93b4e8;background:#f8fbff}.delivery-product-choice[aria-checked="true"]{border-color:#2563eb;background:#eff6ff;box-shadow:inset 0 0 0 1px #2563eb}
+.delivery-product-choice:hover{border-color:#93b4e8;background:#f8fbff}
+.delivery-product-choice[aria-checked="true"]{border-color:#2563eb;background:#eff6ff;box-shadow:inset 0 0 0 1px #2563eb}
 .delivery-product-choice:focus-visible{outline:3px solid #bfdbfe;outline-offset:2px}
 .delivery-product-swatch{width:14px;height:34px;flex:0 0 14px;border:1px solid #98a2b3;border-radius:5px;background:var(--product-color,#1264d8)}
-.delivery-product-copy{display:flex;flex-direction:column;gap:4px;min-width:0}.delivery-product-name{font-size:13px;font-weight:800;overflow-wrap:anywhere}.delivery-product-code{font-size:10px;font-weight:750;color:#667085;letter-spacing:.03em}
-.delivery-product-choice[aria-checked="true"] .delivery-product-code{color:#1d4ed8}
+.delivery-product-copy{display:flex;flex-direction:row;align-items:center;flex-wrap:wrap;gap:6px;min-width:0}
+.delivery-product-name{font-size:13px;font-weight:800;overflow-wrap:anywhere}
+.delivery-product-code{display:inline-flex;align-items:center;flex:0 0 auto;padding:3px 6px;border:1px solid #dce5ef;border-radius:6px;background:#f8fafc;font-size:10px;font-weight:800;color:#475467;letter-spacing:.02em}
+.delivery-product-choice[aria-checked="true"] .delivery-product-code{border-color:#bfdbfe;background:#fff;color:#1d4ed8}
 .delivery-product-picker-empty{grid-column:1/-1;padding:12px;border:1px dashed #cbd5e1;border-radius:10px;color:#667085;font-size:12px}
-@media(max-width:520px){.delivery-product-picker{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.delivery-product-choice{padding:10px;min-height:54px;gap:8px}.delivery-product-name{font-size:12px}.delivery-product-code{font-size:9px}}
+@media(max-width:760px){.app-layout{display:block!important}.sidebar{position:relative!important;top:auto!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;padding:12px!important;display:flex!important;flex-direction:column!important;gap:0!important;border-right:0!important;border-bottom:1px solid #dce5ef!important}.side-brand{padding:0 6px 12px!important}.side-nav{display:flex!important;overflow-x:auto!important;padding-top:10px!important;gap:4px!important}.side-nav a{white-space:nowrap!important;padding:11px!important;font-size:12px!important}.side-nav .nav-icon{display:none!important}.sidebar-logout{align-self:flex-end!important;width:auto!important;margin:10px 0 0!important;padding:9px 12px!important}.shell{padding:20px 15px 32px!important}.top{margin-bottom:24px!important}}
+@media(max-width:520px){.delivery-grid{grid-template-columns:1fr}.delivery-wide{grid-column:auto}.delivery-stats{grid-template-columns:1fr 1fr}.delivery-record-head{align-items:start}.delivery-product-picker{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.delivery-product-choice{padding:10px;min-height:54px;gap:8px}.delivery-product-name{font-size:12px}.delivery-product-code{font-size:9px;padding:3px 5px}}
+@media(max-width:380px){.delivery-product-picker{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -151,33 +160,6 @@ $('refreshDeliveries').addEventListener('click',async()=>{try{await loadSetup();
 setDefaultDate();updateFeePreview();
 Promise.all([loadSetup(),loadDeliveries()]).catch(error=>message(error.message||'Could not load logistics data. Confirm that you are signed in as an admin.',true));
 })();
-</script>refreshDeliveries" type="button">Refresh</button></header>
-<div class="eyebrow">DELIVERY MANAGEMENT</div><h1>Deliveries</h1><p class="intro">Record fuel deliveries, track quantities and fees, and review delivery history saved in the shared database.</p>
-<div id="deliveryMessage" class="note" role="status" hidden></div>
-<section class="card" style="min-height:0;margin-bottom:26px">
-<div class="section-head" style="margin-top:0"><div><h2>Record a delivery</h2><p>Delivery details are saved to the station database.</p></div></div>
-<form id="deliveryForm" class="delivery-form">
-<div class="delivery-grid">
-<label>Delivery date and time<input id="deliveryDate" type="datetime-local" required></label>
-<label>Supplier<input id="supplierName" maxlength="160" placeholder="Supplier name"></label>
-<label>Truck and driver<select id="deliveryTruck"><option value="">No truck selected</option></select></label>
-<label>Fuel product<select id="deliveryProduct" required><option value="">Loading products…</option></select></label>
-<label>Ordered quantity (L)<input id="orderedLiters" type="number" min="0" step="0.001" placeholder="Optional"></label>
-<label>Delivered quantity (L)<input id="deliveredLiters" type="number" min="0" step="0.001" value="0" required></label>
-<label>Delivery fee per litre (ETB)<input id="deliveryFee" type="number" min="0" step="0.0001" value="0" required></label>
-<label>Destination tank<select id="deliveryTank"><option value="">Not specified</option></select></label>
-<label>Tank opening stock (L)<input id="tankOpening" type="number" min="0" step="0.001" placeholder="Optional"></label>
-<label>Tank closing stock (L)<input id="tankClosing" type="number" min="0" step="0.001" placeholder="Optional"></label>
-<label>Status<select id="deliveryStatus"><option value="draft">Draft</option><option value="in_progress">In progress</option><option value="completed">Completed</option></select></label>
-<label class="delivery-wide">Notes<textarea id="deliveryNotes" rows="2" maxlength="2000" placeholder="Invoice number, observations, or other details"></textarea></label>
-</div>
-<div class="delivery-actions"><button class="primary" id="saveDelivery" type="submit">Save delivery</button><span class="muted" id="deliveryFeePreview">Estimated fee: ETB 0.00</span></div>
-</form>
-</section>
-<section>
-<div class="section-head"><div><h2>Delivery history</h2><p id="deliveryCount">Loading records…</p></div></div>
-<div id="deliveryHistory" class="delivery-history"><div class="card">Loading delivery records…</div></div>
-</section>
-</main></div></div>
+</script>
 </body>
 </html>
