@@ -2334,13 +2334,14 @@ window.uploadPurchaseDetailPdf=async function(purchase){
 .purchase-truck-choice .purchase-truck-choice-plate{display:inline-block!important;flex:0 0 auto;width:max-content!important;max-width:100%!important;margin:0!important;padding:4px 7px!important;font-size:14px!important;line-height:1.25!important;text-align:left!important;align-self:flex-start!important;overflow-wrap:anywhere}
 .purchase-truck-choice .purchase-truck-choice-driver{display:block;width:100%;margin:0!important;font-size:16px!important;line-height:1.25!important;font-weight:800!important;text-align:left!important;overflow-wrap:anywhere}
 .purchase-truck-choice .purchase-truck-choice-compartments{display:block;width:100%;margin:0!important;font-size:12px!important;line-height:1.25!important;text-align:left!important;overflow-wrap:anywhere}
-/* Pending discharge cards: warm yellow surface, with clear readable contrast */
-.purchase-pending-card{background:#fffcf0!important;border-color:#f1d58a!important;box-shadow:0 2px 8px rgba(138,90,0,.07)!important}
-.purchase-pending-card::before{background:#eab308!important}
-.purchase-pending-card .purchase-card-top{background:#fff5cc!important;border-bottom-color:#f3dfaa!important}
-.purchase-pending-card .purchase-card-meta>span,.purchase-pending-card .purchase-compartment-list>span{border-bottom-color:#f2e6c5!important}
-.purchase-pending-card .purchase-pending-actions{background:#fff9e6!important;border-top-color:#f3dfaa!important}
-.purchase-pending-card .purchase-pending-status{background:#fff0b3!important;color:#805400!important}
+/* Pending discharge cards: target the actual rendered card class */
+.purchase-discharge-pending-card{background:#fffcf0!important;border-color:#f1d58a!important;box-shadow:0 2px 8px rgba(138,90,0,.07)!important}
+.purchase-discharge-pending-card .purchase-discharge-pending-head{background:#fff5cc!important;border-radius:10px;padding:10px!important;margin:-1px -1px 10px!important}
+.purchase-discharge-pending-card .purchase-pending-status{background:#fff0b3!important;color:#805400!important}
+.purchase-discharge-pending-card .purchase-discharge-remaining{background:#fff5cc!important}
+.purchase-discharge-pending-card .purchase-discharge-pending-info{border-top:1px solid #f2e6c5!important;padding-top:10px!important}
+.purchase-discharge-pending-card .purchase-discharge-pending-actions{background:#fff9e6!important;border-top:1px solid #f3dfaa!important;padding-top:12px!important;margin-top:12px!important}
+.purchase-discharge-pending-card .purchase-discharge-pending-actions button{border-color:#ead8a0!important}
 </style>
 
 </body></html>
