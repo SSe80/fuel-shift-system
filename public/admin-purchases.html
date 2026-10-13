@@ -1348,10 +1348,16 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       if(truck)applySelectedPurchaseTruck(truck);
     }
   }
+  function purchaseTruckPlate(truck){
+    if(!truck)return '';
+    const plate=String(truck.plate||truck.truck_code||truck.registration_number||'').trim();
+    const trailer=String(truck.trailerPlate||truck.trailer_plate||'').trim();
+    return plate+(trailer?' / '+trailer:'');
+  }
   function applySelectedPurchaseTruck(truck){
     if(!truck)return;
     selectedPurchaseTruck=truck;
-    [['purchase-driver-name',truck.driverName||truck.driver_name||''],['purchase-driver-phone',truck.driverPhone||truck.driver_phone||''],['purchase-plate-number',truck.plate||truck.truck_code||truck.registration_number||'']].forEach(([id,value])=>{const input=document.getElementById(id);if(input){input.value=value;input.readOnly=true;}});
+    [['purchase-driver-name',truck.driverName||truck.driver_name||''],['purchase-driver-phone',truck.driverPhone||truck.driver_phone||''],['purchase-plate-number',purchaseTruckPlate(truck)]].forEach(([id,value])=>{const input=document.getElementById(id);if(input){input.value=value;input.readOnly=true;}});
     const count=Number(truck.compartmentCount||truck.compartment_count||(Array.isArray(truck.calibrations)?truck.calibrations.length:0)||0);
     const countSelect=document.getElementById('purchase-truck-compartments');
     if(countSelect){let option=Array.from(countSelect.options).find(o=>Number(o.value)===count);if(count>0&&!option){option=document.createElement('option');option.value=String(count);option.textContent=count+' compartments';countSelect.append(option);}countSelect.value=count>0?String(count):'';countSelect.disabled=true;}
@@ -1483,7 +1489,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     const count=Number(document.getElementById('purchase-truck-compartments')?.value||0);
     const truckType=purchaseTruckType;
     const truckTypeLabel=truckType==='contracted'?'Contracted':truckType==='non_contracted'?'Non-contracted':'—';
-    const registeredTruckLabel=selectedPurchaseTruck?(selectedPurchaseTruck.plate||selectedPurchaseTruck.truck_code||selectedPurchaseTruck.registration_number||'Registered truck'):'—';
+    const registeredTruckLabel=selectedPurchaseTruck?(purchaseTruckPlate(selectedPurchaseTruck)||'Registered truck'):'—';
     const inputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
     const delivered=inputs.reduce((sum,input)=>sum+getPurchaseCompartmentLiters(input),0);
     const difference=delivered-ordered;
@@ -1644,7 +1650,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       if(!Array.isArray(tanks)||!Array.isArray(productsData)||!Array.isArray(pending)||!Array.isArray(history)||!Array.isArray(shifts)||!Array.isArray(employees)||!Array.isArray(trucksData))throw new Error('Unable to load purchase data');
       purchaseTanks=tanks; purchaseDetailTanks=tanks; purchaseProducts=productsData; purchaseTrucks=trucksData.filter(t=>t.isActive!==false&&t.active!==false); purchaseShifts=shifts; purchaseEmployees=employees; purchaseDetailData=[...pending,...history.filter(h=>!pending.some(p=>String(p.id)===String(h.id)))];
       const registeredList=document.getElementById('purchase-registered-truck-options');
-      if(registeredList){registeredList.innerHTML=purchaseTrucks.length?purchaseTrucks.map(t=>{const id=String(t.databaseId||t.id);const plate=t.plate||t.truck_code||t.registration_number||'Truck';const driver=t.driverName||t.driver_name||'';const count=Number(t.compartmentCount||t.compartment_count||(Array.isArray(t.calibrations)?t.calibrations.length:0)||0);return '<button type="button" class="purchase-choice purchase-truck-choice'+(id===selectedRegisteredTruckId?' selected':'')+'" data-registered-truck="'+purchaseH(id)+'" aria-pressed="'+String(id===selectedRegisteredTruckId)+'"><strong>'+purchaseH(plate)+'</strong><span>'+purchaseH(driver||'Driver not listed')+' · '+count+' compartments</span></button>';}).join(''):'<p class="muted">No active Logistics trucks registered.</p>';registeredList.querySelectorAll('[data-registered-truck]').forEach(button=>button.addEventListener('click',()=>selectRegisteredTruck(button.dataset.registeredTruck)));}
+      if(registeredList){registeredList.innerHTML=purchaseTrucks.length?purchaseTrucks.map(t=>{const id=String(t.databaseId||t.id);const plate=purchaseTruckPlate(t)||'Truck';const driver=t.driverName||t.driver_name||'';const count=Number(t.compartmentCount||t.compartment_count||(Array.isArray(t.calibrations)?t.calibrations.length:0)||0);return '<button type="button" class="purchase-choice purchase-truck-choice'+(id===selectedRegisteredTruckId?' selected':'')+'" data-registered-truck="'+purchaseH(id)+'" aria-pressed="'+String(id===selectedRegisteredTruckId)+'"><strong>'+purchaseH(plate)+'</strong><span>'+purchaseH(driver||'Driver not listed')+' · '+count+' compartments</span></button>';}).join(''):'<p class="muted">No active Logistics trucks registered.</p>';registeredList.querySelectorAll('[data-registered-truck]').forEach(button=>button.addEventListener('click',()=>selectRegisteredTruck(button.dataset.registeredTruck)));}
       const activeProducts=productsData.filter(p=>p.active!==false).sort((a,b)=>String(a.code_name||a.name).localeCompare(String(b.code_name||b.name)));
       const productSelect=document.getElementById('purchase-product');
       if(productSelect)productSelect.innerHTML='<option value="">Select product</option>'+activeProducts.map(p=>'<option value="'+purchaseH(p.name)+'">'+purchaseH(p.code_name||p.name)+'</option>').join('');
