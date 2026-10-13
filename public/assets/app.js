@@ -4319,6 +4319,7 @@ async function _performDispenserActivation(pending){
       employee_id:pending.employeeId,
       nozzle_id:pending.id,
       opening_tank_liters:pending.openingTankLiters,
+      opening_tank_dip_mm:pending.openingTankDipMm,
       activation_nozzles:pending.selected.map(x=>({nozzle_id:x.nozzle_id,opening_reading:x.activation_number}))
     })});
     window.pendingDispenserAssignment=null;
@@ -4341,7 +4342,10 @@ async function _confirmDispenserActivation(){
   const employeeId=employeeSelect?.value||'';
   const attendantName=employeeSelect?.selectedOptions?.[0]?.textContent||'Selected attendant';
   const tank=(window.tankRecords||[]).find(x=>String(x.id)===String(d.tank_id));
-  const openingTankLiters=Number(tank?.current_liters ?? tank?.opening_stock_liters);
+  const tankDipInput=document.getElementById('dispenser-activation-tank-dip');
+  const openingTankDipRaw=String(tankDipInput?.value??'').trim();
+  const openingTankDipMm=openingTankDipRaw===''?NaN:Number(openingTankDipRaw);
+  const openingTankLiters=tankLitersFromDip(tank,openingTankDipMm);
   const selected=[];
   ids.forEach((nozzleId,i)=>{
     const box=document.getElementById('nozzle-activation-input-'+i);
@@ -4352,8 +4356,16 @@ async function _confirmDispenserActivation(){
   });
   const error=document.getElementById('dispenser-activate-error');
   const review=document.getElementById('dispenser-activation-review');
+  if(!Number.isFinite(openingTankDipMm)||openingTankDipMm<0){
+    error.textContent='Enter the tank opening dip in millimeters before assigning the dispenser.';
+    error.style.display='block'; return false;
+  }
   if(!Number.isFinite(openingTankLiters)||openingTankLiters<0){
-    error.textContent='This tank has no recorded stock balance. Record its opening stock in Tank Settings before assigning a shift.';
+    error.textContent='This tank has no usable calibration. Add tank calibration points in Tank Settings before entering the opening dip.';
+    error.style.display='block'; return false;
+  }
+  if(openingTankLiters>Number(tank?.capacity_liters||0)){
+    error.textContent='The measured tank opening stock exceeds the tank capacity. Check the dip and calibration.';
     error.style.display='block'; return false;
   }
   if(!employeeId){
@@ -4376,6 +4388,8 @@ async function _confirmDispenserActivation(){
         '<div><span class="muted" style="font-size:11px">PRODUCT</span><b style="display:block;margin-top:3px">'+h(productCode)+'</b></div>'+
         '<div><span class="muted" style="font-size:11px">ATTENDANT</span><b style="display:block;margin-top:3px">'+h(attendantName)+'</b></div>'+
         '<div><span class="muted" style="font-size:11px">TANK</span><b style="display:block;margin-top:3px">'+h(tankCode)+'</b></div>'+
+        '<div><span class="muted" style="font-size:11px">OPENING TANK DIP</span><b style="display:block;margin-top:3px">'+reading(openingTankDipMm)+' mm</b></div>'+
+        '<div><span class="muted" style="font-size:11px">OPENING TANK STOCK</span><b style="display:block;margin-top:3px">'+liters(openingTankLiters)+' L</b></div>'+
       '</div>'+
 
       '<div><span class="muted" style="font-size:11px">OPENING NOZZLE READINGS</span><div style="margin-top:4px">'+nozzleReadings+'</div></div>'+
@@ -4387,6 +4401,7 @@ async function _confirmDispenserActivation(){
     employeeId,
     attendantName,
     openingTankLiters,
+    openingTankDipMm,
     selected,
     productCode,
     tankCode
