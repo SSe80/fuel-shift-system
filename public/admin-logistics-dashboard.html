@@ -75,7 +75,7 @@ let products=[],trucks=[],tanks=[],fees=[],deliveries=[];
 function message(text,isError){const el=$('deliveryMessage');el.hidden=!text;el.textContent=text||'';el.style.borderColor=isError?'#fca5a5':'var(--line)';el.style.color=isError?'#991b1b':'var(--muted)'}
 function money(value){return 'ETB '+Number(value||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
 function liters(value){return Number(value||0).toLocaleString(undefined,{maximumFractionDigits:3})+' L'}
-async function request(url,options){const response=await fetch(url,{credentials:'same-origin',headers:{...headers,...(options&&options.headers||{})},...(options||{})});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Request failed ('+response.status+').');return data}
+async function request(url,options){const response=await fetch(url,{...(options||{}),credentials:'same-origin',headers:{...headers,...(options&&options.headers||{})}});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Request failed ('+response.status+').');return data}
 function fillSelect(id,items,placeholder,label){const select=$(id);select.innerHTML='';const first=document.createElement('option');first.value='';first.textContent=placeholder;select.append(first);items.forEach(item=>{const opt=document.createElement('option');opt.value=item.id;opt.textContent=label(item);select.append(opt)})}
 function selectedProduct(){return products.find(p=>String(p.id)===$('deliveryProduct').value)}
 function updateFeePreview(){const qty=Number($('deliveredLiters').value||0),rate=Number($('deliveryFee').value||0);$('deliveryFeePreview').textContent='Estimated fee: '+money(qty*rate)}
