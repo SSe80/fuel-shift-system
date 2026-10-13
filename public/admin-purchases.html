@@ -785,6 +785,9 @@
 .purchase-product-hex{display:inline-flex;align-items:center;padding:3px 6px;border:1px solid #e4e7ec;border-radius:6px;background:#fff;color:#667085;font-size:10px;font-weight:750;letter-spacing:.02em}
 .purchase-product-choice.selected .purchase-product-hex{border-color:#bfdbfe;color:#1d4ed8}
 .purchase-product-empty{grid-column:1/-1;padding:12px;border:1px dashed #cbd5e1;border-radius:10px}
+.purchase-compartment-conversion{margin-top:6px;font-size:12px;font-weight:750;color:#027a48}
+.purchase-compartment-conversion.warning{color:#b42318}
+.purchase-compartment-conversion:empty{display:none}
 @media(max-width:420px){.purchase-product-options{grid-template-columns:1fr}.purchase-product-choice{min-height:54px}}
 </style>
 </head><body class="admin-shell admin-purchases-page admin-control-ui" data-app-page="adminPurchases"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
@@ -1071,17 +1074,50 @@ window.uploadPurchaseDetailPdf=async function(purchase){
   const orderedQuantityInput=document.getElementById('purchase-ordered-quantity');
   const parseQuantity=value=>Number(String(value??'').replace(/,/g,'').trim()||0);
   const formatQuantity=value=>{const n=parseQuantity(value);return n>0?n.toLocaleString(undefined,{maximumFractionDigits:2}):'';};
+  function purchaseCalibrationVolume(table,mm){
+    if(!Array.isArray(table)||table.length<2||!Number.isFinite(mm))return {ok:false,message:'No valid calibration is saved for this compartment.'};
+    const points=table.map(p=>({mm:Number(p?.mm),litres:Number(p?.litres)})).filter(p=>Number.isFinite(p.mm)&&Number.isFinite(p.litres)).sort((a,b)=>a.mm-b.mm);
+    if(points.length<2)return {ok:false,message:'No valid calibration is saved for this compartment.'};
+    if(mm<points[0].mm||mm>points[points.length-1].mm)return {ok:false,message:'Dip is outside calibration range ('+points[0].mm+'–'+points[points.length-1].mm+' mm).'};
+    for(let i=0;i<points.length;i++)if(mm===points[i].mm)return {ok:true,litres:points[i].litres};
+    for(let i=1;i<points.length;i++){const lo=points[i-1],hi=points[i];if(mm>lo.mm&&mm<hi.mm)return {ok:true,litres:lo.litres+(mm-lo.mm)*(hi.litres-lo.litres)/(hi.mm-lo.mm)};}
+    return {ok:false,message:'Could not calculate liters from this dip.'};
+  }
+  function updatePurchaseCompartmentConversion(input){
+    if(!input)return;
+    if(purchaseTruckType!=='contracted'){delete input.dataset.calculatedLiters;return;}
+    const result=document.getElementById(input.id+'-conversion');
+    const truck=selectedPurchaseTruck;
+    const index=Number(input.dataset.compartmentIndex||0)-1;
+    const table=truck?.calibrations?.[index]?.calibrationTable;
+    const raw=input.value.replace(/,/g,'').trim();
+    if(!raw){input.dataset.calculatedLiters='';if(result){result.textContent='Enter dip height to calculate liters.';result.classList.remove('warning');}return;}
+    const conversion=purchaseCalibrationVolume(table,Number(raw));
+    if(conversion.ok){input.dataset.calculatedLiters=String(conversion.litres);if(result){result.textContent='Calculated volume: '+purchaseLiters(conversion.litres)+' L';result.classList.remove('warning');}}
+    else{input.dataset.calculatedLiters='';if(result){result.textContent=conversion.message;result.classList.add('warning');}}
+  }
+  function getPurchaseCompartmentLiters(input){
+    if(purchaseTruckType==='contracted'){const value=input?.dataset?.calculatedLiters;return value!==undefined&&value!==''?Number(value):NaN;}
+    return parseQuantity(input?.value);
+  }
+  function bindDipFormatting(input){
+    if(!input)return;
+    input.addEventListener('input',()=>{const digits=input.value.replace(/[^0-9]/g,'');input.value=digits?Number(digits).toLocaleString():'';updatePurchaseCompartmentConversion(input);});
+    input.addEventListener('blur',()=>{const digits=input.value.replace(/[^0-9]/g,'');input.value=digits?Number(digits).toLocaleString():'';updatePurchaseCompartmentConversion(input);});
+  }
   function renderCompartmentInputs(){
     const container=document.getElementById('purchase-compartment-liters');
     const count=Number(document.getElementById('purchase-truck-compartments')?.value||0);
     if(!container)return;
     container.innerHTML='';
+    const usesCalibration=purchaseTruckType==='contracted';
     for(let i=1;i<=count;i++){
       const field=document.createElement('div');
       field.className='purchase-field';
-      field.innerHTML='<label for="purchase-compartment-'+i+'">Compartment '+i+'</label><div class="purchase-input-unit"><input id="purchase-compartment-'+i+'" class="purchase-compartment-liter" type="text" inputmode="decimal" autocomplete="off" placeholder="0" required><span>Liters</span></div>';
+      field.innerHTML='<label for="purchase-compartment-'+i+'">Compartment '+i+(usesCalibration?' dip height':' quantity')+'</label><div class="purchase-input-unit"><input id="purchase-compartment-'+i+'" class="purchase-compartment-liter" data-compartment-index="'+i+'" type="text" inputmode="'+(usesCalibration?'numeric':'decimal')+'" autocomplete="off" placeholder="0" required><span>'+(usesCalibration?'mm':'Liters')+'</span></div>'+(usesCalibration?'<div id="purchase-compartment-'+i+'-conversion" class="purchase-compartment-conversion" aria-live="polite">Enter dip height to calculate liters.</div>':'');
       container.appendChild(field);
-      bindQuantityFormatting(field.querySelector('input'));
+      const input=field.querySelector('input');
+      if(usesCalibration)bindDipFormatting(input);else bindQuantityFormatting(input);
     }
   }
   const bindQuantityFormatting=input=>{if(!input)return;input.addEventListener('input',()=>{const raw=input.value.replace(/[^0-9.]/g,'');const parts=raw.split('.');const normalized=parts.shift()+(parts.length?'.'+parts.join(''):''),digits=normalized.split('.'),integer=digits[0]||'',fraction=digits[1]!==undefined?digits[1].slice(0,2):'';input.value=integer?Number(integer).toLocaleString()+ (digits.length>1?'.'+fraction:''):'';});input.addEventListener('blur',()=>{if(input.value)input.value=formatQuantity(input.value);});};
@@ -1226,7 +1262,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     if(step===3){
       const compartmentCount=Number(document.getElementById('purchase-truck-compartments')?.value||0);
       const compartmentInputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
-      if(!compartmentCount||compartmentInputs.length!==compartmentCount||compartmentInputs.some(input=>!Number.isFinite(parseQuantity(input.value))||parseQuantity(input.value)<=0)){setStatus('Enter a valid liter quantity for every compartment.',true);return;}
+      if(!compartmentCount||compartmentInputs.length!==compartmentCount||compartmentInputs.some(input=>!Number.isFinite(getPurchaseCompartmentLiters(input))||getPurchaseCompartmentLiters(input)<=0)){setStatus(purchaseTruckType==='contracted'?'Enter a valid dip within each compartment calibration range.':'Enter a valid liter quantity for every compartment.',true);return;}
       renderPurchaseReview();
     }
     renderPurchaseStep(step+1);
@@ -1245,12 +1281,12 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     const truckTypeLabel=truckType==='contracted'?'Contracted':truckType==='non_contracted'?'Non-contracted':'—';
     const registeredTruckLabel=selectedPurchaseTruck?(selectedPurchaseTruck.plate||selectedPurchaseTruck.truck_code||selectedPurchaseTruck.registration_number||'Registered truck'):'—';
     const inputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
-    const delivered=inputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
+    const delivered=inputs.reduce((sum,input)=>sum+getPurchaseCompartmentLiters(input),0);
     const difference=delivered-ordered;
     const abs=Math.abs(difference);
     const matches= Math.abs(difference) < 0.000001;
     const diffText=matches?'Matches ordered quantity':difference>0?'Over delivered by '+purchaseLiters(abs)+' L':'Short delivered by '+purchaseLiters(abs)+' L';
-    const rows=inputs.map((input,i)=>'<div class="purchase-review-row"><span>Compartment '+(i+1)+'</span><strong>'+purchaseLiters(parseQuantity(input.value))+' L</strong></div>').join('');
+    const rows=inputs.map((input,i)=>'<div class="purchase-review-row"><span>Compartment '+(i+1)+(purchaseTruckType==='contracted'?' · Dip '+purchaseH(input.value)+' mm':'')+'</span><strong>'+purchaseLiters(getPurchaseCompartmentLiters(input))+' L</strong></div>').join('');
     const selectedProduct=purchaseProducts.find(p=>String(p.name||'').toLowerCase()===String(productValue||'').toLowerCase()); const productCode=selectedProduct?.code_name||product||'—';
     review.innerHTML='<div class="purchase-review-section"><h4>1. Order</h4><div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(productCode)+'</strong></div><div class="purchase-review-row"><span>Invoice number</span><strong>'+purchaseH(invoice)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div></div>'+
       '<div class="purchase-review-section"><h4>2. Truck</h4><div class="purchase-review-row"><span>Truck type</span><strong>'+purchaseH(truckTypeLabel)+'</strong></div>'+(truckType==='contracted'?'<div class="purchase-review-row"><span>Registered truck</span><strong>'+purchaseH(registeredTruckLabel)+'</strong></div>':'')+'<div class="purchase-review-row"><span>Driver name</span><strong>'+purchaseH(driver)+'</strong></div><div class="purchase-review-row"><span>Driver phone</span><strong>'+purchaseH(phone)+'</strong></div><div class="purchase-review-row"><span>Plate number</span><strong>'+purchaseH(plate)+'</strong></div><div class="purchase-review-row"><span>Compartments</span><strong>'+count+'</strong></div></div>'+
@@ -1261,7 +1297,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
   window.updatePurchaseMismatchAcknowledgement=function(){
     const ordered=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
     const inputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
-    const delivered=inputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
+    const delivered=inputs.reduce((sum,input)=>sum+getPurchaseCompartmentLiters(input),0);
     const matches=Math.abs(delivered-ordered)<0.000001;
     const acknowledged=!!document.getElementById('purchase-quantity-mismatch-ack')?.checked;
     const confirmButton=document.querySelector('#purchase-modal .purchase-wizard-actions button[onclick="performCreatePurchase()"]');
@@ -1854,7 +1890,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     const product=productSelect?.value||'';
     const invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
     const compartmentInputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
-    const q=compartmentInputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
+    const q=compartmentInputs.reduce((sum,input)=>sum+getPurchaseCompartmentLiters(input),0);
     const orderedQuantity=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
     const driverName=document.getElementById('purchase-driver-name')?.value.trim()||'';
     const driverPhone=document.getElementById('purchase-driver-phone')?.value.trim()||'';
@@ -1866,7 +1902,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     if(!product||!invoice||!Number.isFinite(orderedQuantity)||orderedQuantity<=0||!compartments||compartmentInputs.length!==compartments||!Number.isFinite(q)||q<=0){setStatus('Purchase details are incomplete. Enter the product, invoice, quantity, and truck details.',true);return;}
     try{
       setStatus('Confirming purchase…',false);
-      await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product,quantity_liters:q,invoice_number:invoice,ordered_quantity_liters:orderedQuantity,driver_name:driverName,driver_phone:driverPhone,plate_number:plateNumber,truck_compartments:compartments,compartment_liters:compartmentInputs.map(input=>parseQuantity(input.value))})});
+      await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product,quantity_liters:q,invoice_number:invoice,ordered_quantity_liters:orderedQuantity,driver_name:driverName,driver_phone:driverPhone,plate_number:plateNumber,truck_compartments:compartments,compartment_liters:compartmentInputs.map(input=>getPurchaseCompartmentLiters(input)),compartment_dip_mm:purchaseTruckType==='contracted'?compartmentInputs.map(input=>parseQuantity(input.value)):null,registered_truck_id:purchaseTruckType==='contracted'?(selectedPurchaseTruck?.databaseId||selectedPurchaseTruck?.id||null):null})});
       const summary=
         '<div class="purchase-confirmation-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div>'+
         '<div class="purchase-confirmation-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>'+
