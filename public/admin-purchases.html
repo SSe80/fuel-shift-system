@@ -1143,8 +1143,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       const active=String(selected).toLowerCase()===name.toLowerCase();
       return '<button type="button" class="purchase-product-choice'+(active?' selected':'')+'" data-purchase-product="'+purchaseH(name)+'" aria-pressed="'+String(active)+'">'+
         '<span class="purchase-product-swatch" style="--purchase-product-color:'+purchaseH(color)+'"></span>'+
-        '<span class="purchase-product-choice-copy"><strong>'+purchaseH(name)+'</strong>'+(code&&code.toLowerCase()!==name.toLowerCase()?'<span class="purchase-product-code">'+purchaseH(code)+'</span>':'')+
-        '<span class="purchase-product-hex">'+purchaseH(color.toUpperCase())+'</span></span></button>';
+        '<span class="purchase-product-choice-copy"><strong>'+purchaseH(name)+'</strong></span></button>';
     }).join('');
     picker.querySelectorAll('[data-purchase-product]').forEach(button=>button.addEventListener('click',()=>{
       if(productSelect)productSelect.value=button.dataset.purchaseProduct||'';
