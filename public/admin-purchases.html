@@ -2136,6 +2136,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       const summary=
         '<div class="purchase-confirmation-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div>'+
         '<div class="purchase-confirmation-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>'+
+        '<div class="purchase-confirmation-row"><span>Truck / trailer plate</span><strong>'+purchaseH(plateNumber||'—')+'</strong></div>'+
         '<div class="purchase-confirmation-row"><span>Ordered quantity</span><strong>'+purchaseLiters(orderedQuantity)+' L</strong></div>'+
         '<div class="purchase-confirmation-row"><span>Delivered quantity</span><strong>'+purchaseLiters(q)+' L</strong></div>';
       document.getElementById('purchase-ordered-quantity').value='';
