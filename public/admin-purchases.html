@@ -961,6 +961,21 @@
 }
 .purchase-compartment-card .purchase-compartment-conversion:empty{display:none!important}
 </style>
+
+<style>
+/* Non-contracted truck compartment count selector */
+.purchase-compartment-selector-field{gap:10px!important}
+.purchase-compartment-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%}
+.purchase-compartment-option{display:flex;min-width:0;min-height:76px;padding:12px 6px!important;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1px solid #d0d5dd!important;border-radius:13px!important;background:#fff!important;color:#344054!important;box-shadow:0 1px 2px rgba(16,24,40,.04);cursor:pointer;transition:border-color .16s ease,background .16s ease,box-shadow .16s ease,transform .16s ease}
+.purchase-compartment-option strong{font-size:23px!important;line-height:1.05;font-weight:850!important;color:#101828!important}
+.purchase-compartment-option span{font-size:11px!important;line-height:1.25;font-weight:650!important;color:#667085!important;text-align:center}
+.purchase-compartment-option:hover{border-color:#84adff!important;background:#f8fbff!important}
+.purchase-compartment-option.selected,.purchase-compartment-option[aria-pressed="true"]{border:1.5px solid #2563eb!important;background:#eff6ff!important;box-shadow:0 0 0 3px rgba(37,99,235,.09)}
+.purchase-compartment-option.selected strong,.purchase-compartment-option[aria-pressed="true"] strong{color:#1d4ed8!important}
+.purchase-compartment-option.selected span,.purchase-compartment-option[aria-pressed="true"] span{color:#1d4ed8!important}
+.purchase-compartment-option:focus-visible{outline:3px solid rgba(59,130,246,.3);outline-offset:2px}
+@media(max-width:420px){.purchase-compartment-options{gap:7px}.purchase-compartment-option{min-height:69px;padding:10px 3px!important;border-radius:11px!important}.purchase-compartment-option strong{font-size:21px!important}.purchase-compartment-option span{font-size:10px!important}}
+</style>
 </head><body class="admin-shell admin-purchases-page admin-control-ui" data-app-page="adminPurchases"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
   <nav class="admin-sidebar-nav">
@@ -995,7 +1010,7 @@
         <div class="purchase-field"><label for="purchase-driver-name">Driver name</label><input id="purchase-driver-name" type="text" placeholder="Driver name" autocomplete="name" required></div>
         <div class="purchase-field"><label for="purchase-driver-phone">Driver phone number</label><input id="purchase-driver-phone" type="tel" inputmode="tel" placeholder="Driver phone number" autocomplete="tel" required></div>
         <div class="purchase-field"><label for="purchase-plate-number">Plate number</label><input id="purchase-plate-number" type="text" placeholder="Plate number" autocomplete="off" required></div>
-        <div class="purchase-field"><label for="purchase-truck-compartments">Truck compartments</label><select id="purchase-truck-compartments" required><option value="">Select compartments</option><option value="2">2 compartments</option><option value="3">3 compartments</option><option value="4">4 compartments</option><option value="5">5 compartments</option></select></div>
+        <div class="purchase-field purchase-compartment-selector-field"><label>Truck compartments</label><div id="purchase-compartment-options" class="purchase-compartment-options" role="group" aria-label="Choose number of truck compartments"><button type="button" class="purchase-compartment-option" data-compartment-count="2" aria-pressed="false"><strong>2</strong><span>Compartments</span></button><button type="button" class="purchase-compartment-option" data-compartment-count="3" aria-pressed="false"><strong>3</strong><span>Compartments</span></button><button type="button" class="purchase-compartment-option" data-compartment-count="4" aria-pressed="false"><strong>4</strong><span>Compartments</span></button></div><select id="purchase-truck-compartments" aria-label="Truck compartments" tabindex="-1" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" aria-hidden="true"><option value="">Select compartments</option><option value="2">2 compartments</option><option value="3">3 compartments</option><option value="4">4 compartments</option></select></div>
       </div>
       <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(2)">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(2)">Continue</button></div>
     </section>
@@ -1293,7 +1308,24 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     }
   }
   const bindQuantityFormatting=input=>{if(!input)return;input.addEventListener('input',()=>{const raw=input.value.replace(/[^0-9.]/g,'');const parts=raw.split('.');const normalized=parts.shift()+(parts.length?'.'+parts.join(''):''),digits=normalized.split('.'),integer=digits[0]||'',fraction=digits[1]!==undefined?digits[1].slice(0,2):'';input.value=integer?Number(integer).toLocaleString()+ (digits.length>1?'.'+fraction:''):'';});input.addEventListener('blur',()=>{if(input.value)input.value=formatQuantity(input.value);});};
-  bindQuantityFormatting(orderedQuantityInput); document.getElementById('purchase-truck-compartments')?.addEventListener('change',renderCompartmentInputs);
+  const compartmentCountSelect=document.getElementById('purchase-truck-compartments');
+  function syncCompartmentOptionStyles(){
+    const selected=String(compartmentCountSelect?.value||'');
+    document.querySelectorAll('[data-compartment-count]').forEach(button=>{
+      const active=button.dataset.compartmentCount===selected;
+      button.classList.toggle('selected',active);
+      button.setAttribute('aria-pressed',String(active));
+    });
+  }
+  document.querySelectorAll('[data-compartment-count]').forEach(button=>button.addEventListener('click',()=>{
+    if(!compartmentCountSelect||compartmentCountSelect.disabled)return;
+    compartmentCountSelect.value=button.dataset.compartmentCount;
+    compartmentCountSelect.dispatchEvent(new Event('change',{bubbles:true}));
+    syncCompartmentOptionStyles();
+  }));
+  bindQuantityFormatting(orderedQuantityInput);
+  compartmentCountSelect?.addEventListener('change',()=>{renderCompartmentInputs();syncCompartmentOptionStyles();});
+
   function setTruckMode(mode){
     purchaseTruckType=mode||'';
     document.querySelectorAll('[data-truck-type]').forEach(button=>{const active=button.dataset.truckType===purchaseTruckType;button.classList.toggle('selected',active);button.setAttribute('aria-pressed',String(active));});
