@@ -174,8 +174,42 @@ function renderTrucks(){
   row.append(main,side,details);list.append(row);
  })
 }
-function toggleTruckActive(id){const trucks=getTrucks();const index=trucks.findIndex(item=>item.id===id);if(index<0)return;trucks[index].isActive=trucks[index].isActive===false;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));renderTrucks();const row=$('truckList').querySelector('[data-truck-id="'+id+'"]');if(row){row.classList.add('expanded');row.querySelector('.truck-row-main').setAttribute('aria-expanded','true')}}catch(e){alert('Could not update this truck in this browser storage.')}}
-function removeTruck(id){const trucks=getTrucks();const truck=trucks.find(item=>item.id===id);if(!truck)return;if(!confirm('Remove truck '+(truck.plate||'record')+'? This cannot be undone.'))return;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks.filter(item=>item.id!==id)));renderTrucks()}catch(e){alert('Could not remove this truck in this browser storage.')}}
+async function toggleTruckActive(id){
+ const trucks=getTrucks(),index=trucks.findIndex(item=>item.id===id);if(index<0)return;
+ const updated={...trucks[index],isActive:trucks[index].isActive===false,updatedAt:new Date().toISOString()};
+ try{
+  const response=await fetch('/api/logistics/trucks',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify(updated)});
+  const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Database save failed.');
+  trucks[index]={...updated,...result};localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));renderTrucks();
+  const row=$('truckList').querySelector('[data-truck-id="'+id+'"]');if(row){row.classList.add('expanded');row.querySelector('.truck-row-main').setAttribute('aria-expanded','true')}
+ }catch(error){alert('Could not update truck in the database. No changes were made. '+(error.message||''))}
+}
+async function removeTruck(id){
+ const trucks=getTrucks(),truck=trucks.find(item=>item.id===id);if(!truck)return;
+ if(!confirm('Remove truck '+(truck.plate||'record')+'? This cannot be undone.'))return;
+ try{
+  const response=await fetch('/api/logistics/trucks/'+encodeURIComponent(id),{method:'DELETE',credentials:'same-origin',headers:{Accept:'application/json','X-Fuel-Role':'admin'}});
+  const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Database delete failed.');
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks.filter(item=>item.id!==id)));renderTrucks();
+ }catch(error){alert('Could not remove this truck from the database. No changes were made. '+(error.message||''))}
+}
+async function syncTrucksWithDatabase(){
+ try{
+  const response=await fetch('/api/logistics/trucks',{credentials:'same-origin',headers:{Accept:'application/json','X-Fuel-Role':'admin'}});
+  const data=await response.json();if(!response.ok||!Array.isArray(data))throw new Error(data.error||'Unable to load trucks from database.');
+  const local=getTrucks(),server=data.slice(),knownIds=new Set(server.map(x=>String(x.id))),knownPlates=new Set(server.map(x=>String(x.plate||'').toUpperCase()));
+  for(const old of local){
+   if(knownIds.has(String(old.id))||knownPlates.has(String(old.plate||'').toUpperCase()))continue;
+   const save=await fetch('/api/logistics/trucks',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify(old)});
+   const result=await save.json().catch(()=>({}));
+   if(!save.ok)throw new Error(result.error||'A saved local truck could not be migrated.');
+   server.push({...old,...result});knownIds.add(String(result.id||old.id));knownPlates.add(String(result.plate||old.plate||'').toUpperCase());
+  }
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(server));renderTrucks();
+ }catch(error){
+  console.warn('Logistics database sync failed; keeping local truck backup.',error);
+ }
+}
 
 function showTruckSuccess(isEdit,plate){
  const successOverlay=$('truckSuccessOverlay');
@@ -213,6 +247,7 @@ let touchStartX=0,touchStartY=0;
 $('wizardViewport').addEventListener('touchstart',e=>{const t=e.touches[0];touchStartX=t.clientX;touchStartY=t.clientY},{passive:true});
 $('wizardViewport').addEventListener('touchend',e=>{const t=e.changedTouches[0],dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;if(Math.abs(dx)>85&&Math.abs(dx)>Math.abs(dy)*1.25){if(dx<0&&step<2){if(validateStep())showStep(step+1)}else if(dx>0&&step>0)showStep(step-1)}},{passive:true});
 renderTrucks();
+syncTrucksWithDatabase();
 // Delivery fees follow the product catalogue managed in main Admin Settings.
 const FEE_STORAGE_KEY='adminLogisticsProductFeesV1';
 let feeRates=[],stationProducts=[],feeRatesLoaded=false;
