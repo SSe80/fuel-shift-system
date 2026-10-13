@@ -37,7 +37,16 @@
         throw new Error('This account is not valid for the selected login');
       }
       try { window.sessionStorage.setItem('fuelRole', role); } catch (_) {}
-      window.location.replace(successUrl || (role === 'admin' ? 'admin-dashboard.html' : 'attendant-dashboard.html'));
+      var destination = successUrl || (role === 'admin' ? 'admin-dashboard.html' : 'attendant-dashboard.html');
+      // The logistics guard may return users to the page they originally requested.
+      // Only accept a small allowlist of same-origin logistics pages.
+      if (window.location.pathname.split('/').pop() === 'admin-logistics.html') {
+        var requested = '';
+        try { requested = new URLSearchParams(window.location.search).get('next') || ''; } catch (_) {}
+        var allowed = ['admin-logistics-dashboard.html', 'admin-logistics-settings.html', 'admin-logistics-truck.html'];
+        if (allowed.indexOf(requested) !== -1) destination = requested;
+      }
+      window.location.replace(destination);
     })
     .catch(function (error) {
       showMessage(error && error.message ? error.message : 'Login failed');
