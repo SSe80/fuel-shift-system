@@ -899,45 +899,27 @@
   letter-spacing:.02em;
 }
 .purchase-compartment-card .purchase-compartment-conversion{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  min-height:52px;
+  display:block;
+  min-height:0;
   box-sizing:border-box;
   margin:0!important;
-  padding:11px 13px!important;
-  border:1px solid #b7e4c7!important;
-  border-radius:12px!important;
-  background:linear-gradient(110deg,#ecfdf3,#f5fdf8)!important;
-  color:#067647!important;
-  font-size:14px!important;
+  padding:2px 1px 0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#101828!important;
+  font-size:13px!important;
   line-height:1.4;
   font-weight:750!important;
   font-variant-numeric:tabular-nums;
   overflow-wrap:anywhere;
 }
-.purchase-compartment-card .purchase-compartment-conversion:before{
-  content:"L";
-  display:grid;
-  place-items:center;
-  flex:0 0 29px;
-  width:29px;
-  height:29px;
-  border-radius:9px;
-  background:#d1fadf;
-  color:#027a48;
-  font-size:13px;
-  font-weight:900;
-}
 .purchase-compartment-card .purchase-compartment-conversion.warning{
-  border-color:#fecdca!important;
-  background:linear-gradient(110deg,#fef3f2,#fff8f7)!important;
+  padding:7px 9px!important;
+  border:1px solid #fecdca!important;
+  border-radius:8px!important;
+  background:#fef3f2!important;
   color:#b42318!important;
-}
-.purchase-compartment-card .purchase-compartment-conversion.warning:before{
-  content:"!";
-  background:#fee4e2;
-  color:#b42318;
 }
 .purchase-compartment-card .purchase-compartment-conversion:empty{display:none}
 .purchase-compartment-manual{background:#fff!important}
@@ -1254,7 +1236,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     const index=Number(input.dataset.compartmentIndex||0)-1;
     const table=truck?.calibrations?.[index]?.calibrationTable;
     const raw=input.value.replace(/,/g,'').trim();
-    if(!raw){input.dataset.calculatedLiters='';if(result){result.textContent='Enter dip height to calculate liters.';result.classList.remove('warning');}return;}
+    if(!raw){input.dataset.calculatedLiters='';if(result){result.textContent='';result.classList.remove('warning');}return;}
     const conversion=purchaseCalibrationVolume(table,Number(raw));
     if(conversion.ok){input.dataset.calculatedLiters=String(conversion.litres);if(result){result.textContent='Calculated volume: '+purchaseLiters(conversion.litres)+' L';result.classList.remove('warning');}}
     else{input.dataset.calculatedLiters='';if(result){result.textContent=conversion.message;result.classList.add('warning');}}
@@ -1278,7 +1260,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       const section=document.createElement('section');
       section.className=usesCalibration?'purchase-compartment-card':'purchase-compartment-card purchase-compartment-manual';
       section.setAttribute('aria-label','Compartment '+i);
-      section.innerHTML='<div class="purchase-compartment-title">COMPARTMENT '+i+'</div><div class="purchase-field"><label for="purchase-compartment-'+i+'">'+(usesCalibration?'Dip height':'Quantity')+'</label><div class="purchase-input-unit"><input id="purchase-compartment-'+i+'" class="purchase-compartment-liter" data-compartment-index="'+i+'" type="text" inputmode="'+(usesCalibration?'numeric':'decimal')+'" autocomplete="off" placeholder="0" required><span>'+(usesCalibration?'mm':'Liters')+'</span></div></div>'+(usesCalibration?'<div id="purchase-compartment-'+i+'-conversion" class="purchase-compartment-conversion" aria-live="polite">Volume conversion will appear here.</div>':'');
+      section.innerHTML='<div class="purchase-compartment-title">COMPARTMENT '+i+'</div><div class="purchase-field"><label for="purchase-compartment-'+i+'">'+(usesCalibration?'Dip height':'Quantity')+'</label><div class="purchase-input-unit"><input id="purchase-compartment-'+i+'" class="purchase-compartment-liter" data-compartment-index="'+i+'" type="text" inputmode="'+(usesCalibration?'numeric':'decimal')+'" autocomplete="off" placeholder="0" required><span>'+(usesCalibration?'mm':'Liters')+'</span></div></div>'+(usesCalibration?'<div id="purchase-compartment-'+i+'-conversion" class="purchase-compartment-conversion" aria-live="polite"></div>':'');
       container.appendChild(section);
       const input=section.querySelector('input');
       if(usesCalibration)bindDipFormatting(input);else bindQuantityFormatting(input);
