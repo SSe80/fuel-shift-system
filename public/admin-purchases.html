@@ -7,6 +7,9 @@
   .admin-purchases-page .purchase-section:first-of-type{padding:15px 16px 17px}
 }
 </style><style>
+/* Keep Add Purchase wizard near the top of the visible screen. Scoped to this modal only. */
+#purchase-modal.modal.open{align-items:flex-start!important;padding-top:max(16px,env(safe-area-inset-top))!important;padding-bottom:16px!important;overflow-y:auto!important}
+#purchase-modal .purchase-wizard-card{margin-top:0!important}
 .purchase-wizard-card{width:min(560px,100%);max-height:90vh}
 .purchase-step-indicator{display:flex;align-items:center;gap:7px;margin:4px 0 20px}
 .purchase-step-indicator span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#edf0f4;color:#667085;font-size:12px;font-weight:700}
