@@ -1355,6 +1355,175 @@ def reorder_settings():
         if us>=400:return jsonify(ur),us
     return jsonify({"ok":True,"key":key,"ids":ordered,"item_orders":item_orders}),200
 
+def _logistics_admin_auth():
+    return require_admin()
+
+def _logistics_truck_to_ui(row, compartments):
+    calibrations=[]
+    for item in sorted(compartments, key=lambda x: int(x.get("compartment_number") or 0)):
+        details=item.get("calibration_points")
+        if not isinstance(details,dict):
+            details={}
+        points=details.get("calibrationTable", details.get("points", []))
+        if not isinstance(points,list):
+            points=[]
+        calibrations.append({
+            "compartment":item.get("compartment_number"),
+            "fileName":details.get("fileName"),
+            "fileType":details.get("fileType") or "text/csv",
+            "fileSize":details.get("fileSize"),
+            "verifiedMm":details.get("verifiedMm"),
+            "verifiedLitres":details.get("verifiedLitres"),
+            "calibrationTable":points
+        })
+    return {
+        "id":row.get("legacy_local_id") or row.get("id"),
+        "databaseId":row.get("id"),
+        "driverName":row.get("driver_name") or "",
+        "driverPhone":row.get("driver_phone") or "",
+        "plate":row.get("truck_code") or "",
+        "trailerPlate":row.get("trailer_plate") or "",
+        "compartmentCount":row.get("compartment_count") or len(compartments),
+        "calibrations":calibrations,
+        "createdAt":row.get("created_at"),
+        "updatedAt":row.get("updated_at"),
+        "isActive":row.get("active", True)
+    }
+
+@app.get("/api/logistics/trucks")
+def logistics_list_trucks():
+    auth=_logistics_admin_auth()
+    if auth:return auth
+    status,rows=sb("logistics_trucks",params={"select":"*","order":"created_at.asc","limit":"1000"})
+    if status!=200:return jsonify({"error":"Unable to load logistics trucks","details":rows}),status
+    cs,compartments=sb("logistics_truck_compartments",params={"select":"*","order":"compartment_number.asc","limit":"5000"})
+    if cs!=200:return jsonify({"error":"Unable to load truck compartments","details":compartments}),cs
+    grouped={}
+    for item in compartments or []:
+        grouped.setdefault(str(item.get("truck_id")),[]).append(item)
+    return jsonify([_logistics_truck_to_ui(row,grouped.get(str(row.get("id")),[])) for row in rows or []]),200
+
+@app.post("/api/logistics/trucks")
+def logistics_save_truck():
+    auth=_logistics_admin_auth()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    local_id=str(data.get("id") or "").strip()
+    plate=str(data.get("plate") or "").strip().upper()
+    driver=str(data.get("driverName") or "").strip()
+    phone=str(data.get("driverPhone") or "").strip()
+    trailer=str(data.get("trailerPlate") or "").strip().upper()
+    count=data.get("compartmentCount",0)
+    calibrations=data.get("calibrations") if isinstance(data.get("calibrations"),list) else []
+    if not plate or not driver or not phone:
+        return jsonify({"error":"Truck plate, driver name and phone are required"}),400
+    try:
+        count=int(count)
+        if count<1 or count>100: raise ValueError()
+    except (TypeError,ValueError):
+        return jsonify({"error":"Invalid compartment count"}),400
+    if len(calibrations)>count:
+        return jsonify({"error":"Calibration count exceeds compartment count"}),400
+    existing=None
+    if local_id:
+        es,found=sb("logistics_trucks",params={"legacy_local_id":"eq."+local_id,"select":"id","limit":"1"})
+        if es!=200:return jsonify({"error":"Unable to check existing truck","details":found}),es
+        if found:existing=found[0]
+    if existing is None:
+        es,found=sb("logistics_trucks",params={"truck_code":"eq."+plate,"select":"id,legacy_local_id","limit":"1"})
+        if es!=200:return jsonify({"error":"Unable to check truck plate","details":found}),es
+        if found:existing=found[0]
+    now=datetime.now(timezone.utc).isoformat()
+    body={"truck_code":plate,"registration_number":plate,"trailer_plate":trailer or None,
+          "driver_name":driver,"driver_phone":phone,"compartment_count":count,
+          "active":data.get("isActive") is not False,"updated_at":now}
+    if local_id:body["legacy_local_id"]=local_id
+    if existing:
+        ts,result=sb("logistics_trucks",method="PATCH",params={"id":"eq."+str(existing["id"])},body=body,prefer="return=representation")
+    else:
+        body["created_at"]=now
+        ts,result=sb("logistics_trucks",method="POST",body=body,prefer="return=representation")
+    if ts>=400:return jsonify({"error":"Unable to save truck","details":result}),ts
+    saved=(result or [None])[0] if isinstance(result,list) else result
+    if not isinstance(saved,dict) or not saved.get("id"):
+        rs,found=sb("logistics_trucks",params={"truck_code":"eq."+plate,"select":"*","limit":"1"})
+        if rs!=200 or not found:return jsonify({"error":"Truck saved but could not be reloaded"}),500
+        saved=found[0]
+    truck_id=str(saved["id"])
+    ds,deleted=sb("logistics_truck_compartments",method="DELETE",params={"truck_id":"eq."+truck_id},prefer="return=representation")
+    if ds>=400:return jsonify({"error":"Truck saved, but old compartment data could not be replaced","details":deleted}),ds
+    rows=[]
+    for index,cal in enumerate(calibrations):
+        if not isinstance(cal,dict):continue
+        points=cal.get("calibrationTable")
+        if not isinstance(points,list):points=[]
+        details={"calibrationTable":points,"fileName":cal.get("fileName"),"fileType":cal.get("fileType"),
+                 "fileSize":cal.get("fileSize"),"verifiedMm":cal.get("verifiedMm"),"verifiedLitres":cal.get("verifiedLitres")}
+        rows.append({"truck_id":truck_id,"compartment_number":int(cal.get("compartment") or index+1),
+                     "capacity_liters":max(1,float(data.get("compartmentCapacities",{}).get(str(index+1),1))) if isinstance(data.get("compartmentCapacities"),dict) else 1,
+                     "calibration_points":details,"calibration_verified":cal.get("verifiedMm") is not None,
+                     "calibration_verified_at":now if cal.get("verifiedMm") is not None else None,
+                     "calibration_verified_by":str(session.get("employee_id") or "") if cal.get("verifiedMm") is not None else None})
+    if rows:
+        cs,created=sb("logistics_truck_compartments",method="POST",body=rows,prefer="return=representation")
+        if cs>=400:return jsonify({"error":"Truck saved, but compartment calibration could not be saved","details":created}),cs
+    return jsonify(_logistics_truck_to_ui(saved,rows)),200
+
+@app.delete("/api/logistics/trucks/<truck_key>")
+def logistics_delete_truck(truck_key):
+    auth=_logistics_admin_auth()
+    if auth:return auth
+    if not truck_key:return jsonify({"error":"Truck identifier is required"}),400
+    if len(truck_key)>=32 and "-" in truck_key:
+        status,rows=sb("logistics_trucks",params={"id":"eq."+truck_key,"select":"id","limit":"1"})
+        if status!=200:return jsonify({"error":"Unable to find truck","details":rows}),status
+        found=rows
+    else:
+        status,found=sb("logistics_trucks",params={"legacy_local_id":"eq."+truck_key,"select":"id","limit":"1"})
+        if status!=200:return jsonify({"error":"Unable to find truck","details":found}),status
+    if not found:return jsonify({"ok":True,"not_found":True}),200
+    status,result=sb("logistics_trucks",method="DELETE",params={"id":"eq."+str(found[0]["id"])},prefer="return=representation")
+    if status>=400:return jsonify({"error":"Unable to remove truck","details":result}),status
+    return jsonify({"ok":True}),200
+
+@app.get("/api/logistics/product-fees")
+def logistics_get_product_fees():
+    auth=_logistics_admin_auth()
+    if auth:return auth
+    status,rows=sb("logistics_product_fees",params={"select":"id,product_id,product_name,fee_per_liter,currency,active,updated_at","order":"product_name.asc","limit":"1000"})
+    return (jsonify(rows),status)
+
+@app.post("/api/logistics/product-fees")
+def logistics_save_product_fees():
+    auth=_logistics_admin_auth()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    items=data.get("items")
+    if not isinstance(items,list) or len(items)>500:
+        return jsonify({"error":"Provide a valid items array (maximum 500 products)"}),400
+    now=datetime.now(timezone.utc).isoformat()
+    for item in items:
+        if not isinstance(item,dict):continue
+        product_name=str(item.get("product_name") or "").strip()
+        product_id=str(item.get("product_id") or "").strip()
+        try:rate=float(item.get("fee_per_liter",0))
+        except (TypeError,ValueError):return jsonify({"error":"Each fee must be a valid number"}),400
+        if not product_name or not math.isfinite(rate) or rate<0:return jsonify({"error":"Product names and non-negative fee rates are required"}),400
+        existing=None
+        if product_id:
+            es,found=sb("logistics_product_fees",params={"product_id":"eq."+product_id,"select":"id","limit":"1"})
+            if es!=200:return jsonify({"error":"Unable to check saved fee","details":found}),es
+            if found:existing=found[0]
+        if existing is None:
+            es,found=sb("logistics_product_fees",params={"product_name":"eq."+product_name,"select":"id","limit":"1"})
+            if es!=200:return jsonify({"error":"Unable to check saved fee","details":found}),es
+            if found:existing=found[0]
+        body={"product_id":product_id or None,"product_name":product_name,"fee_per_liter":rate,"currency":"ETB","active":True,"updated_at":now}
+        if existing:status,result=sb("logistics_product_fees",method="PATCH",params={"id":"eq."+str(existing["id"])},body=body,prefer="return=representation")
+        else:status,result=sb("logistics_product_fees",method="POST",body=body,prefer="return=representation")
+        if status>=400:return jsonify({"error":"Unable to save product fee","details":result}),status
+    return jsonify({"ok":True,"saved":len(items)}),200
+
 @app.get("/api/products")
 def products():
     auth=require_login()
