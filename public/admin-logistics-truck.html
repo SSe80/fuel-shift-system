@@ -19,7 +19,7 @@
 .logistics-nav{display:grid;gap:5px;padding-top:17px}
 .logistics-nav a{display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;text-decoration:none;color:#475467;font-size:13px}
 .logistics-nav a:hover,.logistics-nav a.active{background:#eff6ff;color:#1d4ed8}
-.logistics-nav a span{width:22px;text-align:center}.logistics-logout{width:100%;margin-top:18px;border:1px solid #fecaca;border-radius:9px;padding:10px 14px;background:#fff;color:#b91c1c;font-size:13px;font-weight:750;cursor:pointer}.logistics-logout:disabled{opacity:.6}
+.logistics-nav a span{width:22px;text-align:center}.logistics-logout{width:100%;margin-top:auto;border:1px solid #fecaca;border-radius:9px;padding:10px 14px;background:#fff;color:#b91c1c;font-size:13px;font-weight:750;cursor:pointer}.logistics-logout:disabled{opacity:.6}.logistics-sidebar{display:flex;flex-direction:column}.logistics-nav{width:100%}
 .logistics-main{min-width:0;flex:1}
 .logistics-main .wrap{max-width:900px;margin:0 auto;padding:36px 28px}
 .truck-panel{background:#fff;border:1px solid var(--lg-line);border-radius:16px;padding:28px;box-shadow:0 5px 20px #0f172a08}
@@ -41,7 +41,7 @@ p{font-size:14px;line-height:1.7;color:var(--lg-muted);max-width:650px}
 <a href="admin-logistics-dashboard.html"><span>⌂</span><b>Dashboard</b></a>
 <a href="admin-logistics-settings.html"><span>⚙</span><b>Settings</b></a>
 </nav>
-<button class="logistics-logout" type="button" data-logistics-logout>Log out</button>
+<button class="logistics-logout sidebar-logout" type="button" data-logistics-logout><span aria-hidden="true">↪</span> Log out</button>
 </aside>
 <div class="logistics-main">
 <main class="wrap">
