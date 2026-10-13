@@ -2100,6 +2100,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       const summary=
         '<div class="purchase-confirmation-row"><span>Product</span><strong>'+purchaseH(p?.product||'—')+'</strong></div>'+
         '<div class="purchase-confirmation-row"><span>Invoice</span><strong>'+purchaseH(p?.invoice_number||'—')+'</strong></div>'+
+        '<div class="purchase-confirmation-row"><span>Truck / trailer plate</span><strong>'+purchaseH(window.purchaseDisplayPlate(p))+'</strong></div>'+
         '<div class="purchase-confirmation-row"><span>Discharged quantity</span><strong>'+purchaseLiters(total)+' L</strong></div>'+
         '<div class="purchase-confirmation-row"><span>Destination tank</span><strong>'+purchaseH(tank?.tank_code||'—')+'</strong></div>';
       closePurchaseDischarge();
