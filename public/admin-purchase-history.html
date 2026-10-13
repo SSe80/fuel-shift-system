@@ -274,7 +274,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 let records=[];
 function matches(p){
  const q=(document.getElementById('purchase-history-search')?.value||'').trim().toLowerCase();
- const hay=[p.invoice_number,p.product,p.product_code,p.plate_number,p.driver_name].filter(Boolean).join(' ').toLowerCase();
+ const hay=[p.invoice_number,p.product,p.product_code,p.plate_number,p.trailer_plate,p.trailerPlate,p.driver_name].filter(Boolean).join(' ').toLowerCase();
  if(q&&!hay.includes(q))return false;
  const period=document.getElementById('purchase-history-period')?.value||'all';
  if(period!=='all'){
