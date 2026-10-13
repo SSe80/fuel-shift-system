@@ -1575,8 +1575,8 @@ def logistics_create_delivery():
           "registration_snapshot":truck.get("registration_number") if truck else None,"driver_name_snapshot":truck.get("driver_name") if truck else None,
           "supplier_name":str(data.get("supplier_name") or "").strip() or None,"product_id":product_id or None,"product_name":product_name,
           "ordered_liters":ordered,"delivered_liters":delivered,"fee_per_liter":fee,"status":status_value,
-          "tank_id":tank_id or None,"tank_opening_liters":data.get("tank_opening_liters") or None,
-          "tank_closing_liters":data.get("tank_closing_liters") or None,"tank_difference_liters":data.get("tank_difference_liters"),
+          "tank_id":tank_id or None,"tank_opening_liters":None if data.get("tank_opening_liters") in (None, "") else float(data.get("tank_opening_liters")),
+          "tank_closing_liters":None if data.get("tank_closing_liters") in (None, "") else float(data.get("tank_closing_liters")),"tank_difference_liters":None if data.get("tank_difference_liters") in (None, "") else float(data.get("tank_difference_liters")),
           "notes":str(data.get("notes") or "").strip() or None,"created_by":str(session.get("employee_id") or ""),
           "completed_at":now if status_value=="completed" else None,"updated_at":now}
     status,result=sb("logistics_deliveries",method="POST",body=body,prefer="return=representation")
