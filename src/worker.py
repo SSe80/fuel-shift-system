@@ -2216,6 +2216,7 @@ def create_shift():
     # Store the readings now, but do not activate the tank/dispenser yet.
     activation_nozzles=data.get("activation_nozzles")
     opening_tank_liters=data.get("opening_tank_liters")
+    opening_tank_dip_mm=data.get("opening_tank_dip_mm")
     if activation_nozzles is not None:
         if not isinstance(activation_nozzles,list) or not activation_nozzles:
             return jsonify({"error":"At least one nozzle must be activated"}),400
@@ -2225,6 +2226,12 @@ def create_shift():
             return jsonify({"error":"Invalid tank opening liters"}),400
         if opening_tank_liters < 0:
             return jsonify({"error":"Tank opening liters cannot be negative"}),400
+        try:
+            opening_tank_dip_mm=float(opening_tank_dip_mm)
+        except (TypeError,ValueError):
+            return jsonify({"error":"Enter a valid tank opening dip in millimeters"}),400
+        if opening_tank_dip_mm < 0:
+            return jsonify({"error":"Tank opening dip cannot be negative"}),400
         for item in activation_nozzles:
             if not isinstance(item,dict) or not str(item.get("nozzle_id","")).strip():
                 return jsonify({"error":"Invalid nozzle activation data"}),400
@@ -2249,6 +2256,7 @@ def create_shift():
     if activation_nozzles is not None:
         body["activation_nozzles"]=activation_nozzles
         body["opening_tank_liters"]=opening_tank_liters
+        body["opening_tank_dip_mm"]=opening_tank_dip_mm
     status,result=sb("shifts",method="POST",body=body,prefer="return=representation")
     if status>=400:
         if status==409 or (isinstance(result,dict) and result.get("code")=="23505"):
