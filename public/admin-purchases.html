@@ -816,7 +816,7 @@
     </section>
     <section class="purchase-wizard-step" data-purchase-step="2">
       <div class="purchase-field"><label>Truck type</label><div id="purchase-truck-type-options" class="purchase-choice-grid" role="group" aria-label="Truck type"><button type="button" class="purchase-choice" data-truck-type="contracted" aria-pressed="false">Contracted truck</button><button type="button" class="purchase-choice" data-truck-type="non_contracted" aria-pressed="false">Non-contracted truck</button></div></div>
-      <div id="purchase-contracted-truck-fields" hidden><div class="purchase-field"><label>Registered Logistics truck</label><div id="purchase-registered-truck-options" class="purchase-truck-list" role="group" aria-label="Registered trucks"><p class="muted">Loading registered trucks…</p></div></div><p class="muted" id="purchase-registered-truck-help">Choose a truck registered in Admin Logistics Settings.</p></div>
+      <div id="purchase-contracted-truck-fields" hidden><div class="purchase-field"><label>Registered Logistics truck</label><div id="purchase-registered-truck-options" class="purchase-truck-list" role="group" aria-label="Registered trucks"><p class="muted">Loading registered trucks…</p></div></div></div>
       <div id="purchase-non-contracted-fields" hidden>
         <div class="purchase-field"><label for="purchase-driver-name">Driver name</label><input id="purchase-driver-name" type="text" placeholder="Driver name" autocomplete="name" required></div>
         <div class="purchase-field"><label for="purchase-driver-phone">Driver phone number</label><input id="purchase-driver-phone" type="tel" inputmode="tel" placeholder="Driver phone number" autocomplete="tel" required></div>
@@ -2082,5 +2082,5 @@ window.uploadPurchaseDetailPdf=async function(purchase){
   .purchase-choice.selected{border-color:var(--primary,#2563eb);box-shadow:0 0 0 2px color-mix(in srgb,var(--primary,#2563eb) 18%,transparent);background:var(--surface-muted,#eff6ff)}
   .purchase-choice span{font-size:.88em;opacity:.8}
   .purchase-truck-list{display:grid;gap:8px}
-  @media(max-width:520px){.purchase-choice-grid{grid-template-columns:1fr}}
+  @media(max-width:520px){.purchase-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.purchase-choice{padding:12px 9px;font-size:13px;align-items:center;text-align:center}}
 </style>
