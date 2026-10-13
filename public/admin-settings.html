@@ -385,7 +385,7 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
         <input id="operational-reset-confirmation" class="operational-reset-input" type="text" autocomplete="off" spellcheck="false" placeholder="RESET OPERATIONAL DATA">
       </label>
       <label>Admin PIN
-        <input id="operational-reset-admin-pin" class="operational-reset-input" type="password" inputmode="numeric" autocomplete="current-password" required placeholder="Enter your admin PIN">
+        <input id="operational-reset-admin-pin" class="operational-reset-input" type="password" name="operational-reset-admin-pin" inputmode="numeric" autocomplete="new-password" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" readonly required placeholder="Enter your admin PIN">
       </label>
       <div class="row" style="justify-content:flex-end">
         <button type="button" id="cancel-operational-reset">Cancel</button>
@@ -441,9 +441,10 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
   const sectionStatus=document.getElementById('operational-reset-status');
   const modalStatus=document.getElementById('operational-reset-modal-status');
   if(!openBtn||!modal||typeof api!=='function') return;
-  function closeModal(){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  function closeModal(){pinInput.value='';pinInput.setAttribute('readonly','readonly');updateResetButton();modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
   function updateResetButton(){confirmBtn.disabled=input.value.trim()!=='RESET OPERATIONAL DATA'||!pinInput.value.trim();}
-  function openModal(){input.value='';pinInput.value='';confirmBtn.disabled=true;confirmBtn.textContent='Permanently Reset Data';modalStatus.textContent='';modalStatus.className='operational-reset-status muted';modal.classList.add('open');modal.setAttribute('aria-hidden','false');input.focus();}
+  function openModal(){input.value='';pinInput.value='';pinInput.setAttribute('readonly','readonly');confirmBtn.disabled=true;confirmBtn.textContent='Permanently Reset Data';modalStatus.textContent='';modalStatus.className='operational-reset-status muted';modal.classList.add('open');modal.setAttribute('aria-hidden','false');input.focus();}
+  pinInput.addEventListener('focus',()=>pinInput.removeAttribute('readonly'));
   openBtn.addEventListener('click',openModal);
   [cancelBtn,closeBtn,backdrop].forEach(el=>el&&el.addEventListener('click',closeModal));
   input.addEventListener('input',updateResetButton);
