@@ -1082,7 +1082,11 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     if(!contracted){
       selectedPurchaseTruck=null;
       if(registeredTruckSelect)registeredTruckSelect.value='';
-      if(nonContracted){['purchase-driver-name','purchase-driver-phone','purchase-plate-number'].forEach(id=>{const input=document.getElementById(id);if(input)input.readOnly=false;});const count=document.getElementById('purchase-truck-compartments');if(count)count.disabled=false;}
+      if(nonContracted){
+        ['purchase-driver-name','purchase-driver-phone','purchase-plate-number'].forEach(id=>{const input=document.getElementById(id);if(input){input.readOnly=false;input.value='';}});
+        const count=document.getElementById('purchase-truck-compartments');if(count){count.disabled=false;count.value='';}
+        renderCompartmentInputs();
+      }
     }else if(registeredTruckSelect?.value){
       const truck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===String(registeredTruckSelect.value));
       if(truck)applySelectedPurchaseTruck(truck);
