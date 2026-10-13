@@ -7,9 +7,10 @@
   .admin-purchases-page .purchase-section:first-of-type{padding:15px 16px 17px}
 }
 </style><style>
-/* Keep Add Purchase wizard near the top of the visible screen. Scoped to this modal only. */
-#purchase-modal.modal.open{align-items:flex-start!important;padding-top:max(16px,env(safe-area-inset-top))!important;padding-bottom:16px!important;overflow-y:auto!important}
-#purchase-modal .purchase-wizard-card{margin-top:0!important}
+/* Pin Add Purchase wizard to the top edge of the viewport; avoid inherited modal centering. */
+#purchase-modal.modal.open{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;display:block!important;padding:0!important;overflow:hidden!important}
+#purchase-modal.modal.open>.modal-backdrop{position:fixed!important;inset:0!important}
+#purchase-modal.modal.open>.purchase-wizard-card{position:fixed!important;top:max(8px,env(safe-area-inset-top))!important;left:50%!important;right:auto!important;bottom:auto!important;transform:translateX(-50%)!important;margin:0!important;width:min(520px,calc(100vw - 20px))!important;max-width:520px!important;max-height:calc(100dvh - max(16px,env(safe-area-inset-top) + env(safe-area-inset-bottom)))!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;box-sizing:border-box!important}
 .purchase-wizard-card{width:min(560px,100%);max-height:90vh}
 .purchase-step-indicator{display:flex;align-items:center;gap:7px;margin:4px 0 20px}
 .purchase-step-indicator span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#edf0f4;color:#667085;font-size:12px;font-weight:700}
