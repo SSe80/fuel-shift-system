@@ -771,7 +771,23 @@
 .purchase-history-recorded-toggle{width:25px;height:25px;font-size:15px}
 }
 </style><style>
-.purchase-history-show-more-wrap{display:flex;justify-content:center;margin:12px 0 2px}.purchase-history-show-more{min-width:168px;min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 18px;border:1px solid #4b83bd;border-radius:12px;background:#4b83bd;color:#fff;text-decoration:none;font-size:12px;font-weight:800;box-shadow:0 3px 10px rgba(75,131,189,.16)}.purchase-history-show-more::after{content:'→';font-size:16px;line-height:1;transition:transform .16s ease}.purchase-history-show-more:hover{background:#3e73a7;border-color:#3e73a7}.purchase-history-show-more:hover::after{transform:translateX(2px)}@media(max-width:560px){.purchase-history-show-more{width:100%}}</style></head><body class="admin-shell admin-purchases-page admin-control-ui" data-app-page="adminPurchases"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
+.purchase-history-show-more-wrap{display:flex;justify-content:center;margin:12px 0 2px}.purchase-history-show-more{min-width:168px;min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 18px;border:1px solid #4b83bd;border-radius:12px;background:#4b83bd;color:#fff;text-decoration:none;font-size:12px;font-weight:800;box-shadow:0 3px 10px rgba(75,131,189,.16)}.purchase-history-show-more::after{content:'→';font-size:16px;line-height:1;transition:transform .16s ease}.purchase-history-show-more:hover{background:#3e73a7;border-color:#3e73a7}.purchase-history-show-more:hover::after{transform:translateX(2px)}@media(max-width:560px){.purchase-history-show-more{width:100%}}</style><style id="purchase-product-choice-style">
+.purchase-product-field #purchase-product{position:absolute!important;width:1px!important;height:1px!important;min-height:1px!important;opacity:0!important;pointer-events:none!important;clip-path:inset(50%)!important}
+.purchase-product-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:7px}
+.purchase-product-choice{display:flex;align-items:center;gap:10px;min-width:0;min-height:60px;padding:11px 12px;border:1px solid #d0d9e5;border-radius:12px;background:#fff;color:#182230;text-align:left;font:inherit;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}
+.purchase-product-choice:hover{border-color:#93b4e8;background:#f8fbff}
+.purchase-product-choice.selected,.purchase-product-choice[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff;box-shadow:inset 0 0 0 1px #2563eb}
+.purchase-product-choice:focus-visible{outline:3px solid #bfdbfe;outline-offset:2px}
+.purchase-product-swatch{width:15px;height:38px;flex:0 0 15px;border:1px solid #98a2b3;border-radius:5px;background:var(--purchase-product-color,#2563eb)}
+.purchase-product-choice-copy{display:flex;align-items:center;gap:5px 7px;flex-wrap:wrap;min-width:0}
+.purchase-product-choice-copy strong{font-size:13px;font-weight:800;overflow-wrap:anywhere}
+.purchase-product-code{display:inline-flex;padding:3px 6px;border:1px solid #dce5ef;border-radius:6px;background:#f8fafc;color:#475467;font-size:10px;font-weight:800}
+.purchase-product-hex{display:inline-flex;align-items:center;padding:3px 6px;border:1px solid #e4e7ec;border-radius:6px;background:#fff;color:#667085;font-size:10px;font-weight:750;letter-spacing:.02em}
+.purchase-product-choice.selected .purchase-product-hex{border-color:#bfdbfe;color:#1d4ed8}
+.purchase-product-empty{grid-column:1/-1;padding:12px;border:1px dashed #cbd5e1;border-radius:10px}
+@media(max-width:420px){.purchase-product-options{grid-template-columns:1fr}.purchase-product-choice{min-height:54px}}
+</style>
+</head><body class="admin-shell admin-purchases-page admin-control-ui" data-app-page="adminPurchases"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
   <nav class="admin-sidebar-nav">
     <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
@@ -793,14 +809,14 @@
   <div class="purchase-step-indicator"><span class="active">1</span><i></i><span>2</span><i></i><span>3</span><i></i><span>4</span></div>
   <form class="purchase-form" onsubmit="return false;">
     <section class="purchase-wizard-step active" data-purchase-step="1">
-      <div class="purchase-field"><label for="purchase-product">Product</label><select id="purchase-product" required><option value="">Select product</option></select></div>
+      <div class="purchase-field purchase-product-field"><label>Product</label><select id="purchase-product" required aria-hidden="true" tabindex="-1"><option value="">Select product</option></select><div id="purchase-product-options" class="purchase-product-options" role="group" aria-label="Choose fuel product"><p class="muted">Loading products…</p></div></div>
       <div class="purchase-field"><label for="purchase-invoice">Invoice number</label><input id="purchase-invoice" type="text" placeholder="Invoice number" autocomplete="off" required></div>
       <div class="purchase-field purchase-wide"><label for="purchase-ordered-quantity">Ordered quantity</label><div class="purchase-input-unit"><input id="purchase-ordered-quantity" type="text" inputmode="decimal" autocomplete="off" placeholder="0" required><span>Liters</span></div></div>
       <div class="purchase-wizard-actions"><button type="button" onclick="closePurchaseModal()">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(1)">Continue</button></div>
     </section>
     <section class="purchase-wizard-step" data-purchase-step="2">
-      <div class="purchase-field"><label for="purchase-truck-type">Truck type</label><select id="purchase-truck-type" required><option value="">Select truck type</option><option value="contracted">Contracted truck</option><option value="non_contracted">Non-contracted truck</option></select></div>
-      <div id="purchase-contracted-truck-fields" hidden><div class="purchase-field"><label for="purchase-registered-truck">Registered truck</label><select id="purchase-registered-truck"><option value="">Select a registered Logistics truck</option></select></div><p class="muted" id="purchase-registered-truck-help">Choose a truck registered in Admin Logistics Settings.</p></div>
+      <div class="purchase-field"><label>Truck type</label><div id="purchase-truck-type-options" class="purchase-choice-grid" role="group" aria-label="Truck type"><button type="button" class="purchase-choice" data-truck-type="contracted" aria-pressed="false">Contracted truck</button><button type="button" class="purchase-choice" data-truck-type="non_contracted" aria-pressed="false">Non-contracted truck</button></div></div>
+      <div id="purchase-contracted-truck-fields" hidden><div class="purchase-field"><label>Registered Logistics truck</label><div id="purchase-registered-truck-options" class="purchase-truck-list" role="group" aria-label="Registered trucks"><p class="muted">Loading registered trucks…</p></div></div><p class="muted" id="purchase-registered-truck-help">Choose a truck registered in Admin Logistics Settings.</p></div>
       <div id="purchase-non-contracted-fields" hidden>
         <div class="purchase-field"><label for="purchase-driver-name">Driver name</label><input id="purchase-driver-name" type="text" placeholder="Driver name" autocomplete="name" required></div>
         <div class="purchase-field"><label for="purchase-driver-phone">Driver phone number</label><input id="purchase-driver-phone" type="tel" inputmode="tel" placeholder="Driver phone number" autocomplete="tel" required></div>
@@ -1070,9 +1086,9 @@ window.uploadPurchaseDetailPdf=async function(purchase){
   }
   const bindQuantityFormatting=input=>{if(!input)return;input.addEventListener('input',()=>{const raw=input.value.replace(/[^0-9.]/g,'');const parts=raw.split('.');const normalized=parts.shift()+(parts.length?'.'+parts.join(''):''),digits=normalized.split('.'),integer=digits[0]||'',fraction=digits[1]!==undefined?digits[1].slice(0,2):'';input.value=integer?Number(integer).toLocaleString()+ (digits.length>1?'.'+fraction:''):'';});input.addEventListener('blur',()=>{if(input.value)input.value=formatQuantity(input.value);});};
   bindQuantityFormatting(orderedQuantityInput); document.getElementById('purchase-truck-compartments')?.addEventListener('change',renderCompartmentInputs);
-  const truckTypeSelect=document.getElementById('purchase-truck-type');
-  const registeredTruckSelect=document.getElementById('purchase-registered-truck');
   function setTruckMode(mode){
+    purchaseTruckType=mode||'';
+    document.querySelectorAll('[data-truck-type]').forEach(button=>{const active=button.dataset.truckType===purchaseTruckType;button.classList.toggle('selected',active);button.setAttribute('aria-pressed',String(active));});
     const contracted=mode==='contracted',nonContracted=mode==='non_contracted';
     const contractedFields=document.getElementById('purchase-contracted-truck-fields');
     const nonContractedFields=document.getElementById('purchase-non-contracted-fields');
@@ -1081,14 +1097,14 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     ['purchase-driver-name','purchase-driver-phone','purchase-plate-number','purchase-truck-compartments'].forEach(id=>{const input=document.getElementById(id);if(input)input.required=nonContracted;});
     if(!contracted){
       selectedPurchaseTruck=null;
-      if(registeredTruckSelect)registeredTruckSelect.value='';
+      selectedRegisteredTruckId='';
       if(nonContracted){
         ['purchase-driver-name','purchase-driver-phone','purchase-plate-number'].forEach(id=>{const input=document.getElementById(id);if(input){input.readOnly=false;input.value='';}});
         const count=document.getElementById('purchase-truck-compartments');if(count){count.disabled=false;count.value='';}
         renderCompartmentInputs();
       }
-    }else if(registeredTruckSelect?.value){
-      const truck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===String(registeredTruckSelect.value));
+    }else if(selectedRegisteredTruckId){
+      const truck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===String(selectedRegisteredTruckId));
       if(truck)applySelectedPurchaseTruck(truck);
     }
   }
@@ -1101,14 +1117,49 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     if(countSelect){let option=Array.from(countSelect.options).find(o=>Number(o.value)===count);if(count>0&&!option){option=document.createElement('option');option.value=String(count);option.textContent=count+' compartments';countSelect.append(option);}countSelect.value=count>0?String(count):'';countSelect.disabled=true;}
     renderCompartmentInputs();
   }
-  truckTypeSelect?.addEventListener('change',()=>setTruckMode(truckTypeSelect.value));
-  registeredTruckSelect?.addEventListener('change',()=>{const truck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===String(registeredTruckSelect.value));if(truck)applySelectedPurchaseTruck(truck);else selectedPurchaseTruck=null;});
+  document.querySelectorAll('[data-truck-type]').forEach(button=>button.addEventListener('click',()=>setTruckMode(button.dataset.truckType)));
+  function selectRegisteredTruck(id){
+    selectedRegisteredTruckId=String(id||'');
+    const truck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===selectedRegisteredTruckId);
+    document.querySelectorAll('[data-registered-truck]').forEach(button=>{const active=button.dataset.registeredTruck===selectedRegisteredTruckId;button.classList.toggle('selected',active);button.setAttribute('aria-pressed',String(active));});
+    if(truck)applySelectedPurchaseTruck(truck);else selectedPurchaseTruck=null;
+  }
+  function purchaseProductColor(product){
+    const candidate=String(product?.color||product?.color_code||product?.hex_color||product?.colour||'').trim();
+    return /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(candidate)?candidate:'#2563eb';
+  }
+  function renderPurchaseProductChoices(products=purchaseProducts){
+    const picker=document.getElementById('purchase-product-options');
+    if(!picker)return;
+    if(!Array.isArray(products)||!products.length){
+      picker.innerHTML='<p class="muted purchase-product-empty">No active products available.</p>';
+      return;
+    }
+    const selected=productSelect?.value||'';
+    picker.innerHTML=products.map(product=>{
+      const name=String(product.name||product.code_name||'Product');
+      const code=String(product.code_name||'').trim();
+      const color=purchaseProductColor(product);
+      const active=String(selected).toLowerCase()===name.toLowerCase();
+      return '<button type="button" class="purchase-product-choice'+(active?' selected':'')+'" data-purchase-product="'+purchaseH(name)+'" aria-pressed="'+String(active)+'">'+
+        '<span class="purchase-product-swatch" style="--purchase-product-color:'+purchaseH(color)+'"></span>'+
+        '<span class="purchase-product-choice-copy"><strong>'+purchaseH(name)+'</strong>'+(code&&code.toLowerCase()!==name.toLowerCase()?'<span class="purchase-product-code">'+purchaseH(code)+'</span>':'')+
+        '<span class="purchase-product-hex">'+purchaseH(color.toUpperCase())+'</span></span></button>';
+    }).join('');
+    picker.querySelectorAll('[data-purchase-product]').forEach(button=>button.addEventListener('click',()=>{
+      if(productSelect)productSelect.value=button.dataset.purchaseProduct||'';
+      renderPurchaseProductChoices(products);
+      setStatus('',false);
+    }));
+  }
   const status=document.getElementById('purchase-status');
   const list=document.getElementById('purchase-list');
   let purchaseTanks=[];
   let purchaseProducts=[];
   let purchaseTrucks=[];
   let selectedPurchaseTruck=null;
+  let purchaseTruckType='';
+  let selectedRegisteredTruckId='';
   let purchaseShifts=[];
   let purchaseEmployees=[];
   let purchaseStep=1;
@@ -1156,10 +1207,10 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       if(!Number.isFinite(orderedQuantity)||orderedQuantity<=0){setStatus('Enter a valid ordered quantity before continuing.',true);return;}
     }
     if(step===2){
-      const type=document.getElementById('purchase-truck-type')?.value||'';
+      const type=purchaseTruckType;
       if(!type){setStatus('Select contracted or non-contracted truck before continuing.',true);return;}
       if(type==='contracted'){
-        selectedPurchaseTruck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===String(document.getElementById('purchase-registered-truck')?.value||''))||null;
+        selectedPurchaseTruck=purchaseTrucks.find(t=>String(t.databaseId||t.id)===String(selectedRegisteredTruckId))||null;
         if(!selectedPurchaseTruck){setStatus('Select a registered Logistics truck.',true);return;}
         applySelectedPurchaseTruck(selectedPurchaseTruck);
       }else{
@@ -1189,7 +1240,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     const phone=document.getElementById('purchase-driver-phone')?.value.trim()||'—';
     const plate=document.getElementById('purchase-plate-number')?.value.trim()||'—';
     const count=Number(document.getElementById('purchase-truck-compartments')?.value||0);
-    const truckType=document.getElementById('purchase-truck-type')?.value||'';
+    const truckType=purchaseTruckType;
     const truckTypeLabel=truckType==='contracted'?'Contracted':truckType==='non_contracted'?'Non-contracted':'—';
     const registeredTruckLabel=selectedPurchaseTruck?(selectedPurchaseTruck.plate||selectedPurchaseTruck.truck_code||selectedPurchaseTruck.registration_number||'Registered truck'):'—';
     const inputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
@@ -1351,11 +1402,12 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       const [tanks,productsData,pending,history,shifts,employees,trucksData]=await Promise.all([purchaseApi('/api/tanks'),purchaseApi('/api/products'),purchaseApi('/api/purchases?status=pending_discharge'),purchaseApi('/api/purchases?status=discharged'),purchaseApi('/api/shifts'),purchaseApi('/api/employees'),purchaseApi('/api/logistics/trucks').catch(()=>[])]);
       if(!Array.isArray(tanks)||!Array.isArray(productsData)||!Array.isArray(pending)||!Array.isArray(history)||!Array.isArray(shifts)||!Array.isArray(employees)||!Array.isArray(trucksData))throw new Error('Unable to load purchase data');
       purchaseTanks=tanks; purchaseDetailTanks=tanks; purchaseProducts=productsData; purchaseTrucks=trucksData.filter(t=>t.isActive!==false&&t.active!==false); purchaseShifts=shifts; purchaseEmployees=employees; purchaseDetailData=[...pending,...history.filter(h=>!pending.some(p=>String(p.id)===String(h.id)))];
-      const registeredSelect=document.getElementById('purchase-registered-truck');
-      if(registeredSelect){const previous=registeredSelect.value;registeredSelect.innerHTML='<option value="">'+(purchaseTrucks.length?'Select a registered Logistics truck':'No active Logistics trucks registered')+'</option>'+purchaseTrucks.map(t=>{const id=t.databaseId||t.id;const plate=t.plate||t.truck_code||t.registration_number||'Truck';const driver=t.driverName||t.driver_name||'';const count=Number(t.compartmentCount||t.compartment_count||(Array.isArray(t.calibrations)?t.calibrations.length:0)||0);return '<option value="'+purchaseH(id)+'">'+purchaseH(plate)+' · '+purchaseH(driver)+' · '+count+' compartments</option>';}).join('');if(purchaseTrucks.some(t=>String(t.databaseId||t.id)===String(previous)))registeredSelect.value=previous;}
-      const activeProducts=productsData.filter(p=>p.active!==false);
+      const registeredList=document.getElementById('purchase-registered-truck-options');
+      if(registeredList){registeredList.innerHTML=purchaseTrucks.length?purchaseTrucks.map(t=>{const id=String(t.databaseId||t.id);const plate=t.plate||t.truck_code||t.registration_number||'Truck';const driver=t.driverName||t.driver_name||'';const count=Number(t.compartmentCount||t.compartment_count||(Array.isArray(t.calibrations)?t.calibrations.length:0)||0);return '<button type="button" class="purchase-choice purchase-truck-choice'+(id===selectedRegisteredTruckId?' selected':'')+'" data-registered-truck="'+purchaseH(id)+'" aria-pressed="'+String(id===selectedRegisteredTruckId)+'"><strong>'+purchaseH(plate)+'</strong><span>'+purchaseH(driver||'Driver not listed')+' · '+count+' compartments</span></button>';}).join(''):'<p class="muted">No active Logistics trucks registered.</p>';registeredList.querySelectorAll('[data-registered-truck]').forEach(button=>button.addEventListener('click',()=>selectRegisteredTruck(button.dataset.registeredTruck)));}
+      const activeProducts=productsData.filter(p=>p.active!==false).sort((a,b)=>String(a.code_name||a.name).localeCompare(String(b.code_name||b.name)));
       const productSelect=document.getElementById('purchase-product');
-      if(productSelect)productSelect.innerHTML='<option value="">Select product</option>'+activeProducts.sort((a,b)=>String(a.code_name||a.name).localeCompare(String(b.code_name||b.name))).map(p=>'<option value="'+purchaseH(p.name)+'">'+purchaseH(p.code_name||p.name)+'</option>').join('');
+      if(productSelect)productSelect.innerHTML='<option value="">Select product</option>'+activeProducts.map(p=>'<option value="'+purchaseH(p.name)+'">'+purchaseH(p.code_name||p.name)+'</option>').join('');
+      renderPurchaseProductChoices(activeProducts);
       const partialPending=pending.filter(p=>Array.isArray(p.discharge_history)&&p.discharge_history.length>0);
       const historyWithPartial=[...partialPending,...history.filter(h=>!partialPending.some(p=>String(p.id)===String(h.id)))];
       if(dischargeList)dischargeList.innerHTML=pending.length?pending.map(p=>{const t=tanks.find(x=>String(x.id)===String(p.tank_id));return renderPurchaseCard(p,t,true);}).join(''):'<div class="purchase-empty">No purchases waiting for discharge.</div>';
@@ -1825,8 +1877,8 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       document.getElementById('purchase-plate-number').value='';
       document.getElementById('purchase-truck-compartments').disabled=false;
       document.getElementById('purchase-truck-compartments').value='';
-      document.getElementById('purchase-truck-type').value='';
-      document.getElementById('purchase-registered-truck').value='';
+      selectedRegisteredTruckId='';
+      document.querySelectorAll('[data-registered-truck]').forEach(button=>{button.classList.remove('selected');button.setAttribute('aria-pressed','false');});
       setTruckMode('');
       document.getElementById('purchase-product').value='';
       document.getElementById('purchase-invoice').value='';
@@ -2023,4 +2075,11 @@ window.uploadPurchaseDetailPdf=async function(purchase){
 .purchase-wizard-step[data-purchase-step="4"] .purchase-review-row strong{font-size:13px;color:#101828;max-width:60%;overflow-wrap:anywhere}
 .purchase-wizard-step[data-purchase-step="4"] .purchase-review-difference{padding:9px 11px;font-size:13px;line-height:1.35}
 .purchase-wizard-step[data-purchase-step="4"] .purchase-review-difference strong{color:#101828}
+
+  .purchase-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .purchase-choice{display:flex;flex-direction:column;align-items:flex-start;gap:5px;width:100%;padding:13px 14px;border:1px solid var(--border-color,#d1d5db);border-radius:12px;background:var(--card-bg,#fff);color:inherit;text-align:left;cursor:pointer}
+  .purchase-choice.selected{border-color:var(--primary,#2563eb);box-shadow:0 0 0 2px color-mix(in srgb,var(--primary,#2563eb) 18%,transparent);background:var(--surface-muted,#eff6ff)}
+  .purchase-choice span{font-size:.88em;opacity:.8}
+  .purchase-truck-list{display:grid;gap:8px}
+  @media(max-width:520px){.purchase-choice-grid{grid-template-columns:1fr}}
 </style>
