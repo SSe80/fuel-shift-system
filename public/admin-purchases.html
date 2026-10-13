@@ -1743,7 +1743,6 @@ window.uploadPurchaseDetailPdf=async function(purchase){
   window.dischargePurchase=function(purchaseId){openPurchaseDischarge(purchaseId);};
   window.performCreatePurchase=async function(){
     const product=productSelect?.value||'';
-    const tankId=tankSelect?.value||'';
     const invoice=document.getElementById('purchase-invoice')?.value.trim()||'';
     const compartmentInputs=Array.from(document.querySelectorAll('.purchase-compartment-liter'));
     const q=compartmentInputs.reduce((sum,input)=>sum+parseQuantity(input.value),0);
