@@ -31,6 +31,20 @@ p{font-size:14px;line-height:1.7;color:var(--lg-muted);max-width:650px}
 @media(max-width:760px){.logistics-layout{display:block}.logistics-sidebar{position:relative;width:100%;height:auto;padding:12px}.logistics-brand{padding-bottom:12px}.logistics-nav{display:flex;overflow-x:auto;padding-top:10px}.logistics-nav a{white-space:nowrap}.logistics-main .wrap{padding:22px 13px}.truck-panel{padding:20px}}
 </style>
 <script src="assets/logistics-auth.js?v=20261013-01"></script>
+<style id="logistics-admin-theme">
+/* Align Logistics with the main Admin panel: dark horizontal navigation, light workspace. */
+body{background:#f7f9fc!important;color:#182230!important;font-family:Inter,"Segoe UI",Arial,sans-serif!important}
+.logistics-layout{display:block!important;min-height:100vh;background:#f7f9fc!important}
+.logistics-sidebar{position:relative!important;top:auto!important;width:100%!important;height:74px!important;min-height:74px!important;padding:0 18px!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:18px!important;background:#111827!important;color:#e5e7eb!important;border:0!important;border-bottom:1px solid #253047!important;box-shadow:0 4px 18px #10182818!important;overflow:visible!important}
+.logistics-brand{flex:0 0 auto!important;padding:0!important;border:0!important;color:#f9fafb!important}.logistics-brand strong{color:#f9fafb!important;font-size:13px!important}.logistics-brand small{color:#9ca3af!important}.logistics-mark{background:#1f2937!important;border:1px solid #374151!important;color:#fbbf24!important}
+.logistics-nav{flex:1 1 auto!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;padding:0!important;overflow-x:auto!important;scrollbar-width:none}.logistics-nav::-webkit-scrollbar{display:none}
+.logistics-nav a{flex:0 0 auto!important;white-space:nowrap!important;color:#d1d5db!important;padding:12px 13px!important;border-radius:10px!important;font-size:14px!important}.logistics-nav a:hover,.logistics-nav a.active{background:#273449!important;color:#fff!important}
+.logistics-logout{flex:0 0 auto!important;width:auto!important;margin:0!important;padding:11px 13px!important;background:#111827!important;border-color:#7f1d1d!important;color:#fecaca!important;white-space:nowrap}
+.logistics-main{width:100%!important;min-width:0!important}.logistics-main .wrap{max-width:1180px!important;margin:0 auto!important;padding:28px 22px 44px!important;background:#f7f9fc!important}
+.truck-panel{border-color:#e1e8f0!important;border-radius:16px!important;box-shadow:0 5px 20px #0f172a08!important}
+@media(max-width:760px){.logistics-sidebar{height:64px!important;min-height:64px!important;padding:0 10px!important;gap:8px!important}.logistics-brand{display:none!important}.logistics-nav{justify-content:flex-start!important;gap:4px!important}.logistics-nav a{padding:11px!important;font-size:12px!important}.logistics-nav a span{display:none!important}.logistics-logout{padding:10px!important;font-size:12px!important}.logistics-main .wrap{padding:20px 15px 32px!important}}
+@media(max-width:480px){.logistics-sidebar{height:58px!important;min-height:58px!important;padding:0 7px!important}.logistics-nav a{padding:10px!important;font-size:11px!important}.logistics-logout{padding:9px!important;font-size:11px!important}.logistics-main .wrap{padding:16px 12px 28px!important}}
+</style>
 </head>
 <body class="admin-shell admin-control-ui" data-app-page="adminLogisticsTruck">
 <div class="logistics-layout">
