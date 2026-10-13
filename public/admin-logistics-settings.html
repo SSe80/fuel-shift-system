@@ -184,13 +184,26 @@ function showTruckSuccess(isEdit,plate){
  successOverlay.classList.add('open');successOverlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';$('truckSuccessClose').focus();
 }
 function closeTruckSuccess(){const successOverlay=$('truckSuccessOverlay');successOverlay.classList.remove('open');successOverlay.setAttribute('aria-hidden','true');document.body.style.overflow='';$('addTruckBtn').focus()}
-function confirmTruck(){
+async function confirmTruck(){
  if(!validateStep())return;
  const count=Number($('compartmentCount').value);
  const calibrations=Array.from({length:count},(_,i)=>{const file=calibrationFiles[i];const old=editingTruck?.calibrations?.[i];const heightInput=document.querySelector('[data-verification-compartment="'+i+'"]');const heightValue=heightInput?.value?.trim()??'';const verifiedMm=heightValue===''?(old?.verifiedMm??null):Number(heightValue);const conversion=heightValue===''?null:volumeAtHeight(calibrationTables[i],verifiedMm);return (file||old)?{...(old||{}),compartment:i+1,fileName:file?.name||old?.fileName,fileType:file?.type||old?.fileType||'text/csv',fileSize:file?.size??old?.fileSize,verifiedMm,verifiedLitres:conversion?.ok?conversion.litres:(heightValue===''?(old?.verifiedLitres??null):old?.verifiedLitres),calibrationTable:calibrationTables[i]}:null}).filter(Boolean);
  const record={...(editingTruck||{}),id:editingTruckId||'truck-'+Date.now(),driverName:$('driverName').value.trim(),driverPhone:$('driverPhone').value.trim(),plate:$('truckPlate').value.trim().toUpperCase(),trailerPlate:$('trailerPlate').value.trim().toUpperCase(),compartmentCount:count,calibrations,createdAt:editingTruck?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),isActive:editingTruck?.isActive!==false};
- try{const trucks=getTrucks();const index=trucks.findIndex(item=>item.id===record.id);const wasEditing=index>=0;if(wasEditing)trucks[index]=record;else trucks.push(record);localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));closeWizard();renderTrucks();showTruckSuccess(wasEditing,record.plate)}catch(e){setError(2,'Could not save this truck in this browser. Storage may be full or unavailable.');}
+ $('wizardNext').disabled=true;
+ try{
+  const response=await fetch('/api/logistics/trucks',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify(record)});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||'Database save failed ('+response.status+').');
+  const trucks=getTrucks(),index=trucks.findIndex(item=>item.id===record.id||String(item.plate).toUpperCase()===record.plate);
+  if(index>=0)trucks[index]={...record,...result};else trucks.push({...record,...result});
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));
+  closeWizard();renderTrucks();showTruckSuccess(index>=0,record.plate);
+ }catch(error){
+  try{const trucks=getTrucks(),index=trucks.findIndex(item=>item.id===record.id);if(index>=0)trucks[index]=record;else trucks.push(record);localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));}catch(_){}
+  setError(2,(error.message||'Could not save truck to the database.')+' Your entry was kept in this browser as a backup; retry after reconnecting.');
+ }finally{$('wizardNext').disabled=false;}
 }
+
 $('addTruckBtn').addEventListener('click',()=>{resetWizardTitle();openWizard()});$('truckSuccessClose').addEventListener('click',closeTruckSuccess);$('truckSuccessOverlay').addEventListener('click',e=>{if(e.target===$('truckSuccessOverlay'))closeTruckSuccess()});$('closeWizard').addEventListener('click',closeWizard);$('wizardBack').addEventListener('click',()=>{if(step===0)closeWizard();else showStep(step-1)});
 $('wizardNext').addEventListener('click',()=>{if(step<2){if(validateStep())showStep(step+1)}else confirmTruck()});
 document.querySelectorAll('input[name="compartmentChoice"]').forEach(choice=>choice.addEventListener('change',()=>{$('compartmentCount').value=choice.value;calibrationFiles=[];calibrationTables=[];renderCalibrationInputs()}));
