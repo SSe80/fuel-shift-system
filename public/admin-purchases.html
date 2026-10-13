@@ -1642,7 +1642,10 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     const lastEvent=history.length?history[history.length-1]:null;
     const tankStockUnrecorded=history.length>0&&history.some(e=>!e?.tank_stock_recorded);
     const datePurchase=p.purchase_date?new Date(p.purchase_date).toLocaleString():'—';
-    const plateDisplay=window.purchaseDisplayPlate(p);
+    const registeredPurchaseTruck=p.registered_truck_id?purchaseTrucks.find(t=>String(t.databaseId||t.id)===String(p.registered_truck_id)):null;
+    const registeredPlate=registeredPurchaseTruck?purchaseTruckPlate(registeredPurchaseTruck):'';
+    const savedPlate=window.purchaseDisplayPlate(p);
+    const plateDisplay=registeredPlate||savedPlate;
     const plateRow='<div class="purchase-card-plate"><span>Truck / trailer plate</span><strong>'+purchaseH(plateDisplay)+'</strong></div>';
 
     if(dischargeMode){
