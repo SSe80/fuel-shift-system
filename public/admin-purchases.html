@@ -38,6 +38,7 @@
 .purchase-step-indicator{margin:18px 0 22px}
 .purchase-wizard-step{padding:0 2px}
 .purchase-wizard-step .purchase-field{margin-bottom:16px}
+.purchase-plate-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.purchase-plate-fields>.purchase-field{min-width:0}@media(max-width:420px){.purchase-plate-fields{gap:8px}.purchase-plate-fields input{padding-left:9px;padding-right:9px;font-size:12px}}
 .purchase-wizard-step label{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;font-size:13px;font-weight:600;color:#344054}
 .purchase-wizard-step input,.purchase-wizard-step select{width:100%;min-height:46px;border-radius:11px}
 .purchase-input-unit{display:flex;align-items:center}
@@ -1009,7 +1010,10 @@
       <div id="purchase-non-contracted-fields" hidden>
         <div class="purchase-field"><label for="purchase-driver-name">Driver name</label><input id="purchase-driver-name" type="text" placeholder="Driver name" autocomplete="name" required></div>
         <div class="purchase-field"><label for="purchase-driver-phone">Driver phone number</label><input id="purchase-driver-phone" type="tel" inputmode="tel" placeholder="Driver phone number" autocomplete="tel" required></div>
-        <div class="purchase-field"><label for="purchase-plate-number">Plate number</label><input id="purchase-plate-number" type="text" placeholder="Plate number" autocomplete="off" required></div>
+         <div class="purchase-plate-fields">
+           <div class="purchase-field"><label for="purchase-plate-number">Truck plate number</label><input id="purchase-plate-number" type="text" placeholder="e.g. ET-3-78964" autocomplete="off" required></div>
+           <div class="purchase-field"><label for="purchase-trailer-plate">Trailer plate <span style="font-weight:500;color:#667085">(optional)</span></label><input id="purchase-trailer-plate" type="text" placeholder="e.g. ET-3-67894" autocomplete="off"></div>
+         </div>
         <div class="purchase-field purchase-compartment-selector-field"><label>Truck compartments</label><div id="purchase-compartment-options" class="purchase-compartment-options" role="group" aria-label="Choose number of truck compartments"><button type="button" class="purchase-compartment-option" data-compartment-count="2" aria-pressed="false"><strong>2</strong><span>Compartments</span></button><button type="button" class="purchase-compartment-option" data-compartment-count="3" aria-pressed="false"><strong>3</strong><span>Compartments</span></button><button type="button" class="purchase-compartment-option" data-compartment-count="4" aria-pressed="false"><strong>4</strong><span>Compartments</span></button></div><select id="purchase-truck-compartments" aria-label="Truck compartments" tabindex="-1" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" aria-hidden="true"><option value="">Select compartments</option><option value="2">2 compartments</option><option value="3">3 compartments</option><option value="4">4 compartments</option></select></div>
       </div>
       <div class="purchase-wizard-actions"><button type="button" onclick="returnPurchaseStep(2)">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(2)">Continue</button></div>
@@ -1339,7 +1343,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       selectedPurchaseTruck=null;
       selectedRegisteredTruckId='';
       if(nonContracted){
-        ['purchase-driver-name','purchase-driver-phone','purchase-plate-number'].forEach(id=>{const input=document.getElementById(id);if(input){input.readOnly=false;input.value='';}});
+        ['purchase-driver-name','purchase-driver-phone','purchase-plate-number','purchase-trailer-plate'].forEach(id=>{const input=document.getElementById(id);if(input){input.readOnly=false;input.value='';}});
         const count=document.getElementById('purchase-truck-compartments');if(count){count.disabled=false;count.value='';}
         renderCompartmentInputs();
       }
@@ -1463,7 +1467,9 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       }else{
         const driverName=document.getElementById('purchase-driver-name')?.value.trim()||'';
         const driverPhone=document.getElementById('purchase-driver-phone')?.value.trim()||'';
-        const plateNumber=document.getElementById('purchase-plate-number')?.value.trim()||'';
+     const truckPlateNumber=document.getElementById('purchase-plate-number')?.value.trim()||'';
+     const trailerPlateNumber=document.getElementById('purchase-trailer-plate')?.value.trim()||'';
+     const plateNumber=purchaseTruckType==='non_contracted'&&trailerPlateNumber?truckPlateNumber+' / '+trailerPlateNumber:truckPlateNumber;
         const compartments=document.getElementById('purchase-truck-compartments')?.value||'';
         if(!driverName||!driverPhone||!plateNumber||!compartments){setStatus('Complete all non-contracted truck details before continuing.',true);return;}
         selectedPurchaseTruck=null;
@@ -1485,7 +1491,9 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     const ordered=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
     const driver=document.getElementById('purchase-driver-name')?.value.trim()||'—';
     const phone=document.getElementById('purchase-driver-phone')?.value.trim()||'—';
-    const plate=document.getElementById('purchase-plate-number')?.value.trim()||'—';
+     const truckPlate=document.getElementById('purchase-plate-number')?.value.trim()||'';
+     const trailerPlate=document.getElementById('purchase-trailer-plate')?.value.trim()||'';
+     const plate=(truckType==='non_contracted'&&trailerPlate?truckPlate+' / '+trailerPlate:truckPlate)||'—';
     const count=Number(document.getElementById('purchase-truck-compartments')?.value||0);
     const truckType=purchaseTruckType;
     const truckTypeLabel=truckType==='contracted'?'Contracted':truckType==='non_contracted'?'Non-contracted':'—';
@@ -2122,6 +2130,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       document.getElementById('purchase-driver-name').value='';
       document.getElementById('purchase-driver-phone').value='';
       document.getElementById('purchase-plate-number').value='';
+       document.getElementById('purchase-trailer-plate').value='';
       document.getElementById('purchase-truck-compartments').disabled=false;
       document.getElementById('purchase-truck-compartments').value='';
       selectedRegisteredTruckId='';
