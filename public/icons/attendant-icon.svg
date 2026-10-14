@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>M.E.A Software Development — Attendant</title>
+  <rect width="512" height="512" rx="96" fill="#2a080d"/>
+  <defs><linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb7185"/><stop offset="1" stop-color="#dc2626"/></linearGradient></defs>
+  <text x="256" y="222" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="124" font-weight="700" letter-spacing="1" fill="url(#red)">M.E.A</text>
+  <path d="M158 267H354" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+  <text x="256" y="310" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="400" letter-spacing="4.5" fill="#fecaca">SOFTWARE</text>
+  <text x="256" y="339" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="400" letter-spacing="4.5" fill="#fecaca">DEVELOPMENT</text>
+</svg>
