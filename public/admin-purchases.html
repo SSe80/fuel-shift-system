@@ -1223,15 +1223,24 @@ window.downloadPurchaseDetailPdf=async function(options){
       const h=38;if(y+h>H-20){footer();doc.addPage();header();title('Discharge History · Continued');}
       box(M,y,CW,h);doc.setFillColor(...(stock?green:red));doc.rect(M,y,2.5,h,'F');
       T('OPERATION '+(i+1),M+7,y+7,6.5,blue,'bold');T(dt(e.discharge_datetime||e.created_at),W-M-4,y+7,5.5,muted,'normal','normal',{align:'right'});
-      const vals=[['Tank',tank],['Shift attendant(s)',att],['Discharged',L(qty)],['Stock before',Number.isFinite(before)?L(before):'—'],['Expected after',expected!=null?L(expected):'—'],['Recorded stock',stock&&Number.isFinite(recorded)?L(recorded):'Not recorded'],['Difference',diff!=null?(diff>0?'+':'')+L(diff):'—']];
+      const vals=[['Tank',tank],['Shift attendant(s)',att],['Discharged',L(qty)],['Stock before',beforeRaw!==undefined&&beforeRaw!==null&&Number.isFinite(before)?L(before):'—'],['Expected after',expected!=null?L(expected):'—'],['Recorded stock',stock&&recordedRaw!==undefined&&recordedRaw!==null&&Number.isFinite(recorded)?L(recorded):'Not recorded'],['Stock difference',diff!=null?(diff>0?'+':'')+L(diff):'—']];
       const g=4,cell=(CW-14-g*3)/4;vals.forEach((v,j)=>{const xx=M+7+(j%4)*(cell+g),yy=y+11+Math.floor(j/4)*11;field(v[0],v[1],xx,yy,cell);});
       y+=h+5;
     }
 
-    if(y+35>H-20){footer();doc.addPage();header();}
+    const dischargeRemarks=[...hist].map(e=>String(e?.tank_stock_remark||'').trim()).filter(Boolean);
+    const purchaseRemark=String(p.purchase_remark||p.purchase_remark_note||p.remark||'').trim();
+    const remarkParts=[];
+    if(purchaseRemark)remarkParts.push('Purchase note: '+purchaseRemark);
+    dischargeRemarks.forEach((note,i)=>remarkParts.push((dischargeRemarks.length>1?'Discharge note '+(i+1)+': ':'Discharge note: ')+note));
+    const remark=remarkParts.join('\n')||'No remark recorded.';
+    const remarkLines=remark.split('\n').flatMap(part=>wrap(part,CW-8,7));
+    const remarkHeight=Math.max(18,10+remarkLines.length*4.2);
+    if(y+remarkHeight+18>H-20){footer();doc.addPage();header();y=38;}
     title('Purchase Remark');
-    const remark=[...hist].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||String(p.purchase_remark||p.remark||'').trim()||'No remark recorded.';
-    const lines=wrap(remark,CW-8,7).slice(0,6),rh=Math.max(18,10+lines.length*4.2);box(M,y,CW,rh);lines.forEach((ln,i)=>T(ln,M+4,y+7+i*4.2,7,muted));y+=rh+7;
+    box(M,y,CW,remarkHeight);
+    remarkLines.forEach((ln,i)=>T(ln,M+4,y+7+i*4.2,7,muted));
+    y+=remarkHeight+7;
     if(y>H-22){footer();doc.addPage();header();}
     T('Record ID',M,y,5,muted,'bold');T(String(p.id||'—'),M,y+5.5,5.5,navy);footer();
     const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);
