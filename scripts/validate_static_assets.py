@@ -75,7 +75,7 @@ def main():
     sw = PUBLIC / "service-worker.js"
     if sw.exists():
         source = sw.read_text(encoding="utf-8")
-        match = re.search(r"const\\s+SHELL\\s*=\\s*\\[(.*?)\\];", source, re.S)
+        match = re.search(r"const\s+SHELL\s*=\s*\[(.*?)\];", source, re.S)
         if match:
             for path in re.findall(r"""["'](/[^"']+)["']""", match.group(1)):
                 if not (PUBLIC / path.lstrip("/")).is_file():
