@@ -2508,6 +2508,7 @@ def update_nozzle(nozzle_id):
             status,current=sb("nozzles",params={"id":"eq."+nozzle_id,"select":"id,nozzle_code,nozzle_ids,nozzle_count,product,tank_id,active"})
             if status!=200 or not current:return jsonify({"error":"Could not reload dispenser after order change"}),status
             cur=current[0]
+            body["nozzle_code"]=target_code
     elif "product" in data:
         # Moving to another product gets the next available number in that product group.
         code_name=str(product_row.get("code_name") or "").strip()
