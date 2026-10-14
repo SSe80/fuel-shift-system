@@ -1,0 +1,20 @@
+{
+  "name": "Fuel Shift System Admin",
+  "short_name": "Fuel Admin",
+  "description": "Administrator access for Fuel Shift System",
+  "id": "/admin-login.html",
+  "start_url": "/admin-login.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#3182ce",
+  "icons": [
+    {
+      "src": "/icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
