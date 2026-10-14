@@ -319,9 +319,15 @@ window.closePurchaseDetail=function(){const m=document.getElementById('purchase-
     const detailActions=document.getElementById('purchase-detail-actions');
     if(detailActions){detailActions.querySelector('.purchase-detail-download').style.display=tankStockRecorded?'':'none';}
     const eventRows=history.map((e,i)=>{
-      const before=Number(e.tank_liters_before), qty=Number(e.discharged_quantity_liters||0), recorded=Number(e.tank_stock_recorded_liters);
-      const hasBefore=Number.isFinite(before), hasRecorded=Number.isFinite(recorded), expectedAfter=hasBefore?before+qty:null;
-      const diff=hasBefore&&hasRecorded?recorded-expectedAfter:null;
+      const beforeRaw=e.physical_tank_liters_before??e.tank_liters_before;
+      const before=Number(beforeRaw), qty=Number(e.discharged_quantity_liters||0);
+      const recordedRaw=e.tank_stock_recorded_liters, recorded=Number(recordedRaw);
+      const expectedRaw=e.tank_liters_after, savedDifferenceRaw=e.tank_stock_difference_liters;
+      const hasBefore=beforeRaw!==undefined&&beforeRaw!==null&&Number.isFinite(before);
+      const hasRecorded=recordedRaw!==undefined&&recordedRaw!==null&&Number.isFinite(recorded);
+      const expectedAfter=expectedRaw!==undefined&&expectedRaw!==null&&Number.isFinite(Number(expectedRaw))?Number(expectedRaw):(hasBefore?before+qty:null);
+      const savedDifference=savedDifferenceRaw!==undefined&&savedDifferenceRaw!==null&&Number.isFinite(Number(savedDifferenceRaw))?Number(savedDifferenceRaw):null;
+      const diff=savedDifference!==null?savedDifference:(hasRecorded&&expectedAfter!==null?recorded-expectedAfter:null);
       const tolerance=Number.isFinite(qty)?Math.max(5,qty*0.01):5;
       const differenceHigh=Number.isFinite(diff)&&Math.abs(diff)>tolerance;
       const recordedOk=e.tank_stock_recorded===true&&!differenceHigh;
