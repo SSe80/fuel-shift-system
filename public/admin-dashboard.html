@@ -1,6 +1,12 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Dashboard</title><link rel="stylesheet" href="assets/style.css?v=20261011-popup2"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-01"></head>
+<head>
+<link rel="manifest" href="/admin-manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fuel Admin">
+<link rel="icon" href="/icons/admin-icon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Dashboard</title><link rel="stylesheet" href="assets/style.css?v=20261011-popup2"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-01"></head>
 <body class="admin-shell admin-control-ui" data-app-page="adminDashboard">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
   <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
@@ -184,6 +190,13 @@
   }
 
   DriveQueue.start({ dsr: buildDsr, msr: buildMsr }, 30000);
+})();
+</script>
+<script>
+(function(){
+ if("serviceWorker" in navigator)window.addEventListener("load",function(){navigator.serviceWorker.register("/service-worker.js").catch(function(e){console.error("Admin service worker registration failed:",e);});});
+ var pe=null,b=null;window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();pe=e;if(!b){b=document.createElement("button");b.type="button";b.textContent="Install Admin App";b.setAttribute("aria-label","Install Fuel Shift System Admin app");b.style.cssText="position:fixed;z-index:99999;right:16px;bottom:16px;padding:12px 16px;border:0;border-radius:12px;background:#2563eb;color:#fff;font:700 13px Arial,sans-serif;box-shadow:0 5px 18px #0003;cursor:pointer";b.addEventListener("click",async function(){if(!pe)return;pe.prompt();await pe.userChoice;pe=null;b.remove();b=null;});document.body.appendChild(b);}});
+ window.addEventListener("appinstalled",function(){if(b)b.remove();b=null;pe=null;});
 })();
 </script>
 </body></html>
