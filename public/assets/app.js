@@ -3462,11 +3462,15 @@ async function openAdminSaleHistoryDetails(id){
 
   let t=(item&&item.takeover)||{};
   let sales=Array.isArray(item&&item.sales)?item.sales:[];
+  let saleLoadError='';
   try{
     const data=await api('/api/shift-takeovers/'+encodeURIComponent(id)+'/sale-record');
     if(data&&data.takeover)t=data.takeover;
     if(data&&Array.isArray(data.sales))sales=data.sales;
-  }catch(e){}
+    else if(data&&data.error)saleLoadError=String(data.error);
+  }catch(e){
+    saleLoadError=String(e&&e.message?e.message:'Unable to load recorded sales');
+  }
 
   let detailTanks=Array.isArray(window.dashboardTankRecords)?window.dashboardTankRecords:[];
   let detailProducts=Array.isArray(window.dashboardProductRecords)?window.dashboardProductRecords:[];
@@ -3563,7 +3567,7 @@ async function openAdminSaleHistoryDetails(id){
       '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">TANK STOCK</span><h4>Tank stock reconciliation · '+h(tankCode)+'</h4></div></div><div class="history-detail-info-grid"><div><span>Opening stock</span><strong>'+(Number.isFinite(tankOpening)?liters(tankOpening)+' L':'—')+'</strong></div><div><span>Purchase discharges during shift</span><strong>+'+liters(purchaseDischargeLiters)+' L</strong></div><div><span>Tank sales</span><strong>'+liters(tankSalesLiters)+' L</strong></div><div><span>Expected closing stock</span><strong>'+(Number.isFinite(expectedClosingStock)?liters(expectedClosingStock)+' L':'—')+'</strong></div><div><span>Physical closing stock</span><strong>'+(Number.isFinite(tankClosing)?liters(tankClosing)+' L':'—')+'</strong></div><div><span>Stock variance</span><strong>'+(Number.isFinite(calculatedTankVariance)?(calculatedTankVariance>0?'+':'')+liters(calculatedTankVariance)+' L':'—')+'</strong></div></div></div>',
       '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">ATTENDANT PURCHASE DISCHARGES</span><h4>Discharges credited to '+h(attendant||'this attendant')+'</h4></div><span class="history-detail-count">'+attendantDischarges.length+' operation'+(attendantDischarges.length===1?'':'s')+'</span></div>'+attendantDischargeMarkup+'</div>',
       (returnedLiters>0?'<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">RETURNED FUEL</span><h4>Return deduction</h4></div></div><div class="history-detail-info-grid"><div><span>Shift selling price</span><strong>'+money(returnUnitPrice)+' / L</strong></div><div><span>Returned liters</span><strong>'+liters(returnedLiters)+' L</strong></div><div><span>Returned fuel value</span><strong>− '+money(returnedAmount)+'</strong></div><div><span>Gross calculated sales</span><strong>'+money(grossAmount)+'</strong></div><div><span>Net calculated sales</span><strong>'+money(totalAmount)+'</strong></div></div></div>':'')+
-      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">SALES</span><h4>Recorded sales</h4></div><span class="history-detail-count">'+sales.length+' '+(sales.length===1?'entry':'entries')+'</span></div><div class="history-detail-sales">'+(saleRows||'<div class="history-detail-empty">No sale entries were recorded.</div>')+'</div><div class="history-detail-total-row"><span>Entries total</span><strong>'+money(entryTotal)+'</strong></div><div class="history-detail-total-row"><span>Difference vs net sales</span><strong>'+money(entryTotal-totalAmount)+'</strong></div></div>',
+      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">SALES</span><h4>Recorded sales</h4></div><span class="history-detail-count">'+sales.length+' '+(sales.length===1?'entry':'entries')+'</span></div><div class="history-detail-sales">'+(saleLoadError?'<div class="history-detail-empty">Sales could not be loaded: '+h(saleLoadError)+'</div>':(saleRows||'<div class="history-detail-empty">No sale entries were recorded for this shift.</div>'))+'</div><div class="history-detail-total-row"><span>Entries total</span><strong>'+money(entryTotal)+'</strong></div><div class="history-detail-total-row"><span>Difference vs net sales</span><strong>'+money(entryTotal-totalAmount)+'</strong></div></div>',
       '<div class="history-detail-section"><div class="history-detail-info-grid"><div><span>Submitted</span><strong>'+h(submittedAt?new Date(submittedAt).toLocaleString():'—')+'</strong></div><div><span>Confirmed</span><strong>'+h(confirmedAt?new Date(confirmedAt).toLocaleString():'—')+'</strong></div></div></div>'
     ].join('');
     if(box)box.innerHTML=content;
