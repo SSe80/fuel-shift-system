@@ -33,6 +33,29 @@ h1{font-size:clamp(27px,4vw,36px);line-height:1.2;letter-spacing:-.8px;margin:8p
 .page-description{margin:0;color:var(--lg-muted);font-size:13px;line-height:1.6}
 @media(max-width:760px){.logistics-sidebar{min-height:64px;padding:0 10px;gap:8px}.logistics-brand{display:none}.logistics-nav{justify-content:flex-start;gap:4px}.logistics-nav a{padding:11px;font-size:12px}.logistics-nav a span{display:none}.logistics-logout{padding:10px;font-size:12px}.logistics-main .wrap{padding:20px 15px 32px}.page-header{align-items:flex-start;margin-bottom:20px}}
 @media(max-width:480px){.logistics-sidebar{min-height:58px;padding:0 7px}.logistics-nav a{padding:10px;font-size:11px}.logistics-logout{padding:9px;font-size:11px}.logistics-main .wrap{padding:16px 12px 28px}}
+  .delivery-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 18px}
+  .delivery-stat{padding:16px 18px;border:1px solid #e0e8f1;border-radius:14px;background:#fff;box-shadow:0 3px 12px #10182808}
+  .delivery-stat span{display:block;color:#667085;font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.06em}
+  .delivery-stat strong{display:block;margin-top:7px;color:#172033;font-size:23px;font-variant-numeric:tabular-nums}
+  .delivery-panel{border:1px solid #e0e8f1;border-radius:16px;background:#fff;overflow:hidden;box-shadow:0 4px 18px #10182808}
+  .delivery-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 18px;border-bottom:1px solid #e8edf3}
+  .delivery-panel-head h2{margin:0;font-size:17px}.delivery-panel-head p{margin:5px 0 0;color:#667085;font-size:12px}
+  .delivery-filter{width:min(100%,330px);min-height:42px;border:1px solid #d6e0eb;border-radius:10px;padding:0 12px;background:#fff;color:#182230;font:inherit}
+  .delivery-list{display:grid;gap:0}.delivery-card{padding:15px 18px;border-bottom:1px solid #edf1f5}
+  .delivery-card:last-child{border-bottom:0}.delivery-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .delivery-card-title{min-width:0}.delivery-card-title strong{display:block;color:#182230;font-size:14px;overflow-wrap:anywhere}
+  .delivery-card-title small{display:block;margin-top:4px;color:#667085;font-size:11px}
+  .delivery-quantity{flex:0 0 auto;color:#155eef;font-size:17px;font-weight:850;white-space:nowrap}
+  .delivery-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+  .delivery-meta>div{min-width:0;padding:9px 10px;border:1px solid #edf1f5;border-radius:9px;background:#f9fbfd}
+  .delivery-meta span{display:block;color:#7b8794;font-size:10px;margin-bottom:4px}.delivery-meta b{display:block;color:#344054;font-size:12px;overflow-wrap:anywhere}
+  .delivery-attendant{color:#067647!important}.delivery-unknown{color:#b54708!important}
+  .delivery-status{display:inline-flex;align-items:center;border:1px solid #b7e4cb;border-radius:999px;padding:4px 8px;background:#ecfdf3;color:#067647;font-size:10px;font-weight:800}
+  .delivery-status.review{border-color:#fedf89;background:#fffaeb;color:#b54708}
+  .delivery-empty{padding:34px 18px;text-align:center;color:#667085;font-size:13px}
+  .delivery-error{margin:12px 18px;padding:12px;border:1px solid #fecdca;border-radius:10px;background:#fef3f2;color:#b42318;font-size:12px}
+  @media(max-width:680px){.delivery-summary{grid-template-columns:1fr 1fr}.delivery-panel-head{align-items:flex-start;flex-direction:column}.delivery-filter{width:100%}.delivery-meta{grid-template-columns:1fr 1fr}.delivery-card{padding:13px 12px}.delivery-quantity{font-size:15px}}
+  @media(max-width:380px){.delivery-summary{grid-template-columns:1fr}.delivery-card-top{flex-direction:column}.delivery-quantity{align-self:flex-start}}
 </style>
 <script src="assets/logistics-auth.js?v=20261013-01"></script>
 </head>
@@ -57,7 +80,70 @@ h1{font-size:clamp(27px,4vw,36px);line-height:1.2;letter-spacing:-.8px;margin:8p
 <p class="page-description">Logistics workspace</p>
 </div>
 </header>
+<section class="delivery-summary" aria-label="Delivery totals">
+  <div class="delivery-stat"><span>Discharge operations</span><strong id="delivery-operation-count">—</strong></div>
+  <div class="delivery-stat"><span>Total discharged</span><strong id="delivery-total-liters">—</strong></div>
+  <div class="delivery-stat"><span>Attendants identified</span><strong id="delivery-attendant-count">—</strong></div>
+</section>
+<section class="delivery-panel">
+  <div class="delivery-panel-head"><div><h2>Purchase discharge records</h2><p>Each tank discharge is attributed to the attendant working on that same tank at the recorded time.</p></div><input id="delivery-search" class="delivery-filter" type="search" placeholder="Search invoice, tank, attendant…" aria-label="Search purchase discharge records"></div>
+  <div id="delivery-list" class="delivery-list"><div class="delivery-empty">Loading purchase discharge records…</div></div>
+</section>
 </main>
+</div>
+</div>
+<script>
+(function(){
+  'use strict';
+  var allRows=[];
+  var list=document.getElementById('delivery-list');
+  var search=document.getElementById('delivery-search');
+  var countEl=document.getElementById('delivery-operation-count');
+  var litersEl=document.getElementById('delivery-total-liters');
+  var attendantEl=document.getElementById('delivery-attendant-count');
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function number(v){var n=Number(v);return Number.isFinite(n)?n:0;}
+  function fmt(v){return number(v).toLocaleString('en-US',{maximumFractionDigits:2});}
+  function date(v){if(!v)return 'Time not recorded';var d=new Date(v);return Number.isNaN(d.getTime())?'Time not recorded':d.toLocaleString();}
+  function render(){
+    var q=String(search&&search.value||'').trim().toLowerCase();
+    var rows=allRows.filter(function(x){return !q||[x.invoice,x.tank,x.attendant,x.product,x.time].some(function(v){return String(v||'').toLowerCase().includes(q);});});
+    if(!rows.length){list.innerHTML='<div class="delivery-empty">'+(allRows.length?'No discharge records match your search.':'No purchase discharge records have been recorded yet.')+'</div>';return;}
+    list.innerHTML=rows.map(function(x){
+      var identified=!!x.attendant&&x.attendant!=='Attendant not identified';
+      return '<article class="delivery-card"><div class="delivery-card-top"><div class="delivery-card-title"><strong>Invoice '+esc(x.invoice)+' · '+esc(x.product)+'</strong><small>'+esc(x.time)+'</small></div><div class="delivery-quantity">'+fmt(x.quantity)+' L</div></div>'+
+        '<div class="delivery-meta"><div><span>Tank</span><b>'+esc(x.tank)+'</b></div><div><span>Discharged by</span><b class="'+(identified?'delivery-attendant':'delivery-unknown')+'">'+esc(identified?x.attendant:'Not identified')+'</b></div><div><span>Attribution</span><b><span class="delivery-status '+(identified?'':'review')+'">'+(identified?'ATTENDANT MATCHED':'REVIEW REQUIRED')+'</span></b></div><div><span>Operation</span><b>'+(x.operationIndex==null?'Discharge':'Discharge '+(x.operationIndex+1))+'</b></div></div></article>';
+    }).join('');
+  }
+  async function load(){
+    try{
+      var response=await fetch('/api/purchases',{method:'GET',credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json','X-Fuel-Role':'admin'}});
+      var data=await response.json().catch(function(){return null;});
+      if(!response.ok)throw new Error(data&&data.error?data.error:'Unable to load purchase records.');
+      var purchases=Array.isArray(data)?data:(Array.isArray(data&&data.purchases)?data.purchases:[]);
+      allRows=[];
+      purchases.forEach(function(p){
+        (Array.isArray(p.discharge_history)?p.discharge_history:[]).forEach(function(d,index){
+          var quantity=number(d.discharged_quantity_liters!=null?d.discharged_quantity_liters:d.quantity_liters);
+          if(!(quantity>0))return;
+          allRows.push({invoice:p.invoice_number||p.invoice||p.id||'—',product:p.product_code||p.product||'Fuel',
+            tank:d.tank_code||d.tank_name||d.tank_id||'Tank',attendant:d.attendant_name||'',
+            time:date(d.discharge_datetime||d.discharged_at),quantity:quantity,operationIndex:d.operation_index==null?index:d.operation_index});
+        });
+      });
+      allRows.sort(function(a,b){return String(b.time).localeCompare(String(a.time));});
+      var total=allRows.reduce(function(sum,x){return sum+x.quantity;},0);
+      var names=new Set(allRows.map(function(x){return x.attendant;}).filter(Boolean));
+      if(countEl)countEl.textContent=String(allRows.length);
+      if(litersEl)litersEl.textContent=fmt(total)+' L';
+      if(attendantEl)attendantEl.textContent=String(names.size);
+      render();
+    }catch(e){list.innerHTML='<div class="delivery-error">'+esc(e.message||'Unable to load purchase discharge records.')+'</div>';}
+  }
+  if(search)search.addEventListener('input',render);
+  load();
+})();
+</script>
 </div>
 </div>
 </body>
