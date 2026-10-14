@@ -3004,7 +3004,31 @@ def create_purchase():
         "p_compartment_liters":data.get("compartment_liters")
     })
     if status>=400:return jsonify({"error":result}),status
+    purchase_remark=str(data.get("purchase_remark") or "").strip()
+    if purchase_remark:
+        if len(purchase_remark)>5000:return jsonify({"error":"Purchase remark must be 5000 characters or fewer"}),400
+        purchase_obj=result.get("purchase") if isinstance(result,dict) else None
+        purchase_id=(purchase_obj or {}).get("id") if isinstance(purchase_obj,dict) else None
+        if not purchase_id:return jsonify({"error":"Purchase was created, but its ID was not returned so the remark could not be saved."}),500
+        remark_status,remark_result=sb("purchases",method="PATCH",params={"id":"eq."+str(purchase_id)},body={"purchase_remark":purchase_remark},prefer="return=representation")
+        if remark_status>=400:return jsonify({"error":"Purchase was created, but its remark could not be saved.","details":remark_result,"purchase":result}),500
+        if isinstance(result,dict) and isinstance(result.get("purchase"),dict):
+            result["purchase"]["purchase_remark"]=purchase_remark
     return jsonify(result),201
+
+@app.patch("/api/purchases/<purchase_id>/remark")
+def update_purchase_remark(purchase_id):
+    auth=require_admin()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    remark=str(data.get("purchase_remark") or "").strip()
+    if len(remark)>5000:return jsonify({"error":"Purchase remark must be 5000 characters or fewer"}),400
+    ps,rows=sb("purchases",params={"id":"eq."+str(purchase_id),"select":"id","limit":"1"})
+    if ps!=200:return jsonify({"error":"Unable to verify purchase","details":rows}),ps
+    if not rows:return jsonify({"error":"Purchase not found"}),404
+    status,result=sb("purchases",method="PATCH",params={"id":"eq."+str(purchase_id)},body={"purchase_remark":remark},prefer="return=representation")
+    if status>=400:return jsonify({"error":"Purchase remark could not be saved","details":result}),status
+    return jsonify({"ok":True,"purchase_id":str(purchase_id),"purchase_remark":remark}),200
 
 @app.post("/api/purchases/<purchase_id>/discharge")
 def discharge_purchase(purchase_id):
