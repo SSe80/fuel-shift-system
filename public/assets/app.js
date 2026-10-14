@@ -3211,6 +3211,7 @@ async function downloadAdminSaleHistoryDetails(id){
   const tankClosingRaw=t.tank_closing_liters ?? t.closing_tank_liters ?? shift?.tank_closing_liters ?? shift?.closing_liters ?? shift?.closing_tank_liters;
   const tankOpening=tankOpeningRaw==null||tankOpeningRaw===''?NaN:Number(tankOpeningRaw);
   const tankClosing=tankClosingRaw==null||tankClosingRaw===''?NaN:Number(tankClosingRaw);
+  const purchaseDischargeLiters=await getShiftPurchaseDischargeLiters(tankId,startedAt,endedAt);
   const recordedTankSales=Number(t.tank_sales_liters ?? t.total_sales_liters ?? totalLiters);
   const tankSold=Number.isFinite(recordedTankSales)?recordedTankSales:totalLiters;
   const status=String(t.sales_status||(t.sales_confirmed_at?'confirmed':(t.sales_submitted_at?'pending_admin':'unknown'))).replace(/_/g,' ');
@@ -3249,7 +3250,7 @@ async function downloadAdminSaleHistoryDetails(id){
   const hasMultipleReadingTanks=readingTanks.length>1;
   const hasRecordedTankSales=t.tank_sales_liters!=null&&t.tank_sales_liters!==''&&Number.isFinite(Number(t.tank_sales_liters));
   const reconciledTankSold=hasRecordedTankSales?Number(t.tank_sales_liters):(hasMultipleReadingTanks?NaN:totalLiters);
-  const tankExpected=Number.isFinite(tankOpening)&&Number.isFinite(reconciledTankSold)?tankOpening-reconciledTankSold:NaN;
+  const tankExpected=Number.isFinite(tankOpening)&&Number.isFinite(reconciledTankSold)?tankOpening+purchaseDischargeLiters-reconciledTankSold:NaN;
   const tankDiff=Number.isFinite(tankOpening)&&Number.isFinite(tankClosing)&&Number.isFinite(tankExpected)?tankClosing-tankExpected:NaN;
   const variancePct=Number.isFinite(tankOpening)&&tankOpening>0&&Number.isFinite(tankDiff)?tankDiff/tankOpening*100:NaN;
   const tankOpeningLabel=Number.isFinite(tankOpening)?liters(tankOpening)+' L':'—';
@@ -3267,8 +3268,8 @@ async function downloadAdminSaleHistoryDetails(id){
   // Prefer the stored tank variance (matches the on-screen card); otherwise use the calculated one.
   const storedVar=Number(t.tank_variance_liters),storedPct=Number(t.tank_variance_pct);
   const hasTank=Number.isFinite(tankOpening)&&Number.isFinite(tankClosing);
-  const varLiters=(t.tank_variance_liters!=null&&Number.isFinite(storedVar))?storedVar:tankDiff;
-  const varPct=(t.tank_variance_pct!=null&&Number.isFinite(storedPct))?storedPct:variancePct;
+  const varLiters=tankDiff;
+  const varPct=variancePct;
   const varTone=Number.isFinite(varLiters)&&Math.abs(varLiters)>=0.005?WARN:[21,128,61];
   const tankRow=[tankCode,hasTank?fmtNum(tankOpening)+' L':'—',hasTank?fmtNum(tankClosing)+' L':'—',Number.isFinite(reconciledTankSold)?fmtNum(reconciledTankSold)+' L':'—',
     Number.isFinite(varLiters)?(varLiters>0?'+':'')+fmtNum(varLiters)+' L':'—',
@@ -3303,6 +3304,8 @@ async function downloadAdminSaleHistoryDetails(id){
       {label:'Difference vs net sales',value:(differenceValue>0?'+':'')+fmtMoney(differenceValue),size:11.5,tone:hasDifference?'warn':undefined}
     ],
     totals2:[
+      {label:'Purchase discharges',value:'+'+fmtNum(purchaseDischargeLiters)+' L',size:11.5},
+      {label:'Expected closing stock',value:Number.isFinite(tankExpected)?fmtNum(tankExpected)+' L':'—',size:11.5},
       {label:'Status',value:statusLabel,size:11.5,tone:/confirmed/i.test(statusLabel)?'good':undefined},
       {label:'Submitted',value:fmtDate(submittedAt),size:11.5},
       {label:'Confirmed',value:fmtDate(confirmedAt),size:11.5}
@@ -3383,6 +3386,23 @@ function downloadPurchaseDetailPdf(){
   toast('PDF downloaded');
 }
 window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
+
+async function getShiftPurchaseDischargeLiters(tankId,startAt,endAt){
+  if(!tankId)return 0;
+  try{
+    const data=await api('/api/tank-movements');
+    const movements=Array.isArray(data)?data:(Array.isArray(data?.movements)?data.movements:[]);
+    const start=startAt?new Date(startAt).getTime():NaN;
+    const end=endAt?new Date(endAt).getTime():NaN;
+    return movements.reduce((sum,m)=>{
+      if(String(m.tank_id||'')!==String(tankId)||String(m.movement_type||'').toLowerCase()!=='purchase')return sum;
+      const at=new Date(m.created_at||m.movement_at||m.discharge_at||0).getTime();
+      if(Number.isFinite(start)&&at<start)return sum;
+      if(Number.isFinite(end)&&at>end)return sum;
+      return sum+Math.max(0,Number(m.quantity_liters||0));
+    },0);
+  }catch(_){return 0;}
+}
 
 async function openAdminSaleHistoryDetails(id){
   // Admin Sales uses adminSalesData.history. The attendant dashboard may also
@@ -3494,12 +3514,17 @@ async function openAdminSaleHistoryDetails(id){
     const entryTotal=sales.reduce(function(sum,s){return sum+Number(s.amount||0);},0);
     const tankOpening=t.tank_opening_liters==null||t.tank_opening_liters===''?NaN:Number(t.tank_opening_liters);
     const tankClosing=t.tank_closing_liters==null||t.tank_closing_liters===''?NaN:Number(t.tank_closing_liters);
+    const tankIdForReconciliation=t.tank_id||relatedTank?.id||item.tank?.id||item.dispenser?.tank_id;
+    const purchaseDischargeLiters=await getShiftPurchaseDischargeLiters(tankIdForReconciliation,startedAt,endedAt);
+    const tankSalesLiters=Number(t.tank_sales_liters??totalLiters);
+    const expectedClosingStock=Number.isFinite(tankOpening)?tankOpening+purchaseDischargeLiters-tankSalesLiters:NaN;
+    const calculatedTankVariance=Number.isFinite(tankClosing)&&Number.isFinite(expectedClosingStock)?tankClosing-expectedClosingStock:NaN;
 
     const content=[
       '<div class="history-detail-overview"><div class="history-detail-main"><span class="section-kicker">SHIFT DETAILS</span><h4>'+h(dispenser)+'</h4><p>'+h(displayProductCode)+' · '+h(tankCode)+'</p></div><div class="history-detail-amount"><span>'+h(statusLabel)+' · NET SALES</span><strong>'+money(totalAmount)+'</strong><small>'+liters(totalLiters)+' L net sold</small></div></div>',
       '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">SHIFT</span><h4>Shift information</h4></div></div><div class="history-detail-info-grid"><div><span>Attendant</span><strong>'+h(attendant)+'</strong></div><div><span>Shift</span><strong>'+h(shiftName)+'</strong></div><div><span>Started</span><strong>'+h(startedAt?new Date(startedAt).toLocaleString():'—')+'</strong></div><div><span>Ended</span><strong>'+h(endedAt?new Date(endedAt).toLocaleString():'—')+'</strong></div><div><span>Dispenser / Nozzle</span><strong>'+h(dispenser)+'</strong></div><div><span>Tank</span><strong>'+h(tankCode)+'</strong></div><div><span>Product</span><strong>'+h(displayProductCode)+'</strong></div><div><span>DSR ID</span><strong class="mono">'+h(dsrId||'—')+'</strong></div><div class="wide"><span>Shift ID</span><strong class="mono">'+h(t.shift_id||'—')+'</strong></div></div></div>',
       '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">READINGS</span><h4>Opening & closing meter readings</h4></div></div><div class="history-detail-readings">'+(rows||'<div class="history-detail-empty">No nozzle readings were recorded.</div>')+'</div><div class="history-detail-total-row"><span>Gross dispenser liters</span><strong>'+liters(grossLiters)+' L</strong></div><div class="history-detail-total-row"><span>Returned to tank</span><strong>'+liters(returnedLiters)+' L</strong></div><div class="history-detail-total-row"><span>Net liters sold</span><strong>'+liters(totalLiters)+' L</strong></div></div>',
-      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">TANK STOCK</span><h4>Recorded tank stock · '+h(tankCode)+'</h4></div></div><div class="history-detail-info-grid"><div><span>Opening stock</span><strong>'+(Number.isFinite(tankOpening)?liters(tankOpening)+' L':'—')+'</strong></div><div><span>Closing stock</span><strong>'+(Number.isFinite(tankClosing)?liters(tankClosing)+' L':'—')+'</strong></div><div><span>Tank sales</span><strong>'+(t.tank_sales_liters!=null&&Number.isFinite(Number(t.tank_sales_liters))?liters(t.tank_sales_liters)+' L':'—')+'</strong></div><div><span>Stock variance</span><strong>'+(t.tank_variance_liters!=null&&Number.isFinite(Number(t.tank_variance_liters))?liters(t.tank_variance_liters)+' L':'—')+'</strong></div></div></div>',
+      '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">TANK STOCK</span><h4>Tank stock reconciliation · '+h(tankCode)+'</h4></div></div><div class="history-detail-info-grid"><div><span>Opening stock</span><strong>'+(Number.isFinite(tankOpening)?liters(tankOpening)+' L':'—')+'</strong></div><div><span>Purchase discharges during shift</span><strong>+'+liters(purchaseDischargeLiters)+' L</strong></div><div><span>Tank sales</span><strong>'+liters(tankSalesLiters)+' L</strong></div><div><span>Expected closing stock</span><strong>'+(Number.isFinite(expectedClosingStock)?liters(expectedClosingStock)+' L':'—')+'</strong></div><div><span>Physical closing stock</span><strong>'+(Number.isFinite(tankClosing)?liters(tankClosing)+' L':'—')+'</strong></div><div><span>Stock variance</span><strong>'+(Number.isFinite(calculatedTankVariance)?(calculatedTankVariance>0?'+':'')+liters(calculatedTankVariance)+' L':'—')+'</strong></div></div></div>',
       (returnedLiters>0?'<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">RETURNED FUEL</span><h4>Return deduction</h4></div></div><div class="history-detail-info-grid"><div><span>Shift selling price</span><strong>'+money(returnUnitPrice)+' / L</strong></div><div><span>Returned liters</span><strong>'+liters(returnedLiters)+' L</strong></div><div><span>Returned fuel value</span><strong>− '+money(returnedAmount)+'</strong></div><div><span>Gross calculated sales</span><strong>'+money(grossAmount)+'</strong></div><div><span>Net calculated sales</span><strong>'+money(totalAmount)+'</strong></div></div></div>':'')+
       '<div class="history-detail-section"><div class="history-detail-section-head"><div><span class="section-kicker">SALES</span><h4>Recorded sales</h4></div><span class="history-detail-count">'+sales.length+' '+(sales.length===1?'entry':'entries')+'</span></div><div class="history-detail-sales">'+(saleRows||'<div class="history-detail-empty">No sale entries were recorded.</div>')+'</div><div class="history-detail-total-row"><span>Entries total</span><strong>'+money(entryTotal)+'</strong></div><div class="history-detail-total-row"><span>Difference vs net sales</span><strong>'+money(entryTotal-totalAmount)+'</strong></div></div>',
       '<div class="history-detail-section"><div class="history-detail-info-grid"><div><span>Submitted</span><strong>'+h(submittedAt?new Date(submittedAt).toLocaleString():'—')+'</strong></div><div><span>Confirmed</span><strong>'+h(confirmedAt?new Date(confirmedAt).toLocaleString():'—')+'</strong></div></div></div>'
