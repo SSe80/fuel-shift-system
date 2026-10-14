@@ -2846,6 +2846,108 @@ def create_sale():
         "error":"Direct fuel-volume sales are disabled. Fuel sales are recorded from nozzle meter reconciliation during shift handover or dispenser deactivation."
     }),410
 
+@app.get("/api/shift-purchase-discharges")
+def shift_purchase_discharges():
+    auth=require_login()
+    if auth:return auth
+    shift_id=str(request.args.get("shift_id") or "").strip()
+    if not shift_id:return jsonify({"error":"shift_id is required"}),400
+
+    ss,shift_rows=sb("shifts",params={
+        "id":"eq."+shift_id,
+        "select":"id,employee_id,nozzle_id,start_time,end_time,status",
+        "limit":"1"
+    })
+    if ss!=200:return jsonify({"error":"Unable to load shift"}),ss
+    if not shift_rows:return jsonify({"error":"Shift not found"}),404
+    shift=shift_rows[0]
+    is_admin=session.get("role")=="admin"
+    if not is_admin and str(shift.get("employee_id") or "")!=str(session.get("employee_id") or ""):
+        return jsonify({"error":"You can only view purchase discharges for your own shift"}),403
+
+    def _shift_discharge_parse_dt(value):
+        if not value:return None
+        try:
+            parsed=datetime.fromisoformat(str(value).replace("Z","+00:00"))
+            if parsed.tzinfo is None:parsed=parsed.replace(tzinfo=timezone.utc)
+            return parsed.astimezone(timezone.utc)
+        except Exception:return None
+
+    started=_shift_discharge_parse_dt(shift.get("start_time"))
+    ended=_shift_discharge_parse_dt(shift.get("end_time"))
+    if not started:return jsonify({"error":"Shift start time is unavailable"}),422
+
+    # Resolve the physical tank from normalized nozzle readings first. A single
+    # shift can have multiple nozzles, so include every tank actually connected.
+    tank_ids=set()
+    rs,reading_rows=sb("shift_nozzle_readings",params={
+        "shift_id":"eq."+shift_id,
+        "select":"nozzle_id"
+    })
+    if rs==200:
+        nozzle_ids=sorted(set(str(x.get("nozzle_id")) for x in reading_rows if x.get("nozzle_id")))
+        if nozzle_ids:
+            ns,nozzle_rows=sb("dispenser_nozzles",params={
+                "id":"in.("+",".join(nozzle_ids)+")",
+                "select":"id,tank_id"
+            })
+            if ns==200:
+                tank_ids.update(str(x.get("tank_id")) for x in nozzle_rows if x.get("tank_id"))
+    # Legacy fallback for older shifts without normalized readings.
+    if not tank_ids and shift.get("nozzle_id"):
+        ns,legacy_rows=sb("nozzles",params={
+            "id":"eq."+str(shift.get("nozzle_id")),
+            "select":"id,tank_id",
+            "limit":"1"
+        })
+        if ns==200 and legacy_rows and legacy_rows[0].get("tank_id"):
+            tank_ids.add(str(legacy_rows[0]["tank_id"]))
+
+    if not tank_ids:return jsonify([]),200
+    ps,purchases_rows=sb("purchases",params={
+        "select":"*",
+        "order":"purchase_date.desc",
+        "limit":"200"
+    })
+    if ps!=200:return jsonify({"error":"Unable to load purchase discharge records"}),ps
+
+    employee_name=None
+    es,employee_rows=sb("employees",params={
+        "id":"eq."+str(shift.get("employee_id") or ""),
+        "select":"id,name",
+        "limit":"1"
+    })
+    if es==200 and employee_rows:employee_name=employee_rows[0].get("name")
+
+    output=[]
+    for purchase in purchases_rows or []:
+        for operation in purchase.get("discharge_history") or []:
+            if not isinstance(operation,dict):continue
+            tank_id=str(operation.get("tank_id") or "")
+            if tank_id not in tank_ids:continue
+            discharged_at=operation.get("discharge_datetime") or operation.get("discharged_at")
+            discharged_dt=_shift_discharge_parse_dt(discharged_at)
+            if not discharged_dt or discharged_dt<started or (ended and discharged_dt>=ended):continue
+            quantity=operation.get("discharged_quantity_liters",operation.get("quantity_liters",0))
+            try:quantity=float(quantity or 0)
+            except (TypeError,ValueError):quantity=0
+            if quantity<=0:continue
+            output.append({
+                "purchase_id":purchase.get("id"),
+                "invoice_number":purchase.get("invoice_number") or purchase.get("invoice") or "—",
+                "product":purchase.get("product") or "—",
+                "tank_id":tank_id,
+                "tank_code":operation.get("tank_code") or "Tank",
+                "discharge_datetime":discharged_at,
+                "quantity_liters":quantity,
+                "attendant_name":employee_name or "Attendant not identified",
+                "attendant_shift_id":shift_id,
+                "attribution_status":"inside_shift" if employee_name else "attendant_unknown"
+            })
+    output.sort(key=lambda x:str(x.get("discharge_datetime") or ""))
+    return jsonify(output),200
+
+
 @app.get("/api/purchases")
 def purchases():
     auth=require_admin()
