@@ -7,11 +7,11 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#100607",
-  "theme_color": "#c92f38",
+  "background_color": "#2a080d",
+  "theme_color": "#dc2626",
   "icons": [
     {
-      "src": "/icons/app-icon.svg",
+      "src": "/icons/attendant-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
