@@ -2896,8 +2896,13 @@ def purchase_pdf(purchase_id):
             try: expected=float(before)+float(quantity)
             except (TypeError,ValueError): expected=None
         recorded=e.get("tank_stock_recorded_liters")
+        if recorded is None: recorded=e.get("physical_tank_liters_after")
+        if recorded is None: recorded=e.get("tank_stock_closing_liters")
+        if expected is None: expected=e.get("expected_tank_liters_after")
         difference=e.get("tank_stock_difference_liters")
         if difference is None: difference=e.get("tank_stock_adjustment_liters")
+        if difference is None: difference=e.get("physical_vs_system_difference_liters")
+        if difference is None: difference=e.get("stock_difference_liters")
         if difference is None and recorded is not None and expected is not None:
             try: difference=float(recorded)-float(expected)
             except (TypeError,ValueError): difference=None
