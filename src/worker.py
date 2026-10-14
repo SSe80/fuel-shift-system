@@ -816,7 +816,7 @@ def get_tank_difference_alerts():
                 except (TypeError,ValueError):continue
                 if abs(difference)<=handover_tolerance:continue
                 tank_id=str(tank_row.get("tank_id") or tank_row.get("id") or "")
-                tank_label=str(tank_row.get("tank_code") or tank_row.get("tank_name") or ("Tank "+tank_id[:8] if tank_id else "Tank"))
+                tank_label=str(tank_row.get("tank_code") or tank_row.get("tank") or tank_row.get("tank_name") or ("Tank "+tank_id[:8] if tank_id else "Tank"))
                 alerts.append({
                     "key":"dsr-tank-difference:"+report_day+":"+tank_id,
                     "level":"warning",
