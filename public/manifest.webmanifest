@@ -1,0 +1,20 @@
+{
+  "name": "Fuel Shift System",
+  "short_name": "Fuel Shift",
+  "description": "Fuel station shift and sales management",
+  "id": "/attendant-login.html",
+  "start_url": "/attendant-login.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#100607",
+  "theme_color": "#c92f38",
+  "icons": [
+    {
+      "src": "/icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
