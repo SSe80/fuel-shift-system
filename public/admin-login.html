@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Admin Login</title>
+  <link rel="manifest" href="/admin-manifest.webmanifest">
+  <meta name="theme-color" content="#3182ce">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Fuel Admin">
+  <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/style.css">
   <style>
     :root {
@@ -136,6 +142,8 @@
     button:hover { filter: brightness(1.08); }
     button:active { transform: translateY(1px); }
 
+    .install-button { display: none; margin-top: 12px; background: #172033; box-shadow: none; }
+
     .hint {
       margin: 22px 0 0;
       color: var(--muted);
@@ -178,12 +186,36 @@
         <button type="submit">Sign in</button>
       </form>
 
+      <button type="button" id="install-app" class="install-button">Install Admin App</button>
       <p class="hint">Administrator access</p>
       <div id="toast" class="toast"></div>
     </section>
   </main>
 
-  <script src="assets/login.js?v=20261007-03"></script>
+  <script>
+  let adminInstallPrompt = null;
+  const adminInstallButton = document.getElementById("install-app");
+  window.addEventListener("beforeinstallprompt", event => {
+    event.preventDefault();
+    adminInstallPrompt = event;
+    adminInstallButton.style.display = "block";
+  });
+  adminInstallButton.addEventListener("click", async () => {
+    if (!adminInstallPrompt) return;
+    adminInstallPrompt.prompt();
+    await adminInstallPrompt.userChoice;
+    adminInstallPrompt = null;
+    adminInstallButton.style.display = "none";
+  });
+  window.addEventListener("appinstalled", () => {
+    adminInstallButton.style.display = "none";
+    adminInstallPrompt = null;
+  });
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("/service-worker.js").catch(error => console.error("Service worker registration failed:", error)));
+  }
+</script>
+<script src="assets/login.js?v=20261007-03"></script>
 <script src="assets/popup-portal.js?v=20261011-p1"></script>
 </body>
 </html>
