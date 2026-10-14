@@ -3211,7 +3211,7 @@ async function downloadAdminSaleHistoryDetails(id){
   const tankClosingRaw=t.tank_closing_liters ?? t.closing_tank_liters ?? shift?.tank_closing_liters ?? shift?.closing_liters ?? shift?.closing_tank_liters;
   const tankOpening=tankOpeningRaw==null||tankOpeningRaw===''?NaN:Number(tankOpeningRaw);
   const tankClosing=tankClosingRaw==null||tankClosingRaw===''?NaN:Number(tankClosingRaw);
-  const purchaseDischargeLiters=await getShiftPurchaseDischargeLiters(tankId,startedAt,endedAt,tankCode);
+  const purchaseDischargeLiters=await getShiftPurchaseDischargeLiters(tankId,startedAt,endedAt,tankCode,t.shift_id||item.shift_id);
   const attendantDischarges=await getShiftPurchaseDischargeDetails(tankId,startedAt,endedAt,tankCode,attendant,t.shift_id||item.shift_id);
   const attendantDischargeSummary=attendantDischarges.length?attendantDischarges.map(x=>String(x.tank_code||tankCode)+' '+Number(x.quantity_liters||0).toLocaleString('en-US',{maximumFractionDigits:2})+' L').join('; '):'None attributed during this shift';
   const recordedTankSales=Number(t.tank_sales_liters ?? t.total_sales_liters ?? totalLiters);
@@ -3390,76 +3390,39 @@ function downloadPurchaseDetailPdf(){
 }
 window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
 
-async function getShiftPurchaseDischargeLiters(tankId,startAt,endAt,tankCode){
-  const normalizedTankCode=String(tankCode||'').trim().toLowerCase();
-  if(!tankId&&!normalizedTankCode)return 0;
-  const start=startAt?new Date(startAt).getTime():NaN;
-  const end=endAt?new Date(endAt).getTime():NaN;
-  const inWindow=at=>{
-    const ts=at?new Date(at).getTime():NaN;
-    return (!Number.isFinite(start)||!Number.isFinite(ts)||ts>=start)&&
-      (!Number.isFinite(end)||!Number.isFinite(ts)||ts<=end);
-  };
-  // Purchases keep the authoritative per-tank discharge history. A tank movement
-  // row is useful as a fallback, but the purchase history is more complete.
+async function getShiftPurchaseDischargeLiters(tankId,startAt,endAt,tankCode,shiftId){
+  // Use the authenticated, shift-scoped endpoint. The general purchases endpoint
+  // is admin-only and must not be exposed to attendants.
+  if(!shiftId)return 0;
   try{
-    const data=await api('/api/purchases');
-    const purchases=Array.isArray(data)?data:(Array.isArray(data?.purchases)?data.purchases:[]);
-    let foundHistory=false,total=0;
-    purchases.forEach(p=>{
-      const history=Array.isArray(p?.discharge_history)?p.discharge_history:[];
-      history.forEach(d=>{
-        const sameTankId=!!tankId&&String(d?.tank_id||'')===String(tankId);
-        const sameTankCode=!!normalizedTankCode&&String(d?.tank_code||'').trim().toLowerCase()===normalizedTankCode;
-        if(!sameTankId&&!sameTankCode)return;
-        const qty=Number(d?.discharged_quantity_liters??d?.quantity_liters??0);
-        if(!(qty>0)||!inWindow(d?.discharge_datetime||d?.discharged_at||p?.discharged_at||p?.created_at))return;
-        foundHistory=true;total+=qty;
-      });
-    });
-    if(foundHistory)return total;
-  }catch(_){}
-  try{
-    const data=await api('/api/tank-movements');
-    const movements=Array.isArray(data)?data:(Array.isArray(data?.movements)?data.movements:[]);
-    return movements.reduce((sum,m)=>{
-      const sameTankId=!!tankId&&String(m.tank_id||'')===String(tankId);
-      const sameTankCode=!!normalizedTankCode&&String(m.tank_code||'').trim().toLowerCase()===normalizedTankCode;
-      if((!sameTankId&&!sameTankCode)||String(m.movement_type||'').toLowerCase()!=='purchase')return sum;
-      if(!inWindow(m.created_at||m.movement_at||m.discharge_at))return sum;
-      return sum+Math.max(0,Number(m.quantity_liters||0));
-    },0);
-  }catch(_){return 0;}
+    const data=await api('/api/shift-purchase-discharges?shift_id='+encodeURIComponent(String(shiftId)));
+    const discharges=Array.isArray(data)?data:(Array.isArray(data?.discharges)?data.discharges:[]);
+    return discharges.reduce((sum,d)=>sum+Math.max(0,Number(d?.quantity_liters||0)),0);
+  }catch(_){
+    // Older deployments may not have the scoped endpoint yet. A movement-only
+    // fallback is intentionally omitted: it can include movements outside this
+    // shift and silently corrupt tank reconciliation.
+    return 0;
+  }
 }
 
 async function getShiftPurchaseDischargeDetails(tankId,startAt,endAt,tankCode,attendantName,shiftId){
-  const normalizedTankCode=String(tankCode||'').trim().toLowerCase();
-  const normalizedAttendant=String(attendantName||'').trim().toLowerCase();
-  const start=startAt?new Date(startAt).getTime():NaN,end=endAt?new Date(endAt).getTime():NaN;
+  if(!shiftId)return [];
   try{
-    const data=await api('/api/purchases');
-    const purchases=Array.isArray(data)?data:(Array.isArray(data?.purchases)?data.purchases:[]);
-    const out=[];
-    purchases.forEach(p=>{
-      (Array.isArray(p?.discharge_history)?p.discharge_history:[]).forEach(d=>{
-        const sameTankId=!!tankId&&String(d?.tank_id||'')===String(tankId);
-        const sameTankCode=!!normalizedTankCode&&String(d?.tank_code||'').trim().toLowerCase()===normalizedTankCode;
-        if(!sameTankId&&!sameTankCode)return;
-        const at=d?.discharge_datetime||d?.discharged_at;
-        const ts=at?new Date(at).getTime():NaN;
-        if(!Number.isFinite(ts)||(Number.isFinite(start)&&ts<start)||(Number.isFinite(end)&&ts>end))return;
-        const operator=String(d?.attendant_name||'').trim();
-        const matchesShift=!!shiftId&&String(d?.attendant_shift_id||'')===String(shiftId);
-        if(normalizedAttendant&&operator.toLowerCase()!==normalizedAttendant&&!matchesShift)return;
-        const quantity=Number(d?.discharged_quantity_liters??d?.quantity_liters??0);
-        if(!(quantity>0))return;
-        out.push({purchase_id:p.id,invoice_number:p.invoice_number||p.invoice||'—',product:p.product_code||p.product||'—',
-          tank_id:d.tank_id,tank_code:d.tank_code||tankCode||'Tank',discharge_datetime:at,quantity_liters:quantity,
-          attendant_name:operator||'Attendant not identified',attribution_status:d.attendant_attribution_status||'unknown'});
-      });
-    });
-    return out.sort((x,y)=>String(x.discharge_datetime||'').localeCompare(String(y.discharge_datetime||'')));
-  }catch(_){return [];}
+    const data=await api('/api/shift-purchase-discharges?shift_id='+encodeURIComponent(String(shiftId)));
+    const discharges=Array.isArray(data)?data:(Array.isArray(data?.discharges)?data.discharges:[]);
+    return discharges.map(d=>({
+      purchase_id:d.purchase_id,
+      invoice_number:d.invoice_number||'—',
+      product:d.product||'—',
+      tank_id:d.tank_id,
+      tank_code:d.tank_code||tankCode||'Tank',
+      discharge_datetime:d.discharge_datetime,
+      quantity_liters:Number(d.quantity_liters||0),
+      attendant_name:d.attendant_name||'Attendant not identified',
+      attribution_status:d.attribution_status||'unknown'
+    })).filter(d=>d.quantity_liters>0)
+      .sort((x,y)=>String(x.discharge_datetime||'').localeCompare(String(y.discharge_datetime||'')));
 }
 
 async function openAdminSaleHistoryDetails(id){
@@ -3573,7 +3536,7 @@ async function openAdminSaleHistoryDetails(id){
     const tankOpening=t.tank_opening_liters==null||t.tank_opening_liters===''?NaN:Number(t.tank_opening_liters);
     const tankClosing=t.tank_closing_liters==null||t.tank_closing_liters===''?NaN:Number(t.tank_closing_liters);
     const tankIdForReconciliation=t.tank_id||relatedTank?.id||item.tank?.id||item.dispenser?.tank_id;
-    const purchaseDischargeLiters=await getShiftPurchaseDischargeLiters(tankIdForReconciliation,startedAt,endedAt,tankCode);
+    const purchaseDischargeLiters=await getShiftPurchaseDischargeLiters(tankIdForReconciliation,startedAt,endedAt,tankCode,t.shift_id||item.shift_id);
     const tankSalesLiters=Number(t.tank_sales_liters??totalLiters);
     const expectedClosingStock=Number.isFinite(tankOpening)?tankOpening+purchaseDischargeLiters-tankSalesLiters:NaN;
     const calculatedTankVariance=Number.isFinite(tankClosing)&&Number.isFinite(expectedClosingStock)?tankClosing-expectedClosingStock:NaN;
