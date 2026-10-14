@@ -1235,13 +1235,20 @@ window.downloadPurchaseDetailPdf=async function(options){
     dischargeRemarks.forEach((note,i)=>remarkParts.push((dischargeRemarks.length>1?'Discharge note '+(i+1)+': ':'Discharge note: ')+note));
     const remark=remarkParts.join('\n')||'No remark recorded.';
     const remarkLines=remark.split('\n').flatMap(part=>wrap(part,CW-8,7));
-    const remarkHeight=Math.max(18,10+remarkLines.length*4.2);
-    if(y+remarkHeight+18>H-20){footer();doc.addPage();header();y=38;}
     title('Purchase Remark');
-    box(M,y,CW,remarkHeight);
-    remarkLines.forEach((ln,i)=>T(ln,M+4,y+7+i*4.2,7,muted));
-    y+=remarkHeight+7;
-    if(y>H-22){footer();doc.addPage();header();}
+    let remarkIndex=0;
+    while(remarkIndex<remarkLines.length){
+      const available=H-22-y;
+      const chunkSize=Math.max(1,Math.floor((available-10)/4.2));
+      const chunk=remarkLines.slice(remarkIndex,remarkIndex+chunkSize);
+      const remarkHeight=Math.max(18,10+chunk.length*4.2);
+      if(y+remarkHeight>H-20){footer();doc.addPage();header();title('Purchase Remark · Continued');}
+      box(M,y,CW,remarkHeight);
+      chunk.forEach((ln,i)=>T(ln,M+4,y+7+i*4.2,7,muted));
+      y+=remarkHeight+7;
+      remarkIndex+=chunk.length;
+    }
+    if(y+12>H-20){footer();doc.addPage();header();}
     T('Record ID',M,y,5,muted,'bold');T(String(p.id||'—'),M,y+5.5,5.5,navy);footer();
     const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);
     const fileName='purchase_'+safe+'.pdf';
