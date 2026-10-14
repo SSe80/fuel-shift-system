@@ -99,7 +99,10 @@ ROLE_SESSION_COOKIE = {
     "admin": "__Host-fuel_admin_session",
     "attendant": "__Host-fuel_attendant_session"
 }
+# Attendant sessions keep their existing 24-hour lifetime. Admin sessions are
+# intentionally long-lived and are cleared by the explicit admin logout.
 ROLE_SESSION_MAX_AGE = 60 * 60 * 24
+ADMIN_SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 * 10
 
 def _session_secret_bytes():
     return str(app.secret_key).encode("utf-8")
@@ -108,9 +111,12 @@ def _make_role_token(employee_id, role):
     payload = {
         "employee_id": str(employee_id),
         "role": str(role),
-        "exp": int(datetime.now(timezone.utc).timestamp()) + ROLE_SESSION_MAX_AGE,
         "nonce": secrets.token_urlsafe(12)
     }
+    # Admin tokens do not expire automatically; attendant token lifetime is
+    # unchanged. Account deactivation and explicit logout still invalidate access.
+    if role != "admin":
+        payload["exp"] = int(datetime.now(timezone.utc).timestamp()) + ROLE_SESSION_MAX_AGE
     raw = base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode()).decode().rstrip("=")
     sig = hmac.new(_session_secret_bytes(), raw.encode(), hashlib.sha256).hexdigest()
     return raw + "." + sig
@@ -124,7 +130,9 @@ def _read_role_token(token, expected_role):
         payload = json.loads(base64.urlsafe_b64decode(raw + "==").decode())
         if payload.get("role") != expected_role:
             return None
-        if int(payload.get("exp", 0)) < int(datetime.now(timezone.utc).timestamp()):
+        # Legacy/admin tokens without an expiry remain valid until logout.
+        # Attendant tokens retain the existing expiration check.
+        if payload.get("exp") is not None and int(payload["exp"]) < int(datetime.now(timezone.utc).timestamp()):
             return None
         if not payload.get("employee_id"):
             return None
@@ -168,7 +176,7 @@ def _set_role_cookie(response, role, employee_id):
     response.set_cookie(
         ROLE_SESSION_COOKIE[role],
         _make_role_token(employee_id, role),
-        max_age=ROLE_SESSION_MAX_AGE,
+        max_age=ADMIN_SESSION_COOKIE_MAX_AGE if role == "admin" else ROLE_SESSION_MAX_AGE,
         secure=True,
         httponly=True,
         samesite="Lax",
