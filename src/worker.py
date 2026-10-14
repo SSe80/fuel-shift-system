@@ -3551,8 +3551,16 @@ def shift_takeover_sale_record(takeover_id):
     if status!=200:return jsonify(takeovers),status
     if not takeovers:return jsonify({"error":"Shift takeover not found"}),404
     takeover=takeovers[0]
-    if session.get("role")!="admin" and str(takeover.get("from_employee_id"))!=str(session.get("employee_id")):
-        return jsonify({"error":"Unauthorized"}),403
+    # Both attendants involved in this handover may view the read-only sale
+    # record. Keep unrelated attendants restricted, and keep recording/cancel
+    # endpoints governed by their own stricter RPC checks.
+    if session.get("role")!="admin":
+        employee_id=str(session.get("employee_id"))
+        if employee_id not in (
+            str(takeover.get("from_employee_id") or ""),
+            str(takeover.get("to_employee_id") or "")
+        ):
+            return jsonify({"error":"Unauthorized"}),403
     ss,sales=sb("shift_takeover_sales",params={"takeover_id":"eq."+takeover_id,"select":"id,sale_type_id,amount,submitted_amount,reason,recorded_by,created_at","order":"created_at.asc,id.asc"})
     if ss!=200:return jsonify(sales),ss
     type_ids=[str(x.get("sale_type_id")) for x in sales if x.get("sale_type_id")]
