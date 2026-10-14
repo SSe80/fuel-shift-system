@@ -1003,6 +1003,7 @@
       <div class="purchase-field purchase-product-field"><label>Product</label><select id="purchase-product" required aria-hidden="true" tabindex="-1"><option value="">Select product</option></select><div id="purchase-product-options" class="purchase-product-options" role="group" aria-label="Choose fuel product"><p class="muted">Loading products…</p></div></div>
       <div class="purchase-field"><label for="purchase-invoice">Invoice number</label><input id="purchase-invoice" type="text" placeholder="Invoice number" autocomplete="off" required></div>
       <div class="purchase-field purchase-wide"><label for="purchase-ordered-quantity">Ordered quantity</label><div class="purchase-input-unit"><input id="purchase-ordered-quantity" type="text" inputmode="decimal" autocomplete="off" placeholder="0" required><span>Liters</span></div></div>
+      <div class="purchase-field purchase-wide"><label for="purchase-remark">Purchase remark <span style="font-weight:500;color:#667085">(optional)</span></label><textarea id="purchase-remark" rows="3" maxlength="5000" placeholder="e.g. The difference volume (169 L) is not paid."></textarea></div>
       <div class="purchase-wizard-actions"><button type="button" onclick="closePurchaseModal()">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(1)">Continue</button></div>
     </section>
     <section class="purchase-wizard-step" data-purchase-step="2">
@@ -1619,7 +1620,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     const tankSections=tankEntries.map(entry=>{
       return '<article class="purchase-detail-tank-card"><div class="purchase-detail-tank-head"><div><span class="purchase-detail-tank-dot" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(entry.tankCode)+'</strong></div><span>Tank</span></div><div class="purchase-detail-row"><span>Discharge operations</span><strong>'+history.filter(e=>String(e?.tank_id||'')===String(entry.tankId)).length+'</strong></div></article>';
     }).join('');
-    const purchaseRemark=[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||'';
+    const purchaseRemark=String(p.purchase_remark||p.purchase_remark_note||p.remark||'').trim()||[...history].reverse().map(e=>String(e?.tank_stock_remark||'').trim()).find(Boolean)||'';
     const el=document.getElementById('purchase-detail-content');
     if(el)el.innerHTML=
       '<div class="purchase-detail-hero">'+
@@ -1637,8 +1638,23 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       (tankSections?'<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Tanks</h4><span>'+tankEntries.length+' tank'+(tankEntries.length===1?'':'s')+'</span></div>'+tankSections+'</section>':'')+
       '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Delivery</h4><span class="purchase-detail-delivery-status">'+purchaseH(statusText||'—')+'</span></div>'+rows([['Delivered quantity',purchaseLiters(total)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Undischarged quantity',purchaseLiters(remaining)+' L'],['Difference',difference],['Fully discharged at',p.discharged_at?new Date(p.discharged_at).toLocaleString():'Not yet']])+'</section>'+
       (history.length?'<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Discharge History</h4><span>'+history.length+' operation'+(history.length===1?'':'s')+'</span></div>'+eventRows+'</section>':'')+
-      '<section class="purchase-detail-remark"><div class="purchase-detail-remark-head"><div><span class="purchase-detail-kicker">FINAL NOTE</span><h4>Purchase Remark</h4></div><span>Optional</span></div><p>'+purchaseH(purchaseRemark||'No remark added for this purchase.')+'</p></section>';
+      '<section class="purchase-detail-remark"><div class="purchase-detail-remark-head"><div><span class="purchase-detail-kicker">FINAL NOTE</span><h4>Purchase Remark</h4></div><span>Editable</span></div><textarea id="purchase-detail-remark-input" rows="3" maxlength="5000" placeholder="Add a note about this purchase">'+purchaseH(purchaseRemark)+'</textarea><div style="display:flex;justify-content:flex-end;margin-top:10px"><button type="button" class="primary" onclick="savePurchaseRemark(\''+purchaseH(p.id)+'\')">Save remark</button></div><p id="purchase-detail-remark-status" aria-live="polite"></p></section>';
     const m=document.getElementById('purchase-detail-modal');if(m){m.classList.add('open');m.setAttribute('aria-hidden','false');}
+  };
+  window.savePurchaseRemark=async function(id){
+    const input=document.getElementById('purchase-detail-remark-input');
+    const status=document.getElementById('purchase-detail-remark-status');
+    if(!input)return;
+    if(status){status.textContent='Saving remark…';status.className='purchase-status';}
+    try{
+      await purchaseApi('/api/purchases/'+encodeURIComponent(id)+'/remark',{method:'PATCH',body:JSON.stringify({purchase_remark:input.value.trim()})});
+      const purchase=(purchaseDetailData||[]).find(p=>String(p.id)===String(id));
+      if(purchase)purchase.purchase_remark=input.value.trim();
+      if(status){status.textContent='Purchase remark saved. Download a new PDF to include it.';status.className='purchase-status success';}
+      await loadPurchases();
+    }catch(error){
+      if(status){status.textContent=error.message||'Unable to save purchase remark.';status.className='purchase-status error';}
+    }
   };
   let purchaseDetailTanks=[];
   window.togglePurchaseHistoryRecordedCard=function(id){
@@ -2161,7 +2177,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     if(!product||!invoice||!Number.isFinite(orderedQuantity)||orderedQuantity<=0||!compartments||compartmentInputs.length!==compartments||!Number.isFinite(q)||q<=0){setStatus('Purchase details are incomplete. Enter the product, invoice, quantity, and truck details.',true);return;}
     try{
       setStatus('Confirming purchase…',false);
-      await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product,quantity_liters:q,invoice_number:invoice,ordered_quantity_liters:orderedQuantity,driver_name:driverName,driver_phone:driverPhone,plate_number:plateNumber,truck_compartments:compartments,compartment_liters:compartmentInputs.map(input=>getPurchaseCompartmentLiters(input)),compartment_dip_mm:purchaseTruckType==='contracted'?compartmentInputs.map(input=>parseQuantity(input.value)):null,registered_truck_id:purchaseTruckType==='contracted'?(selectedPurchaseTruck?.databaseId||selectedPurchaseTruck?.id||null):null})});
+      await purchaseApi('/api/purchases',{method:'POST',body:JSON.stringify({product,quantity_liters:q,invoice_number:invoice,ordered_quantity_liters:orderedQuantity,purchase_remark:document.getElementById('purchase-remark')?.value.trim()||'',driver_name:driverName,driver_phone:driverPhone,plate_number:plateNumber,truck_compartments:compartments,compartment_liters:compartmentInputs.map(input=>getPurchaseCompartmentLiters(input)),compartment_dip_mm:purchaseTruckType==='contracted'?compartmentInputs.map(input=>parseQuantity(input.value)):null,registered_truck_id:purchaseTruckType==='contracted'?(selectedPurchaseTruck?.databaseId||selectedPurchaseTruck?.id||null):null})});
       const summary=
         '<div class="purchase-confirmation-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div>'+
         '<div class="purchase-confirmation-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>'+
@@ -2180,6 +2196,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       setTruckMode('');
       document.getElementById('purchase-product').value='';
       document.getElementById('purchase-invoice').value='';
+      const purchaseRemarkInput=document.getElementById('purchase-remark');if(purchaseRemarkInput)purchaseRemarkInput.value='';
       const container=document.getElementById('purchase-compartment-liters');if(container)container.innerHTML='';
       closePurchaseModal();
       await loadPurchases();
