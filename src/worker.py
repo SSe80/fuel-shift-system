@@ -2853,8 +2853,66 @@ def purchases():
     status,rows=sb("purchases",params=params)
     if status != 200:
         return jsonify(rows),status
-    for row in rows:
-        row["attendant"]=None
+
+    # Attribute each discharge to the attendant whose shift was running on
+    # the same physical tank at that timestamp, never to the admin recorder.
+    try:
+        ss,shift_rows=sb("shifts",params={"select":"id,employee_id,nozzle_id,tank_id,start_time,end_time,status","order":"start_time.desc","limit":"10000"})
+        if ss==200:
+            nozzle_ids=sorted(set(str(x.get("nozzle_id")) for x in shift_rows if x.get("nozzle_id")))
+            nozzle_tank_map={}
+            if nozzle_ids:
+                ns,nozzle_rows=sb("dispenser_nozzles",params={"id":"in.("+",".join(nozzle_ids)+")","select":"id,tank_id"})
+                if ns==200:nozzle_tank_map={str(x.get("id")):str(x.get("tank_id")) for x in nozzle_rows if x.get("id") and x.get("tank_id")}
+            employee_ids=sorted(set(str(x.get("employee_id")) for x in shift_rows if x.get("employee_id")))
+            employee_name_map={}
+            if employee_ids:
+                es,employee_rows=sb("employees",params={"id":"in.("+",".join(employee_ids)+")","select":"id,name","limit":"10000"})
+                if es==200:employee_name_map={str(x.get("id")):str(x.get("name") or "").strip() for x in employee_rows}
+            def _purchase_parse_dt(value):
+                if not value:return None
+                try:
+                    parsed=datetime.fromisoformat(str(value).replace("Z","+00:00"))
+                    if parsed.tzinfo is None:parsed=parsed.replace(tzinfo=timezone.utc)
+                    return parsed.astimezone(timezone.utc)
+                except Exception:return None
+            for purchase in rows or []:
+                enriched=[]
+                for operation in purchase.get("discharge_history") or []:
+                    op=dict(operation) if isinstance(operation,dict) else {}
+                    dt=_purchase_parse_dt(op.get("discharge_datetime") or op.get("discharged_at"))
+                    tank_id=str(op.get("tank_id") or "")
+                    if not dt:
+                        op["attendant_name"]=None
+                        op["attendant_attribution_status"]="invalid_timestamp"
+                        enriched.append(op)
+                        continue
+                    matches=[]
+                    for sh in shift_rows or []:
+                        started=_purchase_parse_dt(sh.get("start_time"))
+                        ended=_purchase_parse_dt(sh.get("end_time"))
+                        shift_tank_id=nozzle_tank_map.get(str(sh.get("nozzle_id") or "")) or str(sh.get("tank_id") or "")
+                        if not started or not tank_id or not shift_tank_id or shift_tank_id!=tank_id:continue
+                        if started<=dt and (ended is None or dt<ended):matches.append(sh)
+                    if len(matches)==1:
+                        sh=matches[0]
+                        op["attendant_name"]=employee_name_map.get(str(sh.get("employee_id") or "")) or None
+                        op["attendant_shift_id"]=sh.get("id")
+                        op["attendant_attribution_status"]="inside_shift" if op.get("attendant_name") else "attendant_unknown"
+                    elif len(matches)>1:
+                        op["attendant_name"]=None
+                        op["attendant_shift_id"]=None
+                        op["attendant_attribution_status"]="ambiguous_overlap"
+                    else:
+                        op["attendant_name"]=None
+                        op["attendant_shift_id"]=None
+                        op["attendant_attribution_status"]="outside_shift"
+                    enriched.append(op)
+                purchase["discharge_history"]=enriched
+                purchase["attendant"]=None
+    except Exception:
+        # Keep purchases available if attribution lookups are temporarily unavailable.
+        for purchase in rows or []:purchase["attendant"]=None
     return jsonify(rows),200
 
 @app.get("/api/purchases/<purchase_id>/pdf")
@@ -4660,51 +4718,36 @@ def daily_report(report_date_override=None):
     def _parse_aware_dt(value):
         return _parse_aware_dt_for_report(value)
 
-    def _attribute_discharge_to_shift(discharge_datetime):
+    # Resolve each shift nozzle's physical tank before matching a discharge.
+    discharge_nozzle_tank_map={str(n.get("id")):str(n.get("tank_id")) for n in (dispenser_nozzle_rows or []) if n.get("id") and n.get("tank_id")}
+    discharge_handover_tank_map={str(h.get("shift_id")):str(h.get("tank_id")) for h in (handover_rows or []) if h.get("shift_id") and h.get("tank_id")}
+
+    def _attribute_discharge_to_shift(discharge_datetime, discharge_tank_id=None):
         dt=_parse_aware_dt(discharge_datetime)
+        discharge_tank_id=str(discharge_tank_id or "")
         if not dt:
-            return {
-                "shift_id":None,
-                "shift_started_at":None,
-                "shift_ended_at":None,
-                "shift_attribution_status":"invalid_timestamp"
-            }
+            return {"shift_id":None,"shift_started_at":None,"shift_ended_at":None,"shift_attribution_status":"invalid_timestamp"}
         matches=[]
         for sh in discharge_attribution_shifts:
             started=_parse_aware_dt(sh.get("start_time"))
             ended=_parse_aware_dt(sh.get("end_time"))
-            if not started:
-                continue
-            # Half-open interval [start, end) prevents a discharge exactly at
-            # a handover boundary from being attributed to both shifts.
-            if report_start_utc <= started < report_end_utc and started <= dt and (ended is None or dt < ended):
-                matches.append(sh)
+            if not started:continue
+            shift_tank_id=discharge_nozzle_tank_map.get(str(sh.get("nozzle_id") or "")) or discharge_handover_tank_map.get(str(sh.get("id") or ""))
+            # Do not assign a discharge to an unrelated shift if its tank is unknown.
+            if discharge_tank_id and (not shift_tank_id or str(shift_tank_id)!=discharge_tank_id):continue
+            # Half-open interval [start, end) avoids double attribution at handover.
+            if report_start_utc <= started < report_end_utc and started <= dt and (ended is None or dt < ended):matches.append(sh)
         if len(matches)==1:
             sh=matches[0]
-            return {
-                "shift_id":sh.get("id"),
-                "shift_employee_id":sh.get("employee_id"),
+            return {"shift_id":sh.get("id"),"shift_employee_id":sh.get("employee_id"),
                 "shift_employee_name":(employee_map.get(str(sh.get("employee_id"))) or {}).get("name") or "Unknown",
-                "shift_nozzle_id":sh.get("nozzle_id"),
-                "shift_started_at":sh.get("start_time"),
-                "shift_ended_at":sh.get("end_time"),
-                "shift_status":sh.get("status"),
-                "shift_attribution_status":"inside_shift"
-            }
+                "shift_nozzle_id":sh.get("nozzle_id"),"shift_started_at":sh.get("start_time"),
+                "shift_ended_at":sh.get("end_time"),"shift_status":sh.get("status"),
+                "shift_attribution_status":"inside_shift"}
         if len(matches)>1:
-            return {
-                "shift_id":None,
-                "shift_started_at":None,
-                "shift_ended_at":None,
-                "shift_attribution_status":"ambiguous_overlap",
-                "overlapping_shift_ids":[str(x.get("id")) for x in matches if x.get("id")]
-            }
-        return {
-            "shift_id":None,
-            "shift_started_at":None,
-            "shift_ended_at":None,
-            "shift_attribution_status":"outside_shift"
-        }
+            return {"shift_id":None,"shift_started_at":None,"shift_ended_at":None,
+                "shift_attribution_status":"ambiguous_overlap","overlapping_shift_ids":[str(x.get("id")) for x in matches if x.get("id")]}
+        return {"shift_id":None,"shift_started_at":None,"shift_ended_at":None,"shift_attribution_status":"outside_shift"}
 
     seen_discharge_operations=set()
     for p in purchase_rows:
@@ -4720,7 +4763,7 @@ def daily_report(report_date_override=None):
             if not tid:
                 continue
             discharged=float(op.get("discharged_quantity_liters") or sum(float(v or 0) for v in _json_list(op.get("compartment_liters"))))
-            discharge_attribution=_attribute_discharge_to_shift(op.get("discharge_datetime"))
+            discharge_attribution=_attribute_discharge_to_shift(op.get("discharge_datetime"), tid)
             # Prefer a persisted operation id. For legacy rows, use a stable
             # transaction fingerprint so the same operation represented twice
             # cannot increase the DSR purchase contribution twice.
@@ -4767,9 +4810,11 @@ def daily_report(report_date_override=None):
 
             discharge_operations_by_tank.setdefault(tid,[]).append({
                 "purchase_id":p.get("id"),
+                "invoice_number":p.get("invoice_number"),
+                "product":p.get("product"),
                 "operation_index":op_index,
                 "discharge_datetime":op.get("discharge_datetime"),
-                "tank_code":op.get("tank_code"),
+                "tank_code":op.get("tank_code") or (tank_map.get(tid) or {}).get("tank_code"),
                 **discharge_attribution,
                 "discharged_liters":discharged,
                 "tank_liters_before":float(before) if before is not None else None,
@@ -4791,12 +4836,14 @@ def daily_report(report_date_override=None):
                 if tid:
                     discharged=float(p.get("discharged_quantity_liters") or 0)
                     purchase_by_tank[tid]=purchase_by_tank.get(tid,0.0)+discharged
-                    discharge_attribution=_attribute_discharge_to_shift(p.get("discharged_at"))
+                    discharge_attribution=_attribute_discharge_to_shift(p.get("discharged_at"), p.get("tank_id"))
                     attributed_shift_id=str(discharge_attribution.get("shift_id") or "")
                     if attributed_shift_id:
                         purchase_by_shift[attributed_shift_id]=purchase_by_shift.get(attributed_shift_id,0.0)+discharged
                     discharge_operations_by_tank.setdefault(tid,[]).append({
                         "purchase_id":p.get("id"),
+                        "invoice_number":p.get("invoice_number"),
+                        "product":p.get("product"),
                         "operation_index":None,
                         "discharge_datetime":p.get("discharged_at"),
                         "tank_code":(tank_all_by_id.get(tid) or {}).get("tank_code"),
@@ -4809,11 +4856,19 @@ def daily_report(report_date_override=None):
                         "compartment_indexes":[],
                     })
 
-    # Attach physically discharged purchase volume to each responsible shift
-    # after discharge operations have been fully attributed.
+    # Attach each discharge to exactly one matching tank shift and attendant.
+    purchase_operations_by_shift={}
+    all_purchase_discharge_operations=[]
+    for operations in discharge_operations_by_tank.values():
+        for operation in operations:
+            all_purchase_discharge_operations.append(operation)
+            sid=str(operation.get("shift_id") or "")
+            if sid and operation.get("shift_attribution_status")=="inside_shift":
+                purchase_operations_by_shift.setdefault(sid,[]).append(operation)
     for summary in shift_summary:
         sid=str(summary.get("shift_id") or "")
         summary["tank_purchases_liters"]=float(purchase_by_shift.get(sid,0.0))
+        summary["purchase_discharge_operations"]=sorted(purchase_operations_by_shift.get(sid,[]),key=lambda x:str(x.get("discharge_datetime") or ""))
 
     # Only include tanks that actually participate in this DSR through a
     # shift, a nozzle, or a purchase/discharge recorded for this report date.
@@ -5092,6 +5147,7 @@ def daily_report(report_date_override=None):
         },
         "sales":sales_rows,
         "purchases":purchase_rows,
+        "purchase_discharge_operations":all_purchase_discharge_operations,
         "handovers":handover_rows,
         "shift_summary":shift_summary,
         "dispenser_summary":dispenser_summary,
