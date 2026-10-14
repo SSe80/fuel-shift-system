@@ -58,6 +58,26 @@ body.admin-settings-page #drive-settings-section .section-heading p{
   }
 }
 </style>
+
+<style>
+/* Keep the dispenser activation panel near the top of the visible screen. */
+#dispenser-activate-modal {
+  align-items: flex-start !important;
+  justify-content: center !important;
+  overflow-y: auto !important;
+  padding: max(12px, env(safe-area-inset-top)) 12px 20px !important;
+  box-sizing: border-box;
+}
+#dispenser-activate-modal > .modal-card {
+  margin: 0 auto !important;
+  max-height: calc(100dvh - 32px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+@media (max-height: 700px) {
+  #dispenser-activate-modal > .modal-card { max-height: calc(100dvh - 20px) !important; }
+}
+</style>
 </head>
 <body class="admin-shell admin-settings-page admin-control-ui" data-app-page="adminSettings">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Admin navigation">
