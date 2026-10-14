@@ -4605,12 +4605,17 @@ def daily_report():
             tank_nozzle_sales_by_shift.setdefault(tid,{})
             tank_nozzle_sales_by_shift[tid][sid]=tank_nozzle_sales_by_shift[tid].get(sid,0.0)+float((sale or {}).get("liters_sold") or 0)
 
-    # Tank detail: first shift opening, last shift closing, discharged
-    # purchases, sales and stock difference for each tank.
+    # Tank detail is a DSR-level reconciliation, not a sum of individual
+    # handover variances. Resolve each shift to the tank configured on its
+    # dispenser first, because shared-tank membership comes from the actual
+    # dispenser connection. Keep the handover tank as a legacy fallback only.
+    # This groups every dispenser connected to the same physical tank into one
+    # DSR stock equation and avoids splitting a shared tank by stale handover IDs.
     tank_shift_rows={}
     for sh in day_shifts:
         hrow=handover_by_shift_id.get(str(sh.get("id"))) or {}
-        tid=str(hrow.get("tank_id") or "")
+        dispenser=dispenser_map.get(str(sh.get("nozzle_id") or "")) or {}
+        tid=str(dispenser.get("tank_id") or hrow.get("tank_id") or "")
         if tid:
             tank_shift_rows.setdefault(tid,[]).append((sh,hrow))
     # Use actual discharge operations as the DSR purchase ledger. A purchase
