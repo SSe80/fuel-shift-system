@@ -36,6 +36,9 @@
       if (user.role !== role) {
         throw new Error('This account is not valid for the selected login');
       }
+      // Persist the role selector across browser restarts. The role itself is not
+      // an authentication credential; the HttpOnly server cookie remains authoritative.
+      try { window.localStorage.setItem('fuelRole', role); } catch (_) {}
       try { window.sessionStorage.setItem('fuelRole', role); } catch (_) {}
       var destination = successUrl || (role === 'admin' ? 'admin-dashboard.html' : 'attendant-dashboard.html');
       // The logistics guard may return users to the page they originally requested.
