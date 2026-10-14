@@ -1,5 +1,5 @@
-const CACHE_NAME = "fuel-shift-shell-v2";
-const SHELL = ["/attendant-login.html", "/manifest.webmanifest", "/icons/app-icon.svg"];
+const CACHE_NAME = "fuel-shift-shell-v3";
+const SHELL = ["/attendant-login.html", "/manifest.webmanifest", "/admin-manifest.webmanifest", "/icons/attendant-icon.svg", "/icons/admin-icon.svg"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
 });
