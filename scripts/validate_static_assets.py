@@ -65,10 +65,28 @@ def main():
         except Exception as exc:
             ERRORS.append(f"{page.relative_to(ROOT)}: HTML parse failed: {exc}")
 
+    # Check relative assets referenced from CSS, including backgrounds and fonts.
+    for stylesheet in sorted(PUBLIC.rglob("*.css")):
+        try:
+            css = stylesheet.read_text(encoding="utf-8")
+        except Exception as exc:
+            ERRORS.append(f"{stylesheet.relative_to(ROOT)}: CSS read failed: {exc}")
+            continue
+        for value in re.findall(r"url\\(\\s*(['\"]?)(.*?)\\1\\s*\\)", css, re.I):
+            check_reference(stylesheet, value[1])
+        for value in re.findall(r"@import\\s+(?:url\\()?\\s*['\"]([^'\"]+)['\"]", css, re.I):
+            check_reference(stylesheet, value)
+
+    # Validate not only manifest JSON, but also the local launch page and icons.
     for manifest in (PUBLIC / "manifest.webmanifest", PUBLIC / "admin-manifest.webmanifest"):
         if manifest.exists():
             try:
-                json.loads(manifest.read_text(encoding="utf-8"))
+                data = json.loads(manifest.read_text(encoding="utf-8"))
+                if data.get("start_url"):
+                    check_reference(manifest, data["start_url"])
+                for icon in data.get("icons", []):
+                    if isinstance(icon, dict) and icon.get("src"):
+                        check_reference(manifest, icon["src"])
             except Exception as exc:
                 ERRORS.append(f"{manifest.relative_to(ROOT)}: invalid JSON: {exc}")
 
