@@ -3389,16 +3389,36 @@ window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
 
 async function getShiftPurchaseDischargeLiters(tankId,startAt,endAt){
   if(!tankId)return 0;
+  const start=startAt?new Date(startAt).getTime():NaN;
+  const end=endAt?new Date(endAt).getTime():NaN;
+  const inWindow=at=>{
+    const ts=at?new Date(at).getTime():NaN;
+    return (!Number.isFinite(start)||!Number.isFinite(ts)||ts>=start)&&
+      (!Number.isFinite(end)||!Number.isFinite(ts)||ts<=end);
+  };
+  // Purchases keep the authoritative per-tank discharge history. A tank movement
+  // row is useful as a fallback, but the purchase history is more complete.
+  try{
+    const data=await api('/api/purchases');
+    const purchases=Array.isArray(data)?data:(Array.isArray(data?.purchases)?data.purchases:[]);
+    let foundHistory=false,total=0;
+    purchases.forEach(p=>{
+      const history=Array.isArray(p?.discharge_history)?p.discharge_history:[];
+      history.forEach(d=>{
+        if(String(d?.tank_id||'')!==String(tankId))return;
+        const qty=Number(d?.discharged_quantity_liters??d?.quantity_liters??0);
+        if(!(qty>0)||!inWindow(d?.discharge_datetime||d?.discharged_at||p?.discharged_at||p?.created_at))return;
+        foundHistory=true;total+=qty;
+      });
+    });
+    if(foundHistory)return total;
+  }catch(_){}
   try{
     const data=await api('/api/tank-movements');
     const movements=Array.isArray(data)?data:(Array.isArray(data?.movements)?data.movements:[]);
-    const start=startAt?new Date(startAt).getTime():NaN;
-    const end=endAt?new Date(endAt).getTime():NaN;
     return movements.reduce((sum,m)=>{
       if(String(m.tank_id||'')!==String(tankId)||String(m.movement_type||'').toLowerCase()!=='purchase')return sum;
-      const at=new Date(m.created_at||m.movement_at||m.discharge_at||0).getTime();
-      if(Number.isFinite(start)&&at<start)return sum;
-      if(Number.isFinite(end)&&at>end)return sum;
+      if(!inWindow(m.created_at||m.movement_at||m.discharge_at))return sum;
       return sum+Math.max(0,Number(m.quantity_liters||0));
     },0);
   }catch(_){return 0;}
