@@ -2453,4 +2453,9 @@ window.uploadPurchaseDetailPdf=async function(purchase){
   .purchase-truck-choice .purchase-truck-choice-compartments{display:block;width:100%;color:#667085;font-size:12px;font-weight:650;line-height:1.3;opacity:1;text-align:left;overflow-wrap:anywhere}
   .purchase-truck-choice.selected .purchase-truck-choice-plate{border-color:#93c5fd;background:#dbeafe;color:#1e40af}
   @media(max-width:520px){.purchase-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.purchase-choice{padding:12px 9px;font-size:13px;align-items:center;text-align:center}.purchase-truck-choice{align-items:flex-start!important;text-align:left!important}.purchase-truck-choice .purchase-truck-choice-plate{align-self:flex-start}}
+
+/* Keep the Discharge Purchase popup at the top of the viewport on desktop and mobile. */
+#purchase-discharge-modal.modal.open{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;display:block!important;padding:0!important;overflow:hidden!important}
+#purchase-discharge-modal.modal.open>.modal-backdrop{position:fixed!important;inset:0!important}
+#purchase-discharge-modal.modal.open>.purchase-discharge-card{position:fixed!important;top:max(8px,env(safe-area-inset-top))!important;left:50%!important;right:auto!important;bottom:auto!important;transform:translateX(-50%)!important;margin:0!important;width:min(520px,calc(100vw - 20px))!important;max-width:520px!important;max-height:calc(100dvh - max(16px,env(safe-area-inset-top) + env(safe-area-inset-bottom)))!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;box-sizing:border-box!important}
 </style>
