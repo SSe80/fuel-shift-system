@@ -1501,28 +1501,54 @@ def logistics_save_product_fees():
     items=data.get("items")
     if not isinstance(items,list) or len(items)>500:
         return jsonify({"error":"Provide a valid items array (maximum 500 products)"}),400
+    # Resolve every fee against the product catalogue. Never trust a client-supplied
+    # product name and ID independently; that can attach a fee to the wrong product.
+    ps,products=sb("products",params={"select":"id,name,code_name,active","limit":"1000"})
+    if ps!=200:return jsonify({"error":"Unable to load product catalogue","details":products}),ps
     now=datetime.now(timezone.utc).isoformat()
+    saved=0
     for item in items:
         if not isinstance(item,dict):continue
-        product_name=str(item.get("product_name") or "").strip()
-        product_id=str(item.get("product_id") or "").strip()
+        requested_name=str(item.get("product_name") or "").strip()
+        requested_id=str(item.get("product_id") or "").strip()
         try:rate=float(item.get("fee_per_liter",0))
         except (TypeError,ValueError):return jsonify({"error":"Each fee must be a valid number"}),400
-        if not product_name or not math.isfinite(rate) or rate<0:return jsonify({"error":"Product names and non-negative fee rates are required"}),400
-        existing=None
-        if product_id:
-            es,found=sb("logistics_product_fees",params={"product_id":"eq."+product_id,"select":"id","limit":"1"})
+        if not requested_name or not math.isfinite(rate) or rate<0:
+            return jsonify({"error":"Product names and non-negative fee rates are required"}),400
+        by_id=next((p for p in products if str(p.get("id"))==requested_id),None) if requested_id else None
+        by_name=next((p for p in products if requested_name.casefold() in
+                      (str(p.get("name") or "").strip().casefold(),
+                       str(p.get("code_name") or "").strip().casefold())),None)
+        if requested_id and not by_id:
+            return jsonify({"error":"Product ID does not exist in the catalogue","product_id":requested_id}),400
+        if by_id and by_name and str(by_id.get("id"))!=str(by_name.get("id")):
+            return jsonify({"error":"Product name and product ID refer to different products","product_name":requested_name,"product_id":requested_id}),400
+        product=by_id or by_name
+        if not product:
+            return jsonify({"error":"Product not found in catalogue","product_name":requested_name}),404
+        if not product.get("active"):
+            return jsonify({"error":"Product is inactive","product_name":requested_name}),400
+        canonical_id=str(product["id"])
+        # Keep the established logistics display convention (MGR / AGO).
+        canonical_name=str(product.get("code_name") or product["name"]).strip()
+        es,found=sb("logistics_product_fees",params={"product_id":"eq."+canonical_id,"select":"id","limit":"1"})
+        if es!=200:return jsonify({"error":"Unable to check saved fee","details":found}),es
+        existing=found[0] if found else None
+        body={"product_id":canonical_id,"product_name":canonical_name,"fee_per_liter":rate,
+              "currency":"ETB","active":True,"updated_at":now}
+        if existing:
+            status,result=sb("logistics_product_fees",method="PATCH",params={"id":"eq."+str(existing["id"])},body=body,prefer="return=representation")
+        else:
+            # Migrate an older name-only row in place if one exists, to avoid duplicates.
+            es,found=sb("logistics_product_fees",params={"product_name":"eq."+canonical_name,"select":"id","limit":"1"})
             if es!=200:return jsonify({"error":"Unable to check saved fee","details":found}),es
-            if found:existing=found[0]
-        if existing is None:
-            es,found=sb("logistics_product_fees",params={"product_name":"eq."+product_name,"select":"id","limit":"1"})
-            if es!=200:return jsonify({"error":"Unable to check saved fee","details":found}),es
-            if found:existing=found[0]
-        body={"product_id":product_id or None,"product_name":product_name,"fee_per_liter":rate,"currency":"ETB","active":True,"updated_at":now}
-        if existing:status,result=sb("logistics_product_fees",method="PATCH",params={"id":"eq."+str(existing["id"])},body=body,prefer="return=representation")
-        else:status,result=sb("logistics_product_fees",method="POST",body=body,prefer="return=representation")
+            if found:
+                status,result=sb("logistics_product_fees",method="PATCH",params={"id":"eq."+str(found[0]["id"])},body=body,prefer="return=representation")
+            else:
+                status,result=sb("logistics_product_fees",method="POST",body=body,prefer="return=representation")
         if status>=400:return jsonify({"error":"Unable to save product fee","details":result}),status
-    return jsonify({"ok":True,"saved":len(items)}),200
+        saved+=1
+    return jsonify({"ok":True,"saved":saved}),200
 
 @app.get("/api/logistics/deliveries")
 def logistics_list_deliveries():
@@ -1790,12 +1816,20 @@ def create_tank():
     if not product or capacity <= 0:
         return jsonify({"error":"Product and valid tank size are required"}),400
 
-    ps, products = sb("products", params={"select":"name,code_name,active","name":"eq."+product,"limit":"1"})
-    if ps != 200 or not products:
+    # Accept either the catalogue name (e.g. Gasoline) or its code (e.g. MGR),
+    # but persist the canonical name and foreign key from the same catalogue row.
+    ps, products = sb("products", params={"select":"id,name,code_name,active","limit":"1000"})
+    if ps != 200:
+        return jsonify({"error":"Unable to load product catalogue","details":products}),ps
+    p = next((row for row in products if
+              str(row.get("name") or "").strip().casefold() == product.casefold() or
+              str(row.get("code_name") or "").strip().casefold() == product.casefold()), None)
+    if not p:
         return jsonify({"error":"Product not found"}),404
-    p = products[0]
     if not p.get("active"):
         return jsonify({"error":"Product is inactive"}),400
+    product = str(p["name"]).strip()
+    product_id = str(p["id"])
     code_name = str(p["code_name"]).strip()
 
     ts, tanks = sb("tanks", params={"select":"tank_code","product":"eq."+product})
@@ -1813,6 +1847,7 @@ def create_tank():
     status,result=sb("tanks",method="POST",body={
         "tank_code":tank_code,
         "product":product,
+        "product_id":product_id,
         "capacity_liters":capacity,
         "current_liters":0,
         "current_mm":0,
