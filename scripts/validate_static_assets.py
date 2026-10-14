@@ -74,7 +74,7 @@ def main():
             continue
         for value in re.findall(r"url\(\s*(['\"]?)(.*?)\1\s*\)", css, re.I):
             check_reference(stylesheet, value[1])
-        for value in re.findall(r"url\(\s*(['\"]?)(.*?)\1\s*\)", css, re.I):
+        for value in re.findall(r"@import\s+(?:url\()?\s*['\"]([^'\"]+)['\"]", css, re.I):
             check_reference(stylesheet, value)
 
     # Validate not only manifest JSON, but also the local launch page and icons.
