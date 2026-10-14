@@ -1,6 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<rect width="512" height="512" rx="112" fill="#100607"/>
-<rect x="54" y="54" width="404" height="404" rx="88" fill="#c92f38"/>
-<path d="M256 100 376 168v176l-120 68-120-68V168z" fill="#fff" opacity=".12"/>
-<path d="M290 112 188 274h72l-38 126 104-174h-72z" fill="#fff"/>
+  <title>M.E.A Software Development</title>
+  <rect width="512" height="512" rx="96" fill="#0b1220"/>
+  <defs>
+    <linearGradient id="mea" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#20c8e6"/>
+      <stop offset=".52" stop-color="#3999ed"/>
+      <stop offset="1" stop-color="#6268f0"/>
+    </linearGradient>
+  </defs>
+  <text x="256" y="222" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="124" font-weight="500" letter-spacing="1" fill="url(#mea)">M.E.A</text>
+  <path d="M158 267H354" stroke="#34435c" stroke-width="3" stroke-linecap="round"/>
+  <text x="256" y="310" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="400" letter-spacing="4.5" fill="#a8b5ca">SOFTWARE</text>
+  <text x="256" y="339" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="400" letter-spacing="4.5" fill="#a8b5ca">DEVELOPMENT</text>
 </svg>
