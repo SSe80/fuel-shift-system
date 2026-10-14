@@ -1663,7 +1663,7 @@ body.attendant-dashboard-page #admin-sale-history-details .history-detail-sectio
 body.attendant-dashboard-page .attendant-action-result-backdrop{position:absolute!important;inset:0!important;background:rgba(15,23,42,.62)!important}
 body.attendant-dashboard-page .attendant-action-result-modal{z-index:1400!important}
 body.attendant-dashboard-page .attendant-action-result-card{position:relative!important;z-index:1!important;width:min(430px,calc(100vw - 30px))!important;max-height:82vh!important;overflow:auto!important}
-@media(max-width:600px){body.attendant-dashboard-page #admin-sale-history-details{align-items:flex-start!important;padding:8px 8px max(8px, env(safe-area-inset-bottom))!important;overflow-y:auto!important}body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card{width:calc(100vw - 16px)!important;max-height:calc(100dvh - 16px)!important;margin:0 auto!important;border-radius:16px!important}body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card>.top{padding:14px 14px 12px!important}body.attendant-dashboard-page #admin-sale-history-details #admin-sale-history-details-content{padding:10px!important}body.attendant-dashboard-page #admin-sale-history-details .admin-sale-history-download{width:66px!important;flex-basis:66px!important}}
+@media(max-width:600px){body.attendant-dashboard-page #admin-sale-history-details{align-items:flex-start!important;padding:8px 8px max(8px, env(safe-area-inset-bottom))!important;overflow-y:auto!important}body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card{width:calc(100vw - 16px)!important;max-height:calc(100dvh - 16px)!important;margin:0 auto!important;border-radius:16px!important}body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card>.top{padding:14px 14px 12px!important}body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card{height:calc(100vh - 24px)!important;height:calc(100dvh - 24px)!important;width:calc(100vw - 16px)!important}body.attendant-dashboard-page #admin-sale-history-details #admin-sale-history-details-content{padding:10px!important}body.attendant-dashboard-page #admin-sale-history-details .admin-sale-history-download{width:66px!important;flex-basis:66px!important}}
 /* FINAL — Pending Shift Confirmation card redesign */
 body.attendant-dashboard-page .pending-confirmation-card{border:1px solid #e3e8ef!important;border-radius:16px!important;background:#fff!important;box-shadow:0 5px 18px rgba(16,24,40,.055)!important}
 body.attendant-dashboard-page .pending-confirmation-card::before{width:4px!important;background:#b4232f!important}
@@ -1896,7 +1896,11 @@ body.attendant-dashboard-page #admin-sale-history-details{
 body.attendant-dashboard-page #admin-sale-history-details .admin-sale-review-card{
   display:flex!important;
   flex-direction:column!important;
+  width:min(760px,calc(100vw - 24px))!important;
+  height:min(88vh,900px)!important;
+  height:min(88dvh,900px)!important;
   min-height:0!important;
+  max-height:calc(100vh - 24px)!important;
   max-height:calc(100dvh - 24px)!important;
   overflow:hidden!important;
 }
