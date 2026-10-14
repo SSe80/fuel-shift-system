@@ -5347,7 +5347,7 @@ function buildDailyReportPdfBlob(){
 
   const shiftCards=shifts.map((s,i)=>({
     title:'SHIFT '+(i+1)+' - '+(s.attendant||s.employee_name||'Unknown'),
-    sub:(s.dispenser||'-')+' / '+(productFor(s.product).code||s.product||''),
+    sub:(s.dispenser||'-')+' / '+(productFor(s.product).code||s.product||'')+((Array.isArray(s.purchase_discharge_operations)&&s.purchase_discharge_operations.length)?' / Discharges: '+s.purchase_discharge_operations.map(op=>String(op.invoice_number||'Invoice')+' · '+String(op.tank_code||'Tank')+' '+fmtL(op.discharged_liters)).join('; '):''),
     cols:[{label:'Start',value:dailyReportTime(s.started_at||s.start_time)},{label:'End',value:dailyReportTime(s.ended_at||s.end_time)},
       {label:'Sold',value:fmtL(s.sales_liters||s.total_sales_liters)},{label:'Purchase discharged',value:'+'+fmtL(s.tank_purchases_liters||0)},{label:'Sales',value:fmtM(s.sales_amount||s.total_sales_amount),tone:'good',w:93}]
   }));
@@ -5567,7 +5567,7 @@ async function loadDailyReport(showDetails=false){
       '<div class="dsr-performance-metric"><span>'+h(x.tank||'Tank')+'</span><b>'+Number(x.reconciliation_pct||0).toFixed(1)+'%</b></div>'
     ).join('');
     const attribution=perf.discharge_attribution||{};
-    const auditBlock='<div class="dsr-performance-block dsr-discharge-audit-block"><div class="dsr-subhead">Discharge attribution audit</div><p class="dsr-audit-note">Timestamp-to-shift matching only. This audit does not change station-wide DSR purchase or reconciliation totals.</p><div class="dsr-discharge-audit-grid">'+
+    const auditBlock='<div class="dsr-performance-block dsr-discharge-audit-block"><div class="dsr-subhead">Discharge attribution audit</div><p class="dsr-audit-note">Tank-and-timestamp-to-shift matching. This audit does not change station-wide DSR purchase or reconciliation totals.</p><div class="dsr-discharge-audit-grid">'+
       '<div><span>Total operations</span><b>'+Number(attribution.operation_count||0)+'</b></div>'+
       '<div class="ok"><span>Inside active shift</span><b>'+Number(attribution.inside_shift_count||0)+'</b></div>'+
       '<div class="negative"><span>Outside active shift</span><b>'+Number(attribution.outside_shift_count||0)+'</b></div>'+
