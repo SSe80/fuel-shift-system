@@ -2897,6 +2897,7 @@ def purchase_pdf(purchase_id):
             except (TypeError,ValueError): expected=None
         recorded=e.get("tank_stock_recorded_liters")
         difference=e.get("tank_stock_difference_liters")
+        if difference is None: difference=e.get("tank_stock_adjustment_liters")
         if difference is None and recorded is not None and expected is not None:
             try: difference=float(recorded)-float(expected)
             except (TypeError,ValueError): difference=None
@@ -2917,14 +2918,16 @@ def purchase_pdf(purchase_id):
         remark=str(e.get("tank_stock_remark") or "").strip()
         if remark: lines.append("Remark: "+clean(remark))
         lines.append("")
-    final_remark=""
-    for e in reversed(history):
-        if str(e.get("tank_stock_remark") or "").strip():
-            final_remark=str(e.get("tank_stock_remark")).strip()
-            break
-    if not final_remark: final_remark=str(p.get("purchase_remark") or p.get("remark") or "").strip()
-    if final_remark:
-        lines += ["PURCHASE REMARK",clean(final_remark)]
+    note_lines=[]
+    for i,e in enumerate(history):
+        note=str(e.get("tank_stock_remark") or e.get("remark") or e.get("purchase_remark") or "").strip()
+        if note:
+            note_lines.append(("Discharge %02d remark: "%(i+1))+clean(note))
+    purchase_note=str(p.get("purchase_remark") or p.get("purchase_remark_note") or p.get("remark") or p.get("tank_stock_remark") or "").strip()
+    if purchase_note and purchase_note not in [str(e.get("tank_stock_remark") or "").strip() for e in history]:
+        note_lines.append("Purchase note: "+clean(purchase_note))
+    if note_lines:
+        lines += ["PURCHASE REMARK"]+note_lines
 
     def esc_pdf(s):
         return clean(s).replace("\\","\\\\").replace("(","\\(").replace(")","\\)")
