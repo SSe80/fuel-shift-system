@@ -4804,11 +4804,16 @@ def daily_report(report_date_override=None):
             # inside the purchase quantity.
             pre_discharge_adjustment=float(op.get("system_before_adjustment_liters") or 0)
 
-            if discharge_attribution.get("shift_attribution_status")=="inside_shift":
+            attribution_status=discharge_attribution.get("shift_attribution_status")
+            # A discharge overlapping multiple shifts on the same tank still
+            # belongs in the physical tank ledger, but must not be credited to
+            # one attendant until the overlap is resolved.
+            if attribution_status in ("inside_shift","ambiguous_overlap"):
                 purchase_by_tank[tid]=purchase_by_tank.get(tid,0.0)+discharged
-                attributed_shift_id=str(discharge_attribution.get("shift_id") or "")
-                if attributed_shift_id:
-                    purchase_by_shift[attributed_shift_id]=purchase_by_shift.get(attributed_shift_id,0.0)+discharged
+                if attribution_status=="inside_shift":
+                    attributed_shift_id=str(discharge_attribution.get("shift_id") or "")
+                    if attributed_shift_id:
+                        purchase_by_shift[attributed_shift_id]=purchase_by_shift.get(attributed_shift_id,0.0)+discharged
                 total_operation_adjustment=(pre_discharge_adjustment + (stock_adjustment or 0))
                 if abs(total_operation_adjustment)>0.000001:
                     purchase_adjustment_by_tank[tid]=purchase_adjustment_by_tank.get(tid,0.0)+total_operation_adjustment
