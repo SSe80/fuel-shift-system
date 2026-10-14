@@ -827,7 +827,7 @@ def get_tank_difference_alerts():
                     "level":"warning",
                     "title":"DSR tank stock difference exceeds tolerance",
                     "detail":tank_label+" DSR expected closing stock differs from actual closing stock by "+str(round(abs(difference),2))+" L for "+report_day+". Configured tolerance is "+str(round(handover_tolerance,2))+" L. Review the DSR tank reconciliation.",
-                    "href":"admin-sales.html",
+                    "href":"admin-dsr-detail.html?date="+report_day,
                     "meta":report_day+" · Difference "+("+" if difference>0 else "")+str(round(difference,2))+" L · Allowed "+str(round(handover_tolerance,2))+" L",
                     "date":report_day+"T23:59:59+03:00",
                     "tank_id":tank_id,
