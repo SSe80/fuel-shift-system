@@ -2862,7 +2862,7 @@ def purchases():
     # Attribute each discharge to the attendant whose shift was running on
     # the same physical tank at that timestamp, never to the admin recorder.
     try:
-        ss,shift_rows=sb("shifts",params={"select":"id,employee_id,nozzle_id,tank_id,start_time,end_time,status","order":"start_time.desc","limit":"10000"})
+        ss,shift_rows=sb("shifts",params={"select":"id,employee_id,nozzle_id,start_time,end_time,status","order":"start_time.desc","limit":"10000"})
         if ss==200:
             nozzle_ids=sorted(set(str(x.get("nozzle_id")) for x in shift_rows if x.get("nozzle_id")))
             nozzle_tank_map={}
