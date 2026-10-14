@@ -75,25 +75,25 @@ self.addEventListener("fetch", event => {
   if (url.pathname.startsWith("/assets/") ||
       url.pathname.startsWith("/icons/") ||
       url.pathname.endsWith(".webmanifest")) {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(request);
-      const refresh = fetch(request).then(async response => {
+    const cachePromise = caches.open(CACHE_NAME);
+    const refreshPromise = cachePromise.then(cache =>
+      fetch(request).then(async response => {
         if (response.ok && response.type !== "opaque") {
           await cache.put(request, response.clone());
         }
         return response;
-      });
+      })
+    );
 
-      // Return a previously verified asset immediately while refreshing it
-      // in the background. Versioned asset URLs are used by application pages.
-      if (cached) {
-        event.waitUntil(refresh.then(() => undefined).catch(() => undefined));
-        return cached;
-      }
+    // Register the refresh while the fetch event is still being handled.
+    event.waitUntil(refreshPromise.then(() => undefined).catch(() => undefined));
+    event.respondWith((async () => {
+      const cache = await cachePromise;
+      const cached = await cache.match(request);
+      if (cached) return cached;
 
       try {
-        return await refresh;
+        return await refreshPromise;
       } catch (_) {
         return new Response("Static asset unavailable. Check your connection and retry.", {
           status: 503,
