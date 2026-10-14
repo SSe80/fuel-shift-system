@@ -893,7 +893,7 @@ async function confirmPendingHandoverReview(id){
     else toast('PIN field is unavailable. Close this window and open the handover again.');
     return;
   }
-  if(!/^\\d+$/.test(pin)){
+  if(!/^\d+$/.test(pin)){
     toast('Enter your numeric PIN.');
     input?.focus();
     return;
