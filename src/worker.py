@@ -2864,11 +2864,30 @@ def purchases():
     try:
         ss,shift_rows=sb("shifts",params={"select":"id,employee_id,nozzle_id,start_time,end_time,status","order":"start_time.desc","limit":"10000"})
         if ss==200:
-            nozzle_ids=sorted(set(str(x.get("nozzle_id")) for x in shift_rows if x.get("nozzle_id")))
-            nozzle_tank_map={}
-            if nozzle_ids:
-                ns,nozzle_rows=sb("dispenser_nozzles",params={"id":"in.("+",".join(nozzle_ids)+")","select":"id,tank_id"})
-                if ns==200:nozzle_tank_map={str(x.get("id")):str(x.get("tank_id")) for x in nozzle_rows if x.get("id") and x.get("tank_id")}
+            # Shift.nozzle_id is a legacy nozzles.id, not a dispenser_nozzles.id.
+            # Prefer normalized shift readings to resolve the actual physical tank.
+            shift_ids=sorted(set(str(x.get("id")) for x in shift_rows if x.get("id")))
+            shift_tank_map={}
+            if shift_ids:
+                rs,reading_rows=sb("shift_nozzle_readings",params={"shift_id":"in.("+",".join(shift_ids)+")","select":"shift_id,nozzle_id"})
+                if rs==200:
+                    reading_nozzle_ids=sorted(set(str(x.get("nozzle_id")) for x in reading_rows if x.get("nozzle_id")))
+                    reading_tank_map={}
+                    if reading_nozzle_ids:
+                        ns,nozzle_rows=sb("dispenser_nozzles",params={"id":"in.("+",".join(reading_nozzle_ids)+")","select":"id,tank_id"})
+                        if ns==200:reading_tank_map={str(x.get("id")):str(x.get("tank_id")) for x in nozzle_rows if x.get("id") and x.get("tank_id")}
+                    for reading in reading_rows:
+                        tid=reading_tank_map.get(str(reading.get("nozzle_id") or ""))
+                        if tid:shift_tank_map.setdefault(str(reading.get("shift_id")),set()).add(tid)
+            # Fall back to the legacy nozzle relation for older shifts without normalized readings.
+            legacy_ids=sorted(set(str(x.get("nozzle_id")) for x in shift_rows if x.get("nozzle_id")))
+            if legacy_ids:
+                ns,legacy_rows=sb("nozzles",params={"id":"in.("+",".join(legacy_ids)+")","select":"id,tank_id"})
+                if ns==200:
+                    legacy_tank_map={str(x.get("id")):str(x.get("tank_id")) for x in legacy_rows if x.get("id") and x.get("tank_id")}
+                    for sh in shift_rows:
+                        tid=legacy_tank_map.get(str(sh.get("nozzle_id") or ""))
+                        if tid:shift_tank_map.setdefault(str(sh.get("id")),set()).add(tid)
             employee_ids=sorted(set(str(x.get("employee_id")) for x in shift_rows if x.get("employee_id")))
             employee_name_map={}
             if employee_ids:
@@ -2896,8 +2915,8 @@ def purchases():
                     for sh in shift_rows or []:
                         started=_purchase_parse_dt(sh.get("start_time"))
                         ended=_purchase_parse_dt(sh.get("end_time"))
-                        shift_tank_id=nozzle_tank_map.get(str(sh.get("nozzle_id") or "")) or str(sh.get("tank_id") or "")
-                        if not started or not tank_id or not shift_tank_id or shift_tank_id!=tank_id:continue
+                        shift_tanks=shift_tank_map.get(str(sh.get("id") or ""),set())
+                        if not started or not tank_id or tank_id not in shift_tanks:continue
                         if started<=dt and (ended is None or dt<ended):matches.append(sh)
                     if len(matches)==1:
                         sh=matches[0]
