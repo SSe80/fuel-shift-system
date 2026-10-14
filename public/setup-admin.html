@@ -1,6 +1,12 @@
 <!doctype html>
 <html lang="en">
 <head>
+<link rel="manifest" href="/admin-manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fuel Admin">
+<link rel="icon" href="/icons/admin-icon.svg" type="image/svg+xml">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Fuel Shift System - First Admin Setup</title>
@@ -49,5 +55,5 @@ form.addEventListener('submit',async e=>{
 });
 </script>
 <script src="assets/popup-portal.js?v=20261011-p1"></script>
-</body>
+<script>if("serviceWorker"in navigator)window.addEventListener("load",function(){navigator.serviceWorker.register("/service-worker.js").catch(function(e){console.error("Admin service worker registration failed:",e);});});</script></body>
 </html>
