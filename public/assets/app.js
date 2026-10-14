@@ -240,14 +240,15 @@ function updateTakeoverSaleConfirmation(){
   const difference=Math.abs(total-calculated);
   const allowedDifference=getSalesDifferenceTolerance();
   const overCalculated=total>calculated+allowedDifference;
-  const matches=difference<=allowedDifference && sales.length>0 && !missingReason;
+  const zeroSales=calculated===0 && Number(takeover.total_sales_liters||0)===0;
+  const matches=difference<=allowedDifference && (sales.length>0 || zeroSales) && !missingReason;
   const status=document.getElementById('takeover-sale-match-status');
   if(status)status.innerHTML='<div class="takeover-confirm-sales">'+
     (sales.length?sales.map(x=>'<div class="takeover-confirm-sale-row"><span>'+h(x.name)+'</span><strong>'+money(x.amount)+'</strong></div>').join(''):'<div class="takeover-review-empty">No sale amounts entered.</div>')+
     '<div class="takeover-confirm-total"><span>Entered sales total</span><strong>'+money(total)+'</strong></div>'+
     '<div class="takeover-confirm-check"><span>Net calculated sales</span><b>'+money(calculated)+'</b><span>Difference to reconcile</span><b>'+money(difference)+'</b></div></div>'+
     (missingReason?'<div class="takeover-sale-mismatch">Reason required for '+h(missingReason)+'.</div>':
-     !sales.length?'<div class="takeover-sale-mismatch">Enter at least one sale amount.</div>':
+     !sales.length?(calculated===0&&Number(takeover.total_sales_liters||0)===0?'<div class="takeover-sale-match">No fuel was dispensed. You can record this shift with zero sales.</div>':'<div class="takeover-sale-mismatch">Enter at least one sale amount.</div>'):
      overCalculated?'<div class="takeover-sale-mismatch">Entered sales exceed the configured tolerance of ETB '+money(allowedDifference)+'. Adjust the sale entries.</div>':
      difference<=0.005?'<div class="takeover-sale-match">Entered total matches the net calculated sales after any saved returned-fuel deduction.</div>':
      '<div class="takeover-sale-match">Difference is within the configured ETB '+money(allowedDifference)+' tolerance. You can continue with confirmation.</div>');
@@ -280,13 +281,13 @@ async function confirmTakeoverSale(){
   const id=window.pendingTakeoverSaleId;
   const sales=window.pendingTakeoverSales||[];
   const button=document.querySelector('#takeover-sale-confirm-modal button.confirm-sale-button');
-  if(!id||!sales.length)return;
+  if(!id)return;
   if(button)button.disabled=true;
   try{
     await api('/api/shift-takeovers/'+id+'/record-sale',{method:'POST',body:JSON.stringify({sales:sales.map(x=>({sale_type_id:x.sale_type_id,amount:x.amount,reason:x.reason||null}))})});
     closeTakeoverSaleConfirm();
     closeTakeoverSaleModal();
-    toast('Sale submitted for admin confirmation');
+    toast((Array.isArray(sales)&&sales.length===0)?'No-sales shift recorded successfully':'Sale submitted for admin confirmation');
     await userDashboard();
   }catch(e){
     if(button)button.disabled=false;
