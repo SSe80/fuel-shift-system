@@ -2888,15 +2888,31 @@ def purchase_pdf(purchase_id):
     if not history:
         lines.append("No discharge operations recorded.")
     for i,e in enumerate(history):
+        before=e.get("physical_tank_liters_before")
+        if before is None: before=e.get("tank_liters_before")  # legacy discharge-history records
+        quantity=e.get("discharged_quantity_liters")
+        expected=e.get("tank_liters_after")
+        if expected is None and before is not None and quantity is not None:
+            try: expected=float(before)+float(quantity)
+            except (TypeError,ValueError): expected=None
+        recorded=e.get("tank_stock_recorded_liters")
+        difference=e.get("tank_stock_difference_liters")
+        if difference is None and recorded is not None and expected is not None:
+            try: difference=float(recorded)-float(expected)
+            except (TypeError,ValueError): difference=None
+        try: tolerance=max(5.0,float(quantity or 0)*0.01)
+        except (TypeError,ValueError): tolerance=5.0
+        stock_status=("Stock reconciled" if difference is None or abs(float(difference))<=tolerance else "Difference high") if e.get("tank_stock_recorded") else "Tank stock not recorded"
         lines += [
             "Discharge %02d"%(i+1),
-            "Date & time: "+clean(e.get("created_at")),
-            "Tank: "+clean(e.get("tank_id")),
-            "Quantity discharged: "+fmt(e.get("discharged_quantity_liters"))+" L",
-            "Tank stock before: "+fmt(e.get("tank_liters_before"))+" L",
-            "Expected closing: "+fmt((float(e.get("tank_liters_before"))+float(e.get("discharged_quantity_liters"))) if e.get("tank_liters_before") is not None else None)+" L",
-            "Recorded closing: "+(fmt(e.get("tank_stock_recorded_liters"))+" L" if e.get("tank_stock_recorded") else "Not recorded"),
-            "Stock status: "+("Stock reconciled" if e.get("tank_stock_recorded") else "Tank stock not recorded"),
+            "Date & time: "+clean(e.get("discharge_datetime") or e.get("created_at")),
+            "Tank: "+clean(e.get("tank_code") or e.get("tank_id")),
+            "Quantity discharged: "+fmt(quantity)+" L",
+            "Tank stock before: "+fmt(before)+" L",
+            "Expected closing: "+fmt(expected)+" L",
+            "Recorded closing: "+(fmt(recorded)+" L" if e.get("tank_stock_recorded") else "Not recorded"),
+            "Stock difference: "+((("+" if float(difference)>0 else "")+fmt(difference)+" L") if difference is not None else "—"),
+            "Stock status: "+stock_status,
         ]
         remark=str(e.get("tank_stock_remark") or "").strip()
         if remark: lines.append("Remark: "+clean(remark))
