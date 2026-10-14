@@ -35,7 +35,7 @@
     if (run(name)) return;
 
     var script = document.createElement('script');
-    script.src = 'assets/app.js?v=20261008-18';
+    script.src = 'assets/app.js?v=20261014-loading-reliability1';
     script.async = false;
 
     script.onload = function () {
