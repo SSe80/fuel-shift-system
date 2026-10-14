@@ -4801,8 +4801,15 @@ def daily_report():
         if str(tid) not in relevant_tank_ids:
             continue
         rows=sorted(tank_shift_rows.get(tid,[]),key=lambda z:str(z[0].get("start_time") or ""))
+        # Shared-tank dispensers can have overlapping shifts. Use the earliest
+        # shift opening and the latest actual shift ending for the DSR boundary;
+        # the last item by start time is not necessarily the last shift to end.
         first_h=rows[0][1] if rows else {}
-        last_h=rows[-1][1] if rows else {}
+        closing_pair=max(
+            rows,
+            key=lambda z:str(z[0].get("end_time") or z[0].get("start_time") or "")
+        ) if rows else None
+        last_h=closing_pair[1] if closing_pair else {}
         opening=float(first_h.get("tank_opening_liters") or 0) if rows else float(tank.get("opening_stock_liters") or 0)
         closing=float(last_h.get("tank_closing_liters") or 0) if rows else float(tank.get("current_liters") or 0)
         sales_l=float(sum(float(z[1].get("total_sales_liters") or 0) for z in rows))
