@@ -3212,7 +3212,7 @@ async function downloadAdminSaleHistoryDetails(id){
   const tankOpening=tankOpeningRaw==null||tankOpeningRaw===''?NaN:Number(tankOpeningRaw);
   const tankClosing=tankClosingRaw==null||tankClosingRaw===''?NaN:Number(tankClosingRaw);
   const purchaseDischargeLiters=await getShiftPurchaseDischargeLiters(tankId,startedAt,endedAt,tankCode);
-  const attendantDischarges=await getShiftPurchaseDischargeDetails(tankId,startedAt,endedAt,tankCode,attendant);
+  const attendantDischarges=await getShiftPurchaseDischargeDetails(tankId,startedAt,endedAt,tankCode,attendant,t.shift_id||item.shift_id);
   const attendantDischargeSummary=attendantDischarges.length?attendantDischarges.map(x=>String(x.tank_code||tankCode)+' '+Number(x.quantity_liters||0).toLocaleString('en-US',{maximumFractionDigits:2})+' L').join('; '):'None attributed during this shift';
   const recordedTankSales=Number(t.tank_sales_liters ?? t.total_sales_liters ?? totalLiters);
   const tankSold=Number.isFinite(recordedTankSales)?recordedTankSales:totalLiters;
@@ -3432,7 +3432,7 @@ async function getShiftPurchaseDischargeLiters(tankId,startAt,endAt,tankCode){
   }catch(_){return 0;}
 }
 
-async function getShiftPurchaseDischargeDetails(tankId,startAt,endAt,tankCode,attendantName){
+async function getShiftPurchaseDischargeDetails(tankId,startAt,endAt,tankCode,attendantName,shiftId){
   const normalizedTankCode=String(tankCode||'').trim().toLowerCase();
   const normalizedAttendant=String(attendantName||'').trim().toLowerCase();
   const start=startAt?new Date(startAt).getTime():NaN,end=endAt?new Date(endAt).getTime():NaN;
@@ -3449,7 +3449,8 @@ async function getShiftPurchaseDischargeDetails(tankId,startAt,endAt,tankCode,at
         const ts=at?new Date(at).getTime():NaN;
         if(!Number.isFinite(ts)||(Number.isFinite(start)&&ts<start)||(Number.isFinite(end)&&ts>end))return;
         const operator=String(d?.attendant_name||'').trim();
-        if(normalizedAttendant&&operator.toLowerCase()!==normalizedAttendant)return;
+        const matchesShift=!!shiftId&&String(d?.attendant_shift_id||'')===String(shiftId);
+        if(normalizedAttendant&&operator.toLowerCase()!==normalizedAttendant&&!matchesShift)return;
         const quantity=Number(d?.discharged_quantity_liters??d?.quantity_liters??0);
         if(!(quantity>0))return;
         out.push({purchase_id:p.id,invoice_number:p.invoice_number||p.invoice||'—',product:p.product_code||p.product||'—',
@@ -3576,7 +3577,7 @@ async function openAdminSaleHistoryDetails(id){
     const tankSalesLiters=Number(t.tank_sales_liters??totalLiters);
     const expectedClosingStock=Number.isFinite(tankOpening)?tankOpening+purchaseDischargeLiters-tankSalesLiters:NaN;
     const calculatedTankVariance=Number.isFinite(tankClosing)&&Number.isFinite(expectedClosingStock)?tankClosing-expectedClosingStock:NaN;
-    const attendantDischarges=await getShiftPurchaseDischargeDetails(tankIdForReconciliation,startedAt,endedAt,tankCode,attendant);
+    const attendantDischarges=await getShiftPurchaseDischargeDetails(tankIdForReconciliation,startedAt,endedAt,tankCode,attendant,t.shift_id||item.shift_id);
     const attendantDischargeMarkup=attendantDischarges.length?attendantDischarges.map(d=>
       '<div class="history-detail-total-row"><span>Invoice '+h(d.invoice_number)+' · '+h(d.tank_code)+' · '+h(d.attendant_name)+'</span><strong>'+liters(d.quantity_liters)+' L · '+h(d.discharge_datetime?new Date(d.discharge_datetime).toLocaleString():'—')+'</strong></div>'
     ).join(''):'<div class="history-detail-empty">No purchase discharge was attributed to '+h(attendant||'this attendant')+' during this shift.</div>';
