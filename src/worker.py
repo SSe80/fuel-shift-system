@@ -1568,9 +1568,25 @@ def logistics_create_delivery():
     auth=_logistics_admin_auth()
     if auth:return auth
     data=request.get_json(silent=True) or {}
-    product_id=str(data.get("product_id") or "").strip()
-    product_name=str(data.get("product_name") or "").strip()
-    if not product_name:return jsonify({"error":"Choose a product for this delivery"}),400
+    requested_product_id=str(data.get("product_id") or "").strip()
+    requested_product_name=str(data.get("product_name") or "").strip()
+    if not requested_product_name and not requested_product_id:
+        return jsonify({"error":"Choose a product for this delivery"}),400
+    ps,products=sb("products",params={"select":"id,name,code_name,active","limit":"1000"})
+    if ps!=200:return jsonify({"error":"Unable to load product catalogue","details":products}),ps
+    product_by_id=next((p for p in products if str(p.get("id"))==requested_product_id),None) if requested_product_id else None
+    product_by_name=next((p for p in products if requested_product_name.casefold() in
+                          (str(p.get("name") or "").strip().casefold(),
+                           str(p.get("code_name") or "").strip().casefold())),None) if requested_product_name else None
+    if requested_product_id and not product_by_id:
+        return jsonify({"error":"Product ID does not exist in the catalogue","product_id":requested_product_id}),400
+    if product_by_id and product_by_name and str(product_by_id.get("id"))!=str(product_by_name.get("id")):
+        return jsonify({"error":"Product name and product ID refer to different products"}),400
+    product=product_by_id or product_by_name
+    if not product:return jsonify({"error":"Product not found in catalogue","product_name":requested_product_name}),404
+    if not product.get("active"):return jsonify({"error":"Product is inactive"}),400
+    product_id=str(product["id"])
+    product_name=str(product.get("code_name") or product["name"]).strip()
     try:
         delivered=float(data.get("delivered_liters") or 0)
         fee=float(data.get("fee_per_liter") or 0)
@@ -1587,9 +1603,15 @@ def logistics_create_delivery():
     else:truck=None
     tank_id=str(data.get("tank_id") or "").strip()
     if tank_id:
-        ts,tanks=sb("tanks",params={"id":"eq."+tank_id,"select":"id","limit":"1"})
+        ts,tanks=sb("tanks",params={"id":"eq."+tank_id,"select":"id,product,product_id","limit":"1"})
         if ts!=200:return jsonify({"error":"Unable to verify selected tank","details":tanks}),ts
         if not tanks:return jsonify({"error":"Selected tank was not found"}),404
+        tank=tanks[0]
+        tank_product_id=str(tank.get("product_id") or "")
+        tank_product_name=str(tank.get("product") or "").strip().casefold()
+        if (tank_product_id and tank_product_id!=product_id) or (not tank_product_id and tank_product_name not in
+                (str(product.get("name") or "").strip().casefold(),str(product.get("code_name") or "").strip().casefold())):
+            return jsonify({"error":"Selected tank is assigned to a different product"}),400
     status_value=str(data.get("status") or "completed").strip().lower()
     if status_value not in ("draft","in_progress","completed","cancelled"):return jsonify({"error":"Invalid delivery status"}),400
     date_value=str(data.get("delivery_date") or datetime.now(timezone.utc).isoformat()).strip()
