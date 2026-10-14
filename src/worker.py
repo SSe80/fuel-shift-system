@@ -1726,10 +1726,30 @@ def update_product(product_id):
     body["updated_at"]=datetime.now(timezone.utc).isoformat()
 
     # Read the current product so activation/price changes can be recorded.
-    old_status, old_rows = sb("products",params={"id":"eq."+product_id,"select":"id,active,selling_price"})
+    old_status, old_rows = sb("products",params={"id":"eq."+product_id,"select":"id,name,code_name,active,selling_price"})
     if old_status != 200 or not old_rows:
         return jsonify({"error":"Product not found"}),404
     old_product=old_rows[0]
+    # Product labels are denormalized in operational configuration and human-readable
+    # codes identify dispensers/tanks. Refuse a rename while referenced rather than
+    # silently leaving tanks, dispensers, deliveries or purchase records disconnected.
+    name_changed=("name" in body and body["name"]!=old_product.get("name"))
+    code_changed=("code_name" in body and body["code_name"]!=old_product.get("code_name"))
+    if name_changed or code_changed:
+        linked_checks=[
+            ("tanks",{"product_id":"eq."+product_id,"select":"id","limit":"1"}),
+            ("dispenser_nozzles",{"product_id":"eq."+product_id,"select":"id","limit":"1"}),
+            ("logistics_product_fees",{"product_id":"eq."+product_id,"select":"id","limit":"1"}),
+            ("logistics_deliveries",{"product_id":"eq."+product_id,"select":"id","limit":"1"}),
+            ("purchases",{"product_id":"eq."+product_id,"select":"id","limit":"1"}),
+            ("nozzles",{"product":"eq."+str(old_product.get("name") or ""),"select":"id","limit":"1"})
+        ]
+        for linked_table,linked_params in linked_checks:
+            linked_status,linked_rows=sb(linked_table,params=linked_params)
+            if linked_status!=200:
+                return jsonify({"error":"Could not verify product dependencies before renaming","table":linked_table,"details":linked_rows}),linked_status
+            if linked_rows:
+                return jsonify({"error":"This product is already connected to operational records. Rename/code changes are blocked to protect tank, dispenser, nozzle, purchase and delivery links. Keep the current name/code until a coordinated migration is available."}),409
     activating = ("active" in body and body["active"] is True and not old_product.get("active"))
     price_changed = "selling_price" in body and float(body["selling_price"]) != float(old_product.get("selling_price") or 0)
 
