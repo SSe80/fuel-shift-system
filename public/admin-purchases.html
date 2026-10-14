@@ -1592,16 +1592,15 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       const stockClass=recordedOk?'purchase-detail-stock-ok':'purchase-detail-stock-alert';
       const tankId=String(e.tank_id||'');
       const tankRecord=purchaseDetailTanks?.find(t=>String(t.id)===tankId);
-      const direct=Array.isArray(tankRecord?.active_shifts)?tankRecord.active_shifts:[];
-      const matching=direct.length?direct:purchaseShifts.filter(s=>Array.isArray(s.nozzle_readings)&&s.nozzle_readings.some(n=>String(n.tank_id)===tankId));
-      const attendants=[...new Map(matching.map(s=>{
-        const name=s.employee_name||purchaseEmployees.find(emp=>String(emp.id)===String(s.employee_id))?.name||'Assigned attendant';
-        return [String(s.employee_id||name),name];
-      })).values()];
-      const attendantText=attendants.length?attendants.join(', '):'No shift attendant recorded';
+      // The person who submitted the discharge is stored on the operation itself.
+      // Do not infer the operator from the tank's active/overlapping dispenser shifts.
+      const dischargedById=String(e.discharged_by||e.discharged_by_employee_id||e.performed_by||'');
+      const dischargedByEmployee=purchaseEmployees.find(emp=>dischargedById&&String(emp.id)===dischargedById);
+      const dischargedByName=[e.discharged_by_name,e.performed_by_name,e.attendant_name,dischargedByEmployee?.name].find(v=>v&&String(v).trim()&&!/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(String(v).trim()));
+      const attendantText=dischargedByName?String(dischargedByName).trim():(dischargedById?'Recorded attendant (name unavailable)':'Not recorded');
       return '<article class="purchase-detail-discharge-event"><div class="purchase-detail-event-title"><div><span class="purchase-detail-event-number">DISCHARGE '+(i+1)+'</span><strong>'+purchaseH(e.tank_code||tankRecord?.tank_code||'Tank')+'</strong></div><span class="'+stockClass+'">'+(recordedOk?'✓ ':'⚠ ')+stockStatus+'</span></div><div class="purchase-detail-event-grid">'+
         '<div><span>Date & time</span><strong>'+purchaseH(e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—')+'</strong></div>'+
-        '<div><span>Shift attendant(s)</span><strong>'+purchaseH(attendantText)+'</strong></div>'+
+        '<div><span>Discharged by</span><strong>'+purchaseH(attendantText)+'</strong></div>'+
         '<div><span>Compartments</span><strong>'+purchaseH(Array.isArray(e.compartment_indexes)?e.compartment_indexes.map(x=>'C'+x).join(', '):'—')+'</strong></div>'+
         '<div><span>Quantity discharged</span><strong>'+purchaseH(purchaseLiters(qty))+' L</strong></div>'+
         '<div><span>Tank stock before</span><strong>'+purchaseH(hasBefore?purchaseLiters(before)+' L':'—')+'</strong></div>'+
