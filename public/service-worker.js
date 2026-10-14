@@ -1,10 +1,11 @@
-const CACHE_NAME = "fuel-shift-shell-v4";
+const CACHE_NAME = "fuel-shift-shell-v5";
 const SHELL = [
   "/admin-login.html",
   "/admin-logistics.html",
   "/attendant-login.html",
   "/manifest.webmanifest",
   "/admin-manifest.webmanifest",
+  "/icons/app-icon.svg",
   "/icons/attendant-icon.svg",
   "/icons/admin-icon.svg"
 ];
@@ -63,6 +64,41 @@ self.addEventListener("fetch", event => {
           "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Connection required</title><body style=\"font:16px system-ui;padding:24px;line-height:1.5\"><h2>Connection required</h2><p>This page could not be loaded. Check your internet connection and try again.</p><button onclick=\"location.reload()\">Retry</button></body></html>",
           { status: 503, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } }
         );
+      }
+    })());
+    return;
+  }
+
+  // Cache static assets at runtime so repeat page loads are fast and
+  // an intermittent connection does not leave pages without their scripts.
+  // API responses are deliberately excluded above.
+  if (url.pathname.startsWith("/assets/") ||
+      url.pathname.startsWith("/icons/") ||
+      url.pathname.endsWith(".webmanifest")) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(request);
+      const refresh = fetch(request).then(async response => {
+        if (response.ok && response.type !== "opaque") {
+          await cache.put(request, response.clone());
+        }
+        return response;
+      });
+
+      // Return a previously verified asset immediately while refreshing it
+      // in the background. Versioned asset URLs are used by application pages.
+      if (cached) {
+        event.waitUntil(refresh.then(() => undefined).catch(() => undefined));
+        return cached;
+      }
+
+      try {
+        return await refresh;
+      } catch (_) {
+        return new Response("Static asset unavailable. Check your connection and retry.", {
+          status: 503,
+          headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" }
+        });
       }
     })());
     return;
