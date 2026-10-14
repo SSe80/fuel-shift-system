@@ -321,8 +321,8 @@ window.closePurchaseDetail=function(){const m=document.getElementById('purchase-
     const eventRows=history.map((e,i)=>{
       const beforeRaw=e.physical_tank_liters_before??e.tank_liters_before;
       const before=Number(beforeRaw), qty=Number(e.discharged_quantity_liters||0);
-      const recordedRaw=e.tank_stock_recorded_liters, recorded=Number(recordedRaw);
-      const expectedRaw=e.tank_liters_after, savedDifferenceRaw=e.tank_stock_difference_liters;
+      const recordedRaw=e.tank_stock_recorded_liters??e.physical_tank_liters_after??e.tank_stock_closing_liters, recorded=Number(recordedRaw);
+      const expectedRaw=e.tank_liters_after??e.expected_tank_liters_after, savedDifferenceRaw=e.tank_stock_difference_liters??e.tank_stock_adjustment_liters??e.physical_vs_system_difference_liters??e.stock_difference_liters;
       const hasBefore=beforeRaw!==undefined&&beforeRaw!==null&&Number.isFinite(before);
       const hasRecorded=recordedRaw!==undefined&&recordedRaw!==null&&Number.isFinite(recorded);
       const expectedAfter=expectedRaw!==undefined&&expectedRaw!==null&&Number.isFinite(Number(expectedRaw))?Number(expectedRaw):(hasBefore?before+qty:null);
