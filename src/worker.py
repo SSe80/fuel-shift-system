@@ -2396,6 +2396,7 @@ def update_nozzle(nozzle_id):
             return jsonify(result),200
         except (TypeError,ValueError):
             return jsonify({"error":"Invalid tank opening liters"}),400
+
     status,current=sb("nozzles",params={"id":"eq."+nozzle_id,"select":"id,nozzle_code,nozzle_ids,product,tank_id,nozzle_count,active"})
     if status!=200 or not current:return jsonify({"error":"Dispenser not found"}),404
     cur=current[0]
@@ -2406,38 +2407,79 @@ def update_nozzle(nozzle_id):
         except (TypeError,ValueError): return jsonify({"error":"Nozzle count must be 1, 2, 3 or 4"}),400
         if count not in (1,2,3,4): return jsonify({"error":"Nozzle count must be 1, 2, 3 or 4"}),400
         body["nozzle_count"]=count
-    new_product=str(data.get("product",cur["product"])).strip()
-    new_tank_id=str(data.get("tank_id",cur["tank_id"] or "")).strip()
+    new_count=int(body.get("nozzle_count",cur.get("nozzle_count") or 1))
+    new_product_input=str(data.get("product",cur.get("product") or "")).strip()
+    new_tank_id=str(data.get("tank_id",cur.get("tank_id") or "")).strip()
+    product_row=None
+    tank_row=None
     if "product" in data or "tank_id" in data:
-        ps,pr=sb("products",params={"name":"eq."+new_product,"select":"name,code_name,active","limit":"1"})
-        if ps!=200 or not pr:return jsonify({"error":"Product not found"}),404
-        if not pr[0].get("active"):return jsonify({"error":"Product is inactive"}),400
-        ts,tr=sb("tanks",params={"id":"eq."+new_tank_id,"select":"id,product,active"})
-        if ts!=200 or not tr:return jsonify({"error":"Tank not found"}),404
-        if not tr[0].get("active"):return jsonify({"error":"Tank is inactive"}),400
-        if new_product.lower()!=str(tr[0]["product"]).lower():return jsonify({"error":"Dispenser product must match tank product"}),400
+        ps,products=sb("products",params={"select":"id,name,code_name,active","limit":"1000"})
+        if ps!=200:return jsonify({"error":"Unable to load product catalogue","details":products}),ps
+        product_row=next((p for p in products if
+            str(p.get("name") or "").strip().casefold()==new_product_input.casefold() or
+            str(p.get("code_name") or "").strip().casefold()==new_product_input.casefold()),None)
+        if not product_row:return jsonify({"error":"Product not found"}),404
+        if not product_row.get("active"):return jsonify({"error":"Product is inactive"}),400
+        new_product=str(product_row.get("name") or "").strip()
+        ts,tr=sb("tanks",params={"id":"eq."+new_tank_id,"select":"id,product,product_id,active","limit":"1"})
+        if ts!=200:return jsonify({"error":tr}),ts
+        if not tr:return jsonify({"error":"Tank not found"}),404
+        tank_row=tr[0]
+        if not tank_row.get("active"):return jsonify({"error":"Tank is inactive"}),400
+        tank_product_id=str(tank_row.get("product_id") or "")
+        if tank_product_id and tank_product_id!=str(product_row.get("id")):
+            return jsonify({"error":"Dispenser product must match tank product"}),400
+        if not tank_product_id and str(tank_row.get("product") or "").strip().casefold()!=new_product.casefold():
+            return jsonify({"error":"Dispenser product must match tank product"}),400
         body["product"]=new_product
         body["tank_id"]=new_tank_id
+    else:
+        new_product=new_product_input
+        ps,products=sb("products",params={"select":"id,name,code_name,active","limit":"1000"})
+        if ps!=200:return jsonify({"error":"Unable to load product catalogue","details":products}),ps
+        product_row=next((p for p in products if str(p.get("name") or "").strip().casefold()==new_product.casefold()),None)
+        if not product_row:
+            return jsonify({"error":"The dispenser product is not linked to the current product catalogue. Select its catalogue product and tank to repair the link."}),409
+
+    if "nozzle_count" in data and new_count!=int(cur.get("nozzle_count") or 1):
+        ss,sr=sb("shifts",params={"nozzle_id":"eq."+nozzle_id,"status":"in.(assigned,active)","select":"id","limit":"1"})
+        if ss!=200:return jsonify({"error":sr}),ss
+        if sr:return jsonify({"error":"Nozzle count cannot be changed while this dispenser has an assigned or active shift."}),409
+
+    # Preflight normalized records before changing the legacy row. Their UUIDs
+    # are referenced by shift readings, so existing physical rows are updated
+    # in place and never deleted/recreated.
+    ds,dispenser_rows=sb("dispensers",params={"dispenser_code":"eq."+str(cur.get("nozzle_code") or ""),"select":"id,dispenser_code,active","limit":"1"})
+    if ds!=200:return jsonify({"error":"Could not load physical dispenser record","details":dispenser_rows}),ds
+    if not dispenser_rows:
+        return jsonify({"error":"Physical dispenser record is missing for "+str(cur.get("nozzle_code") or "")+". No changes were saved."}),409
+    physical_dispenser=dispenser_rows[0]
+    physical_id=str(physical_dispenser["id"])
+    dns,physical_rows=sb("dispenser_nozzles",params={"dispenser_id":"eq."+physical_id,"select":"id,dispenser_id,nozzle_number,nozzle_code,product_id,tank_id,active","order":"nozzle_number.asc"})
+    if dns!=200:return jsonify({"error":"Could not load physical nozzle records","details":physical_rows}),dns
+
+    # Handle the existing reorder UI's swap while preserving stable physical IDs.
+    code_updates={nozzle_id:None}
     if "tank_order" in data:
         try: order=int(data["tank_order"])
         except (TypeError,ValueError): return jsonify({"error":"Invalid dispenser order"}),400
         if order<1:return jsonify({"error":"Dispenser order must be 1 or greater"}),400
-        code_product=new_product
-        ps,pr=sb("products",params={"name":"eq."+code_product,"select":"name,code_name","limit":"1"})
-        if ps!=200 or not pr:return jsonify({"error":"Product not found"}),404
-        code_name=str(pr[0]["code_name"]).strip()
+        code_name=str(product_row.get("code_name") or "").strip()
         import re
         pattern=re.compile(r"^"+re.escape(code_name)+r"•DISPENSER (\d+)$",re.IGNORECASE)
         current_match=pattern.match(str(cur["nozzle_code"]))
         current_order=int(current_match.group(1)) if current_match else None
         if current_order is None:return jsonify({"error":"Current dispenser order could not be determined"}),400
-        ts,same=sb("nozzles",params={"select":"id,nozzle_code","product":"eq."+code_product})
+        ts,same=sb("nozzles",params={"select":"id,nozzle_code,product","product":"eq."+new_product})
         if ts!=200:return jsonify({"error":same}),ts
         max_order=max([int(m.group(1)) for x in same if (m:=pattern.match(str(x.get("nozzle_code",""))))] or [0])
         if order>max_order:return jsonify({"error":"Select one of the existing dispenser orders"}),400
         if order!=current_order:
             target=next((x for x in same if x["id"]!=nozzle_id and pattern.match(str(x.get("nozzle_code",""))) and int(pattern.match(str(x["nozzle_code"])).group(1))==order),None)
             if not target:return jsonify({"error":"Selected dispenser order is not available"}),400
+            target_ds,target_dispenser=sb("dispensers",params={"dispenser_code":"eq."+str(target["nozzle_code"]),"select":"id,dispenser_code","limit":"1"})
+            if target_ds!=200:return jsonify({"error":"Could not load the other physical dispenser"}),target_ds
+            if not target_dispenser:return jsonify({"error":"Physical dispenser record is missing for "+str(target["nozzle_code"])+". No changes were saved."}),409
             current_code=f"{code_name}•DISPENSER {current_order}"
             target_code=f"{code_name}•DISPENSER {order}"
             temp_code=f"{code_name}•DISPENSER __swap__{nozzle_id}"
@@ -2447,28 +2489,75 @@ def update_nozzle(nozzle_id):
             if status>=400:return jsonify({"error":"Could not change dispenser order"}),status
             status,_=sb("nozzles",method="PATCH",params={"id":"eq."+target["id"]},body={"nozzle_code":current_code},prefer="return=minimal")
             if status>=400:return jsonify({"error":"Could not complete dispenser order swap"}),status
+            # Reflect the swap in both normalized dispenser records and their labels.
+            for legacy_id,final_code in ((nozzle_id,target_code),(str(target["id"]),current_code)):
+                legacy_ds,legacy_rows=sb("nozzles",params={"id":"eq."+legacy_id,"select":"id,nozzle_code,product,tank_id,nozzle_count","limit":"1"})
+                if legacy_ds!=200 or not legacy_rows:return jsonify({"error":"Dispenser order changed in legacy records but normalized synchronization failed; retry the order sync."}),500
+                nds,ndrows=sb("dispensers",params={"dispenser_code":"eq."+temp_code if legacy_id==str(target["id"]) else "eq."+str(cur["nozzle_code"]),"select":"id,dispenser_code","limit":"1"})
+                # Locate by the preflight UUID when possible, avoiding any dependence on a changing code.
+                wanted_id=physical_id if legacy_id==nozzle_id else str(target_dispenser[0]["id"])
+                st,_=sb("dispensers",method="PATCH",params={"id":"eq."+wanted_id},body={"dispenser_code":final_code},prefer="return=minimal")
+                if st>=400:return jsonify({"error":"Legacy order changed but normalized dispenser sync failed"}),st
+                pstatus,prows=sb("dispenser_nozzles",params={"dispenser_id":"eq."+wanted_id,"select":"id,nozzle_number"})
+                if pstatus!=200:return jsonify({"error":"Could not synchronize physical nozzle labels"}),pstatus
+                for pn in prows:
+                    pnum=int(pn.get("nozzle_number") or 1)
+                    st,_=sb("dispenser_nozzles",method="PATCH",params={"id":"eq."+str(pn["id"])},body={"nozzle_code":f"{final_code}-N•{pnum}"},prefer="return=minimal")
+                    if st>=400:return jsonify({"error":"Legacy order changed but physical nozzle label sync failed"}),st
+            # Reload current legacy record after the swap before applying remaining edits.
+            status,current=sb("nozzles",params={"id":"eq."+nozzle_id,"select":"id,nozzle_code,nozzle_ids,nozzle_count,product,tank_id,active"})
+            if status!=200 or not current:return jsonify({"error":"Could not reload dispenser after order change"}),status
+            cur=current[0]
     elif "product" in data:
-        # Moving to another product gets the next available automatic dispenser number.
-        ps,pr=sb("products",params={"name":"eq."+new_product,"select":"name,code_name","limit":"1"})
-        if ps==200 and pr:
-            code_name=str(pr[0]["code_name"]).strip()
-            ts,rows=sb("nozzles",params={"select":"nozzle_code","product":"eq."+new_product})
-            if ts==200:
-                import re
-                pattern=re.compile(r"^"+re.escape(code_name)+r"•DISPENSER (\d+)$",re.IGNORECASE)
-                max_order=max([int(m.group(1)) for x in rows if (m:=pattern.match(str(x.get("nozzle_code",""))))] or [0])
-                body["nozzle_code"]=f"{code_name}•DISPENSER {max_order+1}"
-    # Never allow the generic PATCH endpoint to deactivate an active dispenser.
-    # Deactivation must go through the two-party request/attendant-confirmation flow.
+        # Moving to another product gets the next available number in that product group.
+        code_name=str(product_row.get("code_name") or "").strip()
+        ts,rows=sb("nozzles",params={"select":"nozzle_code","product":"eq."+new_product})
+        if ts!=200:return jsonify({"error":rows}),ts
+        import re
+        pattern=re.compile(r"^"+re.escape(code_name)+r"•DISPENSER (\d+)$",re.IGNORECASE)
+        max_order=max([int(m.group(1)) for x in rows if (m:=pattern.match(str(x.get("nozzle_code",""))))] or [0])
+        body["nozzle_code"]=f"{code_name}•DISPENSER {max_order+1}"
+
+    # Never allow generic PATCH to deactivate an active dispenser.
     if data.get("active") is False and cur.get("active") is True:
         return jsonify({"error":"Active dispenser deactivation must be confirmed by the admin and then by the assigned attendant."}),409
-    final_code=body.get("nozzle_code",cur["nozzle_code"])
-    final_count=body.get("nozzle_count",cur.get("nozzle_count",1))
-    if "nozzle_code" in body or "nozzle_count" in body:
-        body["nozzle_ids"]=[f"{final_code}-N•{i}" for i in range(1, int(final_count)+1)]
+
+    final_code=str(body.get("nozzle_code",cur["nozzle_code"]))
+    body["nozzle_ids"]=[f"{final_code}-N•{i}" for i in range(1,new_count+1)] if ("nozzle_code" in body or "nozzle_count" in body) else cur.get("nozzle_ids")
     if not body:return jsonify({"error":"No changes supplied"}),400
+
+    # If changing product/tank, ensure the destination code is not already used.
+    if final_code!=str(cur.get("nozzle_code")):
+        cs,clash=sb("nozzles",params={"nozzle_code":"eq."+final_code,"select":"id","limit":"1"})
+        if cs!=200:return jsonify({"error":clash}),cs
+        if clash and str(clash[0].get("id"))!=nozzle_id:return jsonify({"error":"The destination dispenser code is already in use."}),409
+
     status,result=sb("nozzles",method="PATCH",params={"id":"eq."+nozzle_id},body=body,prefer="return=representation")
     if status>=400:return jsonify({"error":result}),status
+
+    # Synchronize normalized parent and physical nozzle rows. Keep physical UUIDs
+    # stable; additions create only missing numbers and reductions deactivate extras.
+    if final_code!=str(cur.get("nozzle_code")):
+        st,_=sb("dispensers",method="PATCH",params={"id":"eq."+physical_id},body={"dispenser_code":final_code},prefer="return=minimal")
+        if st>=400:return jsonify({"error":"Legacy dispenser saved but normalized dispenser code sync failed","details":_}),st
+    if product_row:
+        product_id=str(product_row.get("id"))
+        for pn in physical_rows:
+            pnum=int(pn.get("nozzle_number") or 1)
+            pbody={"product_id":product_id,"tank_id":new_tank_id,"nozzle_code":f"{final_code}-N•{pnum}"}
+            if pnum>new_count:
+                pbody["active"]=False
+            st,res=sb("dispenser_nozzles",method="PATCH",params={"id":"eq."+str(pn["id"])},body=pbody,prefer="return=minimal")
+            if st>=400:return jsonify({"error":"Legacy dispenser saved but physical nozzle synchronization failed","details":res}),st
+        existing_numbers={int(pn.get("nozzle_number") or 1) for pn in physical_rows}
+        for pnum in range(1,new_count+1):
+            if pnum in existing_numbers:continue
+            st,res=sb("dispenser_nozzles",method="POST",body={
+                "dispenser_id":physical_id,"nozzle_number":pnum,
+                "nozzle_code":f"{final_code}-N•{pnum}","product_id":product_id,
+                "tank_id":new_tank_id,"active":False
+            },prefer="return=representation")
+            if st>=400:return jsonify({"error":"Legacy dispenser saved but a new physical nozzle could not be created","details":res}),st
     return jsonify(result),200
 
 @app.get("/api/shifts")
