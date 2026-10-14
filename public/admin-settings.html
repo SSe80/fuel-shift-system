@@ -1,6 +1,12 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Settings</title><link rel="stylesheet" href="assets/style.css?v=20261011-sales-tolerance-fix2"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-03">
+<head>
+<link rel="manifest" href="/admin-manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fuel Admin">
+<link rel="icon" href="/icons/admin-icon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Settings</title><link rel="stylesheet" href="assets/style.css?v=20261011-sales-tolerance-fix2"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-03">
 <style>
 .settings-group-heading{margin:22px 0 12px;padding:4px 2px 10px;border-bottom:1px solid var(--border-color,#d9dee7)}
 .settings-group-heading .section-kicker{display:block;font-size:.72rem;letter-spacing:.1em;font-weight:800;color:var(--muted,#667085);margin-bottom:5px}
@@ -682,5 +688,8 @@ body.admin-settings-page #drive-settings-section .drive-config-content{padding:2
 body.admin-settings-page #drive-settings-section .drive-config-content .drive-field:last-of-type{margin-bottom:10px}
 </style>
 
+<script>
+(function(){if("serviceWorker"in navigator)window.addEventListener("load",function(){navigator.serviceWorker.register("/service-worker.js").catch(function(e){console.error("Admin service worker registration failed:",e);});});var pe=null,b=null;window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();pe=e;if(!b){b=document.createElement("button");b.type="button";b.textContent="Install Admin App";b.setAttribute("aria-label","Install Fuel Shift System Admin app");b.style.cssText="position:fixed;z-index:99999;right:16px;bottom:16px;padding:12px 16px;border:0;border-radius:12px;background:#2563eb;color:#fff;font:700 13px Arial,sans-serif;box-shadow:0 5px 18px #0003;cursor:pointer";b.addEventListener("click",async function(){if(!pe)return;pe.prompt();await pe.userChoice;pe=null;b.remove();b=null;});document.body.appendChild(b);}});window.addEventListener("appinstalled",function(){if(b)b.remove();b=null;pe=null;});})();
+</script>
 </body>
 </html>
