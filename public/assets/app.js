@@ -3423,6 +3423,7 @@ async function getShiftPurchaseDischargeDetails(tankId,startAt,endAt,tankCode,at
       attribution_status:d.attribution_status||'unknown'
     })).filter(d=>d.quantity_liters>0)
       .sort((x,y)=>String(x.discharge_datetime||'').localeCompare(String(y.discharge_datetime||'')));
+  }catch(_){return [];}
 }
 
 async function openAdminSaleHistoryDetails(id){
