@@ -2544,7 +2544,8 @@ def update_nozzle(nozzle_id):
         return jsonify({"error":"Active dispenser deactivation must be confirmed by the admin and then by the assigned attendant."}),409
 
     final_code=str(body.get("nozzle_code",cur["nozzle_code"]))
-    body["nozzle_ids"]=[f"{final_code}-N•{i}" for i in range(1,new_count+1)] if ("nozzle_code" in body or "nozzle_count" in body) else cur.get("nozzle_ids")
+    if "nozzle_code" in body or "nozzle_count" in body:
+        body["nozzle_ids"]=[f"{final_code}-N•{i}" for i in range(1,new_count+1)]
     if not body:return jsonify({"error":"No changes supplied"}),400
 
     # If changing product/tank, ensure the destination code is not already used.
