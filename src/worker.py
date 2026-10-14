@@ -799,8 +799,9 @@ def get_tank_difference_alerts():
     for row in handovers or []:
         stamp=row.get("shift_started_at") or row.get("shift_ended_at")
         local_day=_local_date_from_iso(stamp) if stamp else None
-        if local_day and local_day not in report_dates:
-            report_dates.append(local_day)
+        report_day=local_day.isoformat() if local_day else None
+        if report_day and report_day not in report_dates:
+            report_dates.append(report_day)
     report_dates=sorted(report_dates,reverse=True)[:31]
     for report_day in report_dates:
         try:
