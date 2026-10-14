@@ -883,18 +883,32 @@ function closePendingHandoverReview(){
   modal.classList.remove('open');modal.setAttribute('aria-hidden','true');
 }
 async function confirmPendingHandoverReview(id){
-  const pin=document.getElementById('pending-handover-review-pin-'+id)?.value||'';
+  const input=document.getElementById('pending-handover-review-pin-'+id);
+  const pin=input?.value||'';
+  const modal=document.getElementById('pending-handover-review-modal');
+  const buttons=modal?Array.from(modal.querySelectorAll('button')):[];
+  const confirmButton=buttons.find(b=>/confirm shift/i.test(b.textContent||''));
   if(!pin){
-    const input=document.getElementById('pending-handover-review-pin-'+id);
     if(input){input.focus();input.reportValidity?.();}
+    else toast('PIN field is unavailable. Close this window and open the handover again.');
     return;
   }
+  if(!/^\\d+$/.test(pin)){
+    toast('Enter your numeric PIN.');
+    input?.focus();
+    return;
+  }
+  if(confirmButton){confirmButton.disabled=true;confirmButton.dataset.originalText=confirmButton.textContent;confirmButton.textContent='Confirming…';}
   try{
-    await api('/api/handovers/'+id+'/confirm',{method:'POST',body:JSON.stringify({pin})});
+    await api('/api/handovers/'+encodeURIComponent(id)+'/confirm',{method:'POST',body:JSON.stringify({pin})});
     closePendingHandoverReview();
     showAttendantActionResult('success','Shift confirmed','The handover was confirmed and your new shift has started.',()=>userDashboard());
   }catch(e){
-    showAttendantActionResult('failed','Shift confirmation failed',e.message||'The shift could not be confirmed.');
+    const message=e?.message||'The shift could not be confirmed. Please try again.';
+    try{showAttendantActionResult('failed','Shift confirmation failed',message);}
+    catch(_){toast(message);}
+  }finally{
+    if(confirmButton){confirmButton.disabled=false;confirmButton.textContent=confirmButton.dataset.originalText||'Confirm Shift';delete confirmButton.dataset.originalText;}
   }
 }
 async function confirmHandoverFromDashboard(event,id){
