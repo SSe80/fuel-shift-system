@@ -3211,7 +3211,7 @@ async function downloadAdminSaleHistoryDetails(id){
   const tankClosingRaw=t.tank_closing_liters ?? t.closing_tank_liters ?? shift?.tank_closing_liters ?? shift?.closing_liters ?? shift?.closing_tank_liters;
   const tankOpening=tankOpeningRaw==null||tankOpeningRaw===''?NaN:Number(tankOpeningRaw);
   const tankClosing=tankClosingRaw==null||tankClosingRaw===''?NaN:Number(tankClosingRaw);
-  const purchaseDischargeLiters=await getShiftPurchaseDischargeLiters(tankId,startedAt,endedAt);
+  const purchaseDischargeLiters=await getShiftPurchaseDischargeLiters(tankId,startedAt,endedAt,tankCode);
   const recordedTankSales=Number(t.tank_sales_liters ?? t.total_sales_liters ?? totalLiters);
   const tankSold=Number.isFinite(recordedTankSales)?recordedTankSales:totalLiters;
   const status=String(t.sales_status||(t.sales_confirmed_at?'confirmed':(t.sales_submitted_at?'pending_admin':'unknown'))).replace(/_/g,' ');
@@ -3387,8 +3387,9 @@ function downloadPurchaseDetailPdf(){
 }
 window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
 
-async function getShiftPurchaseDischargeLiters(tankId,startAt,endAt){
-  if(!tankId)return 0;
+async function getShiftPurchaseDischargeLiters(tankId,startAt,endAt,tankCode){
+  const normalizedTankCode=String(tankCode||'').trim().toLowerCase();
+  if(!tankId&&!normalizedTankCode)return 0;
   const start=startAt?new Date(startAt).getTime():NaN;
   const end=endAt?new Date(endAt).getTime():NaN;
   const inWindow=at=>{
@@ -3405,7 +3406,9 @@ async function getShiftPurchaseDischargeLiters(tankId,startAt,endAt){
     purchases.forEach(p=>{
       const history=Array.isArray(p?.discharge_history)?p.discharge_history:[];
       history.forEach(d=>{
-        if(String(d?.tank_id||'')!==String(tankId))return;
+        const sameTankId=!!tankId&&String(d?.tank_id||'')===String(tankId);
+        const sameTankCode=!!normalizedTankCode&&String(d?.tank_code||'').trim().toLowerCase()===normalizedTankCode;
+        if(!sameTankId&&!sameTankCode)return;
         const qty=Number(d?.discharged_quantity_liters??d?.quantity_liters??0);
         if(!(qty>0)||!inWindow(d?.discharge_datetime||d?.discharged_at||p?.discharged_at||p?.created_at))return;
         foundHistory=true;total+=qty;
@@ -3417,7 +3420,9 @@ async function getShiftPurchaseDischargeLiters(tankId,startAt,endAt){
     const data=await api('/api/tank-movements');
     const movements=Array.isArray(data)?data:(Array.isArray(data?.movements)?data.movements:[]);
     return movements.reduce((sum,m)=>{
-      if(String(m.tank_id||'')!==String(tankId)||String(m.movement_type||'').toLowerCase()!=='purchase')return sum;
+      const sameTankId=!!tankId&&String(m.tank_id||'')===String(tankId);
+      const sameTankCode=!!normalizedTankCode&&String(m.tank_code||'').trim().toLowerCase()===normalizedTankCode;
+      if((!sameTankId&&!sameTankCode)||String(m.movement_type||'').toLowerCase()!=='purchase')return sum;
       if(!inWindow(m.created_at||m.movement_at||m.discharge_at))return sum;
       return sum+Math.max(0,Number(m.quantity_liters||0));
     },0);
@@ -3535,7 +3540,7 @@ async function openAdminSaleHistoryDetails(id){
     const tankOpening=t.tank_opening_liters==null||t.tank_opening_liters===''?NaN:Number(t.tank_opening_liters);
     const tankClosing=t.tank_closing_liters==null||t.tank_closing_liters===''?NaN:Number(t.tank_closing_liters);
     const tankIdForReconciliation=t.tank_id||relatedTank?.id||item.tank?.id||item.dispenser?.tank_id;
-    const purchaseDischargeLiters=await getShiftPurchaseDischargeLiters(tankIdForReconciliation,startedAt,endedAt);
+    const purchaseDischargeLiters=await getShiftPurchaseDischargeLiters(tankIdForReconciliation,startedAt,endedAt,tankCode);
     const tankSalesLiters=Number(t.tank_sales_liters??totalLiters);
     const expectedClosingStock=Number.isFinite(tankOpening)?tankOpening+purchaseDischargeLiters-tankSalesLiters:NaN;
     const calculatedTankVariance=Number.isFinite(tankClosing)&&Number.isFinite(expectedClosingStock)?tankClosing-expectedClosingStock:NaN;
