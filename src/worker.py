@@ -802,7 +802,8 @@ def get_tank_difference_alerts():
         report_day=local_day.isoformat() if local_day else None
         if report_day and report_day not in report_dates:
             report_dates.append(report_day)
-    report_dates=sorted(report_dates,reverse=True)[:31]
+    # Bound repeated Admin polling to the latest seven report dates.
+    report_dates=sorted(report_dates,reverse=True)[:7]
     for report_day in report_dates:
         try:
             report_result=daily_report(report_day)
@@ -811,6 +812,10 @@ def get_tank_difference_alerts():
             if report_status!=200 or not hasattr(report_response,"get_json"):
                 continue
             report_payload=report_response.get_json(silent=True) or {}
+            # Only completed/confirmed DSRs are authoritative. In-progress
+            # report days must not emit misleading tank-difference alerts.
+            if report_payload.get("report_ready") is not True:
+                continue
             for tank_row in report_payload.get("dsr_tank_details") or report_payload.get("tank_details") or []:
                 try:difference=float(tank_row.get("difference_liters") or 0)
                 except (TypeError,ValueError):continue
