@@ -1220,9 +1220,16 @@ window.downloadPurchaseDetailPdf=async function(options){
     else for(let i=0;i<hist.length;i++){
       const e=hist[i]||{},qty=n(e.discharged_quantity_liters),beforeRaw=e.physical_tank_liters_before??e.tank_liters_before,before=Number(beforeRaw),recordedRaw=e.tank_stock_recorded_liters??e.physical_tank_liters_after??e.tank_stock_closing_liters,recorded=Number(recordedRaw),expectedRaw=e.tank_liters_after??e.expected_tank_liters_after,expected=expectedRaw!==undefined&&expectedRaw!==null&&Number.isFinite(Number(expectedRaw))?Number(expectedRaw):(beforeRaw!==undefined&&beforeRaw!==null&&Number.isFinite(before)?before+qty:null),savedDifferenceRaw=e.tank_stock_difference_liters??e.tank_stock_adjustment_liters??e.physical_vs_system_difference_liters??e.stock_difference_liters,savedDifference=savedDifferenceRaw!==undefined&&savedDifferenceRaw!==null&&Number.isFinite(Number(savedDifferenceRaw))?Number(savedDifferenceRaw):null,diff=savedDifference!==null?savedDifference:(recordedRaw!==undefined&&recordedRaw!==null&&Number.isFinite(recorded)&&expected!=null?recorded-expected:null);
       const tank=e.tank_code||selected.find(t=>String(t.id)===String(e.tank_id))?.tank_code||'—',stock=e.tank_stock_recorded===true;
-      const dischargedById=String(e.discharged_by||e.discharged_by_employee_id||e.performed_by||'');
-      const dischargedByEmployee=purchaseEmployees.find(emp=>dischargedById&&String(emp.id)===dischargedById);
-      const att=[e.discharged_by_name,e.performed_by_name,e.attendant_name,dischargedByEmployee?.name].find(v=>v&&String(v).trim()&&!/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(String(v).trim()))|| (dischargedById?'Recorded attendant (name unavailable)':'Not recorded');
+      const dischargeAt=Date.parse(e.discharge_datetime||'');
+      const matchingShifts=purchaseShifts.filter(s=>{
+        const reads=Array.isArray(s.nozzle_readings)?s.nozzle_readings:[];
+        if(!reads.some(n=>String(n.tank_id||'')===String(e.tank_id||'')))return false;
+        const started=Date.parse(s.start_time||s.started_at||'');
+        const ended=Date.parse(s.end_time||s.ended_at||'');
+        return Number.isFinite(dischargeAt)&&(!Number.isFinite(started)||started<=dischargeAt)&&(!Number.isFinite(ended)||ended>=dischargeAt);
+      });
+      const attendantNames=[...new Set(matchingShifts.map(s=>purchaseEmployees.find(emp=>String(emp.id)===String(s.employee_id))?.name).filter(Boolean))];
+      const att=attendantNames.join(', ')||'Attendant not identified for this discharge time';
       const h=45;if(y+h>H-20){footer();doc.addPage();header();title('Discharge History · Continued');}
       box(M,y,CW,h);doc.setFillColor(...(stock?green:red));doc.rect(M,y,2.5,h,'F');
       T('OPERATION '+(i+1),M+7,y+7,6.5,blue,'bold');T(dt(e.discharge_datetime||e.created_at),W-M-4,y+7,5.5,muted,'normal','normal',{align:'right'});
@@ -1596,10 +1603,16 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       const tankRecord=purchaseDetailTanks?.find(t=>String(t.id)===tankId);
       // The person who submitted the discharge is stored on the operation itself.
       // Do not infer the operator from the tank's active/overlapping dispenser shifts.
-      const dischargedById=String(e.discharged_by||e.discharged_by_employee_id||e.performed_by||'');
-      const dischargedByEmployee=purchaseEmployees.find(emp=>dischargedById&&String(emp.id)===dischargedById);
-      const dischargedByName=[e.discharged_by_name,e.performed_by_name,e.attendant_name,dischargedByEmployee?.name].find(v=>v&&String(v).trim()&&!/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(String(v).trim()));
-      const attendantText=dischargedByName?String(dischargedByName).trim():(dischargedById?'Recorded attendant (name unavailable)':'Not recorded');
+      const dischargeAt=Date.parse(e.discharge_datetime||'');
+      const matchingShifts=purchaseShifts.filter(s=>{
+        const reads=Array.isArray(s.nozzle_readings)?s.nozzle_readings:[];
+        if(!reads.some(n=>String(n.tank_id||'')===String(e.tank_id||'')))return false;
+        const started=Date.parse(s.start_time||s.started_at||'');
+        const ended=Date.parse(s.end_time||s.ended_at||'');
+        return Number.isFinite(dischargeAt)&&(!Number.isFinite(started)||started<=dischargeAt)&&(!Number.isFinite(ended)||ended>=dischargeAt);
+      });
+      const attendantNames=[...new Set(matchingShifts.map(s=>purchaseEmployees.find(emp=>String(emp.id)===String(s.employee_id))?.name).filter(Boolean))];
+      const attendantText=attendantNames.join(', ')||'Attendant not identified for this discharge time';
       return '<article class="purchase-detail-discharge-event"><div class="purchase-detail-event-title"><div><span class="purchase-detail-event-number">DISCHARGE '+(i+1)+'</span><strong>'+purchaseH(e.tank_code||tankRecord?.tank_code||'Tank')+'</strong></div><span class="'+stockClass+'">'+(recordedOk?'✓ ':'⚠ ')+stockStatus+'</span></div><div class="purchase-detail-event-grid">'+
         '<div><span>Date & time</span><strong>'+purchaseH(e.discharge_datetime?new Date(e.discharge_datetime).toLocaleString():'—')+'</strong></div>'+
         '<div><span>Discharged by</span><strong>'+purchaseH(attendantText)+'</strong></div>'+
