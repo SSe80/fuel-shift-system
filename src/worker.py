@@ -780,7 +780,7 @@ def get_tank_difference_alerts():
     purchase_value=config.get("purchase_discharge_tank_difference_tolerance")
     purchase_tolerance=float(10 if purchase_value is None else purchase_value)
     hs,handovers=sb("shift_takeovers",params={
-        "select":"id,shift_id,tank_id,tank_variance_liters,shift_ended_at,created_at",
+        "select":"id,shift_id,tank_id,tank_variance_liters,shift_started_at,shift_ended_at,created_at",
         "order":"created_at.desc","limit":"5000"
     })
     if hs!=200:return jsonify({"error":"Unable to check shift tank differences","details":handovers}),hs
@@ -790,20 +790,47 @@ def get_tank_difference_alerts():
     })
     if ps!=200:return jsonify({"error":"Unable to check purchase discharge tank differences","details":purchases}),ps
     alerts=[]
+    # Reconcile tank differences at DSR level, not from individual handover
+    # variance. This is essential when several dispensers draw from the same
+    # physical tank: individual shift variances are not the final tank balance.
+    # Reuse the DSR's existing calculation so the alert and report share one
+    # stock equation; this is read-only and never blocks shift handover.
+    report_dates=[]
     for row in handovers or []:
-        try:difference=float(row.get("tank_variance_liters") or 0)
-        except (TypeError,ValueError):continue
-        if abs(difference)<=handover_tolerance:continue
-        record_id=str(row.get("id") or "")
-        alerts.append({
-            "key":"tank-handover-difference:"+record_id,
-            "level":"warning",
-            "title":"Shift handover tank difference exceeds tolerance",
-            "detail":"Physical closing stock differs from expected stock by "+str(round(abs(difference),2))+" L; configured tolerance is "+str(round(handover_tolerance,2))+" L. Review the handover and tank reconciliation.",
-            "href":"admin-sales.html",
-            "meta":"Difference "+("+" if difference>0 else "")+str(round(difference,2))+" L · Allowed "+str(round(handover_tolerance,2))+" L",
-            "date":row.get("shift_ended_at") or row.get("created_at")
-        })
+        stamp=row.get("shift_started_at") or row.get("shift_ended_at")
+        local_day=_local_date_from_iso(stamp) if stamp else None
+        if local_day and local_day not in report_dates:
+            report_dates.append(local_day)
+    report_dates=sorted(report_dates,reverse=True)[:31]
+    for report_day in report_dates:
+        try:
+            report_result=daily_report(report_day)
+            report_response=report_result[0] if isinstance(report_result,tuple) else report_result
+            report_status=report_result[1] if isinstance(report_result,tuple) and len(report_result)>1 else getattr(report_response,"status_code",200)
+            if report_status!=200 or not hasattr(report_response,"get_json"):
+                continue
+            report_payload=report_response.get_json(silent=True) or {}
+            for tank_row in report_payload.get("dsr_tank_details") or report_payload.get("tank_details") or []:
+                try:difference=float(tank_row.get("difference_liters") or 0)
+                except (TypeError,ValueError):continue
+                if abs(difference)<=handover_tolerance:continue
+                tank_id=str(tank_row.get("tank_id") or tank_row.get("id") or "")
+                tank_label=str(tank_row.get("tank_code") or tank_row.get("tank_name") or ("Tank "+tank_id[:8] if tank_id else "Tank"))
+                alerts.append({
+                    "key":"dsr-tank-difference:"+report_day+":"+tank_id,
+                    "level":"warning",
+                    "title":"DSR tank stock difference exceeds tolerance",
+                    "detail":tank_label+" DSR expected closing stock differs from actual closing stock by "+str(round(abs(difference),2))+" L for "+report_day+". Configured tolerance is "+str(round(handover_tolerance,2))+" L. Review the DSR tank reconciliation.",
+                    "href":"admin-sales.html",
+                    "meta":report_day+" · Difference "+("+" if difference>0 else "")+str(round(difference,2))+" L · Allowed "+str(round(handover_tolerance,2))+" L",
+                    "date":report_day+"T23:59:59+03:00",
+                    "tank_id":tank_id,
+                    "report_date":report_day
+                })
+        except Exception:
+            # A failed historical DSR calculation should not make this alert
+            # endpoint unavailable; the purchase-discharge alerts still load.
+            continue
     for purchase in purchases or []:
         history=purchase.get("discharge_history")
         if not isinstance(history,list):continue
@@ -3919,10 +3946,10 @@ def _daily_report_error_boundary(fn):
 
 @app.get("/api/reports/daily")
 @_daily_report_error_boundary
-def daily_report():
+def daily_report(report_date_override=None):
     auth=require_admin()
     if auth:return auth
-    report_date=request.args.get("date") or date.today().isoformat()
+    report_date=report_date_override or request.args.get("date") or date.today().isoformat()
     try:
         report_day=date.fromisoformat(report_date)
     except ValueError:
