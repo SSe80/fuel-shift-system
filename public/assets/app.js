@@ -143,10 +143,20 @@ async function login(role) {
 }
 async function performLogout(){
   const role=getFuelRole();
-  try{await api('/api/logout',{method:'POST',body:'{}'});}catch(_){}
-  localStorage.removeItem('fuelRole');
-  sessionStorage.removeItem('fuelRole');
-  location.href=role==='admin'?'admin-login.html':'attendant-login.html';
+  const button=document.querySelector('#logout-confirm-modal .logout-confirm-button');
+  if(button){button.disabled=true;button.textContent='Logging out…';}
+  try{
+    await api('/api/logout',{method:'POST',body:'{}'});
+    // Prevent the login page's session-resume helper from redirecting straight
+    // back to the dashboard after an intentional logout on this device.
+    try{localStorage.setItem('fuelExplicitLogout:'+role,'1');}catch(_){}
+    localStorage.removeItem('fuelRole');
+    sessionStorage.removeItem('fuelRole');
+    location.replace(role==='admin'?'admin-login.html':'attendant-login.html');
+  }catch(e){
+    if(button){button.disabled=false;button.textContent='Log out';}
+    toast('Logout failed. You are still signed in. Check your connection and try again.');
+  }
 }
 function closeLogoutConfirmation(){
   const modal=document.getElementById('logout-confirm-modal');
