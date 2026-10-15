@@ -21,7 +21,7 @@
       note.id = 'fuel-auth-retry-note';
       note.setAttribute('role', 'status');
       note.style.cssText = 'position:fixed;z-index:99999;left:16px;right:16px;top:16px;padding:14px 16px;border:1px solid #f0c36d;border-radius:12px;background:#fff8e6;color:#713f12;font:600 14px/1.45 system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.12)';
-      note.textContent = 'Could not verify your session because the server is temporarily unavailable. Your login has not been cleared. Check your connection and retry.';
+      note.textContent = 'Could not verify your saved session. The app has not signed you out or cleared your saved login. Check your connection and retry.';
       var button = document.createElement('button');
       button.type = 'button';
       button.textContent = 'Retry';
@@ -41,18 +41,14 @@
       .then(function (response) {
         // Only an explicit unauthorized response should send the user back to login.
         // A server error or temporary network failure must not masquerade as logout.
-        if (response.status === 401) {
-          goToLogin();
-          return null;
-        }
+        if (response.status === 401) throw new Error('Saved session could not be verified (' + response.status + ').');
         if (!response.ok) throw new Error('Session check temporarily failed (' + response.status + ').');
         return response.json();
       })
       .then(function (data) {
         if (data === null) return;
         if (!data || data.authenticated !== true || !data.user || data.user.role !== role) {
-          goToLogin();
-          return;
+          throw new Error('Saved session could not be verified.');
         }
         try { window.sessionStorage.setItem('fuelRole', role); } catch (_) {}
         document.documentElement.style.visibility = '';
