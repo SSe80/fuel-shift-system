@@ -297,7 +297,7 @@ async function confirmTakeoverSale(){
     await api('/api/shift-takeovers/'+id+'/record-sale',{method:'POST',body:JSON.stringify({sales:sales.map(x=>({sale_type_id:x.sale_type_id,amount:x.amount,reason:x.reason||null}))})});
     closeTakeoverSaleConfirm();
     closeTakeoverSaleModal();
-    toast((Array.isArray(sales)&&sales.length===0)?'No-sales shift recorded successfully':'Sale submitted for admin confirmation');
+    toast('Sale submitted for admin confirmation');
     await userDashboard();
   }catch(e){
     if(button)button.disabled=false;
@@ -3752,9 +3752,11 @@ async function finalizeAdminSaleConfirmation(){
   const card=document.querySelector('.admin-sale-confirm-card[data-takeover-id="'+id+'"]');
   const ids=Array.from(card?.querySelectorAll('.admin-sale-check:checked')||[]).map(x=>x.getAttribute('data-sale-id'));
   const total=card?.querySelectorAll('.admin-sale-check').length||0;
-  if(!ids.length||ids.length!==total){closeAdminSaleReview();toast('Tick every sale before confirming');return;}
   const pendingItem=(adminSalesData.pending||[]).find(x=>String(x.takeover?.id)===String(id));
   const returnedLiters=Number(pendingItem?.takeover?.returned_liters||0);
+  const netCalculated=adminReturnedFuelBreakdown(pendingItem?.takeover||{},returnedLiters).netAmount;
+  const validZeroSales=total===0&&ids.length===0&&netCalculated<=0.005;
+  if(!validZeroSales&&(!ids.length||ids.length!==total)){closeAdminSaleReview();toast('Tick every sale before confirming');return;}
   const button=document.getElementById('admin-sale-final-confirm');
   if(button)button.disabled=true;
   try{
