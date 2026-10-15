@@ -5,6 +5,7 @@
   "compatibility_date": "2026-09-12",
   "compatibility_flags": ["python_workers"],
   "vars": {
+    "GOOGLE_OAUTH_CLIENT_ID": "890175678596-j6li5ku5eebdslcbkl5umtpk5t86g6bh.apps.googleusercontent.com",
     "SUPABASE_URL": "https://sdhnqtnlogmuealsgkhr.supabase.co"
   },
   "assets": {
