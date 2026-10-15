@@ -187,7 +187,7 @@ def prevent_legacy_session_overlap(response):
     if role in ROLE_SESSION_COOKIE and employee_id and request.path != "/api/logout":
         _set_role_cookie(response, role, employee_id)
     session.modified = False
-    response.delete_cookie("__Host-fuel_shift_session", path="/")
+    response.delete_cookie("__Host-fuel_shift_session", path="/", secure=True, httponly=True, samesite="Lax")
     return response
 
 def _set_role_cookie(response, role, employee_id):
@@ -202,7 +202,7 @@ def _set_role_cookie(response, role, employee_id):
     )
 
 def _clear_role_cookie(response, role):
-    response.delete_cookie(ROLE_SESSION_COOKIE[role], path="/")
+    response.delete_cookie(ROLE_SESSION_COOKIE[role], path="/", secure=True, httponly=True, samesite="Lax")
 
 def _audit_record_locator(path, payload=None):
     """Return a safe table/filter pair for tracked records that can be compared around a mutation."""
@@ -953,7 +953,7 @@ def _role_login(role):
         return jsonify({"error": "Invalid credentials for this login"}), 401
     response = jsonify({k: emp[k] for k in ("id","name","phone","operator_id","role")})
     _set_role_cookie(response, role, emp["id"])
-    response.delete_cookie("__Host-fuel_shift_session", path="/")
+    response.delete_cookie("__Host-fuel_shift_session", path="/", secure=True, httponly=True, samesite="Lax")
     return response
 
 @app.post("/api/admin-login")
