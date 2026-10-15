@@ -56,9 +56,39 @@
     });
   }
 
+  function resumeExistingSession(role) {
+    if (role !== 'admin' && role !== 'attendant') return;
+    // If the PWA/browser opens the login URL after a phone restart, first
+    // check the existing HttpOnly session cookie instead of making the user
+    // sign in again. A failed/network check never clears the cookie or role.
+    fetch('/api/me', {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { 'X-Fuel-Role': role, 'Accept': 'application/json' }
+    }).then(function (response) {
+      if (!response.ok) return null;
+      return response.json();
+    }).then(function (data) {
+      if (!data || data.authenticated !== true || !data.user || data.user.role !== role) return;
+      try { window.localStorage.setItem('fuelRole', role); } catch (_) {}
+      var destination = role === 'admin' ? 'admin-dashboard.html' : 'attendant-dashboard.html';
+      if (role === 'admin' && window.location.pathname.split('/').pop() === 'admin-logistics.html') {
+        var requested = '';
+        try { requested = new URLSearchParams(window.location.search).get('next') || ''; } catch (_) {}
+        var allowed = ['admin-logistics-dashboard.html', 'admin-logistics-settings.html', 'admin-logistics-truck.html'];
+        if (allowed.indexOf(requested) !== -1) destination = requested;
+      }
+      window.location.replace(destination);
+    }).catch(function () {
+      // Keep the login form available during network outages; never log out.
+    });
+  }
+
   window.addEventListener('DOMContentLoaded', function () {
     var form = document.getElementById('login-form');
     if (!form) return;
+    resumeExistingSession(form.getAttribute('data-role'));
     form.addEventListener('submit', function (event) {
       event.preventDefault();
       login(form.getAttribute('data-role'), form.getAttribute('data-success-url'));
