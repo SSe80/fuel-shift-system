@@ -1777,7 +1777,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
         // Keep the record eligible for retry and expose the real failure for diagnosis.
         console.error('[Purchase Drive upload] Failed for purchase '+id+':',uploadError);
         if(typeof window.toast==='function'){
-          window.toast('Google Drive upload failed for purchase '+String(p.invoice_number||p.id)+'. It will retry on the next refresh.');
+          window.toast('Google Drive upload failed for purchase '+String(p.invoice_number||p.id)+'. Automatic retry is scheduled while this page remains open.');
         }
       }finally{
         purchaseDriveUploadInFlight.delete(id);
@@ -1829,6 +1829,23 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       if(list)list.innerHTML='<div class="purchase-empty">Purchase history unavailable right now.</div>';
     }
   };
+
+  // Keep automatic Drive export moving without requiring the admin to press Refresh.
+  // A retry reloads the authoritative purchase/discharge/tank-stock state before
+  // attempting eligible PDFs, and only runs while this page is visible.
+  let purchaseAutoRefreshInFlight=false;
+  async function refreshPurchaseExports(){
+    if(document.hidden||purchaseAutoRefreshInFlight||typeof window.loadPurchases!=='function')return;
+    purchaseAutoRefreshInFlight=true;
+    try{await window.loadPurchases();}
+    finally{purchaseAutoRefreshInFlight=false;}
+  }
+  window.addEventListener('online',refreshPurchaseExports);
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden)refreshPurchaseExports();
+  });
+  window.setInterval(refreshPurchaseExports,60000);
+
   let purchaseDischargeState={purchase:null,purchaseId:null,selectedIndexes:[],tankId:null,tankLitersBefore:null,tanks:[]};
 
   function setDischargeStep(step){
