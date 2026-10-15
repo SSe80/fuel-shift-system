@@ -68,6 +68,88 @@ def _pem_to_der(pem):
     return base64.b64decode("".join(body.split()))
 
 
+def _service_account_config(e):
+    email = getattr(e, "GOOGLE_SERVICE_ACCOUNT_EMAIL", None)
+    private_key = getattr(e, "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY", None)
+    if not email and not private_key:
+        return None
+    if not email or not private_key:
+        raise DriveError(
+            "Google Drive service-account authentication is selected, but "
+            "GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY is missing. "
+            "Set the private key as a Cloudflare Worker secret.",
+            503,
+        )
+    return str(email).strip(), str(private_key).replace("\\n", "\n").strip()
+
+
+async def _service_account_access_token(e):
+    """Create a short-lived Google OAuth access token using a service-account JWT."""
+    config = _service_account_config(e)
+    if not config:
+        return None
+    email, private_key = config
+    now = int(time.time())
+    header = _b64url(json.dumps({"alg": "RS256", "typ": "JWT"}, separators=(",", ":")))
+    claims = _b64url(json.dumps({
+        "iss": email,
+        "scope": DRIVE_SCOPE,
+        "aud": TOKEN_URL,
+        "iat": now,
+        "exp": now + 3600,
+    }, separators=(",", ":")))
+    unsigned = header + "." + claims
+    try:
+        key = await crypto.subtle.importKey(
+            "pkcs8",
+            to_js(_pem_to_der(private_key)),
+            Object.fromEntries([
+                ("name", "RSASSA-PKCS1-v1_5"),
+                ("hash", "SHA-256"),
+            ]),
+            False,
+            to_js(["sign"]),
+        )
+        signature = await crypto.subtle.sign(
+            Object.fromEntries([("name", "RSASSA-PKCS1-v1_5")]),
+            key,
+            to_js(unsigned.encode()),
+        )
+        jwt = unsigned + "." + _b64url(bytes(Uint8Array.new(signature).to_py()))
+    except Exception as exc:
+        raise DriveError(
+            "Could not sign the Google service-account assertion. Check that "
+            "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY contains the complete PKCS#8 PEM private key. "
+            + str(exc)[:160],
+            503,
+        )
+    from urllib.parse import urlencode
+    status, data = await _http(
+        TOKEN_URL,
+        "POST",
+        {"Content-Type": "application/x-www-form-urlencoded"},
+        urlencode({
+            "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+            "assertion": jwt,
+        }),
+    )
+    if status >= 400 or not isinstance(data, dict) or not data.get("access_token"):
+        detail = (data or {}).get("error_description") or (data or {}).get("error") or str(data)
+        raise DriveError(
+            "Google service-account token exchange failed (%s): %s" % (status, str(detail)[:180]),
+            503 if status >= 500 else 401,
+        )
+    return data["access_token"]
+
+
+async def _drive_access_token(e):
+    """Prefer service-account auth for Drive uploads; retain OAuth for legacy setups."""
+    token = await _service_account_access_token(e)
+    if token:
+        return token
+    return await _refresh_access_token(e)
+
+
 def _oauth_config(e):
     client_id = getattr(e, "GOOGLE_OAUTH_CLIENT_ID", None)
     client_secret = getattr(e, "GOOGLE_OAUTH_CLIENT_SECRET", None)
@@ -249,7 +331,7 @@ async def _upload_pdf(token, folder_id, name, pdf_bytes):
 
 
 async def _store(e, root_id, subfolder, file_name, pdf_bytes):
-    token = await _refresh_access_token(e)
+    token = await _drive_access_token(e)
     await check_folder(token, root_id)
     sub_id = await _ensure_folder(token, root_id, subfolder)
     return await _upload_pdf(token, sub_id, file_name, pdf_bytes)
@@ -262,7 +344,7 @@ def store_pdf(e, root_id, subfolder, file_name, pdf_bytes):
 
 
 async def _check_both(e, folders):
-    token = await _refresh_access_token(e)
+    token = await _drive_access_token(e)
     out = {}
     for key, fid in folders.items():
         out[key] = await check_folder(token, fid) if fid else None
