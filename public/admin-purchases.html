@@ -1279,7 +1279,7 @@ window.downloadPurchaseDetailPdf=async function(options){
     try{
       const bytes=new Uint8Array(await pdfBlob.arrayBuffer());
       let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));
-      const response=await fetch('/api/drive/purchases/upload',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify({pdf_base64:btoa(binary),file_name:fileName,purchase_date:String(p.purchase_datetime||p.created_at||'').slice(0,10)})});
+      const response=await fetch('/api/drive/purchases/upload',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify({pdf_base64:btoa(binary),file_name:fileName,purchase_date:String(p.purchase_date||p.purchase_datetime||p.created_at||'').slice(0,10)})});
       const result=await response.json().catch(()=>({}));
       if(!response.ok||!result.ok)throw new Error(result.error||('HTTP '+response.status));
       if(typeof window.toast==='function')window.toast('Purchase PDF saved to Google Drive: '+(result.path||fileName));
@@ -1758,8 +1758,19 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       if(purchaseDriveUploadInFlight.has(id))continue;
       purchaseDriveUploadInFlight.add(id);
       try{
-        const uploaded=await window.uploadPurchaseDetailPdf(p);
-        if(uploaded===false)throw new Error('Purchase PDF upload failed; it will be retried.');
+        let uploaded=false,lastUploadError=null;
+        // Retry transient upload/PDF-generation failures immediately. The backend
+        // reuses the same monthly folder and filename, updating an existing Drive file.
+        for(let attempt=0;attempt<3&&!uploaded;attempt++){
+          try{
+            uploaded=await window.uploadPurchaseDetailPdf(p);
+            if(uploaded===false)throw new Error('Purchase PDF upload failed.');
+          }catch(retryError){
+            lastUploadError=retryError;
+            if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+          }
+        }
+        if(!uploaded)throw lastUploadError||new Error('Purchase PDF upload failed; it will be retried on the next refresh.');
         try{localStorage.setItem(marker,signature);}catch(_){}
       }catch(uploadError){
         // Automatic Drive uploads must never fall back to downloading a file.
