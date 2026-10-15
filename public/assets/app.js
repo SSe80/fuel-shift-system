@@ -93,11 +93,14 @@ async function confirmSettingsAction(){
   }catch(e){toast(e.message);}
 }
 function getFuelRole() {
-  const savedRole = localStorage.getItem('fuelRole') || sessionStorage.getItem('fuelRole') || '';
-  if (savedRole === 'admin' || savedRole === 'attendant') return savedRole;
+  // The page determines the API role. A single localStorage key is shared by
+  // every tab on this origin, so another role logging in must not change the
+  // role header sent by an already-open admin/attendant page.
   const path = location.pathname.toLowerCase();
   if (path.includes('admin-')) return 'admin';
   if (path.includes('attendant-')) return 'attendant';
+  const savedRole = localStorage.getItem('fuelRole') || sessionStorage.getItem('fuelRole') || '';
+  if (savedRole === 'admin' || savedRole === 'attendant') return savedRole;
   return '';
 }
 async function api(path, options={}) {
