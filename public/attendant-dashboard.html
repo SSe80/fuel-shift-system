@@ -1971,8 +1971,8 @@ body.attendant-dashboard-page #takeover-sale-modal.open,
 body.attendant-dashboard-page #takeover-sale-confirm-modal.open{
   display:flex!important;
 }
-body.attendant-dashboard-page #takeover-sale-modal > .takeover-action-modal,
-body.attendant-dashboard-page #takeover-sale-confirm-modal > .takeover-action-modal{
+body.attendant-dashboard-page #takeover-sale-modal > .modal-backdrop + .takeover-action-modal,
+body.attendant-dashboard-page #takeover-sale-confirm-modal > .modal-backdrop + .takeover-action-modal{
   position:relative!important;
   inset:auto!important;
   flex:0 0 auto!important;
@@ -1988,8 +1988,8 @@ body.attendant-dashboard-page #takeover-sale-confirm-modal > .takeover-action-mo
   overflow:hidden!important;
   min-height:0!important;
 }
-body.attendant-dashboard-page #takeover-sale-modal > .takeover-action-modal > .top,
-body.attendant-dashboard-page #takeover-sale-confirm-modal > .takeover-action-modal > .top{
+body.attendant-dashboard-page #takeover-sale-modal > .modal-backdrop + .takeover-action-modal > .top,
+body.attendant-dashboard-page #takeover-sale-confirm-modal > .modal-backdrop + .takeover-action-modal > .top{
   flex:0 0 auto!important;
 }
 body.attendant-dashboard-page #takeover-sale-modal #takeover-sale-summary{
@@ -2012,8 +2012,8 @@ body.attendant-dashboard-page #takeover-sale-confirm-modal #takeover-sale-confir
   overscroll-behavior:contain!important;
   -webkit-overflow-scrolling:touch!important;
 }
-body.attendant-dashboard-page #takeover-sale-modal > .takeover-action-modal > .row,
-body.attendant-dashboard-page #takeover-sale-confirm-modal > .takeover-action-modal > .row{
+body.attendant-dashboard-page #takeover-sale-modal > .modal-backdrop + .takeover-action-modal > .row,
+body.attendant-dashboard-page #takeover-sale-confirm-modal > .modal-backdrop + .takeover-action-modal > .row{
   flex:0 0 auto!important;
   display:flex!important;
   flex-wrap:wrap!important;
@@ -2029,8 +2029,8 @@ body.attendant-dashboard-page #takeover-sale-confirm-modal > .takeover-action-mo
     align-items:flex-start!important;
     padding: max(8px,env(safe-area-inset-top)) 10px max(8px,env(safe-area-inset-bottom))!important;
   }
-  body.attendant-dashboard-page #takeover-sale-modal > .takeover-action-modal,
-  body.attendant-dashboard-page #takeover-sale-confirm-modal > .takeover-action-modal{
+  body.attendant-dashboard-page #takeover-sale-modal > .modal-backdrop + .takeover-action-modal,
+  body.attendant-dashboard-page #takeover-sale-confirm-modal > .modal-backdrop + .takeover-action-modal{
     width:calc(100vw - 20px)!important;
     max-height:calc(100dvh - max(16px,env(safe-area-inset-top)) - max(16px,env(safe-area-inset-bottom)))!important;
     margin:0 auto!important;
