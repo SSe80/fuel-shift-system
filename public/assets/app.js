@@ -281,6 +281,17 @@ async function continueBatchRecordSales(){
       if(amount>0)a.sales.push({sale_type_id:p.sale_type_id,amount,reason:p.reason||null});
     });
   }
+  // Each shift is validated independently by the database RPC. Catch any
+  // per-shift rounding/tolerance mismatch here instead of failing the whole batch.
+  const allocationMismatches=allocations.map(a=>({
+    takeover:a.takeover,
+    expected:calc(a.takeover),
+    allocated:Math.round(a.sales.reduce((sum,x)=>sum+Number(x.amount||0),0)*100)/100
+  })).filter(a=>Math.abs(a.allocated-a.expected)>allowedDifference+0.000001);
+  if(allocationMismatches.length){
+    if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">The proportional payment allocation would put '+allocationMismatches.length+' shift(s) outside the configured '+money(allowedDifference)+' tolerance. Adjust the combined payment amounts or ask an administrator to review the tolerance before submitting.</div>';
+    return;
+  }
   window.pendingBatchRecordSales.allocations=allocations;
   if(review)review.innerHTML='<div class="takeover-sale-summary"><div><span>Selected shifts</span><strong>'+selected.length+'</strong></div><div><span>Combined calculated sales</span><strong>'+money(calculated)+'</strong></div><div><span>Combined payments entered</span><strong>'+money(entered)+'</strong></div><div><span>Difference</span><strong>'+money(entered-calculated)+'</strong></div></div><p class="muted">Payments are allocated proportionally by each shift’s net calculated sales. Review the per-shift allocation below.</p>'+allocations.map(a=>{const shift=(window.dashboardShiftRecords||[]).find(s=>String(s.id)===String(a.takeover.shift_id));const nozzle=(window.dashboardNozzleRecords||[]).find(n=>String(n.id)===String(shift?.nozzle_id));return '<div class="batch-record-review-shift"><strong>'+h(nozzle?.nozzle_code||a.takeover.dispenser_code||'Dispenser')+'</strong><span>Calculated: '+money(calc(a.takeover))+'</span><span>Allocated: '+money(a.sales.reduce((sum,x)=>sum+x.amount,0))+'</span><small>'+h((a.share*100).toFixed(2))+'% share</small><div>'+a.sales.map(x=>{const typ=types.find(t=>String(t.id)===String(x.sale_type_id));return '<span>'+h(typ?.name||'Sale')+': '+money(x.amount)+'</span>';}).join(' · ')+'</div></div>';}).join('');
   if(status)status.innerHTML='';
