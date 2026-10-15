@@ -312,7 +312,7 @@ async function confirmTakeoverSale(){
   }catch(e){
     submissionFailed=true;
     const message=String(e?.message||'Unable to submit this sales record. Please try again.');
-    if(status)status.innerHTML+='<div class="takeover-sale-mismatch" role="alert">Submission failed: '+h(message)+'</div>';
+    if(status){status.innerHTML='<div class="takeover-sale-mismatch record-sale-submit-error" role="alert">Submission failed: '+h(message)+'</div>'+status.innerHTML;status.scrollIntoView({block:'nearest',behavior:'smooth'});}
     toast('Sale submission failed: '+message);
   }finally{
     if(button){
