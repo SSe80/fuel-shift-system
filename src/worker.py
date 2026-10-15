@@ -5572,10 +5572,14 @@ def drive_oauth_callback():
         if not refresh_token:
             return redirect("/admin-settings.html?drive_oauth=refresh_token_missing", code=302)
         encrypted = drive.encrypt_refresh_token(env(), refresh_token)
+        try:
+            connected_email = drive.google_email(tokens.get("access_token", ""))
+        except Exception:
+            connected_email = None
         row = {
             "id": 1,
             "encrypted_refresh_token": encrypted,
-            "google_email": drive.google_email(tokens.get("access_token", "")),
+            "google_email": connected_email,
             "connected_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
