@@ -289,19 +289,35 @@ function backToTakeoverSaleEntry(){
 }
 async function confirmTakeoverSale(){
   const id=window.pendingTakeoverSaleId;
-  const sales=window.pendingTakeoverSales||[];
+  const sales=Array.isArray(window.pendingTakeoverSales)?window.pendingTakeoverSales:[];
   const button=document.querySelector('#takeover-sale-confirm-modal button.confirm-sale-button');
-  if(!id)return;
-  if(button)button.disabled=true;
+  const status=document.getElementById('takeover-sale-match-status');
+  if(!id){
+    const message='This shift record is no longer selected. Close this window and open Record Sale again.';
+    if(status)status.innerHTML='<div class="takeover-sale-mismatch">'+h(message)+'</div>';
+    toast(message);
+    return;
+  }
+  if(button){button.disabled=true;button.textContent='Submitting…';}
   try{
-    await api('/api/shift-takeovers/'+id+'/record-sale',{method:'POST',body:JSON.stringify({sales:sales.map(x=>({sale_type_id:x.sale_type_id,amount:x.amount,reason:x.reason||null}))})});
+    await api('/api/shift-takeovers/'+encodeURIComponent(id)+'/record-sale',{
+      method:'POST',
+      body:JSON.stringify({sales:sales.map(x=>({sale_type_id:x.sale_type_id,amount:Number(x.amount)||0,reason:x.reason||null}))})
+    });
     closeTakeoverSaleConfirm();
     closeTakeoverSaleModal();
     toast('Sale submitted for admin confirmation');
     await userDashboard();
   }catch(e){
-    if(button)button.disabled=false;
-    toast(e.message);
+    const message=String(e?.message||'Unable to submit this sales record. Please try again.');
+    if(status)status.innerHTML+='<div class="takeover-sale-mismatch" role="alert">Submission failed: '+h(message)+'</div>';
+    toast('Sale submission failed: '+message);
+  }finally{
+    if(button){
+      button.textContent='Confirm';
+      // Re-evaluate the sales match before enabling the button again.
+      updateTakeoverSaleConfirmation();
+    }
   }
 }
 
