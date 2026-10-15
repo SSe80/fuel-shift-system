@@ -2113,7 +2113,12 @@ def update_tank_stock(tank_id):
         event["tank_stock_remark"]=remark; history[event_index]=event
         ms,mr=sb("purchases",method="PATCH",params={"id":"eq."+purchase_id},body={"discharge_history":history},prefer="return=representation")
         if ms>=400:return jsonify({"error":"The physical reading was saved, but the remark could not be updated.","details":mr}),500
-        return jsonify({"ok":True,"event_index":event_index,"remark":remark}),200
+        # Refresh the Drive PDF after a stock remark edit; never undo a saved stock record
+        # merely because the external Drive service is temporarily unavailable.
+        drive_export=_auto_upload_completed_purchase_pdf(purchase_id)
+        return jsonify({"ok":True,"event_index":event_index,"remark":remark,
+                        "drive_pdf_uploaded":bool(drive_export.get("ok")),
+                        "drive_pdf_error":drive_export.get("error")}),200
     try: expected_after=float(event.get("tank_liters_after"))
     except (TypeError,ValueError):return jsonify({"error":"This discharge has no recorded accounting closing balance"}),409
     difference=stock-expected_after
@@ -2131,7 +2136,12 @@ def update_tank_stock(tank_id):
     history[event_index]=event
     ms,mr=sb("purchases",method="PATCH",params={"id":"eq."+purchase_id},body={"discharge_history":history},prefer="return=representation")
     if ms>=400:return jsonify({"error":"Physical tank reading could not be recorded.","details":mr}),500
-    return jsonify({"ok":True,"tank":None,"previous_liters":expected_after,"stock_liters":stock,"adjustment_liters":0,"physical_difference_liters":difference,"event_index":event_index}),200
+    # The PDF is generated from the persisted purchase record on the Worker and uploaded
+    # immediately when this was the final missing tank-stock reading.
+    drive_export=_auto_upload_completed_purchase_pdf(purchase_id)
+    return jsonify({"ok":True,"tank":None,"previous_liters":expected_after,"stock_liters":stock,"adjustment_liters":0,"physical_difference_liters":difference,"event_index":event_index,
+                    "drive_pdf_uploaded":bool(drive_export.get("ok")),
+                    "drive_pdf_error":drive_export.get("error")}),200
 
 @app.route("/api/tanks/<tank_id>", methods=["DELETE"])
 def delete_tank(tank_id):
@@ -3209,6 +3219,50 @@ def purchase_pdf(purchase_id):
     response.headers["Content-Disposition"]='attachment; filename="purchase_'+clean(p.get("invoice_number") or purchase_id)+'.pdf"'
     response.headers["Cache-Control"]="no-store"
     return response
+
+def _auto_upload_completed_purchase_pdf(purchase_id):
+    """Upload a completed purchase PDF from server-side data, without a browser-generated blob."""
+    try:
+        status, rows = sb("purchases", params={"id":"eq."+str(purchase_id), "select":"*", "limit":"1"})
+        if status != 200:
+            return {"ok":False,"error":"Could not read purchase record (HTTP %s)" % status}
+        if not rows:
+            return {"ok":False,"error":"Purchase not found"}
+        purchase = rows[0]
+        history = purchase.get("discharge_history") or []
+        if str(purchase.get("status") or "").lower() != "discharged" or not history or not all(
+            isinstance(event, dict) and event.get("tank_stock_recorded") is True for event in history
+        ):
+            return {"ok":False,"skipped":True,"error":"Purchase is not fully discharged with every tank-stock reading recorded"}
+        settings = _drive_settings() or {}
+        root = settings.get("purchase_folder_id")
+        if not root:
+            return {"ok":False,"error":"Purchases PDF folder is not configured"}
+        # Reuse the canonical server-side PDF renderer so the Drive copy includes
+        # stock-before/expected-closing/difference/remark details.
+        response = purchase_pdf(str(purchase_id))
+        if getattr(response, "status_code", 200) != 200:
+            return {"ok":False,"error":"Purchase PDF generation failed (HTTP %s)" % getattr(response, "status_code", "unknown")}
+        pdf = response.get_data()
+        if not pdf or not pdf.startswith(b"%PDF"):
+            return {"ok":False,"error":"Server generated an invalid purchase PDF"}
+        raw_invoice = str(purchase.get("invoice_number") or purchase_id)
+        safe_invoice = re.sub(r"[^A-Za-z0-9_.-]+", "_", raw_invoice).strip("._")[:80] or str(purchase_id)
+        file_name = "purchase_" + safe_invoice + ".pdf"
+        raw_date = str(purchase.get("purchase_date") or purchase.get("created_at") or "")[:10]
+        try:
+            purchase_day = date.fromisoformat(raw_date)
+        except Exception:
+            purchase_day = datetime.now(timezone.utc).date()
+        folder_name = purchase_day.strftime("%B %Y")
+        file_id, link = drive.store_pdf(env(), root, folder_name, file_name, pdf)
+        return {"ok":True,"file_id":file_id,"url":link,
+                "path":"PURCHASES/%s/%s" % (folder_name,file_name)}
+    except drive.DriveError as err:
+        return {"ok":False,"error":str(err)}
+    except Exception as err:
+        return {"ok":False,"error":str(err) or "Automatic purchase PDF upload failed"}
+
 
 @app.post("/api/purchases")
 def create_purchase():
