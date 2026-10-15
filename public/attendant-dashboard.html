@@ -2037,8 +2037,8 @@ body.attendant-dashboard-page #takeover-sale-confirm-modal > .modal-backdrop + .
   }
 }
 
-/* FINAL OVERRIDE: Record Sale card itself scrolls. Previous nested flex scrollers
-   competed with legacy height:0 rules and could clip the lower half on phones. */
+/* FINAL FIX: the dialog card itself is the scroll container. This keeps the title and
+   action buttons reachable even when the sale form is taller than the phone screen. */
 body.attendant-dashboard-page #takeover-sale-modal.modal.open,
 body.attendant-dashboard-page #takeover-sale-confirm-modal.modal.open {
   position:fixed!important;
@@ -2050,11 +2050,11 @@ body.attendant-dashboard-page #takeover-sale-confirm-modal.modal.open {
   min-height:0!important;
   max-height:100dvh!important;
   margin:0!important;
-  padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom))!important;
+  padding:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom))!important;
   display:flex!important;
-  flex-direction:column!important;
-  align-items:center!important;
-  justify-content:flex-start!important;
+  flex-direction:row!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
   overflow-x:hidden!important;
   overflow-y:auto!important;
   box-sizing:border-box!important;
@@ -2072,64 +2072,53 @@ body.attendant-dashboard-page #takeover-sale-modal.modal.open > .modal-backdrop 
 body.attendant-dashboard-page #takeover-sale-confirm-modal.modal.open > .modal-backdrop + .modal-card.takeover-action-modal {
   position:relative!important;
   inset:auto!important;
-  top:auto!important;
-  right:auto!important;
-  bottom:auto!important;
-  left:auto!important;
   transform:none!important;
+  z-index:1!important;
   flex:0 0 auto!important;
-  align-self:center!important;
+  align-self:flex-start!important;
   width:min(460px,100%)!important;
+  min-width:0!important;
   max-width:460px!important;
   height:auto!important;
   min-height:0!important;
-  max-height:none!important;
-  margin:0 0 10px!important;
-  padding:0 0 max(12px,env(safe-area-inset-bottom))!important;
+  max-height:calc(100dvh - max(16px,env(safe-area-inset-top) + env(safe-area-inset-bottom)))!important;
+  margin:0 auto 8px!important;
+  padding:0!important;
   display:block!important;
   overflow-x:hidden!important;
-  overflow-y:visible!important;
+  overflow-y:auto!important;
   box-sizing:border-box!important;
-  z-index:1!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior:contain!important;
   touch-action:pan-y!important;
 }
 body.attendant-dashboard-page #takeover-sale-modal.modal.open .takeover-sales-entry-section,
-body.attendant-dashboard-page #takeover-sale-confirm-modal.modal.open #takeover-sale-confirm-content {
+body.attendant-dashboard-page #takeover-sale-confirm-modal.modal.open #takeover-sale-confirm-content,
+body.attendant-dashboard-page #takeover-sale-modal.modal.open #takeover-sale-summary {
   height:auto!important;
   min-height:0!important;
   max-height:none!important;
-  flex:none!important;
   overflow:visible!important;
   touch-action:pan-y!important;
 }
-body.attendant-dashboard-page #takeover-sale-modal.modal.open #takeover-sale-summary {
-  max-height:none!important;
-  overflow:visible!important;
-}
+body.attendant-dashboard-page #takeover-sale-modal.modal.open > .modal-backdrop + .modal-card.takeover-action-modal > .top,
+body.attendant-dashboard-page #takeover-sale-confirm-modal.modal.open > .modal-backdrop + .modal-card.takeover-action-modal > .top,
 body.attendant-dashboard-page #takeover-sale-modal.modal.open > .modal-backdrop + .modal-card.takeover-action-modal > .row,
 body.attendant-dashboard-page #takeover-sale-confirm-modal.modal.open > .modal-backdrop + .modal-card.takeover-action-modal > .row {
   position:static!important;
-  display:flex!important;
-  flex-wrap:wrap!important;
-  flex:0 0 auto!important;
-  margin:0!important;
-  padding:12px!important;
-  background:#fff!important;
-  border-top:1px solid #e8edf2!important;
 }
 @media(max-width:600px) {
   body.attendant-dashboard-page #takeover-sale-modal.modal.open,
   body.attendant-dashboard-page #takeover-sale-confirm-modal.modal.open {
-    align-items:stretch!important;
+    align-items:flex-start!important;
     padding:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom))!important;
   }
   body.attendant-dashboard-page #takeover-sale-modal.modal.open > .modal-backdrop + .modal-card.takeover-action-modal,
   body.attendant-dashboard-page #takeover-sale-confirm-modal.modal.open > .modal-backdrop + .modal-card.takeover-action-modal {
-    align-self:stretch!important;
     width:100%!important;
-    max-width:none!important;
-    margin:0 0 8px!important;
+    max-width:460px!important;
+    max-height:calc(100dvh - max(16px,env(safe-area-inset-top) + env(safe-area-inset-bottom)))!important;
+    margin:0 auto 8px!important;
   }
-}
-</style>
+}</style>
 </body></html>
