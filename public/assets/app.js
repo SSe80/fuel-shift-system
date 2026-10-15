@@ -164,6 +164,23 @@ function openLogoutConfirmation(){
   setTimeout(()=>modal.querySelector('.logout-cancel-button')?.focus(),0);
 }
 async function logout(){openLogoutConfirmation();}
+
+function showSessionRecovery(role){
+  const label=role==='admin'?'administrator':'attendant';
+  let banner=document.getElementById('fuel-session-recovery-banner');
+  if(!banner){
+    banner=document.createElement('div');
+    banner.id='fuel-session-recovery-banner';
+    banner.setAttribute('role','alert');
+    banner.style.cssText='position:sticky;top:0;z-index:99998;padding:12px 16px;background:#fff7e6;border:1px solid #f0c36d;color:#713f12;font:600 14px/1.45 system-ui,sans-serif;text-align:center';
+    banner.innerHTML='<span>Unable to verify the saved '+label+' session. The app has not requested logout. Check your connection and retry.</span> <button type="button" id="fuel-session-retry" style="margin:6px;padding:7px 12px;border:0;border-radius:8px;background:#92400e;color:white;font-weight:700">Retry</button>';
+    const mount=()=>{if(document.body&&!document.getElementById('fuel-session-recovery-banner'))document.body.insertBefore(banner,document.body.firstChild);};
+    if(document.body)mount();else document.addEventListener('DOMContentLoaded',mount,{once:true});
+    banner.querySelector('#fuel-session-retry').addEventListener('click',function(){window.location.reload();});
+  }
+  banner.hidden=false;
+}
+
 async function currentUser(){return (await api('/api/me')).user;}
 
 function openTakeoverSaleModal(id){
@@ -538,7 +555,7 @@ async function userDashboard(){
   try{
     await window.stationCurrencyReady;
     const me=await currentUser();
-    if(me.role!=='attendant')return location.href='attendant-login.html';
+    if(me.role!=='attendant')return showSessionRecovery('attendant');
     document.getElementById('name').textContent=me.name;
     let [shifts,nozzles,products,tanks,handovers,employees,takeovers,saleTypes,deactivationRequests,stationSettings]=await Promise.all([
       api('/api/shifts').catch(()=>[]),
@@ -737,14 +754,14 @@ box.innerHTML=
   wrapSection('ACTIVE','Active Shifts',activeHtml);
     if(!box.innerHTML)box.innerHTML='';
   }catch(e){
-    if(e.message==='Unauthorized')location.href='attendant-login.html';
+    if(e.message==='Unauthorized')showSessionRecovery('attendant');
     else{const s=document.getElementById('employee-status');if(s)s.textContent=e.message;}
   }
 }
 async function loadAttendantShiftPage(){
   try{
     const me=await currentUser();
-    if(me.role!=='attendant')return location.href='attendant-login.html';
+    if(me.role!=='attendant')return showSessionRecovery('attendant');
     const nameEl=document.getElementById('name');
     if(nameEl)nameEl.textContent=me.name;
     const [shifts,nozzles,products,employees,tanks,takeovers,handovers]=await Promise.all([
@@ -807,7 +824,7 @@ async function loadAttendantShiftPage(){
       });
     }
   }catch(e){
-    if(e.message==='Unauthorized')location.href='attendant-login.html';
+    if(e.message==='Unauthorized')showSessionRecovery('attendant');
     else{const s=document.getElementById('shift-page-status');if(s)s.textContent=e.message;}
   }
 }
@@ -1329,7 +1346,7 @@ async function loadStationNotifications(){
 
 async function adminInbox(){
  try{
-  const me=await currentUser();if(me.role!=='admin')return location.href='admin-login.html';
+  const me=await currentUser();if(me.role!=='admin')return showSessionRecovery('admin');
   const title=document.getElementById('inbox-page-title');if(title)title.textContent='Inbox';
   await loadStationNotifications();
  }catch(e){const list=document.getElementById('station-notifications-list');if(list)list.innerHTML='<div class="station-notification-empty">Could not load the inbox. Please refresh and try again.</div>';}
@@ -1338,7 +1355,7 @@ async function adminInbox(){
 async function adminDashboard(){
   try{
     await window.stationCurrencyReady;
-    const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
+    const me=await currentUser(); if(me.role!=='admin')return showSessionRecovery('admin');
     await loadAccountingPeriod();
     const [allTanks,sales,allShifts,allProducts,allDispensers,employees,purchases,inventory,movements]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles'),api('/api/users'),api('/api/purchases'),api('/api/inventory-summary'),api('/api/tank-movements')]);
     const products=allProducts.filter(p=>p.active===true);
@@ -1422,7 +1439,7 @@ async function adminDashboard(){
     const recent=[...todaySales.map(s=>({time:s.sale_time,text:'Sale • '+codeForProduct(s.product)+' • '+liters(s.quantity_liters)+' L • '+money(s.amount)})),...purchases.filter(p=>String(p.purchase_date||'').slice(0,10)===today).map(p=>({time:p.purchase_date,text:'Purchase • '+codeForProduct(p.product)+' • '+liters(p.quantity_liters)+' L'})),...activeShifts.map(s=>({time:s.assigned_at||s.created_at,text:'Shift active • '+(activeEmployees.find(e=>e.id===s.employee_id)?.name||'Attendant')+' • '+((dispensers.find(d=>d.id===s.nozzle_id)||{}).nozzle_code||'Dispenser')}))].sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,12);
     el('activity').innerHTML=recent.length?recent.map(x=>'<div class="card"><b>'+h(x.text)+'</b><br><span class="muted">'+new Date(x.time).toLocaleString()+'</span></div>').join(''):'<div class="card"><p>No activity recorded today.</p></div>';
     el('dashboard-status').textContent=low.length?low.length+' tank(s) are at or below 10% capacity.':'Dashboard shows only activated Settings records.';
-  }catch(e){const s=document.getElementById('dashboard-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
+  }catch(e){const s=document.getElementById('dashboard-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')showSessionRecovery('admin');}
 }
 function renderActivatedProductsGraph(products,sales){
   const host=document.getElementById('activated-products-graph');
@@ -1456,7 +1473,7 @@ function renderActivatedProductsGraph(products,sales){
 
 async function adminFuelConfiguration(){
   try{
-    await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
+    await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return showSessionRecovery('admin');
     const [allProducts,allTanks,allDispensers,allShifts,employees,sales]=await Promise.all([api('/api/products'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/users'),api('/api/sales')]);
     const products=allProducts.filter(p=>p.active===true), tanks=allTanks.filter(t=>t.active===true&&products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase()));
     const dispensers=allDispensers.filter(d=>d.active===true&&tanks.some(t=>t.id===d.tank_id));
@@ -1508,7 +1525,7 @@ async function adminFuelConfiguration(){
       dispenserMarkup+='<section class="activated-dispenser-product-group activated-dispenser-ungrouped"><div class="activated-dispenser-group-head"><span class="activated-dispenser-group-dot"></span><div><span class="field-label">PRODUCT</span><strong>Other / Unmatched</strong></div><span class="activated-dispenser-group-count">'+ungroupedDispensers.length+' dispenser'+(ungroupedDispensers.length===1?'':'s')+'</span></div><div class="activated-dispenser-group-cards">'+ungroupedDispensers.map(d=>renderDispenserCard(d,productCodes[String(d.product||'').toLowerCase()]||d.product||'—')).join('')+'</div></section>';
     }
     el('dispensers').innerHTML=dispenserMarkup||'<div class="card"><p>No activated dispensers.</p></div>';
-  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
+  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')showSessionRecovery('admin');}
 }
 function ensureAdminInventoryTankDetailsModal(){
   let modal=document.getElementById('admin-inventory-tank-details-modal');
@@ -1612,7 +1629,7 @@ function openAdminInventoryTankDetails(id){
 }
 async function adminInventory(){
   try{
-    await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
+    await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return showSessionRecovery('admin');
     const [allTanks,allProducts,allDispensers,inventory,movements,purchases]=await Promise.all([api('/api/tanks'),api('/api/products'),api('/api/nozzles'),api('/api/inventory-summary'),api('/api/tank-movements'),api('/api/purchases')]);
     const products=allProducts.filter(p=>p.active===true), tanks=allTanks.filter(t=>t.active===true&&products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase())), dispensers=allDispensers.filter(d=>d.active===true&&tanks.some(t=>t.id===d.tank_id));
     window.__adminInventoryState={tanks,products,inventory,movements,purchases};
@@ -1816,7 +1833,7 @@ async function adminInventory(){
         modal.classList.add('is-open');
       });
     });
-  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
+  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')showSessionRecovery('admin');}
 }
 function closeAdminAttendantDetails(){
   const modal=document.getElementById('admin-attendant-details-modal');
@@ -1971,7 +1988,7 @@ async function adminAttendants(){
   try{
     await window.stationCurrencyReady;
     const me=await currentUser();
-    if(me.role!=='admin')return location.href='admin-login.html';
+    if(me.role!=='admin')return showSessionRecovery('admin');
     const [employees,shifts,dispensers,salesResult]=await Promise.all([api('/api/users'),api('/api/shifts'),api('/api/nozzles'),api('/api/sales/history').then(data=>({ok:true,data})).catch(()=>({ok:false,data:[]}))]);
     const active=employees.filter(e=>e.active===true&&e.role==='attendant');
     const activeShifts=shifts.filter(s=>String(s.status||'').trim().toLowerCase()==='active');
@@ -1989,13 +2006,13 @@ async function adminAttendants(){
         '<div class="attendant-shift-row"><span class="field-label">SHIFT'+(employeeShifts.length>1?'S':'')+'</span><div class="attendant-shift-list">'+(stations.length?stations.map(station=>'<strong>'+h(station)+'</strong>').join(''): '<strong>No active shift</strong>')+'</div></div>'+
       '</article>';
     }).join(''):'<div class="empty-content">No activated attendants.</div>';
-  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
+  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')showSessionRecovery('admin');}
 }
 async function adminAccountingControl(){
   try{
-    await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return location.href='admin-login.html';
+    await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return showSessionRecovery('admin');
     await loadAccountingPeriod();
-  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')location.href='admin-login.html';}
+  }catch(e){const s=document.getElementById('page-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')showSessionRecovery('admin');}
 }
 
 let adminSalesData={pending:[],history:[]};
@@ -2314,7 +2331,7 @@ async function refreshAdminSales(){
 }
 async function adminSalesConfirmations(){
   try{
-    const me=await currentUser();if(me.role!=='admin')return location.href='admin-login.html';
+    const me=await currentUser();if(me.role!=='admin')return showSessionRecovery('admin');
     await window.stationCurrencyReady;
     const [list,history,progressing]=await Promise.all([api('/api/sales/confirmations'),api('/api/sales/history'),api('/api/sales/progressing')]);
     adminSalesData={pending:Array.isArray(list)?list:[],history:Array.isArray(history)?history:[],progressing:Array.isArray(progressing)?progressing:[]};
@@ -2322,7 +2339,7 @@ async function adminSalesConfirmations(){
     const status=document.getElementById('sales-confirmation-status');if(status)status.textContent='';
   }catch(e){
     const box=document.getElementById('sales-confirmation-status');if(box)box.textContent=e.message;
-    if(e.message==='Unauthorized')location.href='admin-login.html';
+    if(e.message==='Unauthorized')showSessionRecovery('admin');
   }
 }
 function createGenericReportPdf(report){
@@ -3807,7 +3824,7 @@ function settingsOrderFromContainer(container){return Array.from(container?.quer
 async function adminSettings(){
   try{
     const me=await currentUser();
-    if(me.role!=='admin')return location.href='admin-login.html';
+    if(me.role!=='admin')return showSessionRecovery('admin');
     await loadSettingsData();
   }catch(e){
     const box=document.getElementById('settings-status');
@@ -6181,7 +6198,7 @@ async function toggleAdminFullHistoryDsrGroup(dsrId){
 async function adminSalesHistory(){
   try{
     const me=await currentUser();
-    if(me.role!=='admin')return location.href='admin-login.html';
+    if(me.role!=='admin')return showSessionRecovery('admin');
     await window.stationCurrencyReady;
     const history=await api('/api/sales/history');
     adminSalesHistoryData={history:Array.isArray(history)?history:[]};
@@ -6193,7 +6210,7 @@ async function adminSalesHistory(){
   }catch(e){
     const status=document.getElementById('full-sales-history-status');
     if(status)status.textContent=e.message;
-    if(e.message==='Unauthorized')location.href='admin-login.html';
+    if(e.message==='Unauthorized')showSessionRecovery('admin');
   }
 }
 function refreshAdminSalesHistory(){
