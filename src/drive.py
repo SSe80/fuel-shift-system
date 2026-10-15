@@ -64,8 +64,44 @@ def _b64url(data):
 
 
 def _pem_to_der(pem):
-    body = re.sub(r"-----[A-Z ]+-----", "", pem)
-    return base64.b64decode("".join(body.split()))
+    """Decode a Google service-account private key PEM into PKCS#8 DER bytes.
+
+    Cloudflare secrets are sometimes pasted with JSON quotes or escaped newlines.
+    Accept those harmless formatting variants, but reject non-PEM/invalid key data
+    with a clear configuration error before WebCrypto tries to import it.
+    """
+    if isinstance(pem, bytes):
+        pem = pem.decode()
+    pem = str(pem or "").strip()
+    if not pem:
+        raise ValueError("private key is empty")
+    # Also accept the private_key field copied from a service-account JSON file.
+    if pem.startswith("{"):
+        try:
+            pem = str(json.loads(pem).get("private_key", "")).strip()
+        except Exception:
+            pass
+    if len(pem) >= 2 and pem[0] == pem[-1] and pem[0] in ("'", '"'):
+        pem = pem[1:-1]
+    pem = pem.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\r", "")
+    if "-----BEGIN PRIVATE KEY-----" not in pem:
+        if "-----BEGIN RSA PRIVATE KEY-----" in pem:
+            raise ValueError(
+                "The supplied key is PKCS#1 (RSA PRIVATE KEY), but WebCrypto requires PKCS#8. "
+                "Use the private_key value from the Google service-account JSON credentials."
+            )
+        raise ValueError(
+            "Expected a complete PKCS#8 PEM key beginning with -----BEGIN PRIVATE KEY-----. "
+            "Set the secret to the JSON credentials' private_key value, not the whole file or its key ID."
+        )
+    body = re.sub(r"-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----", "", pem)
+    try:
+        der = base64.b64decode("".join(body.split()), validate=True)
+    except Exception:
+        raise ValueError("The PEM key body is not valid base64; copy the complete private_key value.")
+    if len(der) < 64 or not der.startswith(b"0"):
+        raise ValueError("The decoded private key does not look like a valid PKCS#8 DER key.")
+    return der
 
 
 def _service_account_config(e):
@@ -102,7 +138,7 @@ async def _service_account_access_token(e):
     try:
         key = await crypto.subtle.importKey(
             "pkcs8",
-            to_js(_pem_to_der(private_key)),
+            Uint8Array.new(to_js(list(_pem_to_der(private_key)))),
             Object.fromEntries([
                 ("name", "RSASSA-PKCS1-v1_5"),
                 ("hash", "SHA-256"),
@@ -117,10 +153,18 @@ async def _service_account_access_token(e):
         )
         jwt = unsigned + "." + _b64url(bytes(Uint8Array.new(signature).to_py()))
     except Exception as exc:
+        detail = str(exc)
+        if isinstance(exc, ValueError):
+            detail = str(exc)
+        elif "DataError" in detail or "Invalid PKCS8" in detail:
+            detail = (
+                "WebCrypto rejected the decoded private key as PKCS#8. Confirm that "
+                "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY is the complete private_key value "
+                "from the Google service-account JSON file, with BEGIN/END PRIVATE KEY "
+                "lines and real or escaped newlines."
+            )
         raise DriveError(
-            "Could not sign the Google service-account assertion. Check that "
-            "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY contains the complete PKCS#8 PEM private key. "
-            + str(exc)[:160],
+            "Could not sign the Google service-account assertion. " + detail[:240],
             503,
         )
     from urllib.parse import urlencode
