@@ -131,6 +131,17 @@ def exchange_code(e, code, redirect_uri):
     return run_sync(exchange_oauth_code(e, code, redirect_uri))
 
 
+async def _google_email(token):
+    status, data = await _http("https://openidconnect.googleapis.com/v1/userinfo", "GET", _auth(token))
+    if status >= 400 or not isinstance(data, dict):
+        return None
+    return data.get("email")
+
+
+def google_email(token):
+    return run_sync(_google_email(token))
+
+
 async def _refresh_access_token(e):
     client_id, client_secret, secret = _oauth_config(e)
     from supabase_rest import request as sb_request
@@ -219,13 +230,13 @@ async def check_folder(token, folder_id):
     url = DRIVE_API + "/" + folder_id + "?fields=id,name,mimeType,capabilities(canAddChildren)&supportsAllDrives=true"
     status, data = await _http(url, "GET", _auth(token))
     if status == 404:
-        raise DriveError("Folder not found or not shared with the service account", 404)
+        raise DriveError("Folder not found or not accessible by the connected Google account", 404)
     if status >= 400:
         raise _gerr("Folder check", status, data)
     if (data or {}).get("mimeType") != FOLDER_MIME:
         raise DriveError("The link is not a Drive folder", 400)
     if not ((data or {}).get("capabilities") or {}).get("canAddChildren", False):
-        raise DriveError("Service account has no write access to this folder", 403)
+        raise DriveError("Connected Google account has no write access to this folder", 403)
     return {"id": data["id"], "name": data.get("name", "")}
 
 
