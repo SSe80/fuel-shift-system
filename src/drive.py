@@ -208,11 +208,31 @@ async def _service_account_access_token(e):
 
 
 async def _drive_access_token(e):
-    """Prefer service-account auth for Drive uploads; retain OAuth for legacy setups."""
-    token = await _service_account_access_token(e)
-    if token:
-        return token
-    return await _refresh_access_token(e)
+    """Use the connected administrator Google account for My Drive uploads.
+
+    Service accounts have no personal Drive storage quota, so uploading into a
+    normal My Drive folder with a service-account token fails with HTTP 403.
+    Prefer the stored user OAuth refresh token; use a service account only when
+    user OAuth is not configured/connected (for example, a properly configured
+    Shared Drive destination).
+    """
+    try:
+        return await _refresh_access_token(e)
+    except DriveError as exc:
+        message = str(exc)
+        # Only fall back when there is no usable user-OAuth setup at all. Do not
+        # hide expired/revoked OAuth credentials behind a service-account retry.
+        oauth_not_configured = (
+            "Google OAuth client ID/secret are not configured" in message
+            or "DRIVE_TOKEN_ENCRYPTION_KEY must be configured" in message
+            or "Connect your personal Google Drive from Admin Settings first" in message
+        )
+        if not oauth_not_configured:
+            raise
+        token = await _service_account_access_token(e)
+        if token:
+            return token
+        raise
 
 
 def _oauth_config(e):
