@@ -856,7 +856,9 @@ async function userDashboard(){
 box.innerHTML=
   wrapSection('SHIFT CONFIRMATIONS','Pending Shift Confirmations',pendingShiftHtml+pendingIncomingHtml)+
   wrapSection('DISPENSER DEACTIVATION','Pending Deactivation',pendingDeactivationHtml)+
-  wrapSection('SHIFT HANDOVER','Record Sale & Handover',batchRecordSalesCard+takeoverHtml+pendingTakeoverHtml+pendingOutgoingHtml)+
+  wrapSection('SALES','Sales',pendingTakeoverHtml)+
+  wrapSection('RECORD SALES','Record Sales',batchRecordSalesCard+takeoverHtml)+
+  wrapSection('SHIFT HANDOVER','Shift Handover',pendingOutgoingHtml)+
   wrapSection('ACTIVE','Active Shifts',activeHtml);
     if(!box.innerHTML)box.innerHTML='';
   }catch(e){
