@@ -35,7 +35,7 @@
     if (run(name)) return;
 
     var script = document.createElement('script');
-    script.src = 'assets/app.js?v=20261014-loading-reliability1';
+    script.src = 'assets/app.js?v=20261015-no-auto-logout1';
     script.async = false;
 
     script.onload = function () {
