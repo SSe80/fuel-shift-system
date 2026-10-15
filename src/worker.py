@@ -5556,16 +5556,24 @@ def _msr_ready(month_start):
     return True
 
 def _drive_after_dsr_confirm(report_day):
-    """Queue the confirmed DSR and recheck this and the previous month for MSR eligibility."""
+    """Queue the DSR and check this and the previous month for MSR eligibility."""
     try:
         _drive_enqueue("dsr", report_day.isoformat())
-        # A month-end report may become eligible only after a DSR is confirmed
-        # in the following month, so recheck the prior month as well.
+
+        # Recheck the previous month when a DSR is confirmed in the new month,
+        # because the prior month's MSR may only then become eligible.
         this_month = report_day.replace(day=1)
         previous_month = this_month - timedelta(days=1)
-        for month_start in (this_month, previous_month.replace(day=1)):
+        candidates = (this_month, previous_month.replace(day=1))
+        seen = set()
+        for month_start in candidates:
+            month_key = month_start.strftime("%Y-%m")
+            if month_key in seen:
+                continue
+            seen.add(month_key)
             if _msr_ready(month_start):
-                _drive_enqueue("msr", month_start.strftime("%Y-%m"))
+                _drive_enqueue("msr", month_key)
+
     except Exception:
         app.logger.exception("drive enqueue failed")
 
