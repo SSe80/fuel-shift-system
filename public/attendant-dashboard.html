@@ -1320,6 +1320,34 @@ body.attendant-dashboard-page .active-shift-card .active-shift-meta>div:first-ch
   }
 }
 
+
+/* Mobile Record Sale: keep the dialog at the top while giving the sales form
+   its own usable scroll area; keep Cancel/Continue in the visible footer. */
+@media (max-width: 768px){
+  body.attendant-dashboard-page #takeover-sale-modal .takeover-action-modal{
+    display:flex!important;
+    flex-direction:column!important;
+    height:min(78dvh, 680px)!important;
+    max-height:calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+    min-height:260px!important;
+    overflow:hidden!important;
+  }
+  body.attendant-dashboard-page #takeover-sale-modal .takeover-sales-entry-section{
+    flex:1 1 auto!important;
+    height:auto!important;
+    min-height:90px!important;
+    max-height:none!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  body.attendant-dashboard-page #takeover-sale-modal .takeover-action-modal>.row{
+    flex:0 0 auto!important;
+    margin-top:0!important;
+    background:#fff!important;
+  }
+}
+
 </style><style>
 .attendant-dashboard-page .takeover-details-modal{max-width:760px;border-radius:18px;overflow:hidden}
 .attendant-dashboard-page .takeover-details-modal>.top{padding:16px 18px;border-bottom:1px solid #e8edf2;background:#fff}
