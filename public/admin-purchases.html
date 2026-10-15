@@ -1171,7 +1171,7 @@ window.ensurePurchasePdfEngine=async function(){
 window.downloadPurchaseDetailPdf=async function(options){
   options=options||{};
   const p=window.currentPurchaseDetailData;
-  const fail=(msg)=>{if(options.uploadOnly&&typeof window.toast==='function')window.toast(msg);else if(typeof window.openPurchaseFailed==='function')window.openPurchaseFailed(msg,'PDF Download Failed');else alert(msg);};
+  const fail=(msg)=>{if(options.uploadOnly)return; if(typeof window.openPurchaseFailed==='function')window.openPurchaseFailed(msg,'PDF Download Failed');else alert(msg);};
   if(!p){fail('Purchase details are not available.');return;}
   const n=v=>Number(v||0), L=v=>n(v).toLocaleString(undefined,{maximumFractionDigits:2})+' L';
   const dt=v=>{try{return v?new Date(v).toLocaleString():'—';}catch(_){return '—';}};
@@ -1285,7 +1285,7 @@ window.downloadPurchaseDetailPdf=async function(options){
       if(typeof window.toast==='function')window.toast('Purchase PDF saved to Google Drive: '+(result.path||fileName));
       return true;
     }catch(uploadError){
-      if(typeof window.toast==='function')window.toast((options.uploadOnly?'Purchase PDF could not be saved to Drive: ':'PDF downloaded, but Drive storage failed: ')+(uploadError.message||'unknown error'));
+      if(!options.uploadOnly&&typeof window.toast==='function')window.toast('PDF downloaded, but Drive storage failed: '+(uploadError.message||'unknown error'));
       if(options.uploadOnly)return false;
     }
   }catch(e){fail(e.message||'Unable to create the PDF.');if(options.uploadOnly)return false;}
