@@ -51,6 +51,39 @@
     document.head.appendChild(script);
   }
 
+  // Add safe diagnostics to the existing session-recovery banner.
+  // This never clears cookies, storage, or the saved role.
+  if (typeof window.fetch === 'function' && !window.__fuelSessionDiagnosticFetch) {
+    window.__fuelSessionDiagnosticFetch = true;
+    var originalFetch = window.fetch.bind(window);
+    window.fetch = function (input, init) {
+      var requestUrl = typeof input === 'string' ? input : (input && input.url) || '';
+      var isMeCheck = /(?:^|\\/)api\\/me(?:[?#]|$)/.test(requestUrl);
+      var request = originalFetch(input, init);
+      if (!isMeCheck) return request;
+      return request.then(function (response) {
+        if (!response.ok) {
+          var code = response.status;
+          window.setTimeout(function () {
+            var detail = document.getElementById('fuel-session-recovery-detail');
+            if (!detail) return;
+            if (code === 401) detail.textContent = 'Session check rejected (HTTP 401). This message does not log you out. Retry; if it persists, sign in again only after confirming the correct site.';
+            else if (code === 403) detail.textContent = 'Session check denied (HTTP 403). This message does not clear your session.';
+            else if (code === 503) detail.textContent = 'Server or database temporarily unable to verify the session (HTTP 503). Wait a moment and retry.';
+            else detail.textContent = 'Session verification failed (HTTP ' + code + '). Retry in a moment.';
+          }, 0);
+        }
+        return response;
+      }).catch(function (error) {
+        window.setTimeout(function () {
+          var detail = document.getElementById('fuel-session-recovery-detail');
+          if (detail) detail.textContent = 'Network error while checking the saved session. Check your connection and retry. (' + String(error && error.message || 'request failed').slice(0, 120) + ')';
+        }, 0);
+        throw error;
+      });
+    };
+  }
+
   window.addEventListener('DOMContentLoaded', function () {
     var name = pageFunction();
     if (name) loadAppAndRun(name);
