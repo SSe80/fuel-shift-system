@@ -70,31 +70,86 @@ def _pem_to_der(pem):
     return base64.b64decode("".join(body.split()))
 
 
-def service_account(e):
-    raw = getattr(e, "GOOGLE_SERVICE_ACCOUNT_JSON", None)
-    if not raw:
-        raise DriveError("GOOGLE_SERVICE_ACCOUNT_JSON secret is not set", 503)
+def _oauth_config(e):
+    client_id = getattr(e, "GOOGLE_OAUTH_CLIENT_ID", None)
+    client_secret = getattr(e, "GOOGLE_OAUTH_CLIENT_SECRET", None)
+    encryption_key = getattr(e, "DRIVE_TOKEN_ENCRYPTION_KEY", None)
+    if not client_id or not client_secret:
+        raise DriveError("Google OAuth client ID/secret are not configured in Worker secrets", 503)
+    if not encryption_key or len(str(encryption_key)) < 32:
+        raise DriveError("DRIVE_TOKEN_ENCRYPTION_KEY must be configured as a secret of at least 32 characters", 503)
+    return str(client_id), str(client_secret), str(encryption_key)
+
+
+async def _key_bytes(secret):
+    digest = await crypto.subtle.digest("SHA-256", to_js(str(secret).encode()))
+    return Uint8Array.new(digest)
+
+
+async def _encrypt_refresh(secret, refresh_token):
+    iv = crypto.getRandomValues(Uint8Array.new(12))
+    key = await crypto.subtle.importKey("raw", await _key_bytes(secret),
+        Object.fromEntries([("name", "AES-GCM")]), False, to_js(["encrypt"]))
+    encrypted = await crypto.subtle.encrypt(Object.fromEntries([("name", "AES-GCM"), ("iv", iv)]),
+        key, to_js(str(refresh_token).encode()))
+    return "v1:" + _b64url(bytes(iv.to_py())) + ":" + _b64url(bytes(Uint8Array.new(encrypted).to_py()))
+
+
+async def _decrypt_refresh(secret, value):
     try:
-        sa = json.loads(raw)
+        version, iv_s, encrypted_s = value.split(":", 2)
+        if version != "v1":
+            raise ValueError("unsupported token format")
+        iv = base64.urlsafe_b64decode(iv_s + "=" * (-len(iv_s) % 4))
+        encrypted = base64.urlsafe_b64decode(encrypted_s + "=" * (-len(encrypted_s) % 4))
+        key = await crypto.subtle.importKey("raw", await _key_bytes(secret),
+            Object.fromEntries([("name", "AES-GCM")]), False, to_js(["decrypt"]))
+        plain = await crypto.subtle.decrypt(Object.fromEntries([("name", "AES-GCM"), ("iv", to_js(iv))]),
+            key, to_js(encrypted))
+        return bytes(Uint8Array.new(plain).to_py()).decode()
     except Exception:
-        raise DriveError("GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON", 503)
-    for k in ("client_email", "private_key"):
-        if not sa.get(k):
-            raise DriveError("Service account JSON is missing " + k, 503)
-    return sa
+        raise DriveError("Stored Google authorization could not be decrypted. Check DRIVE_TOKEN_ENCRYPTION_KEY.", 503)
 
 
-async def _sign(sa):
-    now = int(time.time())
-    header = {"alg": "RS256", "typ": "JWT"}
-    claims = {"iss": sa["client_email"], "scope": DRIVE_SCOPE, "aud": TOKEN_URL, "iat": now, "exp": now + 3600}
-    signing_input = _b64url(json.dumps(header, separators=(",", ":"))) + "." + _b64url(json.dumps(claims, separators=(",", ":")))
-    der = _pem_to_der(sa["private_key"])
-    key = await crypto.subtle.importKey(
-        "pkcs8", to_js(der), Object.fromEntries([("name", "RSASSA-PKCS1-v1_5"), ("hash", "SHA-256")]),
-        False, to_js(["sign"]))
-    sig = await crypto.subtle.sign(Object.fromEntries([("name", "RSASSA-PKCS1-v1_5")]), key, to_js(signing_input.encode()))
-    return signing_input + "." + _b64url(bytes(Uint8Array.new(sig).to_py()))
+def encrypt_refresh_token(e, refresh_token):
+    _, _, secret = _oauth_config(e)
+    return run_sync(_encrypt_refresh(secret, refresh_token))
+
+
+async def exchange_oauth_code(e, code, redirect_uri):
+    client_id, client_secret, _ = _oauth_config(e)
+    from urllib.parse import urlencode
+    status, data = await _http(TOKEN_URL, "POST", {"Content-Type": "application/x-www-form-urlencoded"},
+        urlencode({"code": code, "client_id": client_id, "client_secret": client_secret,
+                   "redirect_uri": redirect_uri, "grant_type": "authorization_code"}))
+    if status >= 400 or not isinstance(data, dict) or not data.get("access_token"):
+        raise DriveError("Google authorization exchange failed (%s): %s" % (status, str(data)[:240]), 502)
+    return data
+
+
+def exchange_code(e, code, redirect_uri):
+    return run_sync(exchange_oauth_code(e, code, redirect_uri))
+
+
+async def _refresh_access_token(e):
+    client_id, client_secret, secret = _oauth_config(e)
+    from supabase_rest import request as sb_request
+    status, rows = sb_request(e.SUPABASE_URL, e.SUPABASE_SECRET_KEY, "GET",
+        "drive_oauth_connection", {"id": "eq.1", "select": "encrypted_refresh_token"}, None, None)
+    if status >= 400 or not rows:
+        raise DriveError("Connect your personal Google Drive from Admin Settings first.", 401)
+    refresh_token = await _decrypt_refresh(secret, rows[0].get("encrypted_refresh_token", ""))
+    from urllib.parse import urlencode
+    status, data = await _http(TOKEN_URL, "POST", {"Content-Type": "application/x-www-form-urlencoded"},
+        urlencode({"client_id": client_id, "client_secret": client_secret,
+                   "refresh_token": refresh_token, "grant_type": "refresh_token"}))
+    if status >= 400 or not isinstance(data, dict) or not data.get("access_token"):
+        raise DriveError("Google authorization expired or was revoked. Reconnect Google Drive in Admin Settings.", 401)
+    return data["access_token"]
+
+
+def access_token(e):
+    return run_sync(_refresh_access_token(e))
 
 
 async def _http(url, method="GET", headers=None, body=None):
@@ -197,8 +252,8 @@ async def _upload_pdf(token, folder_id, name, pdf_bytes):
     return data["id"], data.get("webViewLink")
 
 
-async def _store(sa, root_id, subfolder, file_name, pdf_bytes):
-    token = await _token(sa)
+async def _store(e, root_id, subfolder, file_name, pdf_bytes):
+    token = await _refresh_access_token(e)
     await check_folder(token, root_id)
     sub_id = await _ensure_folder(token, root_id, subfolder)
     return await _upload_pdf(token, sub_id, file_name, pdf_bytes)
@@ -207,11 +262,11 @@ async def _store(sa, root_id, subfolder, file_name, pdf_bytes):
 def store_pdf(e, root_id, subfolder, file_name, pdf_bytes):
     """Create the monthly/yearly subfolder if needed, then upload (or overwrite) the PDF.
     Returns (drive_file_id, web_view_link)."""
-    return run_sync(_store(service_account(e), root_id, subfolder, file_name, pdf_bytes))
+    return run_sync(_store(e, root_id, subfolder, file_name, pdf_bytes))
 
 
-async def _check_both(sa, folders):
-    token = await _token(sa)
+async def _check_both(e, folders):
+    token = await _refresh_access_token(e)
     out = {}
     for key, fid in folders.items():
         out[key] = await check_folder(token, fid) if fid else None
@@ -219,10 +274,10 @@ async def _check_both(sa, folders):
 
 
 def test_folders(e, folders):
-    return run_sync(_check_both(service_account(e), folders))
+    return run_sync(_check_both(e, folders))
 
 
-# Google Sheets-backed admin audit log. Uses the existing service-account Drive access.
+# Google Sheets-backed admin audit log. Uses the administrator-authorized Google OAuth connection.
 SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets"
 
 
