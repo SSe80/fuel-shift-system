@@ -1285,8 +1285,8 @@ window.downloadPurchaseDetailPdf=async function(options){
       if(typeof window.toast==='function')window.toast('Purchase PDF saved to Google Drive: '+(result.path||fileName));
       return true;
     }catch(uploadError){
-      if(!options.uploadOnly&&typeof window.toast==='function')window.toast('PDF downloaded, but Drive storage failed: '+(uploadError.message||'unknown error'));
-      if(options.uploadOnly)return false;
+      if(options.uploadOnly)throw uploadError;
+      if(typeof window.toast==='function')window.toast('PDF downloaded, but Drive storage failed: '+(uploadError.message||'unknown error'));
     }
   }catch(e){fail(e.message||'Unable to create the PDF.');if(options.uploadOnly)return false;}
   finally{if(btn){btn.disabled=false;btn.textContent='Download PDF';}}
@@ -1777,7 +1777,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
         // Keep the record eligible for retry and expose the real failure for diagnosis.
         console.error('[Purchase Drive upload] Failed for purchase '+id+':',uploadError);
         if(typeof window.toast==='function'){
-          window.toast('Google Drive upload failed for purchase '+String(p.invoice_number||p.id)+'. Automatic retry is scheduled while this page remains open.');
+          window.toast('Google Drive upload failed for purchase '+String(p.invoice_number||p.id)+': '+String(uploadError.message||'Unknown upload error')+'. Automatic retry is scheduled while this page remains open.');
         }
       }finally{
         purchaseDriveUploadInFlight.delete(id);
