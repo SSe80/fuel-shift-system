@@ -1288,7 +1288,7 @@ window.downloadPurchaseDetailPdf=async function(options){
       if(options.uploadOnly)throw uploadError;
       if(typeof window.toast==='function')window.toast('PDF downloaded, but Drive storage failed: '+(uploadError.message||'unknown error'));
     }
-  }catch(e){fail(e.message||'Unable to create the PDF.');if(options.uploadOnly)return false;}
+  }catch(e){if(options.uploadOnly)throw e;fail(e.message||'Unable to create the PDF.');}
   finally{if(btn){btn.disabled=false;btn.textContent='Download PDF';}}
 };
 window.uploadPurchaseDetailPdf=async function(purchase){
@@ -1729,8 +1729,45 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     }
     return '<article class="purchase-card purchase-history-full-card tank-stock-history-alert-card"><div class="purchase-history-full-head"><div><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(p.invoice_number?('Invoice #'+p.invoice_number):'Purchase — No Invoice')+'</strong></div><small>'+purchaseH(productCode)+' · '+purchaseH(datePurchase)+'</small></div><span class="purchase-history-full-badge">⚠️ DISCHARGED</span></div><div class="purchase-history-full-main"><div><span>Delivered quantity</span><strong>'+purchaseH(purchaseLiters(total))+' L</strong></div><div><span>Invoice</span><strong>'+purchaseH(p.invoice_number||'—')+'</strong></div><div><span>Truck / trailer plate</span><strong>'+purchaseH(plateDisplay)+'</strong></div><div><span>Fully discharged</span><strong>'+purchaseH(p.discharged_at?new Date(p.discharged_at).toLocaleString():'—')+'</strong></div></div><div class="purchase-history-card-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button><button type="button" class="primary tank-stock-alert" onclick="openTankStockCard(this.dataset.id)" data-id="'+purchaseH(p.id)+'">⚠ Tank Stock</button></div></article>';
   };
-  // Purchase PDFs are uploaded once by the server when discharge and tank-stock recording
-  // are complete. Do not run client-side retries or periodic export reconciliation.
+  // Upload the canonical Purchase Details PDF (the same jsPDF layout as Download PDF).
+  // The server deliberately does not generate a second, differently formatted PDF.
+  let purchaseDriveUploadRunning=false;
+  async function retryCompletedPurchasePdfUploads(purchases){
+    if(purchaseDriveUploadRunning||!Array.isArray(purchases))return;
+    purchaseDriveUploadRunning=true;
+    try{
+      for(const p of purchases){
+        const history=Array.isArray(p?.discharge_history)?p.discharge_history:[];
+        if(String(p?.status||'').toLowerCase()!=='discharged'||!history.length||!history.every(e=>e&&e.tank_stock_recorded===true))continue;
+        const id=String(p.id||'');
+        if(!id)continue;
+        const signature=JSON.stringify({invoice:p.invoice_number,status:p.status,history:history.map(e=>[e.tank_id,e.tank_stock_recorded_at,e.tank_stock_recorded_liters,e.tank_stock_difference_liters,e.tank_stock_remark])});
+        const key='fuel-shift-drive-purchase:'+id;
+        const retryKey=key+':retry-after';
+        try{if(localStorage.getItem(key)===signature)continue;}catch(_){}
+        try{if(Number(localStorage.getItem(retryKey)||0)>Date.now())continue;}catch(_){}
+        window.currentPurchaseDetailData=p;
+        window.currentPurchaseDetailTanks=purchaseDetailTanks||purchaseTanks||[];
+        let lastError=null,uploaded=false;
+        for(let attempt=0;attempt<3&&!uploaded;attempt++){
+          try{
+            uploaded=await window.uploadPurchaseDetailPdf(p);
+            if(!uploaded)throw new Error('Purchase Details PDF renderer did not complete the upload.');
+          }catch(err){
+            lastError=err;
+            if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+          }
+        }
+        if(uploaded){
+          try{localStorage.setItem(key,signature);localStorage.removeItem(retryKey);}catch(_){}
+        }else{
+          try{localStorage.setItem(retryKey,String(Date.now()+5*60*1000));}catch(_){}
+          if(typeof window.toast==='function')window.toast('Purchase PDF upload failed — Invoice '+String(p.invoice_number||id)+': '+String(lastError?.message||'unknown upload error'));
+          console.error('Purchase PDF upload failed for invoice '+String(p.invoice_number||id),lastError);
+        }
+      }
+    }finally{purchaseDriveUploadRunning=false;}
+  }
 
   window.loadPurchases=async function(){
     try{
@@ -1770,6 +1807,8 @@ window.uploadPurchaseDetailPdf=async function(purchase){
         },100);
       }
       setStatus('',false);
+      // Run in the background so the purchase list stays usable while Drive retries.
+      void retryCompletedPurchasePdfUploads(historyWithPartial);
     }catch(e){
       setStatus(e.message||'Failed to load purchases.',true);
       if(dischargeList)dischargeList.innerHTML='<div class="purchase-empty">Discharge purchases unavailable right now.</div>';
