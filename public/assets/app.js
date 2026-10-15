@@ -196,7 +196,7 @@ function openBatchRecordSalesModal(){
     const shift=(window.dashboardShiftRecords||[]).find(s=>String(s.id)===String(t.shift_id));
     const nozzle=(window.dashboardNozzleRecords||[]).find(n=>String(n.id)===String(shift?.nozzle_id));
     const breakdown=adminReturnedFuelBreakdown(t,Number(t.returned_liters||0));
-    return '<label class="batch-record-shift-option"><input type="checkbox" class="batch-record-shift-check" value="'+h(t.id)+'" checked><span><strong>'+h(nozzle?.nozzle_code||t.dispenser_code||'Dispenser')+'</strong><small>'+h(nozzle?.product||shift?.product||'Fuel')+' · '+h(new Date(t.shift_ended_at||t.created_at||Date.now()).toLocaleString())+'</small></span><b>'+money(breakdown.netAmount)+'</b></label>';
+    return '<label class="batch-record-shift-option"><input type="checkbox" class="batch-record-shift-check" onchange="updateBatchRecordSelectionSummary()" value="'+h(t.id)+'" checked><span><strong>'+h(nozzle?.nozzle_code||t.dispenser_code||'Dispenser')+'</strong><small>'+h(nozzle?.product||shift?.product||'Fuel')+' · '+h(new Date(t.shift_ended_at||t.created_at||Date.now()).toLocaleString())+'</small></span><b>'+money(breakdown.netAmount)+'</b></label>';
   }).join('');
   const types=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
   if(payments)payments.innerHTML=types.map(s=>'<div class="batch-record-payment-row" data-sale-type="'+h(s.id)+'"><label>'+h(s.name)+(s.description?' <small>'+h(s.description)+'</small>':'')+'<input type="number" class="batch-record-payment-amount" data-sale-id="'+h(s.id)+'" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></label>'+(s.reason_required?'<label class="batch-record-reason-label">Reason<textarea class="batch-record-payment-reason" data-reason-id="'+h(s.id)+'" rows="2" placeholder="Required when this sales type is used"></textarea></label>':'')+'</div>').join('')||'<p class="muted">No active sales types are configured.</p>';
@@ -216,7 +216,7 @@ function updateBatchRecordSelectionSummary(){
   const el=document.getElementById('batch-record-selected-summary');
   if(el)el.innerHTML='<div><span>Selected shifts</span><strong>'+selectedRows.length+'</strong></div><div><span>Combined calculated sales</span><strong>'+money(total)+'</strong></div>';
 }
-function continueBatchRecordSales(){
+async function continueBatchRecordSales(){
   const status=document.getElementById('batch-record-status');
   const selectedIds=Array.from(document.querySelectorAll('#batch-record-shift-list .batch-record-shift-check:checked')).map(x=>String(x.value));
   const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
@@ -236,6 +236,9 @@ function continueBatchRecordSales(){
   const calc=t=>adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netAmount;
   const calculated=selected.reduce((sum,t)=>sum+calc(t),0);
   const entered=payments.reduce((sum,p)=>sum+p.amount,0);
+  const stationSettings=await api('/api/settings').catch(()=>({sales_difference_tolerance:1}));
+  const allowedDifference=Math.max(0,Number(stationSettings?.sales_difference_tolerance??1));
+  if(Math.abs(entered-calculated)>allowedDifference){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Combined payments must match combined net calculated sales within '+money(allowedDifference)+' tolerance. Entered '+money(entered)+', calculated '+money(calculated)+'.</div>';return;}
   const positive=selected.filter(t=>calc(t)>0);
   const totalPositive=positive.reduce((sum,t)=>sum+calc(t),0);
   if(totalPositive===0&&entered>0){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Selected shifts have zero calculated sales; payment amounts must be zero.</div>';return;}
