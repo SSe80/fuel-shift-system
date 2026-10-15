@@ -2036,7 +2036,11 @@ function updateAdminSaleConfirmButton(card){
   if(!card)return;
   const checks=Array.from(card.querySelectorAll('.admin-sale-check'));
   const button=card.querySelector('[data-confirm-sales]');
-  if(button)button.disabled=checks.length===0||checks.some(x=>!x.checked);
+  const id=String(card.getAttribute('data-takeover-id')||'');
+  const pendingItem=(adminSalesData.pending||[]).find(x=>String(x.takeover?.id)===id);
+  const netCalculated=adminReturnedFuelBreakdown(pendingItem?.takeover||{},Number(pendingItem?.takeover?.returned_liters||0)).netAmount;
+  const validZeroSales=checks.length===0&&netCalculated<=0.005;
+  if(button)button.disabled=!validZeroSales&&(checks.length===0||checks.some(x=>!x.checked));
 }
 function bindAdminSaleChecks(){
   document.querySelectorAll('.admin-sale-confirm-card').forEach(card=>{
@@ -2223,7 +2227,7 @@ function renderAdminPendingSaleCard(item){
     '<div class="admin-pending-sale-body" hidden>'+
       '<div class="admin-sale-context"><div><span>Shift started</span><strong>'+new Date(t.shift_started_at).toLocaleString()+'</strong></div><div><span>Shift ended</span><strong>'+new Date(t.shift_ended_at).toLocaleString()+'</strong></div><div><span>Net liters sold</span><strong>'+liters(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netLiters)+' L</strong></div><div><span>Gross calculated amount</span><strong>'+money(t.total_sales_amount)+'</strong></div><div><span>Net calculated amount</span><strong>'+money(calculated)+'</strong></div></div>'+
       '<div class="admin-sale-review-strip" data-admin-sale-review-strip="'+h(t.id)+'"><span><b>'+sales.length+'</b> sale entr'+(sales.length===1?'y':'ies')+'</span><span>Submitted <b>'+money(submitted)+'</b></span><span class="'+(Math.abs(variance)<=getSalesDifferenceTolerance()?'match':'difference')+'">Net difference <b>'+money(Math.abs(variance))+'</b></span></div>'+
-      '<div class="admin-sale-check-section"><div class="takeover-detail-heading">Sales to check <small>Check every entry before confirming</small></div>'+checked+'</div>'+
+      '<div class="admin-sale-check-section"><div class="takeover-detail-heading">Sales to check <small>'+(sales.length?'Check every entry before confirming':'Zero fuel dispensed — confirm this zero-sales record')+'</small></div>'+(checked||'<div class="admin-review-empty">No sale entries: no fuel was dispensed. This zero-sales record is pending admin confirmation.</div>')+'</div>'+
       (Number(t.returned_liters||0)>0?'<section class="admin-saved-returned-fuel"><div class="admin-saved-returned-fuel-head"><span class="admin-saved-returned-fuel-icon" aria-hidden="true">↩</span><div><strong>Saved returned fuel</strong><small>Recorded for this shift</small></div><span class="admin-saved-returned-fuel-status">SAVED</span></div><div class="admin-saved-returned-fuel-rows"><div class="admin-saved-returned-fuel-row"><span>Returned liters</span><b>'+liters(t.returned_liters)+' L</b></div><div class="admin-saved-returned-fuel-row"><span>Shift selling price</span><b>'+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).unitPrice)+' / L</b></div><div class="admin-saved-returned-fuel-row deduction"><span>Returned fuel deduction</span><b>− '+money(t.returned_amount??adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).returnedAmount)+'</b></div></div></section>':'')+
       '<div class="admin-sale-total admin-pending-submitted-total"><span>Submitted sales total</span><strong>'+money(submitted)+'</strong></div><div class="row admin-sale-actions"><button type="button" onclick="cancelAdminSaleConfirmation(\''+t.id+'\')">Cancel</button><button type="button" class="primary" disabled data-confirm-sales="'+h(t.id)+'" onclick="confirmAdminSaleConfirmation(\''+t.id+'\')">Confirm sales</button></div>'+
     '</div></article>';
