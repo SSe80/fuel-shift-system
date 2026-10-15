@@ -1281,14 +1281,16 @@ window.downloadPurchaseDetailPdf=async function(options){
       const result=await response.json().catch(()=>({}));
       if(!response.ok||!result.ok)throw new Error(result.error||('HTTP '+response.status));
       if(typeof window.toast==='function')window.toast('Purchase PDF saved to Google Drive: '+(result.path||fileName));
+      return true;
     }catch(uploadError){
       if(typeof window.toast==='function')window.toast((options.uploadOnly?'Purchase PDF could not be saved to Drive: ':'PDF downloaded, but Drive storage failed: ')+(uploadError.message||'unknown error'));
+      if(options.uploadOnly)return false;
     }
-  }catch(e){fail(e.message||'Unable to create the PDF.');}
+  }catch(e){fail(e.message||'Unable to create the PDF.');if(options.uploadOnly)return false;}
   finally{if(btn){btn.disabled=false;btn.textContent='Download PDF';}}
 };
 window.uploadPurchaseDetailPdf=async function(purchase){
-  if(!purchase){if(typeof window.toast==='function')window.toast('Purchase saved, but its PDF record could not be located for Drive storage.');return;}
+  if(!purchase){if(typeof window.toast==='function')window.toast('Purchase PDF could not be located for Drive storage.');return false;}
   window.currentPurchaseDetailData=purchase;
   window.currentPurchaseDetailTanks=window.currentPurchaseDetailTanks||[];
   return window.downloadPurchaseDetailPdf({uploadOnly:true});
@@ -1754,7 +1756,8 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       if(purchaseDriveUploadInFlight.has(id))continue;
       purchaseDriveUploadInFlight.add(id);
       try{
-        await window.uploadPurchaseDetailPdf(p);
+        const uploaded=await window.uploadPurchaseDetailPdf(p);
+        if(uploaded===false)throw new Error('Purchase PDF upload failed; it will be retried.');
         try{localStorage.setItem(marker,signature);}catch(_){}
       }catch(_){
         // A failed upload stays eligible and will be retried on the next purchase refresh.
