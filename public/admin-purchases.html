@@ -1171,7 +1171,7 @@ window.ensurePurchasePdfEngine=async function(){
 window.downloadPurchaseDetailPdf=async function(options){
   options=options||{};
   const p=window.currentPurchaseDetailData;
-  const fail=(msg)=>{if(options.uploadOnly&&typeof window.toast==='function')window.toast(msg);else if(typeof window.openPurchaseFailed==='function')window.openPurchaseFailed(msg,'PDF Download Failed');else alert(msg);};
+  const fail=(msg)=>{if(options.uploadOnly)return; if(typeof window.openPurchaseFailed==='function')window.openPurchaseFailed(msg,'PDF Download Failed');else alert(msg);};
   if(!p){fail('Purchase details are not available.');return;}
   const n=v=>Number(v||0), L=v=>n(v).toLocaleString(undefined,{maximumFractionDigits:2})+' L';
   const dt=v=>{try{return v?new Date(v).toLocaleString():'—';}catch(_){return '—';}};
@@ -1279,13 +1279,13 @@ window.downloadPurchaseDetailPdf=async function(options){
     try{
       const bytes=new Uint8Array(await pdfBlob.arrayBuffer());
       let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));
-      const response=await fetch('/api/drive/purchases/upload',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify({pdf_base64:btoa(binary),file_name:fileName,purchase_date:String(p.purchase_datetime||p.created_at||'').slice(0,10)})});
+      const response=await fetch('/api/drive/purchases/upload',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify({pdf_base64:btoa(binary),file_name:fileName,purchase_date:String(p.purchase_date||p.purchase_datetime||p.created_at||'').slice(0,10)})});
       const result=await response.json().catch(()=>({}));
       if(!response.ok||!result.ok)throw new Error(result.error||('HTTP '+response.status));
       if(typeof window.toast==='function')window.toast('Purchase PDF saved to Google Drive: '+(result.path||fileName));
       return true;
     }catch(uploadError){
-      if(typeof window.toast==='function')window.toast((options.uploadOnly?'Purchase PDF could not be saved to Drive: ':'PDF downloaded, but Drive storage failed: ')+(uploadError.message||'unknown error'));
+      if(!options.uploadOnly&&typeof window.toast==='function')window.toast('PDF downloaded, but Drive storage failed: '+(uploadError.message||'unknown error'));
       if(options.uploadOnly)return false;
     }
   }catch(e){fail(e.message||'Unable to create the PDF.');if(options.uploadOnly)return false;}
@@ -1758,8 +1758,19 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       if(purchaseDriveUploadInFlight.has(id))continue;
       purchaseDriveUploadInFlight.add(id);
       try{
-        const uploaded=await window.uploadPurchaseDetailPdf(p);
-        if(uploaded===false)throw new Error('Purchase PDF upload failed; it will be retried.');
+        let uploaded=false,lastUploadError=null;
+        // Retry transient upload/PDF-generation failures immediately. The backend
+        // reuses the same monthly folder and filename, updating an existing Drive file.
+        for(let attempt=0;attempt<3&&!uploaded;attempt++){
+          try{
+            uploaded=await window.uploadPurchaseDetailPdf(p);
+            if(uploaded===false)throw new Error('Purchase PDF upload failed.');
+          }catch(retryError){
+            lastUploadError=retryError;
+            if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+          }
+        }
+        if(!uploaded)throw lastUploadError||new Error('Purchase PDF upload failed; it will be retried on the next refresh.');
         try{localStorage.setItem(marker,signature);}catch(_){}
       }catch(uploadError){
         // Automatic Drive uploads must never fall back to downloading a file.
