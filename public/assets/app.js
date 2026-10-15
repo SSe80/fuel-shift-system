@@ -236,8 +236,19 @@ async function continueBatchRecordSales(){
   const calc=t=>adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netAmount;
   const calculated=selected.reduce((sum,t)=>sum+calc(t),0);
   const entered=payments.reduce((sum,p)=>sum+p.amount,0);
-  const stationSettings=await api('/api/settings').catch(()=>({sales_difference_tolerance:1}));
-  const allowedDifference=Math.max(0,Number(stationSettings?.sales_difference_tolerance??1));
+  let stationSettings;
+  try{
+    stationSettings=await api('/api/settings');
+  }catch(e){
+    if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Unable to load the configured sales-difference tolerance. Check your connection and try again.</div>';
+    return;
+  }
+  const rawTolerance=Number(stationSettings?.sales_difference_tolerance);
+  if(!Number.isFinite(rawTolerance)||rawTolerance<0){
+    if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">The configured sales-difference tolerance could not be verified. Ask an administrator to check Settings.</div>';
+    return;
+  }
+  const allowedDifference=rawTolerance;
   if(Math.abs(entered-calculated)>allowedDifference){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Combined payments must match combined net calculated sales within '+money(allowedDifference)+' tolerance. Entered '+money(entered)+', calculated '+money(calculated)+'.</div>';return;}
   const positive=selected.filter(t=>calc(t)>0);
   const totalPositive=positive.reduce((sum,t)=>sum+calc(t),0);
