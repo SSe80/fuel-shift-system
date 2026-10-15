@@ -5484,47 +5484,73 @@ def _drive_enqueue(kind, report_key):
     return st < 400
 
 def _msr_ready(month_start):
-    """True when every day of the month, up to yesterday, has a confirmed DSR.
-    Days with no shifts cannot be confirmed (the DSR route refuses them), so they are skipped."""
+    """True only after the calendar month has ended and every shift started in it
+    has ended and every date with shifts has a confirmed DSR. Empty days are skipped."""
     first = month_start.replace(day=1)
     next_first = (first.replace(day=28) + timedelta(days=4)).replace(day=1)
-    last = min(next_first - timedelta(days=1), _addis_today() - timedelta(days=1))
-    if last < first:
+    last = next_first - timedelta(days=1)
+
+    # Never publish a provisional MSR. Wait until Addis Ababa has moved into
+    # the next calendar month, not merely until yesterday's DSR is confirmed.
+    if _addis_today() <= last:
         return False
+
     cs, conf = sb("daily_report_confirmations", params={
         "report_date": "gte." + first.isoformat(), "and": "(report_date.lte.%s)" % last.isoformat(),
         "status": "eq.confirmed", "select": "report_date", "limit": "1000"})
     if cs >= 400:
         return False
     confirmed = {str(r.get("report_date")) for r in (conf or [])}
+
+    # Convert Addis Ababa month boundaries to UTC for the shift query.
     start_utc = datetime(first.year, first.month, first.day, tzinfo=timezone.utc) - timedelta(hours=3)
-    end_utc = datetime(last.year, last.month, last.day, tzinfo=timezone.utc) - timedelta(hours=3) + timedelta(days=1)
+    end_utc = datetime(next_first.year, next_first.month, next_first.day, tzinfo=timezone.utc) - timedelta(hours=3)
     ss, shifts = sb("shifts", params={
         "and": "(start_time.gte.%s,start_time.lt.%s)" % (start_utc.isoformat(), end_utc.isoformat()),
-        "select": "start_time", "limit": "10000"})
+        "select": "start_time,end_time", "limit": "10000"})
     if ss >= 400:
         return False
+
     days_with_shifts = set()
     for r in (shifts or []):
+        # An MSR must wait for every shift that started in the month to end,
+        # even if that shift crossed midnight into the following month.
+        if not r.get("end_time"):
+            return False
         try:
             t = datetime.fromisoformat(str(r.get("start_time")).replace("Z", "+00:00"))
             days_with_shifts.add((t.astimezone(timezone.utc) + timedelta(hours=3)).date().isoformat())
         except Exception:
-            continue
+            return False
+
     d = first
     while d <= last:
         key = d.isoformat()
-        if key not in confirmed and key in days_with_shifts:
+        if key in days_with_shifts and key not in confirmed:
             return False
         d += timedelta(days=1)
     return True
 
 def _drive_after_dsr_confirm(report_day):
-    """Called after a DSR is confirmed. Never fails the confirmation itself."""
+    """Queue the DSR and check the just-finished and previous month for MSR eligibility."""
     try:
         _drive_enqueue("dsr", report_day.isoformat())
-        if _msr_ready(report_day):
-            _drive_enqueue("msr", report_day.strftime("%Y-%m"))
+
+        # The final DSR may be confirmed before the calendar month ends. Check
+        # again when a DSR in the following month is confirmed, so the previous
+        # month's MSR can be queued only after the month is closed and all its
+        # DSRs/shifts are complete.
+        this_month = report_day.replace(day=1)
+        previous_month = this_month - timedelta(days=1)
+        candidates = (this_month, previous_month.replace(day=1))
+        seen = set()
+        for month_start in candidates:
+            month_key = month_start.strftime("%Y-%m")
+            if month_key in seen:
+                continue
+            seen.add(month_key)
+            if _msr_ready(month_start):
+                _drive_enqueue("msr", month_key)
     except Exception:
         app.logger.exception("drive enqueue failed")
 
