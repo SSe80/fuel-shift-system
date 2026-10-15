@@ -1948,4 +1948,93 @@ body.attendant-dashboard-page #admin-sale-history-details #admin-sale-history-de
 <div class="row"><button type="button" class="btn" onclick="backToTakeoverSaleEntry()">Back</button><button type="button" class="btn" onclick="editTakeoverSaleEntries()">Edit Sales</button><button type="button" class="primary confirm-sale-button" onclick="confirmTakeoverSale()" disabled>Confirm</button></div>
 </div></div><div id="takeover-details-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="closeTakeoverDetails()"></div><div class="modal-card takeover-details-modal"><div class="top"><div><span class="section-kicker">SHIFT HISTORY</span><h3>Shift Details</h3></div><button type="button" class="modal-close" onclick="closeTakeoverDetails()" aria-label="Close">×</button></div><div id="takeover-details-content"></div><div class="row"><button type="button" class="primary" onclick="closeTakeoverDetails()">Close</button></div></div></div><div id="admin-sale-history-details" class="modal purchase-modal" aria-hidden="true"><div class="modal-backdrop" onclick="closeAdminSaleHistoryDetails()"></div><div class="modal-card admin-sale-review-card takeover-details-modal"><div class="top"><div><span class="section-kicker">SHIFT HISTORY</span><h3>Shift Details</h3><p class="muted">View the complete confirmed sales record.</p></div><div class="admin-sale-history-detail-actions"><button type="button" class="secondary admin-sale-history-download" id="admin-sale-history-download" onclick="downloadAdminSaleHistoryDetails(this.dataset.takeoverId)" title="Download PDF">⇩ PDF</button><button type="button" class="modal-close" onclick="closeAdminSaleHistoryDetails()">×</button></div></div><div id="admin-sale-history-details-content"></div></div></div><div id="toast" class="toast"></div><div id="employee-status" class="page-status"></div></main><script src="assets/app.js?v=20261014-loading-reliability1"></script><script src="assets/app-boot.js?v=20261014-loading-reliability1"></script><script src="assets/admin-control-ui.js?v=20261010-02"></script>
 <script src="assets/popup-portal.js?v=20261014-details-modal-card-scroll-fix"></script>
+
+<style id="record-sale-modal-viewport-fix">
+/* Record Sale / Review Sale: keep the whole dialog inside the phone viewport.
+   The body is a flex column; only the middle content scrolls, never the whole card off-screen. */
+body.attendant-dashboard-page #takeover-sale-modal,
+body.attendant-dashboard-page #takeover-sale-confirm-modal{
+  position:fixed!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  height:100dvh!important;
+  box-sizing:border-box!important;
+  padding:12px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+body.attendant-dashboard-page #takeover-sale-modal.open,
+body.attendant-dashboard-page #takeover-sale-confirm-modal.open{
+  display:flex!important;
+}
+body.attendant-dashboard-page #takeover-sale-modal > .takeover-action-modal,
+body.attendant-dashboard-page #takeover-sale-confirm-modal > .takeover-action-modal{
+  position:relative!important;
+  inset:auto!important;
+  flex:0 0 auto!important;
+  width:min(460px,calc(100vw - 24px))!important;
+  max-width:460px!important;
+  height:auto!important;
+  max-height:calc(100dvh - 24px)!important;
+  margin:auto!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+  min-height:0!important;
+}
+body.attendant-dashboard-page #takeover-sale-modal > .takeover-action-modal > .top,
+body.attendant-dashboard-page #takeover-sale-confirm-modal > .takeover-action-modal > .top{
+  flex:0 0 auto!important;
+}
+body.attendant-dashboard-page #takeover-sale-modal #takeover-sale-summary{
+  flex:0 0 auto!important;
+  max-height:none!important;
+}
+body.attendant-dashboard-page #takeover-sale-modal .takeover-sales-entry-section{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+body.attendant-dashboard-page #takeover-sale-confirm-modal #takeover-sale-confirm-content{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+body.attendant-dashboard-page #takeover-sale-modal > .takeover-action-modal > .row,
+body.attendant-dashboard-page #takeover-sale-confirm-modal > .takeover-action-modal > .row{
+  flex:0 0 auto!important;
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:7px!important;
+  padding:10px 12px max(10px,env(safe-area-inset-bottom))!important;
+  margin:0!important;
+  background:#fff!important;
+  border-top:1px solid #e8edf2!important;
+}
+@media(max-width:600px){
+  body.attendant-dashboard-page #takeover-sale-modal,
+  body.attendant-dashboard-page #takeover-sale-confirm-modal{
+    align-items:flex-start!important;
+    padding: max(8px,env(safe-area-inset-top)) 10px max(8px,env(safe-area-inset-bottom))!important;
+  }
+  body.attendant-dashboard-page #takeover-sale-modal > .takeover-action-modal,
+  body.attendant-dashboard-page #takeover-sale-confirm-modal > .takeover-action-modal{
+    width:calc(100vw - 20px)!important;
+    max-height:calc(100dvh - max(16px,env(safe-area-inset-top)) - max(16px,env(safe-area-inset-bottom)))!important;
+    margin:0 auto!important;
+  }
+}
+</style>
 </body></html>
