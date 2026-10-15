@@ -3274,6 +3274,37 @@ def _auto_upload_completed_purchase_pdf(purchase_id):
         return {"ok":False,"error":str(err) or "Automatic purchase PDF upload failed"}
 
 
+@app.post("/api/drive/purchases/retry")
+def drive_retry_completed_purchase_pdfs():
+    """Retry eligible completed purchase PDFs and return per-invoice diagnostics."""
+    auth=require_admin()
+    if auth:return auth
+    status, purchases = sb("purchases", params={
+        "status":"eq.discharged",
+        "select":"id,invoice_number,status,discharge_history",
+        "order":"created_at.desc",
+        "limit":"250"
+    })
+    if status != 200:
+        return jsonify({"ok":False,"error":"Could not list completed purchases","details":purchases}), status
+    results=[]
+    for purchase in purchases or []:
+        history=purchase.get("discharge_history") or []
+        if not history or not all(isinstance(event,dict) and event.get("tank_stock_recorded") is True for event in history):
+            continue
+        outcome=_auto_upload_completed_purchase_pdf(purchase.get("id"))
+        results.append({
+            "invoice_number":purchase.get("invoice_number") or str(purchase.get("id")),
+            "ok":bool(outcome.get("ok")),
+            "path":outcome.get("path"),
+            "error":outcome.get("error"),
+            "skipped":bool(outcome.get("skipped"))
+        })
+    failed=[item for item in results if not item["ok"]]
+    return jsonify({"ok":not failed,"checked":len(results),"uploaded":len(results)-len(failed),
+                    "failed":failed,"results":results}), (200 if not failed else 502)
+
+
 @app.post("/api/purchases")
 def create_purchase():
     auth=require_admin()
