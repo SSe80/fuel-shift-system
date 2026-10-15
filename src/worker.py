@@ -3317,7 +3317,11 @@ def update_purchase_remark(purchase_id):
     if not rows:return jsonify({"error":"Purchase not found"}),404
     status,result=sb("purchases",method="PATCH",params={"id":"eq."+str(purchase_id)},body={"purchase_remark":remark},prefer="return=representation")
     if status>=400:return jsonify({"error":"Purchase remark could not be saved","details":result}),status
-    return jsonify({"ok":True,"purchase_id":str(purchase_id),"purchase_remark":remark}),200
+    # Keep the Drive PDF in sync if the purchase has already completed.
+    drive_export=_auto_upload_completed_purchase_pdf(purchase_id)
+    return jsonify({"ok":True,"purchase_id":str(purchase_id),"purchase_remark":remark,
+                    "drive_pdf_uploaded":bool(drive_export.get("ok")),
+                    "drive_pdf_error":drive_export.get("error")}),200
 
 @app.post("/api/purchases/<purchase_id>/discharge")
 def discharge_purchase(purchase_id):
