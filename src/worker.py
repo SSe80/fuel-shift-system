@@ -155,11 +155,30 @@ def _load_role_session():
 
 @app.before_request
 def load_role_session():
+    # OAuth endpoints are browser navigations/Google redirects and cannot carry
+    # the X-Fuel-Role header used by API fetches. They restore the admin role
+    # from its dedicated HttpOnly cookie inside the route instead.
+    if request.path in ("/api/drive/oauth/start", "/api/drive/oauth/callback"):
+        session.clear()
+        session.modified = False
+        return
     if request.path.startswith("/api/") and request.path not in ("/api/admin-login", "/api/attendant-login", "/api/login"):
         _load_role_session()
 
+
+def _load_drive_oauth_admin_session():
+    payload = _read_role_token(request.cookies.get(ROLE_SESSION_COOKIE["admin"]), "admin")
+    session.clear()
+    if payload:
+        session["employee_id"] = payload["employee_id"]
+        session["role"] = "admin"
+    session.modified = False
+    return payload
+
 @app.after_request
 def prevent_legacy_session_overlap(response):
+    if request.path == "/api/drive/oauth/callback":
+        response.delete_cookie("__Host-fuel_drive_oauth_state", path="/")
     # Role sessions are independent HttpOnly cookies. Refresh an authenticated
     # attendant cookie on normal API activity so sessions created before this
     # change are migrated to the long-lived, non-expiring token/cookie.
@@ -5522,6 +5541,8 @@ def _drive_oauth_redirect_uri():
 
 @app.get("/api/drive/oauth/start")
 def drive_oauth_start():
+    if not _load_drive_oauth_admin_session():
+        return jsonify({"error": "Unauthorized"}), 401
     auth = require_admin()
     if auth: return auth
     try:
@@ -5529,8 +5550,6 @@ def drive_oauth_start():
         if not client_id:
             return jsonify({"error": "GOOGLE_OAUTH_CLIENT_ID Worker secret is not configured"}), 503
         state = secrets.token_urlsafe(32)
-        session["drive_oauth_state"] = state
-        session["drive_oauth_started"] = int(datetime.now(timezone.utc).timestamp())
         from urllib.parse import urlencode
         params = {
             "client_id": str(client_id),
@@ -5542,7 +5561,10 @@ def drive_oauth_start():
             "include_granted_scopes": "true",
             "state": state,
         }
-        return redirect("https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params), code=302)
+        response = redirect("https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params), code=302)
+        response.set_cookie("__Host-fuel_drive_oauth_state", state, max_age=600, secure=True,
+                            httponly=True, samesite="Lax", path="/")
+        return response
     except Exception:
         app.logger.exception("Could not start Google Drive OAuth")
         return jsonify({"error": "Could not start Google Drive authorization"}), 500
@@ -5550,14 +5572,12 @@ def drive_oauth_start():
 
 @app.get("/api/drive/oauth/callback")
 def drive_oauth_callback():
-    expected = session.get("drive_oauth_state")
+    expected = request.cookies.get("__Host-fuel_drive_oauth_state", "")
     supplied = request.args.get("state", "")
-    started = int(session.get("drive_oauth_started") or 0)
-    now = int(datetime.now(timezone.utc).timestamp())
-    session.pop("drive_oauth_state", None)
-    session.pop("drive_oauth_started", None)
-    if not expected or not supplied or not hmac.compare_digest(str(expected), str(supplied)) or now - started > 600 or now < started:
+    if not expected or not supplied or not hmac.compare_digest(str(expected), str(supplied)):
         return redirect("/admin-settings.html?drive_oauth=state_error", code=302)
+    if not _load_drive_oauth_admin_session():
+        return redirect("/admin-login.html?drive_oauth=admin_session_required", code=302)
     if request.args.get("error"):
         return redirect("/admin-settings.html?drive_oauth=denied", code=302)
     code = request.args.get("code", "")
