@@ -1793,10 +1793,12 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       return String(p?.status||'').toLowerCase()==='discharged'&&history.length>0&&history.every(e=>e?.tank_stock_recorded===true);
     });
     if(!eligible.length)return;
-    const needsRetry=eligible.some(p=>{
-      try{return localStorage.getItem('fuel-shift-drive-purchase:'+String(p.id))!==purchaseDriveSignature(p);}catch(_){return true;}
-    });
-    if(!needsRetry)return;
+    // A localStorage success marker cannot prove the file still exists in Drive.
+    // Reconcile eligible purchases server-side on page load and retry at most once
+    // per minute while the admin page is open, including when a previous attempt failed.
+    const now=Date.now();
+    if(now-(window.__purchaseServerRetryLastAttempt||0)<60000)return;
+    window.__purchaseServerRetryLastAttempt=now;
     purchaseServerRetryInFlight=true;
     try{
       const response=await fetch('/api/drive/purchases/retry',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Fuel-Role':'admin'},body:'{}'});
