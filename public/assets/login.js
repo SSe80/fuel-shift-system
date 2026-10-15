@@ -38,6 +38,8 @@
       }
       // Persist the role selector across browser restarts. The role itself is not
       // an authentication credential; the HttpOnly server cookie remains authoritative.
+      // A successful manual login ends this device's explicit-logout state.
+      try { window.localStorage.removeItem('fuelExplicitLogout:' + role); } catch (_) {}
       try { window.localStorage.setItem('fuelRole', role); } catch (_) {}
       try { window.sessionStorage.setItem('fuelRole', role); } catch (_) {}
       var destination = successUrl || (role === 'admin' ? 'admin-dashboard.html' : 'attendant-dashboard.html');
@@ -58,6 +60,9 @@
 
   function resumeExistingSession(role) {
     if (role !== 'admin' && role !== 'attendant') return;
+    // An explicit logout must take precedence over automatic PWA session resume.
+    // Keep the login form available until the user signs in again.
+    try { if (window.localStorage.getItem('fuelExplicitLogout:' + role) === '1') return; } catch (_) {}
     // If the PWA/browser opens the login URL after a phone restart, first
     // check the existing HttpOnly session cookie instead of making the user
     // sign in again. A failed/network check never clears the cookie or role.
