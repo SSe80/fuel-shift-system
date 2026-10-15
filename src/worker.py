@@ -3951,14 +3951,27 @@ def _daily_confirmation_snapshot(report_date):
         str(x.get("id")) for x in shifts
         if len(takeovers_by_shift.get(str(x.get("id")),[]))==0
     ]
+    # A shift with zero fuel dispensed and zero calculated sales is a valid
+    # zero-sales shift. Do not make it look incomplete merely because it has
+    # no sale-type rows or a sales submission timestamp.
+    def is_zero_dispense_shift(takeover):
+        try:
+            return (
+                float(takeover.get("total_sales_liters") or 0) <= 0.005
+                and float(takeover.get("total_sales_amount") or 0) <= 0.005
+            )
+        except (TypeError, ValueError):
+            return False
     missing_sales_shifts=[
         str(x.get("id")) for x in shifts
         if len(takeovers_by_shift.get(str(x.get("id")),[]))==1
+        and not is_zero_dispense_shift(takeovers_by_shift[str(x.get("id"))][0])
         and sale_count_by_takeover.get(str(takeovers_by_shift[str(x.get("id"))][0].get("id")),0)==0
     ]
     unsubmitted_sales_shifts=[
         str(x.get("id")) for x in shifts
         if len(takeovers_by_shift.get(str(x.get("id")),[]))==1
+        and not is_zero_dispense_shift(takeovers_by_shift[str(x.get("id"))][0])
         and not bool(takeovers_by_shift[str(x.get("id"))][0].get("sales_submitted_at"))
     ]
     unconfirmed_sales_shifts=[
@@ -3977,7 +3990,8 @@ def _daily_confirmation_snapshot(report_date):
         and not missing_sales_shifts
         and not unsubmitted_sales_shifts
         and all(
-            str(t.get("sales_status") or "") in ("pending_admin","confirmed")
+            is_zero_dispense_shift(t)
+            or str(t.get("sales_status") or "") in ("pending_admin","confirmed")
             for t in takeovers
         )
         and len(takeovers)==len(shifts)
