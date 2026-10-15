@@ -5056,7 +5056,7 @@ function dailyReportIdFromTimestamp(value){
   const localDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
   return dailyReportIdLabel(localDate);
 }
-function updateDailyDsrConfirmButton(card){
+async function updateDailyDsrConfirmButton(card){
   if(!card)return;
   const checks=Array.from(card.querySelectorAll('.daily-dsr-method-check'));
   const selectAll=card.querySelector('.daily-dsr-select-all');
