@@ -88,7 +88,7 @@ BEGIN
   -- A genuine zero-dispensed-fuel shift must still enter the same admin
   -- confirmation queue as regular sales. Allow zero entries only when the
   -- calculated net sales amount is exactly zero.
-  IF v_total <= 0 AND v_expected_net_amount > 0 THEN
+  IF v_total <= 0 AND (v_expected_net_amount > 0 OR coalesce(v_t.total_sales_liters,0) > 0) THEN
     DELETE FROM public.shift_takeover_sales WHERE takeover_id = v_t.id;
     RAISE EXCEPTION 'Enter at least one sale amount';
   END IF;
@@ -127,17 +127,17 @@ DECLARE
   v_definition text;
   v_original text;
   v_pattern text := 'IF[[:space:]]+v_count[[:space:]]*=[[:space:]]*0[[:space:]]+OR[[:space:]]+v_checked[[:space:]]*<>[[:space:]]*v_count[[:space:]]+THEN[[:space:]]+RAISE EXCEPTION ''Every sale must be checked before confirmation'';[[:space:]]*END IF;';
-  v_replacement text := 'IF (v_count=0 AND greatest(0,round(coalesce(v_t.total_sales_amount,0)-coalesce(v_t.returned_amount,0),2)) > 0) OR (v_count>0 AND v_checked<>v_count) THEN RAISE EXCEPTION ''Every sale must be checked before confirmation''; END IF;';
+  v_replacement text := 'IF (v_count=0 AND (coalesce(v_t.total_sales_amount,0) > 0 OR coalesce(v_t.total_sales_liters,0) > 0)) OR (v_count>0 AND v_checked<>v_count) THEN RAISE EXCEPTION ''Every sale must be checked before confirmation''; END IF;';
 BEGIN
   v_definition := pg_get_functiondef(
-    'public.confirm_shift_takeover_sales_with_return_v2(uuid,uuid,jsonb,numeric)'::regprocedure
+    'public.confirm_shift_takeover_sales_with_return(uuid,uuid,jsonb,numeric)'::regprocedure
   );
   v_original := v_definition;
   v_definition := regexp_replace(v_definition, v_pattern, v_replacement, 'gi');
 
   IF v_definition = v_original
      OR position('v_count=0 AND greatest(0,round(coalesce(v_t.total_sales_amount,0)-coalesce(v_t.returned_amount,0),2)) > 0' IN v_definition) = 0 THEN
-    RAISE EXCEPTION 'Could not update the active confirmation RPC sale-count guard; no changes applied';
+    RAISE EXCEPTION 'Could not update the return-aware confirmation RPC sale-count guard; no changes applied';
   END IF;
 
   EXECUTE v_definition;
