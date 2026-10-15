@@ -30,6 +30,32 @@
     if ($('drive-audit-sheet-link')) $('drive-audit-sheet-link').value = s.body.admin_audit_sheet_id ? 'https://docs.google.com/spreadsheets/d/' + s.body.admin_audit_sheet_id + '/edit' : '';
     say('Drive links loaded.');
   }
+  async function loadOAuthStatus() {
+    var s = await api('/api/drive/oauth/status');
+    if (s.status !== 200) return;
+    var connect = $('drive-connect-btn'), disconnect = $('drive-disconnect-btn');
+    if (connect) connect.textContent = s.body.connected ? 'Reconnect Google Drive' : 'Connect personal Google Drive';
+    if (disconnect) disconnect.disabled = !s.body.connected;
+    var p = new URLSearchParams(window.location.search), result = p.get('drive_oauth');
+    if (result) {
+      var messages = {
+        connected: 'Personal Google Drive connected. You can now test the configured folders.',
+        denied: 'Google authorization was cancelled.',
+        state_error: 'Google authorization expired or could not be verified. Please connect again.',
+        missing_code: 'Google did not return an authorization code. Please connect again.',
+        refresh_token_missing: 'Google did not return a refresh token. Reconnect and approve access when prompted.',
+        storage_error: 'Google Drive was authorized, but secure token storage failed. Check the database migration and Worker secrets.',
+        oauth_error: 'Google Drive authorization failed. Check OAuth client settings and Worker secrets.',
+        admin_session_required: 'Please sign in as admin and connect Google Drive again.'
+      };
+      say(messages[result] || 'Google Drive connection updated.', result !== 'connected');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (s.body.connected) {
+      say('Personal Google Drive is connected. DSR, MSR, Purchases, and audit uploads will use this account.');
+    } else {
+      say('Connect your personal Google account before testing Drive folders.');
+    }
+  }
   async function saveSettings() {
     var s = await api('/api/drive/settings', 'PUT', { dsr_link: $('drive-dsr-link').value, msr_link: $('drive-msr-link').value, purchase_link: $('drive-purchase-link').value, admin_audit_link: $('drive-audit-link').value, admin_audit_sheet_link: $('drive-audit-sheet-link').value });
     if (s.status !== 200) return say('Save failed: ' + errText(s.body.error, s.status), true);
@@ -91,7 +117,15 @@
     if ($('drive-settings-section')) {
       $('drive-save-btn').addEventListener('click', saveSettings);
       $('drive-test-btn').addEventListener('click', testConnection);
+      if ($('drive-connect-btn')) $('drive-connect-btn').addEventListener('click', function () { window.location.href = '/api/drive/oauth/start'; });
+      if ($('drive-disconnect-btn')) $('drive-disconnect-btn').addEventListener('click', async function () {
+        if (!window.confirm('Disconnect the personal Google Drive account? Future uploads will stop until you reconnect.')) return;
+        var r = await api('/api/drive/oauth/disconnect', 'POST', {});
+        if (r.status !== 200) return say('Could not disconnect Google Drive: ' + errText(r.body.error, r.status), true);
+        await loadOAuthStatus();
+      });
       window.DriveSettings.load();
+      loadOAuthStatus();
       // Keep queue status fresh and wake the report-page PDF builders while admin settings is open.
       window.setInterval(loadQueue, 30000);
     }

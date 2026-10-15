@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, session
+from flask import Flask, jsonify, request, session, redirect
 from workers import wsgi
 import os, base64, hmac, secrets, hashlib, json, math
 from datetime import datetime, timezone, date, timedelta
@@ -5514,6 +5514,112 @@ def _drive_settings():
     if st >= 400:
         return None
     return (rows or [{}])[0]
+
+def _drive_oauth_redirect_uri():
+    configured = getattr(env(), "DRIVE_OAUTH_REDIRECT_URI", None)
+    return str(configured).strip() if configured else request.url_root.rstrip("/") + "/api/drive/oauth/callback"
+
+
+@app.get("/api/drive/oauth/start")
+def drive_oauth_start():
+    auth = require_admin()
+    if auth: return auth
+    try:
+        client_id = getattr(env(), "GOOGLE_OAUTH_CLIENT_ID", None)
+        if not client_id:
+            return jsonify({"error": "GOOGLE_OAUTH_CLIENT_ID Worker secret is not configured"}), 503
+        state = secrets.token_urlsafe(32)
+        session["drive_oauth_state"] = state
+        session["drive_oauth_started"] = int(datetime.now(timezone.utc).timestamp())
+        from urllib.parse import urlencode
+        params = {
+            "client_id": str(client_id),
+            "redirect_uri": _drive_oauth_redirect_uri(),
+            "response_type": "code",
+            "scope": "openid email https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets",
+            "access_type": "offline",
+            "prompt": "consent",
+            "include_granted_scopes": "true",
+            "state": state,
+        }
+        return redirect("https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params), code=302)
+    except Exception:
+        app.logger.exception("Could not start Google Drive OAuth")
+        return jsonify({"error": "Could not start Google Drive authorization"}), 500
+
+
+@app.get("/api/drive/oauth/callback")
+def drive_oauth_callback():
+    expected = session.get("drive_oauth_state")
+    supplied = request.args.get("state", "")
+    started = int(session.get("drive_oauth_started") or 0)
+    now = int(datetime.now(timezone.utc).timestamp())
+    session.pop("drive_oauth_state", None)
+    session.pop("drive_oauth_started", None)
+    if not expected or not supplied or not hmac.compare_digest(str(expected), str(supplied)) or now - started > 600 or now < started:
+        return redirect("/admin-settings.html?drive_oauth=state_error", code=302)
+    if request.args.get("error"):
+        return redirect("/admin-settings.html?drive_oauth=denied", code=302)
+    code = request.args.get("code", "")
+    if not code:
+        return redirect("/admin-settings.html?drive_oauth=missing_code", code=302)
+    auth = require_admin()
+    if auth:
+        return redirect("/admin-login.html?drive_oauth=admin_session_required", code=302)
+    try:
+        tokens = drive.exchange_code(env(), code, _drive_oauth_redirect_uri())
+        refresh_token = tokens.get("refresh_token")
+        if not refresh_token:
+            return redirect("/admin-settings.html?drive_oauth=refresh_token_missing", code=302)
+        encrypted = drive.encrypt_refresh_token(env(), refresh_token)
+        try:
+            connected_email = drive.google_email(tokens.get("access_token", ""))
+        except Exception:
+            connected_email = None
+        row = {
+            "id": 1,
+            "encrypted_refresh_token": encrypted,
+            "google_email": connected_email,
+            "connected_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        st, out = sb("drive_oauth_connection", method="POST", params={"on_conflict": "id"},
+                     body=row, prefer="resolution=merge-duplicates,return=minimal")
+        if st >= 400:
+            app.logger.error("Could not save encrypted Drive OAuth token: %s", str(out)[:200])
+            return redirect("/admin-settings.html?drive_oauth=storage_error", code=302)
+        return redirect("/admin-settings.html?drive_oauth=connected", code=302)
+    except drive.DriveError as err:
+        app.logger.warning("Google Drive OAuth callback failed: %s", str(err)[:200])
+        return redirect("/admin-settings.html?drive_oauth=oauth_error", code=302)
+    except Exception:
+        app.logger.exception("Unexpected Google Drive OAuth callback error")
+        return redirect("/admin-settings.html?drive_oauth=oauth_error", code=302)
+
+
+@app.get("/api/drive/oauth/status")
+def drive_oauth_status():
+    auth = require_admin()
+    if auth: return auth
+    st, rows = sb("drive_oauth_connection", params={
+        "id": "eq.1", "select": "google_email,connected_at,updated_at"
+    })
+    if st >= 400:
+        return jsonify({"error": "Drive connection status unavailable"}), 500
+    row = (rows or [None])[0]
+    return jsonify({"connected": bool(row), "google_email": (row or {}).get("google_email"),
+                    "connected_at": (row or {}).get("connected_at")}), 200
+
+
+@app.post("/api/drive/oauth/disconnect")
+def drive_oauth_disconnect():
+    auth = require_admin()
+    if auth: return auth
+    st, out = sb("drive_oauth_connection", method="DELETE", params={"id": "eq.1"}, prefer="return=minimal")
+    if st >= 400:
+        return jsonify({"error": "Could not disconnect Google Drive"}), st
+    return jsonify({"ok": True}), 200
+
 
 @app.get("/api/drive/settings")
 def drive_get_settings():
