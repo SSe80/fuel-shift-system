@@ -3228,11 +3228,9 @@ def _auto_upload_completed_purchase_pdf(purchase_id):
     with a different layout, so completed-purchase PDF uploads are handled only by
     the canonical client-side renderer.
     """
-    return {
-        "ok": False,
-        "skipped": True,
-        "error": "Server-side PDF upload skipped to preserve the Purchase Details Download PDF format."
-    }
+    # The canonical PDF is uploaded by the Purchases page's client-side renderer.
+    # Do not surface a server-renderer skip as an upload failure to the user.
+    return {"ok": True, "skipped": True}
 
 
 @app.post("/api/drive/purchases/retry")
@@ -3256,13 +3254,16 @@ def drive_retry_completed_purchase_pdfs():
         outcome=_auto_upload_completed_purchase_pdf(purchase.get("id"))
         results.append({
             "invoice_number":purchase.get("invoice_number") or str(purchase.get("id")),
-            "ok":bool(outcome.get("ok")),
+            "ok":bool(outcome.get("ok")) and not bool(outcome.get("skipped")),
             "path":outcome.get("path"),
             "error":outcome.get("error"),
             "skipped":bool(outcome.get("skipped"))
         })
-    failed=[item for item in results if not item["ok"]]
-    return jsonify({"ok":not failed,"checked":len(results),"uploaded":len(results)-len(failed),
+    failed=[item for item in results if not item["ok"] and not item["skipped"]]
+    skipped=sum(1 for item in results if item["skipped"])
+    uploaded=sum(1 for item in results if item["ok"])
+    return jsonify({"ok":not failed,"checked":len(results),"uploaded":uploaded,"skipped":skipped,
+                    "message":"Skipped PDFs are uploaded by the Purchases page using the canonical Download PDF renderer.",
                     "failed":failed,"results":results}), (200 if not failed else 502)
 
 
