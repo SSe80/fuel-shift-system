@@ -299,6 +299,7 @@ async function confirmTakeoverSale(){
     return;
   }
   if(button){button.disabled=true;button.textContent='Submitting…';}
+  let submissionFailed=false;
   try{
     await api('/api/shift-takeovers/'+encodeURIComponent(id)+'/record-sale',{
       method:'POST',
@@ -309,14 +310,19 @@ async function confirmTakeoverSale(){
     toast('Sale submitted for admin confirmation');
     await userDashboard();
   }catch(e){
+    submissionFailed=true;
     const message=String(e?.message||'Unable to submit this sales record. Please try again.');
     if(status)status.innerHTML+='<div class="takeover-sale-mismatch" role="alert">Submission failed: '+h(message)+'</div>';
     toast('Sale submission failed: '+message);
   }finally{
     if(button){
       button.textContent='Confirm';
-      // Re-evaluate the sales match before enabling the button again.
-      updateTakeoverSaleConfirmation();
+      if(submissionFailed){
+        button.disabled=false;
+      }else{
+        // Re-evaluate the sales match before enabling the button again.
+        updateTakeoverSaleConfirmation();
+      }
     }
   }
 }
