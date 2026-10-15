@@ -1,8 +1,6 @@
 """Google Drive upload helpers for the Fuel Shift Worker.
 
-Auth: a service account. Its JSON key is the Cloudflare secret GOOGLE_SERVICE_ACCOUNT_JSON.
-The JWT is signed with WebCrypto (RSASSA-PKCS1-v1_5 / SHA-256), the same API the Worker
-already uses for password hashing. Nothing here runs in the browser; the key never leaves the Worker.
+Auth: administrator-authorized Google OAuth. Refresh tokens are AES-GCM encrypted with a Cloudflare Worker secret before server-only Supabase storage. Nothing here runs in the browser; OAuth secrets remain in the Worker.
 """
 import base64, json, re, time, uuid
 from pyodide.ffi import run_sync, to_js
@@ -174,19 +172,6 @@ async def _http(url, method="GET", headers=None, body=None):
     except Exception:
         data = text
     return int(resp.status), data
-
-
-async def _token(sa):
-    assertion = await _sign(sa)
-    body = "grant_type=" + "urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=" + assertion
-    status, data = await _http(TOKEN_URL, "POST", {"Content-Type": "application/x-www-form-urlencoded"}, body)
-    if status >= 400 or not isinstance(data, dict) or "access_token" not in data:
-        raise DriveError("Google sign-in failed (%s): %s" % (status, str(data)[:200]), 502)
-    return data["access_token"]
-
-
-def access_token(e):
-    return run_sync(_token(service_account(e)))
 
 
 def _auth(token):
