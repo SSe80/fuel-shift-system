@@ -3546,6 +3546,32 @@ def handovers():
                 row["source_tank_code"]=tank.get("tank_code")
     return jsonify(rows),200
 
+@app.post("/api/shift-takeovers/record-sales-batch")
+def record_shift_takeover_sales_batch():
+    auth=require_login()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    batch=data.get("batch",[])
+    if not isinstance(batch,list):
+        return jsonify({"error":"Invalid batch entries"}),400
+    if not batch or len(batch)>20:
+        return jsonify({"error":"Select between 1 and 20 shifts per submission"}),400
+    seen=set()
+    for item in batch:
+        if not isinstance(item,dict) or not item.get("takeover_id") or not isinstance(item.get("sales",[]),list):
+            return jsonify({"error":"Each batch item must contain a takeover_id and sales array"}),400
+        takeover_id=str(item.get("takeover_id"))
+        if takeover_id in seen:
+            return jsonify({"error":"A shift was selected more than once"}),400
+        seen.add(takeover_id)
+    status,result=rpc("record_shift_takeover_sales_batch",{
+        "p_employee_id":session["employee_id"],
+        "p_batch":batch
+    })
+    if status>=400:return jsonify(result),status
+    return jsonify(result),200
+
+
 @app.post("/api/shift-takeovers/<takeover_id>/record-sale")
 def record_shift_takeover_sale(takeover_id):
     auth=require_login()
@@ -5484,14 +5510,12 @@ def _drive_enqueue(kind, report_key):
     return st < 400
 
 def _msr_ready(month_start):
-    """True only after the calendar month has ended and every shift started in it
-    has ended and every date with shifts has a confirmed DSR. Empty days are skipped."""
+    """True only after the month has ended and all its shifts and required DSRs are complete."""
     first = month_start.replace(day=1)
     next_first = (first.replace(day=28) + timedelta(days=4)).replace(day=1)
     last = next_first - timedelta(days=1)
 
-    # Never publish a provisional MSR. Wait until Addis Ababa has moved into
-    # the next calendar month, not merely until yesterday's DSR is confirmed.
+    # Do not enqueue an MSR while its month is still in progress (Addis Ababa time).
     if _addis_today() <= last:
         return False
 
@@ -5502,7 +5526,7 @@ def _msr_ready(month_start):
         return False
     confirmed = {str(r.get("report_date")) for r in (conf or [])}
 
-    # Convert Addis Ababa month boundaries to UTC for the shift query.
+    # Shift timestamps are stored in UTC; report dates use Addis Ababa time (UTC+3).
     start_utc = datetime(first.year, first.month, first.day, tzinfo=timezone.utc) - timedelta(hours=3)
     end_utc = datetime(next_first.year, next_first.month, next_first.day, tzinfo=timezone.utc) - timedelta(hours=3)
     ss, shifts = sb("shifts", params={
@@ -5513,8 +5537,8 @@ def _msr_ready(month_start):
 
     days_with_shifts = set()
     for r in (shifts or []):
-        # An MSR must wait for every shift that started in the month to end,
-        # even if that shift crossed midnight into the following month.
+        # Every shift that began in this month must have ended, including shifts
+        # that cross midnight into the following month.
         if not r.get("end_time"):
             return False
         try:
@@ -5532,14 +5556,12 @@ def _msr_ready(month_start):
     return True
 
 def _drive_after_dsr_confirm(report_day):
-    """Queue the DSR and check the just-finished and previous month for MSR eligibility."""
+    """Queue the DSR and check this and the previous month for MSR eligibility."""
     try:
         _drive_enqueue("dsr", report_day.isoformat())
 
-        # The final DSR may be confirmed before the calendar month ends. Check
-        # again when a DSR in the following month is confirmed, so the previous
-        # month's MSR can be queued only after the month is closed and all its
-        # DSRs/shifts are complete.
+        # Recheck the previous month when a DSR is confirmed in the new month,
+        # because the prior month's MSR may only then become eligible.
         this_month = report_day.replace(day=1)
         previous_month = this_month - timedelta(days=1)
         candidates = (this_month, previous_month.replace(day=1))
@@ -5551,6 +5573,7 @@ def _drive_after_dsr_confirm(report_day):
             seen.add(month_key)
             if _msr_ready(month_start):
                 _drive_enqueue("msr", month_key)
+
     except Exception:
         app.logger.exception("drive enqueue failed")
 
