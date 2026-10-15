@@ -518,7 +518,7 @@ async function userDashboard(){
     const me=await currentUser();
     if(me.role!=='attendant')return location.href='attendant-login.html';
     document.getElementById('name').textContent=me.name;
-    const [shifts,nozzles,products,tanks,handovers,employees,takeovers,saleTypes,deactivationRequests,stationSettings]=await Promise.all([
+    let [shifts,nozzles,products,tanks,handovers,employees,takeovers,saleTypes,deactivationRequests,stationSettings]=await Promise.all([
       api('/api/shifts').catch(()=>[]),
       api('/api/nozzles').catch(()=>[]),
       api('/api/products').catch(()=>[]),
