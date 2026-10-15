@@ -1281,14 +1281,16 @@ window.downloadPurchaseDetailPdf=async function(options){
       const result=await response.json().catch(()=>({}));
       if(!response.ok||!result.ok)throw new Error(result.error||('HTTP '+response.status));
       if(typeof window.toast==='function')window.toast('Purchase PDF saved to Google Drive: '+(result.path||fileName));
+      return true;
     }catch(uploadError){
       if(typeof window.toast==='function')window.toast((options.uploadOnly?'Purchase PDF could not be saved to Drive: ':'PDF downloaded, but Drive storage failed: ')+(uploadError.message||'unknown error'));
+      if(options.uploadOnly)return false;
     }
-  }catch(e){fail(e.message||'Unable to create the PDF.');}
+  }catch(e){fail(e.message||'Unable to create the PDF.');if(options.uploadOnly)return false;}
   finally{if(btn){btn.disabled=false;btn.textContent='Download PDF';}}
 };
 window.uploadPurchaseDetailPdf=async function(purchase){
-  if(!purchase){if(typeof window.toast==='function')window.toast('Purchase saved, but its PDF record could not be located for Drive storage.');return;}
+  if(!purchase){if(typeof window.toast==='function')window.toast('Purchase PDF could not be located for Drive storage.');return false;}
   window.currentPurchaseDetailData=purchase;
   window.currentPurchaseDetailTanks=window.currentPurchaseDetailTanks||[];
   return window.downloadPurchaseDetailPdf({uploadOnly:true});
@@ -1725,6 +1727,45 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     }
     return '<article class="purchase-card purchase-history-full-card tank-stock-history-alert-card"><div class="purchase-history-full-head"><div><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(p.invoice_number?('Invoice #'+p.invoice_number):'Purchase — No Invoice')+'</strong></div><small>'+purchaseH(productCode)+' · '+purchaseH(datePurchase)+'</small></div><span class="purchase-history-full-badge">⚠️ DISCHARGED</span></div><div class="purchase-history-full-main"><div><span>Delivered quantity</span><strong>'+purchaseH(purchaseLiters(total))+' L</strong></div><div><span>Invoice</span><strong>'+purchaseH(p.invoice_number||'—')+'</strong></div><div><span>Truck / trailer plate</span><strong>'+purchaseH(plateDisplay)+'</strong></div><div><span>Fully discharged</span><strong>'+purchaseH(p.discharged_at?new Date(p.discharged_at).toLocaleString():'—')+'</strong></div></div><div class="purchase-history-card-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button><button type="button" class="primary tank-stock-alert" onclick="openTankStockCard(this.dataset.id)" data-id="'+purchaseH(p.id)+'">⚠ Tank Stock</button></div></article>';
   };
+  // Automatically upload purchase PDFs only after full discharge and recorded closing stock
+  // for every discharge operation. Retries reuse the stable filename and overwrite the same Drive file.
+  const purchaseDriveSignature=p=>{
+    const history=Array.isArray(p?.discharge_history)?p.discharge_history:[];
+    return JSON.stringify({
+      status:p?.status, discharged_at:p?.discharged_at,
+      purchase_remark:p?.purchase_remark||p?.purchase_remark_note||p?.remark||'',
+      history:history.map(e=>({
+        tank_id:e?.tank_id, discharge_datetime:e?.discharge_datetime,
+        discharged_quantity_liters:e?.discharged_quantity_liters,
+        tank_stock_recorded:e?.tank_stock_recorded,
+        tank_stock_recorded_liters:e?.tank_stock_recorded_liters,
+        tank_stock_difference_liters:e?.tank_stock_difference_liters,
+        tank_stock_remark:e?.tank_stock_remark||''
+      }))
+    });
+  };
+  const purchaseDriveUploadInFlight=new Set();
+  async function uploadCompletedPurchaseRecords(purchases){
+    for(const p of (Array.isArray(purchases)?purchases:[])){
+      const history=Array.isArray(p?.discharge_history)?p.discharge_history:[];
+      if(String(p?.status||'').toLowerCase()!=='discharged'||!history.length||!history.every(e=>e?.tank_stock_recorded===true))continue;
+      const signature=purchaseDriveSignature(p);
+      const marker='fuel-shift-drive-purchase:'+String(p.id);
+      try{if(localStorage.getItem(marker)===signature)continue;}catch(_){}
+      const id=String(p.id);
+      if(purchaseDriveUploadInFlight.has(id))continue;
+      purchaseDriveUploadInFlight.add(id);
+      try{
+        const uploaded=await window.uploadPurchaseDetailPdf(p);
+        if(uploaded===false)throw new Error('Purchase PDF upload failed; it will be retried.');
+        try{localStorage.setItem(marker,signature);}catch(_){}
+      }catch(_){
+        // A failed upload stays eligible and will be retried on the next purchase refresh.
+      }finally{
+        purchaseDriveUploadInFlight.delete(id);
+      }
+    }
+  }
   window.loadPurchases=async function(){
     try{
       setStatus('Loading purchases…',false);
@@ -1750,6 +1791,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
           list.innerHTML=renderHistoryGroup(unrecordedHistory,'⚠ Tank Stock Not Recorded','unrecorded')+renderHistoryGroup(recordedHistory,'Purchase History','recorded');
         }
       }
+      uploadCompletedPurchaseRecords(historyWithPartial);
       const purchaseHash=String(location.hash||'');
       if(purchaseHash.startsWith('#purchase-')){
         const targetPurchaseId=decodeURIComponent(purchaseHash.slice('#purchase-'.length));
@@ -2220,12 +2262,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       const container=document.getElementById('purchase-compartment-liters');if(container)container.innerHTML='';
       closePurchaseModal();
       await loadPurchases();
-      const savedPurchase=purchaseDetailData?.find(function(item){return String(item.invoice_number||'').trim()===String(invoice).trim();});
-      if(savedPurchase&&typeof window.uploadPurchaseDetailPdf==='function'){
-        try{await window.uploadPurchaseDetailPdf(savedPurchase);}catch(pdfError){if(typeof window.toast==='function')window.toast('Purchase was recorded, but automatic PDF storage failed: '+(pdfError.message||'unknown error'));}
-      }else if(typeof window.toast==='function'){
-        window.toast('Purchase was recorded. Open its details and download PDF to store it in Drive.');
-      }
+      // Purchase PDFs upload automatically only after full discharge and all tank stocks are recorded.
       openPurchaseSuccess('purchase',summary);
     }catch(e){
       const message=e.message||'Failed to confirm purchase.';
