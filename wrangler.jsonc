@@ -6,6 +6,8 @@
   "compatibility_flags": ["python_workers"],
   "vars": {
     "GOOGLE_OAUTH_CLIENT_ID": "890175678596-j6li5ku5eebdslcbkl5umtpk5t86g6bh.apps.googleusercontent.com",
+    "GOOGLE_SERVICE_ACCOUNT_EMAIL": "fuel-shift-drive-uploader@fuel-shift-drive.iam.gserviceaccount.com",
+    "GOOGLE_SERVICE_ACCOUNT_PROJECT_ID": "fuel-shift-drive",
     "SUPABASE_URL": "https://sdhnqtnlogmuealsgkhr.supabase.co"
   },
   "assets": {
