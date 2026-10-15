@@ -119,7 +119,7 @@ END;
 $function$;
 
 
--- Update the active confirmation RPC (the return-aware v2 function used by
+-- Update the active legacy confirmation RPC called by the return-aware v2 function
 -- the worker) so a zero-entry pending record can be confirmed only when the
 -- shift's calculated net sales amount is zero.
 DO $migration$
@@ -136,7 +136,7 @@ BEGIN
   v_definition := regexp_replace(v_definition, v_pattern, v_replacement, 'gi');
 
   IF v_definition = v_original
-     OR position('v_count=0 AND greatest(0,round(coalesce(v_t.total_sales_amount,0)-coalesce(v_t.returned_amount,0),2)) > 0' IN v_definition) = 0 THEN
+     OR position('v_count=0 AND (coalesce(v_t.total_sales_amount,0) > 0 OR coalesce(v_t.total_sales_liters,0) > 0)' IN v_definition) = 0 THEN
     RAISE EXCEPTION 'Could not update the return-aware confirmation RPC sale-count guard; no changes applied';
   END IF;
 
