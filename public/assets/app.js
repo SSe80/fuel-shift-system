@@ -2583,7 +2583,8 @@ function createPdfDoc(){
   const line=(x1,t1,x2,t2,color,wd,dash)=>cmd((dash?'['+dash+'] 0 d ':'')+col(color)+' RG '+(wd||.6)+' w '+n2(x1)+' '+Y(t1)+' m '+n2(x2)+' '+Y(t2)+' l S'+(dash?' [] 0 d':'')+'\n');
   const poly=(pts,color)=>cmd(col(color)+' rg '+pts.map((p,i)=>n2(p[0])+' '+Y(p[1])+(i?' l':' m')).join(' ')+' h f\n');
   Object.assign(d,{clean,tw,fit,wrap,box,outline,hline,line,text,poly});
-  d.singlePage=false;
+  d.singlePage=false;d.anchorY=0;d.contentStart=0;
+  d.markContent=(anchor)=>{d.anchorY=anchor;d.contentStart=pages[pages.length-1].length;};
   d.newPage=()=>{if(d.singlePage)return;pages.push([]);d.y=d.topY;};
   d.ensure=h=>{if(!d.singlePage&&d.y+h>BOTTOM)d.newPage();};
   d.section=(title,x,t)=>{box(x,t,3,13.4,C.BLUE);text(clean(title).toUpperCase(),x+10,t+10.2,10.5,true,C.NAVY);};
@@ -2679,10 +2680,11 @@ function createPdfDoc(){
   d.pageCount=()=>pages.length;
   d.finish=(footerLeft,title)=>{
     if(d.singlePage){
-      const s=Math.min(1,(BOTTOM-2)/Math.max(1,d.y));
+      const an=d.anchorY||0;
+      const s=Math.min(1,(BOTTOM-2-an)/Math.max(1,d.y-an));
       if(s<1){
-        const tx=W*(1-s)/2,ty=H*(1-s);
-        pages[0].unshift('q '+n2(s)+' 0 0 '+n2(s)+' '+n2(tx)+' '+n2(ty)+' cm\n');
+        const tx=W*(1-s)/2,ty=(H-an)*(1-s);
+        pages[0].splice(d.contentStart||0,0,'q '+n2(s)+' 0 0 '+n2(s)+' '+n2(tx)+' '+n2(ty)+' cm\n');
         pages[0].push('Q\n');
       }
     }
@@ -2738,6 +2740,61 @@ function createSalesReportPdf(r){
 }
 
 /* ---------- PURCHASE REPORT ---------- */
+function createPurchaseDetailPdfV2(r){
+  const d=createPdfDoc(),M=d.M,C=d.C,CW=d.CW;
+  d.singlePage=true;
+  d.header({kicker:'PURCHASE HISTORY  \u00b7  PURCHASE DETAIL',title:r.title,subtitle:r.subtitle,subSize:10,h:90,kBase:30,tBase:56,sBase:74,pillTop:33.5,pillBase:50.5,status:r.statusLabel});
+  d.markContent(90);
+  d.y=108;
+  // Quantities
+  d.section('Quantities',M,d.y);d.y+=24;
+  d.y+=d.cards(r.quantities,{top:d.y,perRow:4,h:56,labelSize:7.5,labelBase:17,valBase:39,valSize:14})+8;
+  d.text(d.fit(r.summaryLine,8.5,false,CW),M,d.y+8,8.5,false,C.GRAY);
+  d.y+=20;
+  // Order and truck & driver, side by side
+  const half=(CW-14)/2,RX=M+half+14;
+  d.section('Order',M,d.y);d.section('Truck & driver',RX,d.y);d.y+=24;
+  const top=d.y;
+  const lrow=(x,y,label,value)=>{d.text(d.clean(label),x,y+11,8,false,C.GRAY);d.text(d.fit(String(value),9,true,half-10),x+half,y+11,9,true,C.INK,'r');d.hline(x,x+half,y+17,C.LINE,.4);};
+  r.order.forEach((row,i)=>lrow(M,top+i*20,row.label,row.value));
+  r.truck.forEach((row,i)=>lrow(RX,top+i*20,row.label,row.value));
+  d.y=top+Math.max(r.order.length,r.truck.length)*20+12;
+  // Compartments: each card shows its quantity and whether it was discharged
+  d.section('Compartments',M,d.y);d.y+=24;
+  const per=4,gap=8,cw=(CW-gap*(per-1))/per,ch=50;
+  r.compartments.forEach((c,i)=>{const col=i%per,row=Math.floor(i/per);const x=M+col*(cw+gap),y=d.y+row*(ch+gap);
+    d.box(x,y,cw,ch,c.discharged?[240,253,244]:C.CARD,5);
+    d.text(d.clean(c.label).toUpperCase(),x+10,y+16,7,false,C.GRAY);
+    d.text(c.discharged?'DISCHARGED':'UNDISCHARGED',x+cw-10,y+16,6,true,c.discharged?C.GREEN:C.AMBER,'r');
+    d.text(d.fit(c.value,12,true,cw-20),x+10,y+37,12,true,C.INK);});
+  d.y+=Math.ceil(r.compartments.length/per)*(ch+gap)+12;
+  // Discharge history: one card per discharge, with every field the detail card shows
+  d.section('Discharge history',M,d.y);d.y+=24;
+  if(!r.events.length){d.box(M,d.y,CW,34,C.CARD,5);d.text('No discharge operations recorded.',M+14,d.y+21,9,'i',C.GRAY);d.y+=46;}
+  r.events.forEach((e,i)=>{
+    const h=84;
+    d.box(M,d.y,CW,h,[255,255,255],6);d.outline(M,d.y,CW,h,6);
+    const label='DISCHARGE '+(i+1);
+    d.text(label,M+12,d.y+19,7.5,true,C.BLUE);
+    d.text(d.fit(e.tank,10,true,CW-200),M+12+d.tw(label,7.5,true)+10,d.y+19,10,true,C.INK);
+    const pw=d.tw(e.status,6.8,true)+18;
+    d.box(M+CW-12-pw,d.y+8,pw,17,e.statusTone.bg,8.5);
+    d.text(e.status,M+CW-12-pw/2,d.y+19.5,6.8,true,e.statusTone.fg,'c');
+    const gw=(CW-24)/4;
+    e.fields.forEach((f,k)=>{const row=Math.floor(k/4),col=k%4;const x=M+12+col*gw,y=d.y+32+row*25;
+      d.text(d.clean(f.label).toUpperCase(),x,y+8,6.3,false,C.GRAY);
+      d.text(d.fit(f.value,8.5,true,gw-10),x,y+20,8.5,true,f.tone||C.INK);});
+    d.y+=h+8;});
+  d.y+=4;
+  // Remark
+  d.section('Purchase remark',M,d.y);d.y+=24;
+  const rl=d.wrap(r.remark,9,false,CW-28),bh=Math.max(34,rl.length*12.5+20);
+  d.box(M,d.y,CW,bh,C.CARD,5);
+  rl.forEach((s,i)=>d.text(s,M+14,d.y+19+i*12.5,9,r.remarkEmpty?'i':false,r.remarkEmpty?C.GRAY:C.INK));
+  d.y+=bh;
+  return d.finish(r.footer,'Purchase Detail - '+r.title);
+}
+
 function createPurchaseReportPdf(r){
   const d=createPdfDoc(),M=d.M,C=d.C;
   d.header({kicker:'PURCHASE HISTORY  \u00b7  PURCHASE DETAIL',title:r.title,subtitle:r.subtitle,subSize:10,h:90,kBase:30,tBase:56,sBase:74,pillTop:33.5,pillBase:50.5,status:r.statusLabel});
@@ -3335,63 +3392,89 @@ function downloadPurchaseDetailPdf(){
   const id=window.currentPurchaseDetailId;
   const p=window.currentPurchaseDetailData||((typeof purchaseDetailData!=='undefined'&&Array.isArray(purchaseDetailData)?purchaseDetailData:[]).find(x=>String(x.id)===String(id)));
   if(!p){toast('Purchase details are not available. Please reopen the detail card and try again.');return;}
+  const C={NAVY:[15,23,42],BLUE:[37,99,235],INK:[16,24,40],GRAY:[102,112,133],LINE:[228,231,236],CARD:[249,250,251],GREEN:[21,128,61],AMBER:[180,83,9],RED:[185,28,28]};
   const history=Array.isArray(p.discharge_history)?p.discharge_history:[],compartments=Array.isArray(p.compartment_liters)?p.compartment_liters:[];
   const firstNum=(...a)=>{for(const v of a){if(v!=null&&v!==''&&Number.isFinite(Number(v)))return Number(v);}return null;};
   const fmtL=v=>v==null?'—':Number(v).toLocaleString('en-US',{maximumFractionDigits:2})+' L';
+  const signedL=v=>v==null?'—':(v>0?'+':'')+fmtL(v);
   const fmtDate=v=>{if(!v)return '—';const t=new Date(v);return Number.isNaN(t.getTime())?'—':t.toLocaleString('en-US');};
-  const utcStamp=v=>{const t=new Date(v);return(!v||Number.isNaN(t.getTime()))?'—':t.toISOString().slice(0,19).replace('T','  ');};
   const isId=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(String(v||''));
   const ordered=firstNum(p.ordered_quantity_liters,p.quantity_liters)||0;
   const delivered=firstNum(p.delivered_quantity_liters,p.quantity_liters,p.ordered_quantity_liters)||0;
-  const discharged=firstNum(p.discharged_quantity_liters)||0,remaining=Math.max(0,delivered-discharged);
+  const discharged=firstNum(p.discharged_quantity_liters)||0;
+  const remaining=Math.max(0,delivered-discharged);
+  const difference=delivered-ordered;
   const productName=p.product||p.product_name||p.product_code||'—';
-  const rawStatus=String(p.status||'recorded').replace(/_/g,' '),statusLabel=rawStatus.charAt(0).toUpperCase()+rawStatus.slice(1);
+  const rawStatus=String(p.status||'recorded').replace(/_/g,' ');
+  const statusLabel=rawStatus.charAt(0).toUpperCase()+rawStatus.slice(1);
   const invoice=String(p.invoice_number||'—');
-  const displayPlate=(()=>{const plate=String(p.plate_number||p.plate||p.truck_plate||'').trim();const trailer=String(p.trailer_plate||p.trailerPlate||'').trim();if(!plate)return '—';const parts=plate.split('/').map(x=>x.trim());return trailer&&!parts.includes(trailer)?plate+' / '+trailer:plate;})();
+  const plate=String(p.plate_number||p.plate||p.truck_plate||'').trim();
+  const trailer=String(p.trailer_plate||p.trailerPlate||'').trim();
+  const displayPlate=!plate?'—':(trailer&&!plate.split('/').map(x=>x.trim()).includes(trailer)?plate+' / '+trailer:plate);
   const purchaseDate=fmtDate(p.purchase_date||p.created_at);
-  const entries=history.map(e=>{
-    const qty=firstNum(e.quantity_liters,e.discharged_quantity_liters)||0;
-    const before=firstNum(e.physical_tank_liters_before,e.system_liters_before,e.tank_liters_before,e.stock_before_liters);
-    const expected=firstNum(e.expected_closing_liters,e.expected_liters,e.system_liters_before!=null?Number(e.system_liters_before)+qty:null);
-    const recorded=firstNum(e.recorded_closing_liters,e.tank_liters_after,e.closing_liters,before!=null?before+qty:null);
-    const who=[e.shift_attendant_name,e.attendant_name,e.discharged_by_name,e.discharged_by].find(v=>v&&!isId(v))||'—';
-    return{qty,before,expected,recorded,who,status:e.tank_stock_status||'—',tank:e.tank_code||e.tank_id||'—',when:e.discharge_datetime||e.discharged_at||e.created_at};
-  });
-  const dischargeRows=entries.length?entries.map((e,i)=>[String(i+1),utcStamp(e.when),e.tank,fmtL(e.qty),fmtL(e.before),fmtL(e.expected),fmtL(e.recorded)])
-    :[['—','No discharge operations recorded','—','—','—','—','—']];
-  // Explanatory lines, built only from what the data actually shows.
-  const noteParts=[];
-  if(ordered>0&&Math.abs(delivered-ordered)>=0.005)noteParts.push('Delivered '+(delivered>ordered?'exceeds':'is below')+' ordered by '+fmtL(Math.abs(delivered-ordered))+'.');
-  const tankSet=[...new Set(entries.map(e=>e.tank).filter(x=>x!=='—'))];
-  if(entries.length>1)noteParts.push('Total discharged across '+(tankSet.length===2?'both':tankSet.length)+' tank'+(tankSet.length===1?'':'s')+': '+entries.map(e=>fmtL(e.qty)).join(' + ')+' = '+fmtL(entries.reduce((s,e)=>s+e.qty,0))+'.');
-  const every=entries.length>1?(entries.length===2?' (both discharges)':' (all discharges)'):'';
-  const uniq=a=>[...new Set(a)].join(', ');
-  const info=entries.length?['Shift attendant(s): '+uniq(entries.map(e=>e.who))+every,'Stock status: '+uniq(entries.map(e=>e.status))+every]:null;
-  const allKnown=entries.length&&entries.every(e=>e.before!=null&&e.expected!=null&&e.recorded!=null);
-  const dischargeNote=(allKnown&&entries.every(e=>Math.abs(e.expected)<0.005&&Math.abs(e.recorded-(e.before+e.qty))<0.01))
-    ?'Note: Expected closing is recorded as 0 L for '+(entries.length===1?'this discharge':entries.length===2?'both discharges':'all discharges')+', while recorded closing equals stock before + quantity.':null;
-  const compSum=compartments.reduce((s,q)=>s+(Number(q)||0),0);
-  const compCards=compartments.map((q,i)=>({label:'Compartment '+(i+1),value:fmtL(Number(q)||0),style:'outline'}));
-  compCards.push({label:'Total',value:fmtL(compartments.length?compSum:delivered),style:'dark'});
+  const fullyAt=p.discharged_at?fmtDate(p.discharged_at):'Not yet';
+  // Compartments: which ones have been discharged
+  const dischargedSet=new Set();
+  history.forEach(e=>(Array.isArray(e.compartment_indexes)?e.compartment_indexes:[]).forEach(x=>dischargedSet.add(Number(x))));
+  const compOut=compartments.map((q,i)=>({label:'Comp. '+(i+1),value:fmtL(Number(q)||0),discharged:dischargedSet.has(i+1)}));
+  // Discharge history: the same fields the detail card shows
+  const events=history.map(e=>{
+    const qty=firstNum(e.discharged_quantity_liters,e.quantity_liters)||0;
+    const before=firstNum(e.physical_tank_liters_before,e.tank_liters_before);
+    const expected=firstNum(e.tank_liters_after,before!=null?before+qty:null);
+    const recorded=firstNum(e.tank_stock_recorded_liters);
+    const savedDiff=firstNum(e.tank_stock_difference_liters);
+    const diff=savedDiff!=null?savedDiff:(recorded!=null&&expected!=null?recorded-expected:null);
+    const tol=Math.max(5,qty*0.01);
+    const isRecorded=e.tank_stock_recorded===true;
+    const high=diff!=null&&Math.abs(diff)>tol;
+    const statusText=!isRecorded?'NOT RECORDED':high?'DIFFERENCE HIGH':'RECONCILED';
+    const statusTone=!isRecorded?{bg:[241,243,246],fg:C.GRAY}:high?{bg:[254,226,226],fg:C.RED}:{bg:[220,252,231],fg:C.GREEN};
+    const who=[e.shift_attendant_name,e.attendant_name,e.discharged_by_name,e.discharged_by].find(v=>v&&!isId(v))||'Not identified';
+    const comps=Array.isArray(e.compartment_indexes)&&e.compartment_indexes.length?e.compartment_indexes.map(x=>'C'+x).join(', '):'—';
+    return{
+      tank:String(e.tank_code||e.tank_id||'Tank'),
+      status:statusText,statusTone,
+      fields:[
+        {label:'Date & time',value:fmtDate(e.discharge_datetime)},
+        {label:'Discharged by',value:who},
+        {label:'Compartments',value:comps},
+        {label:'Quantity',value:fmtL(qty)},
+        {label:'Stock before',value:before!=null?fmtL(before):'—'},
+        {label:'Expected closing',value:expected!=null?fmtL(expected):'—'},
+        {label:'Recorded closing',value:recorded!=null?fmtL(recorded):'Not recorded',tone:isRecorded?undefined:C.AMBER},
+        {label:'Stock difference',value:signedL(diff),tone:high?C.RED:undefined}
+      ]};});
   const remarkText=String(p.remark||p.purchase_remark||'').trim();
-  const blob=createPurchaseReportPdf({
+  const summaryLine='Difference (delivered - ordered): '+signedL(difference)+'     ·     Fully discharged at: '+fullyAt+'     ·     Status: '+statusLabel;
+  const blob=createPurchaseDetailPdfV2({
     title:'Invoice #'+invoice,
-    subtitle:'Product: '+productName+'   \u00b7   Purchased '+purchaseDate,
+    subtitle:'Product: '+productName+'   ·   Purchased '+purchaseDate,
     statusLabel:statusLabel,
     quantities:[
-      {label:'Ordered',value:fmtL(ordered)},{label:'Delivered',value:fmtL(delivered)},
+      {label:'Ordered',value:fmtL(ordered)},
+      {label:'Delivered',value:fmtL(delivered)},
       {label:'Discharged',value:fmtL(discharged),tone:(discharged>0&&remaining<0.005)?'good':undefined},
       {label:'Undischarged',value:fmtL(remaining),tone:remaining>=0.005?'warn':undefined}
     ],
-    note:noteParts.join(' '),
-    order:[{label:'Invoice number',value:invoice},{label:'Purchase date',value:purchaseDate},{label:'Product',value:productName},{label:'Status',value:statusLabel}],
-    truck:[{label:'Driver',value:p.driver_name||'—'},{label:'Driver phone',value:p.driver_phone||'—'},{label:'Plate number',value:displayPlate},{label:'Compartments',value:String(p.truck_compartments||compartments.length||'—')}],
-    compartments:compCards,
-    dischargeRows:dischargeRows,
-    info:info,
-    dischargeNote:dischargeNote,
+    summaryLine:summaryLine,
+    order:[
+      {label:'Product',value:productName},
+      {label:'Invoice number',value:invoice},
+      {label:'Purchase date',value:purchaseDate},
+      {label:'Ordered quantity',value:fmtL(ordered)},
+      {label:'Difference',value:signedL(difference)}
+    ],
+    truck:[
+      {label:'Driver name',value:p.driver_name||'—'},
+      {label:'Driver phone',value:p.driver_phone||'—'},
+      {label:'Plate number',value:displayPlate},
+      {label:'Compartments',value:String(p.truck_compartments||compartments.length||'—')}
+    ],
+    compartments:compOut,
+    events:events,
     remark:remarkText||'No purchase remark recorded.',remarkEmpty:!remarkText,
-    footer:'Invoice '+invoice+'  \u00b7  '+productName+'  \u00b7  Purchase detail'
+    footer:'Invoice '+invoice+'  ·  '+productName+'  ·  Purchase detail'
   });
   const url=URL.createObjectURL(blob),link=document.createElement('a');
   link.href=url;link.download='purchase-'+invoice.replace(/[^A-Za-z0-9_-]/g,'_')+'-report.pdf';
