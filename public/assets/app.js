@@ -518,7 +518,7 @@ async function userDashboard(){
     const me=await currentUser();
     if(me.role!=='attendant')return location.href='attendant-login.html';
     document.getElementById('name').textContent=me.name;
-    const [shifts,nozzles,products,tanks,handovers,employees,takeovers,saleTypes,deactivationRequests]=await Promise.all([
+    const [shifts,nozzles,products,tanks,handovers,employees,takeovers,saleTypes,deactivationRequests,stationSettings]=await Promise.all([
       api('/api/shifts').catch(()=>[]),
       api('/api/nozzles').catch(()=>[]),
       api('/api/products').catch(()=>[]),
@@ -527,8 +527,12 @@ async function userDashboard(){
       api('/api/users').catch(()=>[]),
       api('/api/shift-takeovers').catch(()=>[]),
       api('/api/sale-types').catch(()=>[]),
-      api('/api/dispenser-deactivation-requests').catch(()=>[])
+      api('/api/dispenser-deactivation-requests').catch(()=>[]),
+      api('/api/settings').catch(()=>({}))
     ]);
+    // Use the same saved ordering as Admin Settings > Sales, including drag-and-drop order.
+    const savedSaleOrder=stationSettings?.item_orders||{};
+    if(typeof applySavedSettingsOrder==='function')saleTypes=applySavedSettingsOrder(saleTypes,'saleTypes',savedSaleOrder);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
     const tankNames=Object.fromEntries(tanks.map(t=>[t.id,t.tank_code]));
