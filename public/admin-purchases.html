@@ -1784,6 +1784,42 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       }
     }
   }
+
+  let purchaseServerRetryInFlight=false;
+  async function retryServerPurchaseExports(purchases){
+    if(purchaseServerRetryInFlight||document.hidden)return;
+    const eligible=(Array.isArray(purchases)?purchases:[]).filter(p=>{
+      const history=Array.isArray(p?.discharge_history)?p.discharge_history:[];
+      return String(p?.status||'').toLowerCase()==='discharged'&&history.length>0&&history.every(e=>e?.tank_stock_recorded===true);
+    });
+    if(!eligible.length)return;
+    const needsRetry=eligible.some(p=>{
+      try{return localStorage.getItem('fuel-shift-drive-purchase:'+String(p.id))!==purchaseDriveSignature(p);}catch(_){return true;}
+    });
+    if(!needsRetry)return;
+    purchaseServerRetryInFlight=true;
+    try{
+      const response=await fetch('/api/drive/purchases/retry',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Fuel-Role':'admin'},body:'{}'});
+      const result=await response.json().catch(()=>({}));
+      for(const item of (Array.isArray(result.results)?result.results:[])){
+        if(item.ok){
+          const p=eligible.find(row=>String(row.invoice_number||row.id)===String(item.invoice_number));
+          if(p){try{localStorage.setItem('fuel-shift-drive-purchase:'+String(p.id),purchaseDriveSignature(p));}catch(_){}}
+        }
+      }
+      if(!response.ok||!result.ok){
+        const detail=(result.failed||[]).map(item=>'Invoice '+item.invoice_number+': '+(item.error||'upload failed')).join('; ');
+        console.error('[Purchase Drive retry] Server retry failed:',result);
+        if(typeof window.toast==='function')window.toast('Purchase PDF upload still failing: '+(detail||result.error||('HTTP '+response.status)));
+      }else if(result.uploaded>0&&typeof window.toast==='function'){
+        window.toast('Purchase PDFs saved to Google Drive ('+result.uploaded+').');
+      }
+    }catch(error){
+      console.error('[Purchase Drive retry] Request failed:',error);
+      if(typeof window.toast==='function')window.toast('Could not retry purchase PDFs: '+(error.message||'connection error'));
+    }finally{purchaseServerRetryInFlight=false;}
+  }
+
   window.loadPurchases=async function(){
     try{
       setStatus('Loading purchases…',false);
@@ -1809,7 +1845,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
           list.innerHTML=renderHistoryGroup(unrecordedHistory,'⚠ Tank Stock Not Recorded','unrecorded')+renderHistoryGroup(recordedHistory,'Purchase History','recorded');
         }
       }
-      uploadCompletedPurchaseRecords(historyWithPartial);
+      await retryServerPurchaseExports(historyWithPartial);
       const purchaseHash=String(location.hash||'');
       if(purchaseHash.startsWith('#purchase-')){
         const targetPurchaseId=decodeURIComponent(purchaseHash.slice('#purchase-'.length));
