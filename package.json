@@ -1,0 +1,8 @@
+{
+  "name": "fuel-shift-system",
+  "private": true,
+  "version": "2.0.0",
+  "scripts": {
+    "build": "node -e \"console.log('No compilation required; serve the static application from public/')\""
+  }
+}

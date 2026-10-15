@@ -1272,7 +1272,9 @@ window.downloadPurchaseDetailPdf=async function(options){
     const safe=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50);
     const fileName='purchase_'+safe+'.pdf';
     const pdfBlob=doc.output('blob');
-    if(!options.uploadOnly)doc.save(fileName);
+    // Only a deliberate user click may trigger a browser download. The background
+    // Drive uploader passes uploadOnly:true and must never invoke doc.save().
+    if(options.uploadOnly!==true)doc.save(fileName);
     // Store the generated purchase PDF in the configured Google Drive folder.
     try{
       const bytes=new Uint8Array(await pdfBlob.arrayBuffer());
@@ -1759,8 +1761,13 @@ window.uploadPurchaseDetailPdf=async function(purchase){
         const uploaded=await window.uploadPurchaseDetailPdf(p);
         if(uploaded===false)throw new Error('Purchase PDF upload failed; it will be retried.');
         try{localStorage.setItem(marker,signature);}catch(_){}
-      }catch(_){
-        // A failed upload stays eligible and will be retried on the next purchase refresh.
+      }catch(uploadError){
+        // Automatic Drive uploads must never fall back to downloading a file.
+        // Keep the record eligible for retry and expose the real failure for diagnosis.
+        console.error('[Purchase Drive upload] Failed for purchase '+id+':',uploadError);
+        if(typeof window.toast==='function'){
+          window.toast('Google Drive upload failed for purchase '+String(p.invoice_number||p.id)+'. It will retry on the next refresh.');
+        }
       }finally{
         purchaseDriveUploadInFlight.delete(id);
       }
