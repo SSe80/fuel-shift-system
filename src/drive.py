@@ -83,7 +83,15 @@ def _pem_to_der(pem):
             pass
     if len(pem) >= 2 and pem[0] == pem[-1] and pem[0] in ("'", '"'):
         pem = pem[1:-1]
-    pem = pem.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\r", "")
+    # Normalize both single-escaped (\\n) and double-escaped (\\\\n)
+    # line breaks, which can happen when a JSON value is copied through a UI.
+    for _ in range(3):
+        pem = pem.replace("\\\\r\\\\n", "\n").replace("\\\\n", "\n")
+    pem = pem.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\r", "")
+    # Remove a stray escape slash left behind by double-escaped line breaks.
+    pem = re.sub(r"\\\\(?=\n)", "", pem)
+    # Some secret editors preserve JSON-style escaped slashes or quote wrappers.
+    pem = pem.replace("\\/", "/")
     if "-----BEGIN PRIVATE KEY-----" not in pem:
         if "-----BEGIN RSA PRIVATE KEY-----" in pem:
             raise ValueError(
@@ -95,10 +103,23 @@ def _pem_to_der(pem):
             "Set the secret to the JSON credentials' private_key value, not the whole file or its key ID."
         )
     body = re.sub(r"-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----", "", pem)
+    body = "".join(body.split())
+    # Do not silently strip arbitrary punctuation: report a safe, useful hint
+    # without ever echoing any part of the secret into logs or API responses.
+    if not body or re.search(r"[^A-Za-z0-9+/=]", body):
+        raise ValueError(
+            "The configured secret includes characters outside PEM base64. In Cloudflare, "
+            "set GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY to only the complete private_key string "
+            "from the Google service-account JSON. If pasted as one line, preserve the \\n "
+            "line-break escapes; do not include JSON field names, commas, or surrounding quotes."
+        )
     try:
-        der = base64.b64decode("".join(body.split()), validate=True)
+        der = base64.b64decode(body, validate=True)
     except Exception:
-        raise ValueError("The PEM key body is not valid base64; copy the complete private_key value.")
+        raise ValueError(
+            "The PEM key body is incomplete or invalid base64. Copy the full private_key value "
+            "from the original Google service-account JSON; do not retype or truncate it."
+        )
     if len(der) < 64 or not der.startswith(b"0"):
         raise ValueError("The decoded private key does not look like a valid PKCS#8 DER key.")
     return der
