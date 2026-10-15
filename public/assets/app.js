@@ -183,6 +183,107 @@ function showSessionRecovery(role){
 
 async function currentUser(){return (await api('/api/me')).user;}
 
+function openBatchRecordSalesModal(){
+  const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
+  if(!eligible.length){toast('No shifts are ready to record');return;}
+  window.batchRecordSalesStage='entry';
+  window.batchRecordSalesSelected=new Set(eligible.map(t=>String(t.id)));
+  const list=document.getElementById('batch-record-shift-list');
+  const payments=document.getElementById('batch-record-payment-list');
+  const status=document.getElementById('batch-record-status');
+  if(status)status.innerHTML='';
+  if(list)list.innerHTML=eligible.map(t=>{
+    const shift=(window.dashboardShiftRecords||[]).find(s=>String(s.id)===String(t.shift_id));
+    const nozzle=(window.dashboardNozzleRecords||[]).find(n=>String(n.id)===String(shift?.nozzle_id));
+    const breakdown=adminReturnedFuelBreakdown(t,Number(t.returned_liters||0));
+    return '<label class="batch-record-shift-option"><input type="checkbox" class="batch-record-shift-check" value="'+h(t.id)+'" checked><span><strong>'+h(nozzle?.nozzle_code||t.dispenser_code||'Dispenser')+'</strong><small>'+h(nozzle?.product||shift?.product||'Fuel')+' · '+h(new Date(t.shift_ended_at||t.created_at||Date.now()).toLocaleString())+'</small></span><b>'+money(breakdown.netAmount)+'</b></label>';
+  }).join('');
+  const types=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
+  if(payments)payments.innerHTML=types.map(s=>'<div class="batch-record-payment-row" data-sale-type="'+h(s.id)+'"><label>'+h(s.name)+(s.description?' <small>'+h(s.description)+'</small>':'')+'<input type="number" class="batch-record-payment-amount" data-sale-id="'+h(s.id)+'" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></label>'+(s.reason_required?'<label class="batch-record-reason-label">Reason<textarea class="batch-record-payment-reason" data-reason-id="'+h(s.id)+'" rows="2" placeholder="Required when this sales type is used"></textarea></label>':'')+'</div>').join('')||'<p class="muted">No active sales types are configured.</p>';
+  const modal=document.getElementById('batch-record-sales-modal');
+  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+  updateBatchRecordSelectionSummary();
+}
+function closeBatchRecordSalesModal(){
+  const modal=document.getElementById('batch-record-sales-modal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+function updateBatchRecordSelectionSummary(){
+  const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
+  const selected=new Set(Array.from(document.querySelectorAll('#batch-record-shift-list .batch-record-shift-check:checked')).map(x=>String(x.value)));
+  const selectedRows=eligible.filter(t=>selected.has(String(t.id)));
+  const total=selectedRows.reduce((sum,t)=>sum+adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netAmount,0);
+  const el=document.getElementById('batch-record-selected-summary');
+  if(el)el.innerHTML='<div><span>Selected shifts</span><strong>'+selectedRows.length+'</strong></div><div><span>Combined calculated sales</span><strong>'+money(total)+'</strong></div>';
+}
+function continueBatchRecordSales(){
+  const status=document.getElementById('batch-record-status');
+  const selectedIds=Array.from(document.querySelectorAll('#batch-record-shift-list .batch-record-shift-check:checked')).map(x=>String(x.value));
+  const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
+  const selected=eligible.filter(t=>selectedIds.includes(String(t.id)));
+  if(!selected.length){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Select at least one eligible shift.</div>';return;}
+  const types=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
+  const payments=[];
+  for(const type of types){
+    const row=document.querySelector('#batch-record-payment-list [data-sale-type="'+CSS.escape(String(type.id))+'"]');
+    const input=row?.querySelector('.batch-record-payment-amount');
+    const amount=Number(input?.value||0);
+    if(!Number.isFinite(amount)||amount<0){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Enter valid non-negative amounts.</div>';return;}
+    const reason=row?.querySelector('.batch-record-payment-reason')?.value.trim()||'';
+    if(amount>0&&type.reason_required&&!reason){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">A reason is required for '+h(type.name)+'.</div>';return;}
+    if(amount>0)payments.push({sale_type_id:String(type.id),name:type.name,amount:Math.round(amount*100)/100,reason});
+  }
+  const calc=t=>adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netAmount;
+  const calculated=selected.reduce((sum,t)=>sum+calc(t),0);
+  const entered=payments.reduce((sum,p)=>sum+p.amount,0);
+  const positive=selected.filter(t=>calc(t)>0);
+  const totalPositive=positive.reduce((sum,t)=>sum+calc(t),0);
+  if(totalPositive===0&&entered>0){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Selected shifts have zero calculated sales; payment amounts must be zero.</div>';return;}
+  if(totalPositive>0&&entered===0){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Enter the combined sales amounts before continuing.</div>';return;}
+  window.pendingBatchRecordSales={selected,payments,calculated,entered};
+  const preview=document.getElementById('batch-record-review');
+  const entry=document.getElementById('batch-record-entry');
+  const review=document.getElementById('batch-record-review-content');
+  const allocations=selected.map(t=>({takeover:t,share:totalPositive>0?calc(t)/totalPositive:0,sales:[]}));
+  for(const p of payments){
+    let allocated=0;
+    const recipients=allocations.filter(a=>a.share>0);
+    recipients.forEach((a,i)=>{
+      const amount=i===recipients.length-1?Math.round((p.amount-allocated)*100)/100:Math.round(p.amount*a.share*100)/100;
+      allocated=Math.round((allocated+amount)*100)/100;
+      if(amount>0)a.sales.push({sale_type_id:p.sale_type_id,amount,reason:p.reason||null});
+    });
+  }
+  window.pendingBatchRecordSales.allocations=allocations;
+  if(review)review.innerHTML='<div class="takeover-sale-summary"><div><span>Selected shifts</span><strong>'+selected.length+'</strong></div><div><span>Combined calculated sales</span><strong>'+money(calculated)+'</strong></div><div><span>Combined payments entered</span><strong>'+money(entered)+'</strong></div><div><span>Difference</span><strong>'+money(entered-calculated)+'</strong></div></div><p class="muted">Payments are allocated proportionally by each shift’s net calculated sales. Review the per-shift allocation below.</p>'+allocations.map(a=>{const shift=(window.dashboardShiftRecords||[]).find(s=>String(s.id)===String(a.takeover.shift_id));const nozzle=(window.dashboardNozzleRecords||[]).find(n=>String(n.id)===String(shift?.nozzle_id));return '<div class="batch-record-review-shift"><strong>'+h(nozzle?.nozzle_code||a.takeover.dispenser_code||'Dispenser')+'</strong><span>Calculated: '+money(calc(a.takeover))+'</span><span>Allocated: '+money(a.sales.reduce((sum,x)=>sum+x.amount,0))+'</span><small>'+h((a.share*100).toFixed(2))+'% share</small><div>'+a.sales.map(x=>{const typ=types.find(t=>String(t.id)===String(x.sale_type_id));return '<span>'+h(typ?.name||'Sale')+': '+money(x.amount)+'</span>';}).join(' · ')+'</div></div>';}).join('');
+  if(status)status.innerHTML='';
+  if(entry)entry.hidden=true;
+  if(preview)preview.hidden=false;
+}
+function backToBatchRecordEntry(){
+  const preview=document.getElementById('batch-record-review');
+  const entry=document.getElementById('batch-record-entry');
+  if(preview)preview.hidden=true;
+  if(entry)entry.hidden=false;
+}
+async function submitBatchRecordSales(){
+  const pending=window.pendingBatchRecordSales;
+  const button=document.getElementById('batch-record-submit');
+  const status=document.getElementById('batch-record-status');
+  if(!pending)return;
+  if(button){button.disabled=true;button.textContent='Submitting…';}
+  try{
+    await api('/api/shift-takeovers/record-sales-batch',{method:'POST',body:JSON.stringify({batch:pending.allocations.map(a=>({takeover_id:a.takeover.id,sales:a.sales}))})});
+    closeBatchRecordSalesModal();
+    toast('Combined sales submitted for admin confirmation');
+    await userDashboard();
+  }catch(e){
+    if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Batch submission failed: '+h(e?.message||'Please try again.')+'</div>';
+  }finally{
+    if(button){button.disabled=false;button.textContent='Submit all shifts';}
+  }
+}
+
 function openTakeoverSaleModal(id){
   const takeover=(window.takeoverRecords||[]).find(x=>String(x.id)===String(id));
   if(!takeover)return;
@@ -660,6 +761,7 @@ async function userDashboard(){
     const readyTakeovers=takeoverList.filter(x=>x.sales_status==='awaiting_attendant'&&String(x.from_employee_id)===String(me.id));
     const completedTakeovers=takeoverList.filter(x=>x.sales_status==='confirmed'||(!x.sales_status&&x.sales_recorded_at));
     window.dashboardSaleTypes=Array.isArray(saleTypes)?saleTypes:[];
+    window.currentAttendantId=String(me.id);
     window.takeoverRecords=takeoverList;
     window.dashboardShiftRecords=shifts;
     window.dashboardNozzleRecords=nozzles;
@@ -711,6 +813,7 @@ async function userDashboard(){
         '</div>'+
       '</div>';
     }).join('');
+    const batchRecordSalesCard=readyTakeovers.length?'<div class="card batch-record-sales-launch-card"><div><span class="section-kicker">MULTI-SHIFT</span><h3>Record Sales Together</h3><p>Select multiple MGR and AGO shifts, enter combined payment amounts once, and review proportional allocations before submitting.</p></div><button class="primary" type="button" onclick="openBatchRecordSalesModal()">Select shifts & record together</button></div>':'';
     const takeoverHtml=readyTakeovers.map(t=>{
       const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
       const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
@@ -750,7 +853,7 @@ async function userDashboard(){
 box.innerHTML=
   wrapSection('SHIFT CONFIRMATIONS','Pending Shift Confirmations',pendingShiftHtml+pendingIncomingHtml)+
   wrapSection('DISPENSER DEACTIVATION','Pending Deactivation',pendingDeactivationHtml)+
-  wrapSection('SHIFT HANDOVER','Record Sale & Handover',takeoverHtml+pendingTakeoverHtml+pendingOutgoingHtml)+
+  wrapSection('SHIFT HANDOVER','Record Sale & Handover',batchRecordSalesCard+takeoverHtml+pendingTakeoverHtml+pendingOutgoingHtml)+
   wrapSection('ACTIVE','Active Shifts',activeHtml);
     if(!box.innerHTML)box.innerHTML='';
   }catch(e){
