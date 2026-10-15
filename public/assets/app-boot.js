@@ -65,8 +65,16 @@
         if (!response.ok) {
           var code = response.status;
           window.setTimeout(function () {
+            var banner = document.getElementById('fuel-session-recovery-banner');
+            if (!banner) return;
             var detail = document.getElementById('fuel-session-recovery-detail');
-            if (!detail) return;
+            if (!detail) {
+              detail = document.createElement('div');
+              detail.id = 'fuel-session-recovery-detail';
+              detail.style.cssText = 'margin-top:4px;font-weight:500';
+              var retry = banner.querySelector('#fuel-session-retry');
+              banner.insertBefore(detail, retry || null);
+            }
             if (code === 401) detail.textContent = 'Session check rejected (HTTP 401). This message does not log you out. Retry; if it persists, sign in again only after confirming the correct site.';
             else if (code === 403) detail.textContent = 'Session check denied (HTTP 403). This message does not clear your session.';
             else if (code === 503) detail.textContent = 'Server or database temporarily unable to verify the session (HTTP 503). Wait a moment and retry.';
@@ -76,8 +84,17 @@
         return response;
       }).catch(function (error) {
         window.setTimeout(function () {
+          var banner = document.getElementById('fuel-session-recovery-banner');
+          if (!banner) return;
           var detail = document.getElementById('fuel-session-recovery-detail');
-          if (detail) detail.textContent = 'Network error while checking the saved session. Check your connection and retry. (' + String(error && error.message || 'request failed').slice(0, 120) + ')';
+          if (!detail) {
+            detail = document.createElement('div');
+            detail.id = 'fuel-session-recovery-detail';
+            detail.style.cssText = 'margin-top:4px;font-weight:500';
+            var retry = banner.querySelector('#fuel-session-retry');
+            banner.insertBefore(detail, retry || null);
+          }
+          detail.textContent = 'Network error while checking the saved session. Check your connection and retry. (' + String(error && error.message || 'request failed').slice(0, 120) + ')';
         }, 0);
         throw error;
       });
