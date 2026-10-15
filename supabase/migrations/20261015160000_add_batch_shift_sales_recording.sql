@@ -51,6 +51,13 @@ BEGIN
       v_sales
     );
 
+    -- Do not report a mixed batch as successful if any selected shift was
+    -- already submitted by a prior request. Raising here rolls back any
+    -- earlier shifts written by this RPC, preserving all-or-nothing behavior.
+    IF coalesce((v_result->>'already_recorded')::boolean, false) THEN
+      RAISE EXCEPTION 'Shift % has already been submitted; refresh the dashboard and review the selected shifts', v_takeover_id;
+    END IF;
+
     v_results := v_results || jsonb_build_array(v_result);
     v_count := v_count + 1;
   END LOOP;
