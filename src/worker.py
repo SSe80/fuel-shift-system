@@ -5575,7 +5575,7 @@ def drive_oauth_callback():
         row = {
             "id": 1,
             "encrypted_refresh_token": encrypted,
-            "google_email": None,
+            "google_email": drive.google_email(tokens.get("access_token", "")),
             "connected_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
