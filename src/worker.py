@@ -3546,6 +3546,32 @@ def handovers():
                 row["source_tank_code"]=tank.get("tank_code")
     return jsonify(rows),200
 
+@app.post("/api/shift-takeovers/record-sales-batch")
+def record_shift_takeover_sales_batch():
+    auth=require_login()
+    if auth:return auth
+    data=request.get_json(silent=True) or {}
+    batch=data.get("batch",[])
+    if not isinstance(batch,list):
+        return jsonify({"error":"Invalid batch entries"}),400
+    if not batch or len(batch)>20:
+        return jsonify({"error":"Select between 1 and 20 shifts per submission"}),400
+    seen=set()
+    for item in batch:
+        if not isinstance(item,dict) or not item.get("takeover_id") or not isinstance(item.get("sales",[]),list):
+            return jsonify({"error":"Each batch item must contain a takeover_id and sales array"}),400
+        takeover_id=str(item.get("takeover_id"))
+        if takeover_id in seen:
+            return jsonify({"error":"A shift was selected more than once"}),400
+        seen.add(takeover_id)
+    status,result=rpc("record_shift_takeover_sales_batch",{
+        "p_employee_id":session["employee_id"],
+        "p_batch":batch
+    })
+    if status>=400:return jsonify(result),status
+    return jsonify(result),200
+
+
 @app.post("/api/shift-takeovers/<takeover_id>/record-sale")
 def record_shift_takeover_sale(takeover_id):
     auth=require_login()
