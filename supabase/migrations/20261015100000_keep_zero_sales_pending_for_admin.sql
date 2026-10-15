@@ -126,30 +126,18 @@ DO $migration$
 DECLARE
   v_definition text;
   v_original text;
-  v_target text;
-  v_replacement text;
+  v_pattern text := 'IF[[:space:]]+v_count[[:space:]]*=[[:space:]]*0[[:space:]]+OR[[:space:]]+v_checked[[:space:]]*<>[[:space:]]*v_count[[:space:]]+THEN[[:space:]]+RAISE EXCEPTION ''Every sale must be checked before confirmation'';[[:space:]]*END IF;';
+  v_replacement text := 'IF (v_count=0 AND greatest(0,round(coalesce(v_t.total_sales_amount,0)-coalesce(v_t.returned_amount,0),2)) > 0) OR (v_count>0 AND v_checked<>v_count) THEN RAISE EXCEPTION ''Every sale must be checked before confirmation''; END IF;';
 BEGIN
   v_definition := pg_get_functiondef(
     'public.confirm_shift_takeover_sales_with_return_v2(uuid,uuid,jsonb,numeric)'::regprocedure
   );
   v_original := v_definition;
-
-  v_target := 'if v_count=0 or v_checked<>v_count then raise exception ''Every sale must be checked before confirmation''; end if;';
-  v_replacement := 'if (v_count=0 and greatest(0,round(coalesce(v_t.total_sales_amount,0)-coalesce(v_t.returned_amount,0),2)) > 0) or (v_count>0 and v_checked<>v_count) then raise exception ''Every sale must be checked before confirmation''; end if;';
-  IF position(v_target IN v_definition) > 0 THEN
-    v_definition := replace(v_definition, v_target, v_replacement);
-  ELSE
-    v_target := 'if v_count = 0 or v_checked <> v_count then raise exception ''Every sale must be checked before confirmation''; end if;';
-    IF position(v_target IN v_definition) > 0 THEN
-      v_definition := replace(v_definition, v_target, v_replacement);
-    ELSE
-      RAISE EXCEPTION 'Could not locate the sale-count guard in confirmation RPC; no changes applied';
-    END IF;
-  END IF;
+  v_definition := regexp_replace(v_definition, v_pattern, v_replacement, 'gi');
 
   IF v_definition = v_original
-     OR position('v_count=0 and greatest(0,round(coalesce(v_t.total_sales_amount,0)-coalesce(v_t.returned_amount,0),2)) > 0' IN v_definition) = 0 THEN
-    RAISE EXCEPTION 'Zero-sales confirmation guard rewrite failed; no changes applied';
+     OR position('v_count=0 AND greatest(0,round(coalesce(v_t.total_sales_amount,0)-coalesce(v_t.returned_amount,0),2)) > 0' IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'Could not update the active confirmation RPC sale-count guard; no changes applied';
   END IF;
 
   EXECUTE v_definition;
