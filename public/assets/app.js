@@ -187,16 +187,17 @@ function openBatchRecordSalesModal(){
   const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
   if(!eligible.length){toast('No shifts are ready to record');return;}
   window.batchRecordSalesStage='entry';
-  window.batchRecordSalesSelected=new Set(eligible.map(t=>String(t.id)));
+  // The server accepts at most 20 shifts per atomic batch. Preselect no more than that.
+  window.batchRecordSalesSelected=new Set(eligible.slice(0,20).map(t=>String(t.id)));
   const list=document.getElementById('batch-record-shift-list');
   const payments=document.getElementById('batch-record-payment-list');
   const status=document.getElementById('batch-record-status');
   if(status)status.innerHTML='';
-  if(list)list.innerHTML=eligible.map(t=>{
+  if(list)list.innerHTML=eligible.map((t,index)=>{
     const shift=(window.dashboardShiftRecords||[]).find(s=>String(s.id)===String(t.shift_id));
     const nozzle=(window.dashboardNozzleRecords||[]).find(n=>String(n.id)===String(shift?.nozzle_id));
     const breakdown=adminReturnedFuelBreakdown(t,Number(t.returned_liters||0));
-    return '<label class="batch-record-shift-option"><input type="checkbox" class="batch-record-shift-check" onchange="updateBatchRecordSelectionSummary()" value="'+h(t.id)+'" checked><span><strong>'+h(nozzle?.nozzle_code||t.dispenser_code||'Dispenser')+'</strong><small>'+h(nozzle?.product||shift?.product||'Fuel')+' · '+h(new Date(t.shift_ended_at||t.created_at||Date.now()).toLocaleString())+'</small></span><b>'+money(breakdown.netAmount)+'</b></label>';
+    return '<label class="batch-record-shift-option"><input type="checkbox" class="batch-record-shift-check" onchange="handleBatchRecordShiftSelection(this)" value="'+h(t.id)+'" '+(index<20?'checked':'')+'><span><strong>'+h(nozzle?.nozzle_code||t.dispenser_code||'Dispenser')+'</strong><small>'+h(nozzle?.product||shift?.product||'Fuel')+' · '+h(new Date(t.shift_ended_at||t.created_at||Date.now()).toLocaleString())+'</small></span><b>'+money(breakdown.netAmount)+'</b></label>';
   }).join('');
   const types=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
   if(payments)payments.innerHTML=types.map(s=>'<div class="batch-record-payment-row" data-sale-type="'+h(s.id)+'"><label>'+h(s.name)+(s.description?' <small>'+h(s.description)+'</small>':'')+'<input type="number" class="batch-record-payment-amount" data-sale-id="'+h(s.id)+'" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></label>'+(s.reason_required?'<label class="batch-record-reason-label">Reason<textarea class="batch-record-payment-reason" data-reason-id="'+h(s.id)+'" rows="2" placeholder="Required when this sales type is used"></textarea></label>':'')+'</div>').join('')||'<p class="muted">No active sales types are configured.</p>';
@@ -207,6 +208,18 @@ function openBatchRecordSalesModal(){
 function closeBatchRecordSalesModal(){
   const modal=document.getElementById('batch-record-sales-modal');
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+}
+function handleBatchRecordShiftSelection(input){
+  const checked=document.querySelectorAll('#batch-record-shift-list .batch-record-shift-check:checked');
+  if(input?.checked&&checked.length>20){
+    input.checked=false;
+    const status=document.getElementById('batch-record-status');
+    if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">You can record a maximum of 20 shifts together. Submit this batch, then record the remaining shifts.</div>';
+  }else{
+    const status=document.getElementById('batch-record-status');
+    if(status)status.innerHTML='';
+  }
+  updateBatchRecordSelectionSummary();
 }
 function updateBatchRecordSelectionSummary(){
   const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
