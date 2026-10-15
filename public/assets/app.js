@@ -2038,8 +2038,8 @@ function updateAdminSaleConfirmButton(card){
   const button=card.querySelector('[data-confirm-sales]');
   const id=String(card.getAttribute('data-takeover-id')||'');
   const pendingItem=(adminSalesData.pending||[]).find(x=>String(x.takeover?.id)===id);
-  const netCalculated=adminReturnedFuelBreakdown(pendingItem?.takeover||{},Number(pendingItem?.takeover?.returned_liters||0)).netAmount;
-  const validZeroSales=checks.length===0&&netCalculated<=0.005;
+  const zeroBreakdown=adminReturnedFuelBreakdown(pendingItem?.takeover||{},Number(pendingItem?.takeover?.returned_liters||0));
+  const validZeroSales=checks.length===0&&zeroBreakdown.netAmount<=0.005&&zeroBreakdown.netLiters<=0.005;
   if(button)button.disabled=!validZeroSales&&(checks.length===0||checks.some(x=>!x.checked));
 }
 function bindAdminSaleChecks(){
@@ -3758,8 +3758,8 @@ async function finalizeAdminSaleConfirmation(){
   const total=card?.querySelectorAll('.admin-sale-check').length||0;
   const pendingItem=(adminSalesData.pending||[]).find(x=>String(x.takeover?.id)===String(id));
   const returnedLiters=Number(pendingItem?.takeover?.returned_liters||0);
-  const netCalculated=adminReturnedFuelBreakdown(pendingItem?.takeover||{},returnedLiters).netAmount;
-  const validZeroSales=total===0&&ids.length===0&&netCalculated<=0.005;
+  const zeroBreakdown=adminReturnedFuelBreakdown(pendingItem?.takeover||{},returnedLiters);
+  const validZeroSales=total===0&&ids.length===0&&zeroBreakdown.netAmount<=0.005&&zeroBreakdown.netLiters<=0.005;
   if(!validZeroSales&&(!ids.length||ids.length!==total)){closeAdminSaleReview();toast('Tick every sale before confirming');return;}
   const button=document.getElementById('admin-sale-final-confirm');
   if(button)button.disabled=true;
