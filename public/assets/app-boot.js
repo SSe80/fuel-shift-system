@@ -58,7 +58,7 @@
     var originalFetch = window.fetch.bind(window);
     window.fetch = function (input, init) {
       var requestUrl = typeof input === 'string' ? input : (input && input.url) || '';
-      var isMeCheck = /(?:^|\\/)api\\/me(?:[?#]|$)/.test(requestUrl);
+      var isMeCheck = requestUrl.indexOf('/api/me') >= 0;
       var request = originalFetch(input, init);
       if (!isMeCheck) return request;
       return request.then(function (response) {
