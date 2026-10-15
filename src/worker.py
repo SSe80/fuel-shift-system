@@ -3240,9 +3240,19 @@ def _auto_upload_completed_purchase_pdf(purchase_id):
             return {"ok":False,"error":"Purchases PDF folder is not configured"}
         # Reuse the canonical server-side PDF renderer so the Drive copy includes
         # stock-before/expected-closing/difference/remark details.
-        response = purchase_pdf(str(purchase_id))
-        if getattr(response, "status_code", 200) != 200:
-            return {"ok":False,"error":"Purchase PDF generation failed (HTTP %s)" % getattr(response, "status_code", "unknown")}
+        rendered = purchase_pdf(str(purchase_id))
+        # Flask view handlers commonly return (Response, status_code). Normalize
+        # that tuple before reading the generated PDF bytes.
+        if isinstance(rendered, tuple):
+            response = rendered[0] if rendered else None
+            response_status = rendered[1] if len(rendered) > 1 and isinstance(rendered[1], int) else getattr(response, "status_code", 200)
+        else:
+            response = rendered
+            response_status = getattr(response, "status_code", 200)
+        if response_status != 200:
+            return {"ok":False,"error":"Purchase PDF generation failed (HTTP %s)" % response_status}
+        if response is None or not hasattr(response, "get_data"):
+            return {"ok":False,"error":"Purchase PDF renderer did not return a Flask response"}
         pdf = response.get_data()
         if not pdf or not pdf.startswith(b"%PDF"):
             return {"ok":False,"error":"Server generated an invalid purchase PDF"}
