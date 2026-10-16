@@ -765,6 +765,18 @@ async function userDashboard(){
     const pendingHandovers=handovers.filter(x=>x.status==='pending'&&String(x.to_employee_id)===String(me.id));
     const box=document.getElementById('shift');
 
+    // Collect every shift-related card into one shared DSR group registry.
+    // Individual card types must not create their own duplicate DSR sections.
+    const attendantDsrCardGroups={};
+    const attendantDsrGroups=(records,timestampFor,renderCard)=>{
+      (Array.isArray(records)?records:[]).forEach(record=>{
+        const dsrId=dailyReportIdFromTimestamp(timestampFor(record));
+        const cardHtml=renderCard(record);
+        const priority=cardHtml.includes('Pending Shift Confirmation')?0:1;
+        (attendantDsrCardGroups[dsrId]||(attendantDsrCardGroups[dsrId]=[])).push({html:cardHtml,priority});
+      });
+      return '';
+    };
     const pendingShiftHtml=attendantDsrGroups(pendingShifts,s=>s.start_time||s.started_at||s.created_at,s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
       const readings=Array.isArray(s.activation_nozzles)?s.activation_nozzles:[];
@@ -874,21 +886,6 @@ async function userDashboard(){
         '<div class="pending-deactivation-action"><button class="primary" type="button" onclick="openDispenserDeactivationConfirmation(\''+req.id+'\')"><span>Enter closing readings</span><span aria-hidden="true">→</span></button></div>'+
       '</div>';
     }).join('');
-    const attendantDsrGroups=(records,timestampFor,renderCard)=>{
-      const groups={};
-      records.forEach(record=>{
-        const timestamp=timestampFor(record);
-        const dsrId=dailyReportIdFromTimestamp(timestamp);
-        (groups[dsrId]||(groups[dsrId]=[])).push(record);
-      });
-      return Object.keys(groups).sort().reverse().map(dsrId=>
-        '<section class="attendant-dsr-card-group" data-dsr-id="'+h(dsrId)+'">'+
-          '<div class="attendant-dsr-group-title"><span>DSR ID</span><strong>'+h(dsrId)+'</strong></div>'+
-          '<div class="attendant-dsr-group-divider" aria-hidden="true"></div>'+
-          '<div class="attendant-dsr-group-cards">'+groups[dsrId].map(renderCard).join('')+'</div>'+
-        '</section>'
-      ).join('');
-    };
     const pendingTakeoverHtml=attendantDsrGroups(pendingTakeovers.slice(0,5),t=>{
       const shift=shifts.find(s=>String(s.id)===String(t.shift_id));
       return t.shift_started_at||shift?.start_time||shift?.started_at||t.created_at;
@@ -954,14 +951,22 @@ async function userDashboard(){
         '<div class="active-shift-actions"><button class="btn active-handover-btn" type="button" onclick="openDashboardHandover(\''+s.id+'\')">Handover</button></div></div>';
     });
 
-    const wrapSection=(kicker,title,content)=>content?'<section class="dashboard-section"><div class="dashboard-section-head"><div><span class="section-kicker">'+kicker+'</span><h2>'+title+'</h2></div></div><div class="dashboard-section-cards">'+content+'</div></section>':'';
-box.innerHTML=
-  wrapSection('SHIFT CONFIRMATIONS','Pending Shift Confirmations',pendingShiftHtml+pendingIncomingHtml)+
-  wrapSection('DISPENSER DEACTIVATION','Pending Deactivation',pendingDeactivationHtml)+
-  wrapSection('SALES','Sales',pendingTakeoverHtml)+
-  wrapSection('RECORD SALES','Record Sales',batchRecordSalesCard+takeoverHtml)+
-  wrapSection('SHIFT HANDOVER','Shift Handover',pendingOutgoingHtml)+
-  wrapSection('ACTIVE','Active Shifts',activeHtml);
+    // The batch-record-sales launcher belongs with the same DSR as the eligible
+    // Record Sale cards, not in a separate card-type section.
+    if(readyTakeovers.length){
+      const firstReady=readyTakeovers[0];
+      const firstReadyShift=shifts.find(s=>String(s.id)===String(firstReady.shift_id));
+      const firstReadyDsr=dailyReportIdFromTimestamp(firstReady.shift_started_at||firstReadyShift?.start_time||firstReadyShift?.started_at||firstReady.created_at);
+      (attendantDsrCardGroups[firstReadyDsr]||(attendantDsrCardGroups[firstReadyDsr]=[])).push({html:batchRecordSalesCard,priority:1});
+    }
+    const unifiedDsrSections=Object.keys(attendantDsrCardGroups).sort().reverse().map(dsrId=>
+      '<section class="attendant-dsr-card-group" data-dsr-id="'+h(dsrId)+'">'+
+        '<div class="attendant-dsr-group-title"><span>DSR ID</span><strong>'+h(dsrId)+'</strong></div>'+
+        '<div class="attendant-dsr-group-divider" aria-hidden="true"></div>'+
+        '<div class="attendant-dsr-group-cards">'+attendantDsrCardGroups[dsrId].sort((a,b)=>a.priority-b.priority).map(item=>item.html).join('')+'</div>'+
+      '</section>'
+    ).join('');
+    box.innerHTML=unifiedDsrSections?'<section class="dashboard-section"><div class="dashboard-section-head"><div><span class="section-kicker">DAILY SHIFT REPORTS</span><h2>Shift & Sales Activity</h2></div></div><div class="dashboard-section-cards">'+unifiedDsrSections+'</div></section>':'';
     if(!box.innerHTML)box.innerHTML='';
   }catch(e){
     if(e.message==='Unauthorized')showSessionRecovery('attendant');
