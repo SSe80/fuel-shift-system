@@ -3171,9 +3171,43 @@ function createDsrReportPdf(r){
   d.section('Key figures',M,d.y);d.y+=24.2;
   const kw=[100.1,169.9,69.8,69.8,69.8],kg=(d.CW-kw.reduce((a,b)=>a+b,0))/4;
   d.y+=d.cards(r.key,{top:d.y,widths:kw,gap:kg,h:58,pad:10,labelBase:19,valBase:43,valSize:14})+28;
-  d.table('Dispenser & nozzle performance',[
-    {h:'Dispenser / nozzle',x:8,max:170},{h:'Opening',x:248,a:'r'},{h:'Closing',x:314,a:'r'},{h:'Sold',x:380,a:'r',b:true},{h:'Meter',x:446,a:'r'},{h:'Recon.',x:d.CW-8,a:'r',b:true}],
-    r.dispRows,{hdrGap:25.9,hdrH:22,hdrBase:14.1,minH:36,numOff:18.1,nameOff:13.1,subOff:24.1,lineW:1,after:31.5});
+  // Product -> dispenser -> nozzle hierarchy; deliberately omit the Meter column.
+  d.ensure(48);
+  d.section('Dispenser & nozzle performance',M,d.y);d.y+=25.9;
+  const nozzleCols=[{h:'Dispenser / nozzle',x:8},{h:'Opening',x:292,a:'r'},{h:'Closing',x:362,a:'r'},{h:'Sold',x:432,a:'r',b:true},{h:'Recon.',x:d.CW-8,a:'r',b:true}];
+  const nozzleHead=()=>{
+    d.box(M,d.y,d.CW,22,C.NAVY,6);
+    nozzleCols.forEach(c=>d.text(c.h.toUpperCase(),M+c.x,d.y+14.1,7.5,true,[255,255,255],c.a==='r'?'r':'l'));
+    d.y+=22;
+  };
+  nozzleHead();
+  dispGroups.forEach(pg=>{
+    d.ensure(34);
+    d.box(M,d.y,d.CW,25,[238,244,249],4);
+    d.text(d.fit(pg.product,10,true,d.CW-16),M+8,d.y+9,10,true,C.NAVY);
+    d.y+=25;
+    pg.dispensers.forEach((nozzles,dispenserLabel)=>{
+      if(dispenserLabel){
+        d.ensure(24);
+        d.box(M,d.y,d.CW,21,[247,249,251]);
+        d.text(d.fit(dispenserLabel,9,true,d.CW-24),M+14,d.y+7,9,true,C.INK);
+        d.y+=21;
+      }
+      nozzles.forEach(n=>{
+        const rh=25;
+        if(d.y+rh>BOTTOM){d.newPage();nozzleHead();}
+        d.box(M,d.y,d.CW,rh,C.CARD);
+        d.text(d.fit(n.label,8.5,false,250),M+20,d.y+9,8.5,false,C.INK);
+        d.text(n.opening,M+nozzleCols[1].x,d.y+9,8.5,false,C.INK,'r');
+        d.text(n.closing,M+nozzleCols[2].x,d.y+9,8.5,false,C.INK,'r');
+        d.text(n.sold,M+nozzleCols[3].x,d.y+9,8.5,true,C.INK,'r');
+        d.text(n.recon,M+nozzleCols[4].x,d.y+9,8.5,true,C.INK,'r');
+        d.hline(M,M+d.CW,d.y+rh-.5,C.LINE,0.7);d.y+=rh;
+      });
+    });
+    d.y+=7;
+  });
+  d.y+=24;
   // tank table (rows then four cards per tank)
   d.ensure(26+22+36+52+40);
   d.section('Tank reconciliation',M,d.y);d.y+=25.9;
@@ -5665,14 +5699,27 @@ function buildDailyReportPdfBlob(){
   const topDisp=[...dispensers].sort((a,b)=>num(b.sales_liters)-num(a.sales_liters))[0];
   const topProduct=[...products].sort((a,b)=>num(b.amount)-num(a.amount))[0];
 
-  const dispRows=[];
+  // DSR PDF only: organize nozzle performance by product, then dispenser, then nozzle.
+  const dispGroups=[];
+  const productGroups=new Map();
   dispensers.forEach(disp=>(disp.nozzles||[]).forEach(n=>{
     const pc=productFor(n.product);
-    const nozzleLabel=n.nozzle_code&&String(n.nozzle_code).toLowerCase()!==String(disp.dispenser||'').toLowerCase()?n.nozzle_code:'N'+(n.nozzle_number||1);
-    dispRows.push([{t:disp.dispenser||'Dispenser',sub:'Nozzle: '+nozzleLabel+' \u00b7 '+(pc.code||pc.name||'Unknown')},
-      rd(n.opening_reading),rd(n.closing_reading),fmtL(n.sales_liters),fmtL(n.meter_delta_liters),pct(n.meter_reconciliation_pct)]);
+    const productLabel=pc.code||pc.name||n.product||'Unknown';
+    const productKey=String(productLabel).toLowerCase();
+    if(!productGroups.has(productKey)){
+      const pg={product:productLabel,dispensers:new Map()};
+      productGroups.set(productKey,pg);dispGroups.push(pg);
+    }
+    const pg=productGroups.get(productKey);
+    const dispenserLabel=disp.dispenser||'Dispenser';
+    if(!pg.dispensers.has(dispenserLabel))pg.dispensers.set(dispenserLabel,[]);
+    const nozzleLabel=n.nozzle_code&&String(n.nozzle_code).toLowerCase()!==String(dispenserLabel).toLowerCase()?n.nozzle_code:'N'+(n.nozzle_number||1);
+    pg.dispensers.get(dispenserLabel).push({
+      label:'Nozzle: '+(String(nozzleLabel).startsWith(String(dispenserLabel))?nozzleLabel:dispenserLabel+'-'+nozzleLabel),
+      opening:rd(n.opening_reading),closing:rd(n.closing_reading),sold:fmtL(n.sales_liters),recon:pct(n.meter_reconciliation_pct)
+    });
   }));
-  if(!dispRows.length)dispRows.push([{t:'No dispenser data',sub:'-'},'-','-','-','-','-']);
+  if(!dispGroups.length)dispGroups.push({product:'No dispenser data',dispensers:new Map([['', [{label:'No nozzle readings recorded',opening:'-',closing:'-',sold:'-',recon:'-'}]]])});
 
   const tankBlocks=tanks.map(t=>{
     const warn=Math.abs(num(t.difference_liters))>=0.005?'warn':undefined;
