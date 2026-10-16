@@ -2609,3 +2609,118 @@ body.attendant-dashboard-page #batch-record-review .row>button{
   }
 }
 </style>
+
+<style id="batch-record-sticky-actions-scroll-fix">
+/* Keep Cancel / Review sales and Back / Submit all shifts docked at the bottom.
+   The modal header and action rows stay fixed; only the record/review content scrolls. */
+body.attendant-dashboard-page #batch-record-sales-modal{
+  position:fixed!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  height:100dvh!important;
+  box-sizing:border-box!important;
+  padding:12px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow:hidden!important;
+  overscroll-behavior:contain!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal.open{
+  display:flex!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal>.modal-backdrop+.batch-record-sales-modal-card{
+  position:relative!important;
+  inset:auto!important;
+  display:flex!important;
+  flex-direction:column!important;
+  flex:0 1 auto!important;
+  width:min(520px,calc(100vw - 24px))!important;
+  max-width:520px!important;
+  height:auto!important;
+  max-height:calc(100dvh - 24px)!important;
+  min-height:0!important;
+  margin:auto!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal>.modal-backdrop+.batch-record-sales-modal-card>.top{
+  flex:0 0 auto!important;
+  min-width:0!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-entry:not([hidden]),
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-review:not([hidden]){
+  display:flex!important;
+  flex:1 1 auto!important;
+  flex-direction:column!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-entry>.batch-record-modal-section{
+  flex:1 1 0!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-entry>.batch-record-modal-section:first-child{
+  flex:0 1 auto!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-entry>.batch-record-modal-section:nth-child(2){
+  flex:1 1 auto!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-review-content{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  scrollbar-gutter:stable!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-entry>.row,
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-review>.row{
+  position:relative!important;
+  inset:auto!important;
+  z-index:5!important;
+  display:flex!important;
+  flex:0 0 auto!important;
+  gap:10px!important;
+  margin:0!important;
+  padding:10px 12px max(12px,env(safe-area-inset-bottom))!important;
+  border-top:1px solid #e2e8f0!important;
+  background:var(--card,#fff)!important;
+  box-shadow:0 -4px 12px rgba(15,23,42,.045)!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-entry>.row>button,
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-review>.row>button{
+  flex:1 1 0!important;
+  min-width:0!important;
+  min-height:44px!important;
+  margin:0!important;
+  border-radius:10px!important;
+  font-weight:700!important;
+  white-space:normal!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-status{
+  flex:0 0 auto!important;
+  max-height:20vh!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+}
+@media(max-width:480px){
+  body.attendant-dashboard-page #batch-record-sales-modal{
+    padding:8px!important;
+  }
+  body.attendant-dashboard-page #batch-record-sales-modal>.modal-backdrop+.batch-record-sales-modal-card{
+    width:calc(100vw - 16px)!important;
+    max-height:calc(100dvh - 16px)!important;
+  }
+  body.attendant-dashboard-page #batch-record-sales-modal #batch-record-entry>.row,
+  body.attendant-dashboard-page #batch-record-sales-modal #batch-record-review>.row{
+    padding:9px 10px max(10px,env(safe-area-inset-bottom))!important;
+    gap:8px!important;
+  }
+}
+</style>
