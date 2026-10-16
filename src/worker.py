@@ -5563,8 +5563,10 @@ DRIVE_MAX_PDF_BYTES = 8 * 1024 * 1024
 def _addis_today():
     return (datetime.now(timezone.utc) + timedelta(hours=3)).date()
 
-def _drive_enqueue(kind, report_key):
-    body = {"kind": kind, "report_key": report_key, "status": "pending", "attempts": 0,
+def _drive_enqueue(kind, report_key, status="pending"):
+    """Create/update a report queue row. Incomplete DSRs remain visible as waiting,
+    but only pending rows wake the background PDF exporter."""
+    body = {"kind": kind, "report_key": report_key, "status": status, "attempts": 0,
             "last_error": None, "updated_at": datetime.now(timezone.utc).isoformat()}
     st, out = sb("drive_export_queue", method="POST", params={"on_conflict": "kind,report_key"},
                  body=body, prefer="resolution=merge-duplicates,return=minimal")
@@ -5812,6 +5814,31 @@ def drive_test():
 def drive_queue():
     auth = require_admin()
     if auth: return auth
+
+    # Show DSR dates that have started but are not yet confirmed as Waiting in
+    # the queue. These rows must not trigger PDF generation/upload until the DSR
+    # is confirmed; the report confirmation hook will change them to pending.
+    try:
+        today = _addis_today()
+        start = today - timedelta(days=3650)
+        ss, shifts = sb("shifts", params={
+            "start_time": "gte." + start.isoformat() + "T00:00:00+03:00",
+            "select": "start_time", "order": "start_time.asc", "limit": "10000"})
+        cs, confirmed_rows = sb("daily_report_confirmations", params={
+            "report_date": "gte." + start.isoformat(),
+            "status": "eq.confirmed", "select": "report_date", "limit": "10000"})
+        if ss == 200 and cs == 200:
+            confirmed_dates = {str(row.get("report_date") or "")[:10] for row in (confirmed_rows or [])}
+            started_dates = set()
+            for shift in shifts or []:
+                report_day = _local_date_from_iso(shift.get("start_time"))
+                if report_day and report_day.isoformat() <= today.isoformat():
+                    started_dates.add(report_day.isoformat())
+            for report_day in sorted(started_dates - confirmed_dates):
+                _drive_enqueue("dsr", report_day, status="waiting")
+    except Exception:
+        app.logger.exception("could not sync incomplete DSRs to Drive waiting queue")
+
     st, rows = sb("drive_export_queue", params={
         "status": "neq.done", "select": "id,kind,report_key,status,attempts,last_error,updated_at",
         "order": "report_key.asc", "limit": "500"})
