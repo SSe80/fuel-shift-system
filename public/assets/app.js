@@ -768,12 +768,20 @@ async function userDashboard(){
     // Collect every shift-related card into one shared DSR group registry.
     // Individual card types must not create their own duplicate DSR sections.
     const attendantDsrCardGroups={};
+    const attendantDsrCategoryFor=cardHtml=>{
+      if(cardHtml.includes('Pending Shift Confirmation')||cardHtml.includes('handover-pending-card')||cardHtml.includes('handover-receive-card'))return {id:'shift-handover',title:'Pending Shift Confirmation & Pending Handover',priority:0};
+      if(cardHtml.includes('pending-takeover-sale-card')||cardHtml.includes('main-record-sale-card')||cardHtml.includes('batch-record-sales-launch-card'))return {id:'sales-recording',title:'Pending Record Sale Confirmation & Record Sale',priority:1};
+      if(cardHtml.includes('active-shift-card'))return {id:'active-shifts',title:'Active Shift',priority:2};
+      if(cardHtml.includes('pending-deactivation-card'))return {id:'deactivation',title:'Pending Dispenser Deactivation',priority:3};
+      return {id:'other',title:'Shift Activity',priority:4};
+    };
     const attendantDsrGroups=(records,timestampFor,renderCard)=>{
       (Array.isArray(records)?records:[]).forEach(record=>{
         const dsrId=dailyReportIdFromTimestamp(timestampFor(record));
         const cardHtml=renderCard(record);
+        const category=attendantDsrCategoryFor(cardHtml);
         const priority=cardHtml.includes('Pending Shift Confirmation')?0:1;
-        (attendantDsrCardGroups[dsrId]||(attendantDsrCardGroups[dsrId]=[])).push({html:cardHtml,priority});
+        (attendantDsrCardGroups[dsrId]||(attendantDsrCardGroups[dsrId]=[])).push({html:cardHtml,priority,category});
       });
       return [];
     };
@@ -957,16 +965,26 @@ async function userDashboard(){
       const firstReady=readyTakeovers[0];
       const firstReadyShift=shifts.find(s=>String(s.id)===String(firstReady.shift_id));
       const firstReadyDsr=dailyReportIdFromTimestamp(firstReady.shift_started_at||firstReadyShift?.start_time||firstReadyShift?.started_at||firstReady.created_at);
-      (attendantDsrCardGroups[firstReadyDsr]||(attendantDsrCardGroups[firstReadyDsr]=[])).push({html:batchRecordSalesCard,priority:1});
+      (attendantDsrCardGroups[firstReadyDsr]||(attendantDsrCardGroups[firstReadyDsr]=[])).push({html:batchRecordSalesCard,priority:1,category:attendantDsrCategoryFor(batchRecordSalesCard)});
     }
-    const unifiedDsrSections=Object.keys(attendantDsrCardGroups).sort().reverse().map(dsrId=>
-      '<section class="attendant-dsr-card-group" data-dsr-id="'+h(dsrId)+'">'+
+    const unifiedDsrSections=Object.keys(attendantDsrCardGroups).sort().reverse().map(dsrId=>{
+      const groupedCards={};
+      attendantDsrCardGroups[dsrId].forEach(item=>{
+        const category=item.category||attendantDsrCategoryFor(item.html);
+        (groupedCards[category.id]||(groupedCards[category.id]={...category,cards:[]})).cards.push(item);
+      });
+      const categorySections=Object.values(groupedCards).sort((a,b)=>a.priority-b.priority).map(category=>
+        '<section class="attendant-dsr-card-category" data-card-category="'+h(category.id)+'">'+
+          '<div class="attendant-dsr-category-head"><h3>'+h(category.title)+'</h3></div>'+
+          '<div class="attendant-dsr-group-cards">'+category.cards.sort((a,b)=>a.priority-b.priority).map(item=>item.html).join('')+'</div>'+
+        '</section>'
+      ).join('');
+      return '<section class="attendant-dsr-card-group" data-dsr-id="'+h(dsrId)+'">'+
         '<div class="attendant-dsr-group-title"><span>DSR ID</span><strong>'+h(dsrId)+'</strong></div>'+
         '<div class="dashboard-section-head attendant-dsr-report-head"><div><span class="section-kicker">DAILY SHIFT REPORTS</span><h2>Shift & Sales Activity</h2></div></div>'+
-        '<div class="attendant-dsr-group-divider" aria-hidden="true"></div>'+
-        '<div class="attendant-dsr-group-cards">'+attendantDsrCardGroups[dsrId].sort((a,b)=>a.priority-b.priority).map(item=>item.html).join('')+'</div>'+
-      '</section>'
-    ).join('');
+        '<div class="attendant-dsr-group-divider" aria-hidden="true"></div>'+categorySections+
+      '</section>';
+    }).join('');
     box.innerHTML=unifiedDsrSections||'';
     if(!box.innerHTML)box.innerHTML='';
   }catch(e){
