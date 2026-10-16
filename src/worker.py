@@ -3221,16 +3221,58 @@ def purchase_pdf(purchase_id):
     return response
 
 def _auto_upload_completed_purchase_pdf(purchase_id):
-    """Do not upload a second, differently formatted server-rendered purchase PDF.
+    """Render and upload a completed purchase PDF from the saved server-side record."""
+    try:
+        status, rows = sb("purchases", params={"id": "eq." + str(purchase_id), "select": "*", "limit": "1"})
+        if status != 200:
+            return {"ok": False, "error": "Could not read purchase record (HTTP %s)" % status}
+        if not rows:
+            return {"ok": False, "error": "Purchase not found"}
+        purchase = rows[0]
+        history = purchase.get("discharge_history") or []
+        if str(purchase.get("status") or "").lower() != "discharged" or not history or not all(
+            isinstance(event, dict) and event.get("tank_stock_recorded") is True for event in history
+        ):
+            return {"ok": False, "skipped": True, "error": "Purchase is not fully discharged with every tank-stock reading recorded"}
 
-    The Purchases page uploads the same jsPDF document used by the Purchase Details
-    > Download PDF button. A second server-side renderer would overwrite that file
-    with a different layout, so completed-purchase PDF uploads are handled only by
-    the canonical client-side renderer.
-    """
-    # The canonical PDF is uploaded by the Purchases page's client-side renderer.
-    # Do not surface a server-renderer skip as an upload failure to the user.
-    return {"ok": True, "skipped": True}
+        settings = _drive_settings() or {}
+        root = settings.get("purchase_folder_id")
+        if not root:
+            return {"ok": False, "error": "Purchases PDF folder is not configured"}
+
+        # The server renderer includes tank stock before, expected/recorded closing,
+        # stock difference, and any saved discharge/purchase remarks.
+        rendered = purchase_pdf(str(purchase_id))
+        if isinstance(rendered, tuple):
+            response = rendered[0] if rendered else None
+            response_status = rendered[1] if len(rendered) > 1 and isinstance(rendered[1], int) else getattr(response, "status_code", 200)
+        else:
+            response = rendered
+            response_status = getattr(response, "status_code", 200)
+        if response_status != 200:
+            return {"ok": False, "error": "Purchase PDF generation failed (HTTP %s)" % response_status}
+        if response is None or not hasattr(response, "get_data"):
+            return {"ok": False, "error": "Purchase PDF renderer did not return a Flask response"}
+        pdf = response.get_data()
+        if not pdf or not pdf.startswith(b"%PDF"):
+            return {"ok": False, "error": "Server generated an invalid purchase PDF"}
+
+        raw_invoice = str(purchase.get("invoice_number") or purchase_id)
+        safe_invoice = re.sub(r"[^A-Za-z0-9_.-]+", "_", raw_invoice).strip("._")[:80] or str(purchase_id)
+        file_name = "purchase_" + safe_invoice + ".pdf"
+        raw_date = str(purchase.get("purchase_date") or purchase.get("created_at") or "")[:10]
+        try:
+            purchase_day = date.fromisoformat(raw_date)
+        except Exception:
+            purchase_day = datetime.now(timezone.utc).date()
+        folder_name = purchase_day.strftime("%B %Y")
+        file_id, link = drive.store_pdf(env(), root, folder_name, file_name, pdf)
+        return {"ok": True, "file_id": file_id, "url": link,
+                "path": "PURCHASES/%s/%s" % (folder_name, file_name)}
+    except drive.DriveError as err:
+        return {"ok": False, "error": str(err)}
+    except Exception as err:
+        return {"ok": False, "error": str(err) or "Automatic purchase PDF upload failed"}
 
 
 @app.post("/api/drive/purchases/retry")
