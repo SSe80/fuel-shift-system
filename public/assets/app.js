@@ -3181,7 +3181,7 @@ function createDsrReportPdf(r){
     d.y+=22;
   };
   nozzleHead();
-  dispGroups.forEach(pg=>{
+  (r.dispGroups||[]).forEach(pg=>{
     d.ensure(34);
     d.box(M,d.y,d.CW,25,[238,244,249],4);
     d.text(d.fit(pg.product,10,true,d.CW-16),M+8,d.y+9,10,true,C.NAVY);
@@ -5750,7 +5750,7 @@ function buildDailyReportPdfBlob(){
     key:[{label:'Total fuel sold',value:fmtL(perf.total_sales_liters??summary.sales_liters)},
       {label:'Total sales value',value:fmtM(perf.total_sales_amount??summary.sales_amount),tone:'good'},
       {label:'Completed shifts',value:String(num(perf.shift_count)),size:16},{label:'Dispensers used',value:String(num(perf.dispenser_count)),size:16},{label:'Tanks included',value:String(num(perf.tank_count)),size:16}],
-    dispRows:dispRows,tanks:tankBlocks,stats:stats,
+    dispGroups:dispGroups,tanks:tankBlocks,stats:stats,
     overview:[
       {label:'Avg. liters / shift',value:fmtL(perf.average_liters_per_shift)},{label:'Avg. sales / shift',value:fmtM(perf.average_sales_per_shift)},
       {label:'Calculated sales value',value:fmtM(perf.calculated_sales_amount)},{label:'Payments entered',value:entered},
