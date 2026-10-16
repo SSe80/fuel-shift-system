@@ -2255,22 +2255,21 @@ body.attendant-dashboard-page #toast{z-index:1205!important}
 
 
 <style id="attendant-details-buttons-white">
-/* Keep Details actions on attendant dashboard cards white and readable. */
-body.attendant-dashboard-page .card button[onclick*="Details"],
-body.attendant-dashboard-page .card button[onclick*="details"],
-body.attendant-dashboard-page .card button[class*="details"],
-body.attendant-dashboard-page .card button[data-action*="details"]{
+/* Details action inside the main Record Sales card must override the generic red .btn rule. */
+body.attendant-dashboard-page .card .main-record-sale-actions button,
+body.attendant-dashboard-page .card button.attendant-shift-details-button,
+body.attendant-dashboard-page .card button.compact-detail-button{
   background:#fff!important;
   background-color:#fff!important;
   color:#b4232f!important;
   border:1px solid #d0d5dd!important;
   box-shadow:0 1px 2px rgba(16,24,40,.06)!important;
 }
-body.attendant-dashboard-page .card button[onclick*="Details"]:hover,
-body.attendant-dashboard-page .card button[onclick*="details"]:hover,
-body.attendant-dashboard-page .card button[class*="details"]:hover,
-body.attendant-dashboard-page .card button[data-action*="details"]:hover{
+body.attendant-dashboard-page .card .main-record-sale-actions button:hover,
+body.attendant-dashboard-page .card button.attendant-shift-details-button:hover,
+body.attendant-dashboard-page .card button.compact-detail-button:hover{
   background:#f9fafb!important;
+  background-color:#f9fafb!important;
 }
 </style>
 
