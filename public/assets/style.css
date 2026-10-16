@@ -5651,3 +5651,56 @@ body.admin-sales-page #admin-sale-review-modal.open > .admin-sale-review-card > 
     border-radius: 14px !important;
   }
 }
+
+
+/* Attendant DSR activity group cards: consistent title, spacing and divider */
+body[data-app-page="attendantDashboard"] .attendant-dsr-card-category{
+  display:block;
+  min-width:0;
+  margin:0 0 18px;
+  padding:0;
+  overflow:hidden;
+  border:1px solid var(--border, #e3e7ee);
+  border-radius:14px;
+  background:var(--card, #fff);
+  box-shadow:0 2px 8px rgba(16,24,40,.045);
+}
+body[data-app-page="attendantDashboard"] .attendant-dsr-card-category > .attendant-dsr-category-head{
+  display:block;
+  margin:0;
+  padding:15px 16px 12px;
+  background:transparent;
+  border:0;
+}
+body[data-app-page="attendantDashboard"] .attendant-dsr-card-category > .attendant-dsr-category-head h3{
+  margin:0;
+  padding:0 0 12px;
+  color:var(--text, #202938);
+  font-size:15px;
+  font-weight:750;
+  line-height:1.35;
+  letter-spacing:-.01em;
+  overflow-wrap:anywhere;
+  border-bottom:1px solid var(--border, #e3e7ee);
+}
+body[data-app-page="attendantDashboard"] .attendant-dsr-card-category > .attendant-dsr-group-cards{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  min-width:0;
+  padding:13px 14px 15px;
+}
+body[data-app-page="attendantDashboard"] .attendant-dsr-card-category > .attendant-dsr-group-cards > .card{
+  min-width:0;
+  margin:0;
+  box-shadow:none;
+}
+body[data-app-page="attendantDashboard"] .attendant-dsr-card-category > .attendant-dsr-group-cards > .card + .card{
+  margin-top:0;
+}
+@media(max-width:600px){
+  body[data-app-page="attendantDashboard"] .attendant-dsr-card-category{margin-bottom:14px;border-radius:12px}
+  body[data-app-page="attendantDashboard"] .attendant-dsr-card-category > .attendant-dsr-category-head{padding:13px 13px 10px}
+  body[data-app-page="attendantDashboard"] .attendant-dsr-card-category > .attendant-dsr-category-head h3{font-size:14px;padding-bottom:10px}
+  body[data-app-page="attendantDashboard"] .attendant-dsr-card-category > .attendant-dsr-group-cards{gap:10px;padding:11px 11px 12px}
+}
