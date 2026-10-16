@@ -1313,6 +1313,15 @@ body.attendant-dashboard-page .active-shift-card .active-shift-meta>div:first-ch
   }
 }
 
+
+/* DSR grouping on the attendant dashboard: headings sit outside all cards. */
+body.attendant-dashboard-page .attendant-dsr-card-group{display:block;min-width:0;margin:0 0 18px}
+body.attendant-dashboard-page .attendant-dsr-group-title{display:flex;align-items:baseline;gap:8px;padding:2px 1px 8px;color:#344054}
+body.attendant-dashboard-page .attendant-dsr-group-title span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:850;color:#667085}
+body.attendant-dashboard-page .attendant-dsr-group-title strong{font-size:14px;font-weight:850;color:#17202a;overflow-wrap:anywhere}
+body.attendant-dashboard-page .attendant-dsr-group-divider{height:1px;width:100%;background:#dce3ea;margin:0 0 10px}
+body.attendant-dashboard-page .attendant-dsr-group-cards{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0}
+body.attendant-dashboard-page .attendant-dsr-group-cards>.card{min-width:0}
 </style><style>
 .attendant-dashboard-page .takeover-details-modal{max-width:760px;border-radius:18px;overflow:hidden}
 .attendant-dashboard-page .takeover-details-modal>.top{padding:16px 18px;border-bottom:1px solid #e8edf2;background:#fff}
