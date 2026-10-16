@@ -254,7 +254,8 @@ function closeBatchRecordSalesModal(){
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
 }
 function updateBatchRecordSelectionSummary(){}
-async function continueBatchRecordSales(){
+function continueBatchRecordSales(){
+  return (async()=>{
   const status=document.getElementById('batch-record-status');
   const selectedIds=Array.from(window.batchRecordSalesSelected||[]);
   const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
@@ -300,6 +301,7 @@ async function continueBatchRecordSales(){
   if(status)status.innerHTML='';
   const entry=document.getElementById('batch-record-entry'),preview=document.getElementById('batch-record-review');
   if(entry)entry.hidden=true;if(preview)preview.hidden=false;
+  })();
 }
 function backToBatchRecordEntry(){
   const preview=document.getElementById('batch-record-review'),entry=document.getElementById('batch-record-entry');
