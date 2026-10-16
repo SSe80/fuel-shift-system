@@ -198,7 +198,14 @@ async function currentUser(){return (await api('/api/me')).user;}
 
 function recordSaleDsrForTakeover(t){
   const shift=(window.dashboardShiftRecords||[]).find(s=>String(s.id)===String(t.shift_id));
-  return dailyReportIdFromTimestamp(t.shift_started_at||shift?.start_time||shift?.started_at||t.created_at);
+  const value=t.shift_started_at||shift?.start_time||shift?.started_at||t.created_at;
+  // Match the server's DSR rule: timestamps without an explicit offset are
+  // station-local (Africa/Addis_Ababa), not the phone/browser's local zone.
+  const timestamp=String(value||'');
+  const stationLocal=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/.test(timestamp)
+    ?timestamp+'+03:00'
+    :timestamp;
+  return dailyReportIdFromTimestamp(stationLocal);
 }
 function recordSaleProductForTakeover(t){
   const shift=(window.dashboardShiftRecords||[]).find(s=>String(s.id)===String(t.shift_id));
