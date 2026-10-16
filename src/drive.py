@@ -405,11 +405,11 @@ async def _upload_pdf(token, folder_id, name, pdf_bytes):
     if existing:
         # Overwrite: same name, same file ID, so the Drive link stays stable
         status, data = await _http(UPLOAD_API + "/" + existing + "?uploadType=media&supportsAllDrives=true&fields=id,webViewLink",
-                                   "PATCH", dict(_auth(token), **{"Content-Type": "application/pdf"}), to_js(pdf_bytes))
+                                   "PATCH", dict(_auth(token), **{"Content-Type": "application/pdf"}), Uint8Array.new(to_js(list(pdf_bytes))))
     else:
         boundary, body = _multipart({"name": name, "parents": [folder_id], "mimeType": "application/pdf"}, pdf_bytes)
         status, data = await _http(UPLOAD_API + "?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink",
-                                   "POST", dict(_auth(token), **{"Content-Type": "multipart/related; boundary=" + boundary}), to_js(body))
+                                   "POST", dict(_auth(token), **{"Content-Type": "multipart/related; boundary=" + boundary}), Uint8Array.new(to_js(list(body))))
     if status >= 400 or not data:
         raise _gerr("Upload", status, data)
     return data["id"], data.get("webViewLink")
