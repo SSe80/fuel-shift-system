@@ -236,6 +236,7 @@ function openBatchRecordSalesModal(productKey,dsrId){
  const types=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
  const payments=document.getElementById('batch-record-payment-list');
  if(payments)payments.innerHTML=''+types.map(type=>'<div class="batch-record-payment-row" data-sale-type="'+h(type.id)+'"><label>'+h(type.name)+(type.description?' <small>'+h(type.description)+'</small>':'')+'<input type="number" class="batch-record-payment-amount" data-sale-id="'+h(type.id)+'" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></label>'+(type.reason_required?'<label class="batch-record-reason-label">Reason<textarea class="batch-record-payment-reason" data-reason-id="'+h(type.id)+'" rows="2" placeholder="Required when this sales type is used"></textarea></label>':'')+'</div>').join('')||'<p class="muted">No active sales types are configured.</p>';
+ if(payments)payments.innerHTML+='<div class="batch-record-shared-total"><span>Combined calculated net sales</span><strong>'+money(combined.amount)+'</strong><small>'+liters(combined.liters)+' L across '+rows.length+' dispenser shifts</small></div>';
  const summary=document.getElementById('batch-record-selected-summary');
  if(summary)summary.innerHTML='<div><span>Product</span><strong>'+h(rows[0].info.label)+'</strong></div><div><span>DSR ID</span><strong>'+h(dsrId)+'</strong></div>';
  const title=document.querySelector('#batch-record-sales-modal .top h3');if(title)title.textContent='Record '+rows[0].info.label+' Sales';
