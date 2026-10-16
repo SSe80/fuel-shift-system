@@ -5839,6 +5839,29 @@ def drive_queue():
     except Exception:
         app.logger.exception("could not sync incomplete DSRs to Drive waiting queue")
 
+    # Keep the ongoing month's MSR visible in the queue as Waiting, matching
+    # incomplete DSRs. It must not be uploaded while the month is in progress.
+    # Never overwrite a completed export; once the month closes, the existing
+    # readiness check promotes this row to pending after all required DSRs are confirmed.
+    try:
+        current_month_key = _addis_today().strftime("%Y-%m")
+        ms, current_msr_rows = sb("drive_export_queue", params={
+            "kind": "eq.msr", "report_key": "eq." + current_month_key,
+            "select": "id,status", "limit": "1"})
+        if ms < 400:
+            if not current_msr_rows:
+                _drive_enqueue("msr", current_month_key, status="waiting")
+            else:
+                current_msr = current_msr_rows[0]
+                if current_msr.get("status") != "done" and current_msr.get("status") != "waiting":
+                    sb("drive_export_queue", method="PATCH",
+                       params={"id": "eq." + str(current_msr.get("id"))},
+                       body={"status": "waiting", "attempts": 0, "last_error": None,
+                             "updated_at": datetime.now(timezone.utc).isoformat()},
+                       prefer="return=minimal")
+    except Exception:
+        app.logger.exception("could not sync ongoing MSR to Drive waiting queue")
+
     st, rows = sb("drive_export_queue", params={
         "status": "neq.done", "select": "id,kind,report_key,status,attempts,last_error,updated_at",
         "order": "report_key.asc", "limit": "500"})
