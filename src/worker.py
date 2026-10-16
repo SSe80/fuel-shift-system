@@ -3674,6 +3674,75 @@ def record_shift_takeover_sales_batch():
         if takeover_id in seen:
             return jsonify({"error":"A shift was selected more than once"}),400
         seen.add(takeover_id)
+
+    # Enforce the UI's product + DSR grouping on the server too. Never trust
+    # client-supplied group keys; derive them from the saved shift/nozzle data.
+    ts,takeovers=sb("shift_takeovers",params={
+        "id":"in.("+",".join(seen)+")",
+        "select":"*"
+    })
+    if ts != 200:
+        return jsonify({"error":"Unable to verify the selected shifts. Refresh and try again."}),503
+    takeover_map={str(row.get("id")):row for row in takeovers}
+    if len(takeover_map) != len(seen):
+        return jsonify({"error":"One or more selected shifts could not be verified. Refresh and try again."}),409
+    shift_ids=[str(row.get("shift_id")) for row in takeovers if row.get("shift_id")]
+    if len(shift_ids) != len(takeovers):
+        return jsonify({"error":"A selected shift is missing its dispenser assignment."}),409
+    ss,shift_rows=sb("shifts",params={"id":"in.("+",".join(shift_ids)+")","select":"*"})
+    if ss != 200:
+        return jsonify({"error":"Unable to verify the dispenser assignments. Try again."}),503
+    shift_map={str(row.get("id")):row for row in shift_rows}
+    nozzle_ids=[str(row.get("nozzle_id")) for row in shift_rows if row.get("nozzle_id")]
+    if len(shift_map) != len(takeovers) or len(nozzle_ids) != len(takeovers):
+        return jsonify({"error":"A selected shift is missing its dispenser assignment."}),409
+    ns,nozzle_rows=sb("nozzles",params={"id":"in.("+",".join(nozzle_ids)+")","select":"*"})
+    if ns != 200:
+        return jsonify({"error":"Unable to verify configured products for these dispensers."}),503
+    nozzle_map={str(row.get("id")):row for row in nozzle_rows}
+    product_status,product_rows=sb("products",params={"select":"*"})
+    if product_status != 200:
+        return jsonify({"error":"Unable to verify the configured product catalogue."}),503
+    product_map={str(row.get("id")):row for row in product_rows}
+
+    def batch_product_key(takeover):
+        shift=shift_map.get(str(takeover.get("shift_id")),{})
+        nozzle=nozzle_map.get(str(shift.get("nozzle_id")),{})
+        nozzle_product=str(nozzle.get("product") or shift.get("product") or "")
+        product=None
+        product_id=nozzle.get("product_id")
+        if product_id is not None:
+            product=product_map.get(str(product_id))
+        if product is None and nozzle_product:
+            needle=nozzle_product.strip().lower()
+            product=next((p for p in product_rows if needle in {
+                str(p.get("code_name") or "").strip().lower(),
+                str(p.get("code") or "").strip().lower(),
+                str(p.get("product_code") or "").strip().lower(),
+                str(p.get("name") or "").strip().lower()
+            }),None)
+        return str((product or {}).get("id") or product_id or nozzle.get("product") or shift.get("product") or "unassigned")
+
+    def batch_dsr_date(takeover):
+        shift=shift_map.get(str(takeover.get("shift_id")),{})
+        value=takeover.get("shift_started_at") or shift.get("start_time") or shift.get("started_at") or takeover.get("created_at")
+        if not value:
+            return "DSR"
+        try:
+            parsed=datetime.fromisoformat(str(value).replace("Z","+00:00"))
+            if parsed.tzinfo is None:
+                # Naive timestamps are interpreted in the station's local time.
+                return parsed.date().isoformat()
+            return (parsed.astimezone(timezone.utc)+timedelta(hours=3)).date().isoformat()
+        except Exception:
+            return str(value)[:10]
+
+    grouped_keys=set()
+    for takeover in takeovers:
+        grouped_keys.add((batch_product_key(takeover),batch_dsr_date(takeover)))
+    if len(grouped_keys) != 1:
+        return jsonify({"error":"Record Sales submissions must contain shifts for one configured product and one DSR only."}),400
+
     status,result=rpc("record_shift_takeover_sales_batch",{
         "p_employee_id":session["employee_id"],
         "p_batch":batch
