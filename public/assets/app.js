@@ -841,7 +841,25 @@ async function userDashboard(){
         '<div class="pending-deactivation-action"><button class="primary" type="button" onclick="openDispenserDeactivationConfirmation(\''+req.id+'\')"><span>Enter closing readings</span><span aria-hidden="true">→</span></button></div>'+
       '</div>';
     }).join('');
-    const pendingTakeoverHtml=pendingTakeovers.slice(0,5).map(t=>{
+    const attendantDsrGroups=(records,timestampFor,renderCard)=>{
+      const groups={};
+      records.forEach(record=>{
+        const timestamp=timestampFor(record);
+        const dsrId=dailyReportIdFromTimestamp(timestamp);
+        (groups[dsrId]||(groups[dsrId]=[])).push(record);
+      });
+      return Object.keys(groups).sort().reverse().map(dsrId=>
+        '<section class="attendant-dsr-card-group" data-dsr-id="'+h(dsrId)+'">'+
+          '<div class="attendant-dsr-group-title"><span>DSR ID</span><strong>'+h(dsrId)+'</strong></div>'+
+          '<div class="attendant-dsr-group-divider" aria-hidden="true"></div>'+
+          '<div class="attendant-dsr-group-cards">'+groups[dsrId].map(renderCard).join('')+'</div>'+
+        '</section>'
+      ).join('');
+    };
+    const pendingTakeoverHtml=attendantDsrGroups(pendingTakeovers.slice(0,5),t=>{
+      const shift=shifts.find(s=>String(s.id)===String(t.shift_id));
+      return t.shift_started_at||shift?.start_time||shift?.started_at||t.created_at;
+    },t=>{
       const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
       const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
       const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
@@ -863,9 +881,12 @@ async function userDashboard(){
           '<button class="primary" type="button" onclick="openTakeoverDetails(\''+t.id+'\')">View details</button>'+
         '</div>'+
       '</div>';
-    }).join('');
+    });
     const batchRecordSalesCard=readyTakeovers.length?'<div class="card batch-record-sales-launch-card"><div><span class="section-kicker">MULTI-SHIFT</span><h3>Record Sales Together</h3><p>Select multiple MGR and AGO shifts, enter combined payment amounts once, and review proportional allocations before submitting.</p></div><button class="primary" type="button" onclick="openBatchRecordSalesModal()">Select shifts & record together</button></div>':'';
-    const takeoverHtml=readyTakeovers.map(t=>{
+    const takeoverHtml=attendantDsrGroups(readyTakeovers,t=>{
+      const shift=shifts.find(s=>String(s.id)===String(t.shift_id));
+      return t.shift_started_at||shift?.start_time||shift?.started_at||t.created_at;
+    },t=>{
       const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
       const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
       const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
@@ -874,7 +895,7 @@ async function userDashboard(){
         '<div class="main-record-sale-summary"><div><span>Net liters sold</span><strong>'+liters(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netLiters)+' L</strong></div><div><span>Gross sales amount</span><strong>'+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).grossAmount)+'</strong></div>'+(Number(t.returned_liters||0)>0?'<div><span>Returned fuel deduction</span><strong>− '+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).returnedAmount)+'</strong></div>':'')+'<div><span>Net sales amount</span><strong>'+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netAmount)+'</strong></div></div>'+
         '<div class="main-record-sale-actions"><button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button><button class="btn" type="button" onclick="window.openTakeoverDetails(this.dataset.takeoverId)" data-takeover-id="'+h(t.id)+'">Details</button></div>'+
       '</div>';
-    }).join('');
+    });
     // A pending deactivation replaces the active-shift card on the attendant dashboard.
     // Never render both states for the same shift.
     const pendingDeactivationShiftIds=new Set((Array.isArray(deactivationRequests)?deactivationRequests:[]).map(x=>String(x.shift_id)));
