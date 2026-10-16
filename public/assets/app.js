@@ -769,12 +769,11 @@ async function userDashboard(){
     // Individual card types must not create their own duplicate DSR sections.
     const attendantDsrCardGroups={};
     const attendantDsrCategoryFor=cardHtml=>{
-      if(cardHtml.includes('Pending Shift Confirmation'))return {id:'shift-confirmation',title:'Shift Confirmation',priority:0};
-      if(cardHtml.includes('handover-pending-card')||cardHtml.includes('handover-receive-card'))return {id:'handover',title:'Handover',priority:1};
-      if(cardHtml.includes('pending-takeover-sale-card')||cardHtml.includes('main-record-sale-card')||cardHtml.includes('batch-record-sales-launch-card'))return {id:'sales-recording',title:'Sales Recording',priority:2};
-      if(cardHtml.includes('pending-deactivation-card'))return {id:'deactivation',title:'Dispenser Deactivation',priority:3};
-      if(cardHtml.includes('active-shift-card'))return {id:'active-shifts',title:'Active Shifts',priority:4};
-      return {id:'other',title:'Shift Activity',priority:5};
+      if(cardHtml.includes('Pending Shift Confirmation')||cardHtml.includes('handover-pending-card')||cardHtml.includes('handover-receive-card'))return {id:'shift-handover',title:'Pending Shift Confirmation & Pending Handover',priority:0};
+      if(cardHtml.includes('pending-takeover-sale-card')||cardHtml.includes('main-record-sale-card')||cardHtml.includes('batch-record-sales-launch-card'))return {id:'sales-recording',title:'Pending Record Sale Confirmation & Record Sale',priority:1};
+      if(cardHtml.includes('active-shift-card'))return {id:'active-shifts',title:'Active Shift',priority:2};
+      if(cardHtml.includes('pending-deactivation-card'))return {id:'deactivation',title:'Pending Dispenser Deactivation',priority:3};
+      return {id:'other',title:'Shift Activity',priority:4};
     };
     const attendantDsrGroups=(records,timestampFor,renderCard)=>{
       (Array.isArray(records)?records:[]).forEach(record=>{
