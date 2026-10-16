@@ -3686,6 +3686,8 @@ def record_shift_takeover_sales_batch():
     takeover_map={str(row.get("id")):row for row in takeovers}
     if len(takeover_map) != len(seen):
         return jsonify({"error":"One or more selected shifts could not be verified. Refresh and try again."}),409
+    if any(str(row.get("from_employee_id")) != str(session.get("employee_id")) for row in takeovers):
+        return jsonify({"error":"You can only record sales for your own shifts."}),403
     shift_ids=[str(row.get("shift_id")) for row in takeovers if row.get("shift_id")]
     if len(shift_ids) != len(takeovers):
         return jsonify({"error":"A selected shift is missing its dispenser assignment."}),409
