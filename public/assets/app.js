@@ -5779,12 +5779,13 @@ function downloadDailyReportPdf(){
     if(!out||!out.blob){toast('DSR PDF is not ready. Refresh the report and try again.');return;}
     const url=URL.createObjectURL(out.blob),link=document.createElement('a');
     link.href=url;link.download=out.name||'DSR-report.pdf';link.style.display='none';
-    link.setAttribute('target','_blank');
+    // Do not set target=_blank: mobile browsers can prioritize opening a blank tab
+    // over honoring the download attribute for a generated Blob URL.
     document.body.appendChild(link);
     link.click();
     link.remove();
-    // Keep the object URL alive longer for slower mobile browsers/download managers.
-    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    // Keep the object URL alive while mobile browsers hand the file to Downloads.
+    setTimeout(()=>URL.revokeObjectURL(url),120000);
     toast('DSR PDF download started');
   }catch(error){
     console.error('DSR PDF download failed:',error);
