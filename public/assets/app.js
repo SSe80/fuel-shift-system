@@ -3195,7 +3195,7 @@ function createDsrReportPdf(r){
       }
       nozzles.forEach(n=>{
         const rh=25;
-        if(d.y+rh>BOTTOM){d.newPage();nozzleHead();}
+        if(d.y+rh>d.BOTTOM){d.newPage();nozzleHead();}
         d.box(M,d.y,d.CW,rh,C.CARD);
         d.text(d.fit(n.label,8.5,false,250),M+20,d.y+9,8.5,false,C.INK);
         d.text(n.opening,M+nozzleCols[1].x,d.y+9,8.5,false,C.INK,'r');
