@@ -291,18 +291,21 @@ function continueBatchRecordSales(){
   if(combinedCalculated<=0&&combinedEnteredCents>0){fail('This product group has zero calculated sales, so all payment totals must be zero.');return;}
   const shares=shifts.map(shift=>combinedCalculated>0?shift.calculated/combinedCalculated:0);
   // Allocate each entered payment type proportionally by calculated net sales.
-  // Assign rounding remainders to the last eligible dispenser so each type total is preserved exactly.
+  // Largest-remainder rounding preserves every entered type total exactly without negative cents.
   for(const item of enteredByType){
     const eligibleIndexes=shifts.map((shift,index)=>({shift,index})).filter(x=>x.shift.calculated>0).map(x=>x.index);
-    let remaining=item.cents;
-    for(let position=0;position<eligibleIndexes.length;position++){
-      const index=eligibleIndexes[position];
-      const allocatedCents=position===eligibleIndexes.length-1
-        ?remaining
-        :Math.round(item.cents*shares[index]);
-      remaining-=allocatedCents;
-      if(allocatedCents>0){
-        shifts[index].sales.push({sale_type_id:String(item.type.id),amount:allocatedCents/100,reason:item.reason||null});
+    const allocations=eligibleIndexes.map(index=>{
+      const exactCents=item.cents*shares[index];
+      const baseCents=Math.floor(exactCents);
+      return {index,cents:baseCents,remainder:exactCents-baseCents};
+    });
+    let remaining=item.cents-allocations.reduce((sum,allocation)=>sum+allocation.cents,0);
+    allocations.slice().sort((a,b)=>b.remainder-a.remainder).forEach(allocation=>{
+      if(remaining>0){allocations.find(x=>x.index===allocation.index).cents+=1;remaining-=1;}
+    });
+    for(const allocation of allocations){
+      if(allocation.cents>0){
+        shifts[allocation.index].sales.push({sale_type_id:String(item.type.id),amount:allocation.cents/100,reason:item.reason||null});
       }
     }
   }
