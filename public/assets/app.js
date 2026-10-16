@@ -223,111 +223,90 @@ function recordSaleProductForTakeover(t){
   return {key:String(product?.id||nozzle?.product_id||nozzle?.product||shift?.product||'unassigned'),label:String(product?.code_name||product?.code||product?.product_code||nozzle?.product||shift?.product||product?.name||'Unassigned product'),shift,nozzle};
 }
 function openBatchRecordSalesModal(productKey,dsrId){
-  const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
-  const selected=eligible.filter(t=>recordSaleDsrForTakeover(t)===String(dsrId)&&recordSaleProductForTakeover(t).key===String(productKey));
-  if(!selected.length){toast('No eligible shifts remain in this product group');return;}
-  if(selected.length>20){toast('This product group has more than 20 shifts. Record up to 20 at a time.');return;}
-  window.batchRecordSalesStage='entry';
-  window.batchRecordSalesDsrId=String(dsrId);
-  window.batchRecordSalesProductKey=String(productKey);
-  window.batchRecordSalesSelected=new Set(selected.map(t=>String(t.id)));
-  window.pendingBatchRecordSales=null;
-  const status=document.getElementById('batch-record-status');
-  if(status)status.innerHTML='';
-  const list=document.getElementById('batch-record-shift-list');
-  if(list)list.innerHTML=selected.map(t=>{
-    const info=recordSaleProductForTakeover(t);
-    const breakdown=adminReturnedFuelBreakdown(t,Number(t.returned_liters||0));
-    return '<article class="batch-record-shift-option batch-record-fixed-shift" data-takeover-id="'+h(t.id)+'"><span><strong>'+h(info.nozzle?.nozzle_code||t.dispenser_code||'Dispenser')+'</strong><small>'+h(info.label)+' · '+h(new Date(t.shift_ended_at||t.created_at||Date.now()).toLocaleString())+'</small></span><b>'+money(breakdown.netAmount)+'</b></article>';
-  }).join('');
-  const types=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
-  const payments=document.getElementById('batch-record-payment-list');
-  if(payments)payments.innerHTML=selected.map(t=>{
-    const info=recordSaleProductForTakeover(t);
-    const breakdown=adminReturnedFuelBreakdown(t,Number(t.returned_liters||0));
-    return '<section class="batch-record-dispenser-payment" data-takeover-id="'+h(t.id)+'"><div class="batch-record-dispenser-heading"><strong>'+h(info.nozzle?.nozzle_code||t.dispenser_code||'Dispenser')+'</strong><span>Calculated net sales: '+money(breakdown.netAmount)+'</span><small>Net liters: '+liters(breakdown.netLiters)+' L'+(Number(t.returned_liters||0)>0?' · Returned fuel: '+liters(t.returned_liters)+' L':'')+'</small></div>'+types.map(s=>'<div class="batch-record-payment-row" data-sale-type="'+h(s.id)+'"><label>'+h(s.name)+(s.description?' <small>'+h(s.description)+'</small>':'')+'<input type="number" class="batch-record-payment-amount" data-sale-id="'+h(s.id)+'" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></label>'+(s.reason_required?'<label class="batch-record-reason-label">Reason<textarea class="batch-record-payment-reason" data-reason-id="'+h(s.id)+'" rows="2" placeholder="Required when this sales type is used"></textarea></label>':'')+'</div>').join('')+'</section>';
-  }).join('')||'<p class="muted">No active sales types are configured.</p>';
-  const summary=document.getElementById('batch-record-selected-summary');
-  if(summary)summary.innerHTML='<div><span>Product</span><strong>'+h(recordSaleProductForTakeover(selected[0]).label)+'</strong></div><div><span>DSR ID</span><strong>'+h(dsrId)+'</strong></div><div><span>Dispenser shifts</span><strong>'+selected.length+'</strong></div>';
-  const title=document.querySelector('#batch-record-sales-modal .top h3');
-  if(title)title.textContent='Record '+recordSaleProductForTakeover(selected[0]).label+' Sales';
-  const subtitle=document.querySelector('#batch-record-sales-modal .top p');
-  if(subtitle)subtitle.textContent='Enter the actual payment breakdown separately for each dispenser.';
-  const entry=document.getElementById('batch-record-entry'),preview=document.getElementById('batch-record-review');
-  if(entry)entry.hidden=false;if(preview)preview.hidden=true;
-  const button=document.getElementById('batch-record-submit');
-  if(button){button.disabled=false;button.textContent='Submit all shifts';}
-  const modal=document.getElementById('batch-record-sales-modal');
-  if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
+ const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
+ const selected=eligible.filter(t=>recordSaleDsrForTakeover(t)===String(dsrId)&&recordSaleProductForTakeover(t).key===String(productKey));
+ if(!selected.length){toast('No eligible shifts remain in this product group');return;}
+ if(selected.length>20){toast('This product group has more than 20 shifts. Record up to 20 at a time.');return;}
+ window.batchRecordSalesDsrId=String(dsrId);window.batchRecordSalesProductKey=String(productKey);window.batchRecordSalesSelected=new Set(selected.map(t=>String(t.id)));window.pendingBatchRecordSales=null;
+ const status=document.getElementById('batch-record-status');if(status)status.innerHTML='';
+ const rows=selected.map(t=>({t,info:recordSaleProductForTakeover(t),calc:adminReturnedFuelBreakdown(t,Number(t.returned_liters||0))}));
+ const combined=rows.reduce((a,x)=>({amount:a.amount+x.calc.netAmount,liters:a.liters+x.calc.netLiters}),{amount:0,liters:0});
+ const list=document.getElementById('batch-record-shift-list');
+ if(list)list.innerHTML=rows.map(x=>'<article class="batch-record-shift-option batch-record-fixed-shift" data-takeover-id="'+h(x.t.id)+'"><span><strong>'+h(x.info.nozzle?.nozzle_code||x.t.dispenser_code||'Dispenser')+'</strong><small>'+h(x.info.label)+' · '+h(new Date(x.t.shift_ended_at||x.t.created_at||Date.now()).toLocaleString())+'</small></span><b>'+money(x.calc.netAmount)+'</b></article>').join('');
+ const types=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
+ const payments=document.getElementById('batch-record-payment-list');
+ if(payments)payments.innerHTML='<div class="batch-record-shared-total"><span>Combined calculated net sales</span><strong>'+money(combined.amount)+'</strong><small>'+liters(combined.liters)+' L across '+selected.length+' dispenser shifts</small></div>'+types.map(type=>'<div class="batch-record-payment-row" data-sale-type="'+h(type.id)+'"><label>'+h(type.name)+(type.description?' <small>'+h(type.description)+'</small>':'')+'<input type="number" class="batch-record-payment-amount" data-sale-id="'+h(type.id)+'" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></label>'+(type.reason_required?'<label class="batch-record-reason-label">Reason<textarea class="batch-record-payment-reason" data-reason-id="'+h(type.id)+'" rows="2" placeholder="Required when this sales type is used"></textarea></label>':'')+'</div>').join('')||'<p class="muted">No active sales types are configured.</p>';
+ const summary=document.getElementById('batch-record-selected-summary');
+ if(summary)summary.innerHTML='<div><span>Product</span><strong>'+h(rows[0].info.label)+'</strong></div><div><span>DSR ID</span><strong>'+h(dsrId)+'</strong></div><div><span>Dispenser shifts</span><strong>'+selected.length+'</strong></div><div><span>Combined net sales</span><strong>'+money(combined.amount)+'</strong></div>';
+ const title=document.querySelector('#batch-record-sales-modal .top h3');if(title)title.textContent='Record '+rows[0].info.label+' Sales';
+ const subtitle=document.querySelector('#batch-record-sales-modal .top p');if(subtitle)subtitle.textContent='Enter one shared payment breakdown. The system automatically allocates each sales type across dispensers based on their calculated net sales.';
+ const entry=document.getElementById('batch-record-entry'),preview=document.getElementById('batch-record-review');if(entry)entry.hidden=false;if(preview)preview.hidden=true;
+ const button=document.getElementById('batch-record-submit');if(button){button.disabled=false;button.textContent='Submit all shifts';}
+ const modal=document.getElementById('batch-record-sales-modal');if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false');}
 }
-function closeBatchRecordSalesModal(){
-  const modal=document.getElementById('batch-record-sales-modal');
-  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-}
+function closeBatchRecordSalesModal(){const modal=document.getElementById('batch-record-sales-modal');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}}
 function updateBatchRecordSelectionSummary(){}
 function continueBatchRecordSales(){
-  return (async()=>{
-  const status=document.getElementById('batch-record-status');
-  const selectedIds=Array.from(window.batchRecordSalesSelected||[]);
-  const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
-  const selected=eligible.filter(t=>selectedIds.includes(String(t.id)));
-  const fail=message=>{if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">'+h(message)+'</div>';};
-  if(!selected.length){fail('No eligible shifts remain in this product group. Refresh the dashboard and try again.');return;}
-  if(selected.length>20){fail('A batch can contain no more than 20 shifts.');return;}
-  if(new Set(selected.map(recordSaleDsrForTakeover)).size!==1||selected.some(t=>recordSaleDsrForTakeover(t)!==String(window.batchRecordSalesDsrId))){fail('All shifts must belong to the same DSR.');return;}
-  if(selected.some(t=>recordSaleProductForTakeover(t).key!==String(window.batchRecordSalesProductKey))){fail('All shifts must belong to the same configured product.');return;}
-  const types=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
-  const shifts=[];
-  for(const t of selected){
-    const calc=adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netAmount;
-    const row=document.querySelector('#batch-record-payment-list [data-takeover-id="'+CSS.escape(String(t.id))+'"]');
-    if(!row){fail('Payment fields are missing for '+(t.dispenser_code||'a dispenser')+'. Close and reopen the form.');return;}
-    const sales=[];
-    for(const type of types){
-      const paymentRow=row.querySelector('[data-sale-type="'+CSS.escape(String(type.id))+'"]');
-      const input=paymentRow?.querySelector('.batch-record-payment-amount');
-      const amount=Number(input?.value||0);
-      if(!Number.isFinite(amount)||amount<0){fail('Enter valid non-negative amounts for every dispenser.');return;}
-      const reason=paymentRow?.querySelector('.batch-record-payment-reason')?.value.trim()||'';
-      if(amount>0&&type.reason_required&&!reason){fail('A reason is required for '+type.name+' on '+(recordSaleProductForTakeover(t).nozzle?.nozzle_code||t.dispenser_code||'this dispenser')+'.');return;}
-      if(amount>0)sales.push({sale_type_id:String(type.id),amount:Math.round(amount*100)/100,reason:reason||null});
-    }
-    const entered=Math.round(sales.reduce((sum,p)=>sum+p.amount,0)*100)/100;
-    shifts.push({takeover:t,sales,calculated:calc,entered,difference:Math.round((entered-calc)*100)/100});
-  }
-  let settings;
-  try{settings=await api('/api/settings');}catch(e){fail('Unable to load the configured sales-difference tolerance. Check your connection and try again.');return;}
-  const tolerance=Number(settings?.sales_difference_tolerance);
-  if(!Number.isFinite(tolerance)||tolerance<0){fail('The configured sales-difference tolerance could not be verified. Ask an administrator to check Settings.');return;}
-  for(const s of shifts){
-    if(Math.abs(s.difference)>tolerance+0.000001){fail((recordSaleProductForTakeover(s.takeover).nozzle?.nozzle_code||s.takeover.dispenser_code||'A dispenser')+': payments '+money(s.entered)+' must match net calculated sales '+money(s.calculated)+' within '+money(tolerance)+' tolerance. Difference: '+money(s.difference)+'.');return;}
-    if(s.calculated===0&&s.entered!==0){fail('Zero-sales shift '+(recordSaleProductForTakeover(s.takeover).nozzle?.nozzle_code||s.takeover.dispenser_code||'')+' must have zero payment amounts.');return;}
-  }
-  window.pendingBatchRecordSales={selected:shifts.map(s=>s.takeover),shifts};
-  const review=document.getElementById('batch-record-review-content');
-  if(review)review.innerHTML='<div class="takeover-sale-summary"><div><span>Product</span><strong>'+h(recordSaleProductForTakeover(shifts[0].takeover).label)+'</strong></div><div><span>DSR ID</span><strong>'+h(window.batchRecordSalesDsrId)+'</strong></div><div><span>Dispenser shifts</span><strong>'+shifts.length+'</strong></div><div><span>Combined calculated sales</span><strong>'+money(shifts.reduce((sum,s)=>sum+s.calculated,0))+'</strong></div><div><span>Combined payments</span><strong>'+money(shifts.reduce((sum,s)=>sum+s.entered,0))+'</strong></div></div><p class="muted">Review each dispenser’s independently entered payment breakdown. No proportional allocation is performed.</p>'+shifts.map(s=>{
-    const info=recordSaleProductForTakeover(s.takeover);
-    return '<div class="batch-record-review-shift"><strong>'+h(info.nozzle?.nozzle_code||s.takeover.dispenser_code||'Dispenser')+'</strong><span>Calculated: '+money(s.calculated)+'</span><span>Entered: '+money(s.entered)+'</span><span>Difference: '+money(s.difference)+'</span><div>'+s.sales.map(p=>{const type=types.find(x=>String(x.id)===String(p.sale_type_id));return '<span>'+h(type?.name||'Sale')+': '+money(p.amount)+(p.reason?' — '+h(p.reason):'')+'</span>';}).join(' · ')+'</div></div>';
-  }).join('');
-  if(status)status.innerHTML='';
-  const entry=document.getElementById('batch-record-entry'),preview=document.getElementById('batch-record-review');
-  if(entry)entry.hidden=true;if(preview)preview.hidden=false;
-  })();
+ return (async()=>{
+ const status=document.getElementById('batch-record-status');
+ const ids=Array.from(window.batchRecordSalesSelected||[]);
+ const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
+ const selected=eligible.filter(t=>ids.includes(String(t.id)));
+ const fail=message=>{if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">'+h(message)+'</div>';};
+ if(!selected.length){fail('No eligible shifts remain in this product group. Refresh the dashboard and try again.');return;}
+ if(selected.length>20){fail('A batch can contain no more than 20 shifts.');return;}
+ if(new Set(selected.map(recordSaleDsrForTakeover)).size!==1||selected.some(t=>recordSaleDsrForTakeover(t)!==String(window.batchRecordSalesDsrId))){fail('All shifts must belong to the same DSR.');return;}
+ if(selected.some(t=>recordSaleProductForTakeover(t).key!==String(window.batchRecordSalesProductKey))){fail('All shifts must belong to the same configured product.');return;}
+ const types=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
+ const shifts=selected.map(t=>{const b=adminReturnedFuelBreakdown(t,Number(t.returned_liters||0));return {takeover:t,calculated:b.netAmount,netLiters:b.netLiters,sales:[],entered:0,difference:0};});
+ const totalCalculated=Math.round(shifts.reduce((sum,s)=>sum+s.calculated,0)*100)/100;
+ const sharedSales=[];
+ for(const type of types){
+  const row=document.querySelector('#batch-record-payment-list [data-sale-type="'+CSS.escape(String(type.id))+'"]');
+  const amount=Number(row?.querySelector('.batch-record-payment-amount')?.value||0);
+  if(!Number.isFinite(amount)||amount<0){fail('Enter valid non-negative amounts for every sales type.');return;}
+  const reason=row?.querySelector('.batch-record-payment-reason')?.value.trim()||'';
+  if(amount>0&&type.reason_required&&!reason){fail('A reason is required for '+type.name+'.');return;}
+  if(amount>0)sharedSales.push({sale_type_id:String(type.id),amount:Math.round(amount*100)/100,reason:reason||null});
+ }
+ const totalEntered=Math.round(sharedSales.reduce((sum,p)=>sum+p.amount,0)*100)/100;
+ let settings;try{settings=await api('/api/settings');}catch(e){fail('Unable to load the configured sales-difference tolerance. Check your connection and try again.');return;}
+ const tolerance=Number(settings?.sales_difference_tolerance);
+ if(!Number.isFinite(tolerance)||tolerance<0){fail('The configured sales-difference tolerance could not be verified. Ask an administrator to check Settings.');return;}
+ const totalDifference=Math.round((totalEntered-totalCalculated)*100)/100;
+ if(Math.abs(totalDifference)>tolerance+0.000001){fail('Combined payments '+money(totalEntered)+' must match combined net calculated sales '+money(totalCalculated)+' within '+money(tolerance)+' tolerance. Difference: '+money(totalDifference)+'.');return;}
+ if(totalCalculated===0&&totalEntered!==0){fail('This product group has zero calculated sales, so the shared payment total must be zero.');return;}
+ const cents=n=>Math.round((Number(n)||0)*100),weights=shifts.map(s=>Math.max(0,s.calculated)),weightTotal=weights.reduce((a,b)=>a+b,0);
+ for(const payment of sharedSales){
+  const totalCents=cents(payment.amount);
+  const indexes=shifts.map((s,i)=>({s,i})).filter(x=>x.s.calculated>0);
+  if(!indexes.length)continue;
+  const shares=indexes.map(x=>{const exact=weightTotal>0?totalCents*weights[x.i]/weightTotal:0;return {...x,cents:Math.floor(exact),remainder:exact-Math.floor(exact)};});
+  let centsLeft=totalCents-shares.reduce((sum,x)=>sum+x.cents,0);
+  shares.slice().sort((a,b)=>b.remainder-a.remainder||a.i-b.i).slice(0,centsLeft).forEach(x=>{shares.find(y=>y.i===x.i).cents+=1;});
+  shares.forEach(x=>{if(x.cents>0)shifts[x.i].sales.push({...payment,amount:x.cents/100});});
+ }
+ for(const s of shifts){
+  s.entered=Math.round(s.sales.reduce((sum,p)=>sum+p.amount,0)*100)/100;s.difference=Math.round((s.entered-s.calculated)*100)/100;
+  if(Math.abs(s.difference)>tolerance+0.000001){fail('Automatic allocation for '+(recordSaleProductForTakeover(s.takeover).nozzle?.nozzle_code||s.takeover.dispenser_code||'a dispenser')+' differs from its calculated net sales by '+money(s.difference)+', exceeding the configured tolerance.');return;}
+  if(s.calculated===0&&s.entered!==0){fail('Zero-sales shift '+(recordSaleProductForTakeover(s.takeover).nozzle?.nozzle_code||s.takeover.dispenser_code||'')+' must receive zero allocated payments.');return;}
+ }
+ window.pendingBatchRecordSales={selected:shifts.map(s=>s.takeover),shifts};
+ const review=document.getElementById('batch-record-review-content');
+ if(review)review.innerHTML='<div class="takeover-sale-summary"><div><span>Product</span><strong>'+h(recordSaleProductForTakeover(shifts[0].takeover).label)+'</strong></div><div><span>DSR ID</span><strong>'+h(window.batchRecordSalesDsrId)+'</strong></div><div><span>Combined calculated sales</span><strong>'+money(totalCalculated)+'</strong></div><div><span>Combined payments</span><strong>'+money(totalEntered)+'</strong></div></div><p class="muted">Review the automatic allocation before submitting. Allocations are proportional to each dispenser’s calculated net sales, and the full shared total is preserved.</p>'+shifts.map(s=>{
+  const info=recordSaleProductForTakeover(s.takeover);
+  return '<div class="batch-record-review-shift"><strong>'+h(info.nozzle?.nozzle_code||s.takeover.dispenser_code||'Dispenser')+'</strong><span>Calculated: '+money(s.calculated)+'</span><span>Allocated: '+money(s.entered)+'</span><span>Difference: '+money(s.difference)+'</span><div>'+s.sales.map(p=>{const type=types.find(x=>String(x.id)===String(p.sale_type_id));return '<span>'+h(type?.name||'Sale')+': '+money(p.amount)+(p.reason?' — '+h(p.reason):'')+'</span>';}).join(' · ')+'</div></div>';
+ }).join('');
+ if(status)status.innerHTML='';const entry=document.getElementById('batch-record-entry'),preview=document.getElementById('batch-record-review');if(entry)entry.hidden=true;if(preview)preview.hidden=false;
+ })();
 }
-function backToBatchRecordEntry(){
-  const preview=document.getElementById('batch-record-review'),entry=document.getElementById('batch-record-entry');
-  if(preview)preview.hidden=true;if(entry)entry.hidden=false;
-}
+function backToBatchRecordEntry(){const preview=document.getElementById('batch-record-review'),entry=document.getElementById('batch-record-entry');if(preview)preview.hidden=true;if(entry)entry.hidden=false;}
 async function submitBatchRecordSales(){
-  const pending=window.pendingBatchRecordSales,button=document.getElementById('batch-record-submit'),status=document.getElementById('batch-record-status');
-  if(!pending)return;
-  if(button){button.disabled=true;button.textContent='Submitting…';}
-  try{
-    const batch=pending.shifts.map(s=>({takeover_id:s.takeover.id,sales:s.sales.map(p=>({...p,amount:Math.round(p.amount*100)/100}))}));
-    await api('/api/shift-takeovers/record-sales-batch',{method:'POST',body:JSON.stringify({batch})});
-    closeBatchRecordSalesModal();toast('Product sales submitted for admin confirmation');await userDashboard();
-  }catch(e){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Batch submission failed: '+h(e?.message||'Please try again.')+'</div>';}
-  finally{if(button){button.disabled=false;button.textContent='Submit all shifts';}}
+ const pending=window.pendingBatchRecordSales,button=document.getElementById('batch-record-submit'),status=document.getElementById('batch-record-status');if(!pending)return;
+ if(button){button.disabled=true;button.textContent='Submitting…';}
+ try{const batch=pending.shifts.map(s=>({takeover_id:s.takeover.id,sales:s.sales.map(p=>({...p,amount:Math.round(p.amount*100)/100}))}));await api('/api/shift-takeovers/record-sales-batch',{method:'POST',body:JSON.stringify({batch})});closeBatchRecordSalesModal();toast('Product sales submitted for admin confirmation');await userDashboard();}
+ catch(e){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Batch submission failed: '+h(e?.message||'Please try again.')+'</div>';}
+ finally{if(button){button.disabled=false;button.textContent='Submit all shifts';}}
 }
 
 function openTakeoverSaleModal(id){
