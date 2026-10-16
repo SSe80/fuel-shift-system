@@ -5773,13 +5773,23 @@ function buildDailyReportPdfBlob(){
   return {blob,name:'DSR-'+String(d||'report').replace(/[^A-Za-z0-9_-]/g,'_')+'-report.pdf'};
 }
 function downloadDailyReportPdf(){
-  const out=buildDailyReportPdfBlob();
-  if(!out){toast('Open a DSR detail page first.');return;}
-  const url=URL.createObjectURL(out.blob),link=document.createElement('a');
-  link.href=url;link.download=out.name;
-  document.body.appendChild(link);link.click();link.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1500);
-  toast('DSR PDF downloaded');
+  let out;
+  try{
+    out=buildDailyReportPdfBlob();
+    if(!out||!out.blob){toast('DSR PDF is not ready. Refresh the report and try again.');return;}
+    const url=URL.createObjectURL(out.blob),link=document.createElement('a');
+    link.href=url;link.download=out.name||'DSR-report.pdf';link.style.display='none';
+    link.setAttribute('target','_blank');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    // Keep the object URL alive longer for slower mobile browsers/download managers.
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    toast('DSR PDF download started');
+  }catch(error){
+    console.error('DSR PDF download failed:',error);
+    toast('Could not create the DSR PDF. Refresh the report and try again.');
+  }
 }
 
 async function loadDailyReport(showDetails=false){
