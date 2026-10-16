@@ -771,7 +771,9 @@ async function userDashboard(){
     const attendantDsrGroups=(records,timestampFor,renderCard)=>{
       (Array.isArray(records)?records:[]).forEach(record=>{
         const dsrId=dailyReportIdFromTimestamp(timestampFor(record));
-        (attendantDsrCardGroups[dsrId]||(attendantDsrCardGroups[dsrId]=[])).push(renderCard(record));
+        const cardHtml=renderCard(record);
+        const priority=cardHtml.includes('Pending Shift Confirmation')?0:1;
+        (attendantDsrCardGroups[dsrId]||(attendantDsrCardGroups[dsrId]=[])).push({html:cardHtml,priority});
       });
       return '';
     };
@@ -955,13 +957,13 @@ async function userDashboard(){
       const firstReady=readyTakeovers[0];
       const firstReadyShift=shifts.find(s=>String(s.id)===String(firstReady.shift_id));
       const firstReadyDsr=dailyReportIdFromTimestamp(firstReady.shift_started_at||firstReadyShift?.start_time||firstReadyShift?.started_at||firstReady.created_at);
-      (attendantDsrCardGroups[firstReadyDsr]||(attendantDsrCardGroups[firstReadyDsr]=[])).unshift(batchRecordSalesCard);
+      (attendantDsrCardGroups[firstReadyDsr]||(attendantDsrCardGroups[firstReadyDsr]=[])).push({html:batchRecordSalesCard,priority:1});
     }
     const unifiedDsrSections=Object.keys(attendantDsrCardGroups).sort().reverse().map(dsrId=>
       '<section class="attendant-dsr-card-group" data-dsr-id="'+h(dsrId)+'">'+
         '<div class="attendant-dsr-group-title"><span>DSR ID</span><strong>'+h(dsrId)+'</strong></div>'+
         '<div class="attendant-dsr-group-divider" aria-hidden="true"></div>'+
-        '<div class="attendant-dsr-group-cards">'+attendantDsrCardGroups[dsrId].join('')+'</div>'+
+        '<div class="attendant-dsr-group-cards">'+attendantDsrCardGroups[dsrId].sort((a,b)=>a.priority-b.priority).map(item=>item.html).join('')+'</div>'+
       '</section>'
     ).join('');
     box.innerHTML=unifiedDsrSections?'<section class="dashboard-section"><div class="dashboard-section-head"><div><span class="section-kicker">DAILY SHIFT REPORTS</span><h2>Shift & Sales Activity</h2></div></div><div class="dashboard-section-cards">'+unifiedDsrSections+'</div></section>':'';
