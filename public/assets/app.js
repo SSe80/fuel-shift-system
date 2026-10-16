@@ -278,12 +278,13 @@ function continueBatchRecordSales(){
  if(totalCalculated===0&&totalEntered!==0){fail('This product group has zero calculated sales, so the shared payment total must be zero.');return;}
  const cents=n=>Math.round((Number(n)||0)*100),weights=shifts.map(s=>Math.max(0,s.calculated)),weightTotal=weights.reduce((a,b)=>a+b,0);
  for(const payment of sharedSales){
-  const totalCents=cents(payment.amount);let allocated=0;
+  const totalCents=cents(payment.amount);
   const indexes=shifts.map((s,i)=>({s,i})).filter(x=>x.s.calculated>0);
-  indexes.forEach((x,index)=>{
-   const amountCents=index===indexes.length-1?totalCents-allocated:(weightTotal>0?Math.floor(totalCents*weights[x.i]/weightTotal):0);
-   allocated+=amountCents;if(amountCents>0)shifts[x.i].sales.push({...payment,amount:amountCents/100});
-  });
+  if(!indexes.length)continue;
+  const shares=indexes.map(x=>{const exact=weightTotal>0?totalCents*weights[x.i]/weightTotal:0;return {...x,cents:Math.floor(exact),remainder:exact-Math.floor(exact)};});
+  let centsLeft=totalCents-shares.reduce((sum,x)=>sum+x.cents,0);
+  shares.slice().sort((a,b)=>b.remainder-a.remainder||a.i-b.i).slice(0,centsLeft).forEach(x=>{shares.find(y=>y.i===x.i).cents+=1;});
+  shares.forEach(x=>{if(x.cents>0)shifts[x.i].sales.push({...payment,amount:x.cents/100});});
  }
  for(const s of shifts){
   s.entered=Math.round(s.sales.reduce((sum,p)=>sum+p.amount,0)*100)/100;s.difference=Math.round((s.entered-s.calculated)*100)/100;
