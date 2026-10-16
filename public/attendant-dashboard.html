@@ -2184,6 +2184,51 @@ body.attendant-dashboard-page #takeover-sale-confirm-modal.modal.open > .modal-b
 #batch-record-status{padding:0 12px 12px}
 @media(max-width:600px){.batch-record-sales-launch-card{align-items:stretch}.batch-record-sales-launch-card button{width:100%}.batch-record-shift-option{grid-template-columns:20px minmax(0,1fr)}.batch-record-shift-option>b{grid-column:2}}
 </style>
+
+<style id="attendant-dashboard-cards">
+/* Attendant dashboard: every card in one simple, clear style. Red theme kept. */
+body.attendant-dashboard-page .card{background:#ffffff!important;border:1px solid #f3dede!important;border-radius:16px!important;box-shadow:0 1px 3px rgba(127,29,29,.06)!important;padding:16px!important;margin:0 0 14px!important;color:#1f2937}
+body.attendant-dashboard-page .card h2,body.attendant-dashboard-page .card h3,body.attendant-dashboard-page .card h4{margin:0!important;color:#111827!important;font-weight:800!important;line-height:1.25!important}
+body.attendant-dashboard-page .card h3{font-size:17px!important}
+body.attendant-dashboard-page .card p{margin:4px 0 0!important;color:#6b7280!important;font-size:13px!important;line-height:1.45!important}
+body.attendant-dashboard-page .card .section-kicker,body.attendant-dashboard-page .card [class$="-kicker"]{display:inline-block!important;margin:0 0 6px!important;font-size:10px!important;font-weight:800!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:#b91c1c!important}
+/* Header row of every card: title left, status right */
+body.attendant-dashboard-page .card .top,body.attendant-dashboard-page .card > .head,body.attendant-dashboard-page .card > header{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:12px!important;padding:0 0 12px!important;margin:0!important;border:0!important;background:transparent!important}
+/* Stat tiles: dispenser, tank, opening, readings */
+body.attendant-dashboard-page .card [class*="-tile"],body.attendant-dashboard-page .card [class*="-stat"],body.attendant-dashboard-page .card [class*="-metric"],body.attendant-dashboard-page .card [class*="-info-box"]{background:#fff7f7!important;border:1px solid #fbe0e0!important;border-radius:12px!important;padding:10px 12px!important;box-shadow:none!important}
+body.attendant-dashboard-page .card [class*="-tile"] span,body.attendant-dashboard-page .card [class*="-stat"] span,body.attendant-dashboard-page .card [class*="-metric"] span{display:block!important;font-size:10px!important;font-weight:700!important;letter-spacing:.06em!important;text-transform:uppercase!important;color:#9f1239!important}
+body.attendant-dashboard-page .card [class*="-tile"] strong,body.attendant-dashboard-page .card [class*="-stat"] strong,body.attendant-dashboard-page .card [class*="-metric"] strong{display:block!important;margin-top:3px!important;font-size:15px!important;font-weight:800!important;color:#111827!important}
+/* Status pills */
+body.attendant-dashboard-page .card [class*="status"],body.attendant-dashboard-page .card [class*="-pill"],body.attendant-dashboard-page .card [class*="-badge"]{display:inline-flex!important;align-items:center!important;gap:6px!important;padding:4px 10px!important;border-radius:999px!important;font-size:11px!important;font-weight:800!important;letter-spacing:.04em!important;text-transform:uppercase!important;background:#fee2e2!important;color:#b91c1c!important;border:0!important;white-space:nowrap!important}
+/* Primary and secondary buttons */
+body.attendant-dashboard-page .card button,body.attendant-dashboard-page .card .btn{min-height:46px!important;border-radius:12px!important;font-size:14px!important;font-weight:800!important;cursor:pointer!important;transition:background .15s ease,border-color .15s ease!important}
+body.attendant-dashboard-page .card button.primary,body.attendant-dashboard-page .card button:not(.secondary):not(.ghost):not([class*="close"]):not(.icon-btn){background:#dc2626!important;border:0!important;color:#ffffff!important;box-shadow:0 6px 14px -8px rgba(220,38,38,.7)!important}
+body.attendant-dashboard-page .card button.primary:hover,body.attendant-dashboard-page .card button:not(.secondary):hover{background:#b91c1c!important}
+body.attendant-dashboard-page .card button.secondary,body.attendant-dashboard-page .card button.ghost{background:#ffffff!important;border:1px solid #fecaca!important;color:#b91c1c!important;box-shadow:none!important}
+/* Inputs */
+body.attendant-dashboard-page .card input:not([type=checkbox]):not([type=radio]),body.attendant-dashboard-page .card select,body.attendant-dashboard-page .card textarea{min-height:46px!important;border:1px solid #e5e7eb!important;border-radius:12px!important;padding:10px 12px!important;font-size:15px!important;background:#ffffff!important;color:#111827!important}
+body.attendant-dashboard-page .card input:focus,body.attendant-dashboard-page .card select:focus,body.attendant-dashboard-page .card textarea:focus{outline:none!important;border-color:#dc2626!important;box-shadow:0 0 0 4px rgba(220,38,38,.12)!important}
+/* Lists inside cards: clear rows with dividers */
+body.attendant-dashboard-page .card [class*="-row"],body.attendant-dashboard-page .card [class*="-line"]{display:flex!important;justify-content:space-between!important;align-items:center!important;gap:12px!important;padding:10px 0!important;border-bottom:1px solid #fbe9e9!important;font-size:14px!important}
+body.attendant-dashboard-page .card [class*="-row"]:last-child,body.attendant-dashboard-page .card [class*="-line"]:last-child{border-bottom:0!important}
+/* Action cards get a red accent edge */
+body.attendant-dashboard-page .card.active-shift-card,body.attendant-dashboard-page .card.handover-pending-card,body.attendant-dashboard-page .card.handover-receive-card,body.attendant-dashboard-page .card.main-record-sale-card,body.attendant-dashboard-page .card.pending-takeover-sale-card,body.attendant-dashboard-page .card.pending-deactivation-card,body.attendant-dashboard-page .card.batch-record-sales-launch-card{border-left:4px solid #dc2626!important}
+/* Section titles above groups of cards */
+body.attendant-dashboard-page .attendant-dsr-card-category{padding:14px 16px!important}
+body.attendant-dashboard-page .attendant-dsr-card-category > h2,body.attendant-dashboard-page .attendant-dsr-card-category > h3{font-size:16px!important}
+/* Spacing between card groups */
+body.attendant-dashboard-page .dashboard-section-cards{display:grid!important;gap:14px!important}
+@media (max-width:480px){
+  body.attendant-dashboard-page .card{padding:14px!important;border-radius:14px!important}
+  body.attendant-dashboard-page .card button{width:100%!important}
+  body.attendant-dashboard-page .card .top{flex-direction:column!important;align-items:flex-start!important}
+}
+/* Group containers are plain: the inner cards carry the look (no card inside a card) */
+body.attendant-dashboard-page section.attendant-dsr-card-category.card{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;margin:0 0 14px!important;border-left:0!important}
+body.attendant-dashboard-page section.attendant-dsr-card-category.card > h2,body.attendant-dashboard-page section.attendant-dsr-card-category.card > h3{margin:0 2px 10px!important;font-size:13px!important;font-weight:800!important;letter-spacing:.08em!important;text-transform:uppercase!important;color:#b91c1c!important}
+body.attendant-dashboard-page section.attendant-dsr-card-category.card > .card{margin-top:0!important}
+body.attendant-dashboard-page .card button.primary{width:100%!important}
+</style>
 </body></html>
 <style id="record-sale-error-layer-fix">
 body.attendant-dashboard-page #takeover-sale-confirm-modal .record-sale-submit-error{
