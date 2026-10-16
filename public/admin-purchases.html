@@ -1758,6 +1758,22 @@ window.uploadPurchaseDetailPdf=async function(purchase){
             if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
           }
         }
+        // If the browser PDF renderer or browser-to-Worker upload fails, retry from
+        // the server-side canonical PDF renderer. This avoids depending on the
+        // device's PDF CDN/network and still uploads the saved purchase record.
+        if(!uploaded){
+          try{
+            const response=await fetch('/api/drive/purchases/retry',{
+              method:'POST',credentials:'same-origin',
+              headers:{'Content-Type':'application/json','X-Fuel-Role':'admin'},
+              body:JSON.stringify({purchase_id:id})
+            });
+            const result=await response.json().catch(()=>({}));
+            if(!response.ok||!result.ok)throw new Error(result.error||(result.failed||[]).map(x=>x.error).filter(Boolean).join('; ')||('Server PDF retry failed (HTTP '+response.status+')'));
+            uploaded=Number(result.uploaded)>0;
+            if(!uploaded)throw new Error((result.failed||[]).map(x=>x.error).filter(Boolean).join('; ')||'Server PDF retry did not upload this purchase.');
+          }catch(err){lastError=err;}
+        }
         if(uploaded){
           try{localStorage.setItem(key,signature);localStorage.removeItem(retryKey);}catch(_){}
         }else{
