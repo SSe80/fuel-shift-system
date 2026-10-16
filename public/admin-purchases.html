@@ -1143,7 +1143,7 @@
 <div class="modal-card purchase-detail-card">
   <div class="top"><div><span class="section-kicker">PURCHASE DETAILS</span><h3>Purchase Details</h3></div><button type="button" class="modal-close" onclick="closePurchaseDetail()">×</button></div>
   <div id="purchase-detail-content" class="purchase-detail-content"></div>
-  <div class="purchase-detail-actions" id="purchase-detail-actions"><button type="button" class="purchase-detail-download" onclick="downloadPurchaseDetailPdf()">Download PDF</button><button type="button" onclick="closePurchaseDetail()">Close</button></div>
+  <div class="purchase-detail-actions" id="purchase-detail-actions"><button type="button" class="purchase-detail-download" onclick="downloadPurchaseDetailPdf({download:true})">Download PDF</button><button type="button" onclick="closePurchaseDetail()">Close</button></div>
 </div>
 </div><div id="toast" class="toast"></div></main><script id="purchase-pdf-engine"></script>
 <script>
@@ -1274,7 +1274,7 @@ window.downloadPurchaseDetailPdf=async function(options){
     const pdfBlob=doc.output('blob');
     // Only a deliberate user click may trigger a browser download. The background
     // Drive uploader passes uploadOnly:true and must never invoke doc.save().
-    if(options.uploadOnly!==true)doc.save(fileName);
+    if(options.download===true)doc.save(fileName);
     // Store the generated purchase PDF in the configured Google Drive folder.
     try{
       const bytes=new Uint8Array(await pdfBlob.arrayBuffer());
