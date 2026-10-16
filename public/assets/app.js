@@ -869,20 +869,27 @@ async function userDashboard(){
         '</div>'+
       '</div>';
     });
-    const batchRecordSalesCard=readyTakeovers.length?'<div class="card batch-record-sales-launch-card"><div><span class="section-kicker">MULTI-SHIFT</span><h3>Record Sales Together</h3><p>Select multiple MGR and AGO shifts, enter combined payment amounts once, and review proportional allocations before submitting.</p></div><button class="primary" type="button" onclick="openBatchRecordSalesModal()">Select shifts & record together</button></div>':'';
-    const takeoverHtml=attendantDsrGroups(readyTakeovers,t=>{
-      const shift=shifts.find(s=>String(s.id)===String(t.shift_id));
-      return t.shift_started_at||shift?.start_time||shift?.started_at||t.created_at;
-    },t=>{
-      const takeoverShift=shifts.find(s=>String(s.id)===String(t.shift_id));
-      const takeoverNozzle=nozzles.find(n=>String(n.id)===String(takeoverShift?.nozzle_id));
-      const takeoverDispenser=takeoverNozzle?.nozzle_code||t.dispenser_code||'Dispenser';
-      return '<div class="card dashboard-purchase-card takeover shift-takeover-card main-record-sale-card">'+
-        '<div class="main-record-sale-head"><div><span class="section-kicker">SHIFT HANDOVER</span><div class="takeover-card-title">Record Sale</div><div class="takeover-card-subtitle">'+h(takeoverDispenser)+'</div></div><span class="main-record-sale-status">Handover completed</span></div>'+
-        '<div class="main-record-sale-summary"><div><span>Net liters sold</span><strong>'+liters(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netLiters)+' L</strong></div><div><span>Gross sales amount</span><strong>'+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).grossAmount)+'</strong></div>'+(Number(t.returned_liters||0)>0?'<div><span>Returned fuel deduction</span><strong>− '+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).returnedAmount)+'</strong></div>':'')+'<div><span>Net sales amount</span><strong>'+money(adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netAmount)+'</strong></div></div>'+
-        '<div class="main-record-sale-actions"><button class="primary" type="button" onclick="openTakeoverSaleModal(\''+t.id+'\')">Record Sale</button><button class="btn" type="button" onclick="window.openTakeoverDetails(this.dataset.takeoverId)" data-takeover-id="'+h(t.id)+'">Details</button></div>'+
-      '</div>';
+    const readyByDsrProduct={};
+    readyTakeovers.forEach(t=>{
+      const dsrId=recordSaleDsrForTakeover(t),info=recordSaleProductForTakeover(t);
+      const groupKey=dsrId+'::'+info.key;
+      if(!readyByDsrProduct[groupKey])readyByDsrProduct[groupKey]={dsrId,productKey:info.key,productLabel:info.label,items:[]};
+      readyByDsrProduct[groupKey].items.push(t);
     });
+    Object.values(readyByDsrProduct).forEach(group=>{
+      const productCards=group.items.map(t=>{
+        const info=recordSaleProductForTakeover(t);
+        const breakdown=adminReturnedFuelBreakdown(t,Number(t.returned_liters||0));
+        return '<div class="card dashboard-purchase-card takeover shift-takeover-card main-record-sale-card">'+
+          '<div class="main-record-sale-head"><div><span class="section-kicker">SHIFT HANDOVER</span><div class="takeover-card-title">'+h(info.nozzle?.nozzle_code||t.dispenser_code||'Dispenser')+'</div><div class="takeover-card-subtitle">'+h(info.label)+' · Handover completed</div></div><span class="main-record-sale-status">Ready</span></div>'+
+          '<div class="main-record-sale-summary"><div><span>Net liters sold</span><strong>'+liters(breakdown.netLiters)+' L</strong></div><div><span>Gross sales amount</span><strong>'+money(breakdown.grossAmount)+'</strong></div>'+(Number(t.returned_liters||0)>0?'<div><span>Returned fuel deduction</span><strong>− '+money(breakdown.returnedAmount)+'</strong></div>':'')+'<div><span>Net sales amount</span><strong>'+money(breakdown.netAmount)+'</strong></div></div>'+
+          '<div class="main-record-sale-actions"><button class="btn" type="button" onclick="window.openTakeoverDetails(this.dataset.takeoverId)" data-takeover-id="'+h(t.id)+'">Details</button></div>'+
+        '</div>';
+      }).join('');
+      const groupHtml='<div class="card batch-record-product-group"><div class="batch-record-product-group-head"><div><span class="section-kicker">RECORD SALES</span><h3>'+h(group.productLabel)+'</h3><p>'+group.items.length+' dispenser shift'+(group.items.length===1?'':'s')+' · DSR '+h(group.dsrId)+'</p></div><button class="primary" type="button" onclick="openBatchRecordSalesModal('+JSON.stringify(group.productKey)+','+JSON.stringify(group.dsrId)+')">Record '+h(group.productLabel)+' Sales</button></div><div class="batch-record-product-cards">'+productCards+'</div></div>';
+      (attendantDsrCardGroups[group.dsrId]||(attendantDsrCardGroups[group.dsrId]=[])).push({html:groupHtml,priority:1,category:attendantDsrCategoryFor('<div class="card main-record-sale-card">Record Sale</div>')});
+    });
+    const takeoverHtml='';
     // A pending deactivation replaces the active-shift card on the attendant dashboard.
     // Never render both states for the same shift.
     const pendingDeactivationShiftIds=new Set((Array.isArray(deactivationRequests)?deactivationRequests:[]).map(x=>String(x.shift_id)));
@@ -908,14 +915,6 @@ async function userDashboard(){
         '<div class="active-shift-actions"><button class="btn active-handover-btn" type="button" onclick="openDashboardHandover(\''+s.id+'\')">Handover</button></div></div>';
     });
 
-    // The batch-record-sales launcher belongs with the same DSR as the eligible
-    // Record Sale cards, not in a separate card-type section.
-    if(readyTakeovers.length){
-      const firstReady=readyTakeovers[0];
-      const firstReadyShift=shifts.find(s=>String(s.id)===String(firstReady.shift_id));
-      const firstReadyDsr=dailyReportIdFromTimestamp(firstReady.shift_started_at||firstReadyShift?.start_time||firstReadyShift?.started_at||firstReady.created_at);
-      (attendantDsrCardGroups[firstReadyDsr]||(attendantDsrCardGroups[firstReadyDsr]=[])).push({html:batchRecordSalesCard,priority:1,category:attendantDsrCategoryFor(batchRecordSalesCard)});
-    }
     const unifiedDsrSections=Object.keys(attendantDsrCardGroups).sort().reverse().map(dsrId=>{
       const groupedCards={};
       attendantDsrCardGroups[dsrId].forEach(item=>{
