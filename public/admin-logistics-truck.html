@@ -40,6 +40,9 @@ p{font-size:14px;line-height:1.7;color:var(--lg-muted);max-width:650px}
 .truck-primary{display:inline-flex;align-items:center;justify-content:center;margin-top:10px;border:0;border-radius:10px;padding:12px 16px;background:#2563eb;color:#fff;text-decoration:none;font-size:13px;font-weight:800}
 .truck-primary:hover{background:#1d4ed8}
 @media(max-width:760px){.logistics-layout{display:block}.logistics-sidebar{position:relative;width:100%;height:auto;padding:12px}.logistics-brand{padding-bottom:12px}.logistics-nav{display:flex;overflow-x:auto;padding-top:10px}.logistics-nav a{white-space:nowrap}.logistics-main .wrap{padding:22px 13px}.truck-panel{padding:20px}}
+
+/* Remove the blank strip created by the shared admin-shell top offset; logistics nav is in normal document flow. */
+body.admin-shell{padding-top:0!important}
 </style>
 <script src="assets/logistics-auth.js?v=20261015-session-retry1"></script>
 <style id="logistics-admin-theme">

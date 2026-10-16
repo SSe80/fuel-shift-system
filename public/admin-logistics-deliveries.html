@@ -62,6 +62,9 @@ h1{font-size:clamp(27px,4vw,36px);line-height:1.2;letter-spacing:-.8px;margin:8p
   .delivery-error{margin:12px 18px;padding:12px;border:1px solid #fecdca;border-radius:10px;background:#fef3f2;color:#b42318;font-size:12px}
   @media(max-width:680px){.delivery-summary{grid-template-columns:1fr 1fr}.delivery-panel-head{align-items:flex-start;flex-direction:column}.delivery-filter{width:100%}.delivery-meta{grid-template-columns:1fr 1fr}.delivery-card{padding:13px 12px}.delivery-quantity{font-size:15px}}
   @media(max-width:380px){.delivery-summary{grid-template-columns:1fr}.delivery-card-top{flex-direction:column}.delivery-quantity{align-self:flex-start}}
+
+/* Remove the blank strip created by the shared admin-shell top offset; logistics nav is in normal document flow. */
+body.admin-shell{padding-top:0!important}
 </style>
 <script src="assets/logistics-auth.js?v=20261015-session-retry1"></script>
 </head>
