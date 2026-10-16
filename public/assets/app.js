@@ -5698,29 +5698,29 @@ function buildDailyReportPdfBlob(){
   }));
 
   const blob=createDsrReportPdf({
-    title:'DSR - '+dateLabel,statusLabel:ready?'Confirmed':'Pending',
+    title:'Daily Sales Report (DSR) · '+dateLabel,statusLabel:ready?'Confirmed':'Pending',
     footer:'DSR - '+dateLabel+'  \u00b7  Station daily reconciliation',
-    key:[{label:'Fuel sold',value:fmtL(perf.total_sales_liters??summary.sales_liters)},
-      {label:'Total sales',value:fmtM(perf.total_sales_amount??summary.sales_amount),tone:'good'},
-      {label:'Shifts',value:String(num(perf.shift_count)),size:16},{label:'Dispensers',value:String(num(perf.dispenser_count)),size:16},{label:'Tanks',value:String(num(perf.tank_count)),size:16}],
+    key:[{label:'Total fuel sold',value:fmtL(perf.total_sales_liters??summary.sales_liters)},
+      {label:'Total sales value',value:fmtM(perf.total_sales_amount??summary.sales_amount),tone:'good'},
+      {label:'Completed shifts',value:String(num(perf.shift_count)),size:16},{label:'Dispensers used',value:String(num(perf.dispenser_count)),size:16},{label:'Tanks included',value:String(num(perf.tank_count)),size:16}],
     dispRows:dispRows,tanks:tankBlocks,stats:stats,
     overview:[
       {label:'Avg. liters / shift',value:fmtL(perf.average_liters_per_shift)},{label:'Avg. sales / shift',value:fmtM(perf.average_sales_per_shift)},
-      {label:'Calculated sales',value:fmtM(perf.calculated_sales_amount)},{label:'Entered payments',value:entered},
-      {label:'Financial difference',value:fmtM(perf.financial_difference==null?meterDiff:perf.financial_difference)},
-      {label:'Avg. nozzle reconciliation',value:pct(avgNozzle)}],
+      {label:'Calculated sales value',value:fmtM(perf.calculated_sales_amount)},{label:'Payments entered',value:entered},
+      {label:'Sales vs. payments difference',value:fmtM(perf.financial_difference==null?meterDiff:perf.financial_difference)},
+      {label:'Average nozzle reconciliation',value:pct(avgNozzle)}],
     perf:[
-      {label:'Total tank difference',value:signedL(tankDiff)},
+      {label:'Total tank stock difference',value:signedL(tankDiff)},
       {label:'Top dispenser',value:topDisp?(topDisp.dispenser||'-')+' \u00b7 '+fmtL(topDisp.sales_liters):'-'},
       {label:'Top product',value:topProduct?(topProduct.product||'-')+' \u00b7 '+fmtL(topProduct.liters):'-'},
-      {label:'Average nozzle reconciliation',value:pct(avgNozzle)},{label:'Nozzle count',value:String(num(perf.nozzle_count))},{label:'Attendants',value:String(num(perf.attendant_count))}],
+      {label:'Average nozzle reconciliation',value:pct(avgNozzle)},{label:'Nozzles recorded',value:String(num(perf.nozzle_count))},{label:'Attendants on duty',value:String(num(perf.attendant_count))}],
     shifts:shiftCards,
     finalLeft:[
-      {label:'Report status',value:ready?'CONFIRMED':'PENDING'},{label:'Fuel sold',value:fmtL(perf.total_sales_liters)},
-      {label:'Calculated sales',value:fmtM(perf.calculated_sales_amount??perf.total_sales_amount)},{label:'Entered payments',value:entered},
-      {label:'Financial difference',value:perf.financial_difference==null?'-':fmtM(perf.financial_difference)}],
+      {label:'Report status',value:ready?'CONFIRMED':'PENDING'},{label:'Total fuel sold',value:fmtL(perf.total_sales_liters)},
+      {label:'Calculated sales value',value:fmtM(perf.calculated_sales_amount??perf.total_sales_amount)},{label:'Payments entered',value:entered},
+      {label:'Sales vs. payments difference',value:perf.financial_difference==null?'-':fmtM(perf.financial_difference)}],
     finalRight:[
-      {label:'Average nozzle reconciliation',value:pct(avgNozzle)},{label:'Tank difference',value:signedL(tankDiff)},
+      {label:'Average nozzle reconciliation',value:pct(avgNozzle)},{label:'Tank stock difference',value:signedL(tankDiff)},
       {label:'Shifts / attendants',value:num(perf.shift_count)+' / '+num(perf.attendant_count)},{label:'Dispensers / nozzles',value:num(perf.dispenser_count)+' / '+num(perf.nozzle_count)}]
   });
   return {blob,name:'DSR-'+String(d||'report').replace(/[^A-Za-z0-9_-]/g,'_')+'-report.pdf'};
