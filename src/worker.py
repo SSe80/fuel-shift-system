@@ -3670,7 +3670,12 @@ def record_shift_takeover_sales_batch():
     for item in batch:
         if not isinstance(item,dict) or not item.get("takeover_id") or not isinstance(item.get("sales",[]),list):
             return jsonify({"error":"Each batch item must contain a takeover_id and sales array"}),400
-        takeover_id=str(item.get("takeover_id"))
+        takeover_id=str(item.get("takeover_id")).strip()
+        # Validate UUIDs before constructing PostgREST in.(...) filters.
+        # This avoids malformed identifiers being treated as query syntax and
+        # returns a clear client error before any database RPC is called.
+        if not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", takeover_id):
+            return jsonify({"error":"Each takeover_id must be a valid UUID"}),400
         if takeover_id in seen:
             return jsonify({"error":"A shift was selected more than once"}),400
         seen.add(takeover_id)
