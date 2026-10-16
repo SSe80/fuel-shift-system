@@ -765,7 +765,7 @@ async function userDashboard(){
     const pendingHandovers=handovers.filter(x=>x.status==='pending'&&String(x.to_employee_id)===String(me.id));
     const box=document.getElementById('shift');
 
-    const pendingShiftHtml=pendingShifts.map(s=>{
+    const pendingShiftHtml=attendantDsrGroups(pendingShifts,s=>s.start_time||s.started_at||s.created_at,s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
       const readings=Array.isArray(s.activation_nozzles)?s.activation_nozzles:[];
       const configuredNozzleIds=Array.isArray(n?.nozzle_ids)?n.nozzle_ids:[];
@@ -789,7 +789,7 @@ async function userDashboard(){
           '<button type="button" class="btn pending-cancel-btn" onclick="cancelPendingShift(&quot;'+h(s.id)+'&quot;)">Cancel Shift</button>'+
         '</div>'+
       '</div>';
-    }).join('');
+    });
 
     const pendingOutgoingHandovers=handovers.filter(x=>x.status==='pending'&&String(x.from_employee_id)===String(me.id));
     const pendingIncomingHandovers=handovers.filter(x=>x.status==='pending'&&String(x.to_employee_id)===String(me.id));
@@ -804,7 +804,7 @@ async function userDashboard(){
       ).join('');
     };
 
-    const pendingOutgoingHtml=pendingOutgoingHandovers.map(x=>{
+    const pendingOutgoingHtml=attendantDsrGroups(pendingOutgoingHandovers,x=>{const shift=shifts.find(s=>String(s.id)===String(x.shift_id));return x.shift_started_at||shift?.start_time||shift?.started_at||x.created_at;},x=>{
       const shift=shifts.find(s=>s.id===x.shift_id), n=nozzles.find(item=>item.id===shift?.nozzle_id);
       return '<div class="card dashboard-purchase-card pending pending-confirmation-card handover-pending-card">'+
         '<div class="pending-hero"><div class="pending-hero-icon">↔</div><div><div class="pending-card-title">Pending Handover</div><div class="pending-card-subtitle">Waiting for the receiving attendant to confirm the handover.</div></div></div>'+
@@ -815,9 +815,9 @@ async function userDashboard(){
         '</div>'+
         '<div class="row handover-pending-actions"><button type="button" class="btn" onclick="cancelPendingHandover(\''+x.id+'\')">Cancel Handover</button></div>'+
       '</div>';
-    }).join('');
+    });
 
-    const pendingIncomingHtml=pendingIncomingHandovers.map(x=>{
+    const pendingIncomingHtml=attendantDsrGroups(pendingIncomingHandovers,x=>{const shift=shifts.find(s=>String(s.id)===String(x.shift_id));return x.shift_started_at||shift?.start_time||shift?.started_at||x.created_at;},x=>{
       const shift=shifts.find(s=>s.id===x.shift_id);
       const n=nozzles.find(item=>item.id===shift?.nozzle_id)||{};
       const readings=Array.isArray(x.closing_nozzle_readings)&&x.closing_nozzle_readings.length
@@ -837,7 +837,7 @@ async function userDashboard(){
           '<div class="active-shift-reading-list">'+nozzleReadings+'</div>'+
         '</div>'+
         '<div class="active-shift-actions pending-shift-actions"><button class="btn active-handover-btn" type="button" onclick="openPendingHandoverReview(&quot;'+x.id+'&quot;)">Review & Confirm</button><button class="btn pending-cancel-btn" type="button" onclick="cancelPendingHandover(&quot;'+x.id+'&quot;)">Cancel</button></div></div>';
-    }).join('');
+    });
 
     const takeoverList=Array.isArray(takeovers)?takeovers:[];
     const pendingTakeovers=takeoverList.filter(x=>x.sales_status==='pending_admin'&&String(x.from_employee_id)===String(me.id));
@@ -853,7 +853,8 @@ async function userDashboard(){
     window.dashboardTankRecords=tanks;
     window.pendingDispenserDeactivationRequests=Array.isArray(deactivationRequests)?deactivationRequests:[];
 
-    const pendingDeactivationHtml=(Array.isArray(deactivationRequests)?deactivationRequests:[]).map(req=>{
+    const pendingDeactivationRecords=Array.isArray(deactivationRequests)?deactivationRequests:[];
+    const pendingDeactivationHtml=attendantDsrGroups(pendingDeactivationRecords,req=>req.shift?.start_time||req.shift?.started_at||req.created_at,req=>{
       const n=req.nozzle||{};
       const s=req.shift||{};
       const readings=Array.isArray(req.nozzle_readings)?req.nozzle_readings:[];
@@ -865,7 +866,7 @@ async function userDashboard(){
         const code=h(r.nozzle_code||r.nozzle_id||('Nozzle '+(i+1)));
         const opening=validOpening(r.opening_reading ?? r.reading ?? r.value);
         return '<div class="pending-deactivation-reading-row"><div><span class="pending-deactivation-reading-index">Nozzle '+(i+1)+'</span><strong>'+code+'</strong></div><div class="pending-deactivation-opening"><span>Opening</span><strong>'+opening+'</strong></div></div>';
-      }).join('');
+      });
       return '<div class="card dashboard-purchase-card pending pending-confirmation-card dispenser-deactivation-attendant-card pending-deactivation-card">'+
         '<div class="pending-deactivation-head"><div class="pending-deactivation-head-main"><div class="pending-deactivation-kicker">ACTION REQUIRED</div><div class="pending-card-title">Dispenser deactivation pending</div><div class="pending-card-subtitle">The admin requested this dispenser to be deactivated. Complete the closing readings to finish the current shift.</div></div><span class="pending-deactivation-status">Pending</span></div>'+
         '<div class="pending-deactivation-summary"><div><span>Dispenser</span><strong>'+h(n.nozzle_code||req.nozzle_id||'—')+'</strong></div><div><span>Opening tank</span><strong>'+liters(s.opening_tank_liters)+' L</strong></div></div>'+
@@ -932,7 +933,7 @@ async function userDashboard(){
     // Never render both states for the same shift.
     const pendingDeactivationShiftIds=new Set((Array.isArray(deactivationRequests)?deactivationRequests:[]).map(x=>String(x.shift_id)));
     const activeForDisplay=active.filter(s=>!pendingOutgoingHandovers.some(x=>String(x.shift_id)===String(s.id))&&!pendingDeactivationShiftIds.has(String(s.id)));
-    const activeHtml=activeForDisplay.map(s=>{
+    const activeHtml=attendantDsrGroups(activeForDisplay,s=>s.start_time||s.started_at||s.created_at,s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
       const readings=Array.isArray(s.activation_nozzles)&&s.activation_nozzles.length
         ?s.activation_nozzles
@@ -951,7 +952,7 @@ async function userDashboard(){
           '<div class="active-shift-reading-list">'+nozzleReadings+'</div>'+
         '</div>'+
         '<div class="active-shift-actions"><button class="btn active-handover-btn" type="button" onclick="openDashboardHandover(\''+s.id+'\')">Handover</button></div></div>';
-    }).join('');
+    });
 
     const wrapSection=(kicker,title,content)=>content?'<section class="dashboard-section"><div class="dashboard-section-head"><div><span class="section-kicker">'+kicker+'</span><h2>'+title+'</h2></div></div><div class="dashboard-section-cards">'+content+'</div></section>':'';
 box.innerHTML=
