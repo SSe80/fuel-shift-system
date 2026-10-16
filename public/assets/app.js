@@ -974,7 +974,7 @@ async function userDashboard(){
         (groupedCards[category.id]||(groupedCards[category.id]={...category,cards:[]})).cards.push(item);
       });
       const categorySections=Object.values(groupedCards).sort((a,b)=>a.priority-b.priority).map(category=>
-        '<section class="attendant-dsr-card-category" data-card-category="'+h(category.id)+'">'+
+        '<section class="card attendant-dsr-card-category" data-card-category="'+h(category.id)+'">'+
           '<div class="attendant-dsr-category-head"><h3>'+h(category.title)+'</h3></div>'+
           '<div class="attendant-dsr-group-cards">'+category.cards.sort((a,b)=>a.priority-b.priority).map(item=>item.html).join('')+'</div>'+
         '</section>'
