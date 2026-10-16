@@ -3280,12 +3280,19 @@ def drive_retry_completed_purchase_pdfs():
     """Retry eligible completed purchase PDFs and return per-invoice diagnostics."""
     auth=require_admin()
     if auth:return auth
-    status, purchases = sb("purchases", params={
+    data=request.get_json(silent=True) or {}
+    requested_id=str(data.get("purchase_id") or "").strip()
+    query_params={
         "status":"eq.discharged",
         "select":"id,invoice_number,status,discharge_history",
         "order":"created_at.desc",
         "limit":"250"
-    })
+    }
+    # A page-level fallback can retry just the purchase whose browser upload failed.
+    # Omitting purchase_id preserves the administrator's bulk retry behavior.
+    if requested_id:
+        query_params["id"]="eq."+requested_id
+    status, purchases = sb("purchases", params=query_params)
     if status != 200:
         return jsonify({"ok":False,"error":"Could not list completed purchases","details":purchases}), status
     results=[]
