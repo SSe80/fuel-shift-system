@@ -2255,8 +2255,9 @@ body.attendant-dashboard-page #toast{z-index:1205!important}
 
 
 <style id="attendant-details-buttons-white">
-/* Details action inside the main Record Sales card must override the generic red .btn rule. */
-body.attendant-dashboard-page .card .main-record-sale-actions button,
+/* White Details button in each ready-to-record shift card. Use greater specificity than generic red .btn rules. */
+body.attendant-dashboard-page .card.main-record-sale-card .main-record-sale-actions > button.btn,
+body.attendant-dashboard-page .card.main-record-sale-card .main-record-sale-actions > button,
 body.attendant-dashboard-page .card button.attendant-shift-details-button,
 body.attendant-dashboard-page .card button.compact-detail-button{
   background:#fff!important;
@@ -2265,7 +2266,8 @@ body.attendant-dashboard-page .card button.compact-detail-button{
   border:1px solid #d0d5dd!important;
   box-shadow:0 1px 2px rgba(16,24,40,.06)!important;
 }
-body.attendant-dashboard-page .card .main-record-sale-actions button:hover,
+body.attendant-dashboard-page .card.main-record-sale-card .main-record-sale-actions > button.btn:hover,
+body.attendant-dashboard-page .card.main-record-sale-card .main-record-sale-actions > button:hover,
 body.attendant-dashboard-page .card button.attendant-shift-details-button:hover,
 body.attendant-dashboard-page .card button.compact-detail-button:hover{
   background:#f9fafb!important;
