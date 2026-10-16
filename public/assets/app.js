@@ -765,6 +765,16 @@ async function userDashboard(){
     const pendingHandovers=handovers.filter(x=>x.status==='pending'&&String(x.to_employee_id)===String(me.id));
     const box=document.getElementById('shift');
 
+    // Collect every shift-related card into one shared DSR group registry.
+    // Individual card types must not create their own duplicate DSR sections.
+    const attendantDsrCardGroups={};
+    const attendantDsrGroups=(records,timestampFor,renderCard)=>{
+      (Array.isArray(records)?records:[]).forEach(record=>{
+        const dsrId=dailyReportIdFromTimestamp(timestampFor(record));
+        (attendantDsrCardGroups[dsrId]||(attendantDsrCardGroups[dsrId]=[])).push(renderCard(record));
+      });
+      return '';
+    };
     const pendingShiftHtml=attendantDsrGroups(pendingShifts,s=>s.start_time||s.started_at||s.created_at,s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
       const readings=Array.isArray(s.activation_nozzles)?s.activation_nozzles:[];
@@ -874,16 +884,6 @@ async function userDashboard(){
         '<div class="pending-deactivation-action"><button class="primary" type="button" onclick="openDispenserDeactivationConfirmation(\''+req.id+'\')"><span>Enter closing readings</span><span aria-hidden="true">→</span></button></div>'+
       '</div>';
     }).join('');
-    // Collect every shift-related card into one shared DSR group registry.
-    // Individual card types must not create their own duplicate DSR sections.
-    const attendantDsrCardGroups={};
-    const attendantDsrGroups=(records,timestampFor,renderCard)=>{
-      (Array.isArray(records)?records:[]).forEach(record=>{
-        const dsrId=dailyReportIdFromTimestamp(timestampFor(record));
-        (attendantDsrCardGroups[dsrId]||(attendantDsrCardGroups[dsrId]=[])).push(renderCard(record));
-      });
-      return '';
-    };
     const pendingTakeoverHtml=attendantDsrGroups(pendingTakeovers.slice(0,5),t=>{
       const shift=shifts.find(s=>String(s.id)===String(t.shift_id));
       return t.shift_started_at||shift?.start_time||shift?.started_at||t.created_at;
