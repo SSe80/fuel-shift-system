@@ -1729,8 +1729,8 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     }
     return '<article class="purchase-card purchase-history-full-card tank-stock-history-alert-card"><div class="purchase-history-full-head"><div><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(p.invoice_number?('Invoice #'+p.invoice_number):'Purchase — No Invoice')+'</strong></div><small>'+purchaseH(productCode)+' · '+purchaseH(datePurchase)+'</small></div><span class="purchase-history-full-badge">⚠️ DISCHARGED</span></div><div class="purchase-history-full-main"><div><span>Delivered quantity</span><strong>'+purchaseH(purchaseLiters(total))+' L</strong></div><div><span>Invoice</span><strong>'+purchaseH(p.invoice_number||'—')+'</strong></div><div><span>Truck / trailer plate</span><strong>'+purchaseH(plateDisplay)+'</strong></div><div><span>Fully discharged</span><strong>'+purchaseH(p.discharged_at?new Date(p.discharged_at).toLocaleString():'—')+'</strong></div></div><div class="purchase-history-card-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button><button type="button" class="primary tank-stock-alert" onclick="openTankStockCard(this.dataset.id)" data-id="'+purchaseH(p.id)+'">⚠ Tank Stock</button></div></article>';
   };
-  // Upload the canonical Purchase Details PDF (the same jsPDF layout as Download PDF).
-  // The server deliberately does not generate a second, differently formatted PDF.
+  // Upload completed purchase PDFs exclusively through the server-side renderer.
+  // Never create a browser PDF or call doc.save() during page initialization.
   let purchaseDriveUploadRunning=false;
   async function retryCompletedPurchasePdfUploads(purchases){
     if(purchaseDriveUploadRunning||!Array.isArray(purchases))return;
@@ -1746,22 +1746,8 @@ window.uploadPurchaseDetailPdf=async function(purchase){
         const retryKey=key+':retry-after';
         try{if(localStorage.getItem(key)===signature)continue;}catch(_){}
         try{if(Number(localStorage.getItem(retryKey)||0)>Date.now())continue;}catch(_){}
-        window.currentPurchaseDetailData=p;
-        window.currentPurchaseDetailTanks=purchaseDetailTanks||purchaseTanks||[];
         let lastError=null,uploaded=false;
         for(let attempt=0;attempt<3&&!uploaded;attempt++){
-          try{
-            uploaded=await window.uploadPurchaseDetailPdf(p);
-            if(!uploaded)throw new Error('Purchase Details PDF renderer did not complete the upload.');
-          }catch(err){
-            lastError=err;
-            if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
-          }
-        }
-        // If the browser PDF renderer or browser-to-Worker upload fails, retry from
-        // the server-side canonical PDF renderer. This avoids depending on the
-        // device's PDF CDN/network and still uploads the saved purchase record.
-        if(!uploaded){
           try{
             const response=await fetch('/api/drive/purchases/retry',{
               method:'POST',credentials:'same-origin',
@@ -1769,10 +1755,15 @@ window.uploadPurchaseDetailPdf=async function(purchase){
               body:JSON.stringify({purchase_id:id})
             });
             const result=await response.json().catch(()=>({}));
-            if(!response.ok||!result.ok)throw new Error(result.error||(result.failed||[]).map(x=>x.error).filter(Boolean).join('; ')||('Server PDF retry failed (HTTP '+response.status+')'));
-            uploaded=Number(result.uploaded)>0;
-            if(!uploaded)throw new Error((result.failed||[]).map(x=>x.error).filter(Boolean).join('; ')||'Server PDF retry did not upload this purchase.');
-          }catch(err){lastError=err;}
+            const item=(result.results||[]).find(x=>String(x.invoice_number||'')===String(p.invoice_number||id));
+            if(!response.ok||!result.ok||Number(result.uploaded)<1){
+              throw new Error((item&&item.error)||result.error||(result.failed||[]).map(x=>x.error).filter(Boolean).join('; ')||('Server PDF upload failed (HTTP '+response.status+')'));
+            }
+            uploaded=true;
+          }catch(err){
+            lastError=err;
+            if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+          }
         }
         if(uploaded){
           try{localStorage.setItem(key,signature);localStorage.removeItem(retryKey);}catch(_){}
