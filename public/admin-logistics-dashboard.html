@@ -39,6 +39,9 @@ h1{font-size:clamp(27px,4vw,36px);line-height:1.2;letter-spacing:-.8px;margin:8p
 .page-description{margin:0;color:var(--lg-muted);font-size:13px;line-height:1.6}
 @media(max-width:760px){.logistics-sidebar{min-height:64px;padding:0 10px;gap:8px}.logistics-brand{display:none}.logistics-nav{justify-content:flex-start;gap:4px}.logistics-nav a{padding:11px;font-size:12px}.logistics-nav a span{display:none}.logistics-logout{padding:10px;font-size:12px}.logistics-main .wrap{padding:20px 15px 32px}.page-header{align-items:flex-start;margin-bottom:20px}}
 @media(max-width:480px){.logistics-sidebar{min-height:58px;padding:0 7px}.logistics-nav a{padding:10px;font-size:11px}.logistics-logout{padding:9px;font-size:11px}.logistics-main .wrap{padding:16px 12px 28px}}
+
+/* Remove the blank strip created by the shared admin-shell top offset; logistics nav is in normal document flow. */
+body.admin-shell{padding-top:0!important}
 </style>
 <script src="assets/logistics-auth.js?v=20261015-session-retry1"></script>
 </head>
