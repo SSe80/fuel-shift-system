@@ -5961,6 +5961,9 @@ def drive_purchase_upload():
                         "path": "PURCHASES/%s/%s" % (sub, name)}), 200
     except drive.DriveError as err:
         return jsonify({"ok": False, "error": str(err)}), err.status
+    except Exception as err:
+        app.logger.exception("Purchase PDF upload failed")
+        return jsonify({"ok": False, "error": "Purchase PDF upload failed: " + (str(err) or type(err).__name__)}), 502
 
 @app.post("/api/drive/queue/<item_id>/upload")
 def drive_upload(item_id):
