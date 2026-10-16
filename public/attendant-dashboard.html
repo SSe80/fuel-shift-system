@@ -2724,3 +2724,24 @@ body.attendant-dashboard-page #batch-record-sales-modal #batch-record-status{
   }
 }
 </style>
+
+<style id="batch-record-rounded-bottom-corners">
+/* Round the lower corners of the Record Sale modal and its inner shift cards. */
+body.attendant-dashboard-page #batch-record-sales-modal>.modal-backdrop+.batch-record-sales-modal-card{
+  border-radius:18px!important;
+  -webkit-clip-path:inset(0 round 18px)!important;
+  clip-path:inset(0 round 18px)!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-entry,
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-review{
+  border-radius:0 0 18px 18px!important;
+}
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-entry>.row,
+body.attendant-dashboard-page #batch-record-sales-modal #batch-record-review>.row{
+  border-radius:0 0 18px 18px!important;
+}
+body.attendant-dashboard-page #batch-record-review-content .batch-record-review-shift{
+  border-radius:13px!important;
+  overflow:hidden!important;
+}
+</style>
