@@ -253,7 +253,7 @@ function closeBatchRecordSalesModal(){
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
 }
 function updateBatchRecordSelectionSummary(){}
-async function continueBatchRecordSales(){
+async async function continueBatchRecordSales(){
   const status=document.getElementById('batch-record-status');
   const selectedIds=Array.from(window.batchRecordSalesSelected||[]);
   const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
