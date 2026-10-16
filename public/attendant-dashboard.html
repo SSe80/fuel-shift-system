@@ -2746,9 +2746,13 @@ body.attendant-dashboard-page #batch-record-review-content .batch-record-review-
 }
 </style>
 
-<style id="attendant-sales-recording-group-card">
-/* Put Pending Record Sale Confirmation and Record Sale cards inside one clear group card. */
-body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]{
+<style id="attendant-dsr-all-group-cards">
+/* Give every DSR activity group the same clear parent-card treatment. */
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"],
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="shift-handover"],
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="active-shifts"],
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="deactivation"],
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="other"]{
   display:block!important;
   box-sizing:border-box!important;
   padding:0!important;
@@ -2760,7 +2764,11 @@ body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card
   box-shadow:0 5px 18px rgba(180,35,47,.065)!important;
   overflow:hidden!important;
 }
-body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]>.attendant-dsr-category-head{
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]>.attendant-dsr-category-head,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="shift-handover"]>.attendant-dsr-category-head,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="active-shifts"]>.attendant-dsr-category-head,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="deactivation"]>.attendant-dsr-category-head,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="other"]>.attendant-dsr-category-head{
   display:flex!important;
   align-items:center!important;
   min-height:0!important;
@@ -2769,7 +2777,11 @@ body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card
   border-bottom:1px solid #f3dfe1!important;
   background:#fff8f8!important;
 }
-body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]>.attendant-dsr-category-head h3{
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]>.attendant-dsr-category-head h3,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="shift-handover"]>.attendant-dsr-category-head h3,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="active-shifts"]>.attendant-dsr-category-head h3,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="deactivation"]>.attendant-dsr-category-head h3,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="other"]>.attendant-dsr-category-head h3{
   margin:0!important;
   color:#b4232f!important;
   font-size:14px!important;
@@ -2778,20 +2790,36 @@ body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card
   letter-spacing:0!important;
   text-transform:none!important;
 }
-body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]>.attendant-dsr-group-cards{
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]>.attendant-dsr-group-cards,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="shift-handover"]>.attendant-dsr-group-cards,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="active-shifts"]>.attendant-dsr-group-cards,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="deactivation"]>.attendant-dsr-group-cards,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="other"]>.attendant-dsr-group-cards{
   display:grid!important;
   gap:12px!important;
   min-width:0!important;
   padding:12px!important;
   background:#fff!important;
 }
-body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]>.attendant-dsr-group-cards>.card{
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]>.attendant-dsr-group-cards>.card,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="shift-handover"]>.attendant-dsr-group-cards>.card,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="active-shifts"]>.attendant-dsr-group-cards>.card,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="deactivation"]>.attendant-dsr-group-cards>.card,
+body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="other"]>.attendant-dsr-group-cards>.card{
   min-width:0!important;
   margin:0!important;
   border-radius:12px!important;
 }
 @media(max-width:480px){
-  body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]>.attendant-dsr-category-head{padding:12px!important}
-  body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]>.attendant-dsr-group-cards{padding:9px!important;gap:10px!important}
+  body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]>.attendant-dsr-category-head,
+  body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="shift-handover"]>.attendant-dsr-category-head,
+  body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="active-shifts"]>.attendant-dsr-category-head,
+  body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="deactivation"]>.attendant-dsr-category-head,
+  body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="other"]>.attendant-dsr-category-head{padding:12px!important}
+  body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="sales-recording"]>.attendant-dsr-group-cards,
+  body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="shift-handover"]>.attendant-dsr-group-cards,
+  body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="active-shifts"]>.attendant-dsr-group-cards,
+  body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="deactivation"]>.attendant-dsr-group-cards,
+  body.attendant-dashboard-page section.attendant-dsr-card-category.card[data-card-category="other"]>.attendant-dsr-group-cards{padding:9px!important;gap:10px!important}
 }
 </style>
