@@ -201,9 +201,12 @@ function recordSaleDsrForTakeover(t){
   const value=t.shift_started_at||shift?.start_time||shift?.started_at||t.created_at;
   // Match the server's DSR rule: timestamps without an explicit offset are
   // station-local (Africa/Addis_Ababa), not the phone/browser's local zone.
-  const timestamp=String(value||'');
-  const stationLocal=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/.test(timestamp)
-    ?timestamp+'+03:00'
+  const timestamp=String(value||'').trim();
+  // PostgreSQL timestamps may be serialized with either a T or a space.
+  // Normalize both forms before applying Ethiopia's UTC+03:00 offset.
+  const naiveTimestamp=timestamp.replace(' ','T');
+  const stationLocal=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/.test(naiveTimestamp)
+    ?naiveTimestamp+'+03:00'
     :timestamp;
   return dailyReportIdFromTimestamp(stationLocal);
 }
