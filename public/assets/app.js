@@ -886,7 +886,7 @@ async function userDashboard(){
           '<div class="main-record-sale-actions"><button class="btn" type="button" onclick="window.openTakeoverDetails(this.dataset.takeoverId)" data-takeover-id="'+h(t.id)+'">Details</button></div>'+
         '</div>';
       }).join('');
-      const groupHtml='<div class="card batch-record-product-group"><div class="batch-record-product-group-head"><div><span class="section-kicker">RECORD SALES</span><h3>'+h(group.productLabel)+'</h3><p>'+group.items.length+' dispenser shift'+(group.items.length===1?'':'s')+' · DSR '+h(group.dsrId)+'</p></div><button class="primary" type="button" onclick="openBatchRecordSalesModal('+JSON.stringify(group.productKey)+','+JSON.stringify(group.dsrId)+')">Record '+h(group.productLabel)+' Sales</button></div><div class="batch-record-product-cards">'+productCards+'</div></div>';
+      const groupHtml='<div class="card batch-record-product-group"><div class="batch-record-product-group-head"><div><span class="section-kicker">RECORD SALES</span><h3>'+h(group.productLabel)+'</h3><p>'+group.items.length+' dispenser shift'+(group.items.length===1?'':'s')+' · DSR '+h(group.dsrId)+'</p></div><button class="primary" type="button" onclick="openBatchRecordSalesModal(\''+h(group.productKey)+'\',\''+h(group.dsrId)+'\')">Record '+h(group.productLabel)+' Sales</button></div><div class="batch-record-product-cards">'+productCards+'</div></div>';
       (attendantDsrCardGroups[group.dsrId]||(attendantDsrCardGroups[group.dsrId]=[])).push({html:groupHtml,priority:1,category:attendantDsrCategoryFor('<div class="card main-record-sale-card">Record Sale</div>')});
     });
     const takeoverHtml='';
