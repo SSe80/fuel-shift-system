@@ -2275,3 +2275,69 @@ body.attendant-dashboard-page .card button.compact-detail-button:hover{
 }
 </style>
 
+
+<style id="compact-shift-handover-cards">
+/* Compact completed shift-handover cards: preserve all figures, reduce vertical space. */
+body.attendant-dashboard-page .card.main-record-sale-card{
+  padding:0!important;
+  margin:0!important;
+  border-radius:12px!important;
+  box-shadow:0 1px 3px rgba(16,24,40,.045)!important;
+}
+body.attendant-dashboard-page .main-record-sale-head{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  gap:8px!important;padding:9px 11px 8px 13px!important;
+  border-bottom:1px solid #f1f2f4!important;background:#fff!important;
+}
+body.attendant-dashboard-page .main-record-sale-head .section-kicker{
+  margin:0 0 2px!important;font-size:8px!important;letter-spacing:.08em!important;
+}
+body.attendant-dashboard-page .main-record-sale-head .takeover-card-title{
+  font-size:13px!important;line-height:1.2!important;font-weight:800!important;
+  overflow-wrap:anywhere!important;
+}
+body.attendant-dashboard-page .main-record-sale-head .takeover-card-subtitle{
+  margin-top:2px!important;font-size:10px!important;line-height:1.25!important;
+}
+body.attendant-dashboard-page .main-record-sale-status{
+  flex:0 0 auto!important;padding:4px 7px!important;font-size:9px!important;
+  line-height:1.2!important;border-radius:999px!important;
+}
+body.attendant-dashboard-page .main-record-sale-summary{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:0!important;background:#f1f3f5!important;border-top:0!important;
+}
+body.attendant-dashboard-page .main-record-sale-summary>div{
+  min-width:0!important;padding:8px 9px!important;background:#fff!important;
+  border-right:1px solid #edf0f2!important;
+}
+body.attendant-dashboard-page .main-record-sale-summary>div:last-child{border-right:0!important}
+body.attendant-dashboard-page .main-record-sale-summary span{
+  display:block!important;font-size:8px!important;line-height:1.25!important;
+  letter-spacing:.025em!important;text-transform:none!important;color:#7b8491!important;
+  font-weight:700!important;
+}
+body.attendant-dashboard-page .main-record-sale-summary strong{
+  display:block!important;margin-top:3px!important;font-size:12px!important;
+  line-height:1.25!important;font-weight:800!important;color:#273444!important;
+  overflow-wrap:anywhere!important;
+}
+body.attendant-dashboard-page .main-record-sale-actions{
+  display:flex!important;justify-content:flex-end!important;align-items:center!important;
+  padding:6px 9px!important;border-top:1px solid #f1f2f4!important;background:#fff!important;
+}
+body.attendant-dashboard-page .main-record-sale-actions>button.btn,
+body.attendant-dashboard-page .main-record-sale-actions>button{
+  width:auto!important;min-height:30px!important;padding:0 13px!important;
+  border-radius:8px!important;font-size:11px!important;line-height:1!important;
+}
+@media(max-width:480px){
+  body.attendant-dashboard-page .main-record-sale-summary>div{padding:7px 6px!important}
+  body.attendant-dashboard-page .main-record-sale-summary span{font-size:7.5px!important}
+  body.attendant-dashboard-page .main-record-sale-summary strong{font-size:11px!important}
+  body.attendant-dashboard-page .main-record-sale-head{padding:8px 9px 7px 11px!important}
+  body.attendant-dashboard-page .main-record-sale-actions{padding:5px 8px!important}
+  body.attendant-dashboard-page .main-record-sale-actions>button.btn,
+  body.attendant-dashboard-page .main-record-sale-actions>button{width:auto!important;min-height:28px!important}
+}
+</style>
