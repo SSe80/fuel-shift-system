@@ -962,11 +962,12 @@ async function userDashboard(){
     const unifiedDsrSections=Object.keys(attendantDsrCardGroups).sort().reverse().map(dsrId=>
       '<section class="attendant-dsr-card-group" data-dsr-id="'+h(dsrId)+'">'+
         '<div class="attendant-dsr-group-title"><span>DSR ID</span><strong>'+h(dsrId)+'</strong></div>'+
+        '<div class="dashboard-section-head attendant-dsr-report-head"><div><span class="section-kicker">DAILY SHIFT REPORTS</span><h2>Shift & Sales Activity</h2></div></div>'+
         '<div class="attendant-dsr-group-divider" aria-hidden="true"></div>'+
         '<div class="attendant-dsr-group-cards">'+attendantDsrCardGroups[dsrId].sort((a,b)=>a.priority-b.priority).map(item=>item.html).join('')+'</div>'+
       '</section>'
     ).join('');
-    box.innerHTML=unifiedDsrSections?'<section class="dashboard-section"><div class="dashboard-section-head"><div><span class="section-kicker">DAILY SHIFT REPORTS</span><h2>Shift & Sales Activity</h2></div></div>'+unifiedDsrSections+'</section>':'';
+    box.innerHTML=unifiedDsrSections||'';
     if(!box.innerHTML)box.innerHTML='';
   }catch(e){
     if(e.message==='Unauthorized')showSessionRecovery('attendant');
