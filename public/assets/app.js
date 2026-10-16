@@ -205,6 +205,7 @@ function recordSaleProductForTakeover(t){
   const nozzle=(window.dashboardNozzleRecords||[]).find(n=>String(n.id)===String(shift?.nozzle_id));
   const product=(window.dashboardProductRecords||[]).find(p=>
     (nozzle?.product_id!=null&&String(p.id)===String(nozzle.product_id)) ||
+    String(p.code_name||'').toLowerCase()===String(nozzle?.product||shift?.product||'').toLowerCase() ||
     String(p.code||p.product_code||'').toLowerCase()===String(nozzle?.product||shift?.product||'').toLowerCase() ||
     String(p.name||'').toLowerCase()===String(nozzle?.product||shift?.product||'').toLowerCase()
   );
