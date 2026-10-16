@@ -775,7 +775,7 @@ async function userDashboard(){
         const priority=cardHtml.includes('Pending Shift Confirmation')?0:1;
         (attendantDsrCardGroups[dsrId]||(attendantDsrCardGroups[dsrId]=[])).push({html:cardHtml,priority});
       });
-      return '';
+      return [];
     };
     const pendingShiftHtml=attendantDsrGroups(pendingShifts,s=>s.start_time||s.started_at||s.created_at,s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
