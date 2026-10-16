@@ -3149,19 +3149,36 @@ function createDsrReportPdf(r){
     d.y+=7;
   });
   d.y+=24;
-  // tank table (rows then four cards per tank)
+  // Tank reconciliation grouped by product, then by tank.
   d.ensure(26+22+36+52+40);
   d.section('Tank reconciliation',M,d.y);d.y+=25.9;
-  const tcols=[{h:'Tank / product',x:8},{h:'Opening',x:206,a:'r'},{h:'Purchases',x:276,a:'r'},{h:'Sold',x:346,a:'r'},{h:'Expected',x:426,a:'r'},{h:'Recorded',x:d.CW-8,a:'r',b:true}];
-  d.box(M,d.y,d.CW,22,C.NAVY,6);tcols.forEach(c=>d.text(c.h.toUpperCase(),M+c.x,d.y+14.1,7.5,true,[255,255,255],c.a==='r'?'r':'l'));d.y+=22;
-  r.tanks.forEach(tk=>{
-    d.ensure(36+10+42+30);
-    d.box(M,d.y,d.CW,36,C.CARD);
-    d.text(d.fit(tk.name,9,true,190),M+8,d.y+13.1,9,true);
-    d.text(d.fit(tk.sub,8,false,190),M+8,d.y+24.1,8,false,C.GRAY);
-    tk.cells.forEach((v,i)=>d.text(v,M+tcols[i+1].x,d.y+18.1,9.5,tcols[i+1].b,C.INK,'r'));
-    d.hline(M,M+d.CW,d.y+35.5,C.LINE,1);d.y+=36+10;
-    d.y+=d.cards(tk.cards,{top:d.y,perRow:4,gap:8,h:42,pad:10,labelBase:14.8,valBase:32.8,valSize:13})+32;
+  const tcols=[{h:'Tank',x:8},{h:'Opening',x:206,a:'r'},{h:'Purchases',x:276,a:'r'},{h:'Sold',x:346,a:'r'},{h:'Expected',x:426,a:'r'},{h:'Recorded',x:d.CW-8,a:'r',b:true}];
+  const tankTableHead=()=>{
+    d.box(M,d.y,d.CW,22,C.NAVY,6);
+    tcols.forEach(col=>d.text(col.h.toUpperCase(),M+col.x,d.y+14.1,7.5,true,[255,255,255],col.a==='r'?'r':'l'));
+    d.y+=22;
+  };
+  tankTableHead();
+  const tankProductGroups=new Map();
+  (r.tanks||[]).forEach(tk=>{
+    const productLabel=tk.product||'Unknown product';
+    const key=String(productLabel).toLowerCase();
+    if(!tankProductGroups.has(key))tankProductGroups.set(key,{product:productLabel,tanks:[]});
+    tankProductGroups.get(key).tanks.push(tk);
+  });
+  tankProductGroups.forEach(group=>{
+    d.ensure(30);
+    d.box(M,d.y,d.CW,24,[238,244,249],4);
+    d.text(d.fit(group.product,9.5,true,d.CW-16),M+8,d.y+9,9.5,true,C.NAVY);
+    d.y+=24;
+    group.tanks.forEach(tk=>{
+      d.ensure(36+10+42+30);
+      d.box(M,d.y,d.CW,36,C.CARD);
+      d.text(d.fit(tk.name,9,true,190),M+8,d.y+18.1,9,true);
+      tk.cells.forEach((v,i)=>d.text(v,M+tcols[i+1].x,d.y+18.1,9.5,tcols[i+1].b,C.INK,'r'));
+      d.hline(M,M+d.CW,d.y+35.5,C.LINE,1);d.y+=36+10;
+      d.y+=d.cards(tk.cards,{top:d.y,perRow:4,gap:8,h:42,pad:10,labelBase:14.8,valBase:32.8,valSize:13})+24;
+    });
   });
   d.section('Sales statistics',M,d.y);d.y+=9;
   d.y+=d.lines(r.stats,{base:17,step:22});
@@ -5664,7 +5681,8 @@ function buildDailyReportPdfBlob(){
 
   const tankBlocks=tanks.map(t=>{
     const warn=Math.abs(num(t.difference_liters))>=0.005?'warn':undefined;
-    return{name:t.tank||'Tank',sub:'Product: '+(productFor(t.product).name||t.product||'-'),
+    const tankProduct=productFor(t.product);
+    return{name:t.tank||'Tank',product:tankProduct.code||tankProduct.name||t.product||'Unknown product',
       cells:[fmtL(t.opening_stock_liters),'+'+fmtL(t.purchase_discharged_liters),fmtL(t.nozzle_sales_liters),fmtL(t.expected_closing_liters),fmtL(t.closing_stock_liters)],
       cards:[{label:'Adjustment',value:signedL(t.documented_stock_adjustment_liters)},{label:'Continuity',value:signedL(t.opening_adjustment_liters)},
         {label:'Difference',value:signedL(t.difference_liters),tone:warn},{label:'Variance',value:pct(t.variance_pct),tone:warn}]};
