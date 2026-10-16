@@ -966,7 +966,7 @@ async function userDashboard(){
         '<div class="attendant-dsr-group-cards">'+attendantDsrCardGroups[dsrId].sort((a,b)=>a.priority-b.priority).map(item=>item.html).join('')+'</div>'+
       '</section>'
     ).join('');
-    box.innerHTML=unifiedDsrSections?'<section class="dashboard-section"><div class="dashboard-section-head"><div><span class="section-kicker">DAILY SHIFT REPORTS</span><h2>Shift & Sales Activity</h2></div></div><div class="dashboard-section-cards">'+unifiedDsrSections+'</div></section>':'';
+    box.innerHTML=unifiedDsrSections?'<section class="dashboard-section"><div class="dashboard-section-head"><div><span class="section-kicker">DAILY SHIFT REPORTS</span><h2>Shift & Sales Activity</h2></div></div>'+unifiedDsrSections+'</section>':'';
     if(!box.innerHTML)box.innerHTML='';
   }catch(e){
     if(e.message==='Unauthorized')showSessionRecovery('attendant');
