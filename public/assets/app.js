@@ -200,18 +200,35 @@ function openBatchRecordSalesModal(){
   const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
   if(!eligible.length){toast('No shifts are ready to record');return;}
   window.batchRecordSalesStage='entry';
-  // The server accepts at most 20 shifts per atomic batch. Preselect no more than that.
-  window.batchRecordSalesSelected=new Set(eligible.slice(0,20).map(t=>String(t.id)));
+  // Multi-sales recording is restricted to a single DSR ID per batch.
+  // The server accepts at most 20 shifts per atomic batch.
+  const timestampFor=t=>{
+    const shift=(window.dashboardShiftRecords||[]).find(s=>String(s.id)===String(t.shift_id));
+    return t.shift_started_at||shift?.start_time||shift?.started_at||t.created_at;
+  };
+  const dsrFor=t=>dailyReportIdFromTimestamp(timestampFor(t));
+  const firstDsr=dsrFor(eligible[0]);
+  const initialGroup=eligible.filter(t=>dsrFor(t)===firstDsr).slice(0,20);
+  window.batchRecordSalesSelected=new Set(initialGroup.map(t=>String(t.id)));
+  window.batchRecordSalesDsrId=firstDsr;
   const list=document.getElementById('batch-record-shift-list');
   const payments=document.getElementById('batch-record-payment-list');
   const status=document.getElementById('batch-record-status');
   if(status)status.innerHTML='';
-  if(list)list.innerHTML=eligible.map((t,index)=>{
-    const shift=(window.dashboardShiftRecords||[]).find(s=>String(s.id)===String(t.shift_id));
-    const nozzle=(window.dashboardNozzleRecords||[]).find(n=>String(n.id)===String(shift?.nozzle_id));
-    const breakdown=adminReturnedFuelBreakdown(t,Number(t.returned_liters||0));
-    return '<label class="batch-record-shift-option"><input type="checkbox" class="batch-record-shift-check" onchange="handleBatchRecordShiftSelection(this)" value="'+h(t.id)+'" '+(index<20?'checked':'')+'><span><strong>'+h(nozzle?.nozzle_code||t.dispenser_code||'Dispenser')+'</strong><small>'+h(nozzle?.product||shift?.product||'Fuel')+' · '+h(new Date(t.shift_ended_at||t.created_at||Date.now()).toLocaleString())+'</small></span><b>'+money(breakdown.netAmount)+'</b></label>';
-  }).join('');
+  if(list){
+    const groups={};
+    eligible.forEach(t=>{const id=dsrFor(t);(groups[id]||(groups[id]=[])).push(t);});
+    list.innerHTML=Object.keys(groups).sort().reverse().map(dsrId=>
+      '<section class="batch-record-dsr-group" data-dsr-id="'+h(dsrId)+'"><div class="attendant-dsr-group-title"><span>DSR ID</span><strong>'+h(dsrId)+'</strong></div><div class="attendant-dsr-group-divider" aria-hidden="true"></div>'+
+      groups[dsrId].map(t=>{
+        const shift=(window.dashboardShiftRecords||[]).find(s=>String(s.id)===String(t.shift_id));
+        const nozzle=(window.dashboardNozzleRecords||[]).find(n=>String(n.id)===String(shift?.nozzle_id));
+        const breakdown=adminReturnedFuelBreakdown(t,Number(t.returned_liters||0));
+        const checked=initialGroup.some(x=>String(x.id)===String(t.id));
+        return '<label class="batch-record-shift-option"><input type="checkbox" class="batch-record-shift-check" data-dsr-id="'+h(dsrId)+'" onchange="handleBatchRecordShiftSelection(this)" value="'+h(t.id)+'" '+(checked?'checked':'')+'><span><strong>'+h(nozzle?.nozzle_code||t.dispenser_code||'Dispenser')+'</strong><small>'+h(nozzle?.product||shift?.product||'Fuel')+' · '+h(new Date(t.shift_ended_at||t.created_at||Date.now()).toLocaleString())+'</small></span><b>'+money(breakdown.netAmount)+'</b></label>';
+      }).join('')+'</section>'
+    ).join('');
+  }
   const types=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
   if(payments)payments.innerHTML=types.map(s=>'<div class="batch-record-payment-row" data-sale-type="'+h(s.id)+'"><label>'+h(s.name)+(s.description?' <small>'+h(s.description)+'</small>':'')+'<input type="number" class="batch-record-payment-amount" data-sale-id="'+h(s.id)+'" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></label>'+(s.reason_required?'<label class="batch-record-reason-label">Reason<textarea class="batch-record-payment-reason" data-reason-id="'+h(s.id)+'" rows="2" placeholder="Required when this sales type is used"></textarea></label>':'')+'</div>').join('')||'<p class="muted">No active sales types are configured.</p>';
   const modal=document.getElementById('batch-record-sales-modal');
@@ -223,15 +240,23 @@ function closeBatchRecordSalesModal(){
   if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
 }
 function handleBatchRecordShiftSelection(input){
-  const checked=document.querySelectorAll('#batch-record-shift-list .batch-record-shift-check:checked');
-  if(input?.checked&&checked.length>20){
+  const status=document.getElementById('batch-record-status');
+  const checked=Array.from(document.querySelectorAll('#batch-record-shift-list .batch-record-shift-check:checked'));
+  const dsrIds=[...new Set(checked.map(x=>String(x.dataset.dsrId||'')))];
+  if(dsrIds.length>1){
     input.checked=false;
-    const status=document.getElementById('batch-record-status');
-    if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">You can record a maximum of 20 shifts together. Submit this batch, then record the remaining shifts.</div>';
+    if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Record Sales Together can include shifts from one DSR ID only. Unselect the other DSR group first.</div>';
+  }else if(checked.length>20){
+    input.checked=false;
+    if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">You can record a maximum of 20 shifts from one DSR ID together. Submit this batch, then record the remaining shifts.</div>';
   }else{
-    const status=document.getElementById('batch-record-status');
+    window.batchRecordSalesDsrId=dsrIds[0]||null;
     if(status)status.innerHTML='';
   }
+  const selectedDsr=window.batchRecordSalesDsrId;
+  document.querySelectorAll('#batch-record-shift-list .batch-record-shift-check').forEach(x=>{
+    x.disabled=!!selectedDsr&&x.dataset.dsrId!==selectedDsr&&!x.checked;
+  });
   updateBatchRecordSelectionSummary();
 }
 function updateBatchRecordSelectionSummary(){
@@ -239,15 +264,22 @@ function updateBatchRecordSelectionSummary(){
   const selected=new Set(Array.from(document.querySelectorAll('#batch-record-shift-list .batch-record-shift-check:checked')).map(x=>String(x.value)));
   const selectedRows=eligible.filter(t=>selected.has(String(t.id)));
   const total=selectedRows.reduce((sum,t)=>sum+adminReturnedFuelBreakdown(t,Number(t.returned_liters||0)).netAmount,0);
+  const dsrIds=[...new Set(Array.from(document.querySelectorAll('#batch-record-shift-list .batch-record-shift-check:checked')).map(x=>String(x.dataset.dsrId||'')))];
   const el=document.getElementById('batch-record-selected-summary');
-  if(el)el.innerHTML='<div><span>Selected shifts</span><strong>'+selectedRows.length+'</strong></div><div><span>Combined calculated sales</span><strong>'+money(total)+'</strong></div>';
+  if(el)el.innerHTML='<div><span>DSR ID</span><strong>'+h(dsrIds[0]||'—')+'</strong></div><div><span>Selected shifts</span><strong>'+selectedRows.length+'</strong></div><div><span>Combined calculated sales</span><strong>'+money(total)+'</strong></div>';
 }
 async function continueBatchRecordSales(){
   const status=document.getElementById('batch-record-status');
   const selectedIds=Array.from(document.querySelectorAll('#batch-record-shift-list .batch-record-shift-check:checked')).map(x=>String(x.value));
   const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
   const selected=eligible.filter(t=>selectedIds.includes(String(t.id)));
-  if(!selected.length){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Select at least one eligible shift.</div>';return;}
+  if(!selected.length){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">Select at least one eligible shift from a DSR group.</div>';return;}
+  const dsrFor=t=>{
+    const shift=(window.dashboardShiftRecords||[]).find(s=>String(s.id)===String(t.shift_id));
+    return dailyReportIdFromTimestamp(t.shift_started_at||shift?.start_time||shift?.started_at||t.created_at);
+  };
+  const selectedDsrIds=[...new Set(selected.map(dsrFor))];
+  if(selectedDsrIds.length!==1){if(status)status.innerHTML='<div class="takeover-sale-mismatch" role="alert">A sales batch must contain shifts from one DSR ID only. Select shifts from a single DSR group and try again.</div>';return;}
   const types=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
   const payments=[];
   for(const type of types){
