@@ -208,7 +208,7 @@ function recordSaleProductForTakeover(t){
     String(p.code||p.product_code||'').toLowerCase()===String(nozzle?.product||shift?.product||'').toLowerCase() ||
     String(p.name||'').toLowerCase()===String(nozzle?.product||shift?.product||'').toLowerCase()
   );
-  return {key:String(product?.id||nozzle?.product_id||nozzle?.product||shift?.product||'unassigned'),label:String(product?.code||product?.product_code||nozzle?.product||shift?.product||product?.name||'Unassigned product'),shift,nozzle};
+  return {key:String(product?.id||nozzle?.product_id||nozzle?.product||shift?.product||'unassigned'),label:String(product?.code_name||product?.code||product?.product_code||nozzle?.product||shift?.product||product?.name||'Unassigned product'),shift,nozzle};
 }
 function openBatchRecordSalesModal(productKey,dsrId){
   const eligible=(window.takeoverRecords||[]).filter(t=>t.sales_status==='awaiting_attendant'&&String(t.from_employee_id)===String(window.currentAttendantId||''));
