@@ -1981,7 +1981,61 @@ body.attendant-dashboard-page .batch-record-combined-summary>div>strong{display:
  .batch-record-review-shift{grid-template-columns:minmax(0,1fr)!important}
  .batch-record-review-shift>strong{grid-column:auto!important}
 }
-</style></head><body class="attendant-page attendant-dashboard-page admin-shell admin-control-ui" data-app-page="userDashboard"<button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div><div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing dip (mm)<input id="handover-closing-dip" type="number" min="0" step="0.1" placeholder="Enter tank closing dip" required oninput="updateHandoverClosingDip(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter a dip to calculate liters.</div><input id="handover-closing-liters" type="hidden"><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="batch-record-sales-modal" class="modal" aria-hidden="true">
+</style>
+<style id="batch-record-shared-total-layout">
+/* Keep the combined Record Sale total's label, ETB amount, and litres on separate lines. */
+body.attendant-dashboard-page #batch-record-payment-list .batch-record-shared-total{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr)!important;
+ align-items:start!important;
+ justify-items:stretch!important;
+ gap:0!important;
+ width:100%!important;
+ box-sizing:border-box!important;
+ padding:14px 16px!important;
+ margin:8px 0 16px!important;
+ border:1px solid #dbe3ec!important;
+ border-radius:12px!important;
+ background:#fff!important;
+ text-align:left!important;
+}
+body.attendant-dashboard-page #batch-record-payment-list .batch-record-shared-total>span{
+ display:block!important;
+ margin:0 0 8px!important;
+ font-size:12px!important;
+ line-height:1.45!important;
+ font-weight:600!important;
+ color:#475569!important;
+ white-space:normal!important;
+ overflow-wrap:anywhere!important;
+}
+body.attendant-dashboard-page #batch-record-payment-list .batch-record-shared-total>strong{
+ display:block!important;
+ margin:0!important;
+ font-size:clamp(20px,5vw,26px)!important;
+ line-height:1.25!important;
+ font-weight:750!important;
+ color:#111827!important;
+ font-variant-numeric:tabular-nums!important;
+ white-space:normal!important;
+ overflow-wrap:anywhere!important;
+ word-break:normal!important;
+}
+body.attendant-dashboard-page #batch-record-payment-list .batch-record-shared-total>small{
+ display:block!important;
+ margin:10px 0 0!important;
+ padding-top:10px!important;
+ border-top:1px solid #e8edf2!important;
+ font-size:13px!important;
+ line-height:1.45!important;
+ font-weight:500!important;
+ color:#64748b!important;
+ white-space:normal!important;
+ overflow-wrap:anywhere!important;
+}
+</style>
+
+</head><body class="attendant-page attendant-dashboard-page admin-shell admin-control-ui" data-app-page="userDashboard"<button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div><div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing dip (mm)<input id="handover-closing-dip" type="number" min="0" step="0.1" placeholder="Enter tank closing dip" required oninput="updateHandoverClosingDip(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter a dip to calculate liters.</div><input id="handover-closing-liters" type="hidden"><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="batch-record-sales-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closeBatchRecordSalesModal()"></div>
 <div class="modal-card takeover-action-modal batch-record-sales-modal-card">
 <div class="top"><div><span class="section-kicker">PRODUCT SALES</span><h3>Record Product Sales</h3><p class="muted">Enter the product’s total payment breakdown once. The system allocates it automatically across the dispensers.</p></div><button type="button" class="modal-close" onclick="closeBatchRecordSalesModal()" aria-label="Close">×</button></div>
