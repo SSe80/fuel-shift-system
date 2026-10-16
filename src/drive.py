@@ -403,16 +403,50 @@ def _multipart(metadata, pdf_bytes):
 async def _upload_pdf(token, folder_id, name, pdf_bytes):
     existing = await _find_child(token, folder_id, name)
     if existing:
-        # Overwrite: same name, same file ID, so the Drive link stays stable
-        status, data = await _http(UPLOAD_API + "/" + existing + "?uploadType=media&supportsAllDrives=true&fields=id,webViewLink",
-                                   "PATCH", dict(_auth(token), **{"Content-Type": "application/pdf"}), Uint8Array.new(to_js(list(pdf_bytes))))
-    else:
-        boundary, body = _multipart({"name": name, "parents": [folder_id], "mimeType": "application/pdf"}, pdf_bytes)
-        status, data = await _http(UPLOAD_API + "?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink",
-                                   "POST", dict(_auth(token), **{"Content-Type": "multipart/related; boundary=" + boundary}), Uint8Array.new(to_js(list(body))))
-    if status >= 400 or not data:
-        raise _gerr("Upload", status, data)
-    return data["id"], data.get("webViewLink")
+        status, data = await _http(
+            UPLOAD_API + "/" + existing + "?uploadType=media&supportsAllDrives=true&fields=id,webViewLink",
+            "PATCH", dict(_auth(token), **{"Content-Type": "application/pdf"}),
+            Uint8Array.new(to_js(list(pdf_bytes))))
+        if status >= 400 or not isinstance(data, dict) or not data.get("id"):
+            raise _gerr("Update existing PDF", status, data)
+        return data["id"], data.get("webViewLink")
+
+    # Try the normal single-request multipart upload first.
+    boundary, body = _multipart(
+        {"name": name, "parents": [folder_id], "mimeType": "application/pdf"}, pdf_bytes)
+    status, data = await _http(
+        UPLOAD_API + "?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink",
+        "POST",
+        dict(_auth(token), **{"Content-Type": "multipart/related; boundary=" + boundary}),
+        Uint8Array.new(to_js(list(body))))
+    if status < 400 and isinstance(data, dict) and data.get("id"):
+        return data["id"], data.get("webViewLink")
+
+    multipart_error = "%s" % _gerr("Multipart PDF upload", status, data)
+
+    # Fallback: upload the raw PDF bytes, then set the file's name and parent
+    # in a separate metadata request. This avoids multipart-body incompatibilities
+    # in some Worker runtimes while keeping the same final Drive folder and filename.
+    status, data = await _http(
+        UPLOAD_API + "?uploadType=media&supportsAllDrives=true&fields=id",
+        "POST", dict(_auth(token), **{"Content-Type": "application/pdf"}),
+        Uint8Array.new(to_js(list(pdf_bytes))))
+    if status >= 400 or not isinstance(data, dict) or not data.get("id"):
+        raise DriveError("%s; raw PDF upload fallback failed: %s" %
+                         (multipart_error, str(_gerr("Raw PDF upload", status, data))), 502)
+
+    file_id = data["id"]
+    metadata = json.dumps({"name": name, "mimeType": "application/pdf"})
+    status, meta = await _http(
+        DRIVE_API + "/" + file_id + "?addParents=" + _urlq(folder_id) +
+        "&supportsAllDrives=true&fields=id,webViewLink",
+        "PATCH",
+        dict(_auth(token), **{"Content-Type": "application/json"}),
+        metadata)
+    if status >= 400 or not isinstance(meta, dict) or not meta.get("id"):
+        raise DriveError("PDF content uploaded but Drive could not place/name it in the Purchases folder: %s" %
+                         str(_gerr("Set PDF metadata", status, meta)), 502)
+    return meta["id"], meta.get("webViewLink")
 
 
 async def _store(e, root_id, subfolder, file_name, pdf_bytes):
