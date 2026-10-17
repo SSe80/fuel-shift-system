@@ -3105,100 +3105,148 @@ async function downloadMonthlySalesReportPdf(data){
 }
 
 function createDsrReportPdf(r){
-  const d=createPdfDoc(),M=d.M,C=d.C;
-  d.header({kicker:'DAILY SALES REPORT  \u00b7  STATION DAILY RECONCILIATION',title:r.title,h:84,kBase:28,tBase:54,pillTop:31.5,pillBase:48.5,status:r.statusLabel});
-  d.y=105.8;
-  // ---- page 1 ----
-  d.section('Key figures',M,d.y);d.y+=24.2;
-  const kw=[100.1,169.9,69.8,69.8,69.8],kg=(d.CW-kw.reduce((a,b)=>a+b,0))/4;
-  d.y+=d.cards(r.key,{top:d.y,widths:kw,gap:kg,h:58,pad:10,labelBase:19,valBase:43,valSize:14})+28;
-  // Product -> dispenser -> nozzle hierarchy; deliberately omit the Meter column.
-  d.ensure(48);
-  d.section('Dispenser & nozzle performance',M,d.y);d.y+=25.9;
-  const nozzleCols=[{h:'Dispenser / nozzle',x:8},{h:'Opening',x:292,a:'r'},{h:'Closing',x:362,a:'r'},{h:'Sold',x:432,a:'r',b:true},{h:'Recon.',x:d.CW-8,a:'r',b:true}];
-  const nozzleHead=()=>{
-    d.box(M,d.y,d.CW,22,C.NAVY,6);
-    nozzleCols.forEach(c=>d.text(c.h.toUpperCase(),M+c.x,d.y+14.1,7.5,true,[255,255,255],c.a==='r'?'r':'l'));
-    d.y+=22;
-  };
-  nozzleHead();
-  (r.dispGroups||[]).forEach(pg=>{
-    d.ensure(34);
-    d.box(M,d.y,d.CW,25,[238,244,249],4);
-    d.text(d.fit(pg.product,10,true,d.CW-16),M+8,d.y+9,10,true,C.NAVY);
-    d.y+=25;
-    pg.dispensers.forEach((nozzles,dispenserLabel)=>{
-      if(dispenserLabel){
-        d.ensure(24);
-        d.box(M,d.y,d.CW,21,[247,249,251]);
-        d.text(d.fit(dispenserLabel,9,true,d.CW-24),M+14,d.y+7,9,true,C.INK);
-        d.y+=21;
-      }
-      nozzles.forEach(n=>{
-        const rh=25;
-        if(d.y+rh>d.BOTTOM){d.newPage();nozzleHead();}
-        d.box(M,d.y,d.CW,rh,C.CARD);
-        d.text(d.fit(n.label,8.5,false,250),M+20,d.y+9,8.5,false,C.INK);
-        d.text(n.opening,M+nozzleCols[1].x,d.y+9,8.5,false,C.INK,'r');
-        d.text(n.closing,M+nozzleCols[2].x,d.y+9,8.5,false,C.INK,'r');
-        d.text(n.sold,M+nozzleCols[3].x,d.y+9,8.5,true,C.INK,'r');
-        d.text(n.recon,M+nozzleCols[4].x,d.y+9,8.5,true,C.INK,'r');
-        d.hline(M,M+d.CW,d.y+rh-.5,C.LINE,0.7);d.y+=rh;
+  const d=createPdfDoc(),M=d.M,C=d.C,CW=d.CW;
+  const WHITE=[255,255,255],STRIPE=[248,250,252],BAND=[232,240,250],SOFT=[241,245,249];
+  const GREEN=[21,128,61],AMBER=[180,83,9],RED=[185,28,28];
+  const GREEN_T=[220,252,231],AMBER_T=[254,243,199],RED_T=[254,226,226];
+  const num=v=>{const n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};
+  const fmtL=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:2});
+  const varTone=p=>p<=1?{fg:GREEN,bg:GREEN_T}:p<=3?{fg:AMBER,bg:AMBER_T}:{fg:RED,bg:RED_T};
+  // Attendants per dispenser, in shift order
+  const attMap=new Map();
+  (r.shifts||[]).forEach(s=>{
+    const disp=String(s.sub||'').split(' / ')[0].trim();
+    const nm=String(s.title||'').split(' - ').slice(1).join(' - ').trim()||String(s.title||'');
+    if(!attMap.has(disp))attMap.set(disp,[]);
+    if(!attMap.get(disp).includes(nm))attMap.get(disp).push(nm);
+  });
+  d.singlePage=true;
+  d.header({kicker:'DAILY SALES REPORT  \u00b7  STATION DAILY RECONCILIATION',title:r.title,h:74,kBase:25,tBase:48,pillTop:27,pillBase:43,status:r.statusLabel});
+  d.markContent(74);
+  d.y=92;
+  // Key figures
+  d.section('Key figures',M,d.y);d.y+=20;
+  const kf=(r.key||[]).map((k,i)=>i===1?Object.assign({},k,{style:'dark'}):k);
+  d.y+=d.cards(kf,{top:d.y,h:52,gap:8,pad:10,labelBase:16,valBase:37,valSize:13,labelSize:7})+16;
+  // Dispensers: one equal-width block per dispenser; nozzle columns split each block evenly
+  d.section('Dispenser & nozzle performance',M,d.y);d.y+=20;
+  const groups=r.dispGroups||[];
+  const disps=[];
+  groups.forEach(pg=>pg.dispensers.forEach((nozzles,label)=>disps.push({product:pg.product,label,nozzles})));
+  const LBL=78,nD=disps.length||1,blockW=(CW-LBL)/nD;
+  const blockX=j=>M+LBL+j*blockW;
+  const cols=[];
+  disps.forEach((dp,j)=>{const n=dp.nozzles.length||1,sw=blockW/n;dp.nozzles.forEach((nz,i)=>cols.push({x:blockX(j)+i*sw,w:sw,n:nz}));});
+  // product bands span their dispensers
+  let j0=0;
+  groups.forEach(pg=>{
+    const cnt=pg.dispensers.size;
+    const x=blockX(j0),w=cnt*blockW-4;
+    d.box(x,d.y,w,17,BAND,8);
+    d.text(d.fit(pg.product,8,true,w-10),x+w/2,d.y+11.5,8,true,C.NAVY,'c');
+    j0+=cnt;
+  });
+  d.y+=22;
+  // dispenser cards: equal width, nozzle count under the name
+  disps.forEach((dp,j)=>{
+    const x=blockX(j),w=blockW-4;
+    const total=dp.nozzles.reduce((s,n)=>s+num(n.sold),0);
+    const att=(attMap.get(dp.label)||[]).join(' \u2192 ')||'\u2014';
+    d.box(x,d.y,w,50,WHITE,6);d.outline(x,d.y,w,50,6);
+    d.text(d.fit(dp.label,8,true,w-12),x+w/2,d.y+13,8,true,C.INK,'c');
+    d.text(d.fit(dp.nozzles.length+(dp.nozzles.length===1?' nozzle':' nozzles')+'  \u00b7  Total '+fmtL(total)+' L',7,false,w-12),x+w/2,d.y+25,7,false,C.GRAY,'c');
+    d.text(d.fit(att,7,true,w-12),x+w/2,d.y+39,7,true,C.INK,'c');
+  });
+  d.y+=58;
+  d.box(M,d.y,CW,18,C.NAVY,5);
+  d.text('NOZZLE',M+10,d.y+12,7,true,WHITE);
+  cols.forEach(c=>d.text(d.fit(c.n.label,7,true,c.w-6),c.x+c.w/2,d.y+12,7,true,WHITE,'c'));
+  d.y+=18;
+  [['METER START','opening',false],['METER END','closing',false],['SOLD','sold',true],['RECON.','recon',true]].forEach(([lab,key,bold],ri)=>{
+    if(ri%2===0)d.box(M,d.y,CW,20,STRIPE);
+    d.text(lab,M+10,d.y+13,7,true,C.GRAY);
+    cols.forEach(c=>d.text(d.fit(String(c.n[key]),8,bold,c.w-6),c.x+c.w/2,d.y+13,8,bold,C.INK,'c'));
+    d.y+=20;
+  });
+  d.hline(M,M+CW,d.y+.5,C.LINE,.6);
+  d.y+=14;
+  // Tanks, with a variance legend
+  d.section('Tank reconciliation',M,d.y);
+  let lx=M+CW-8;
+  [['1%',GREEN,'\u2264 1%'],['3%',AMBER,'1\u20133%'],['>',RED,'> 3%']].reverse().forEach(([,col,txt])=>{
+    const w=d.tw(txt,7,false);
+    lx-=w;d.text(txt,lx,d.y+10,7,false,C.GRAY);
+    lx-=10;d.box(lx,d.y+5,6,6,col,3);
+    lx-=10;
+  });
+  d.text('Variance',lx-2,d.y+10,7,true,C.GRAY,'r');
+  d.y+=20;
+  const tc=[{h:'Tank',x:12},{h:'Opening',x:206,a:'r'},{h:'Purchases',x:272,a:'r'},{h:'Sold',x:340,a:'r'},{h:'Expected',x:410,a:'r'},{h:'Recorded',x:CW-12,a:'r',b:true}];
+  d.box(M,d.y,CW,20,C.NAVY,5);
+  tc.forEach(c=>d.text(c.h.toUpperCase(),M+c.x,d.y+13,7,true,WHITE,c.a==='r'?'r':'l'));
+  d.y+=20;
+  const groupsT=new Map();
+  (r.tanks||[]).forEach(tk=>{const key=String(tk.product||'Unknown product').toLowerCase();if(!groupsT.has(key))groupsT.set(key,{product:tk.product||'Unknown product',tanks:[]});groupsT.get(key).tanks.push(tk);});
+  groupsT.forEach(g=>{
+    d.box(M,d.y,CW,18,BAND,3);
+    d.text(d.fit(g.product,9,true,CW-24),M+12,d.y+12.5,9,true,C.NAVY);
+    d.y+=18;
+    g.tanks.forEach(tk=>{
+      const card=(tk.cards||[]);
+      const v=card.find(c=>/variance/i.test(c.label));
+      const vp=v?num(v.value):0;
+      const tone=varTone(vp);
+      d.box(M,d.y,CW,54,WHITE,6);d.outline(M,d.y,CW,54,6);
+      d.text(d.fit(tk.name,9,true,190),M+12,d.y+19,9,true,C.INK);
+      tk.cells.forEach((val,i)=>d.text(val,M+tc[i+1].x,d.y+19,9,!!tc[i+1].b,C.INK,'r'));
+      let cx=M+12;
+      card.filter(c=>!/variance/i.test(c.label)).forEach(c=>{
+        const txt=c.label+'  '+c.value,w=d.tw(txt,7,false)+14;
+        d.box(cx,d.y+31,w,15,SOFT,7.5);
+        d.text(txt,cx+7,d.y+41.5,7,false,C.GRAY);
+        cx+=w+6;
       });
-    });
-    d.y+=7;
-  });
-  d.y+=24;
-  // Tank reconciliation grouped by product, then by tank.
-  d.ensure(26+22+36+52+40);
-  d.section('Tank reconciliation',M,d.y);d.y+=25.9;
-  const tcols=[{h:'Tank',x:8},{h:'Opening',x:206,a:'r'},{h:'Purchases',x:276,a:'r'},{h:'Sold',x:346,a:'r'},{h:'Expected',x:426,a:'r'},{h:'Recorded',x:d.CW-8,a:'r',b:true}];
-  const tankTableHead=()=>{
-    d.box(M,d.y,d.CW,22,C.NAVY,6);
-    tcols.forEach(col=>d.text(col.h.toUpperCase(),M+col.x,d.y+14.1,7.5,true,[255,255,255],col.a==='r'?'r':'l'));
-    d.y+=22;
-  };
-  tankTableHead();
-  const tankProductGroups=new Map();
-  (r.tanks||[]).forEach(tk=>{
-    const productLabel=tk.product||'Unknown product';
-    const key=String(productLabel).toLowerCase();
-    if(!tankProductGroups.has(key))tankProductGroups.set(key,{product:productLabel,tanks:[]});
-    tankProductGroups.get(key).tanks.push(tk);
-  });
-  tankProductGroups.forEach(group=>{
-    d.ensure(30);
-    d.box(M,d.y,d.CW,24,[238,244,249],4);
-    d.text(d.fit(group.product,9.5,true,d.CW-16),M+8,d.y+9,9.5,true,C.NAVY);
-    d.y+=24;
-    group.tanks.forEach(tk=>{
-      d.ensure(36+10+42+30);
-      d.box(M,d.y,d.CW,36,C.CARD);
-      d.text(d.fit(tk.name,9,true,190),M+8,d.y+18.1,9,true);
-      tk.cells.forEach((v,i)=>d.text(v,M+tcols[i+1].x,d.y+18.1,9.5,tcols[i+1].b,C.INK,'r'));
-      d.hline(M,M+d.CW,d.y+35.5,C.LINE,1);d.y+=36+10;
-      d.y+=d.cards(tk.cards,{top:d.y,perRow:4,gap:8,h:42,pad:10,labelBase:14.8,valBase:32.8,valSize:13})+24;
+      if(v){
+        const vt='Variance '+v.value,pw=d.tw(vt,7.5,true)+16;
+        d.box(M+CW-12-pw,d.y+31,pw,15,tone.bg,7.5);
+        d.text(vt,M+CW-12-pw/2,d.y+41.5,7.5,true,tone.fg,'c');
+      }
+      d.y+=60;
     });
   });
-  d.section('Sales statistics',M,d.y);d.y+=9;
-  d.y+=d.lines(r.stats,{base:17,step:22});
-  // ---- page 2 ----
-  d.topY=47.9;d.newPage();
-  const colW=(d.CW-24)/2;
-  d.y+=d.rowsBlock([{title:'Reconciliation overview',rows:r.overview},{title:'Performance statistics',rows:r.perf}],{start:8.8,step:24,base:19,size:9,valSize:9,valPad:110})+43.4;
-  d.section('Shift summary',M,d.y);d.y+=24.1;
-  r.shifts.forEach(s=>{
-    d.ensure(56+10);
-    d.box(M,d.y,d.CW,55.5,C.CARD,4.5);
-    d.text(d.fit(s.title,11,true,170),M+14,d.y+22.8,11,true);
-    d.text(d.fit(s.sub,8.5,false,170),M+14,d.y+37.8,8.5,false,C.GRAY);
-    s.cols.forEach((c,i)=>{const x=M+190+i*80;
-      d.text(c.label.toUpperCase(),x,d.y+20.8,7.5,false,C.GRAY);
-      d.text(d.fit(c.value,10.5,true,c.w||76),x,d.y+37.8,10.5,true,c.tone==='good'?C.GREEN:C.INK);});
-    d.y+=55.5+10;
+  d.y+=6;
+  // Sales statistics
+  d.section('Sales statistics',M,d.y);d.y+=20;
+  const rows=r.stats||[],totals=rows.filter(x=>x.big),lines=rows.filter(x=>!x.big);
+  const fixPct=val=>{const m=String(val).match(/([0-9.]+)%\s*$/);if(m&&parseFloat(m[1])===0&&/ETB\s*[1-9]/.test(String(val)))return String(val).replace(/0\.0%\s*$/,'<0.1%');return val;};
+  lines.forEach(rw=>{
+    d.text(d.fit(rw.label,8.5,false,CW*.6),M+4,d.y+13,8.5,false,C.GRAY);
+    d.text(d.fit(fixPct(rw.value),8.5,true,CW*.5),M+CW-4,d.y+13,8.5,true,C.INK,'r');
+    d.hline(M,M+CW,d.y+19.5,C.LINE,.5);d.y+=19;
   });
-  d.y+=18.5;
-  d.y+=d.rowsBlock([{title:'Final daily performance',rows:r.finalLeft},{title:'',rows:r.finalRight}],{start:8.8,step:24,base:19,size:9,valSize:9,valPad:110})+0;
+  d.y+=10;
+  if(totals.length){
+    const h=46,half=CW/totals.length;
+    d.box(M,d.y,CW,h,C.NAVY,8);
+    totals.forEach((t,i)=>{const x=M+i*half+16;
+      d.text(t.label.toUpperCase(),x,d.y+17,7,true,[147,197,253]);
+      d.text(d.fit(t.value,13,true,half-28),x,d.y+36,13,true,WHITE);});
+    d.y+=h+8;
+  }
+  // Payment reconciliation
+  const ov=r.overview||[];
+  const pick=re=>{const o=ov.find(x=>re.test(String(x.label)));return o?o.value:null;};
+  const calc=pick(/calculated/i),entered=pick(/entered/i),diff=pick(/financial difference/i);
+  if(calc!=null||entered!=null){
+    const ok=num(diff)===0;
+    d.box(M,d.y,CW,26,ok?GREEN_T:RED_T,6);
+    const parts=[['Calculated',calc],['Entered',entered],['Difference',diff]].filter(p=>p[1]!=null);
+    const seg=CW/parts.length;
+    parts.forEach(([lab,val],i)=>{const x=M+i*seg+14;
+      d.text(lab.toUpperCase()+'  ',x,d.y+16,7,true,ok?GREEN:RED);
+      d.text(d.fit(String(val),8.5,true,seg-60),x+d.tw(lab.toUpperCase()+'  ',7,true)+2,d.y+16,8.5,true,C.INK);});
+    d.y+=34;
+  }
   return d.finish(r.footer,'DSR - '+r.title);
 }
 
