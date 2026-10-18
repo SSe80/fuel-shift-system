@@ -99,7 +99,7 @@
         cells.forEach(function (c0, ci) {
           var c = (c0 && typeof c0 === 'object') ? c0 : { v: c0 };
           var v = c.v, ref = colName(ci) + (ri + 1), kind = r.kind || 'data', o;
-          var keepBlank = /^(banner|bannerKicker|section|subhead|head|groupHead|kpiHead|kpi|meta|reconGood|reconBad)$/.test(kind);
+          var keepBlank = /^(banner|bannerKicker|section|subhead|head|groupHead|kpiHead|kpi|meta|reconGood|reconBad)$/.test(kind) || (v === '' && (c.fill || c.border || c.color || c.bold || c.sz || c.align || c.wrap));
           if (v === null || v === undefined || (v === '' && !keepBlank)) return;
           if (kind === 'banner') o = { b: true, sz: 18, color: 'FFFFFF', fill: '14213D', wrap: true };
           else if (kind === 'bannerKicker') o = { b: true, sz: 9, color: '93C5FD', fill: '14213D', wrap: true };
