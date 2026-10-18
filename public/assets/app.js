@@ -3337,7 +3337,7 @@ function createMsrReportPdfV2(r){
   const d=createPdfDoc(),M=24,CW=595.28-48,W=595.28,H=841.89,R=M+CW;
   d.keepA4Width=true;
   const WHITE=[255,255,255],PAGE=[255,255,255],INK=[15,23,42],GREY=[100,116,139],
-    NAVY=[20,33,61],BLUE=[37,99,235],BORDER=[226,232,240],SOFT=[241,245,249],
+    NAVY=[0,0,0],BLUE=[37,99,235],BORDER=[226,232,240],SOFT=[241,245,249],
     LBLUE=[239,246,255],GREEN=[21,128,61],LGREEN=[220,252,231],AMBER=[180,83,9],LAMBER=[254,243,199];
   const card=(x,y,w,h,fill=WHITE)=>{d.box(x,y,w,h,fill,9);d.outline(x,y,w,h,9);};
   const section=(x,y,label)=>{d.box(x,y+1,3,15,BLUE,1.8);d.text(String(label).toUpperCase(),x+12,y+13.5,11.5,true,INK);};
