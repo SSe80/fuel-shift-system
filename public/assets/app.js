@@ -3221,11 +3221,11 @@ function createDsrReportPdf(r){
   let yy=shTop+52;
   prodRows.forEach(rw=>{const nm=String(rw.label).replace(/^by product\s*[\u00b7-]\s*/i,'');const pc=pctOf(rw.value)||0;const col=prodColor(nm);
     d.text(d.fit(nm,10.5,true,half*.6),LX,yy+12,10.5,true,INK);d.text(pc.toFixed(1)+'%',LX+half,yy+12,10.5,true,INK,'r');
-    d.text(d.fit(detailOf(rw.value),9.8,false,half),LX,yy+25,9.8,false,GREY);
+    d.text(d.fit(detailOf(rw.value),12,false,half),LX,yy+25,12,false,GREY);
     d.box(LX,yy+30,half,5,TRACK,2.5);d.box(LX,yy+30,Math.max(3,half*pc/100),5,col,2.5);yy+=39;});
   let yr=shTop+52;
   methRows.forEach(rw=>{const nm=String(rw.label).replace(/^by method\s*[\u00b7-]\s*/i,'');const pc=pctOf(rw.value);const amt=detailOf(rw.value);
-    d.text(d.fit(nm,10,true,half*.45),RX,yr+12,10,true,INK);d.text(d.fit(amt,9.5,false,half*.45),RX+half-44,yr+12,9.5,false,GREY,'r');
+    d.text(d.fit(nm,10,true,half*.45),RX,yr+12,10,true,INK);d.text(d.fit(amt,11.5,false,half*.55),RX+half-44,yr+12,11.5,false,GREY,'r');
     d.text(pc==null?'':(pc===0?'<0.1%':pc.toFixed(1)+'%'),RX+half,yr+12,9.5,true,INK,'r');
     d.box(RX,yr+19,half,5,TRACK,2.5);if(pc!=null)d.box(RX,yr+19,Math.max(3,half*pc/100),5,BLUE,2.5);yr+=29;});
   const sy=shTop+shH-50;
