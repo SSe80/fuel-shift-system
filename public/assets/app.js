@@ -3114,6 +3114,7 @@ function createDsrReportPdf(r){
   const num=v=>{const n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};
   const fmtL=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:2});
   const prodColor=p=>/mgr/i.test(String(p||''))?MGRC:/ago/i.test(String(p||''))?AGOC:[148,163,184];
+  const prodTint=p=>/mgr/i.test(String(p||''))?[254,226,226]:/ago/i.test(String(p||''))?[254,249,195]:[241,245,249];
   const varTone=p=>p<=1?{fg:GREEN,bg:LGREEN}:p<=3?{fg:AMBER,bg:LAMBER}:{fg:RED,bg:LRED};
   const attMap=new Map();
   (r.shifts||[]).forEach(s=>{const disp=String(s.sub||'').split(' / ')[0].trim();const nm=String(s.title||'').split(' - ').slice(1).join(' - ').trim()||String(s.title||'');if(!attMap.has(disp))attMap.set(disp,[]);if(!attMap.get(disp).includes(nm))attMap.get(disp).push(nm);});
@@ -3138,13 +3139,10 @@ function createDsrReportPdf(r){
   card(M,dpTop,CW,dpH);
   section(M+14,dpTop+8,'Dispenser & nozzle performance');
   let py=dpTop+34;
-  let jj=0;
-  groups.forEach(pg=>{const cnt=pg.dispensers.size,gx=disps[jj].x0,gw=pg.dispensers.size?disps.slice(jj,jj+cnt).reduce((s,dp)=>s+dp.span,0):0;const col=prodColor(pg.product);
-    d.box(gx,py,38,18,col,9);d.text(String(pg.product),gx+19,py+13,8.5,true,INK,'c');
-    d.box(gx+38,py+7.5,Math.max(0,gw-38),2.5,col,1.25);jj+=cnt;});
-  py+=24;
+  // Product labels are omitted; each dispenser summary uses a light tint of its product color.
+  py+=4;
   disps.forEach(dp=>{const total=dp.nozzles.reduce((s,n)=>s+num(n.sold),0);
-    d.box(dp.x0+2,py,dp.span-4,40,LBLUE,6);
+    d.box(dp.x0+2,py,dp.span-4,40,prodTint(dp.product),6);
     const lf=dp.span<90?7:8.5;d.text(d.fit(dp.label,lf,true,dp.span-8),dp.x0+dp.span/2,py+16,lf,true,INK,'c');
     d.text(d.fit('Total '+fmtL(total)+' L',8,false,dp.span-12),dp.x0+dp.span/2,py+31,8,false,GREY,'c');});
   py+=46;
