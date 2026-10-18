@@ -367,67 +367,144 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
   return {byCode,byName,nozzles:Array.isArray(nozRecs)?nozRecs:[]};
  };
  const msrRowsFor=async()=>{
-  const d=lastExportData, cur=msrCurrency(), maps=await msrColourMaps();
+  const d=lastExportData,cur=msrCurrency(),maps=await msrColourMaps();
   const recFor=code=>maps.byCode[String(code||'').trim().toLowerCase()]||maps.byName[String(code||'').trim().toLowerCase()]||null;
-  const n2=v=>Number.isFinite(Number(v))?Number(Number(v).toFixed(2)):'';
-  const n1=v=>Number.isFinite(Number(v))?Number(Number(v).toFixed(1)):'';
-  const int=v=>Number.isFinite(Number(v))?Math.round(Number(v)):'';
-  const rows=[];
-  const add=(kind,cells,tint)=>rows.push(tint?{kind,tint,cells}:{kind,cells});
-  const section=(title,headers,data,total)=>{add('title',[title]);add('head',headers);data.forEach(r=>add('data',r.cells||r,r.tint));if(total)add('total',total);add('blank',[]);};
-  add('title',['Monthly Sales Report']);
-  const gen=new Date(),pad=x=>String(x).padStart(2,'0');
-  add('data',['Month',monthLabel(d.month)]);
-  add('data',['Currency',cur]);
-  add('data',['Generated',gen.getFullYear()+'-'+pad(gen.getMonth()+1)+'-'+pad(gen.getDate())+' '+pad(gen.getHours())+':'+pad(gen.getMinutes())]);
-  add('note',['Figures use confirmed daily reports only. The current month is provisional until every day is confirmed.']);
-  add('blank',[]);
-  section('SUMMARY',['Metric','Value','Unit'],[
-    ['Confirmed DSR days',int(d.summary.confirmedDays),'days'],
-    ['Expected confirmed DSR days',int(d.summary.expectedDays),'days'],
-    ['Calculated sales',n2(d.summary.totalSales),cur],
-    ['Net fuel sold',n1(d.summary.totalLiters),'L'],
-    ['Returned fuel',n1(d.summary.totalReturnedLiters),'L'],
-    ['Returned fuel value',n2(d.summary.totalReturnedAmount),cur],
-    ['Confirmed shifts',int(d.summary.totalShifts),'shifts'],
-    ['Average sales per confirmed day',n2(d.summary.averageDailySales),cur],
-    ['Entered payments',d.summary.enteredPayments==null?'':n2(d.summary.enteredPayments),d.summary.enteredPayments==null?'':cur],
-    ['Financial difference',d.summary.financialDifference==null?'':n2(d.summary.financialDifference),d.summary.financialDifference==null?'':cur]]);
-  const dL=d.daily.reduce((a,x)=>a+(Number(x.liters)||0),0),dRL=d.daily.reduce((a,x)=>a+(Number(x.returnedLiters)||0),0),dRA=d.daily.reduce((a,x)=>a+(Number(x.returnedAmount)||0),0),dS=d.daily.reduce((a,x)=>a+(Number(x.sales)||0),0),dSh=d.daily.reduce((a,x)=>a+(Number(x.shifts)||0),0);
-  const payAll=d.daily.every(x=>x.payments!=null),dP=d.daily.reduce((a,x)=>a+(Number(x.payments)||0),0);
-  section('DAILY SALES',['Date','Net fuel sold (L)','Returned fuel (L)','Return value ('+cur+')','Calculated sales ('+cur+')','Entered payments ('+cur+')','Confirmed shifts'],
-    d.daily.map(r=>[String(r.date||''),n1(r.liters),n1(r.returnedLiters),n2(r.returnedAmount),n2(r.sales),r.payments==null?'':n2(r.payments),int(r.shifts)]),
-    ['Total',n1(dL),n1(dRL),n2(dRA),n2(dS),payAll?n2(dP):'',int(dSh)]);
-  // Products
-  const pL=d.products.reduce((a,x)=>a+(Number(x.liters)||0),0),pS=d.products.reduce((a,x)=>a+(Number(x.sales)||0),0);
-  section('PRODUCTS',['Rank','Product code','Fuel sold (L)','Sales ('+cur+')','Share of sales (%)','Sales per litre ('+cur+')'],
-    d.products.map((r,i)=>[i+1,String(r.code||''),n1(r.liters),n2(r.sales),n2(r.sharePct),Number(r.liters)?n2((Number(r.sales)||0)/Number(r.liters)):'']),
-    ['','Total',n1(pL),n2(pS),n2(d.products.reduce((a,x)=>a+(Number(x.sharePct)||0),0)),pL?n2(pS/pL):'']);
-  const stT=(d.salesTypes||[]).reduce((a,x)=>a+(Number(x.sales)||0),0);
-  section('SALES BY TYPE',['Sale type','Total amount ('+cur+')','Share of monthly sales (%)'],
-    (d.salesTypes||[]).map(r=>[String(r.name||''),n2(r.sales),n2(r.sharePct)]),
-    (d.salesTypes||[]).length?['Total',n2(stT),'']:null);
-  section('SALES REQUIRING A REASON',['DSR date','Sale type','Amount ('+cur+')','Reason'],
-    (d.saleReasons||[]).map(r=>[String(r.date||''),String(r.type||''),n2(r.amount),r.reason||'Reason not recorded']));
-  const aT=d.attendants.reduce((a,x)=>a+(Number(x.sales)||0),0),aL=d.attendants.reduce((a,x)=>a+(Number(x.liters)||0),0),aSh=d.attendants.reduce((a,x)=>a+(Number(x.shiftCount)||0),0);
-  section('ATTENDANTS',['Rank','Attendant','Sales ('+cur+')','Fuel sold (L)','Shifts','Share of sales (%)'],
-    d.attendants.map((r,i)=>[i+1,String(r.attendant||'Unknown'),n2(r.sales),n1(r.liters),int(r.shiftCount),aT?n2((Number(r.sales)||0)/aT*100):'']),
-    ['Total',n2(aT),n1(aL),int(aSh),aT?'100.00':'']);
-  // Dispensers: nozzle code and its product
-  const dispRows=maps.nozzles.map(n=>{const rec=recFor(n.product)||{code:n.product};
-    return [String(n.nozzle_code||''),String(rec.code||n.product||''),int(n.nozzle_count||1)];});
-  section('DISPENSERS',['Dispenser','Product','Nozzles'],dispRows);
-  // Shifts
-  const shiftRows=d.shifts.map((r,i)=>[i+1,String(r.shiftDispenser||''),n2(r.sales),n1(r.liters),int(r.records)]);
-  section('SHIFTS AND DISPENSERS',['Rank','Shift / dispenser','Sales ('+cur+')','Fuel sold (L)','Records'],shiftRows);
-  section('MONTHLY RANKING',['Rank','Month','Total sales ('+cur+')','Average sales per confirmed day ('+cur+')','Fuel sold (L)','Confirmed days','Change vs previous month (%)'],
-    monthRankingData.map(r=>[int(r.rank),String(r.month||''),n2(r.amount),n2(r.avgAmount),n1(r.liters),int(r.days),r.changePct==null?'':n2(r.changePct)]));
-  return rows;
+  const COLS=7,rows=[],merges=[];
+  const moneyFmt='"'+cur.replace(/"/g,'""')+'" #,##0.00;[Red]-"'+cur.replace(/"/g,'""')+'" #,##0.00';
+  const litersFmt='#,##0.00" L"',signedLitersFmt='+#,##0.00" L";-#,##0.00" L";0.00" L"',percentFmt='0.0"%"';
+  const n=v=>Number.isFinite(Number(v))?Number(v):0;
+  const numCell=(v,fmt,extra={})=>v==null||v===''?{v:'',border:'light'}:Object.assign({v:n(v),fmt,align:'right',border:'light'},extra);
+  const textCell=(v,extra={})=>Object.assign({v:v==null?'':String(v),border:'light'},extra);
+  const moneyCell=(v,extra={})=>numCell(v,moneyFmt,extra);
+  const litersCell=(v,extra={})=>numCell(v,litersFmt,extra);
+  const countCell=(v,extra={})=>numCell(v,'int',extra);
+  const pctCell=(v,extra={})=>numCell(v,percentFmt,extra);
+  const colName=value=>{let out='',x=value;while(x>0){const rem=(x-1)%26;out=String.fromCharCode(65+rem)+out;x=Math.floor((x-1)/26);}return out;};
+  const padded=cells=>Array.from({length:COLS},(_,i)=>i<cells.length?(cells[i]===undefined?'':cells[i]):'');
+  const addRow=(kind,cells,height,extra={})=>{
+    const row=Object.assign({kind,cells:padded(cells)},extra||{});
+    if(height)row.height=height;
+    if(/^(head|groupHead|data|total)$/.test(kind)&&!row.border)row.border='light';
+    rows.push(row);return rows.length;
+  };
+  const mergeFull=row=>merges.push('A'+row+':'+colName(COLS)+row);
+  const blank=()=>rows.push({kind:'blank',cells:[]});
+  const banded=(cells,index)=>addRow('data',cells,24,{tint:index%2===0?'F1F5F9':null});
+  const section=(title,headers,data,total,options={})=>{
+    const sectionRow=addRow('section',[title],24);mergeFull(sectionRow);
+    addRow('head',headers,28);
+    if(!data.length){
+      const empty=Array.from({length:headers.length},(_,i)=>i===0?'No records available':'');
+      banded(empty,0);
+    }else data.forEach((item,index)=>{
+      const cells=Array.isArray(item)?item:(item.cells||[]);
+      banded(cells,index);
+    });
+    if(total)addRow('total',total,29);
+    blank();
+  };
+
+  // Use the same navy banner, blue section bars, bordered cells and number
+  // formats as the DSR workbook, with the MSR's wider monthly tables.
+  let row=addRow('bannerKicker',['MONTHLY SALES REPORT · STATION RECONCILIATION'],20);mergeFull(row);
+  row=addRow('banner',['Monthly Sales Report · '+monthLabel(d.month)],36);mergeFull(row);
+  const generated=new Date(),pad=x=>String(x).padStart(2,'0');
+  const generatedAt=generated.getFullYear()+'-'+pad(generated.getMonth()+1)+'-'+pad(generated.getDate())+' '+pad(generated.getHours())+':'+pad(generated.getMinutes());
+  const reportStatus=d.month===currentMonth?'PROVISIONAL · MONTH IN PROGRESS':'CONFIRMED DSR DATA';
+  addRow('meta',[
+    {v:'REPORT MONTH',bold:true,color:'64748B',fill:'F8FAFC',border:'light'},monthLabel(d.month),
+    {v:'STATUS',bold:true,color:'64748B',fill:'F8FAFC',border:'light'},reportStatus,
+    {v:'CURRENCY',bold:true,color:'64748B',fill:'F8FAFC',border:'light'},cur,
+    {v:'GENERATED',bold:true,color:'64748B',fill:'F8FAFC',border:'light'}
+  ],24);
+  addRow('meta',[textCell('Generated at',{bold:true,color:'64748B',fill:'F8FAFC'}),generatedAt,
+    textCell('Source',{bold:true,color:'64748B',fill:'F8FAFC'}),'Confirmed daily reports only',
+    textCell('Returned fuel',{bold:true,color:'1D4ED8',fill:'EFF6FF'}),litersCell(d.summary.totalReturnedLiters),moneyCell(d.summary.totalReturnedAmount)
+  ],24);
+  row=addRow('note',['Figures use confirmed daily reports only. The current month remains provisional until its reporting period is complete.'],22);mergeFull(row);
+  blank();
+
+  section('MONTHLY SUMMARY',['METRIC','VALUE','UNIT'],[
+    ['Confirmed DSR days',countCell(d.summary.confirmedDays),textCell('days')],
+    ['Expected confirmed DSR days',countCell(d.summary.expectedDays),textCell('days')],
+    ['Calculated sales',moneyCell(d.summary.totalSales),textCell(cur)],
+    ['Net fuel sold',litersCell(d.summary.totalLiters),textCell('L')],
+    ['Returned fuel',litersCell(d.summary.totalReturnedLiters),textCell('L')],
+    ['Returned fuel value',moneyCell(d.summary.totalReturnedAmount),textCell(cur)],
+    ['Confirmed shifts',countCell(d.summary.totalShifts),textCell('shifts')],
+    ['Average sales per confirmed day',moneyCell(d.summary.averageDailySales),textCell(cur)],
+    ['Entered payments',d.summary.enteredPayments==null?textCell('Incomplete'):moneyCell(d.summary.enteredPayments),textCell(d.summary.enteredPayments==null?'':cur)],
+    ['Financial difference',d.summary.financialDifference==null?textCell('Incomplete'):moneyCell(d.summary.financialDifference),textCell(d.summary.financialDifference==null?'':cur)]
+  ]);
+
+  const dL=d.daily.reduce((a,x)=>a+n(x.liters),0),dRL=d.daily.reduce((a,x)=>a+n(x.returnedLiters),0),
+    dRA=d.daily.reduce((a,x)=>a+n(x.returnedAmount),0),dS=d.daily.reduce((a,x)=>a+n(x.sales),0),
+    dSh=d.daily.reduce((a,x)=>a+n(x.shifts),0),payAll=d.daily.every(x=>x.payments!=null),
+    dP=d.daily.reduce((a,x)=>a+n(x.payments),0);
+  section('DAILY SALES',['DATE','NET FUEL SOLD (L)','RETURNED FUEL (L)','RETURN VALUE ('+cur+')','CALCULATED SALES ('+cur+')','ENTERED PAYMENTS ('+cur+')','CONFIRMED SHIFTS'],
+    d.daily.map(r=>[
+      textCell(r.date),litersCell(r.liters),litersCell(r.returnedLiters,{fill:'EFF6FF',color:'1D4ED8'}),
+      moneyCell(r.returnedAmount,{color:'1D4ED8'}),moneyCell(r.sales),
+      r.payments==null?textCell('—'):moneyCell(r.payments),countCell(r.shifts)
+    ]),
+    [textCell('MONTH TOTAL',{bold:true}),litersCell(dL,{bold:true}),litersCell(dRL,{bold:true,fill:'EFF6FF',color:'1D4ED8'}),
+      moneyCell(dRA,{bold:true,color:'1D4ED8'}),moneyCell(dS,{bold:true}),
+      payAll?moneyCell(dP,{bold:true}):textCell('Incomplete'),countCell(dSh,{bold:true})]
+  );
+
+  const pL=d.products.reduce((a,x)=>a+n(x.liters),0),pS=d.products.reduce((a,x)=>a+n(x.sales),0);
+  section('PRODUCT PERFORMANCE',['RANK','PRODUCT CODE','FUEL SOLD (L)','SALES ('+cur+')','SHARE OF SALES (%)','SALES PER LITRE ('+cur+')'],d.products.map((r,i)=>{
+    const info=recFor(r.code),code=String(r.code||'Unknown');
+    const fill=/mgr/i.test(code)?'FEE2E2':/ago/i.test(code)?'FEF9C3':(info&&XlsxExport.hex(info.color))||'F1F5F9';
+    return [countCell(i+1),textCell(code,{bold:true,fill,color:'0F172A'}),litersCell(r.liters),moneyCell(r.sales),pctCell(r.sharePct),moneyCell(n(r.liters)?n(r.sales)/n(r.liters):0)];
+  }),[
+    textCell('MONTH TOTAL',{bold:true}),textCell('All products',{bold:true}),litersCell(pL,{bold:true}),
+    moneyCell(pS,{bold:true}),pctCell(d.summary.totalSales?d.products.reduce((a,x)=>a+n(x.sharePct),0):0,{bold:true}),
+    moneyCell(pL?pS/pL:0,{bold:true})
+  ]);
+
+  const stT=(d.salesTypes||[]).reduce((a,x)=>a+n(x.sales),0);
+  section('SALES BY TYPE',['SALE TYPE','TOTAL AMOUNT ('+cur+')','SHARE OF MONTHLY SALES (%)'],
+    (d.salesTypes||[]).map((r,i)=>[textCell(r.name||'Sale type'),moneyCell(r.sales),pctCell(r.sharePct)]),
+    (d.salesTypes||[]).length?[textCell('MONTH TOTAL',{bold:true}),moneyCell(stT,{bold:true}),pctCell(stT?100:0,{bold:true})]:null
+  );
+
+  section('SALES REQUIRING A REASON',['DSR DATE','SALE TYPE','AMOUNT ('+cur+')','REASON'],
+    (d.saleReasons||[]).map(r=>[textCell(r.date),textCell(r.type),moneyCell(r.amount),textCell(r.reason||'Reason not recorded',{wrap:true})])
+  );
+
+  const aT=d.attendants.reduce((a,x)=>a+n(x.sales),0),aL=d.attendants.reduce((a,x)=>a+n(x.liters),0),
+    aSh=d.attendants.reduce((a,x)=>a+n(x.shiftCount),0);
+  section('ATTENDANT SUMMARY',['RANK','ATTENDANT','SALES ('+cur+')','FUEL SOLD (L)','SHIFTS','SHARE OF SALES (%)'],
+    d.attendants.map((r,i)=>[countCell(i+1),textCell(r.attendant||'Unknown'),moneyCell(r.sales),litersCell(r.liters),countCell(r.shiftCount),pctCell(aT?n(r.sales)/aT*100:0)]),
+    d.attendants.length?[textCell('TOTAL',{bold:true}),textCell('',{bold:true}),moneyCell(aT,{bold:true}),litersCell(aL,{bold:true}),countCell(aSh,{bold:true}),pctCell(aT?100:0,{bold:true})]:null
+  );
+
+  const dispRows=maps.nozzles.map(nozzle=>{
+    const rec=recFor(nozzle.product)||{code:nozzle.product};
+    const code=String(rec.code_name||rec.code||nozzle.product||'');
+    const fill=/mgr/i.test(code)?'FEE2E2':/ago/i.test(code)?'FEF9C3':(rec.color&&XlsxExport.hex(rec.color))||'F1F5F9';
+    return [textCell(nozzle.nozzle_code||'Dispenser',{bold:true,fill}),textCell(code),countCell(nozzle.nozzle_count||1)];
+  });
+  section('DISPENSER SETUP',['DISPENSER / NOZZLE','PRODUCT','NOZZLES'],dispRows);
+
+  const shiftRows=d.shifts.map((r,i)=>[countCell(i+1),textCell(r.shiftDispenser),moneyCell(r.sales),litersCell(r.liters),countCell(r.records)]);
+  section('SHIFTS AND DISPENSERS',['RANK','SHIFT / DISPENSER','SALES ('+cur+')','FUEL SOLD (L)','RECORDS'],shiftRows);
+
+  section('MONTHLY RANKING',['RANK','MONTH','TOTAL SALES ('+cur+')','AVERAGE SALES PER CONFIRMED DAY ('+cur+')','FUEL SOLD (L)','CONFIRMED DAYS','CHANGE VS PREVIOUS MONTH (%)'],
+    monthRankingData.map(r=>[countCell(r.rank),textCell(monthLabel(r.month)),moneyCell(r.amount),moneyCell(r.avgAmount),litersCell(r.liters),countCell(r.days),r.changePct==null?textCell('—'):pctCell(r.changePct)])
+  );
+  return {rows,merges};
  };
  $('msr-export-xlsx').addEventListener('click',async()=>{
   if(!lastExportData||!lastExportData.daily.length){$('msr-status').textContent='No monthly rows available to export';return;}
-  const rows=await msrRowsFor();
-  XlsxExport.download(XlsxExport.build([{name:'MSR',rows}]),'MSR-'+lastExportData.month+'-report.xlsx');
+  try{
+   if(!window.XlsxExport)throw new Error('Excel export module is unavailable. Reload the page and retry.');
+   const workbook=await msrRowsFor();
+   const blob=XlsxExport.build([{name:'MSR',rows:workbook.rows,merges:workbook.merges}]);
+   XlsxExport.download(blob,'MSR-'+lastExportData.month+'-report.xlsx');
+   $('msr-status').textContent='MSR Excel export complete';
+  }catch(e){$('msr-status').textContent='MSR Excel export failed: '+(e.message||'Unknown error');}
  });
  window.addEventListener('load',function(){
   if(!window.DriveQueue)return;
@@ -458,7 +535,7 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
  $('msr-month').addEventListener('change',load);load();
 })();
 </script><div id="toast" class="toast msr-download-toast" role="status" aria-live="polite"></div>
-<script src="assets/xlsx-export.js?v=20261011-d1"></script><script src="assets/drive-queue.js?v=20261011-d1"></script>
+<script src="assets/xlsx-export.js?v=msr-dsr-style-20261019"></script><script src="assets/drive-queue.js?v=20261011-d1"></script>
 <script src="assets/admin-control-ui.js?v=20261010-02"></script>
 <script src="assets/popup-portal.js?v=20261011-p1"></script>
 <script>
