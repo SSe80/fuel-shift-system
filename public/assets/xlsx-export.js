@@ -93,6 +93,7 @@
     var st = new Styles(), sheetXml = [], names = [];
     sheets.forEach(function (sh, si) {
       var widths = [], xmlRows = '';
+      var sheetNavy = sh && sh.theme && hex(sh.theme.navy) ? hex(sh.theme.navy) : '14213D';
       (sh.rows || []).forEach(function (r, ri) {
         var cells = r.cells || []; if (!cells.length) return;
         var cs = '';
@@ -101,8 +102,8 @@
           var v = c.v, ref = colName(ci) + (ri + 1), kind = r.kind || 'data', o;
           var keepBlank = /^(banner|bannerKicker|section|subhead|head|groupHead|kpiHead|kpi|meta|reconGood|reconBad)$/.test(kind) || (v === '' && (c.fill || c.border || c.color || c.bold || c.sz || c.align || c.wrap));
           if (v === null || v === undefined || (v === '' && !keepBlank)) return;
-          if (kind === 'banner') o = { b: true, sz: 18, color: 'FFFFFF', fill: '14213D', wrap: true };
-          else if (kind === 'bannerKicker') o = { b: true, sz: 9, color: '93C5FD', fill: '14213D', wrap: true };
+          if (kind === 'banner') o = { b: true, sz: 18, color: 'FFFFFF', fill: sheetNavy, wrap: true };
+          else if (kind === 'bannerKicker') o = { b: true, sz: 9, color: sheetNavy === '000000' ? 'D1D5DB' : '93C5FD', fill: sheetNavy, wrap: true };
           else if (kind === 'title') o = { b: true, sz: 13, color: '0F172A' };
           else if (kind === 'section') o = { b: true, sz: 11, color: 'FFFFFF', fill: '2563EB', wrap: true };
           else if (kind === 'subhead') o = { b: true, color: '1D4ED8', fill: 'EFF6FF', wrap: true };
@@ -113,10 +114,14 @@
           else if (kind === 'reconGood') o = { b: true, color: '166534', fill: 'DCFCE7', wrap: true };
           else if (kind === 'reconBad') o = { b: true, color: 'B91C1C', fill: 'FEE2E2', wrap: true };
           else if (kind === 'note') o = { color: '64748B' };
-          else if (kind === 'head') o = { b: true, color: 'FFFFFF', fill: '14213D', wrap: true, align: 'center' };
+          else if (kind === 'head') o = { b: true, color: 'FFFFFF', fill: sheetNavy, wrap: true, align: 'center' };
           else if (kind === 'total') o = { b: true, fill: 'E2E8F0', color: '0F172A' };
           else { o = { color: '0F172A' }; var t = r.tint ? tint(r.tint) : null; if (t) o.fill = t; }
-          if (c.fill && hex(c.fill)) { o.fill = hex(c.fill); o.color = luma(c.fill) < 0.55 ? 'FFFFFF' : '0F172A'; }
+          if (c.fill && hex(c.fill)) {
+            var cellFill = hex(c.fill);
+            if (sh && sh.theme && sh.theme.navy && cellFill === '14213D') cellFill = sheetNavy;
+            o.fill = cellFill; o.color = luma(cellFill) < 0.55 ? 'FFFFFF' : '0F172A';
+          }
           if (c.color && hex(c.color)) o.color = hex(c.color);
           if (c.bold) o.b = true;
           if (c.sz) o.sz = c.sz;
