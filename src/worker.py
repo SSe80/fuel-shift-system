@@ -4581,6 +4581,22 @@ def daily_report(report_date_override=None):
             row["liters"]+=float(x.get("total_sales_liters") or 0)
             row["amount"]+=float(x.get("total_sales_amount") or 0)
 
+    # Resolve dispenser and connected-tank labels before product-level return
+    # allocation; later DSR sections reuse this same mapping.
+    dispenser_ids={str(x.get("nozzle_id")) for x in day_shifts if x.get("nozzle_id")}
+    dispenser_map={}
+    if dispenser_ids:
+        ns,nr=sb("nozzles",params={
+            "id":"in.("+",".join(dispenser_ids)+")",
+            "select":"id,nozzle_code,product,tank_id"
+        })
+        if ns==200:dispenser_map={str(x.get("id")):x for x in nr}
+        dispenser_tank_ids={str(x.get("tank_id")) for x in dispenser_map.values() if x.get("tank_id")}
+        missing_tank_ids=dispenser_tank_ids-set(tank_map)
+        if missing_tank_ids:
+            ts,tr=sb("tanks",params={"id":"in.("+",".join(missing_tank_ids)+")","select":"id,tank_code,product"})
+            if ts==200:tank_map.update({str(x.get("id")):x for x in tr})
+
     # Deduct returns from product-level DSR sales totals while preserving the
     # gross nozzle/meter ledger for physical reconciliation.
     returned_by_product={}
@@ -4618,22 +4634,6 @@ def daily_report(report_date_override=None):
     sales_by_type={}
     # Station payment-method totals are rebuilt from the authoritative
     # payment ledger after shift_summary has been constructed below.
-    # Resolve dispenser/tank and employee labels once for both the individual
-    # shift cards and the combined-per-dispenser reconciliation.
-    dispenser_ids={str(x.get("nozzle_id")) for x in day_shifts if x.get("nozzle_id")}
-    dispenser_map={}
-    if dispenser_ids:
-        ns,nr=sb("nozzles",params={
-            "id":"in.("+",".join(dispenser_ids)+")",
-            "select":"id,nozzle_code,product,tank_id"
-        })
-        if ns==200:dispenser_map={str(x.get("id")):x for x in nr}
-        dispenser_tank_ids={str(x.get("tank_id")) for x in dispenser_map.values() if x.get("tank_id")}
-        missing_tank_ids=dispenser_tank_ids-set(tank_map)
-        if missing_tank_ids:
-            ts,tr=sb("tanks",params={"id":"in.("+",".join(missing_tank_ids)+")","select":"id,tank_code,product"})
-            if ts==200:tank_map.update({str(x.get("id")):x for x in tr})
-
     employee_ids={str(x.get("employee_id")) for x in sales_rows if x.get("employee_id")}
     employee_ids.update(str(x.get("employee_id")) for x in day_shifts if x.get("employee_id"))
     employee_ids.update(str(x.get("from_employee_id")) for x in handover_rows if x.get("from_employee_id"))
