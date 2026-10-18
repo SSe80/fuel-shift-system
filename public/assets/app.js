@@ -3212,8 +3212,8 @@ function createDsrReportPdf(r){
     d.text(pc==null?'':(pc===0?'<0.1%':pc.toFixed(1)+'%'),RX+half,yr+10,8.6,true,INK,'r');
     d.box(RX,yr+15,half,4,TRACK,2);if(pc!=null)d.box(RX,yr+15,Math.max(3,half*pc/100),4,BLUE,2);yr+=24;});
   const sy=shTop+shH-44;
-  if(totals.length){d.box(M+14,sy,CW-28,34,SOFT,7);const th=(CW-28)/totals.length;
-    totals.forEach((t,i)=>{const x=M+14+i*th+12;d.text(t.label.toUpperCase(),x,sy+13,7,true,BLUE);d.text(d.fit(t.value,12,true,th-24),x,sy+28,12,true,BLUE);});}
+  if(totals.length){d.box(M+14,sy,CW-28,38,SOFT,7);const th=(CW-28)/totals.length;
+    totals.forEach((t,i)=>{const x=M+14+i*th+12;d.text(t.label.toUpperCase(),x,sy+14,8,true,BLUE);d.text(d.fit(t.value,15,true,th-24),x,sy+32,15,true,BLUE);});}
   d.y=shTop+shH+10;
   // reconciliation strip
   const ov=r.overview||[];const pick=re=>{const o=ov.find(x=>re.test(String(x.label)));return o?o.value:null;};
