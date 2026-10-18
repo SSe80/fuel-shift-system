@@ -41,7 +41,13 @@
       .then(function (response) {
         // Only an explicit unauthorized response should send the user back to login.
         // A server error or temporary network failure must not masquerade as logout.
-        if (response.status === 401) throw new Error('Saved session could not be verified (' + response.status + ').');
+        if (response.status === 401) {
+          // A true 401 means this role's server session is no longer valid.
+          // Keep local preferences intact, but return to sign-in instead of
+          // exposing a protected page with an unusable session.
+          goToLogin();
+          return null;
+        }
         if (!response.ok) throw new Error('Session check temporarily failed (' + response.status + ').');
         return response.json();
       })
@@ -76,10 +82,27 @@
       credentials: 'same-origin',
       cache: 'no-store',
       headers: { Accept: 'application/json', 'X-Fuel-Role': role }
-    }).catch(function () {}).then(function () {
+    }).then(function (response) {
+      if (!response.ok) throw new Error('Logout request failed (HTTP ' + response.status + ').');
+      return response.json();
+    }).then(function (data) {
+      if (!data || data.ok !== true) throw new Error('The server did not confirm logout.');
+      try { window.localStorage.setItem('fuelExplicitLogout:' + role, '1'); } catch (_) {}
       try { window.localStorage.removeItem('fuelRole'); } catch (_) {}
       try { window.sessionStorage.removeItem('fuelRole'); } catch (_) {}
       window.location.replace(loginPath + '?signed_out=1');
+    }).catch(function () {
+      button.disabled = false;
+      button.textContent = 'Log out';
+      var note = document.getElementById('fuel-auth-logout-note');
+      if (!note) {
+        note = document.createElement('div');
+        note.id = 'fuel-auth-logout-note';
+        note.setAttribute('role', 'alert');
+        note.style.cssText = 'position:fixed;z-index:100000;left:16px;right:16px;top:16px;padding:14px 16px;border:1px solid #f0c36d;border-radius:12px;background:#fff8e6;color:#713f12;font:600 14px/1.45 system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.12)';
+        document.body.appendChild(note);
+      }
+      note.textContent = 'Logout could not be confirmed. Your session has been kept; check your connection and try again.';
     });
   });
 })();
