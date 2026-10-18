@@ -236,7 +236,7 @@ function openBatchRecordSalesModal(productKey,dsrId){
  const types=Array.isArray(window.dashboardSaleTypes)?window.dashboardSaleTypes:[];
  const payments=document.getElementById('batch-record-payment-list');
  window.batchRecordSalesCalculatedAmount=Math.round(combined.amount*100)/100;
- if(payments)payments.innerHTML= '<div class="batch-record-shared-total"><span>Combined calculated net sales</span><strong>'+money(combined.amount)+'</strong><small>'+liters(combined.liters)+' L across '+rows.length+' dispenser shifts</small></div>'+ ( ''+types.map(type=>'<div class="batch-record-payment-row" data-sale-type="'+h(type.id)+'"><label>'+h(type.name)+(type.description?' <small>'+h(type.description)+'</small>':'')+'<input type="number" class="batch-record-payment-amount" data-sale-id="'+h(type.id)+'" min="0" step="0.01" inputmode="decimal" placeholder="0.00" oninput="updateBatchRecordPaymentSummary()"></label>'+(type.reason_required?'<label class="batch-record-reason-label">Reason<textarea class="batch-record-payment-reason" data-reason-id="'+h(type.id)+'" rows="2" placeholder="Required when this sales type is used"></textarea></label>':'')+'</div>').join('')||'<p class="muted">No active sales types are configured.</p>')+'<div class="batch-record-payment-reconciliation" aria-live="polite"><div><span>Calculated</span><strong id="batch-record-summary-calculated">'+money(combined.amount)+'</strong></div><div><span>Payment sum</span><strong id="batch-record-summary-entered">'+money(0)+'</strong></div><div class="batch-record-payment-difference"><span>Difference (payments − calculated)</span><strong id="batch-record-summary-difference">'+money(-combined.amount)+'</strong></div></div>';
+ if(payments)payments.innerHTML= '<div class="batch-record-shared-total"><span>Combined calculated net sales</span><strong>'+money(combined.amount)+'</strong><small>'+liters(combined.liters)+' L across '+rows.length+' dispenser shifts</small></div>'+ ( ''+types.map(type=>'<div class="batch-record-payment-row" data-sale-type="'+h(type.id)+'"><label>'+h(type.name)+(type.description?' <small>'+h(type.description)+'</small>':'')+'<input type="number" class="batch-record-payment-amount" data-sale-id="'+h(type.id)+'" min="0" step="0.01" inputmode="decimal" placeholder="0.00" oninput="updateBatchRecordPaymentSummary()"></label>'+(type.reason_required?'<label class="batch-record-reason-label">Reason<textarea class="batch-record-payment-reason" data-reason-id="'+h(type.id)+'" rows="2" placeholder="Required when this sales type is used"></textarea></label>':'')+'</div>').join('')||'<p class="muted">No active sales types are configured.</p>')+'<div class="batch-record-payment-reconciliation" aria-live="polite"><div class="batch-record-payment-difference"><span id="batch-record-summary-statement">Difference from calculated sales: '+money(-combined.amount)+'</span></div></div>';
  updateBatchRecordPaymentSummary();
  const summary=document.getElementById('batch-record-selected-summary');
  if(summary)summary.innerHTML='<div><span>Product</span><strong>'+h(rows[0].info.label)+'</strong></div><div><span>DSR ID</span><strong>'+h(dsrId)+'</strong></div>';
@@ -254,12 +254,15 @@ function updateBatchRecordPaymentSummary(){
  const calculated=Math.round((Number(window.batchRecordSalesCalculatedAmount)||0)*100)/100;
  const entered=Math.round(Array.from(root.querySelectorAll('.batch-record-payment-amount')).reduce((sum,input)=>sum+Math.max(0,Number(input.value)||0),0)*100)/100;
  const difference=Math.round((entered-calculated)*100)/100;
- const calculatedEl=document.getElementById('batch-record-summary-calculated');
- const enteredEl=document.getElementById('batch-record-summary-entered');
- const differenceEl=document.getElementById('batch-record-summary-difference');
- if(calculatedEl)calculatedEl.textContent=money(calculated);
- if(enteredEl)enteredEl.textContent=money(entered);
- if(differenceEl){differenceEl.textContent=(difference>0?'+':'')+money(difference);differenceEl.parentElement?.classList.toggle('is-matched',Math.abs(difference)<0.005);differenceEl.parentElement?.classList.toggle('is-unmatched',Math.abs(difference)>=0.005);}
+ const statement=document.getElementById('batch-record-summary-statement');
+ const summaryRow=statement?.parentElement;
+ if(statement){
+  const absDifference=money(Math.abs(difference));
+  statement.textContent=Math.abs(difference)<0.005
+   ?'Difference from calculated sales: '+money(0)+' — payments match'
+   :'Difference from calculated sales: '+absDifference+(difference>0?' over calculated sales':' below calculated sales');
+ }
+ if(summaryRow){summaryRow.classList.toggle('is-matched',Math.abs(difference)<0.005);summaryRow.classList.toggle('is-unmatched',Math.abs(difference)>=0.005);}
 }
 function continueBatchRecordSales(){
  return (async()=>{
