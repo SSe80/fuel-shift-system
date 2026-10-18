@@ -24,6 +24,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Check Python syntax
+        run: python -m py_compile src/worker.py src/drive.py src/supabase_rest.py scripts/validate_static_assets.py
       - name: Validate HTML asset references, PWA manifests, and service worker shell
         run: python scripts/validate_static_assets.py
       - name: Check JavaScript syntax
