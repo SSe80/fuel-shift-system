@@ -5326,6 +5326,12 @@ def daily_report(report_date_override=None):
         nozzle_sales_l=float(sum(float((tank_nozzle_sales_by_shift.get(tid) or {}).get(str(z[0].get("id") or "")) or 0) for z in rows))
         nozzle_sales_difference_l=sales_l-nozzle_sales_l
         purchased_l=float(purchase_by_tank.get(tid,0))
+        # Returned fuel is physically added back to tank stock. Attribute each
+        # shift's return once to the same tank used by the tank/shift ledger.
+        returned_liters=float(sum(
+            max(0.0,float(h.get("returned_liters") or 0))
+            for _,h in rows
+        ))
         stock_adjustment_l=float(purchase_adjustment_by_tank.get(tid,0))
         discharge_operations=discharge_operations_by_tank.get(tid,[])
         purchase_ids=sorted(set(str(x.get("purchase_id")) for x in discharge_operations if x.get("purchase_id")))
@@ -5367,15 +5373,13 @@ def daily_report(report_date_override=None):
                 continuity_gap_count+=1
                 opening_adjustment_l+=gap
         # Authoritative tank equation:
-        # opening + discharged purchase + documented adjustments - nozzle sales = closing.
-        # Each discharge operation contributes its delivered quantity once. Multiple
-        # operations for the same purchase are intentionally summed by operation,
-        # while purchase_count/purchase_ids identify the purchase only once.
-        # The adjustment captures a genuine physical/documented variance and must
-        # remain visible rather than being absorbed into the purchase total.
-        expected=opening+opening_adjustment_l+purchased_l+stock_adjustment_l-nozzle_sales_l
+        # opening + discharged purchase + returned fuel + documented adjustments
+        # - gross nozzle sales = closing. Meter sales stay gross; returns are
+        # added back as physical stock, not subtracted from meter readings.
+        # Each return is attributed once through the tank's shift rows.
+        expected=opening+opening_adjustment_l+purchased_l+returned_liters+stock_adjustment_l-nozzle_sales_l
         diff=expected-closing
-        basis=opening+opening_adjustment_l+purchased_l+stock_adjustment_l
+        basis=opening+opening_adjustment_l+purchased_l+returned_liters+stock_adjustment_l
         shift_reconciliation=[]
         running_adjustment=0.0
         for idx,(sh,h) in enumerate(rows):
@@ -5397,6 +5401,7 @@ def daily_report(report_date_override=None):
                 and str(op.get("shift_id") or "")==sid
                 and str(op.get("tank_id") or "")==tid
             )
+            shift_returned_liters=max(0.0,float(h.get("returned_liters") or 0))
             # Discharge-operation stock adjustments are physical/documented
             # variances tied to the operation. Attribute them to the same
             # responsible shift so shift-level reconciliation uses the same
@@ -5419,9 +5424,9 @@ def daily_report(report_date_override=None):
             # Use authoritative nozzle sales in the stock equation.
             # Tank-reported sales remain visible separately as a reconciliation
             # check and must not replace the physical nozzle-sales ledger.
-            shift_expected=shift_open+continuity_adjustment+shift_purchase+shift_adjustment-shift_nozzle_sales
+            shift_expected=shift_open+continuity_adjustment+shift_purchase+shift_returned_liters+shift_adjustment-shift_nozzle_sales
             shift_diff=shift_expected-shift_close
-            shift_basis=shift_open+continuity_adjustment+shift_purchase+shift_adjustment
+            shift_basis=shift_open+continuity_adjustment+shift_purchase+shift_returned_liters+shift_adjustment
             shift_reconciliation.append({
                 "shift_id":sh.get("id"),
                 "started_at":sh.get("start_time"),
@@ -5433,6 +5438,7 @@ def daily_report(report_date_override=None):
                 "nozzle_sales_difference_liters":shift_nozzle_difference,
                 "nozzle_reconciliation_pct":(shift_nozzle_sales/shift_sales*100.0) if shift_sales else (100.0 if shift_nozzle_sales == 0 else 0.0),
                 "purchase_liters":shift_purchase,
+                "returned_liters":shift_returned_liters,
                 "documented_stock_adjustment_liters":shift_adjustment,
                 "continuity_adjustment_liters":continuity_adjustment,
                 "expected_closing_liters":shift_expected,
@@ -5448,6 +5454,7 @@ def daily_report(report_date_override=None):
             "opening_stock_liters":opening,
             "closing_stock_liters":closing,
             "purchase_discharged_liters":purchased_l,
+            "returned_liters":returned_liters,
             "purchase_count":purchase_count,
             "purchase_operation_count":purchase_operation_count,
             "purchase_ids":purchase_ids,
