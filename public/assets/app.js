@@ -3426,17 +3426,38 @@ function createMsrReportPdfV2(r){
     y+=nh+8;
   }
   d.text('Based on confirmed daily reports. The current month remains provisional until all daily reports are confirmed.',M,Math.min(H-18,y+6),6.8,false,GREY);
-  // PAGE 2 — daily ledger. No charts and no attendant performance section.
+  // PAGE 2 — matching DSR cards and ruled ledger. No graphs or attendant section.
   d.newPage();
-  header('');
+  header('Daily reconciliation');
   d.markContent(72);
-  section(M,94,'Daily sales and returned fuel');
-  d.text('Net sales, returned volume, returned value and entered payments',M,113,7.3,false,GREY);
   const dailyRows=(r.dailyRowsV2||[]).length?r.dailyRowsV2:[{cells:['No confirmed DSR days','—','—','—','—','—','—']}];
-  table(M,124,CW,
+  const sumRows=dailyRows.filter(row=>row&&row.bold);
+  const rawRows=dailyRows.filter(row=>row&&!row.bold);
+  const dailyCount=rawRows.filter(row=>row.cells&&row.cells[0]&&row.cells[0]!=='No confirmed DSR days').length;
+  const metrics=[
+    {label:'Confirmed days',value:String(dailyCount)},
+    {label:'Net fuel sold',value:String((r.key||[]).find(x=>/net fuel sold/i.test(x.label||''))?.value||'—')},
+    {label:'Returned fuel',value:String((r.key||[]).find(x=>/returned fuel/i.test(x.label||''))?.value||'—')},
+    {label:'Calculated sales',value:String((r.key||[]).find(x=>/calculated sales/i.test(x.label||''))?.value||'—')}
+  ];
+  const mg=8,mw=(CW-mg*3)/4,my=88,mh=51;
+  metrics.forEach((it,i)=>{
+    const x=M+i*(mw+mg);card(x,my,mw,mh,WHITE);
+    d.box(x+1,my+8,3,mh-16,i===3?GREEN:BLUE,1.5);
+    d.text(d.fit(it.label.toUpperCase(),6.4,true,mw-17),x+10,my+17,6.4,true,GREY);
+    let fs=10;while(fs>7&&d.tw(it.value,fs,true)>mw-18)fs-=.5;
+    d.text(d.fit(it.value,fs,true,mw-18),x+10,my+36,fs,true,INK);
+  });
+  section(M,153,'Daily sales and returned fuel');
+  d.text('Net liters, return volume and value, sales, entered payments and confirmed shifts',M,172,7.1,false,GREY);
+  table(M,184,CW,
     [{h:'Date',x:8,max:70},{h:'Net liters',x:100,a:'r'},{h:'Returns (L)',x:180,a:'r'},{h:'Return value',x:267,a:'r'},{h:'Sales',x:350,a:'r'},{h:'Payments',x:430,a:'r'},{h:'Shifts',x:CW-8,a:'r'}],
-    dailyRows,18);
-  d.text('Returned-fuel values are shown separately from net fuel sold and calculated sales.',M,H-22,6.8,false,GREY);
+    dailyRows,21);
+  const noteY=Math.min(H-70,Math.max(260,194+dailyRows.length*21));
+  card(M,noteY,CW,43,SOFT);
+  d.text('RECONCILIATION NOTE',M+10,noteY+14,6.5,true,GREY);
+  d.text('Returned-fuel values are separate from net fuel sold and calculated sales.',M+10,noteY+29,7.5,false,INK);
+  d.text('Based on confirmed daily reports. Current-month totals remain provisional until all expected DSRs are confirmed.',M,H-22,6.5,false,GREY);
   return d.finish(r.footer,'MSR - '+r.title);
 }
 function createMsrReportPdf(r){
