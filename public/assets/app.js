@@ -5758,8 +5758,9 @@ function buildDailyReportPdfBlob(){
   const tankBlocks=tanks.map(t=>{
     const warn=Math.abs(num(t.difference_liters))>=0.005?'warn':undefined;
     const tankProduct=productFor(t.product);
+    const returned= num(t.returned_liters);
     return{name:t.tank||'Tank',product:tankProduct.code||tankProduct.name||t.product||'Unknown product',
-      cells:[fmtL(t.opening_stock_liters),'+'+fmtL(t.purchase_discharged_liters),fmtL(t.nozzle_sales_liters),fmtL(t.expected_closing_liters),fmtL(t.closing_stock_liters)],
+      cells:[fmtL(t.opening_stock_liters),'+'+fmtL(t.purchase_discharged_liters)+(returned>0?' / +'+fmtL(returned)+' return':''),fmtL(t.nozzle_sales_liters),fmtL(t.expected_closing_liters),fmtL(t.closing_stock_liters)],
       cards:[{label:'Adjustment',value:signedL(t.documented_stock_adjustment_liters)},{label:'Continuity',value:signedL(t.opening_adjustment_liters)},
         {label:'Difference',value:signedL(t.difference_liters),tone:warn},{label:'Variance',value:pct(t.variance_pct),tone:warn}]};
   });
@@ -5776,7 +5777,7 @@ function buildDailyReportPdfBlob(){
     title:'SHIFT '+(i+1)+' - '+(s.attendant||s.employee_name||'Unknown'),
     sub:(s.dispenser||'-')+' / '+(productFor(s.product).code||s.product||'')+((Array.isArray(s.purchase_discharge_operations)&&s.purchase_discharge_operations.length)?' / Discharges: '+s.purchase_discharge_operations.map(op=>String(op.invoice_number||'Invoice')+' · '+String(op.tank_code||'Tank')+' '+fmtL(op.discharged_liters)).join('; '):''),
     cols:[{label:'Start',value:dailyReportTime(s.started_at||s.start_time)},{label:'End',value:dailyReportTime(s.ended_at||s.end_time)},
-      {label:'Sold',value:fmtL(s.sales_liters||s.total_sales_liters)},{label:'Purchase discharged',value:'+'+fmtL(s.tank_purchases_liters||0)},{label:'Sales',value:fmtM(s.sales_amount||s.total_sales_amount),tone:'good',w:93}]
+      {label:'Sold',value:fmtL(s.sales_liters||s.total_sales_liters)},{label:'Purchase / return',value:'+'+fmtL(s.tank_purchases_liters||0)+(num(s.returned_liters)>0?' / +'+fmtL(s.returned_liters)+' L return':'' )},{label:'Sales',value:fmtM(s.sales_amount||s.total_sales_amount),tone:'good',w:93}]
   }));
 
   const blob=createDsrReportPdf({
