@@ -5774,8 +5774,8 @@ function buildDailyReportPdfBlob(){
   if(!products.length)stats.push({label:'By product',value:'No product sales recorded'});
   methods.forEach(x=>stats.push({label:'By method \u00b7 '+(x.type||'Method'),value:fmtM(x.amount)+'  \u00b7  '+pct(x.percentage)}));
   if(!methods.length)stats.push({label:'By method',value:'No payment-method sales recorded'});
-  stats.push({label:'Net sales · returns deducted',value:fmtM(sales.total_amount??perf.total_sales_amount)+'  |  Return −'+fmtM(returnSummary.total_returned_amount),big:true});
-  stats.push({label:'Net liters sold',value:fmtL(sales.total_liters??perf.total_sales_liters)+'  |  Return '+fmtL(returnSummary.total_returned_liters)+' L',big:true});
+  stats.push({label:'Net sales · returns '+fmtM(returnSummary.total_returned_amount),value:fmtM(sales.total_amount??perf.total_sales_amount),big:true});
+  stats.push({label:'Net liters sold · returns '+fmtL(returnSummary.total_returned_liters),value:fmtL(sales.total_liters??perf.total_sales_liters),big:true});
 
   const shiftCards=shifts.map((s,i)=>({
     title:'SHIFT '+(i+1)+' - '+(s.attendant||s.employee_name||'Unknown'),
