@@ -3252,11 +3252,16 @@ function createDsrReportPdf(r){
   d.y=shTop+shH+10;
   // reconciliation strip
   const ov=r.overview||[];const pick=re=>{const o=ov.find(x=>re.test(String(x.label)));return o?o.value:null;};
-  const calc=pick(/calculated/i),entered=pick(/entered/i),diff=pick(/financial difference/i);
-  if(calc!=null||entered!=null){const ok=num(diff)===0;d.box(M,d.y,CW,26,ok?LGREEN:LRED,6);
-    const parts=[['CALCULATED',calc],['ENTERED',entered],['DIFFERENCE',diff]].filter(p=>p[1]!=null);const seg=CW/parts.length;
-    parts.forEach(([lab,val],i)=>{const x=M+i*seg+12;const lw=d.tw(lab,7,true);d.text(lab,x,d.y+17,8,true,ok?GREEN:RED);d.text(d.fit(String(val),9.2,true,seg-lw-30),x+lw+8,d.y+17,9.2,true,INK);});
-    d.y+=32;}
+  const calc=pick(/calculated/i),entered=pick(/entered|payment sum/i),storedDiff=pick(/financial difference|difference/i);
+  const parseMoney=v=>{if(v==null)return null;const raw=String(v).replace(/,/g,'').replace(/ETB/ig,'').replace(/[^0-9.()+-]/g,'').trim();if(!raw||raw==='-'||raw==='—')return 0;const neg=raw.startsWith('(')&&raw.endsWith(')');const n=Number(raw.replace(/[()]/g,''));return Number.isFinite(n)?(neg?-n:n):null;};
+  const calcNum=parseMoney(calc),enteredNum=parseMoney(entered),storedDiffNum=parseMoney(storedDiff);
+  const diff=storedDiffNum!=null?storedDiffNum:(calcNum!=null&&enteredNum!=null?enteredNum-calcNum:null);
+  if(diff!=null){const matched=Math.abs(diff)<0.005,excess=diff>=0.005;const bg=matched||excess?LGREEN:LRED,fg=matched||excess?GREEN:RED;
+    const abs=fmtMoney(Math.abs(diff));
+    const statement=matched?'Difference from calculated sales: ETB 0.00 — payments match':'Difference from calculated sales: ETB '+abs.replace(/^ETB\s*/i,'')+(excess?' above calculated sales':' below calculated sales');
+    d.box(M,d.y,CW,30,bg,6);
+    d.text(d.fit(statement,9,true,CW-24),M+12,d.y+19,9,true,fg);
+    d.y+=36;}
   return d.finish(r.footer,'DSR - '+r.title);
 }
 
