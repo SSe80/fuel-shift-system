@@ -3450,10 +3450,11 @@ function createMsrReportPdfV2(r){
   });
   section(M,153,'Daily sales and returned fuel');
   d.text('Net liters, return volume and value, sales, entered payments and confirmed shifts',M,172,7.1,false,GREY);
+  const dailyRowH=Math.min(21,Math.max(14,Math.floor((H-300)/Math.max(1,dailyRows.length))));
   table(M,184,CW,
     [{h:'Date',x:8,max:70},{h:'Net liters',x:100,a:'r'},{h:'Returns (L)',x:180,a:'r'},{h:'Return value',x:267,a:'r'},{h:'Sales',x:350,a:'r'},{h:'Payments',x:430,a:'r'},{h:'Shifts',x:CW-8,a:'r'}],
-    dailyRows,21);
-  const noteY=Math.min(H-70,Math.max(260,194+dailyRows.length*21));
+    dailyRows,dailyRowH);
+  const noteY=Math.min(H-70,Math.max(260,194+dailyRows.length*dailyRowH));
   card(M,noteY,CW,43,SOFT);
   d.text('RECONCILIATION NOTE',M+10,noteY+14,6.5,true,GREY);
   d.text('Returned-fuel values are separate from net fuel sold and calculated sales.',M+10,noteY+29,7.5,false,INK);
