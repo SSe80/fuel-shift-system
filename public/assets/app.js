@@ -3126,7 +3126,7 @@ function createDsrReportPdf(r){
   // Keep the DSR report body comfortably inset from the A4 page edges.
   const d=createPdfDoc(),M=24,CW=595.28-2*M,R=M+CW;
   d.keepA4Width=true;
-  const WHITE=[255,255,255],PAGE=[238,241,245],CARDB=[226,232,240],INK=[15,23,42],GREY=[100,116,139],NAVYC=[20,33,61],BLUE=[37,99,235];
+  const WHITE=[255,255,255],PAGE=[255,255,255],CARDB=[226,232,240],INK=[15,23,42],GREY=[100,116,139],NAVYC=[20,33,61],BLUE=[37,99,235];
   const AGOC=[250,204,21],MGRC=[220,38,38],GREEN=[22,163,74],AMBER=[194,65,12],RED=[185,28,28];
   const SOFT=[241,245,249],LBLUE=[239,246,255],TRACK=[226,232,240],LGREEN=[220,252,231],LRED=[254,226,226],LAMBER=[254,243,199];
   const num=v=>{const n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};
@@ -3141,7 +3141,20 @@ function createDsrReportPdf(r){
   d.singlePage=true;
   // page background (outside the scaled content)
   d.box(0,0,595.28,841.89,PAGE,0);
-  d.header({kicker:'DAILY SALES REPORT  \u00b7  STATION DAILY RECONCILIATION',title:r.title,h:68,kBase:23,tBase:45,pillTop:24,pillBase:39,status:r.statusLabel});
+  // Printer-safe inset header: keep navy fill and report content inside A4's non-printable edge margin.
+  const headerX=M+0.5,headerY=10,headerH=58,headerR=R-0.5;
+  d.box(headerX,headerY,CW-1,headerH,NAVYC,8);
+  d.text('DAILY SALES REPORT  \\u00b7  STATION DAILY RECONCILIATION',headerX+14,headerY+15,8.5,true,[147,197,253]);
+  const statusLabel=String(r.statusLabel||'').toUpperCase();
+  const statusW=statusLabel?Math.max(82,d.tw(statusLabel,8.5,true)+18):0;
+  const titleMax=statusLabel?Math.max(150,CW-statusW-56):CW-28;
+  d.text(d.fit(r.title,20,true,titleMax),headerX+14,headerY+39,20,true,WHITE);
+  if(statusLabel){
+    const warn=/pending|draft|open|partial|undischarged/i.test(statusLabel);
+    const statusBg=warn?[254,243,199]:[220,252,231],statusFg=warn?[180,83,9]:[21,128,61];
+    d.box(headerR-14-statusW,headerY+20,statusW,22,statusBg,11);
+    d.text(statusLabel,headerR-14-statusW/2,headerY+34,8.5,true,statusFg,'c');
+  }
   d.markContent(68);
   // Key Figures removed; use the space for larger report sections.
   d.y=80;
