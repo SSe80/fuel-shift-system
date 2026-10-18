@@ -3314,10 +3314,11 @@ function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,mont
   const lowDay=withSales.length?withSales.reduce((a,b)=>num(b.sales)<num(a.sales)?b:a):null;
   const topAtt=attendants.length?attendants.reduce((a,b)=>num(b.sales)>num(a.sales)?b:a):null;
   const topProd=products.length?products.reduce((a,b)=>num(b.sales)>num(a.sales)?b:a):null;
+  // Keep MSR highlights station/product-focused; attendant performance is
+  // intentionally excluded from this report.
   const highlights=[
     {label:'Best day',value:bestDay?money(bestDay.sales):'—',sub:bestDay?bestDay.date:''},
     {label:'Lowest day',value:lowDay?money(lowDay.sales):'—',sub:lowDay?lowDay.date:''},
-    {label:'Top attendant',value:topAtt?(topAtt.attendant||'Unknown'):'—',sub:topAtt?money(topAtt.sales):''},
     {label:'Top product',value:topProd?(topProd.code||'Product'):'—',sub:topProd?money(topProd.sales):''}];
   const totalL=products.reduce((n,p)=>n+num(p.liters),0);
   const dispenserRowsV2=nozList.map(n=>{const q=String(n.product||'').trim().toLowerCase();const rec=recByName[q]||recByCode[q];const col=rec?msrHex(rec.color,[100,116,139]):[100,116,139];return{dot:col,cells:[String(n.nozzle_code||'Dispenser'),rec?(rec.code_name||rec.name):String(n.product||'—'),String(n.nozzle_count||1)]};});
@@ -3427,12 +3428,12 @@ function createMsrReportPdfV2(r){
   d.text('Based on confirmed daily reports. The current month remains provisional until all daily reports are confirmed.',M,Math.min(H-18,y+6),6.8,false,GREY);
   // PAGE 2 — daily ledger. No charts and no attendant performance section.
   d.newPage();
-  header('Daily reconciliation');
+  header('');
   d.markContent(72);
-  section(M,88,'Daily sales and returned fuel');
-  d.text('Net sales, returned volume, returned value and entered payments',M,106,7.3,false,GREY);
+  section(M,94,'Daily sales and returned fuel');
+  d.text('Net sales, returned volume, returned value and entered payments',M,113,7.3,false,GREY);
   const dailyRows=(r.dailyRowsV2||[]).length?r.dailyRowsV2:[{cells:['No confirmed DSR days','—','—','—','—','—','—']}];
-  table(M,116,CW,
+  table(M,124,CW,
     [{h:'Date',x:8,max:70},{h:'Net liters',x:100,a:'r'},{h:'Returns (L)',x:180,a:'r'},{h:'Return value',x:267,a:'r'},{h:'Sales',x:350,a:'r'},{h:'Payments',x:430,a:'r'},{h:'Shifts',x:CW-8,a:'r'}],
     dailyRows,18);
   d.text('Returned-fuel values are shown separately from net fuel sold and calculated sales.',M,H-22,6.8,false,GREY);
