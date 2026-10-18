@@ -3135,17 +3135,19 @@ function createDsrReportPdf(r){
   const cw=(CW-28-LBL)/nozzleCount;
   let k0=0;disps.forEach((dp,j)=>{dp.x0=M+14+LBL+k0*cw;dp.span=(dp.nozzles.length||1)*cw;dp.nozzles.forEach((nz,i)=>cols.push({x:M+14+LBL+(k0+i)*cw,w:cw,n:nz,nl:'N-'+(i+1)}));k0+=dp.nozzles.length||1;});
   const dpTop=d.y;
-  const dpH=14+30+42+4+26+4*26+15;
+  // Dispensers are table group rows; no separate total-liter summary cards.
+  const dpH=14+30+24+24+4*26+15;
   card(M,dpTop,CW,dpH);
   section(M+14,dpTop+8,'Dispenser & nozzle performance');
   let py=dpTop+34;
-  // Product labels are omitted; each dispenser summary uses a light tint of its product color.
-  py+=4;
-  disps.forEach(dp=>{const total=dp.nozzles.reduce((s,n)=>s+num(n.sold),0);
-    d.box(dp.x0+2,py,dp.span-4,40,prodTint(dp.product),6);
-    const lf=dp.span<90?7:8.5;d.text(d.fit(dp.label,lf,true,dp.span-8),dp.x0+dp.span/2,py+16,lf,true,INK,'c');
-    d.text(d.fit('Total '+fmtL(total)+' L',8,false,dp.span-12),dp.x0+dp.span/2,py+31,8,false,GREY,'c');});
-  py+=46;
+  d.box(M+14,py,CW-28,24,SOFT,4);
+  d.text('DISPENSER',M+22,py+16,8.5,true,GREY);
+  disps.forEach(dp=>{
+    d.box(dp.x0+2,py+2,Math.max(0,dp.span-4),20,prodTint(dp.product),4);
+    const lf=dp.span<90?7:8.5;
+    d.text(d.fit(dp.label,lf,true,dp.span-8),dp.x0+dp.span/2,py+15,lf,true,INK,'c');
+  });
+  py+=24;
   d.box(M+14,py,CW-28,24,NAVYC,4);
   d.text('NOZZLE',M+22,py+16,8.5,true,WHITE);
   cols.forEach(c=>d.text(c.nl,c.x+c.w/2,py+16,8.5,true,WHITE,'c'));
