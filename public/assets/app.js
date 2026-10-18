@@ -2905,8 +2905,8 @@ function createPdfDoc(){
       const an=d.anchorY||0;
       const s=Math.min(1,(BOTTOM-2-an)/Math.max(1,d.y-an));
       if(s<1){
-        const tx=W*(1-s)/2,ty=(H-an)*(1-s);
-        pages[0].splice(d.contentStart||0,0,'q '+n2(s)+' 0 0 '+n2(s)+' '+n2(tx)+' '+n2(ty)+' cm\n');
+        const sx=d.keepA4Width?1:s,tx=d.keepA4Width?0:W*(1-s)/2,ty=(H-an)*(1-s);
+        pages[0].splice(d.contentStart||0,0,'q '+n2(sx)+' 0 0 '+n2(s)+' '+n2(tx)+' '+n2(ty)+' cm\n');
         pages[0].push('Q\n');
       }
     }
@@ -3106,6 +3106,7 @@ async function downloadMonthlySalesReportPdf(data){
 
 function createDsrReportPdf(r){
   const d=createPdfDoc(),M=0,CW=595.28-2*M,R=M+CW;
+  d.keepA4Width=true;
   const WHITE=[255,255,255],PAGE=[238,241,245],CARDB=[226,232,240],INK=[15,23,42],GREY=[100,116,139],NAVYC=[20,33,61],BLUE=[37,99,235];
   const AGOC=[250,204,21],MGRC=[220,38,38],GREEN=[22,163,74],AMBER=[194,65,12],RED=[185,28,28];
   const SOFT=[241,245,249],LBLUE=[239,246,255],TRACK=[226,232,240],LGREEN=[220,252,231],LRED=[254,226,226],LAMBER=[254,243,199];
