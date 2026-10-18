@@ -116,8 +116,15 @@
       const payment = performance.entered_payment_amount ??
         performance.entered_payments_amount ?? summary.entered_payment_amount ?? null;
       const shiftCount = firstNumber([performance.shift_count, summary.shift_count, report.shift_count]);
+      const shiftSummary = arr(report.shift_summary);
+      const returnSummary = report.dsr_return_summary || {
+        total_returned_liters: shiftSummary.reduce((sum, shift) => sum + num(shift && shift.returned_liters), 0),
+        total_returned_amount: shiftSummary.reduce((sum, shift) => sum + num(shift && shift.returned_amount), 0)
+      };
+      const returnedLiters = firstNumber([returnSummary.total_returned_liters]);
+      const returnedAmount = firstNumber([returnSummary.total_returned_amount]);
       return {
-        date, report, sales, liters,
+        date, report, sales, liters, returnedLiters, returnedAmount,
         payments: payment == null || !Number.isFinite(Number(payment)) ? null : Number(payment),
         shifts: shiftCount
       };
@@ -126,6 +133,8 @@
 
     const totalSales = days.reduce((sum, day) => sum + day.sales, 0);
     const totalLiters = days.reduce((sum, day) => sum + day.liters, 0);
+    const totalReturnedLiters = days.reduce((sum, day) => sum + day.returnedLiters, 0);
+    const totalReturnedAmount = days.reduce((sum, day) => sum + day.returnedAmount, 0);
     const totalShifts = days.reduce((sum, day) => sum + day.shifts, 0);
     const allPaymentsPresent = days.every(day => day.payments !== null);
     const financialValues = days.map(day => {
@@ -169,6 +178,8 @@
         expectedDays: days.length,
         totalSales,
         totalLiters,
+        totalReturnedLiters,
+        totalReturnedAmount,
         totalShifts,
         enteredPayments: allPaymentsPresent ? days.reduce((sum, day) => sum + day.payments, 0) : null,
         financialDifference: allFinancialValuesPresent ? financialValues.reduce((sum, value) => sum + value, 0) : null,
@@ -176,6 +187,7 @@
       },
       daily: days.map(day => ({
         date: day.date, sales: day.sales, liters: day.liters,
+        returnedLiters: day.returnedLiters, returnedAmount: day.returnedAmount,
         payments: day.payments, shifts: day.shifts
       })),
       salesTypes,
