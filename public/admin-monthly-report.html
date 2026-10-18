@@ -500,7 +500,7 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
   try{
    if(!window.XlsxExport)throw new Error('Excel export module is unavailable. Reload the page and retry.');
    const workbook=await msrRowsFor();
-   const blob=XlsxExport.build([{name:'MSR',rows:workbook.rows,merges:workbook.merges}]);
+   const blob=XlsxExport.build([{name:'MSR',rows:workbook.rows,merges:workbook.merges,theme:{navy:'000000'}}]);
    XlsxExport.download(blob,'MSR-'+lastExportData.month+'-report.xlsx');
    $('msr-status').textContent='MSR Excel export complete';
   }catch(e){$('msr-status').textContent='MSR Excel export failed: '+(e.message||'Unknown error');}
