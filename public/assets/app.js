@@ -5857,6 +5857,7 @@ async function loadDailyReport(showDetails=false){
     const dispenserDetails=Array.isArray(r.dsr_dispenser_details)?r.dsr_dispenser_details:(Array.isArray(r.dispenser_summary)?r.dispenser_summary:[]);
     const tankDetails=Array.isArray(r.dsr_tank_details)?r.dsr_tank_details:(Array.isArray(r.tank_details)?r.tank_details:[]);
     const salesSummary=r.dsr_sales_summary||{by_product:Array.isArray(r.sales_summary?.by_product)?r.sales_summary.by_product:[],by_type:Array.isArray(r.sales_summary?.by_type)?r.sales_summary.by_type:[],total_amount:Number(r.total_sales_amount||0),total_liters:Number(r.total_sales_liters||0)};
+    const returnSummary=r.dsr_return_summary||{total_returned_liters:(Array.isArray(r.shift_summary)?r.shift_summary:[]).reduce((sum,x)=>sum+Number(x.returned_liters||0),0),total_returned_amount:(Array.isArray(r.shift_summary)?r.shift_summary:[]).reduce((sum,x)=>sum+Number(x.returned_amount||0),0)};
     const shifts=Array.isArray(r.shift_summary)?r.shift_summary:[];
     const ready=Boolean(r.report_ready);
     window.currentDailyReportData=r;
@@ -5974,7 +5975,7 @@ async function loadDailyReport(showDetails=false){
     document.getElementById('report-sales-summary').innerHTML=
       '<div class="dsr-sales-column"><div class="dsr-subhead">Fuel sales by product</div>'+(productRows||'<div class="daily-empty">No product sales.</div>')+'</div>'+
       '<div class="dsr-sales-column"><div class="dsr-subhead">Sales methods</div>'+(typeRows||'<div class="daily-empty">No sale methods recorded.</div>')+'</div>'+
-      '<div class="dsr-sales-total"><div class="dsr-sales-total-row"><span>Calculated sales</span><strong>'+money(salesSummary.total_amount)+'</strong></div><div class="dsr-sales-total-row"><span>Entered payments</span><strong>'+money(perf.entered_payment_amount ?? perf.total_sales_amount ?? 0)+'</strong></div><div class="dsr-sales-total-row"><span>Financial difference</span><strong>'+money(perf.financial_difference ?? 0)+'</strong></div><div class="dsr-sales-total-row"><span>Liters sold</span><strong>'+liters(salesSummary.total_liters)+' L</strong></div></div>';
+      '<div class="dsr-sales-total"><div class="dsr-sales-total-row"><span>Returned fuel</span><strong>'+liters(returnSummary.total_returned_liters)+' L · '+money(returnSummary.total_returned_amount)+'</strong></div><div class="dsr-sales-total-row"><span>Net calculated sales</span><strong>'+money(salesSummary.total_amount)+'</strong></div><div class="dsr-sales-total-row"><span>Entered payments</span><strong>'+money(perf.entered_payment_amount ?? perf.total_sales_amount ?? 0)+'</strong></div><div class="dsr-sales-total-row"><span>Financial difference</span><strong>'+money(perf.financial_difference ?? 0)+'</strong></div><div class="dsr-sales-total-row"><span>Net liters sold</span><strong>'+liters(salesSummary.total_liters)+' L</strong></div></div>';
 
     const nozzleLabels={};
     dispenserDetails.forEach(disp=>(disp.nozzles||[]).forEach(n=>{
