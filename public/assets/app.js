@@ -5719,6 +5719,10 @@ function buildDailyReportPdfBlob(){
   const dispensers=Array.isArray(r.dsr_dispenser_details)?r.dsr_dispenser_details:[];
   const tanks=Array.isArray(r.dsr_tank_details)?r.dsr_tank_details:[];
   const shifts=Array.isArray(r.shift_summary)?r.shift_summary:[];
+  const returnSummary=r.dsr_return_summary||{
+    total_returned_liters:shifts.reduce((sum,x)=>sum+num(x.returned_liters),0),
+    total_returned_amount:shifts.reduce((sum,x)=>sum+num(x.returned_amount),0)
+  };
   const methods=Array.isArray(sales.by_type)?sales.by_type:[];
   const products=Array.isArray(sales.by_product)?sales.by_product:[];
   const productInfo=window.currentDsrProductInfo||{};
@@ -5770,8 +5774,8 @@ function buildDailyReportPdfBlob(){
   if(!products.length)stats.push({label:'By product',value:'No product sales recorded'});
   methods.forEach(x=>stats.push({label:'By method \u00b7 '+(x.type||'Method'),value:fmtM(x.amount)+'  \u00b7  '+pct(x.percentage)}));
   if(!methods.length)stats.push({label:'By method',value:'No payment-method sales recorded'});
-  stats.push({label:'Sales total',value:fmtM(sales.total_amount??perf.total_sales_amount),big:true});
-  stats.push({label:'Liters total',value:fmtL(sales.total_liters??perf.total_sales_liters),big:true});
+  stats.push({label:'Net sales · returns deducted',value:fmtM(sales.total_amount??perf.total_sales_amount)+'  |  Return −'+fmtM(returnSummary.total_returned_amount),big:true});
+  stats.push({label:'Net liters sold',value:fmtL(sales.total_liters??perf.total_sales_liters)+'  |  Return '+fmtL(returnSummary.total_returned_liters)+' L',big:true});
 
   const shiftCards=shifts.map((s,i)=>({
     title:'SHIFT '+(i+1)+' - '+(s.attendant||s.employee_name||'Unknown'),
