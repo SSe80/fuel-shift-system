@@ -3105,7 +3105,8 @@ async function downloadMonthlySalesReportPdf(data){
 }
 
 function createDsrReportPdf(r){
-  const d=createPdfDoc(),M=0,CW=595.28-2*M,R=M+CW;
+  // Keep the DSR report body comfortably inset from the A4 page edges.
+  const d=createPdfDoc(),M=24,CW=595.28-2*M,R=M+CW;
   d.keepA4Width=true;
   const WHITE=[255,255,255],PAGE=[238,241,245],CARDB=[226,232,240],INK=[15,23,42],GREY=[100,116,139],NAVYC=[20,33,61],BLUE=[37,99,235];
   const AGOC=[250,204,21],MGRC=[220,38,38],GREEN=[22,163,74],AMBER=[194,65,12],RED=[185,28,28];
@@ -3179,8 +3180,8 @@ function createDsrReportPdf(r){
     const x0=tx-11,th=6.1;
     d.poly(up?[[x0,ty+16],[x0+7,ty+16],[x0+3.5,ty+16-th]]:[[x0,ty+16-th],[x0+7,ty+16-th],[x0+3.5,ty+16]],vc);
     const cells=tk.cells||[];const labs=['OPENING','PURCHASES','SOLD','EXPECTED'];const ops=['+','-','=','vs'];
-    const fx=[0,1,2,3,4].map(i=>M+24+i*107.25);
-    cells.slice(0,4).forEach((vl,i)=>{d.text(labs[i],fx[i],ty+37,8,false,GREY);d.text(d.fit(String(vl),10,true,92),fx[i],ty+50,10,true,INK);if(i<3)d.text(ops[i],fx[i]+107.25-14,ty+50,10,false,GREY,'c');});
+    const tankCellW=(CW-38)/5;const fx=[0,1,2,3,4].map(i=>M+24+i*tankCellW);
+    cells.slice(0,4).forEach((vl,i)=>{d.text(labs[i],fx[i],ty+37,8,false,GREY);d.text(d.fit(String(vl),10,true,92),fx[i],ty+50,10,true,INK);if(i<3)d.text(ops[i],fx[i]+tankCellW-14,ty+50,10,false,GREY,'c');});
     d.box(fx[4]-4,ty+27,R-14-fx[4]+4,28,SOFT,5);d.text('RECORDED',fx[4]+2,ty+37,8,false,BLUE);
     d.text(d.fit(String(cells[4]||'\u2014'),10,true,R-14-fx[4]-8),fx[4]+2,ty+50,10,true,BLUE);
     const exp=num(cells[3]),rec=num(cells[4]),frac=exp>0?Math.min(1,rec/exp):0;
