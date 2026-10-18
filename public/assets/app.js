@@ -3144,7 +3144,7 @@ function createDsrReportPdf(r){
   // Printer-safe inset header: keep navy fill and report content inside A4's non-printable edge margin.
   const headerX=M+0.5,headerY=10,headerH=58,headerR=R-0.5;
   d.box(headerX,headerY,CW-1,headerH,NAVYC,8);
-  d.text('DAILY SALES REPORT  \\u00b7  STATION DAILY RECONCILIATION',headerX+14,headerY+15,8.5,true,[147,197,253]);
+  d.text('DAILY SALES REPORT  \u00b7  STATION DAILY RECONCILIATION',headerX+14,headerY+15,8.5,true,[147,197,253]);
   const statusLabel=String(r.statusLabel||'').toUpperCase();
   const statusW=statusLabel?Math.max(82,d.tw(statusLabel,8.5,true)+18):0;
   const titleMax=statusLabel?Math.max(150,CW-statusW-56):CW-28;
