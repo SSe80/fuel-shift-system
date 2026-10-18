@@ -3487,7 +3487,7 @@ function createMsrReportPdfV2(r){
   head(pageTitle,M,48,CW);
   d.y=72;
   table([{h:'Date',x:8,max:78},{h:'Net liters',x:105,a:'r'},{h:'Returns (L)',x:185,a:'r'},{h:'Return value',x:275,a:'r'},{h:'Sales',x:365,a:'r'},{h:'Payments',x:445,a:'r'},{h:'Shifts',x:CW-8,a:'r'}],
-    (r.dailyRowsV2||[]).length?r.dailyRowsV2:[{cells:['No confirmed DSR days','—','—','—','—','—','—']}],24,false);
+    (r.dailyRowsV2||[]).length?r.dailyRowsV2:[{cells:['No confirmed DSR days','—','—','—','—','—','—']}],18,false);
   return d.finish(r.footer,'MSR - '+r.title);
 }
 
