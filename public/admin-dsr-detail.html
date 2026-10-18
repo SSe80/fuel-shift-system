@@ -1410,7 +1410,7 @@ body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-nozzles{
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
-<script src="assets/xlsx-export.js?v=20261018-dsr-pdf-match-x2"></script><script src="assets/app.js?v=dsr-returned-fuel-final-r2-20261019"></script>
+<script src="assets/xlsx-export.js?v=20261018-dsr-pdf-match-x2"></script><script src="assets/app.js?v=dsr-returned-fuel-excel-20261019"></script>
 <script>
 function downloadDailyReportExcel(){
   const report=window.currentDailyReportData;
@@ -1423,6 +1423,13 @@ function downloadDailyReportExcel(){
   const tanks=Array.isArray(report.dsr_tank_details)?report.dsr_tank_details:[];
   const dispensers=Array.isArray(report.dsr_dispenser_details)?report.dsr_dispenser_details:[];
   const sales=report.dsr_sales_summary||{};
+  const shifts=Array.isArray(report.shift_summary)?report.shift_summary:[];
+  const returnSummary=report.dsr_return_summary||{
+    total_returned_liters:shifts.reduce((sum,s)=>sum+Number(s.returned_liters||0),0),
+    total_returned_amount:shifts.reduce((sum,s)=>sum+Number(s.returned_amount||0),0)
+  };
+  const returnedLiters=num(returnSummary.total_returned_liters);
+  const returnedAmount=num(returnSummary.total_returned_amount);
   const products=Array.isArray(sales.by_product)?sales.by_product:[];
   const methods=Array.isArray(sales.by_type)?sales.by_type:[];
   const num=v=>Number.isFinite(Number(v))?Number(v):0;
@@ -1497,7 +1504,7 @@ function downloadDailyReportExcel(){
     dp.startCol=nozzleCols[dp.startIndex].startCol;
     dp.endCol=nozzleCols[dp.endIndex].endCol;
   });
-  const colCount=Math.max(11,unitCount+1);
+  const colCount=Math.max(12,unitCount+1);
   const rows=[],merges=[];
   const colName=n=>{
     let out='';
@@ -1584,7 +1591,7 @@ function downloadDailyReportExcel(){
   // Tank reconciliation: the same five stock figures and four reconciliation measures shown in the PDF.
   section('TANK RECONCILIATION');
   addRow('head',[
-    'TANK','PRODUCT','OPENING STOCK (L)','PURCHASES (+L)','NOZZLE SOLD (L)',
+    'TANK','PRODUCT','OPENING STOCK (L)','PURCHASES (+L)','RETURNED FUEL (+L)','NOZZLE SOLD (L)',
     'EXPECTED CLOSING (L)','RECORDED CLOSING (L)','ADJUSTMENT (L)','CONTINUITY (L)',
     'DIFFERENCE (L)','VARIANCE (%)'
   ],28);
@@ -1603,13 +1610,14 @@ function downloadDailyReportExcel(){
       set(1,product,{bold:true,fill:productTint(product),color:'0F172A'});
       set(2,num(t.opening_stock_liters),{fmt:litersFmt,align:'right'});
       set(3,num(t.purchase_discharged_liters),{fmt:signedLitersPlusFmt,align:'right'});
-      set(4,num(t.nozzle_sales_liters),{fmt:litersFmt,align:'right'});
-      set(5,num(t.expected_closing_liters),{fmt:litersFmt,align:'right'});
-      set(6,num(t.closing_stock_liters),{fmt:litersFmt,align:'right',bold:true,color:'2563EB'});
-      set(7,num(t.documented_stock_adjustment_liters),{fmt:signedLitersFmt,align:'right'});
-      set(8,num(t.opening_adjustment_liters),{fmt:signedLitersFmt,align:'right'});
-      set(9,num(t.difference_liters),{fmt:signedLitersFmt,align:'right',fill:'FEF3C7',color:'C2410C',bold:true});
-      set(10,variance,{fmt:percentFmt,align:'right',fill:varFill,color:varColor,bold:true});
+      set(4,num(t.returned_liters),{fmt:signedLitersPlusFmt,align:'right',fill:'EFF6FF',color:'1D4ED8'});
+      set(5,num(t.nozzle_sales_liters),{fmt:litersFmt,align:'right'});
+      set(6,num(t.expected_closing_liters),{fmt:litersFmt,align:'right'});
+      set(7,num(t.closing_stock_liters),{fmt:litersFmt,align:'right',bold:true,color:'2563EB'});
+      set(8,num(t.documented_stock_adjustment_liters),{fmt:signedLitersFmt,align:'right'});
+      set(9,num(t.opening_adjustment_liters),{fmt:signedLitersFmt,align:'right'});
+      set(10,num(t.difference_liters),{fmt:signedLitersFmt,align:'right',fill:'FEF3C7',color:'C2410C',bold:true});
+      set(11,variance,{fmt:percentFmt,align:'right',fill:varFill,color:varColor,bold:true});
       addRow('data',cells,25);
     });
   }
@@ -1650,10 +1658,14 @@ function downloadDailyReportExcel(){
   const totalAmount=num(sales.total_amount??perf.total_sales_amount);
   const totalLiters=num(sales.total_liters??perf.total_sales_liters);
   const totalCells=styledEmptyCells();
-  totalCells[0]={v:'SALES TOTAL',bold:true,color:'1D4ED8',border:'light'};
+  totalCells[0]={v:'NET SALES TOTAL',bold:true,color:'1D4ED8',border:'light'};
   totalCells[2]={v:totalAmount,fmt:moneyFmt,bold:true,color:'1D4ED8',border:'light'};
-  totalCells[5]={v:'LITERS TOTAL',bold:true,color:'1D4ED8',border:'light'};
+  totalCells[5]={v:'NET LITERS SOLD',bold:true,color:'1D4ED8',border:'light'};
   totalCells[6]={v:totalLiters,fmt:litersFmt,bold:true,color:'1D4ED8',border:'light'};
+  totalCells[8]={v:'RETURNED FUEL (L)',bold:true,color:'1D4ED8',border:'light'};
+  totalCells[9]={v:returnedLiters,fmt:litersFmt,bold:true,color:'1D4ED8',border:'light'};
+  totalCells[10]={v:'RETURN VALUE',bold:true,color:'1D4ED8',border:'light'};
+  totalCells[11]={v:returnedAmount,fmt:moneyFmt,bold:true,color:'1D4ED8',border:'light'};
   addRow('total',totalCells,30);
   blank();
 
