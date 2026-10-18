@@ -1410,7 +1410,7 @@ body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-nozzles{
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
-<script src="assets/xlsx-export.js?v=20261018-dsr-pdf-match-x2"></script><script src="assets/app.js?v=dsr-returned-fuel-excel-20261019"></script>
+<script src="assets/xlsx-export.js?v=20261018-dsr-pdf-match-x2"></script><script src="assets/app.js?v=dsr-returned-fuel-excel-fix-20261019"></script>
 <script>
 function downloadDailyReportExcel(){
   const report=window.currentDailyReportData;
@@ -1424,15 +1424,15 @@ function downloadDailyReportExcel(){
   const dispensers=Array.isArray(report.dsr_dispenser_details)?report.dsr_dispenser_details:[];
   const sales=report.dsr_sales_summary||{};
   const shifts=Array.isArray(report.shift_summary)?report.shift_summary:[];
+  const num=v=>v==null||v===''?0:(Number.isFinite(Number(v))?Number(v):0);
   const returnSummary=report.dsr_return_summary||{
-    total_returned_liters:shifts.reduce((sum,s)=>sum+Number(s.returned_liters||0),0),
-    total_returned_amount:shifts.reduce((sum,s)=>sum+Number(s.returned_amount||0),0)
+    total_returned_liters:shifts.reduce((sum,s)=>sum+num(s.returned_liters),0),
+    total_returned_amount:shifts.reduce((sum,s)=>sum+num(s.returned_amount),0)
   };
   const returnedLiters=num(returnSummary.total_returned_liters);
   const returnedAmount=num(returnSummary.total_returned_amount);
   const products=Array.isArray(sales.by_product)?sales.by_product:[];
   const methods=Array.isArray(sales.by_type)?sales.by_type:[];
-  const num=v=>Number.isFinite(Number(v))?Number(v):0;
   const numberOrDash=v=>v==null||v===''||!Number.isFinite(Number(v))?'-':Number(v);
   const percentOrDash=v=>v==null||v===''||!Number.isFinite(Number(v))?'-':Number(v);
   const infoFor=v=>{
