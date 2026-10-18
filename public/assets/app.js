@@ -3117,13 +3117,13 @@ function createDsrReportPdf(r){
   const attMap=new Map();
   (r.shifts||[]).forEach(s=>{const disp=String(s.sub||'').split(' / ')[0].trim();const nm=String(s.title||'').split(' - ').slice(1).join(' - ').trim()||String(s.title||'');if(!attMap.has(disp))attMap.set(disp,[]);if(!attMap.get(disp).includes(nm))attMap.get(disp).push(nm);});
   d.singlePage=true;
-  d.header({kicker:'DAILY SALES REPORT  \u00b7  STATION DAILY RECONCILIATION',title:r.title,h:74,kBase:25,tBase:48,pillTop:27,pillBase:43,status:r.statusLabel});
-  d.markContent(74);
-  d.y=90;
+  d.header({kicker:'DAILY SALES REPORT  \u00b7  STATION DAILY RECONCILIATION',title:r.title,h:68,kBase:23,tBase:45,pillTop:24,pillBase:39,status:r.statusLabel});
+  d.markContent(68);
+  d.y=84;
   // Key figures
   d.section('Key figures',M,d.y);d.y+=20;
   const kf=(r.key||[]).map((k,i)=>i===1?Object.assign({},k,{style:'dark'}):k);
-  d.y+=d.cards(kf,{top:d.y,h:50,gap:8,pad:10,labelBase:16,valBase:36,valSize:13,labelSize:7})+16;
+  d.y+=d.cards(kf,{top:d.y,h:44,gap:8,pad:9,labelBase:14,valBase:31,valSize:12.5,labelSize:7})+12;
   // Dispensers
   d.section('Dispenser & nozzle performance',M,d.y);d.y+=20;
   const groups=r.dispGroups||[];const disps=[];
@@ -3131,7 +3131,7 @@ function createDsrReportPdf(r){
   const LBL=70,nD=disps.length||1,bw=(CW-LBL)/nD;
   const bx=j=>M+LBL+j*bw;
   const cols=[];
-  disps.forEach((dp,j)=>{const n=dp.nozzles.length||1,sw=bw/n;dp.nozzles.forEach((nz,i)=>cols.push({x:bx(j)+i*sw,w:sw,n:nz}));});
+  disps.forEach((dp,j)=>{const n=dp.nozzles.length||1,sw=bw/n;dp.nozzles.forEach((nz,i)=>cols.push({x:bx(j)+i*sw,w:sw,n:nz,nl:'N'+(i+1)}));});
   // product pills over their dispensers
   let j0=0;
   groups.forEach(pg=>{const cnt=pg.dispensers.size,x=bx(j0),w=cnt*bw-4,col=prodColor(pg.product);
@@ -3143,58 +3143,56 @@ function createDsrReportPdf(r){
   disps.forEach((dp,j)=>{
     const x=bx(j),w=bw-4;
     const total=dp.nozzles.reduce((s,n)=>s+num(n.sold),0);
-    d.box(x,d.y,w,50,WHITE,6);d.outline(x,d.y,w,50,6);
-    d.text(d.fit(dp.label,8,true,w-12),x+w/2,d.y+15,8,true,INKC,'c');
-    d.text(d.fit('Total '+fmtL(total)+' L',7,false,w-12),x+w/2,d.y+28,7,false,GREY,'c');
-    d.text(dp.nozzles.length+(dp.nozzles.length===1?' nozzle':' nozzles'),x+w/2,d.y+40,7,false,GREY,'c');});
-  d.y+=58;
+    d.box(x,d.y,w,42,WHITE,6);d.outline(x,d.y,w,42,6);
+    d.text(d.fit(dp.label,8,true,w-12),x+w/2,d.y+13,8,true,INKC,'c');
+    d.text(d.fit('Total '+fmtL(total)+' L',7,false,w-12),x+w/2,d.y+24,7,false,GREY,'c');
+    d.text(dp.nozzles.length+(dp.nozzles.length===1?' nozzle':' nozzles'),x+w/2,d.y+35,7,false,GREY,'c');});
+  d.y+=49;
   // nozzle grid
-  d.box(M,d.y,CW,18,NAVYC,5);
-  d.text('NOZZLE',M+10,d.y+12,7,true,WHITE);
-  cols.forEach(c=>d.text(d.fit(c.n.label,7,true,c.w-6),c.x+c.w/2,d.y+12,7,true,WHITE,'c'));
-  d.y+=18;
-  [['METER START','opening',false],['METER END','closing',false],['SOLD','sold',true],['RECON.','recon',true]].forEach(([lab,key,bold],ri)=>{
-    if(ri%2===0)d.box(M,d.y,CW,20,STRIPE);
-    d.text(lab,M+10,d.y+13,7,true,GREY);
+  d.box(M,d.y,CW,16,NAVYC,5);
+  d.text('NOZZLE',M+10,d.y+11,7,true,WHITE);
+  cols.forEach(c=>d.text(c.nl,c.x+c.w/2,d.y+11,7,true,WHITE,'c'));
+  d.y+=16;
+  [['OPENING','opening',false],['CLOSING','closing',false],['SOLD','sold',true],['RECON.','recon',true]].forEach(([lab,key,bold],ri)=>{
+    if(ri%2===0)d.box(M,d.y,CW,17,STRIPE);
+    d.text(lab,M+10,d.y+11.5,7,true,GREY);
     cols.forEach(c=>{
-      if(key==='recon'){const pw=Math.min(c.w-14,44);d.box(c.x+c.w/2-pw/2,d.y+4,pw,12,GREEN_T,6);d.text(String(c.n.recon),c.x+c.w/2,d.y+13,7,true,GREEN,'c');}
-      else d.text(d.fit(String(c.n[key]),8,bold,c.w-6),c.x+c.w/2,d.y+13,8,bold,INKC,'c');});
-    d.y+=20;});
+      if(key==='recon'){const pw=Math.min(c.w-14,44);d.box(c.x+c.w/2-pw/2,d.y+3,pw,11,GREEN_T,5.5);d.text(String(c.n.recon),c.x+c.w/2,d.y+11,7,true,GREEN,'c');}
+      else d.text(d.fit(String(c.n[key]),8,bold,c.w-6),c.x+c.w/2,d.y+11.5,8,bold,INKC,'c');});
+    d.y+=17;});
   d.hline(M,R,d.y+.5,LINE,.6);
-  d.y+=14;
+  d.y+=10;
   // tanks
   d.section('Tank reconciliation',M,d.y);
   let lx=R-8;
   [[ '>3%',RED],['1-3%',AMBER],['<=1%',GREEN]].forEach(([txt,colr])=>{const w=d.tw(txt,7,false);lx-=w;d.text(txt,lx,d.y+10,7,false,INKC);lx-=8;d.box(lx-6,d.y+5,6,6,colr,3);lx-=14;});
   d.text('Variance',lx-2,d.y+10,7,true,GREY,'r');
-  d.y+=20;
+  d.y+=18;
   const groupsT=new Map();
   (r.tanks||[]).forEach(tk=>{const key=String(tk.product||'Unknown').toLowerCase();if(!groupsT.has(key))groupsT.set(key,{product:tk.product||'Unknown',tanks:[]});groupsT.get(key).tanks.push(tk);});
   groupsT.forEach(g=>{
     const col=prodColor(g.product);
-    d.box(M,d.y,CW,18,SOFT,4);d.box(M,d.y,4,18,col,2);
-    d.text(d.fit(g.product,8.5,true,CW-24),M+12,d.y+12,8.5,true,INKC);
-    d.y+=22;
+    d.box(M,d.y,CW,16,SOFT,4);d.box(M,d.y,4,16,col,2);
+    d.text(d.fit(g.product,8.5,true,CW-24),M+12,d.y+11,8.5,true,INKC);
+    d.y+=18;
     g.tanks.forEach(tk=>{
       const card=tk.cards||[];const v=card.find(c=>/variance/i.test(c.label));const vp=v?num(v.value):0;const tone=varTone(vp);
-      d.box(M,d.y,CW,80,WHITE,7);d.outline(M,d.y,CW,80,7);
-      d.box(M+8,d.y+10,30,14,col,7);d.text(String(g.product).split(' ')[0].slice(0,4).toUpperCase(),M+23,d.y+20,7,true,INKC,'c');
-      d.text(d.fit(tk.name,9,true,200),M+46,d.y+20,9,true,INKC);
-      // flow: opening + purchases - sold = expected vs recorded
+      d.box(M,d.y,CW,60,WHITE,7);d.outline(M,d.y,CW,60,7);
+      d.box(M+8,d.y+7,30,13,col,6.5);d.text(String(g.product).split(' ')[0].slice(0,4).toUpperCase(),M+23,d.y+16,6.8,true,INKC,'c');
+      d.text(d.fit(tk.name,9,true,200),M+46,d.y+16,9,true,INKC);
       const cells=tk.cells||[];const labs=['OPENING','PURCHASES','SOLD','EXPECTED','RECORDED'];const ops=['+','-','=','vs'];
       const fx=[M+12,M+100,M+196,M+292,M+400];
-      cells.forEach((vl,i)=>{const isRec=i===4;if(isRec){d.box(fx[i]-6,d.y+30,CW-(fx[i]-M)+2,28,SOFT,5);}
-        d.text(labs[i],fx[i],d.y+39,6.6,false,GREY);
-        d.text(d.fit(String(vl),8.5,true,isRec?CW-(fx[i]-M)-14:90),fx[i],d.y+52,8.5,true,isRec?BLUE:INKC);
-        if(i<4)d.text(ops[i],fx[i]+78,d.y+50,ops[i]==='vs'?6.6:9,false,GREY,'c');});
-      // variance pill and chips
+      cells.forEach((vl,i)=>{const isRec=i===4;if(isRec){d.box(fx[i]-6,d.y+19,CW-(fx[i]-M)+2,24,SOFT,5);}
+        d.text(labs[i],fx[i],d.y+28,6.6,false,GREY);
+        d.text(d.fit(String(vl),8.5,true,isRec?CW-(fx[i]-M)-14:90),fx[i],d.y+39,8.5,true,isRec?BLUE:INKC);
+        if(i<4)d.text(ops[i],fx[i]+78,d.y+38,ops[i]==='vs'?6.6:9,false,GREY,'c');});
       const vt='Variance '+(v?v.value:'0.0%');const pw=d.tw(vt,7.5,true)+16;
-      d.box(R-12-pw,d.y+61,pw,15,tone.bg,7.5);d.text(vt,R-12-pw/2,d.y+71.5,7.5,true,tone.fg,'c');
+      d.box(R-12-pw,d.y+44,pw,13,tone.bg,6.5);d.text(vt,R-12-pw/2,d.y+53,7.5,true,tone.fg,'c');
       let cx=M+12;
-      card.filter(c=>!/variance/i.test(c.label)).forEach(c=>{const tx=c.label+'  '+c.value,w=d.tw(tx,7,false)+14;d.box(cx,d.y+61,w,15,SOFT,7.5);d.text(tx,cx+7,d.y+71.5,7,false,GREY);cx+=w+6;});
-      d.y+=86;});
+      card.filter(c=>!/variance/i.test(c.label)).forEach(c=>{const tx=c.label+'  '+c.value,w=d.tw(tx,7,false)+14;d.box(cx,d.y+44,w,13,SOFT,6.5);d.text(tx,cx+7,d.y+53,7,false,GREY);cx+=w+6;});
+      d.y+=66;});
   });
-  d.y+=4;
+  d.y+=2;
   // sales statistics: two columns (by product, by method) with bars, then totals strip
   d.section('Sales statistics',M,d.y);d.y+=20;
   const rows=r.stats||[],totals=rows.filter(x=>x.big);
@@ -3208,23 +3206,23 @@ function createDsrReportPdf(r){
   prodRows.forEach(rw=>{const nm=String(rw.label).replace(/^by product\s*[\u00b7-]\s*/i,'');const pc=pctOf(rw.value)||0;const col=prodColor(nm);
     d.text(d.fit(nm,8.5,true,colW*.5),LX,yy+10,8.5,true,INKC);d.text(pc.toFixed(1)+'%',LX+colW,yy+10,8.5,true,INKC,'r');
     d.text(d.fit(detailOf(rw.value),7,false,colW),LX,yy+22,7,false,GREY);
-    d.box(LX,yy+27,colW,5,SOFT,2.5);d.box(LX,yy+27,Math.max(3,colW*pc/100),5,col,2.5);yy+=40;});
+    d.box(LX,yy+27,colW,5,SOFT,2.5);d.box(LX,yy+27,Math.max(3,colW*pc/100),5,col,2.5);yy+=34;});
   let yr=d.y+18;
   methRows.forEach(rw=>{const nm=String(rw.label).replace(/^by method\s*[\u00b7-]\s*/i,'');const pc=pctOf(rw.value);const amt=detailOf(rw.value);
     d.text(d.fit(nm,8.5,true,colW*.4),RX,yr+10,8.5,true,INKC);d.text(d.fit(amt,7.5,false,colW*.5),RX+colW-44,yr+10,7.5,false,GREY,'r');
     d.text(pc==null?'':(pc===0?'<0.1%':pc.toFixed(1)+'%'),RX+colW,yr+10,8.5,true,INKC,'r');
-    d.box(RX,yr+16,colW,5,SOFT,2.5);if(pc!=null)d.box(RX,yr+16,Math.max(3,colW*pc/100),5,BLUE,2.5);yr+=30;});
-  d.y+=Math.max(yy,yr)-d.y+8;
-  if(totals.length){const h=44,half=CW/totals.length;d.box(M,d.y,CW,h,NAVYC,7);
-    totals.forEach((t,i)=>{const x=M+i*half+14;d.text(t.label.toUpperCase(),x,d.y+16,7,true,LBLUE);d.text(d.fit(t.value,12.5,true,half-28),x,d.y+34,12.5,true,WHITE);});
-    d.y+=h+8;}
+    d.box(RX,yr+16,colW,5,SOFT,2.5);if(pc!=null)d.box(RX,yr+16,Math.max(3,colW*pc/100),5,BLUE,2.5);yr+=23;});
+  d.y+=Math.max(yy,yr)-d.y+6;
+  if(totals.length){const h=36,half=CW/totals.length;d.box(M,d.y,CW,h,NAVYC,7);
+    totals.forEach((t,i)=>{const x=M+i*half+14;d.text(t.label.toUpperCase(),x,d.y+14,7,true,LBLUE);d.text(d.fit(t.value,12,true,half-28),x,d.y+30,12,true,WHITE);});
+    d.y+=h+6;}
   // reconciliation strip
   const ov=r.overview||[];const pick=re=>{const o=ov.find(x=>re.test(String(x.label)));return o?o.value:null;};
   const calc=pick(/calculated/i),entered=pick(/entered/i),diff=pick(/financial difference/i);
-  if(calc!=null||entered!=null){const ok=num(diff)===0;d.box(M,d.y,CW,24,ok?GREEN_T:RED_T,6);
+  if(calc!=null||entered!=null){const ok=num(diff)===0;d.box(M,d.y,CW,20,ok?GREEN_T:RED_T,6);
     const parts=[['CALCULATED',calc],['ENTERED',entered],['DIFFERENCE',diff]].filter(p=>p[1]!=null);const seg=CW/parts.length;
     parts.forEach(([lab,val],i)=>{const x=M+i*seg+12;const lw=d.tw(lab,7,true);d.text(lab,x,d.y+15,7,true,ok?GREEN:RED);d.text(d.fit(String(val),8.5,true,seg-lw-30),x+lw+8,d.y+15,8.5,true,INKC);});
-    d.y+=32;}
+    d.y+=26;}
   return d.finish(r.footer,'DSR - '+r.title);
 }
 
