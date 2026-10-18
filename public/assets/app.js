@@ -3257,7 +3257,7 @@ function createDsrReportPdf(r){
   const calcNum=parseMoney(calc),enteredNum=parseMoney(entered),storedDiffNum=parseMoney(storedDiff);
   const diff=storedDiffNum!=null?storedDiffNum:(calcNum!=null&&enteredNum!=null?enteredNum-calcNum:null);
   if(diff!=null){const matched=Math.abs(diff)<0.005,excess=diff>=0.005;const bg=matched||excess?LGREEN:LRED,fg=matched||excess?GREEN:RED;
-    const abs=fmtMoney(Math.abs(diff));
+    const abs=Math.abs(diff).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
     const statement=matched?'Difference from calculated sales: ETB 0.00 — payments match':'Difference from calculated sales: ETB '+abs.replace(/^ETB\s*/i,'')+(excess?' above calculated sales':' below calculated sales');
     d.box(M,d.y,CW,30,bg,6);
     d.text(d.fit(statement,9,true,CW-24),M+12,d.y+19,9,true,fg);
