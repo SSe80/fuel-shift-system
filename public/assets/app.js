@@ -3116,7 +3116,7 @@ function createDsrReportPdf(r){
   const attMap=new Map();
   (r.shifts||[]).forEach(s=>{const disp=String(s.sub||'').split(' / ')[0].trim();const nm=String(s.title||'').split(' - ').slice(1).join(' - ').trim()||String(s.title||'');if(!attMap.has(disp))attMap.set(disp,[]);if(!attMap.get(disp).includes(nm))attMap.get(disp).push(nm);});
   const card=(x,y,w,h)=>{d.box(x,y,w,h,WHITE,10);d.outline(x,y,w,h,10);};
-  const section=(x,y,t)=>{d.box(x,y+1,3,13,BLUE,1.5);d.text(t.toUpperCase(),x+10,y+12,10.5,true,INK);};
+  const section=(x,y,t)=>{d.box(x,y+1,3,13,BLUE,1.5);d.text(t.toUpperCase(),x+10,y+12.5,11,true,INK);};
   d.singlePage=true;
   // page background (outside the scaled content)
   d.box(0,0,595.28,841.89,PAGE,0);
@@ -3127,10 +3127,10 @@ function createDsrReportPdf(r){
   section(M,d.y,'Key figures');d.y+=22;
   const kn=(r.key||[]).length||5,kg=8,kw=(CW-kg*(kn-1))/kn;
   (r.key||[]).forEach((k,i)=>{const x=M+i*(kw+kg),y=d.y;const hi=/sales/i.test(String(k.label))||i===1;
-    d.box(x,y,kw,46,WHITE,8);d.outline(x,y,kw,46,8);
-    d.text(String(k.label).toUpperCase(),x+10,y+15,7,false,GREY);
-    d.text(d.fit(String(k.value),11.5,true,kw-16),x+10,y+34,11.5,true,/sales|fuel/i.test(String(k.label))?GREEN:INK);});
-  d.y+=58;
+    d.box(x,y,kw,50,WHITE,8);d.outline(x,y,kw,50,8);
+    d.text(String(k.label).toUpperCase(),x+10,y+16,8,false,GREY);
+    d.text(d.fit(String(k.value),12.5,true,kw-16),x+10,y+37,12.5,true,/sales|fuel/i.test(String(k.label))?GREEN:INK);});
+  d.y+=62;
   // DISPENSER & NOZZLE PERFORMANCE
   const groups=r.dispGroups||[];const disps=[];
   groups.forEach(pg=>pg.dispensers.forEach((nozzles,label)=>disps.push({product:pg.product,label,nozzles})));
@@ -3139,37 +3139,37 @@ function createDsrReportPdf(r){
   const cw=(CW-28-LBL)/nozzleCount;
   let k0=0;disps.forEach((dp,j)=>{dp.x0=M+14+LBL+k0*cw;dp.span=(dp.nozzles.length||1)*cw;dp.nozzles.forEach((nz,i)=>cols.push({x:M+14+LBL+(k0+i)*cw,w:cw,n:nz,nl:'N-'+(i+1)}));k0+=dp.nozzles.length||1;});
   const dpTop=d.y;
-  const dpH=14+26+36+4+22+4*22+12;
+  const dpH=14+28+38+4+23+4*23+13;
   card(M,dpTop,CW,dpH);
   section(M+14,dpTop+8,'Dispenser & nozzle performance');
-  let py=dpTop+30;
+  let py=dpTop+32;
   let jj=0;
   groups.forEach(pg=>{const cnt=pg.dispensers.size,gx=disps[jj].x0,gw=pg.dispensers.size?disps.slice(jj,jj+cnt).reduce((s,dp)=>s+dp.span,0):0;const col=prodColor(pg.product);
-    d.box(gx,py,30,14,col,7);d.text(String(pg.product),gx+15,py+10,7,true,INK,'c');
+    d.box(gx,py,34,16,col,8);d.text(String(pg.product),gx+17,py+11.5,7.5,true,INK,'c');
     d.box(gx+34,py+6.5,Math.max(0,gw-34),2,col,1);jj+=cnt;});
-  py+=20;
+  py+=22;
   disps.forEach(dp=>{const total=dp.nozzles.reduce((s,n)=>s+num(n.sold),0);
-    d.box(dp.x0+2,py,dp.span-4,34,LBLUE,6);
-    const lf=dp.span<90?6.2:7.5;d.text(d.fit(dp.label,lf,true,dp.span-8),dp.x0+dp.span/2,py+14,lf,true,INK,'c');
-    d.text(d.fit('Total '+fmtL(total)+' L',7,false,dp.span-12),dp.x0+dp.span/2,py+26,7,false,GREY,'c');});
-  py+=40;
-  d.box(M+14,py,CW-28,20,NAVYC,4);
-  d.text('NOZZLE',M+22,py+13,7,true,WHITE);
-  cols.forEach(c=>d.text(c.nl,c.x+c.w/2,py+13,7,true,WHITE,'c'));
-  py+=20;
+    d.box(dp.x0+2,py,dp.span-4,36,LBLUE,6);
+    const lf=dp.span<90?6.2:7.5;d.text(d.fit(dp.label,lf,true,dp.span-8),dp.x0+dp.span/2,py+15,lf,true,INK,'c');
+    d.text(d.fit('Total '+fmtL(total)+' L',7.3,false,dp.span-12),dp.x0+dp.span/2,py+28,7.3,false,GREY,'c');});
+  py+=42;
+  d.box(M+14,py,CW-28,22,NAVYC,4);
+  d.text('NOZZLE',M+22,py+14.5,7.5,true,WHITE);
+  cols.forEach(c=>d.text(c.nl,c.x+c.w/2,py+14.5,7.5,true,WHITE,'c'));
+  py+=22;
   const rowsDef=[['OPENING','opening'],['CLOSING','closing'],['SOLD','sold'],['RECON.','recon']];
   const maxSold=Math.max(1,...cols.map(c=>num(c.n.sold)));
-  rowsDef.forEach(([lab,key],ri)=>{const y=py+ri*22;
-    d.text(lab,M+22,y+14,7,true,GREY);
+  rowsDef.forEach(([lab,key],ri)=>{const y=py+ri*23;
+    d.text(lab,M+22,y+14.5,7.5,true,GREY);
     cols.forEach(c=>{const cx=c.x+c.w/2;
       if(key==='vol'){const bw2=Math.min(c.w-14,58),frac=num(c.n.sold)/maxSold,col=(/mgr/i.test(String(c.n.product||''))||c.col==='mgr')?MGRC:AGOC;
         d.box(cx-bw2/2,y+8,bw2,5,TRACK,2.5);d.box(cx-bw2/2,y+8,Math.max(4,bw2*frac),5,c.col==='mgr'?MGRC:AGOC,2.5);}
-      else if(key==='recon'){const pw=Math.min(c.w-16,40);d.box(cx-pw/2,y+4,pw,13,LGREEN,6.5);d.text(String(c.n.recon),cx,y+13.5,7,true,GREEN,'c');}
-      else d.text(d.fit(String(c.n[key]),7.6,key==='sold',c.w-6),cx,y+14,7.6,key==='sold',INK,'c');});
+      else if(key==='recon'){const pw=Math.min(c.w-16,40);d.box(cx-pw/2,y+4,pw,13,LGREEN,6.5);d.text(String(c.n.recon),cx,y+14,7.5,true,GREEN,'c');}
+      else d.text(d.fit(String(c.n[key]),8,key==='sold',c.w-6),cx,y+14.5,8,key==='sold',INK,'c');});
     if(ri<rowsDef.length-1)d.hline(M+14,R-14,y+22,CARDB,.5);});
-  d.y=dpTop+dpH+10;
+  d.y=dpTop+dpH+9;
   // TANK RECONCILIATION
-  const tanks=r.tanks||[];const TK=64;const tkH=14+26+tanks.length*TK+4;
+  const tanks=r.tanks||[];const TK=68;const tkH=14+26+tanks.length*TK+4;
   const tkTop=d.y;card(M,tkTop,CW,tkH);section(M+14,tkTop+8,'Tank reconciliation');
   let ty=tkTop+30;
   tanks.forEach(tk=>{const col=prodColor(tk.product);const cards=tk.cards||[];const v=cards.find(c=>/variance/i.test(c.label));const vp=v?num(v.value):0;const tone=varTone(vp);
@@ -3197,23 +3197,23 @@ function createDsrReportPdf(r){
   const rows=r.stats||[],totals=rows.filter(x=>x.big),prodRows=rows.filter(x=>!x.big&&/^by product/i.test(String(x.label))),methRows=rows.filter(x=>!x.big&&/^by method/i.test(String(x.label)));
   const pctOf=v=>{const m=String(v).match(/([0-9.]+)%\s*$/);return m?parseFloat(m[1]):null;};
   const detailOf=v=>String(v).replace(/\s*\u00b7\s*[0-9.<]+%\s*$/,'');
-  const shH=14+26+Math.max(prodRows.length*34,methRows.length*24)+40+10;
+  const shH=14+28+Math.max(prodRows.length*36,methRows.length*26)+42+10;
   const shTop=d.y;card(M,shTop,CW,shH);section(M+14,shTop+8,'Sales statistics');
   const half=(CW-28-16)/2,LX=M+14,RX=M+14+half+16;
-  d.text('BY PRODUCT',LX,shTop+36,7,true,GREY);d.text('BY METHOD',RX,shTop+36,7,true,GREY);
-  let yy=shTop+46;
+  d.text('BY PRODUCT',LX,shTop+38,7.5,true,GREY);d.text('BY METHOD',RX,shTop+38,7.5,true,GREY);
+  let yy=shTop+49;
   prodRows.forEach(rw=>{const nm=String(rw.label).replace(/^by product\s*[\u00b7-]\s*/i,'');const pc=pctOf(rw.value)||0;const col=prodColor(nm);
-    d.text(d.fit(nm,9,true,half*.6),LX,yy+10,9,true,INK);d.text(pc.toFixed(1)+'%',LX+half,yy+10,9,true,INK,'r');
-    d.text(d.fit(detailOf(rw.value),8.5,false,half),LX,yy+21,8.5,false,GREY);
-    d.box(LX,yy+26,half,4,TRACK,2);d.box(LX,yy+26,Math.max(3,half*pc/100),4,col,2);yy+=34;});
-  let yr=shTop+46;
+    d.text(d.fit(nm,9.5,true,half*.6),LX,yy+11,9.5,true,INK);d.text(pc.toFixed(1)+'%',LX+half,yy+11,9.5,true,INK,'r');
+    d.text(d.fit(detailOf(rw.value),9,false,half),LX,yy+23,9,false,GREY);
+    d.box(LX,yy+28,half,4,TRACK,2);d.box(LX,yy+28,Math.max(3,half*pc/100),4,col,2);yy+=36;});
+  let yr=shTop+49;
   methRows.forEach(rw=>{const nm=String(rw.label).replace(/^by method\s*[\u00b7-]\s*/i,'');const pc=pctOf(rw.value);const amt=detailOf(rw.value);
-    d.text(d.fit(nm,8.6,true,half*.45),RX,yr+10,8.6,true,INK);d.text(d.fit(amt,8.5,false,half*.45),RX+half-44,yr+10,8.5,false,GREY,'r');
-    d.text(pc==null?'':(pc===0?'<0.1%':pc.toFixed(1)+'%'),RX+half,yr+10,8.6,true,INK,'r');
-    d.box(RX,yr+15,half,4,TRACK,2);if(pc!=null)d.box(RX,yr+15,Math.max(3,half*pc/100),4,BLUE,2);yr+=24;});
-  const sy=shTop+shH-44;
-  if(totals.length){d.box(M+14,sy,CW-28,38,SOFT,7);const th=(CW-28)/totals.length;
-    totals.forEach((t,i)=>{const x=M+14+i*th+12;d.text(t.label.toUpperCase(),x,sy+14,8,true,BLUE);d.text(d.fit(t.value,15,true,th-24),x,sy+32,15,true,BLUE);});}
+    d.text(d.fit(nm,9,true,half*.45),RX,yr+11,9,true,INK);d.text(d.fit(amt,9,false,half*.45),RX+half-44,yr+11,9,false,GREY,'r');
+    d.text(pc==null?'':(pc===0?'<0.1%':pc.toFixed(1)+'%'),RX+half,yr+11,9,true,INK,'r');
+    d.box(RX,yr+17,half,4,TRACK,2);if(pc!=null)d.box(RX,yr+17,Math.max(3,half*pc/100),4,BLUE,2);yr+=26;});
+  const sy=shTop+shH-46;
+  if(totals.length){d.box(M+14,sy,CW-28,40,SOFT,7);const th=(CW-28)/totals.length;
+    totals.forEach((t,i)=>{const x=M+14+i*th+12;d.text(t.label.toUpperCase(),x,sy+15,8.5,true,BLUE);d.text(d.fit(t.value,16,true,th-24),x,sy+34,16,true,BLUE);});}
   d.y=shTop+shH+10;
   // reconciliation strip
   const ov=r.overview||[];const pick=re=>{const o=ov.find(x=>re.test(String(x.label)));return o?o.value:null;};
