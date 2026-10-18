@@ -3105,7 +3105,7 @@ async function downloadMonthlySalesReportPdf(data){
 }
 
 function createDsrReportPdf(r){
-  const d=createPdfDoc(),M=12,CW=595.28-2*M,R=M+CW;
+  const d=createPdfDoc(),M=0,CW=595.28-2*M,R=M+CW;
   const WHITE=[255,255,255],PAGE=[238,241,245],CARDB=[226,232,240],INK=[15,23,42],GREY=[100,116,139],NAVYC=[20,33,61],BLUE=[37,99,235];
   const AGOC=[250,204,21],MGRC=[220,38,38],GREEN=[22,163,74],AMBER=[194,65,12],RED=[185,28,28];
   const SOFT=[241,245,249],LBLUE=[239,246,255],TRACK=[226,232,240],LGREEN=[220,252,231],LRED=[254,226,226],LAMBER=[254,243,199];
