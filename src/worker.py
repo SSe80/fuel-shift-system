@@ -4775,6 +4775,11 @@ def daily_report(report_date_override=None):
             val=float(amount or 0)
             payment_methods[method]=payment_methods.get(method,0)+val
             sales_by_type[method]=sales_by_type.get(method,0)+val
+    # Payment type isn't captured for a return, so keep the payment ledger
+    # intact and show the return as its own negative sales-method line.
+    total_returned_amount=sum(float(x.get("returned_amount") or 0) for x in shift_summary)
+    if total_returned_amount>0:
+        sales_by_type["Returned fuel (deduction)"]=sales_by_type.get("Returned fuel (deduction)",0)-total_returned_amount
 
     # Combined dispenser/day reconciliation:
     # first shift = opening boundary; last shift = closing boundary.
