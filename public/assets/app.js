@@ -3176,7 +3176,7 @@ function createDsrReportPdf(r){
       if(key==='vol'){const bw2=Math.min(c.w-14,58),frac=num(c.n.sold)/maxSold,col=(/mgr/i.test(String(c.n.product||''))||c.col==='mgr')?MGRC:AGOC;
         d.box(cx-bw2/2,y+8,bw2,5,TRACK,2.5);d.box(cx-bw2/2,y+8,Math.max(4,bw2*frac),5,c.col==='mgr'?MGRC:AGOC,2.5);}
       else if(key==='recon'){const pw=Math.min(c.w-16,44);d.box(cx-pw/2,y+4,pw,15,LGREEN,0);d.text(String(c.n.recon),cx,y+15.5,8.5,true,GREEN,'c');}
-      else d.text(d.fit(String(c.n[key]),9,key==='sold',c.w-6),cx,y+16,9,key==='sold',INK,'c');});
+      else {const soldRow=key==='sold',fontSize=soldRow?12:9;d.text(d.fit(String(c.n[key]),fontSize,soldRow,c.w-6),cx,y+16,fontSize,soldRow,INK,'c');}});
     d.hline(tableX,tableR,y+26,CARDB,0.9);
     d.line(tableX,y,tableX,y+26,CARDB,0.9);
     d.line(tableR,y,tableR,y+26,CARDB,0.9);
