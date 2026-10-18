@@ -90,7 +90,10 @@
 
   async function buildMsr(month) {
     if (!dateMatches(month, /^\d{4}-\d{2}$/)) return null;
-    const confirmations = await api('/api/reports/daily/confirmations');
+    const [confirmations, configuredSaleTypes] = await Promise.all([
+      api('/api/reports/daily/confirmations'),
+      api('/api/sale-types').catch(() => [])
+    ]);
     const dates = [...new Set(arr(confirmations)
       .filter(row => row && row.status === 'confirmed' && String(row.date || '').slice(0, 7) === month)
       .map(row => String(row.date).slice(0, 10))
@@ -168,9 +171,100 @@
     const salesTypes = [...salesTypeTotals.entries()].map(([name, sales]) => ({
       name, sales, sharePct: typeTotal ? sales / typeTotal * 100 : 0
     })).sort((a, b) => b.sales - a.sales);
+    // Keep the automatic Drive PDF consistent with the normal MSR PDF:
+    // types requiring a reason are excluded from its sales-by-type chart.
+    const reasonRequiredTypes = new Set(arr(configuredSaleTypes)
+      .filter(type => type && type.reason_required)
+      .map(type => String(type.name || '').trim().toLowerCase()));
+    const salesTypesForPdf = salesTypes.filter(type =>
+      !reasonRequiredTypes.has(String(type.name || '').trim().toLowerCase())
+    );
     const products = [...productTotals.values()].map(item => ({
       ...item, sharePct: totalSales ? item.sales / totalSales * 100 : 0
     })).sort((a, b) => b.sales - a.sales);
+
+    // The normal MSR aggregates attendant and dispenser performance from
+    // these confirmed daily report details; include those sections in Drive PDFs too.
+    const attendantTotals = new Map();
+    const shiftTotals = new Map();
+    days.forEach(day => {
+      const report = day.report;
+      const dispensers = arr(report.dsr_dispenser_details).length
+        ? arr(report.dsr_dispenser_details) : arr(report.dispenser_summary);
+      dispensers.forEach(dispenser => arr(dispenser.nozzles).forEach(nozzle =>
+        arr(nozzle.attendant_shifts).forEach(shift => {
+          const attendant = String(shift.attendant || shift.attendant_name ||
+            shift.employee_name || 'Unknown attendant').trim();
+          const liters = firstNumber([shift.sales_liters]);
+          const sales = firstNumber([shift.sales_amount]);
+          const currentAttendant = attendantTotals.get(attendant) ||
+            { attendant, liters: 0, sales: 0, shiftCount: 0 };
+          currentAttendant.liters += liters;
+          currentAttendant.sales += sales;
+          currentAttendant.shiftCount += 1;
+          attendantTotals.set(attendant, currentAttendant);
+
+          const shiftName = String(shift.shift_name || shift.shift_code ||
+            shift.shift || 'Recorded shifts').trim();
+          const dispenserName = String(dispenser.dispenser ||
+            dispenser.dispenser_code || 'Dispenser').trim();
+          const key = shiftName + ' · ' + dispenserName;
+          const currentShift = shiftTotals.get(key) ||
+            { shiftDispenser: key, liters: 0, sales: 0, records: 0 };
+          currentShift.liters += liters;
+          currentShift.sales += sales;
+          currentShift.records += 1;
+          shiftTotals.set(key, currentShift);
+        })
+      ));
+    });
+    const attendants = [...attendantTotals.values()].sort((a, b) => b.sales - a.sales);
+    const shifts = [...shiftTotals.values()].sort((a, b) => b.sales - a.sales);
+
+    // Rank this month against the three preceding calendar months. Fetch in
+    // small batches so queue processing does not flood the report API.
+    const rangeStart = new Date(month + '-01T12:00:00');
+    rangeStart.setMonth(rangeStart.getMonth() - 3);
+    const rangeStartKey = rangeStart.getFullYear() + '-' +
+      String(rangeStart.getMonth() + 1).padStart(2, '0') + '-01';
+    const rankingDates = [...new Set(arr(confirmations)
+      .filter(row => row && row.status === 'confirmed')
+      .map(row => String(row.date || '').slice(0, 10))
+      .filter(date => dateMatches(date, /^\d{4}-\d{2}-\d{2}$/) &&
+        date >= rangeStartKey && date.slice(0, 7) <= month))].sort();
+    const reportsByDate = new Map(days.map(day => [day.date, day.report]));
+    const missingRankingDates = rankingDates.filter(date => !reportsByDate.has(date));
+    for (let offset = 0; offset < missingRankingDates.length; offset += 6) {
+      await Promise.all(missingRankingDates.slice(offset, offset + 6).map(async date => {
+        try { reportsByDate.set(date, await getReport(date)); }
+        catch (_) { /* Keep the ranking partial if a historical report is unavailable. */ }
+      }));
+    }
+    const rankingByMonth = new Map();
+    rankingDates.forEach(date => {
+      const report = reportsByDate.get(date);
+      if (!report) return;
+      const performance = report.dsr_performance || report.performance || {};
+      const summary = report.summary || {};
+      const salesSummary = report.dsr_sales_summary || report.sales_summary || {};
+      const amount = firstNumber([
+        performance.calculated_sales_amount, performance.total_sales_amount,
+        summary.sales_amount, salesSummary.total_amount, report.total_sales_amount
+      ]);
+      const liters = firstNumber([
+        performance.total_sales_liters, summary.sales_liters,
+        salesSummary.total_liters, report.total_sales_liters
+      ]);
+      const key = date.slice(0, 7);
+      const item = rankingByMonth.get(key) || { month: key, days: 0, amount: 0, liters: 0 };
+      item.days += 1; item.amount += amount; item.liters += liters;
+      rankingByMonth.set(key, item);
+    });
+    const monthRanking = [...rankingByMonth.values()]
+      .map(item => ({ ...item, avgAmount: item.days ? item.amount / item.days : 0 }))
+      .sort((a, b) => b.avgAmount - a.avgAmount || b.amount - a.amount || b.liters - a.liters)
+      .map((item, index) => ({ ...item, rank: index + 1, changePct: null }));
+
     const data = {
       month,
       summary: {
@@ -191,12 +285,12 @@
         payments: day.payments, shifts: day.shifts
       })),
       salesTypes,
-      salesTypesForPdf: salesTypes,
+      salesTypesForPdf,
       saleReasons: [],
       products,
-      attendants: [],
-      shifts: [],
-      monthRanking: []
+      attendants,
+      shifts,
+      monthRanking
     };
     return buildMonthlySalesReportPdfBlob(data);
   }
