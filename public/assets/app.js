@@ -3105,124 +3105,123 @@ async function downloadMonthlySalesReportPdf(data){
 }
 
 function createDsrReportPdf(r){
-  const d=createPdfDoc(),M=d.M,C=d.C,CW=d.CW,R=M+CW;
-  const WHITE=[255,255,255],NAVYC=[20,33,61],SOFT=[241,245,249],STRIPE=[248,250,252],LINE=[226,232,240],GREY=[100,116,139],INKC=[15,23,42];
-  const AGOC=[255,235,59],MGRC=[229,57,53],LBLUE=[147,197,253],BLUE=[37,99,235];
-  const GREEN=[21,128,61],AMBER=[180,83,9],RED=[185,28,28];
-  const GREEN_T=[220,252,231],AMBER_T=[254,243,199],RED_T=[254,226,226];
+  const d=createPdfDoc(),M=24,CW=595.28-2*M,R=M+CW;
+  const WHITE=[255,255,255],PAGE=[238,241,245],CARDB=[226,232,240],INK=[15,23,42],GREY=[100,116,139],NAVYC=[20,33,61],BLUE=[37,99,235];
+  const AGOC=[250,204,21],MGRC=[220,38,38],GREEN=[22,163,74],AMBER=[194,65,12],RED=[185,28,28];
+  const SOFT=[241,245,249],LBLUE=[239,246,255],TRACK=[226,232,240],LGREEN=[220,252,231],LRED=[254,226,226],LAMBER=[254,243,199];
   const num=v=>{const n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};
   const fmtL=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:2});
   const prodColor=p=>/mgr/i.test(String(p||''))?MGRC:/ago/i.test(String(p||''))?AGOC:[148,163,184];
-  const varTone=p=>p<=1?{fg:GREEN,bg:GREEN_T}:p<=3?{fg:AMBER,bg:AMBER_T}:{fg:RED,bg:RED_T};
+  const varTone=p=>p<=1?{fg:GREEN,bg:LGREEN}:p<=3?{fg:AMBER,bg:LAMBER}:{fg:RED,bg:LRED};
   const attMap=new Map();
   (r.shifts||[]).forEach(s=>{const disp=String(s.sub||'').split(' / ')[0].trim();const nm=String(s.title||'').split(' - ').slice(1).join(' - ').trim()||String(s.title||'');if(!attMap.has(disp))attMap.set(disp,[]);if(!attMap.get(disp).includes(nm))attMap.get(disp).push(nm);});
+  const card=(x,y,w,h)=>{d.box(x,y,w,h,WHITE,10);d.outline(x,y,w,h,10);};
+  const section=(x,y,t)=>{d.box(x,y+1,3,13,BLUE,1.5);d.text(t.toUpperCase(),x+10,y+12,10.5,true,INK);};
   d.singlePage=true;
+  // page background (outside the scaled content)
+  d.box(0,0,595.28,841.89,PAGE,0);
   d.header({kicker:'DAILY SALES REPORT  \u00b7  STATION DAILY RECONCILIATION',title:r.title,h:68,kBase:23,tBase:45,pillTop:24,pillBase:39,status:r.statusLabel});
   d.markContent(68);
-  d.y=84;
-  // Key figures
-  d.section('Key figures',M,d.y);d.y+=20;
-  const kf=(r.key||[]).map((k,i)=>i===1?Object.assign({},k,{style:'dark'}):k);
-  d.y+=d.cards(kf,{top:d.y,h:44,gap:8,pad:9,labelBase:14,valBase:31,valSize:12.5,labelSize:7})+12;
-  // Dispensers
-  d.section('Dispenser & nozzle performance',M,d.y);d.y+=20;
+  d.y=80;
+  // KEY FIGURES
+  section(M,d.y,'Key figures');d.y+=22;
+  const kn=(r.key||[]).length||5,kg=8,kw=(CW-kg*(kn-1))/kn;
+  (r.key||[]).forEach((k,i)=>{const x=M+i*(kw+kg),y=d.y;const hi=/sales/i.test(String(k.label))||i===1;
+    d.box(x,y,kw,46,WHITE,8);d.outline(x,y,kw,46,8);
+    d.text(String(k.label).toUpperCase(),x+10,y+15,7,false,GREY);
+    d.text(d.fit(String(k.value),11.5,true,kw-16),x+10,y+34,11.5,true,/sales|fuel/i.test(String(k.label))?GREEN:INK);});
+  d.y+=58;
+  // DISPENSER & NOZZLE PERFORMANCE
   const groups=r.dispGroups||[];const disps=[];
   groups.forEach(pg=>pg.dispensers.forEach((nozzles,label)=>disps.push({product:pg.product,label,nozzles})));
-  const LBL=70,nD=disps.length||1,bw=(CW-LBL)/nD;
-  const bx=j=>M+LBL+j*bw;
-  const cols=[];
-  disps.forEach((dp,j)=>{const n=dp.nozzles.length||1,sw=bw/n;dp.nozzles.forEach((nz,i)=>cols.push({x:bx(j)+i*sw,w:sw,n:nz,nl:'N'+(i+1)}));});
-  // product pills over their dispensers
-  let j0=0;
-  groups.forEach(pg=>{const cnt=pg.dispensers.size,x=bx(j0),w=cnt*bw-4,col=prodColor(pg.product);
-    d.box(x,d.y,w,18,col,9);
-    d.text(d.fit(String(pg.product),8,true,w-12),x+w/2,d.y+12,8,true,INKC,'c');
-    j0+=cnt;});
-  d.y+=23;
-  // dispenser cards: same width, nozzle count and attendant under the name
-  disps.forEach((dp,j)=>{
-    const x=bx(j),w=bw-4;
-    const total=dp.nozzles.reduce((s,n)=>s+num(n.sold),0);
-    d.box(x,d.y,w,42,WHITE,6);d.outline(x,d.y,w,42,6);
-    d.text(d.fit(dp.label,8,true,w-12),x+w/2,d.y+13,8,true,INKC,'c');
-    d.text(d.fit('Total '+fmtL(total)+' L',7,false,w-12),x+w/2,d.y+24,7,false,GREY,'c');
-    d.text(dp.nozzles.length+(dp.nozzles.length===1?' nozzle':' nozzles'),x+w/2,d.y+35,7,false,GREY,'c');});
-  d.y+=49;
-  // nozzle grid
-  d.box(M,d.y,CW,16,NAVYC,5);
-  d.text('NOZZLE',M+10,d.y+11,7,true,WHITE);
-  cols.forEach(c=>d.text(c.nl,c.x+c.w/2,d.y+11,7,true,WHITE,'c'));
-  d.y+=16;
-  [['OPENING','opening',false],['CLOSING','closing',false],['SOLD','sold',true],['RECON.','recon',true]].forEach(([lab,key,bold],ri)=>{
-    if(ri%2===0)d.box(M,d.y,CW,17,STRIPE);
-    d.text(lab,M+10,d.y+11.5,7,true,GREY);
-    cols.forEach(c=>{
-      if(key==='recon'){const pw=Math.min(c.w-14,44);d.box(c.x+c.w/2-pw/2,d.y+3,pw,11,GREEN_T,5.5);d.text(String(c.n.recon),c.x+c.w/2,d.y+11,7,true,GREEN,'c');}
-      else d.text(d.fit(String(c.n[key]),8,bold,c.w-6),c.x+c.w/2,d.y+11.5,8,bold,INKC,'c');});
-    d.y+=17;});
-  d.hline(M,R,d.y+.5,LINE,.6);
-  d.y+=10;
-  // tanks
-  d.section('Tank reconciliation',M,d.y);
-  let lx=R-8;
-  [[ '>3%',RED],['1-3%',AMBER],['<=1%',GREEN]].forEach(([txt,colr])=>{const w=d.tw(txt,7,false);lx-=w;d.text(txt,lx,d.y+10,7,false,INKC);lx-=8;d.box(lx-6,d.y+5,6,6,colr,3);lx-=14;});
-  d.text('Variance',lx-2,d.y+10,7,true,GREY,'r');
-  d.y+=18;
-  const groupsT=new Map();
-  (r.tanks||[]).forEach(tk=>{const key=String(tk.product||'Unknown').toLowerCase();if(!groupsT.has(key))groupsT.set(key,{product:tk.product||'Unknown',tanks:[]});groupsT.get(key).tanks.push(tk);});
-  groupsT.forEach(g=>{
-    const col=prodColor(g.product);
-    d.box(M,d.y,CW,16,SOFT,4);d.box(M,d.y,4,16,col,2);
-    d.text(d.fit(g.product,8.5,true,CW-24),M+12,d.y+11,8.5,true,INKC);
-    d.y+=18;
-    g.tanks.forEach(tk=>{
-      const card=tk.cards||[];const v=card.find(c=>/variance/i.test(c.label));const vp=v?num(v.value):0;const tone=varTone(vp);
-      d.box(M,d.y,CW,60,WHITE,7);d.outline(M,d.y,CW,60,7);
-      d.box(M+8,d.y+7,30,13,col,6.5);d.text(String(g.product).split(' ')[0].slice(0,4).toUpperCase(),M+23,d.y+16,6.8,true,INKC,'c');
-      d.text(d.fit(tk.name,9,true,200),M+46,d.y+16,9,true,INKC);
-      const cells=tk.cells||[];const labs=['OPENING','PURCHASES','SOLD','EXPECTED','RECORDED'];const ops=['+','-','=','vs'];
-      const fx=[M+12,M+100,M+196,M+292,M+400];
-      cells.forEach((vl,i)=>{const isRec=i===4;if(isRec){d.box(fx[i]-6,d.y+19,CW-(fx[i]-M)+2,24,SOFT,5);}
-        d.text(labs[i],fx[i],d.y+28,6.6,false,GREY);
-        d.text(d.fit(String(vl),8.5,true,isRec?CW-(fx[i]-M)-14:90),fx[i],d.y+39,8.5,true,isRec?BLUE:INKC);
-        if(i<4)d.text(ops[i],fx[i]+78,d.y+38,ops[i]==='vs'?6.6:9,false,GREY,'c');});
-      const vt='Variance '+(v?v.value:'0.0%');const pw=d.tw(vt,7.5,true)+16;
-      d.box(R-12-pw,d.y+44,pw,13,tone.bg,6.5);d.text(vt,R-12-pw/2,d.y+53,7.5,true,tone.fg,'c');
-      let cx=M+12;
-      card.filter(c=>!/variance/i.test(c.label)).forEach(c=>{const tx=c.label+'  '+c.value,w=d.tw(tx,7,false)+14;d.box(cx,d.y+44,w,13,SOFT,6.5);d.text(tx,cx+7,d.y+53,7,false,GREY);cx+=w+6;});
-      d.y+=66;});
-  });
-  d.y+=2;
-  // sales statistics: two columns (by product, by method) with bars, then totals strip
-  d.section('Sales statistics',M,d.y);d.y+=20;
-  const rows=r.stats||[],totals=rows.filter(x=>x.big);
+  const LBL=64,cols=[];
+  const nozzleCount=disps.reduce((s,dp)=>s+(dp.nozzles.length||1),0)||1;
+  const cw=(CW-28-LBL)/nozzleCount;
+  let k0=0;disps.forEach((dp,j)=>{dp.x0=M+14+LBL+k0*cw;dp.span=(dp.nozzles.length||1)*cw;dp.nozzles.forEach((nz,i)=>cols.push({x:M+14+LBL+(k0+i)*cw,w:cw,n:nz,nl:'N-'+(i+1)}));k0+=dp.nozzles.length||1;});
+  const dpTop=d.y;
+  const dpH=14+26+36+4+22+4*22+12;
+  card(M,dpTop,CW,dpH);
+  section(M+14,dpTop+8,'Dispenser & nozzle performance');
+  let py=dpTop+30;
+  let jj=0;
+  groups.forEach(pg=>{const cnt=pg.dispensers.size,gx=disps[jj].x0,gw=pg.dispensers.size?disps.slice(jj,jj+cnt).reduce((s,dp)=>s+dp.span,0):0;const col=prodColor(pg.product);
+    d.box(gx,py,30,14,col,7);d.text(String(pg.product),gx+15,py+10,7,true,INK,'c');
+    d.box(gx+34,py+6.5,Math.max(0,gw-34),2,col,1);jj+=cnt;});
+  py+=20;
+  disps.forEach(dp=>{const total=dp.nozzles.reduce((s,n)=>s+num(n.sold),0);
+    d.box(dp.x0+2,py,dp.span-4,34,LBLUE,6);
+    const lf=dp.span<90?6.2:7.5;d.text(d.fit(dp.label,lf,true,dp.span-8),dp.x0+dp.span/2,py+14,lf,true,INK,'c');
+    d.text(d.fit('Total '+fmtL(total)+' L',7,false,dp.span-12),dp.x0+dp.span/2,py+26,7,false,GREY,'c');});
+  py+=40;
+  d.box(M+14,py,CW-28,20,NAVYC,4);
+  d.text('NOZZLE',M+22,py+13,7,true,WHITE);
+  cols.forEach(c=>d.text(c.nl,c.x+c.w/2,py+13,7,true,WHITE,'c'));
+  py+=20;
+  const rowsDef=[['OPENING','opening'],['CLOSING','closing'],['SOLD','sold'],['RECON.','recon']];
+  const maxSold=Math.max(1,...cols.map(c=>num(c.n.sold)));
+  rowsDef.forEach(([lab,key],ri)=>{const y=py+ri*22;
+    d.text(lab,M+22,y+14,7,true,GREY);
+    cols.forEach(c=>{const cx=c.x+c.w/2;
+      if(key==='vol'){const bw2=Math.min(c.w-14,58),frac=num(c.n.sold)/maxSold,col=(/mgr/i.test(String(c.n.product||''))||c.col==='mgr')?MGRC:AGOC;
+        d.box(cx-bw2/2,y+8,bw2,5,TRACK,2.5);d.box(cx-bw2/2,y+8,Math.max(4,bw2*frac),5,c.col==='mgr'?MGRC:AGOC,2.5);}
+      else if(key==='recon'){const pw=Math.min(c.w-16,40);d.box(cx-pw/2,y+4,pw,13,LGREEN,6.5);d.text(String(c.n.recon),cx,y+13.5,7,true,GREEN,'c');}
+      else d.text(d.fit(String(c.n[key]),7.6,key==='sold',c.w-6),cx,y+14,7.6,key==='sold',INK,'c');});
+    if(ri<rowsDef.length-1)d.hline(M+14,R-14,y+22,CARDB,.5);});
+  d.y=dpTop+dpH+10;
+  // TANK RECONCILIATION
+  const tanks=r.tanks||[];const TK=64;const tkH=14+26+tanks.length*TK+4;
+  const tkTop=d.y;card(M,tkTop,CW,tkH);section(M+14,tkTop+8,'Tank reconciliation');
+  let ty=tkTop+30;
+  tanks.forEach(tk=>{const col=prodColor(tk.product);const cards=tk.cards||[];const v=cards.find(c=>/variance/i.test(c.label));const vp=v?num(v.value):0;const tone=varTone(vp);
+    const diff=cards.find(c=>/difference/i.test(c.label));
+    d.box(M+14,ty+3,3,46,col,1.5);
+    d.box(M+24,ty+5,30,13,col,6.5);d.text(String(tk.product).slice(0,4).toUpperCase(),M+39,ty+14,7,true,INK,'c');
+    d.text(d.fit(tk.name,9,true,150),M+62,ty+15,9,true,INK);
+    const adj=cards.find(c=>/adjust/i.test(c.label)),con=cards.find(c=>/continu/i.test(c.label));
+    let cx=M+62+d.tw(tk.name,9,true)+12;
+    [[adj,'Adjustment',false],[con,'Continuity',false],[diff,'Difference',true]].forEach(([c,lab,hi])=>{if(!c)return;const tx=lab+' '+c.value,w=d.tw(tx,8,hi);d.box(cx,ty+7,w,12,hi?LAMBER:SOFT,3);d.text(tx,cx,ty+15.5,8,hi,hi?AMBER:GREY);cx+=w+6;});
+    const vt='Variance '+(v?v.value:'0.0%'),vw=d.tw(vt,8.5,true),tx=R-14-vw,up=vp<=3,vc=up?GREEN:RED;
+    d.text(vt,tx,ty+16,8.5,true,vc);
+    const x0=tx-11,th=6.1;
+    d.poly(up?[[x0,ty+16],[x0+7,ty+16],[x0+3.5,ty+16-th]]:[[x0,ty+16-th],[x0+7,ty+16-th],[x0+3.5,ty+16]],vc);
+    const cells=tk.cells||[];const labs=['OPENING','PURCHASES','SOLD','EXPECTED'];const ops=['+','-','=','vs'];
+    const fx=[0,1,2,3,4].map(i=>M+24+i*107.25);
+    cells.slice(0,4).forEach((vl,i)=>{d.text(labs[i],fx[i],ty+37,8,false,GREY);d.text(d.fit(String(vl),10,true,92),fx[i],ty+50,10,true,INK);if(i<3)d.text(ops[i],fx[i]+107.25-14,ty+50,10,false,GREY,'c');});
+    d.box(fx[4]-4,ty+27,R-14-fx[4]+4,28,SOFT,5);d.text('RECORDED',fx[4]+2,ty+37,8,false,BLUE);
+    d.text(d.fit(String(cells[4]||'\u2014'),10,true,R-14-fx[4]-8),fx[4]+2,ty+50,10,true,BLUE);
+    const exp=num(cells[3]),rec=num(cells[4]),frac=exp>0?Math.min(1,rec/exp):0;
+    d.box(M+24,ty+58,CW-38,3,TRACK,1.5);d.box(M+24,ty+58,(CW-38)*frac,3,col,1.5);
+    ty+=TK;});
+  d.y=tkTop+tkH+10;
+  // SALES STATISTICS
+  const rows=r.stats||[],totals=rows.filter(x=>x.big),prodRows=rows.filter(x=>!x.big&&/^by product/i.test(String(x.label))),methRows=rows.filter(x=>!x.big&&/^by method/i.test(String(x.label)));
   const pctOf=v=>{const m=String(v).match(/([0-9.]+)%\s*$/);return m?parseFloat(m[1]):null;};
-  const detailOf=v=>String(v).replace(/\s*·\s*[0-9.<]+%\s*$/,'');
-  const prodRows=rows.filter(x=>!x.big&&/^by product/i.test(String(x.label)));
-  const methRows=rows.filter(x=>!x.big&&/^by method/i.test(String(x.label)));
-  const colW=(CW-24)/2,LX=M,RX=M+colW+24;
-  d.text('BY PRODUCT',LX,d.y+8,7,true,GREY);d.text('BY METHOD',RX,d.y+8,7,true,GREY);
-  let yy=d.y+18;
+  const detailOf=v=>String(v).replace(/\s*\u00b7\s*[0-9.<]+%\s*$/,'');
+  const shH=14+26+Math.max(prodRows.length*34,methRows.length*24)+40+10;
+  const shTop=d.y;card(M,shTop,CW,shH);section(M+14,shTop+8,'Sales statistics');
+  const half=(CW-28-16)/2,LX=M+14,RX=M+14+half+16;
+  d.text('BY PRODUCT',LX,shTop+36,7,true,GREY);d.text('BY METHOD',RX,shTop+36,7,true,GREY);
+  let yy=shTop+46;
   prodRows.forEach(rw=>{const nm=String(rw.label).replace(/^by product\s*[\u00b7-]\s*/i,'');const pc=pctOf(rw.value)||0;const col=prodColor(nm);
-    d.text(d.fit(nm,8.5,true,colW*.5),LX,yy+10,8.5,true,INKC);d.text(pc.toFixed(1)+'%',LX+colW,yy+10,8.5,true,INKC,'r');
-    d.text(d.fit(detailOf(rw.value),7,false,colW),LX,yy+22,7,false,GREY);
-    d.box(LX,yy+27,colW,5,SOFT,2.5);d.box(LX,yy+27,Math.max(3,colW*pc/100),5,col,2.5);yy+=34;});
-  let yr=d.y+18;
+    d.text(d.fit(nm,9,true,half*.6),LX,yy+10,9,true,INK);d.text(pc.toFixed(1)+'%',LX+half,yy+10,9,true,INK,'r');
+    d.text(d.fit(detailOf(rw.value),8.5,false,half),LX,yy+21,8.5,false,GREY);
+    d.box(LX,yy+26,half,4,TRACK,2);d.box(LX,yy+26,Math.max(3,half*pc/100),4,col,2);yy+=34;});
+  let yr=shTop+46;
   methRows.forEach(rw=>{const nm=String(rw.label).replace(/^by method\s*[\u00b7-]\s*/i,'');const pc=pctOf(rw.value);const amt=detailOf(rw.value);
-    d.text(d.fit(nm,8.5,true,colW*.4),RX,yr+10,8.5,true,INKC);d.text(d.fit(amt,7.5,false,colW*.5),RX+colW-44,yr+10,7.5,false,GREY,'r');
-    d.text(pc==null?'':(pc===0?'<0.1%':pc.toFixed(1)+'%'),RX+colW,yr+10,8.5,true,INKC,'r');
-    d.box(RX,yr+16,colW,5,SOFT,2.5);if(pc!=null)d.box(RX,yr+16,Math.max(3,colW*pc/100),5,BLUE,2.5);yr+=23;});
-  d.y+=Math.max(yy,yr)-d.y+6;
-  if(totals.length){const h=36,half=CW/totals.length;d.box(M,d.y,CW,h,NAVYC,7);
-    totals.forEach((t,i)=>{const x=M+i*half+14;d.text(t.label.toUpperCase(),x,d.y+14,7,true,LBLUE);d.text(d.fit(t.value,12,true,half-28),x,d.y+30,12,true,WHITE);});
-    d.y+=h+6;}
+    d.text(d.fit(nm,8.6,true,half*.45),RX,yr+10,8.6,true,INK);d.text(d.fit(amt,8.5,false,half*.45),RX+half-44,yr+10,8.5,false,GREY,'r');
+    d.text(pc==null?'':(pc===0?'<0.1%':pc.toFixed(1)+'%'),RX+half,yr+10,8.6,true,INK,'r');
+    d.box(RX,yr+15,half,4,TRACK,2);if(pc!=null)d.box(RX,yr+15,Math.max(3,half*pc/100),4,BLUE,2);yr+=24;});
+  const sy=shTop+shH-44;
+  if(totals.length){d.box(M+14,sy,CW-28,34,SOFT,7);const th=(CW-28)/totals.length;
+    totals.forEach((t,i)=>{const x=M+14+i*th+12;d.text(t.label.toUpperCase(),x,sy+13,7,true,BLUE);d.text(d.fit(t.value,12,true,th-24),x,sy+28,12,true,BLUE);});}
+  d.y=shTop+shH+10;
   // reconciliation strip
   const ov=r.overview||[];const pick=re=>{const o=ov.find(x=>re.test(String(x.label)));return o?o.value:null;};
   const calc=pick(/calculated/i),entered=pick(/entered/i),diff=pick(/financial difference/i);
-  if(calc!=null||entered!=null){const ok=num(diff)===0;d.box(M,d.y,CW,20,ok?GREEN_T:RED_T,6);
+  if(calc!=null||entered!=null){const ok=num(diff)===0;d.box(M,d.y,CW,22,ok?LGREEN:LRED,6);
     const parts=[['CALCULATED',calc],['ENTERED',entered],['DIFFERENCE',diff]].filter(p=>p[1]!=null);const seg=CW/parts.length;
-    parts.forEach(([lab,val],i)=>{const x=M+i*seg+12;const lw=d.tw(lab,7,true);d.text(lab,x,d.y+15,7,true,ok?GREEN:RED);d.text(d.fit(String(val),8.5,true,seg-lw-30),x+lw+8,d.y+15,8.5,true,INKC);});
-    d.y+=26;}
+    parts.forEach(([lab,val],i)=>{const x=M+i*seg+12;const lw=d.tw(lab,7,true);d.text(lab,x,d.y+14,7,true,ok?GREEN:RED);d.text(d.fit(String(val),8.2,true,seg-lw-30),x+lw+8,d.y+14,8.2,true,INK);});
+    d.y+=28;}
   return d.finish(r.footer,'DSR - '+r.title);
 }
 
