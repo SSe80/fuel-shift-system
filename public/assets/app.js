@@ -3301,7 +3301,7 @@ function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,mont
   const saleTypeRowsV2=salesTypesForPdf.map((x,i)=>({cells:[(i+1)+'. '+String(x.name||'Sale type'),money(x.sales),(eligibleSaleTypeTotal?num(x.sales)/eligibleSaleTypeTotal*100:0).toFixed(1)+'%']}));
   if(saleTypeRowsV2.length)saleTypeRowsV2.push({bold:true,cells:['MONTH TOTAL',money(eligibleSaleTypeTotal),eligibleSaleTypeTotal?'100.0%':'0.0%']});
   const attRowsV2=attendants.map((x,i)=>({cells:[(i+1)+'. '+(x.attendant||'Unknown'),money(x.sales),fmt(x.liters)+' L',String(num(x.shiftCount)),share(x.sales).toFixed(1)+'%',''],}));
-  const dailyRowsV2=daily.map(row=>({cells:[String(row.date||'\u2014'),fmt(row.liters)+' L',fmt(row.returnedLiters)+' L',money(row.returnedAmount),money(row.sales),row.payments==null?'\u2014':money(row.payments),String(num(row.shifts)),'Confirmed'],tones:[null,null,null,null,null,null,null,GREEN]}));
+  const dailyRowsV2=daily.map(row=>({cells:[String(row.date||'\u2014'),fmt(row.liters)+' L',fmt(row.returnedLiters)+' L',money(row.returnedAmount),money(row.sales),row.payments==null?'\u2014':money(row.payments),String(num(row.shifts))],tones:[null,null,null,null,null,null,null]}));
   if(daily.length>1)dailyRowsV2.push({bold:true,cells:['Month total',fmt(daily.reduce((n,x)=>n+num(x.liters),0))+' L',fmt(daily.reduce((n,x)=>n+num(x.returnedLiters),0))+' L',money(daily.reduce((n,x)=>n+num(x.returnedAmount),0)),money(daily.reduce((n,x)=>n+num(x.sales),0)),daily.every(x=>x.payments!=null)?money(daily.reduce((n,x)=>n+num(x.payments),0)):'\u2014',String(daily.reduce((n,x)=>n+num(x.shifts),0)),'']});
   const notesStrip=[
     {label:'Expected DSR days',value:String(num(s.expectedDays))},
@@ -3487,7 +3487,7 @@ function createMsrReportPdfV2(r){
   head(pageTitle,M,48,CW);
   d.y=72;
   table([{h:'Date',x:8,max:78},{h:'Net liters',x:105,a:'r'},{h:'Returns (L)',x:185,a:'r'},{h:'Return value',x:275,a:'r'},{h:'Sales',x:365,a:'r'},{h:'Payments',x:445,a:'r'},{h:'Shifts',x:CW-8,a:'r'}],
-    (r.dailyRowsV2||[]).length?r.dailyRowsV2:[{cells:['No confirmed DSR days','—','—','—','—','—','—','']}],24,false);
+    (r.dailyRowsV2||[]).length?r.dailyRowsV2:[{cells:['No confirmed DSR days','—','—','—','—','—','—']}],24,false);
   return d.finish(r.footer,'MSR - '+r.title);
 }
 
