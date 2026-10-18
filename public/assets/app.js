@@ -3075,12 +3075,11 @@ async function buildMonthlySalesReportPdfBlob(data){
   const monthLabel=v=>{const dt=new Date(String(v)+'-01T12:00:00');return Number.isNaN(dt.getTime())?String(v||'Monthly report'):dt.toLocaleDateString('en-US',{month:'long',year:'numeric'});};
   const daily=Array.isArray(data.daily)?data.daily:[],products=Array.isArray(data.products)?data.products:[],attendants=Array.isArray(data.attendants)?data.attendants:[],ranking=Array.isArray(data.monthRanking)?data.monthRanking:[];
   const GREEN=[21,128,61];
-  const dailyRows=daily.map(row=>[String(row.date||'—'),fmt(row.liters)+' L',money(row.sales),row.payments==null?'—':money(row.payments),String(num(row.shifts)),{t:'Confirmed',b:true,tone:GREEN}]);
+  const dailyRows=daily.map(row=>[String(row.date||'—'),fmt(row.liters)+' L',fmt(row.returnedLiters)+' L',money(row.returnedAmount),money(row.sales),row.payments==null?'—':money(row.payments),String(num(row.shifts)),{t:'Confirmed',b:true,tone:GREEN}]);
   if(!dailyRows.length)dailyRows.push(['—','—','—','—','—','No confirmed reports']);
   else if(daily.length>1){
     const payAll=daily.every(x=>x.payments!=null);
-    dailyRows.push([{t:'Month total',b:true},{t:fmt(daily.reduce((n,x)=>n+num(x.liters),0))+' L',b:true},{t:money(daily.reduce((n,x)=>n+num(x.sales),0)),b:true},
-      {t:payAll?money(daily.reduce((n,x)=>n+num(x.payments),0)):'—',b:true},{t:String(daily.reduce((n,x)=>n+num(x.shifts),0)),b:true},'']);
+    dailyRows.push([{t:'Month total',b:true},{t:fmt(daily.reduce((n,x)=>n+num(x.liters),0))+' L',b:true},{t:fmt(daily.reduce((n,x)=>n+num(x.returnedLiters),0))+' L',b:true},{t:money(daily.reduce((n,x)=>n+num(x.returnedAmount),0)),b:true},{t:money(daily.reduce((n,x)=>n+num(x.sales),0)),b:true},{t:payAll?money(daily.reduce((n,x)=>n+num(x.payments),0)):'—',b:true},{t:String(daily.reduce((n,x)=>n+num(x.shifts),0)),b:true},'']);
   }
   const productRows=products.length?products.map((p,i)=>[p.code||'Product code unavailable',fmt(p.liters)+' L',money(p.sales),num(p.sharePct).toFixed(1)+'%',money(num(p.liters)?num(p.sales)/num(p.liters):0),String(i+1)])
     :[['No product totals available','—','—','—','—','—']];
@@ -3092,7 +3091,8 @@ async function buildMonthlySalesReportPdfBlob(data){
     title:monthLabel(data.month),statusLabel:'Generated',footer:'Monthly sales report  \u00b7  '+monthLabel(data.month),
     key:[
       {label:'Calculated sales',value:money(s.totalSales),tone:'good'},
-      {label:'Fuel sold',value:fmt(s.totalLiters)+' L'},
+      {label:'Net fuel sold',value:fmt(s.totalLiters)+' L'},
+      {label:'Returned fuel',value:fmt(s.totalReturnedLiters)+' L · '+money(s.totalReturnedAmount)},
       {label:'Confirmed days',value:String(num(s.confirmedDays)),size:16},
       {label:'Confirmed shifts',value:fmt(s.totalShifts),size:16},
       {label:'Entered payments',value:s.enteredPayments==null?'Incomplete':money(s.enteredPayments),tone:s.enteredPayments==null?'warn':null},
