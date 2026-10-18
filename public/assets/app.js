@@ -3076,7 +3076,7 @@ async function buildMonthlySalesReportPdfBlob(data){
   const daily=Array.isArray(data.daily)?data.daily:[],products=Array.isArray(data.products)?data.products:[],attendants=Array.isArray(data.attendants)?data.attendants:[],ranking=Array.isArray(data.monthRanking)?data.monthRanking:[];
   const GREEN=[21,128,61];
   const dailyRows=daily.map(row=>[String(row.date||'—'),fmt(row.liters)+' L',fmt(row.returnedLiters)+' L',money(row.returnedAmount),money(row.sales),row.payments==null?'—':money(row.payments),String(num(row.shifts)),{t:'Confirmed',b:true,tone:GREEN}]);
-  if(!dailyRows.length)dailyRows.push(['—','—','—','—','—','No confirmed reports']);
+  if(!dailyRows.length)dailyRows.push(['—','—','—','—','—','—','No confirmed reports']);
   else if(daily.length>1){
     const payAll=daily.every(x=>x.payments!=null);
     dailyRows.push([{t:'Month total',b:true},{t:fmt(daily.reduce((n,x)=>n+num(x.liters),0))+' L',b:true},{t:fmt(daily.reduce((n,x)=>n+num(x.returnedLiters),0))+' L',b:true},{t:money(daily.reduce((n,x)=>n+num(x.returnedAmount),0)),b:true},{t:money(daily.reduce((n,x)=>n+num(x.sales),0)),b:true},{t:payAll?money(daily.reduce((n,x)=>n+num(x.payments),0)):'—',b:true},{t:String(daily.reduce((n,x)=>n+num(x.shifts),0)),b:true},'']);
@@ -3521,8 +3521,8 @@ function createMsrReportPdf(r){
   }
   d.y=top+h+18;
   // ---- daily table ----
-  d.table('Daily sales breakdown',[
-    {h:'Date',x:8,max:120},{h:'Fuel sold',x:150,a:'r'},{h:'Sales',x:270,a:'r'},{h:'Payments',x:380,a:'r'},{h:'Shifts',x:440,a:'r'},{h:'Status',x:CW-8,a:'r',b:true}],
+  d.table('Daily sales breakdown',[ 
+    {h:'Date',x:8,max:90},{h:'Net liters',x:112,a:'r'},{h:'Returns (L)',x:195,a:'r'},{h:'Return value',x:278,a:'r'},{h:'Sales',x:355,a:'r'},{h:'Payments',x:425,a:'r'},{h:'Shifts',x:CW-8,a:'r',b:true}],
     r.dailyRows,{hdrGap:22,hdrH:20,hdrBase:13.2,minH:20,rowPad:8.5,baseOff:13.8,after:16});
   // ---- product table ----
   d.table('Product performance',[
