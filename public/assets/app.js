@@ -3135,33 +3135,55 @@ function createDsrReportPdf(r){
   const cw=(CW-28-LBL)/nozzleCount;
   let k0=0;disps.forEach((dp,j)=>{dp.x0=M+14+LBL+k0*cw;dp.span=(dp.nozzles.length||1)*cw;dp.nozzles.forEach((nz,i)=>cols.push({x:M+14+LBL+(k0+i)*cw,w:cw,n:nz,nl:'N-'+(i+1)}));k0+=dp.nozzles.length||1;});
   const dpTop=d.y;
-  // Dispensers are table group rows; no separate total-liter summary cards.
+  // Square-cornered, fully ruled table with a bold vertical divider for each dispenser.
   const dpH=14+30+24+24+4*26+15;
   card(M,dpTop,CW,dpH);
   section(M+14,dpTop+8,'Dispenser & nozzle performance');
   let py=dpTop+34;
-  d.box(M+14,py,CW-28,24,SOFT,4);
-  d.text('DISPENSER',M+22,py+16,8.5,true,GREY);
+  const tableX=M+14,tableR=R-14,labelR=M+14+LBL;
+  d.box(tableX,py,CW-28,24,SOFT,0);
+  d.text('DISPENSER',M+22,py+16,8.5,true,INK);
   disps.forEach(dp=>{
-    d.box(dp.x0+2,py+2,Math.max(0,dp.span-4),20,prodTint(dp.product),4);
+    d.box(dp.x0,py,dp.span,24,prodTint(dp.product),0);
     const lf=dp.span<90?7:8.5;
     d.text(d.fit(dp.label,lf,true,dp.span-8),dp.x0+dp.span/2,py+15,lf,true,INK,'c');
   });
+  d.hline(tableX,tableR,py,CARDB,0.9);
+  d.hline(tableX,tableR,py+24,CARDB,0.9);
+  d.vline(tableX,py,py+24,CARDB,0.9);
+  d.vline(tableR,py,py+24,CARDB,0.9);
+  d.vline(labelR,py,py+24,CARDB,1.8);
+  disps.forEach(dp=>d.vline(dp.x0,py,py+24,CARDB,1.8));
+  d.vline(disps.length?disps[disps.length-1].x0+disps[disps.length-1].span:tableR,py,py+24,CARDB,1.8);
   py+=24;
-  d.box(M+14,py,CW-28,24,NAVYC,4);
+  d.box(tableX,py,CW-28,24,NAVYC,0);
   d.text('NOZZLE',M+22,py+16,8.5,true,WHITE);
   cols.forEach(c=>d.text(c.nl,c.x+c.w/2,py+16,8.5,true,WHITE,'c'));
+  d.hline(tableX,tableR,py,CARDB,0.9);
+  d.hline(tableX,tableR,py+24,CARDB,0.9);
+  d.vline(tableX,py,py+24,CARDB,0.9);
+  d.vline(tableR,py,py+24,CARDB,0.9);
+  d.vline(labelR,py,py+24,CARDB,1.8);
+  disps.forEach(dp=>d.vline(dp.x0,py,py+24,CARDB,1.8));
+  d.vline(disps.length?disps[disps.length-1].x0+disps[disps.length-1].span:tableR,py,py+24,CARDB,1.8);
   py+=24;
   const rowsDef=[['OPENING','opening'],['CLOSING','closing'],['SOLD','sold'],['RECON.','recon']];
   const maxSold=Math.max(1,...cols.map(c=>num(c.n.sold)));
   rowsDef.forEach(([lab,key],ri)=>{const y=py+ri*26;
+    d.box(tableX,y,CW-28,26,WHITE,0);
     d.text(lab,M+22,y+16,8.5,true,GREY);
     cols.forEach(c=>{const cx=c.x+c.w/2;
       if(key==='vol'){const bw2=Math.min(c.w-14,58),frac=num(c.n.sold)/maxSold,col=(/mgr/i.test(String(c.n.product||''))||c.col==='mgr')?MGRC:AGOC;
         d.box(cx-bw2/2,y+8,bw2,5,TRACK,2.5);d.box(cx-bw2/2,y+8,Math.max(4,bw2*frac),5,c.col==='mgr'?MGRC:AGOC,2.5);}
-      else if(key==='recon'){const pw=Math.min(c.w-16,44);d.box(cx-pw/2,y+4,pw,15,LGREEN,7.5);d.text(String(c.n.recon),cx,y+15.5,8.5,true,GREEN,'c');}
+      else if(key==='recon'){const pw=Math.min(c.w-16,44);d.box(cx-pw/2,y+4,pw,15,LGREEN,0);d.text(String(c.n.recon),cx,y+15.5,8.5,true,GREEN,'c');}
       else d.text(d.fit(String(c.n[key]),9,key==='sold',c.w-6),cx,y+16,9,key==='sold',INK,'c');});
-    if(ri<rowsDef.length-1)d.hline(M+14,R-14,y+25,CARDB,.6);});
+    d.hline(tableX,tableR,y+26,CARDB,0.9);
+    d.vline(tableX,y,y+26,CARDB,0.9);
+    d.vline(tableR,y,y+26,CARDB,0.9);
+    d.vline(labelR,y,y+26,CARDB,1.8);
+    disps.forEach(dp=>d.vline(dp.x0,y,y+26,CARDB,1.8));
+    d.vline(disps.length?disps[disps.length-1].x0+disps[disps.length-1].span:tableR,y,y+26,CARDB,1.8);
+  });
   d.y=dpTop+dpH+9;
   // TANK RECONCILIATION
   const tanks=r.tanks||[];const TK=72;const tkH=14+26+tanks.length*TK+4;
