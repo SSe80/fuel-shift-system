@@ -1526,4 +1526,20 @@ if (window.DriveQueue) DriveQueue.start({
   window.addEventListener("appinstalled",function(){if(button)button.remove();button=null;promptEvent=null;});
 })();
 </script>
+<style id="dsr-a4-print">
+/* DSR detail page: print on A4. Shows the report slide at page width, hides the controls. */
+@page { size: A4 portrait; margin: 10mm; }
+@media print {
+  html, body { background: #fff !important; width: 190mm !important; max-width: 190mm !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+  body * { box-shadow: none !important; }
+  .dsr-slide-dots, .daily-detail-download, .toast, button, .eyebrow, .daily-detail-head button,
+  header, nav, .topbar, .sidebar, .admin-nav, .dsr-detail-nav { display: none !important; }
+  .wrap, .dsr-detail-wrap, main { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  .dsr-report-slider { display: block !important; transform: none !important; overflow: visible !important; height: auto !important; min-height: 0 !important; width: 100% !important; }
+  .dsr-report-slide { display: none !important; flex: none !important; width: 100% !important; min-width: 100% !important; padding: 0 !important; }
+  .dsr-report-slide.active, .dsr-report-slide:has(.active) { display: block !important; }
+  .dsr-report-slide-card { height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; padding: 0 !important; border: 0 !important; }
+  .daily-section { break-inside: avoid; page-break-inside: avoid; }
+}
+</style>
 </body></html>
