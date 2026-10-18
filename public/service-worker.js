@@ -1,4 +1,4 @@
-const CACHE_NAME = "fuel-shift-shell-v16";
+const CACHE_NAME = "fuel-shift-shell-v17";
 const SHELL = [
   "/admin-login.html",
   "/admin-logistics.html",
