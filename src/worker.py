@@ -4581,6 +4581,32 @@ def daily_report(report_date_override=None):
             row["liters"]+=float(x.get("total_sales_liters") or 0)
             row["amount"]+=float(x.get("total_sales_amount") or 0)
 
+    # Deduct returns from product-level DSR sales totals while preserving the
+    # gross nozzle/meter ledger for physical reconciliation.
+    returned_by_product={}
+    shift_product_by_id={}
+    for sh in day_shifts:
+        nozzle=dispenser_map.get(str(sh.get("nozzle_id") or "")) or {}
+        tank=tank_map.get(str(nozzle.get("tank_id") or "")) or {}
+        shift_product_by_id[str(sh.get("id") or "")]=nozzle.get("product") or tank.get("product") or "Unknown"
+    for h in handover_rows:
+        sid=str(h.get("shift_id") or "")
+        if sid not in handover_by_shift:
+            continue
+        returned_l=max(0.0,float(h.get("returned_liters") or 0))
+        returned_a=max(0.0,float(h.get("returned_amount") or 0))
+        if not returned_l and not returned_a:
+            continue
+        tank=tank_map.get(str(h.get("tank_id") or "")) or {}
+        product=tank.get("product") or shift_product_by_id.get(sid) or "Unknown"
+        row=returned_by_product.setdefault(product,{"liters":0.0,"amount":0.0})
+        row["liters"]+=returned_l
+        row["amount"]+=returned_a
+    for product,returned in returned_by_product.items():
+        row=by_product.setdefault(product,{"liters":0.0,"amount":0.0})
+        row["liters"]=max(0.0,float(row.get("liters") or 0)-returned["liters"])
+        row["amount"]=max(0.0,float(row.get("amount") or 0)-returned["amount"])
+
     # Sales methods come from the configured Admin Settings sale types
     # (for example Card, Cash, Transfer). Keep payment_method as a fallback
     # for older/direct sales records that have no configured sale type.
@@ -5557,6 +5583,14 @@ def daily_report(report_date_override=None):
             "by_type":sales_type_rows,
             "total_liters":station_l,
             "total_amount":station_a
+        },
+        "dsr_return_summary":{
+            "total_returned_liters":sum(float(x.get("returned_liters") or 0) for x in shift_summary),
+            "total_returned_amount":sum(float(x.get("returned_amount") or 0) for x in shift_summary),
+            "by_product":[
+                {"product":product,"returned_liters":float(values.get("liters") or 0),"returned_amount":float(values.get("amount") or 0)}
+                for product,values in sorted(returned_by_product.items())
+            ]
         },
         "dsr_performance":dsr_performance,
         "total_purchase_discharged_liters":total_p,
