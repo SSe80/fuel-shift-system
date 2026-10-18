@@ -4453,7 +4453,7 @@ def daily_report(report_date_override=None):
     })
     handover_status,handover_rows=sb("shift_takeovers",params={
         "shift_id":shift_id_filter,
-        "select":"id,shift_id,from_employee_id,to_employee_id,shift_started_at,shift_ended_at,total_sales_liters,total_sales_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_sales_liters,tank_variance_liters,tank_variance_pct,nozzle_sales_liters,nozzle_opening_readings,nozzle_closing_readings,sales_status,sales_submitted_at,sales_confirmed_at",
+        "select":"id,shift_id,from_employee_id,to_employee_id,shift_started_at,shift_ended_at,total_sales_liters,total_sales_amount,returned_liters,returned_amount,tank_id,tank_opening_liters,tank_closing_liters,tank_sales_liters,tank_variance_liters,tank_variance_pct,nozzle_sales_liters,nozzle_opening_readings,nozzle_closing_readings,sales_status,sales_submitted_at,sales_confirmed_at",
         "order":"shift_ended_at.asc","limit":"5000"
     })
     nozzle_reading_status,nozzle_reading_rows=sb("shift_nozzle_readings",params={
@@ -4671,9 +4671,17 @@ def daily_report(report_date_override=None):
         dispenser=dispenser_map.get(str(x.get("nozzle_id"))) or {}
         tank=tank_map.get(str(dispenser.get("tank_id") or h.get("tank_id"))) or {}
         direct_l=sum(float(v.get("quantity_liters") or 0) for v in sales_by_shift.get(sid,[]) if float(v.get("quantity_liters") or 0)>0)
-        shift_l=float(h.get("total_sales_liters") or direct_l)
-        calculated_shift_a=float(h.get("total_sales_amount") or sum(float(v.get("amount") or 0) for v in sales_by_shift.get(sid,[])))
+        gross_shift_l=float(h.get("total_sales_liters") or direct_l)
+        gross_calculated_shift_a=float(h.get("total_sales_amount") or sum(float(v.get("amount") or 0) for v in sales_by_shift.get(sid,[])))
+        returned_liters=max(0.0,float(h.get("returned_liters") or 0))
+        returned_amount=max(0.0,float(h.get("returned_amount") or 0))
+        # DSR sales are net of returned fuel/value. Meter and nozzle detail below
+        # intentionally remain gross physical dispensing for reconciliation.
+        shift_l=max(0.0,gross_shift_l-returned_liters)
+        calculated_shift_a=max(0.0,gross_calculated_shift_a-returned_amount)
         recorded_shift_a=payment_amount_by_shift.get(sid)
+        if recorded_shift_a is not None:
+            recorded_shift_a=max(0.0,float(recorded_shift_a)-returned_amount)
         # Entered payments are authoritative only when a dedicated payment-ledger
         # row exists. Never substitute calculated sales for missing payments.
         shift_a=float(recorded_shift_a) if recorded_shift_a is not None else None
@@ -4699,11 +4707,16 @@ def daily_report(report_date_override=None):
             "started_at":x.get("start_time"),
             "ended_at":x.get("end_time"),
             "sales_liters":shift_l,
+            "gross_sales_liters":gross_shift_l,
+            "returned_liters":returned_liters,
+            "returned_amount":returned_amount,
             "meter_delta_liters":shift_meter_delta if complete_meter_rows else None,
             "meter_difference_liters":(shift_l-shift_meter_delta) if complete_meter_rows else None,
             "meter_reconciliation_pct":((shift_l/shift_meter_delta)*100) if complete_meter_rows and shift_meter_delta else None,
             "meter_reconciliation_status":("reconciled" if shift_meter_reconciles else "variance") if complete_meter_rows else "boundary",
             "sales_amount":shift_a,
+            "gross_sales_amount":gross_calculated_shift_a,
+            "returned_amount":returned_amount,
             "calculated_sales_amount":calculated_shift_a,
             "sales_amount_difference":shift_a-calculated_shift_a if recorded_shift_a is not None else 0,
             "tank_opening_liters":float(h.get("tank_opening_liters") or x.get("opening_tank_liters") or 0),
