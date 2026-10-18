@@ -3232,15 +3232,15 @@ function createDsrReportPdf(r){
   const rows=r.stats||[],totals=rows.filter(x=>x.big),prodRows=rows.filter(x=>!x.big&&/^by product/i.test(String(x.label))),methRows=rows.filter(x=>!x.big&&/^by method/i.test(String(x.label)));
   const pctOf=v=>{const m=String(v).match(/([0-9.]+)%\s*$/);return m?parseFloat(m[1]):null;};
   const detailOf=v=>String(v).replace(/\s*\u00b7\s*[0-9.<]+%\s*$/,'');
-  const shH=14+30+Math.max(prodRows.length*39,methRows.length*29)+46+10;
+  const shH=14+30+Math.max(prodRows.length*43,methRows.length*29)+46+10;
   const shTop=d.y;card(M,shTop,CW,shH);section(M+14,shTop+8,'Sales statistics');
   const half=(CW-28-16)/2,LX=M+14,RX=M+14+half+16;
   d.text('BY PRODUCT',LX,shTop+40,8.5,true,GREY);d.text('BY METHOD',RX,shTop+40,8.5,true,GREY);
   let yy=shTop+52;
   prodRows.forEach(rw=>{const nm=String(rw.label).replace(/^by product\s*[\u00b7-]\s*/i,'');const pc=pctOf(rw.value)||0;const col=prodColor(nm);
     d.text(d.fit(nm,10.5,true,half*.6),LX,yy+12,10.5,true,INK);d.text(pc.toFixed(1)+'%',LX+half,yy+12,10.5,true,INK,'r');
-    d.text(d.fit(detailOf(rw.value),12,false,half),LX,yy+25,12,false,GREY);
-    d.box(LX,yy+30,half,5,TRACK,2.5);d.box(LX,yy+30,Math.max(3,half*pc/100),5,col,2.5);yy+=39;});
+    d.text(d.fit(detailOf(rw.value),12,false,half),LX,yy+28,12,false,GREY);
+    d.box(LX,yy+34,half,5,TRACK,2.5);d.box(LX,yy+34,Math.max(3,half*pc/100),5,col,2.5);yy+=43;});
   let yr=shTop+52;
   methRows.forEach(rw=>{const nm=String(rw.label).replace(/^by method\s*[\u00b7-]\s*/i,'');const pc=pctOf(rw.value);const amt=detailOf(rw.value);
     d.text(d.fit(nm,10,true,half*.45),RX,yr+12,10,true,INK);d.text(d.fit(amt,11.5,false,half*.55),RX+half-44,yr+12,11.5,false,GREY,'r');
@@ -3248,7 +3248,7 @@ function createDsrReportPdf(r){
     d.box(RX,yr+19,half,5,TRACK,2.5);if(pc!=null)d.box(RX,yr+19,Math.max(3,half*pc/100),5,BLUE,2.5);yr+=29;});
   const sy=shTop+shH-50;
   if(totals.length){d.box(M+14,sy,CW-28,44,SOFT,7);const th=(CW-28)/totals.length;
-    totals.forEach((t,i)=>{const x=M+14+i*th+12;d.text(t.label.toUpperCase(),x,sy+16,9,true,BLUE);d.text(d.fit(t.value,17.5,true,th-24),x,sy+37,17.5,true,BLUE);});}
+    totals.forEach((t,i)=>{const x=M+14+i*th+12;d.text(t.label.toUpperCase(),x,sy+15,8.5,true,BLUE);d.text(d.fit(t.value,16,true,th-24),x,sy+36,16,true,BLUE);});}
   d.y=shTop+shH+10;
   // reconciliation strip
   const ov=r.overview||[];const pick=re=>{const o=ov.find(x=>re.test(String(x.label)));return o?o.value:null;};
