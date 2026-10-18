@@ -1410,59 +1410,267 @@ body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-nozzles{
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
-<script src="assets/xlsx-export.js?v=20261010-x1"></script><script src="assets/app.js?v=dsr-sales-statistics-spacing-20261018"></script>
+<script src="assets/xlsx-export.js?v=20261018-dsr-pdf-match-x2"></script><script src="assets/app.js?v=dsr-sales-statistics-spacing-20261018"></script>
 <script>
 function downloadDailyReportExcel(){
   const report=window.currentDailyReportData;
   if(!report){if(typeof toast==='function')toast('DSR data is still loading. Please try again.');return;}
-  const date=String(window.currentDailyReportDate||report.date||document.getElementById('report-date')?.value||new Date().toISOString().slice(0,10));
-  const currency=window.stationCurrency||'ETB';
+
+  const reportDate=String(window.currentDailyReportDate||document.getElementById('report-date')?.value||report.date||new Date().toISOString().slice(0,10));
+  const currency=String(window.stationCurrency||'ETB').trim()||'ETB';
   const productInfo=window.currentDsrProductInfo||{};
-  const PRODUCT_KEYS=['product','product_name','fuel_product','product_code_name'];
-  const humanize=k=>String(k).replace(/[._]+/g,' ').replace(/\s+/g,' ').trim().replace(/^\w/,c=>c.toUpperCase());
-  const infoFor=v=>{const k=String(v??'').trim().toLowerCase();if(!k)return null;return productInfo[k]||Object.values(productInfo).find(p=>String(p.code||'').toLowerCase()===k)||null;};
-  const codeFor=v=>{const i=infoFor(v);return i?(i.code||String(v)):String(v??'');};
-  const flatten=(obj,prefix='')=>{const out={};if(!obj||typeof obj!=='object'||Array.isArray(obj))return {value:obj};Object.entries(obj).forEach(([key,value])=>{const name=prefix?prefix+'.'+key:key;if(value&&typeof value==='object'&&!Array.isArray(value))Object.assign(out,flatten(value,name));else if(Array.isArray(value))out[name]=JSON.stringify(value);else out[name]=value;});return out;};
-  const cellValue=v=>{if(v===null||v===undefined)return '';if(typeof v==='boolean')return v?'Yes':'No';if(typeof v==='object')return JSON.stringify(v);return v;};
-  let rows=[];const sheets=[];
-  const push=name=>{sheets.push({name,rows});rows=[];};
-  const title=t=>rows.push({kind:'title',cells:[t]});
+  const perf=report.dsr_performance||{};
+  const tanks=Array.isArray(report.dsr_tank_details)?report.dsr_tank_details:[];
+  const dispensers=Array.isArray(report.dsr_dispenser_details)?report.dsr_dispenser_details:[];
+  const sales=report.dsr_sales_summary||{};
+  const products=Array.isArray(sales.by_product)?sales.by_product:[];
+  const methods=Array.isArray(sales.by_type)?sales.by_type:[];
+  const num=v=>Number.isFinite(Number(v))?Number(v):0;
+  const numberOrDash=v=>v==null||v===''||!Number.isFinite(Number(v))?'-':Number(v);
+  const percentOrDash=v=>v==null||v===''||!Number.isFinite(Number(v))?'-':Number(v);
+  const infoFor=v=>{
+    const key=String(v??'').trim().toLowerCase();
+    if(!key)return null;
+    return productInfo[key]||Object.values(productInfo).find(p=>
+      String(p.code||'').trim().toLowerCase()===key||
+      String(p.name||'').trim().toLowerCase()===key
+    )||null;
+  };
+  const productFor=v=>{
+    const info=infoFor(v);
+    return info||{code:String(v||'Unknown'),name:String(v||'Unknown')};
+  };
+  const productCode=v=>{
+    const p=productFor(v);
+    return p.code||p.name||String(v||'Unknown');
+  };
+  const productTint=v=>/mgr/i.test(String(v||''))?'FEE2E2':/ago/i.test(String(v||''))?'FEF9C3':'F1F5F9';
+  const moneyFmt='"'+currency.replace(/"/g,'""')+'" #,##0.00;[Red]-"'+currency.replace(/"/g,'""')+'" #,##0.00';
+  const litersFmt='#,##0.00" L"';
+  const signedLitersFmt='+#,##0.00" L";-#,##0.00" L";0.00" L"';
+  const signedLitersPlusFmt='+#,##0.00" L";-#,##0.00" L";0.00" L"';
+  const percentFmt='0.0"%"';
+  const readingFmt='#,##0.##';
+  const d= new Date(String(reportDate||'')+'T00:00:00');
+  const dateLabel=Number.isNaN(d.getTime())?String(reportDate||'Report'):d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const ready=Boolean(report.report_ready);
+
+  // Flatten the PDF's product -> dispenser -> nozzle hierarchy without changing its order.
+  const dispGroups=[];
+  const productGroups=new Map();
+  dispensers.forEach(disp=>(Array.isArray(disp.nozzles)?disp.nozzles:[]).forEach(n=>{
+    const pc=productFor(n.product);
+    const productLabel=pc.code||pc.name||n.product||'Unknown';
+    const productKey=String(productLabel).toLowerCase();
+    if(!productGroups.has(productKey)){
+      const pg={product:productLabel,dispensers:new Map()};
+      productGroups.set(productKey,pg);dispGroups.push(pg);
+    }
+    const pg=productGroups.get(productKey);
+    const dispenserLabel=disp.dispenser||'Dispenser';
+    if(!pg.dispensers.has(dispenserLabel))pg.dispensers.set(dispenserLabel,[]);
+    pg.dispensers.get(dispenserLabel).push(n);
+  }));
+  if(!dispGroups.length){
+    dispGroups.push({product:'No dispenser data',dispensers:new Map([['',[{
+      opening_reading:null,closing_reading:null,sales_liters:0,meter_reconciliation_pct:null
+    }]]])});
+  }
+
+  const nozzleCols=[],dispenserSpans=[];
+  dispGroups.forEach(pg=>pg.dispensers.forEach((nozzles,label)=>{
+    const startIndex=nozzleCols.length;
+    nozzles.forEach((n,i)=>nozzleCols.push({product:pg.product,dispenser:label,n:n,nl:'N-'+(i+1)}));
+    dispenserSpans.push({product:pg.product,label:label,startIndex:startIndex,endIndex:nozzleCols.length-1});
+  }));
+  const unitCount=Math.max(10,nozzleCols.length);
+  const baseSpan=Math.floor(unitCount/nozzleCols.length);
+  const extraSpan=unitCount%nozzleCols.length;
+  let unitCursor=0;
+  nozzleCols.forEach((c,i)=>{
+    const span=baseSpan+(i<extraSpan?1:0);
+    c.startCol=unitCursor+2;
+    c.endCol=c.startCol+span-1;
+    unitCursor+=span;
+  });
+  dispenserSpans.forEach(dp=>{
+    dp.startCol=nozzleCols[dp.startIndex].startCol;
+    dp.endCol=nozzleCols[dp.endIndex].endCol;
+  });
+  const colCount=Math.max(11,unitCount+1);
+  const rows=[],merges=[];
+  const colName=n=>{
+    let out='';
+    while(n>0){const r=(n-1)%26;out=String.fromCharCode(65+r)+out;n=Math.floor((n-1)/26);}
+    return out;
+  };
+  const padCells=cells=>{
+    const out=Array.from({length:colCount},(_,i)=>i<cells.length?(cells[i]===undefined?'':cells[i]):'');
+    return out;
+  };
+  const addRow=(kind,cells,height)=>{
+    const r={kind:kind,cells:padCells(cells)};
+    if(height)r.height=height;
+    if(/^(head|groupHead|data|total)$/.test(kind))r.border='light';
+    rows.push(r);
+    return rows.length;
+  };
+  const addFullWidthMerge=rowNumber=>merges.push('A'+rowNumber+':'+colName(colCount)+rowNumber);
+  const addHorizontalMerge=(startCol,endCol,rowNumber)=>{
+    if(endCol>startCol)merges.push(colName(startCol)+rowNumber+':'+colName(endCol)+rowNumber);
+  };
   const blank=()=>rows.push({kind:'blank',cells:[]});
-  // Key / value block (summary, performance, completion)
-  const kv=(t,obj)=>{title(t);rows.push({kind:'head',cells:['Item','Value']});Object.entries(flatten(obj)).forEach(([k,v])=>rows.push({kind:'data',cells:[humanize(k),cellValue(v)]}));blank();};
-  // Table block: one row per record
-  const table=(t,list)=>{title(t);const arr=(Array.isArray(list)?list:[]).filter(x=>x!==null&&x!==undefined);
-    if(!arr.length){rows.push({kind:'note',cells:['No data']});blank();return;}
-    const objs=arr.map(x=>flatten(x));
-    const headers=[...new Set(objs.flatMap(o=>Object.keys(o)))];
-    rows.push({kind:'head',cells:headers.map(humanize)});
-    objs.forEach(o=>{
-      const cells=headers.map(h=>{let v=cellValue(o[h]);if(PRODUCT_KEYS.includes(h.toLowerCase())&&v!=='')v=codeFor(v);return v;});
-      rows.push({kind:'data',cells});
-    });
-    blank();};
-  const summary=report.summary||{};
-  const performance=report.dsr_performance||{};
-  // Sheet 1: summary
-  title('DAILY SALES REPORT (DSR)');
-  rows.push({kind:'data',cells:['Report date',date]});
-  rows.push({kind:'data',cells:['Status',report.report_ready?'Confirmed':'Not confirmed']});
-  rows.push({kind:'data',cells:['Currency',currency]});
+  const section=label=>{
+    const rowNumber=addRow('section',[label],24);
+    addFullWidthMerge(rowNumber);
+  };
+  const styledEmptyCells=()=>Array.from({length:colCount},()=>({v:'',border:'light'}));
+
+  // Report heading and status, using the PDF's navy header and compact status row.
+  let headingRow=addRow('bannerKicker',['DAILY SALES REPORT · STATION DAILY RECONCILIATION'],20);
+  addFullWidthMerge(headingRow);
+  headingRow=addRow('banner',['Daily Sales Report (DSR) · '+dateLabel],34);
+  addFullWidthMerge(headingRow);
+  addRow('meta',[
+    {v:'REPORT DATE',bold:true,color:'64748B'},dateLabel,'',
+    {v:'REPORT STATUS',bold:true,color:'64748B'},ready?'CONFIRMED':'PENDING','',
+    {v:'CURRENCY',bold:true,color:'64748B'},currency
+  ],22);
   blank();
-  kv('REPORT SUMMARY',{...summary,...performance});
-  if(report.completion)kv('REPORT COMPLETION',report.completion);
-  // Sheet 2: dispensers
-  table('DISPENSER DETAILS',report.dsr_dispenser_details||report.dispenser_summary||[]);
-  // Sheet 3: tanks
-  table('TANK DETAILS',report.dsr_tank_details||report.tank_details||[]);
-  // Sheet 4: shifts
-  table('SHIFT DETAILS',report.shift_summary||[]);
-  // Sheet 5: sales
-  const sales=report.dsr_sales_summary||report.sales_summary||{};
-  table('SALES BY PRODUCT',sales.by_product||[]);
-  table('SALES BY TYPE',sales.by_type||[]);
-  push('DSR');
-  XlsxExport.download(XlsxExport.build(sheets),'DSR-'+date+'.xlsx');
+
+  // Dispenser and nozzle matrix: grouped product colours, dispenser spans and nozzle labels.
+  section('DISPENSER & NOZZLE PERFORMANCE');
+  let matrixCells=styledEmptyCells();
+  matrixCells[0]={v:'DISPENSER',bold:true,color:'0F172A',fill:'F1F5F9',align:'left',border:'light'};
+  dispenserSpans.forEach(dp=>{
+    const fill=productTint(dp.product);
+    for(let col=dp.startCol;col<=dp.endCol;col++){
+      matrixCells[col-1]={v:col===dp.startCol?(dp.label||'—'):'',fill:fill,bold:true,align:'center',color:'0F172A',border:'light'};
+    }
+  });
+  let matrixRow=addRow('groupHead',matrixCells,24);
+  dispenserSpans.forEach(dp=>addHorizontalMerge(dp.startCol,dp.endCol,matrixRow));
+
+  matrixCells=styledEmptyCells();
+  matrixCells[0]={v:'NOZZLE',bold:true,color:'FFFFFF',fill:'14213D',align:'left',border:'light'};
+  nozzleCols.forEach(c=>{
+    for(let col=c.startCol;col<=c.endCol;col++){
+      matrixCells[col-1]={v:col===c.startCol?c.nl:'',fill:'14213D',bold:true,align:'center',color:'FFFFFF',border:'light'};
+    }
+  });
+  matrixRow=addRow('head',matrixCells,22);
+  nozzleCols.forEach(c=>addHorizontalMerge(c.startCol,c.endCol,matrixRow));
+
+  const matrixValueRow=(label,getValue,fmt,style,height)=>{
+    const cells=styledEmptyCells();
+    cells[0]={v:label,bold:true,color:'64748B',fill:'F8FAFC',border:'light'};
+    nozzleCols.forEach(c=>{
+      const v=getValue(c.n);
+      for(let col=c.startCol;col<=c.endCol;col++){
+        cells[col-1]=col===c.startCol?
+          Object.assign({v:v,fmt:fmt,align:'center',border:'light'},style||{}):
+          {v:'',border:'light'};
+      }
+    });
+    const rowNumber=addRow('data',cells,height||24);
+    nozzleCols.forEach(c=>addHorizontalMerge(c.startCol,c.endCol,rowNumber));
+  };
+  matrixValueRow('OPENING',n=>numberOrDash(n.opening_reading),readingFmt,{color:'0F172A'},24);
+  matrixValueRow('CLOSING',n=>numberOrDash(n.closing_reading),readingFmt,{color:'0F172A'},24);
+  matrixValueRow('SOLD',n=>num(n.sales_liters),litersFmt,{bold:true,sz:12,color:'0F172A'},26);
+  matrixValueRow('RECON.',n=>percentOrDash(n.meter_reconciliation_pct),percentFmt,{bold:true,fill:'DCFCE7',color:'16A34A'},24);
+  blank();
+
+  // Tank reconciliation: the same five stock figures and four reconciliation measures shown in the PDF.
+  section('TANK RECONCILIATION');
+  addRow('head',[
+    'TANK','PRODUCT','OPENING STOCK (L)','PURCHASES (+L)','NOZZLE SOLD (L)',
+    'EXPECTED CLOSING (L)','RECORDED CLOSING (L)','ADJUSTMENT (L)','CONTINUITY (L)',
+    'DIFFERENCE (L)','VARIANCE (%)'
+  ],28);
+  if(!tanks.length){
+    addRow('note',['No tank reconciliation data'],20);
+  }else{
+    tanks.forEach(t=>{
+      const product=productCode(t.product);
+      const variance=t.variance_pct==null?'-':numberOrDash(t.variance_pct);
+      const varianceNum=num(t.variance_pct);
+      const varFill=varianceNum<=1?'DCFCE7':varianceNum<=3?'FEF3C7':'FEE2E2';
+      const varColor=varianceNum<=1?'166534':varianceNum<=3?'C2410C':'B91C1C';
+      const cells=styledEmptyCells();
+      const set=(i,v,extra)=>cells[i]=Object.assign({v:v,border:'light'},extra||{});
+      set(0,t.tank||'Tank',{bold:true,color:'0F172A'});
+      set(1,product,{bold:true,fill:productTint(product),color:'0F172A'});
+      set(2,num(t.opening_stock_liters),{fmt:litersFmt,align:'right'});
+      set(3,num(t.purchase_discharged_liters),{fmt:signedLitersPlusFmt,align:'right'});
+      set(4,num(t.nozzle_sales_liters),{fmt:litersFmt,align:'right'});
+      set(5,num(t.expected_closing_liters),{fmt:litersFmt,align:'right'});
+      set(6,num(t.closing_stock_liters),{fmt:litersFmt,align:'right',bold:true,color:'2563EB'});
+      set(7,num(t.documented_stock_adjustment_liters),{fmt:signedLitersFmt,align:'right'});
+      set(8,num(t.opening_adjustment_liters),{fmt:signedLitersFmt,align:'right'});
+      set(9,num(t.difference_liters),{fmt:signedLitersFmt,align:'right',fill:'FEF3C7',color:'C2410C',bold:true});
+      set(10,variance,{fmt:percentFmt,align:'right',fill:varFill,color:varColor,bold:true});
+      addRow('data',cells,25);
+    });
+  }
+  blank();
+
+  // PDF-equivalent sales statistics, side by side by product and by payment method.
+  section('SALES STATISTICS');
+  const headings=styledEmptyCells();
+  headings[0]={v:'BY PRODUCT',bold:true,color:'1D4ED8',fill:'EFF6FF',border:'light'};
+  headings[5]={v:'BY METHOD',bold:true,color:'1D4ED8',fill:'EFF6FF',border:'light'};
+  const statHeadRow=addRow('subhead',headings,22);
+  // Keep the two subsection labels separate while preserving the paired layout.
+  addHorizontalMerge(1,4,statHeadRow);
+  addHorizontalMerge(6,8,statHeadRow);
+  addRow('head',[
+    'PRODUCT','FUEL SOLD (L)','SALES VALUE ('+currency+')','SHARE (%)','',
+    'PAYMENT METHOD','SALES VALUE ('+currency+')','SHARE (%)'
+  ],28);
+
+  const statCount=Math.max(products.length,methods.length,1);
+  for(let i=0;i<statCount;i++){
+    const cells=styledEmptyCells();
+    const p=products[i],m=methods[i];
+    if(p){
+      const label=productCode(p.product);
+      cells[0]={v:label,bold:true,fill:productTint(label),color:'0F172A',border:'light'};
+      cells[1]={v:num(p.liters),fmt:litersFmt,align:'right',border:'light'};
+      cells[2]={v:num(p.amount),fmt:moneyFmt,align:'right',border:'light'};
+      cells[3]={v:percentOrDash(p.percentage),fmt:percentFmt,align:'right',border:'light'};
+    }else if(i===0)cells[0]={v:'No product sales recorded',color:'64748B',border:'light'};
+    if(m){
+      cells[5]={v:m.type||'Method',border:'light'};
+      cells[6]={v:num(m.amount),fmt:moneyFmt,align:'right',border:'light'};
+      cells[7]={v:percentOrDash(m.percentage),fmt:percentFmt,align:'right',border:'light'};
+    }else if(i===0)cells[5]={v:'No payment-method sales recorded',color:'64748B',border:'light'};
+    addRow('data',cells,25);
+  }
+  const totalAmount=num(sales.total_amount??perf.total_sales_amount);
+  const totalLiters=num(sales.total_liters??perf.total_sales_liters);
+  const totalCells=styledEmptyCells();
+  totalCells[0]={v:'SALES TOTAL',bold:true,color:'1D4ED8',border:'light'};
+  totalCells[2]={v:totalAmount,fmt:moneyFmt,bold:true,color:'1D4ED8',border:'light'};
+  totalCells[5]={v:'LITERS TOTAL',bold:true,color:'1D4ED8',border:'light'};
+  totalCells[6]={v:totalLiters,fmt:litersFmt,bold:true,color:'1D4ED8',border:'light'};
+  addRow('total',totalCells,30);
+  blank();
+
+  // Match the PDF's reconciliation strip: payment surplus is green, shortfall is red.
+  section('RECONCILIATION');
+  const difference=perf.financial_difference==null?num(perf.sales_amount_difference):num(perf.financial_difference);
+  const matched=Math.abs(difference)<0.005;
+  const excess=difference>=0.005;
+  const amount=Math.abs(difference).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const statement=matched?
+    'Difference from calculated sales: '+currency+' 0.00 — payments match':
+    'Difference from calculated sales: '+currency+' '+amount+(excess?' above calculated sales':' below calculated sales');
+  const reconcileRow=addRow(matched||excess?'reconGood':'reconBad',[statement],30);
+  addFullWidthMerge(reconcileRow);
+
+  const fileDate=String(reportDate||'report').replace(/[^A-Za-z0-9_-]/g,'_');
+  XlsxExport.download(XlsxExport.build([{name:'DSR',rows:rows,merges:merges}]),'DSR-'+fileDate+'.xlsx');
   if(typeof toast==='function')toast('DSR Excel exported.');
 }
 (function(){
