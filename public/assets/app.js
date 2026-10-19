@@ -962,6 +962,31 @@ async function userDashboard(){
     if(panel)return panel;
     const heading=document.querySelector('body.attendant-dashboard-page .page-heading');
     if(!heading)return null;
+    let pushControl=document.getElementById('incoming-handover-push-control');
+    if(!pushControl){
+      pushControl=document.createElement('div');pushControl.id='incoming-handover-push-control';
+      pushControl.style.cssText='display:flex;justify-content:flex-end;margin:-4px 0 12px;';
+      pushControl.innerHTML='<button type="button" id="incoming-handover-push-enable" style="border:1px solid #d0d5dd;border-radius:10px;padding:9px 12px;background:#fff;color:#344054;font-weight:750;font-size:12px;">Enable phone notifications</button>';
+      heading.insertAdjacentElement('afterend',pushControl);
+      pushControl.querySelector('button').addEventListener('click',async()=>{
+        const btn=pushControl.querySelector('button');
+        try{
+          if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))throw new Error('This browser does not support phone push notifications.');
+          if(!window.isSecureContext)throw new Error('Phone notifications require HTTPS.');
+          btn.disabled=true;btn.textContent='Enabling…';
+          const permission=await Notification.requestPermission();
+          if(permission!=='granted')throw new Error('Allow notifications in your browser settings, then try again.');
+          const keyData=await api('/api/push/public-key');
+          const registration=await navigator.serviceWorker.register('/service-worker.js');
+          await navigator.serviceWorker.ready;
+          let subscription=await registration.pushManager.getSubscription();
+          if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(atob(keyData.publicKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0))});
+          await api('/api/push/subscribe',{method:'POST',body:JSON.stringify({subscription:subscription.toJSON()})});
+          btn.textContent='Phone notifications enabled';
+          if(typeof toast==='function')toast('Phone notifications are enabled on this device.');
+        }catch(e){btn.disabled=false;btn.textContent='Enable phone notifications';if(typeof toast==='function')toast(e.message||'Could not enable phone notifications.');else alert(e.message||'Could not enable phone notifications.');}
+      });
+    }
     panel=document.createElement('section');panel.id='incoming-handover-notification';panel.className='incoming-handover-notification';panel.setAttribute('aria-live','polite');panel.hidden=true;
     panel.innerHTML='<div class="incoming-handover-notification-mark" aria-hidden="true">↔</div><div class="incoming-handover-notification-copy"><strong id="incoming-handover-notification-title">Incoming shift handover</strong><span id="incoming-handover-notification-detail"></span></div><button type="button" id="incoming-handover-notification-review">Review handover</button>';
     heading.insertAdjacentElement('afterend',panel);
