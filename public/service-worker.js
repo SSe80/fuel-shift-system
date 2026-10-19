@@ -1,4 +1,4 @@
-const CACHE_NAME = "fuel-shift-shell-v42";
+const CACHE_NAME = "fuel-shift-shell-v43";
 const SHELL = [
   "/admin-login.html",
   "/admin-logistics.html",
@@ -145,8 +145,12 @@ self.addEventListener("push", event => {
   // Keep admin and attendant phone notifications consistent, with a role-specific
   // icon/badge and a clear next action for each notification type.
   if (data.notification_type === "admin_dsr_confirmed_stock" && stockLines.length) {
+    // Keep every tank on one expandable phone notification, with product-colour
+    // markers supplied from the database. Repeated delivery for the same DSR
+    // replaces the existing card without buzzing the administrator twice.
     options.body = stockLines.join("\n");
-    options.actions = [{ action: "view", title: "View tanks" }];
+    options.renotify = false;
+    options.actions = [{ action: "view", title: "View tank stocks" }];
   } else if (data.notification_type === "admin_pending_sales") {
     options.actions = [{ action: "review", title: "Review sales" }];
   } else if (data.notification_type === "admin_dsr_ready") {
