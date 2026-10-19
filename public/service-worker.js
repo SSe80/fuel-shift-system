@@ -1,4 +1,4 @@
-const CACHE_NAME = "fuel-shift-shell-v33";;
+const CACHE_NAME = "fuel-shift-shell-v34";
 const SHELL = [
   "/admin-login.html",
   "/admin-logistics.html",
@@ -128,8 +128,8 @@ self.addEventListener("push", event => {
   try { if (event.data) data = { ...data, ...event.data.json() }; } catch (_) {}
   event.waitUntil(self.registration.showNotification(String(data.title || "Incoming shift handover"), {
     body: String(data.body || "A shift handover is waiting for your confirmation."),
-    icon: "/icons/icon-192.png",
-    badge: "/icons/icon-192.png",
+    icon: "/icons/attendant-icon.svg",
+    badge: "/icons/attendant-icon.svg",
     tag: String(data.tag || ("fuel-handover-" + (data.handover_id || "pending"))),
     renotify: true,
     requireInteraction: true,
