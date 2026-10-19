@@ -1424,6 +1424,32 @@ async function loadStationNotifications(){
  if(!list)return;
  const esc=v=>h(String(v==null?'':v));let items=[];const add=(key,level,title,detail,href,meta='',date=null)=>items.push({key,level,title,detail,href,meta,date:date||null});
  const arr=v=>Array.isArray(v)?v:[],first=(o,keys)=>{for(const k of keys)if(o&&o[k]!=null&&o[k]!=='')return o[k];return null;};
+ // Administrators can subscribe their own phone to pending sales and DSR alerts.
+ if(document.body.classList.contains('admin-shell')&&!document.getElementById('admin-push-enable')){
+  const host=document.querySelector('.station-notifications-heading');
+  if(host){
+   const btn=document.createElement('button');btn.type='button';btn.id='admin-push-enable';btn.textContent='Enable admin phone notifications';
+   btn.style.cssText='margin-top:8px;border:1px solid #d0d5dd;border-radius:10px;padding:9px 12px;background:#fff;color:#344054;font-weight:750;font-size:12px;';
+   btn.addEventListener('click',async()=>{
+    btn.disabled=true;btn.textContent='Enabling…';
+    try{
+     if(!('serviceWorker'in navigator)||!('PushManager'in window)||!('Notification'in window))throw new Error('This browser does not support phone push notifications.');
+     if(!window.isSecureContext)throw new Error('Phone notifications require HTTPS.');
+     const permission=await Notification.requestPermission();
+     if(permission!=='granted')throw new Error('Allow notifications in Chrome settings, then try again.');
+     const keyData=await api('/api/push/public-key');
+     const registration=await navigator.serviceWorker.register('/service-worker.js');
+     await navigator.serviceWorker.ready;
+     let subscription=await registration.pushManager.getSubscription();
+     if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(atob((()=>{const b=keyData.publicKey.replace(/-/g,'+').replace(/_/g,'/');return b+'='.repeat((4-b.length%4)%4)})()),c=>c.charCodeAt(0))});
+     await api('/api/push/subscribe',{method:'POST',body:JSON.stringify({subscription:subscription.toJSON()})});
+     btn.textContent='Admin phone notifications enabled';
+     if(typeof toast==='function')toast('Admin phone notifications are enabled on this device.');
+    }catch(e){btn.disabled=false;btn.textContent='Enable admin phone notifications';if(typeof toast==='function')toast(e.message||'Could not enable admin phone notifications.');else alert(e.message||'Could not enable admin phone notifications.');}
+   });
+   host.appendChild(btn);
+  }
+ }
  try{
   const results=await Promise.allSettled([api('/api/reports/daily/confirmations'),api('/api/tanks'),api('/api/products'),api('/api/purchases'),api('/api/accounting/reconciliation'),api('/api/tank-difference-alerts')]);
   const val=i=>results[i].status==='fulfilled'?results[i].value:null,dsrs=val(0),tankData=val(1),productData=val(2),purchaseData=val(3),recon=val(4),tankDifferenceAlerts=val(5),products=arr(productData);
