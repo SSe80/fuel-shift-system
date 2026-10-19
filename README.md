@@ -95,3 +95,21 @@ Operations:
 - GET/POST /api/handovers
 - POST /api/handovers/:id/confirm
 - GET/POST /api/reports/daily
+
+## Attendant phone push notifications
+
+The handover notification feature uses a Supabase Edge Function named `send-handover-push` and the `public.push_subscriptions` table. The function code is deployed, but phone push is not active until the following secrets are configured.
+
+Set these **Cloudflare Worker secrets**:
+- `VAPID_PUBLIC_KEY` — the URL-safe base64 public key from your VAPID key pair.
+- `PUSH_DELIVERY_TOKEN` — a long random shared token used only between the Worker and the Edge Function.
+
+Set these **Supabase Edge Function secrets** for `send-handover-push`:
+- `PUSH_DELIVERY_TOKEN` — exactly the same token as in Cloudflare.
+- `VAPID_PUBLIC_KEY` — the same VAPID public key.
+- `VAPID_PRIVATE_KEY` — the private key matching the public key; never commit or expose it.
+- `VAPID_SUBJECT` — a valid contact URI such as `mailto:operations@example.com`.
+
+The Supabase Edge Function also requires the project-provided `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` environment values. Never put the service-role key or VAPID private key in browser code or the repository.
+
+After configuring secrets, redeploy the Worker so it receives the new secrets, then test subscription on an HTTPS Android browser and submit a handover to that attendant. Push delivery has not been end-to-end tested yet.
