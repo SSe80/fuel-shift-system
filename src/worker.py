@@ -3755,6 +3755,15 @@ def record_shift_takeover_sales_batch():
         "p_batch":batch
     })
     if status>=400:return jsonify(result),status
+    try:
+        fresh_status, fresh_rows = sb("shift_takeovers", params={
+            "id": "in.(" + ",".join(seen) + ")",
+            "select": "id,shift_id,sales_status"
+        })
+        if fresh_status == 200:
+            _notify_admin_sales_and_dsr(fresh_rows)
+    except Exception:
+        pass
     return jsonify(result),200
 
 
@@ -3772,6 +3781,16 @@ def record_shift_takeover_sale(takeover_id):
         "p_sales":sales
     })
     if status>=400:return jsonify(result),status
+    try:
+        fresh_status, fresh_rows = sb("shift_takeovers", params={
+            "id": "eq." + takeover_id,
+            "select": "id,shift_id,sales_status",
+            "limit": "1"
+        })
+        if fresh_status == 200:
+            _notify_admin_sales_and_dsr(fresh_rows)
+    except Exception:
+        pass
     return jsonify(result),200
 
 @app.get("/api/shift-takeovers/<takeover_id>/sale-record")
@@ -4055,8 +4074,8 @@ def push_public_key():
 def push_subscribe():
     auth = require_login()
     if auth: return auth
-    if session.get("role") != "attendant":
-        return jsonify({"error": "Attendant account required"}), 403
+    if session.get("role") not in ("attendant", "admin"):
+        return jsonify({"error": "Attendant or administrator account required"}), 403
     data = request.get_json(silent=True) or {}
     sub = data.get("subscription") if isinstance(data.get("subscription"), dict) else data
     keys = sub.get("keys") if isinstance(sub.get("keys"), dict) else {}
@@ -4123,6 +4142,60 @@ async def _deliver_handover_push(to_employee_id, handover_id, sender_name, notif
 
 def deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type="incoming"):
     return run_sync(_deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type))
+
+def _notify_admin_push(reference_id, sender_name, notification_type):
+    # Deliver to every active administrator's registered devices. Push failures
+    # are best-effort and must never undo the sales/DSR operation.
+    try:
+        es, admins = sb("employees", params={
+            "role": "eq.admin", "active": "eq.true", "select": "id,name", "limit": "1000"
+        })
+        if es != 200 or not isinstance(admins, list):
+            return
+        for admin in admins:
+            admin_id = str(admin.get("id") or "")
+            if admin_id:
+                deliver_handover_push(
+                    admin_id,
+                    str(reference_id),
+                    sender_name or "Fuel Shift System",
+                    notification_type
+                )
+    except Exception:
+        return
+
+def _notify_admin_sales_and_dsr(takeovers):
+    # Notify for submitted sales and only notify DSR when the authoritative
+    # readiness snapshot says the report can actually be confirmed.
+    try:
+        if not isinstance(takeovers, list):
+            return
+        seen_dates = set()
+        for takeover in takeovers:
+            if not isinstance(takeover, dict):
+                continue
+            takeover_id = str(takeover.get("id") or "")
+            if not takeover_id:
+                continue
+            if str(takeover.get("sales_status") or "") == "pending_admin":
+                _notify_admin_push(takeover_id, "Fuel Shift System", "admin_pending_sales")
+            shift_id = str(takeover.get("shift_id") or "")
+            if not shift_id:
+                continue
+            ss, shifts = sb("shifts", params={
+                "id": "eq." + shift_id, "select": "id,start_time", "limit": "1"
+            })
+            if ss != 200 or not shifts:
+                continue
+            report_day = _local_date_from_iso(shifts[0].get("start_time"))
+            if not report_day or report_day.isoformat() in seen_dates:
+                continue
+            seen_dates.add(report_day.isoformat())
+            snapshot, err, status = _daily_confirmation_snapshot(report_day)
+            if not err and status == 200 and snapshot.get("can_confirm"):
+                _notify_admin_push(report_day.isoformat(), "Fuel Shift System", "admin_dsr_ready")
+    except Exception:
+        return
 
 @app.post("/api/handovers")
 def create_handover():

@@ -1424,14 +1424,44 @@ async function loadStationNotifications(){
  if(!list)return;
  const esc=v=>h(String(v==null?'':v));let items=[];const add=(key,level,title,detail,href,meta='',date=null)=>items.push({key,level,title,detail,href,meta,date:date||null});
  const arr=v=>Array.isArray(v)?v:[],first=(o,keys)=>{for(const k of keys)if(o&&o[k]!=null&&o[k]!=='')return o[k];return null;};
+ // Administrators can subscribe their own phone to pending sales and DSR alerts.
+ if(document.body.classList.contains('admin-shell')&&!document.getElementById('admin-push-enable')){
+  const host=document.querySelector('.station-notifications-heading');
+  if(host){
+   const btn=document.createElement('button');btn.type='button';btn.id='admin-push-enable';btn.textContent='Enable admin phone notifications';
+   btn.style.cssText='margin-top:8px;border:1px solid #d0d5dd;border-radius:10px;padding:9px 12px;background:#fff;color:#344054;font-weight:750;font-size:12px;';
+   btn.addEventListener('click',async()=>{
+    btn.disabled=true;btn.textContent='Enabling…';
+    try{
+     if(!('serviceWorker'in navigator)||!('PushManager'in window)||!('Notification'in window))throw new Error('This browser does not support phone push notifications.');
+     if(!window.isSecureContext)throw new Error('Phone notifications require HTTPS.');
+     const permission=await Notification.requestPermission();
+     if(permission!=='granted')throw new Error('Allow notifications in Chrome settings, then try again.');
+     const keyData=await api('/api/push/public-key');
+     const registration=await navigator.serviceWorker.register('/service-worker.js');
+     await navigator.serviceWorker.ready;
+     let subscription=await registration.pushManager.getSubscription();
+     if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(atob((()=>{const b=keyData.publicKey.replace(/-/g,'+').replace(/_/g,'/');return b+'='.repeat((4-b.length%4)%4)})()),c=>c.charCodeAt(0))});
+     await api('/api/push/subscribe',{method:'POST',body:JSON.stringify({subscription:subscription.toJSON()})});
+     btn.textContent='Admin phone notifications enabled';
+     if(typeof toast==='function')toast('Admin phone notifications are enabled on this device.');
+    }catch(e){btn.disabled=false;btn.textContent='Enable admin phone notifications';if(typeof toast==='function')toast(e.message||'Could not enable admin phone notifications.');else alert(e.message||'Could not enable admin phone notifications.');}
+   });
+   host.appendChild(btn);
+  }
+ }
  try{
-  const results=await Promise.allSettled([api('/api/reports/daily/confirmations'),api('/api/tanks'),api('/api/products'),api('/api/purchases'),api('/api/accounting/reconciliation'),api('/api/tank-difference-alerts')]);
-  const val=i=>results[i].status==='fulfilled'?results[i].value:null,dsrs=val(0),tankData=val(1),productData=val(2),purchaseData=val(3),recon=val(4),tankDifferenceAlerts=val(5),products=arr(productData);
+  const results=await Promise.allSettled([api('/api/reports/daily/confirmations'),api('/api/tanks'),api('/api/products'),api('/api/purchases'),api('/api/accounting/reconciliation'),api('/api/tank-difference-alerts'),api('/api/sales/confirmations')]);
+  const val=i=>results[i].status==='fulfilled'?results[i].value:null,dsrs=val(0),tankData=val(1),productData=val(2),purchaseData=val(3),recon=val(4),tankDifferenceAlerts=val(5),pendingSales=val(6),products=arr(productData);
   const productByName=Object.fromEntries(products.map(p=>[String(p.name||'').trim().toLowerCase(),p])),codeFor=p=>productByName[String(p||'').trim().toLowerCase()]?.code_name||p||'Unknown product';
   const tanks=arr(tankData).filter(t=>t.active!==false),low=[],high=[];
   tanks.forEach(t=>{const cap=Number(t.capacity_liters),stock=Number(t.current_liters);if(!(cap>0)||!Number.isFinite(stock))return;if(stock/cap<=.10)low.push(t);else if(stock/cap>=.90)high.push(t);});
   if(low.length)add('low-tanks','warning','Low tank stock',low.length+' tank'+(low.length===1?' is':'s are')+' at or below 10% capacity: '+low.slice(0,4).map(t=>t.tank_code||'Tank').join(', ')+(low.length>4?' and '+(low.length-4)+' more':''),'admin-inventory.html'+(low[0]?.id?'#tank-'+encodeURIComponent(low[0].id):''),low.slice(0,6).map(t=>(t.tank_code||'Tank')+' · '+codeFor(t.product)+' · '+liters(t.current_liters)+' L left').join(' | '));
   if(high.length)add('high-tanks','info','High tank level',high.length+' tank'+(high.length===1?' is':'s are')+' at or above 90% capacity: '+high.slice(0,4).map(t=>t.tank_code||'Tank').join(', ')+(high.length>4?' and '+(high.length-4)+' more':''),'admin-inventory.html'+(high[0]?.id?'#tank-'+encodeURIComponent(high[0].id):''),high.slice(0,6).map(t=>(t.tank_code||'Tank')+' · '+Math.round(Number(t.current_liters)/Number(t.capacity_liters)*100)+'% full').join(' | '));
+  const pendingSalesRows=arr(pendingSales);
+  if(pendingSalesRows.length){
+   add('pending-sales-confirmation','warning','Sales pending confirmation',pendingSalesRows.length+' shift sale record'+(pendingSalesRows.length===1?' is':'s are')+' waiting for administrator review and confirmation.','admin-sales.html',pendingSalesRows.slice(0,6).map(x=>String(x.dispenser_code||x.nozzle_code||x.shift_id||x.id||'Shift sale')).join(' · '));
+  }
   const pendingDsr=arr(dsrs).filter(x=>x.status==='pending'||x.status==='waiting');
   if(arr(dsrs).length){
    const ready=pendingDsr.filter(x=>x.status==='pending'&&x.report_day_closed!==false&&x.all_shifts_complete&&x.all_handover_recorded&&x.all_sales_recorded);
