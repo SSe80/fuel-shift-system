@@ -172,7 +172,16 @@ self.addEventListener("push", event => {
 });
 self.addEventListener("notificationclick", event => {
   event.notification.close();
-  const target = new URL(event.notification.data?.url || "/attendant-dashboard.html", self.location.origin).href;
+  const fallbackTarget = new URL("/attendant-dashboard.html", self.location.origin);
+  let target = fallbackTarget.href;
+  try {
+    const requestedTarget = new URL(String(event.notification.data?.url || fallbackTarget.pathname), self.location.origin);
+    // Push payloads should only navigate inside this app, even if malformed or
+    // unexpected data reaches the service worker.
+    if (requestedTarget.origin === self.location.origin) target = requestedTarget.href;
+  } catch (_) {
+    target = fallbackTarget.href;
+  }
   event.waitUntil((async () => {
     const openClients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const client of openClients) {
