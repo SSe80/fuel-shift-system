@@ -159,19 +159,19 @@ Deno.serve(async (req: Request) => {
   const message = testNotification
     ? "Push notifications are working on this device. This is a test alert."
     : attendantSalesConfirmed
-    ? "The administrator has confirmed the sales you recorded for this shift."
+    ? `${senderName} confirmed the sales you recorded for this shift.`
     : attendantDsrConfirmed
-      ? `The administrator has confirmed the Daily Sales Report for ${handoverId}.`
+      ? `${senderName} confirmed the Daily Sales Report for ${handoverId}.`
     : adminLowStock
     ? (inventoryMessage || "An active tank is below 10% capacity. Open Inventory to review stock.")
     : adminPurchasePending
       ? (inventoryMessage || "A purchase is awaiting discharge. Open Purchases to review it.")
     : adminDsrConfirmedStock
-    ? (stockLines.length ? `Report date: ${handoverId}\n\n${stockLines.join("\n")}` : `Report date: ${handoverId}\nTank stock details are unavailable. Open Tanks to refresh.`)
+    ? (stockLines.length ? `${senderName} confirmed DSR ${handoverId}.\n\n${stockLines.join("\n")}` : `${senderName} confirmed DSR ${handoverId}. Tank stock details are unavailable. Open Tanks to refresh.`)
     : adminPendingSales
-      ? "A shift sale has been submitted and is waiting for administrator confirmation."
+      ? `${senderName} submitted a shift sale that is waiting for administrator confirmation.`
       : adminDsrReady
-        ? `The daily sales report for ${handoverId} is ready for review and confirmation.`
+        ? `${senderName} submitted sales; the daily sales report for ${handoverId} is ready for review and confirmation.`
         : recordSaleReady
           ? `${senderName} confirmed the shift handover. Record the shift sales now.`
           : `${senderName} sent you a handover that needs your confirmation.`;
