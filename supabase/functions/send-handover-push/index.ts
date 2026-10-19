@@ -105,10 +105,11 @@ Deno.serve(async (req: Request) => {
         { emoji: "⚫", rgb: [45, 45, 45] },
         { emoji: "⚪", rgb: [220, 220, 220] },
       ];
-      return palette.sort((a, b) =>
-        (a.rgb[0] - r) ** 2 + (a.rgb[1] - g) ** 2 + (a.rgb[2] - b) ** 2 -
-        ((b.rgb[0] - r) ** 2 + (b.rgb[1] - g) ** 2 + (b.rgb[2] - b) ** 2)
-      )[0].emoji;
+      const distance = (entry: { rgb: number[] }) =>
+        (entry.rgb[0] - r) ** 2 + (entry.rgb[1] - g) ** 2 + (entry.rgb[2] - b) ** 2;
+      return palette.reduce((closest, entry) =>
+        distance(entry) < distance(closest) ? entry : closest
+      ).emoji;
     };
     if (tanksResponse.ok) {
       const tanks = await tanksResponse.json() as Array<{tank_code?: string; product?: string; current_liters?: number | string; active?: boolean}>;
