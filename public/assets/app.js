@@ -1499,6 +1499,38 @@ function showFuelPushConfirm(action,role){
   modal.querySelector('.fuel-push-accept').focus({preventScroll:true});
  });
 }
+function showFuelPushResult(enabled,message){
+ const id='fuel-push-result-card';
+ document.getElementById(id)?.remove();
+ let style=document.getElementById('fuel-push-result-style');
+ if(!style){
+  style=document.createElement('style');style.id='fuel-push-result-style';
+  style.textContent=`
+   .fuel-push-result{position:fixed;z-index:5000;top:calc(16px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-12px);width:min(420px,calc(100vw - 28px));box-sizing:border-box;display:flex;align-items:flex-start;gap:13px;padding:16px 44px 16px 16px;border:1px solid #d0ead9;border-radius:16px;background:#fff;box-shadow:0 16px 44px rgba(16,24,40,.2);color:#182230;opacity:0;animation:fuelPushResultIn .24s ease-out forwards}
+   .fuel-push-result.is-disabled{border-color:#f2d3d5}
+   .fuel-push-result-icon{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:13px;background:#e8f7ee;color:#16834a;font-size:22px;font-weight:900}
+   .fuel-push-result.is-disabled .fuel-push-result-icon{background:#fff0f0;color:#c4323e}
+   .fuel-push-result-copy{min-width:0;padding-top:1px}
+   .fuel-push-result-kicker{margin:0 0 4px;color:#16834a;font-size:10px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}
+   .fuel-push-result.is-disabled .fuel-push-result-kicker{color:#b4232f}
+   .fuel-push-result-title{margin:0;color:#182230;font-size:15px;font-weight:850;line-height:1.3}
+   .fuel-push-result-message{margin:5px 0 0;color:#667085;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+   .fuel-push-result-close{position:absolute;top:9px;right:10px;width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:#667085;font-size:20px;line-height:1;cursor:pointer}
+   .fuel-push-result-close:hover{background:#f2f4f7}
+   @keyframes fuelPushResultIn{to{opacity:1;transform:translate(-50%,0)}}
+   @media(prefers-reduced-motion:reduce){.fuel-push-result{animation:none;opacity:1;transform:translate(-50%,0)}}
+  `;
+  document.head.appendChild(style);
+ }
+ const card=document.createElement('section');card.id=id;card.className='fuel-push-result'+(enabled?'':' is-disabled');card.setAttribute('role','status');card.setAttribute('aria-live','polite');
+ card.innerHTML='<div class="fuel-push-result-icon" aria-hidden="true">'+(enabled?'✓':'−')+'</div><div class="fuel-push-result-copy"><p class="fuel-push-result-kicker">'+(enabled?'Settings updated':'Notifications paused')+'</p><h2 class="fuel-push-result-title">'+(enabled?'Phone notifications enabled':'Phone notifications disabled')+'</h2><p class="fuel-push-result-message"></p></div><button type="button" class="fuel-push-result-close" aria-label="Dismiss notification">×</button>';
+ card.querySelector('.fuel-push-result-message').textContent=message;
+ const dismiss=()=>{card.style.animation='none';card.style.opacity='0';card.style.transition='opacity .16s ease';setTimeout(()=>card.remove(),170);};
+ card.querySelector('button').addEventListener('click',dismiss);
+ document.body.appendChild(card);
+ const timer=setTimeout(dismiss,4200);
+ card.addEventListener('DOMNodeRemoved',()=>clearTimeout(timer),{once:true});
+}
 function setupFuelPushControl(button,role){
  if(!button)return;
  button.type='button';
@@ -1529,7 +1561,7 @@ function setupFuelPushControl(button,role){
      button.dataset.pushEnabled='true';
     }
     await refreshFuelPushControl(button,role);
-    if(typeof toast==='function')toast(wasEnabled?'Phone notifications disabled.':'Phone notifications enabled.');
+    showFuelPushResult(!wasEnabled,wasEnabled?'Push alerts are off on this phone. In-dashboard notifications will still work.':'This phone will receive push alerts for important shift and system updates.');
    }catch(e){
     if(typeof toast==='function')toast(e.message||('Could not '+action+' phone notifications.'));
     else alert(e.message||('Could not '+action+' phone notifications.'));
