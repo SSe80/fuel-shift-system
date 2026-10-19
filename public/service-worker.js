@@ -121,3 +121,33 @@ self.addEventListener("fetch", event => {
     })());
   }
 });
+
+
+self.addEventListener("push", event => {
+  let data = { title: "Fuel Shift System", body: "A shift handover is waiting for your confirmation.", url: "/attendant-dashboard.html" };
+  try { if (event.data) data = { ...data, ...event.data.json() }; } catch (_) {}
+  event.waitUntil(self.registration.showNotification(String(data.title || "Incoming shift handover"), {
+    body: String(data.body || "A shift handover is waiting for your confirmation."),
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    tag: String(data.tag || ("fuel-handover-" + (data.handover_id || "pending"))),
+    renotify: true,
+    requireInteraction: true,
+    data: { url: String(data.url || "/attendant-dashboard.html"), handover_id: data.handover_id || null }
+  }));
+});
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || "/attendant-dashboard.html", self.location.origin).href;
+  event.waitUntil((async () => {
+    const openClients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of openClients) {
+      if (new URL(client.url).origin === self.location.origin) {
+        await client.focus();
+        if ("navigate" in client) await client.navigate(target);
+        return;
+      }
+    }
+    await self.clients.openWindow(target);
+  })());
+});
