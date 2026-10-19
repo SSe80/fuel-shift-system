@@ -1592,13 +1592,18 @@ async function loadStationNotifications(){
  // Explicitly controlled phone-push setting; never silently re-enable after the user disables it.
  if(document.body.classList.contains('admin-shell')){
   const host=document.querySelector('.station-notifications-heading');
+  const statusLine=document.getElementById('station-notifications-status');
   let btn=document.getElementById('admin-push-enable');
   if(host&&!btn){
    btn=document.createElement('button');btn.type='button';btn.id='admin-push-enable';
-   btn.style.cssText='margin-top:8px;border:1px solid #d0d5dd;border-radius:10px;padding:9px 12px;background:#fff;color:#344054;font-weight:750;font-size:12px;';
-   host.appendChild(btn);
+   btn.style.cssText='display:block;width:fit-content;max-width:100%;margin:8px 0 0;border:1px solid #d0d5dd;border-radius:10px;padding:9px 12px;background:#fff;color:#344054;font-weight:750;font-size:12px;';
   }
-  if(btn)setupFuelPushControl(btn,'admin');
+  if(host&&btn){
+   // Keep the phone-notification control directly beneath the live "Updated just now" status.
+   if(statusLine)statusLine.insertAdjacentElement('afterend',btn);else host.appendChild(btn);
+   btn.style.display='block';btn.style.width='fit-content';btn.style.maxWidth='100%';btn.style.margin='8px 0 0';
+   setupFuelPushControl(btn,'admin');
+  }
  }
  try{
   const results=await Promise.allSettled([api('/api/reports/daily/confirmations'),api('/api/tanks'),api('/api/products'),api('/api/purchases'),api('/api/accounting/reconciliation'),api('/api/tank-difference-alerts'),api('/api/sales/confirmations')]);
