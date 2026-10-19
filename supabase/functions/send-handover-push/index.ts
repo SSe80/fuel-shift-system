@@ -187,15 +187,32 @@ Deno.serve(async (req: Request) => {
 
   let sent = 0;
   let expired = 0;
-  const results = await Promise.all(subscriptions.map(async (sub) => {
+  let failed = 0;
+  await Promise.all(subscriptions.map(async (sub) => {
     try {
-      await webpush.sendNotification({
+      const response = await webpush.sendNotification({
         endpoint: sub.endpoint,
         keys: { p256dh: sub.p256dh, auth: sub.auth },
       }, payload, { TTL: 60 * 60 });
       sent++;
+      // Provider acceptance confirms delivery was queued, not that the phone displayed it.
+      console.info("Push provider accepted notification", {
+        notification_type: notificationType,
+        recipient_id: employeeId,
+        subscription_id: sub.id,
+        status_code: response.statusCode || 201,
+      });
     } catch (error) {
+      failed++;
       const status = (error as { statusCode?: number }).statusCode;
+      const message = error instanceof Error ? error.message.slice(0, 300) : String(error).slice(0, 300);
+      console.error("Push delivery failed", {
+        notification_type: notificationType,
+        recipient_id: employeeId,
+        subscription_id: sub.id,
+        status_code: status || null,
+        error: message,
+      });
       if (status === 404 || status === 410) {
         expired++;
         const del = new URL("/rest/v1/push_subscriptions", supabaseUrl);
@@ -204,5 +221,13 @@ Deno.serve(async (req: Request) => {
       }
     }
   }));
-  return json({ sent, expired });
+  console.info("Push delivery summary", {
+    notification_type: notificationType,
+    recipient_id: employeeId,
+    subscribed_devices: subscriptions.length,
+    accepted_by_provider: sent,
+    expired,
+    failed,
+  });
+  return json({ sent, expired, failed, subscribed_devices: subscriptions.length });
 });
