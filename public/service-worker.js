@@ -128,12 +128,12 @@ self.addEventListener("push", event => {
   try { if (event.data) data = { ...data, ...event.data.json() }; } catch (_) {}
   event.waitUntil(self.registration.showNotification(String(data.title || "Incoming shift handover"), {
     body: String(data.body || "A shift handover is waiting for your confirmation."),
-    icon: "/icons/attendant-icon.svg",
-    badge: "/icons/attendant-icon.svg",
+    icon: String(data.icon || (String(data.notification_type || "").startsWith("admin_") ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg")),
+    badge: String(data.icon || (String(data.notification_type || "").startsWith("admin_") ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg")),
     tag: String(data.tag || ("fuel-handover-" + (data.handover_id || "pending"))),
     renotify: true,
     requireInteraction: true,
-    data: { url: String(data.url || "/attendant-dashboard.html"), handover_id: data.handover_id || null }
+    data: { url: String(data.url || "/attendant-dashboard.html"), handover_id: data.handover_id || null, notification_type: data.notification_type || "incoming" }
   }));
 });
 self.addEventListener("notificationclick", event => {
