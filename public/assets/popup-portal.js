@@ -57,7 +57,7 @@
       'body.admin-control-ui .station-notification-row { border-radius:13px!important; transition:background .16s ease,border-color .16s ease,transform .16s ease!important; }',
       'body.admin-control-ui .station-notification-row:hover { background:#f8fafc!important; }',
       '@media(max-width:640px) { body.admin-control-ui .modal > .modal-card { border-radius:17px!important; } body.admin-control-ui .modal > .modal-card > .top { padding:15px 15px 13px!important; } body.admin-control-ui .modal > .modal-card .row:last-child { padding:13px 15px 15px!important; gap:8px!important; } body.admin-control-ui .modal > .modal-card .row:last-child button, body.admin-control-ui .modal > .modal-card .popup-actions button { min-height:44px!important; padding:10px 12px!important; font-size:13px!important; } body.admin-control-ui .toast { width:calc(100vw - 24px)!important; max-width:calc(100vw - 24px)!important; padding:13px 14px!important; border-radius:14px!important; } }'
-    ].join('\\n');
+    ].join('\n');
     document.head.appendChild(notificationStyle);
 
   }
