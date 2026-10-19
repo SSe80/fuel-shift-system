@@ -4166,7 +4166,7 @@ def push_test():
         return jsonify({"error": "Please sign in again before testing notifications"}), 401
     result = deliver_handover_push(
         employee_id,
-        "test-" + str(int(time.time())),
+        "test-" + str(int(datetime.now(timezone.utc).timestamp())),
         "Fuel Shift System",
         "test"
     )
