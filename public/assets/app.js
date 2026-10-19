@@ -1428,15 +1428,23 @@ async function getFuelPushSubscription(){
  const subscription=await registration.pushManager.getSubscription();
  return {supported:true,permission:Notification.permission,subscription};
 }
+function fuelPushDisabledKey(role){return 'fuelPushDisabled:'+role;}
+function fuelPushWasManuallyDisabled(role){
+ try{return localStorage.getItem(fuelPushDisabledKey(role))==='1';}catch(_){return false;}
+}
+function setFuelPushManuallyDisabled(role,disabled){
+ try{if(disabled)localStorage.setItem(fuelPushDisabledKey(role),'1');else localStorage.removeItem(fuelPushDisabledKey(role));}catch(_){}
+}
 async function refreshFuelPushControl(button,role){
  if(!button)return;
  try{
   const state=await getFuelPushSubscription();
-  button.dataset.pushEnabled=String(!!(state.supported&&state.permission==='granted'&&state.subscription));
+  const enabled=!!(state.supported&&state.permission==='granted'&&state.subscription);
+  button.dataset.pushEnabled=String(enabled);
   button.disabled=!state.supported;
   button.textContent=!state.supported?'Phone notifications unsupported':
-   (button.dataset.pushEnabled==='true'?'Disable phone notifications':'Enable phone notifications');
-  button.setAttribute('aria-pressed',button.dataset.pushEnabled);
+   (enabled?'Disable phone notifications':'Enable phone notifications');
+  button.setAttribute('aria-pressed',String(enabled));
   button.title=state.permission==='denied'?'Notifications are blocked in Android/browser settings. Allow them there before enabling.':'';
  }catch(e){
   button.disabled=false;button.textContent='Retry notification status';button.dataset.pushEnabled='false';
@@ -1465,12 +1473,14 @@ function setupFuelPushControl(button,role){
       const removed=await state.subscription.unsubscribe();
       if(!removed)throw new Error('The phone subscription could not be removed. Please try again.');
      }
+     setFuelPushManuallyDisabled(role,true);
      button.dataset.pushEnabled='false';
     }else{
      const result=await syncFuelAppPushSubscription(true);
      if(!result.enabled)throw new Error(result.permission==='denied'
       ?'Notifications are blocked by Android/browser settings. Allow notifications for the Fuel Shift System app in system settings, then try again.'
       :'Notifications were not enabled. Please allow permission and try again.');
+     setFuelPushManuallyDisabled(role,false);
      button.dataset.pushEnabled='true';
     }
     await refreshFuelPushControl(button,role);
@@ -1485,6 +1495,17 @@ function setupFuelPushControl(button,role){
   });
  }
  refreshFuelPushControl(button,role);
+ // Notifications default to enabled where Android/browser permission has already been granted.
+ // Respect an explicit disable choice on this installed app.
+ if(!fuelPushWasManuallyDisabled(role)){
+  getFuelPushSubscription().then(state=>{
+   if(state.supported&&state.permission==='granted'&&!state.subscription){
+    syncFuelAppPushSubscription(false).then(result=>{
+     if(result.enabled){button.dataset.pushEnabled='true';button.textContent='Disable phone notifications';button.setAttribute('aria-pressed','true');}
+    }).catch(e=>console.warn('Default phone notification subscription failed',e));
+   }
+  }).catch(e=>console.warn('Default phone notification status check failed',e));
+ }
 }
 async function loadStationNotifications(){
  const list=document.getElementById('station-notifications-list'),count=document.getElementById('station-notifications-count'),status=document.getElementById('station-notifications-status');
