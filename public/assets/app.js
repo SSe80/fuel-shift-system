@@ -1583,7 +1583,7 @@ function showFuelPushConfirm(action,role){
   modal.querySelector('.fuel-push-accept').focus({preventScroll:true});
  });
 }
-function showFuelInboxPopup(item){
+function showFuelInboxPopup(item,onOpen){
  const id='fuel-inbox-popup-card';
  document.getElementById(id)?.remove();
  let style=document.getElementById('fuel-inbox-popup-style');
@@ -1621,7 +1621,19 @@ function showFuelInboxPopup(item){
  const close=document.createElement('button');close.type='button';close.className='fuel-inbox-popup-close';close.setAttribute('aria-label','Dismiss notification');close.textContent='×';
  const dismiss=()=>{if(card.isConnected)card.remove();};
  close.addEventListener('click',event=>{event.stopPropagation();dismiss();});
- const open=()=>{if(item.href)window.location.href=item.href;else dismiss();};
+ let opening=false;
+ const open=async()=>{
+  if(opening)return;
+  opening=true;card.setAttribute('aria-busy','true');
+  try{
+   if(typeof onOpen==='function')await onOpen(item);
+   if(item.href)window.location.href=item.href;else dismiss();
+  }catch(error){
+   opening=false;card.removeAttribute('aria-busy');
+   console.warn('Could not mark popup notification as read.',error);
+   if(typeof toast==='function')toast('Could not mark this notification as read. Please try again.');
+  }
+ };
  card.addEventListener('click',open);
  card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open();}});
  card.append(symbol,copy,close);document.body.appendChild(card);
@@ -1937,7 +1949,22 @@ async function loadStationNotifications(){
     if(selected)seen[selected.key]=true;
     sessionStorage.setItem(seenKey,JSON.stringify(seen));
     sessionStorage.setItem('fuelInboxPopupInitializedV1','1');
-    if(selected)showFuelInboxPopup(selected);
+    if(selected)showFuelInboxPopup(selected,async function(popupItem){
+      if(databaseBacked){
+        await api('/api/inbox/'+encodeURIComponent(popupItem.key)+'/state',{method:'PATCH',body:JSON.stringify({is_read:true,is_favorite:!!popupItem.isFavorite})});
+      }else{
+        const saved=JSON.parse(localStorage.getItem('fuelStationInboxReadV1')||'{}')||{};
+        saved[popupItem.key]=Date.now();localStorage.setItem('fuelStationInboxReadV1',JSON.stringify(saved));
+      }
+      popupItem.isRead=true;
+      if(count)count.textContent=String(items.filter(item=>!item.isRead).length);
+      const row=Array.from(list.querySelectorAll('[data-inbox-row]')).find(el=>el.getAttribute('data-inbox-row')===popupItem.key);
+      if(row){
+        row.classList.remove('is-unread');row.classList.add('is-read');
+        const openLabel=row.querySelector('.station-notification-open');
+        if(openLabel)openLabel.innerHTML='Read · '+(popupItem.level==='critical'?'Needs attention':popupItem.level==='warning'?'Action needed':'For review')+' <span aria-hidden="true">→</span>';
+      }
+    });
   }catch(popupError){console.warn('Could not display inbox notification popup.',popupError);}
   const unreadCount=items.filter(item=>!item.isRead).length;
   if(count)count.textContent=String(unreadCount);if(status)status.textContent=failed?'Some checks unavailable':'Updated just now';
