@@ -1579,16 +1579,42 @@ function setupFuelPushControl(button,role){
   });
  }
  refreshFuelPushControl(button,role);
- // Notifications default to enabled where Android/browser permission has already been granted.
- // Respect an explicit disable choice on this installed app.
+ // Phone notifications are on by default. Existing OS permission is subscribed
+ // automatically; where permission has never been granted, invite each signed-in
+ // role to enable it once. Browsers require a user gesture for the OS permission.
  if(!fuelPushWasManuallyDisabled(role)){
-  getFuelPushSubscription().then(state=>{
-   if(state.supported&&state.permission==='granted'&&!state.subscription){
-    syncFuelAppPushSubscription(false).then(result=>{
-     if(result.enabled){button.dataset.pushEnabled='true';button.textContent='Disable phone notifications';button.setAttribute('aria-pressed','true');}
-    }).catch(e=>console.warn('Default phone notification subscription failed',e));
+  getFuelPushSubscription().then(async state=>{
+   if(!state.supported)return;
+   if(state.permission==='granted'&&!state.subscription){
+    const result=await syncFuelAppPushSubscription(false);
+    if(result.enabled){
+     button.dataset.pushEnabled='true';button.textContent='Disable phone notifications';button.setAttribute('aria-pressed','true');
+    }
+    return;
    }
-  }).catch(e=>console.warn('Default phone notification status check failed',e));
+   if(state.permission==='default'){
+    let alreadyPrompted=false;
+    try{alreadyPrompted=sessionStorage.getItem('fuelPushOnboardingPrompted:'+role)==='1';}catch(_){}
+    if(alreadyPrompted)return;
+    try{sessionStorage.setItem('fuelPushOnboardingPrompted:'+role,'1');}catch(_){}
+    // The modal's explicit Enable button is the required user gesture for
+    // Notification.requestPermission(); never claim OS push is enabled early.
+    if(await showFuelPushConfirm('enable',role)){
+     button.disabled=true;button.textContent='Enabling…';
+     try{
+      const result=await syncFuelAppPushSubscription(true);
+      if(!result.enabled)throw new Error('Notifications were not enabled. Please allow permission and try again.');
+      setFuelPushManuallyDisabled(role,false);
+      await refreshFuelPushControl(button,role);
+      showFuelPushResult(true,'Phone notifications are enabled on this device. Important alerts will arrive while the app is closed.');
+     }catch(e){
+      console.warn('Default phone notification setup needs permission',e);
+      if(typeof toast==='function')toast(e.message||'Allow phone notifications to finish setup.');
+      await refreshFuelPushControl(button,role);
+     }finally{button.disabled=false;}
+    }
+   }
+  }).catch(e=>console.warn('Default phone notification setup failed',e));
  }
 }
 async function loadStationNotifications(){
