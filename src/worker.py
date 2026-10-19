@@ -4097,8 +4097,8 @@ def push_unsubscribe():
     return jsonify({"ok": True}), 200
 
 async def _deliver_handover_push(to_employee_id, handover_id, sender_name):
-    token = str(os.environ.get("PUSH_DELIVERY_TOKEN", "") or "").strip()
-    base = str(os.environ.get("SUPABASE_URL", "") or "").strip().rstrip("/")
+    token = str(getattr(env(), "PUSH_DELIVERY_TOKEN", "") or "").strip()
+    base = str(getattr(env(), "SUPABASE_URL", "") or "").strip().rstrip("/")
     if not token or not base or not handover_id:
         return
     try:
