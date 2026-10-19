@@ -38,6 +38,8 @@ Deno.serve(async (req: Request) => {
     return json({ error: "to_employee_id and handover_id are required" }, 400);
   }
   const recordSaleReady = notificationType === "record_sale_ready";
+  const attendantSalesConfirmed = notificationType === "attendant_sales_confirmed";
+  const attendantDsrConfirmed = notificationType === "attendant_dsr_confirmed";
   const adminPendingSales = notificationType === "admin_pending_sales";
   const adminDsrReady = notificationType === "admin_dsr_ready";
   const adminDsrConfirmedStock = notificationType === "admin_dsr_confirmed_stock";
@@ -144,13 +146,19 @@ Deno.serve(async (req: Request) => {
       });
     }
   }
-  const title = adminLowStock ? "Low fuel stock alert"
+  const title = attendantSalesConfirmed ? "Shift sales confirmed"
+    : attendantDsrConfirmed ? "Daily report confirmed"
+    : adminLowStock ? "Low fuel stock alert"
     : adminPurchasePending ? "Purchase awaiting discharge"
     : adminDsrConfirmedStock ? `DSR ${handoverId} confirmed · Tank stocks (${stockLines.length})`
     : adminPendingSales ? "Sales pending confirmation"
     : adminDsrReady ? "DSR ready for confirmation"
     : recordSaleReady ? "Record sale ready" : "Incoming shift handover";
-  const message = adminLowStock
+  const message = attendantSalesConfirmed
+    ? "The administrator has confirmed the sales you recorded for this shift."
+    : attendantDsrConfirmed
+      ? `The administrator has confirmed the Daily Sales Report for ${handoverId}.`
+    : adminLowStock
     ? (inventoryMessage || "An active tank is below 10% capacity. Open Inventory to review stock.")
     : adminPurchasePending
       ? (inventoryMessage || "A purchase is awaiting discharge. Open Purchases to review it.")
@@ -166,13 +174,17 @@ Deno.serve(async (req: Request) => {
   const payload = JSON.stringify({
     title,
     body: message,
-    tag: adminLowStock ? `admin-low-stock-${handoverId}`
+    tag: attendantSalesConfirmed ? `attendant-sales-confirmed-${handoverId}`
+      : attendantDsrConfirmed ? `attendant-dsr-confirmed-${handoverId}`
+      : adminLowStock ? `admin-low-stock-${handoverId}`
       : adminPurchasePending ? `admin-purchase-pending-${handoverId}`
       : adminDsrConfirmedStock ? `admin-dsr-stock-${handoverId}`
       : adminDsrReady ? `admin-dsr-${handoverId}`
       : adminPendingSales ? `admin-sales-${handoverId}`
       : recordSaleReady ? `record-sale-${handoverId}` : `handover-${handoverId}`,
-    url: adminLowStock ? "/admin-inventory.html"
+    url: attendantSalesConfirmed ? "/attendant-dashboard.html"
+      : attendantDsrConfirmed ? "/attendant-dashboard.html"
+      : adminLowStock ? "/admin-inventory.html"
       : adminPurchasePending ? "/admin-purchases.html"
       : adminDsrConfirmedStock ? "/admin-inventory.html"
       : adminDsrReady ? `/admin-daily-report.html#dsr-${encodeURIComponent(handoverId)}`
