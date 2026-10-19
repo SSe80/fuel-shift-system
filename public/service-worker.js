@@ -1,4 +1,4 @@
-const CACHE_NAME = "fuel-shift-shell-v48";
+const CACHE_NAME = "fuel-shift-shell-v49";
 const SHELL = [
   "/admin-login.html",
   "/admin-logistics.html",
@@ -127,11 +127,12 @@ self.addEventListener("fetch", event => {
 self.addEventListener("push", event => {
   let data = { title: "Fuel Shift System", body: "A shift handover is waiting for your confirmation.", url: "/attendant-dashboard.html" };
   try { if (event.data) data = { ...data, ...event.data.json() }; } catch (_) {}
-  const isAdmin = String(data.notification_type || "").startsWith("admin_");
+  const isAdmin = String(data.notification_type || "").startsWith("admin_") || String(data.app_role || "").toLowerCase() === "admin";
   const stockLines = Array.isArray(data.stock_lines) ? data.stock_lines.map(line => String(line)) : [];
   const options = {
     body: String(data.body || "A shift handover is waiting for your confirmation."),
-    icon: String(data.icon || "/icons/notification-mea.svg"),
+    icon: isAdmin ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg",
+    // Keep the compact monochrome badge suitable for Android notification trays.
     badge: "/icons/notification-mea.svg",
     tag: String(data.tag || ("fuel-handover-" + (data.handover_id || "pending"))),
     // Stable tags replace the existing alert without buzzing again when an event is reprocessed.
