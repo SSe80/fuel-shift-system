@@ -958,7 +958,34 @@ async function userDashboard(){
 (function(){
   if(window.__fuelHandoverDashboardNotifications)return;
   window.__fuelHandoverDashboardNotifications=true;
-  let previousPendingIds=new Set(), polling=false, intervalStarted=false;
+  let previousPendingIds=new Set(), previousReadyIds=new Set(), previousConfirmedSaleIds=new Set(), hasLoadedSalesState=false, polling=false, intervalStarted=false;
+  function showAttendantDashboardPopups(events){
+    if(!events.length)return;
+    const seenKey='fuelAttendantDashboardPopupSeenV1';
+    let seen={};
+    try{seen=JSON.parse(sessionStorage.getItem(seenKey)||'{}')||{};}catch(_){}
+    const fresh=events.filter(item=>!seen[item.key]);
+    if(!fresh.length)return;
+    fresh.forEach(item=>{seen[item.key]=true;});
+    try{sessionStorage.setItem(seenKey,JSON.stringify(seen));}catch(_){}
+    const handovers=fresh.filter(item=>item.kind==='handover');
+    const readySales=fresh.filter(item=>item.kind==='record-sale');
+    const confirmedSales=fresh.filter(item=>item.kind==='sales-confirmed');
+    const summary=[];
+    if(handovers.length)summary.push(handovers.length+' incoming handover'+(handovers.length===1?' needs':'s need')+' confirmation');
+    if(readySales.length)summary.push(readySales.length+' record-sale task'+(readySales.length===1?' is':'s are')+' ready');
+    if(confirmedSales.length)summary.push(confirmedSales.length+' shift sale confirmation'+(confirmedSales.length===1?' is':'s are')+' available');
+    const primary=handovers[0]||readySales[0]||confirmedSales[0];
+    const popup=fresh.length===1?primary:{
+      key:fresh.map(item=>item.key).join('|'),
+      level:handovers.length||readySales.length?'warning':'info',
+      title:'New shift updates',
+      detail:summary.join('; ')+'.',
+      href:primary.href
+    };
+    if(typeof showFuelInboxPopup==='function')showFuelInboxPopup(popup);
+    else if(typeof toast==='function')toast(popup.title+': '+popup.detail);
+  }
   function ensurePanel(){
     let panel=document.getElementById('incoming-handover-notification');
     if(panel)return panel;
@@ -1036,15 +1063,27 @@ async function userDashboard(){
       const pending=(Array.isArray(handovers)?handovers:[]).filter(x=>x.status==='pending'&&String(x.to_employee_id)===String(me.id));
       const readySales=(Array.isArray(takeovers)?takeovers:[]).filter(x=>x.sales_status==='awaiting_attendant'&&String(x.from_employee_id)===String(me.id));
       const ids=new Set(pending.map(x=>String(x.id)));
+      const readyIds=new Set(readySales.map(x=>String(x.id)));
+      const confirmedSales=(Array.isArray(takeovers)?takeovers:[]).filter(x=>x.sales_status==='confirmed'&&String(x.from_employee_id)===String(me.id));
+      const confirmedIds=new Set(confirmedSales.map(x=>String(x.id)));
       const fresh=pending.filter(x=>!previousPendingIds.has(String(x.id)));
+      const freshReady=readySales.filter(x=>!previousReadyIds.has(String(x.id)));
+      const newlyConfirmedSales=hasLoadedSalesState?confirmedSales.filter(x=>!previousConfirmedSaleIds.has(String(x.id))):[];
       paint(pending,employees);
       paintRecordSaleReady(readySales);
-      if(previousPendingIds.size&&fresh.length){
-        // Native OS notifications are delivered by the service worker push event.
-        // Keep only the in-app toast here to avoid duplicate OS notifications.
-        if(typeof toast==='function')toast(fresh.length===1?'New incoming shift handover':'You have '+fresh.length+' new incoming shift handovers');
-      }
+      const names=Object.fromEntries((Array.isArray(employees)?employees:[]).map(e=>[String(e.id),e.name]));
+      const popupEvents=[];
+      fresh.forEach(item=>{
+        const sender=names[String(item.from_employee_id)]||'Another attendant';
+        popupEvents.push({key:'handover:'+String(item.id),kind:'handover',level:'warning',title:'Incoming shift handover',detail:sender+' sent you a handover that needs your confirmation.',href:'/attendant-dashboard.html?handover='+encodeURIComponent(String(item.id))});
+      });
+      freshReady.forEach(item=>popupEvents.push({key:'record-sale:'+String(item.id),kind:'record-sale',level:'warning',title:'Record sale ready',detail:'The receiving attendant completed the handover. Record the sales for this shift.',href:'/attendant-dashboard.html#record-sale-ready-notification'}));
+      newlyConfirmedSales.forEach(item=>popupEvents.push({key:'sales-confirmed:'+String(item.id),kind:'sales-confirmed',level:'info',title:'Shift sales confirmed',detail:'The administrator confirmed the sales for your shift.',href:'/attendant-dashboard.html#shift-history'}));
+      showAttendantDashboardPopups(popupEvents);
       previousPendingIds=ids;
+      previousReadyIds=readyIds;
+      previousConfirmedSaleIds=confirmedIds;
+      hasLoadedSalesState=true;
     }catch(_){}finally{polling=false;}
   }
   async function openLinkedHandover(){
