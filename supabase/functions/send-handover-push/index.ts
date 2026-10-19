@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
   if (!employeeId || !handoverId) {
     return json({ error: "to_employee_id and handover_id are required" }, 400);
   }
-  const testNotification = notificationType === "test";
+  if (notificationType === "test") return json({ error: "Test push notifications are disabled" }, 410);
   const recordSaleReady = notificationType === "record_sale_ready";
   const attendantSalesConfirmed = notificationType === "attendant_sales_confirmed";
   const attendantDsrConfirmed = notificationType === "attendant_dsr_confirmed";
@@ -152,8 +152,7 @@ Deno.serve(async (req: Request) => {
       });
     }
   }
-  const title = testNotification ? "Fuel Shift test notification"
-    : attendantSalesConfirmed ? "Shift sales confirmed"
+  const title = attendantSalesConfirmed ? "Shift sales confirmed"
     : attendantDsrConfirmed ? "Daily report confirmed"
     : adminLowStock ? "Low fuel stock alert"
     : adminPurchasePending ? "Purchase awaiting discharge"
@@ -161,9 +160,7 @@ Deno.serve(async (req: Request) => {
     : adminPendingSales ? "Sales pending confirmation"
     : adminDsrReady ? "DSR ready for confirmation"
     : recordSaleReady ? "Record sale ready" : "Incoming shift handover";
-  const message = testNotification
-    ? "Push notifications are working on this device. This is a test alert."
-    : attendantSalesConfirmed
+  const message = attendantSalesConfirmed
     ? `${senderName} confirmed the sales you recorded for this shift.`
     : attendantDsrConfirmed
       ? `${senderName} confirmed the Daily Sales Report for ${handoverId}.`
@@ -183,8 +180,7 @@ Deno.serve(async (req: Request) => {
   const payload = JSON.stringify({
     title,
     body: message,
-    tag: testNotification ? `push-test-${handoverId}`
-      : attendantSalesConfirmed ? `attendant-sales-confirmed-${handoverId}`
+    tag: attendantSalesConfirmed ? `attendant-sales-confirmed-${handoverId}`
       : attendantDsrConfirmed ? `attendant-dsr-confirmed-${handoverId}`
       : adminLowStock ? `admin-low-stock-${handoverId}`
       : adminPurchasePending ? `admin-purchase-pending-${handoverId}`
@@ -192,8 +188,7 @@ Deno.serve(async (req: Request) => {
       : adminDsrReady ? `admin-dsr-${handoverId}`
       : adminPendingSales ? `admin-sales-${handoverId}`
       : recordSaleReady ? `record-sale-${handoverId}` : `handover-${handoverId}`,
-    url: testNotification ? (adminNotification ? "/admin-dashboard.html" : "/attendant-dashboard.html")
-      : attendantSalesConfirmed ? "/attendant-dashboard.html"
+    url: attendantSalesConfirmed ? "/attendant-dashboard.html"
       : attendantDsrConfirmed ? "/attendant-dashboard.html"
       : adminLowStock ? "/admin-inventory.html"
       : adminPurchasePending ? "/admin-purchases.html"
