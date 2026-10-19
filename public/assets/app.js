@@ -1924,10 +1924,23 @@ async function adminDashboard(){
     const todaySalesCount=Number(todaySalesSummary?.count||0);
     const total=Number(todaySalesSummary?.amount||0);
     const activeShifts=shifts.filter(s=>s.status==='active');
+    // Count every shift that belongs to the current Addis Ababa DSR day, not just shifts still active.
+    const addisDateKey=value=>{
+      if(!value)return '';
+      const raw=String(value);
+      if(/^\\d{4}-\\d{2}-\\d{2}$/.test(raw))return raw;
+      const date=new Date(value);
+      if(Number.isNaN(date.getTime()))return '';
+      const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+      const part=type=>parts.find(p=>p.type===type)?.value||'';
+      return part('year')+'-'+part('month')+'-'+part('day');
+    };
+    const todayDsrDate=addisDateKey(new Date());
+    const shiftsForCurrentDsrDay=allShifts.filter(s=>addisDateKey(s.start_time)===todayDsrDate);
     const low=tanks.filter(t=>Number(t.capacity_liters)>0&&Number(t.current_liters)/Number(t.capacity_liters)<=.1);
     const el=id=>document.getElementById(id);
     if(el('sales'))el('sales').textContent=todaySalesCount; if(el('sales-total'))el('sales-total').textContent=money(total);
-    if(el('active-shifts'))el('active-shifts').textContent=activeShifts.length; if(el('tank-count'))el('tank-count').textContent=tanks.length; if(el('alerts'))el('alerts').textContent=low.length;
+    if(el('active-shifts'))el('active-shifts').textContent=shiftsForCurrentDsrDay.length; if(el('tank-count'))el('tank-count').textContent=tanks.length; if(el('alerts'))el('alerts').textContent=low.length;
     if(el('product-count'))el('product-count').textContent=products.length; if(el('dispenser-count'))el('dispenser-count').textContent=dispensers.length; if(el('attendant-count'))el('attendant-count').textContent=activeEmployees.filter(e=>e.role==='attendant').length;
     await loadAccountingReconciliation();
     await loadStationReconciliationAlerts();
