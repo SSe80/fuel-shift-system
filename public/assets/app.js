@@ -1444,6 +1444,18 @@ async function ensureFuelPushRegisteredOnLogin(role){
   console.info('Fuel Shift phone push subscription synchronized for signed-in role:',role);
  }catch(e){
   console.warn('Could not auto-register this signed-in device for push notifications:',e);
+  // Do not silently leave a device unregistered when OS permission is already granted.
+  // Show one actionable warning per browser session; the user can retry via the
+  // existing Enable phone notifications control without being spammed on refresh.
+  try{
+   const warningKey='fuelPushAutoRegisterWarning:'+role;
+   if(!sessionStorage.getItem(warningKey)){
+    sessionStorage.setItem(warningKey,'1');
+    toast('Phone notifications could not be registered automatically. Tap Enable phone notifications and try again.');
+   }
+  }catch(_){
+   toast('Phone notifications could not be registered automatically. Tap Enable phone notifications and try again.');
+  }
  }
 }
 async function getFuelPushSubscription(){
