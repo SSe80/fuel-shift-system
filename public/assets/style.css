@@ -5705,16 +5705,18 @@ body[data-app-page="attendantDashboard"] .attendant-dsr-card-category > .attenda
   body[data-app-page="attendantDashboard"] .attendant-dsr-card-category > .attendant-dsr-group-cards{gap:10px;padding:11px 11px 12px}
 }
 
-/* Keep the Sales today count and currency total aligned without crowding the metric card. */
+/* Align all three Sales today text lines with the other dashboard metric cards. */
 body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales{
-  align-items:stretch!important;
+  padding-top:33px!important;
 }
 body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales > .station-metric-label{
+  display:block!important;
   width:100%!important;
-  margin-bottom:12px!important;
+  margin:0 0 12px!important;
   line-height:1.35!important;
 }
 body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales > b{
+  display:block!important;
   width:100%!important;
   margin:0!important;
   line-height:1.05!important;
@@ -5725,8 +5727,6 @@ body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-
   width:100%!important;
   max-width:100%!important;
   margin-top:9px!important;
-  overflow-wrap:normal!important;
-  word-break:normal!important;
   white-space:nowrap!important;
   font-size:clamp(9px,1.1vw,11px)!important;
   line-height:1.25!important;
@@ -5735,8 +5735,7 @@ body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-
 }
 @media(max-width:560px){
   body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales{
-    padding-right:9px!important;
-    padding-left:11px!important;
+    padding:33px 9px 11px 11px!important;
   }
   body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales > .station-metric-label{
     margin-bottom:10px!important;
