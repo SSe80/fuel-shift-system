@@ -4168,7 +4168,7 @@ def confirm_handover(handover_id):
     data=request.get_json(silent=True) or {}
     pin=str(data.get("pin",""))
     if not pin or not pin.isdigit():return jsonify({"error":"Enter your numeric PIN"}),400
-    es,er=sb("employees",params={"id":"eq."+eid,"active":"eq.true","select":"id,role,pin_hash"})
+    es,er=sb("employees",params={"id":"eq."+eid,"active":"eq.true","select":"id,role,pin_hash,name"})
     if es!=200 or not er:return jsonify({"error":"Attendant account not found"}),404
     emp=er[0]
     if emp.get("role")!="attendant" or not verify_pin(pin,emp.get("pin_hash","")):return jsonify({"error":"Invalid PIN"}),401
