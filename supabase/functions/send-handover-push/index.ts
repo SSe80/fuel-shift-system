@@ -38,6 +38,7 @@ Deno.serve(async (req: Request) => {
   const handoverId = String(body.handover_id || "");
   const senderName = String(body.sender_name || "Another attendant").slice(0, 100);
   const notificationType = String(body.notification_type || "incoming");
+  const appRole = String(body.app_role || "").toLowerCase() === "admin" ? "admin" : "attendant";
   if (!employeeId || !handoverId) {
     return json({ error: "to_employee_id and handover_id are required" }, 400);
   }
@@ -50,7 +51,7 @@ Deno.serve(async (req: Request) => {
   const adminDsrConfirmedStock = notificationType === "admin_dsr_confirmed_stock";
   const adminLowStock = notificationType === "admin_low_stock";
   const adminPurchasePending = notificationType === "admin_purchase_pending";
-  const adminNotification = adminPendingSales || adminDsrReady || adminDsrConfirmedStock || adminLowStock || adminPurchasePending;
+  const adminNotification = appRole === "admin" || adminPendingSales || adminDsrReady || adminDsrConfirmedStock || adminLowStock || adminPurchasePending;
 
   const restHeaders = {
     apikey: serviceKey,
@@ -202,6 +203,7 @@ Deno.serve(async (req: Request) => {
       : recordSaleReady ? "/attendant-dashboard.html"
       : `/attendant-dashboard.html?handover=${encodeURIComponent(handoverId)}`,
     icon: adminNotification ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg",
+    app_role: adminNotification ? "admin" : "attendant",
     handover_id: handoverId,
     notification_type: notificationType,
     stock_lines: stockLines,

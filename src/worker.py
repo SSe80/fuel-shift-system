@@ -4168,7 +4168,8 @@ def push_test():
         employee_id,
         "test-" + str(int(datetime.now(timezone.utc).timestamp())),
         "Fuel Shift System",
-        "test"
+        "test",
+        str(session.get("role") or "attendant")
     )
     if not isinstance(result, dict) or not result.get("ok"):
         return jsonify({"error": "The push service could not send a test notification", "details": result or {}}), 502
@@ -4195,7 +4196,7 @@ def push_unsubscribe():
         return jsonify({"error": "Could not disable phone notifications"}), 502
     return jsonify({"ok": True}), 200
 
-async def _deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type="incoming"):
+async def _deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type="incoming", app_role=None):
     token = str(getattr(env(), "PUSH_DELIVERY_TOKEN", "") or "").strip()
     base = str(getattr(env(), "SUPABASE_URL", "") or "").strip().rstrip("/")
     if not token or not base or not handover_id or not to_employee_id:
@@ -4211,7 +4212,8 @@ async def _deliver_handover_push(to_employee_id, handover_id, sender_name, notif
                 "to_employee_id": str(to_employee_id),
                 "handover_id": str(handover_id),
                 "sender_name": str(sender_name or "Another attendant"),
-                "notification_type": str(notification_type or "incoming")
+                "notification_type": str(notification_type or "incoming"),
+                "app_role": str(app_role or ("admin" if str(notification_type or "").startswith("admin_") else "attendant"))
             })
         }
         response = await fetch(base + "/functions/v1/send-handover-push", options)
@@ -4228,8 +4230,8 @@ async def _deliver_handover_push(to_employee_id, handover_id, sender_name, notif
         print("Push delivery request failed: " + str(exc)[:500])
         return {"ok": False, "error": str(exc)[:300]}
 
-def deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type="incoming"):
-    return run_sync(_deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type))
+def deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type="incoming", app_role=None):
+    return run_sync(_deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type, app_role))
 
 def _notify_admin_push(reference_id, sender_name, notification_type):
     # Deliver to every active administrator's registered devices. Push failures
