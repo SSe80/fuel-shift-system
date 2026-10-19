@@ -1,4 +1,4 @@
-const CACHE_NAME = "fuel-shift-shell-v39";
+const CACHE_NAME = "fuel-shift-shell-v40";
 const SHELL = [
   "/admin-login.html",
   "/admin-logistics.html",
@@ -126,15 +126,27 @@ self.addEventListener("fetch", event => {
 self.addEventListener("push", event => {
   let data = { title: "Fuel Shift System", body: "A shift handover is waiting for your confirmation.", url: "/attendant-dashboard.html" };
   try { if (event.data) data = { ...data, ...event.data.json() }; } catch (_) {}
-  event.waitUntil(self.registration.showNotification(String(data.title || "Incoming shift handover"), {
+  const isAdmin = String(data.notification_type || "").startsWith("admin_");
+  const stockLines = Array.isArray(data.stock_lines) ? data.stock_lines.map(line => String(line)) : [];
+  const options = {
     body: String(data.body || "A shift handover is waiting for your confirmation."),
-    icon: String(data.icon || (String(data.notification_type || "").startsWith("admin_") ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg")),
-    badge: String(data.icon || (String(data.notification_type || "").startsWith("admin_") ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg")),
+    icon: String(data.icon || (isAdmin ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg")),
+    badge: String(isAdmin ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg"),
     tag: String(data.tag || ("fuel-handover-" + (data.handover_id || "pending"))),
     renotify: true,
     requireInteraction: true,
-    data: { url: String(data.url || "/attendant-dashboard.html"), handover_id: data.handover_id || null, notification_type: data.notification_type || "incoming" }
-  }));
+    vibrate: [180, 80, 180],
+    timestamp: Date.now(),
+    lang: "en",
+    dir: "auto",
+    data: { url: String(data.url || "/attendant-dashboard.html"), handover_id: data.handover_id || null, notification_type: data.notification_type || "incoming", stock_lines: stockLines }
+  };
+  // On supported Android browsers, use a richer expanded notification for tank inventory.
+  if (data.notification_type === "admin_dsr_confirmed_stock" && stockLines.length) {
+    options.body = stockLines.join("\\n");
+    options.actions = [{ action: "view", title: "View tanks" }];
+  }
+  event.waitUntil(self.registration.showNotification(String(data.title || "Fuel Shift System"), options));
 });
 self.addEventListener("notificationclick", event => {
   event.notification.close();
