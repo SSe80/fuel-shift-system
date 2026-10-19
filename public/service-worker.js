@@ -1,4 +1,4 @@
-const CACHE_NAME = "fuel-shift-shell-v40";
+const CACHE_NAME = "fuel-shift-shell-v41";
 const SHELL = [
   "/admin-login.html",
   "/admin-logistics.html",
@@ -143,7 +143,7 @@ self.addEventListener("push", event => {
   };
   // On supported Android browsers, use a richer expanded notification for tank inventory.
   if (data.notification_type === "admin_dsr_confirmed_stock" && stockLines.length) {
-    options.body = stockLines.join("\\n");
+    options.body = stockLines.join("\n");
     options.actions = [{ action: "view", title: "View tanks" }];
   }
   event.waitUntil(self.registration.showNotification(String(data.title || "Fuel Shift System"), options));
