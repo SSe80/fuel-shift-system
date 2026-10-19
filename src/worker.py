@@ -4607,6 +4607,23 @@ def confirm_daily_report(report_date):
     # Send the final live tank inventory to every active admin's subscribed devices
     # only after this request has newly confirmed the DSR.
     _notify_admin_push(report_date, "Fuel Shift System", "admin_dsr_confirmed_stock")
+
+    # Notify each attendant who worked on this report date after DSR approval.
+    try:
+        day_start = report_day.isoformat() + "T00:00:00+03:00"
+        next_day_start = (report_day + timedelta(days=1)).isoformat() + "T00:00:00+03:00"
+        ss, report_shifts = sb("shifts", params={
+            "start_time":"gte." + day_start,
+            "and":"(start_time.lt." + next_day_start + ")",
+            "select":"id,employee_id",
+            "limit":"10000"
+        })
+        if ss == 200 and isinstance(report_shifts, list):
+            attendant_ids = sorted(set(str(row.get("employee_id")) for row in report_shifts if row.get("employee_id")))
+            for attendant_id in attendant_ids:
+                deliver_handover_push(attendant_id, report_date, "Fuel Shift System", "attendant_dsr_confirmed")
+    except Exception:
+        pass
     return jsonify({
         "confirmed":True,
         "already_confirmed":False,
