@@ -999,6 +999,39 @@ async function userDashboard(){
     });
     return panel;
   }
+  function ensureRecordSalePanel(){
+    let panel=document.getElementById('record-sale-ready-notification');
+    if(panel)return panel;
+    const incoming=ensurePanel();
+    if(!incoming)return null;
+    panel=document.createElement('section');
+    panel.id='record-sale-ready-notification';
+    panel.className='incoming-handover-notification record-sale-ready-notification';
+    panel.setAttribute('aria-live','polite');
+    panel.hidden=true;
+    panel.style.cssText='display:none;align-items:center;gap:12px;margin:0 0 14px;padding:14px 16px;border:1px solid #a7d9b5;border-radius:16px;background:#f0fbf3;color:#173b26;box-shadow:0 5px 18px rgba(16,24,40,.05);';
+    panel.innerHTML='<div aria-hidden="true" style="display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#d6f5df;color:#176b35;font-size:20px;font-weight:900;">✓</div><div style="display:flex;flex:1;min-width:0;flex-direction:column;gap:4px;"><strong id="record-sale-ready-title" style="font-size:13px;font-weight:850;">Record sale ready</strong><span id="record-sale-ready-detail" style="font-size:12px;color:#42634d;"></span></div><button type="button" id="record-sale-ready-action" style="flex:0 0 auto;min-height:38px;padding:8px 12px;border:0;border-radius:10px;background:#176b35;color:#fff;font-size:12px;font-weight:800;">Record sale</button>';
+    incoming.insertAdjacentElement('afterend',panel);
+    panel.querySelector('#record-sale-ready-action').addEventListener('click',async()=>{
+      try{
+        await userDashboard();
+        const section=document.querySelector('#shift [data-card-category="sales-recording"]');
+        const action=section?.querySelector('button[onclick*="openBatchRecordSalesModal"], .main-record-sale-card button.primary');
+        if(action){action.scrollIntoView({behavior:'smooth',block:'center'});action.focus({preventScroll:true});}
+        else if(section){section.scrollIntoView({behavior:'smooth',block:'center'});}
+        else document.getElementById('shift')?.scrollIntoView({behavior:'smooth',block:'start'});
+      }catch(_){if(typeof toast==='function')toast('Could not refresh Record Sale items. Please try again.');}
+    });
+    return panel;
+  }
+  function paintRecordSaleReady(records){
+    const panel=ensureRecordSalePanel();if(!panel)return;
+    if(!records.length){panel.hidden=true;panel.style.display='none';return;}
+    panel.hidden=false;panel.style.display='flex';
+    panel.querySelector('#record-sale-ready-title').textContent=records.length===1?'Record sale ready':'Record sales ready';
+    panel.querySelector('#record-sale-ready-detail').textContent=records.length===1?'The receiving attendant completed the handover. Record the sales for this shift.':records.length+' completed handovers are ready for sales recording.';
+    panel.querySelector('#record-sale-ready-action').textContent=records.length===1?'Record sale':'Review sales';
+  }
   function paint(pending,employees){
     const panel=ensurePanel();if(!panel)return;
     if(!pending.length){panel.hidden=true;return;}
@@ -1013,12 +1046,14 @@ async function userDashboard(){
     if(polling||document.hidden||!document.body.classList.contains('attendant-dashboard-page'))return;
     polling=true;
     try{
-      const [me,handovers,employees]=await Promise.all([currentUser(),api('/api/handovers'),api('/api/users').catch(()=>[])]);
+      const [me,handovers,employees,takeovers]=await Promise.all([currentUser(),api('/api/handovers'),api('/api/users').catch(()=>[]),api('/api/shift-takeovers').catch(()=>[])]);
       if(me.role!=='attendant')return;
       const pending=(Array.isArray(handovers)?handovers:[]).filter(x=>x.status==='pending'&&String(x.to_employee_id)===String(me.id));
+      const readySales=(Array.isArray(takeovers)?takeovers:[]).filter(x=>x.sales_status==='awaiting_attendant'&&String(x.from_employee_id)===String(me.id));
       const ids=new Set(pending.map(x=>String(x.id)));
       const fresh=pending.filter(x=>!previousPendingIds.has(String(x.id)));
       paint(pending,employees);
+      paintRecordSaleReady(readySales);
       if(previousPendingIds.size&&fresh.length){
         if('Notification'in window&&Notification.permission==='granted'){try{new Notification(fresh.length===1?'New shift handover':'New shift handovers',{body:fresh.length===1?'A handover is waiting for your confirmation.':fresh.length+' handovers are waiting for your confirmation.',tag:'fuel-handover-dashboard',renotify:true});}catch(_){}}
         if(typeof toast==='function')toast(fresh.length===1?'New incoming shift handover':'You have '+fresh.length+' new incoming shift handovers');

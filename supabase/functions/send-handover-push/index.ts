@@ -33,9 +33,11 @@ Deno.serve(async (req: Request) => {
   const employeeId = String(body.to_employee_id || "");
   const handoverId = String(body.handover_id || "");
   const senderName = String(body.sender_name || "Another attendant").slice(0, 100);
+  const notificationType = String(body.notification_type || "incoming");
   if (!employeeId || !handoverId) {
     return json({ error: "to_employee_id and handover_id are required" }, 400);
   }
+  const recordSaleReady = notificationType === "record_sale_ready";
 
   const restHeaders = {
     apikey: serviceKey,
@@ -55,11 +57,16 @@ Deno.serve(async (req: Request) => {
 
   webpush.setVapidDetails(subject, publicKey, privateKey);
   const payload = JSON.stringify({
-    title: "Incoming shift handover",
-    body: `${senderName} sent you a handover that needs your confirmation.`,
-    tag: `handover-${handoverId}`,
-    url: `/attendant-dashboard.html?handover=${encodeURIComponent(handoverId)}`,
+    title: recordSaleReady ? "Record sale ready" : "Incoming shift handover",
+    body: recordSaleReady
+      ? `${senderName} confirmed the shift handover. Record the shift sales now.`
+      : `${senderName} sent you a handover that needs your confirmation.`,
+    tag: recordSaleReady ? `record-sale-${handoverId}` : `handover-${handoverId}`,
+    url: recordSaleReady
+      ? "/attendant-dashboard.html"
+      : `/attendant-dashboard.html?handover=${encodeURIComponent(handoverId)}`,
     handover_id: handoverId,
+    notification_type: recordSaleReady ? "record_sale_ready" : "incoming",
   });
 
   let sent = 0;

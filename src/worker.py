@@ -2771,7 +2771,7 @@ def confirm_shift_assignment(shift_id):
     data=request.get_json(silent=True) or {}
     pin=str(data.get("pin",""))
     if not pin or not pin.isdigit():return jsonify({"error":"Enter your numeric PIN"}),400
-    es,er=sb("employees",params={"id":"eq."+eid,"active":"eq.true","select":"id,role,pin_hash"})
+    es,er=sb("employees",params={"id":"eq."+eid,"active":"eq.true","select":"id,role,pin_hash,name"})
     if es!=200 or not er:return jsonify({"error":"Attendant account not found"}),404
     emp=er[0]
     if emp.get("role")!="attendant" or not verify_pin(pin,emp.get("pin_hash","")):return jsonify({"error":"Invalid PIN"}),401
@@ -4096,10 +4096,10 @@ def push_unsubscribe():
         return jsonify({"error": "Could not disable phone notifications"}), 502
     return jsonify({"ok": True}), 200
 
-async def _deliver_handover_push(to_employee_id, handover_id, sender_name):
+async def _deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type="incoming"):
     token = str(getattr(env(), "PUSH_DELIVERY_TOKEN", "") or "").strip()
     base = str(getattr(env(), "SUPABASE_URL", "") or "").strip().rstrip("/")
-    if not token or not base or not handover_id:
+    if not token or not base or not handover_id or not to_employee_id:
         return
     try:
         options = {
@@ -4111,17 +4111,18 @@ async def _deliver_handover_push(to_employee_id, handover_id, sender_name):
             "body": json.dumps({
                 "to_employee_id": str(to_employee_id),
                 "handover_id": str(handover_id),
-                "sender_name": str(sender_name or "Another attendant")
+                "sender_name": str(sender_name or "Another attendant"),
+                "notification_type": str(notification_type or "incoming")
             })
         }
         response = await fetch(base + "/functions/v1/send-handover-push", options)
-        # Best effort only: never fail a submitted handover because push delivery failed.
+        # Best effort only: never fail a handover operation because push delivery failed.
         await response.text()
     except Exception:
         return
 
-def deliver_handover_push(to_employee_id, handover_id, sender_name):
-    return run_sync(_deliver_handover_push(to_employee_id, handover_id, sender_name))
+def deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type="incoming"):
+    return run_sync(_deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type))
 
 @app.post("/api/handovers")
 def create_handover():
@@ -4167,7 +4168,7 @@ def confirm_handover(handover_id):
     data=request.get_json(silent=True) or {}
     pin=str(data.get("pin",""))
     if not pin or not pin.isdigit():return jsonify({"error":"Enter your numeric PIN"}),400
-    es,er=sb("employees",params={"id":"eq."+eid,"active":"eq.true","select":"id,role,pin_hash"})
+    es,er=sb("employees",params={"id":"eq."+eid,"active":"eq.true","select":"id,role,pin_hash,name"})
     if es!=200 or not er:return jsonify({"error":"Attendant account not found"}),404
     emp=er[0]
     if emp.get("role")!="attendant" or not verify_pin(pin,emp.get("pin_hash","")):return jsonify({"error":"Invalid PIN"}),401
@@ -4178,7 +4179,7 @@ def confirm_handover(handover_id):
         "id":"eq."+handover_id,
         "to_employee_id":"eq."+eid,
         "status":"eq.pending",
-        "select":"id,closing_reading,closing_mm,closing_liters,closing_nozzle_readings",
+        "select":"id,from_employee_id,shift_id,closing_reading,closing_mm,closing_liters,closing_nozzle_readings",
         "limit":"1"
     })
     if hs!=200 or not hr:return jsonify({"error":"Pending handover not found"}),404
@@ -4198,6 +4199,20 @@ def confirm_handover(handover_id):
         "p_opening_liters":liters
     })
     if status>=400:return jsonify({"error":result}),status
+    # Once the receiving attendant confirms the handover, notify the original
+    # shift sender that Record Sale is ready. Push is best-effort and must not
+    # change the successful handover result.
+    try:
+        sender_id=str(handover.get("from_employee_id") or "")
+        if sender_id and sender_id!=str(eid):
+            deliver_handover_push(
+                sender_id,
+                handover_id,
+                emp.get("name") or "The receiving attendant",
+                "record_sale_ready"
+            )
+    except Exception:
+        pass
     return jsonify(result),200
 
 @app.post("/api/handovers/<handover_id>/cancel")
