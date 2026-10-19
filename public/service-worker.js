@@ -1,4 +1,4 @@
-const CACHE_NAME = "fuel-shift-shell-v46";
+const CACHE_NAME = "fuel-shift-shell-v47";
 const SHELL = [
   "/admin-login.html",
   "/admin-logistics.html",
@@ -133,7 +133,8 @@ self.addEventListener("push", event => {
     icon: String(data.icon || (isAdmin ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg")),
     badge: String(isAdmin ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg"),
     tag: String(data.tag || ("fuel-handover-" + (data.handover_id || "pending"))),
-    renotify: true,
+    // Stable tags replace the existing alert without buzzing again when an event is reprocessed.
+    renotify: false,
     requireInteraction: true,
     silent: false,
     vibrate: [180, 80, 180],
