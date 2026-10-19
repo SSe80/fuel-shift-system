@@ -38,6 +38,9 @@ Deno.serve(async (req: Request) => {
     return json({ error: "to_employee_id and handover_id are required" }, 400);
   }
   const recordSaleReady = notificationType === "record_sale_ready";
+  const adminPendingSales = notificationType === "admin_pending_sales";
+  const adminDsrReady = notificationType === "admin_dsr_ready";
+  const adminNotification = adminPendingSales || adminDsrReady;
 
   const restHeaders = {
     apikey: serviceKey,
@@ -56,17 +59,29 @@ Deno.serve(async (req: Request) => {
   if (!subscriptions.length) return json({ sent: 0, expired: 0, reason: "No subscribed devices" });
 
   webpush.setVapidDetails(subject, publicKey, privateKey);
+  const title = adminPendingSales ? "Sales pending confirmation"
+    : adminDsrReady ? "DSR ready for confirmation"
+    : recordSaleReady ? "Record sale ready" : "Incoming shift handover";
+  const message = adminPendingSales
+    ? "A shift sale has been submitted and is waiting for administrator confirmation."
+    : adminDsrReady
+      ? `The daily sales report for ${handoverId} is ready for review and confirmation.`
+      : recordSaleReady
+        ? `${senderName} confirmed the shift handover. Record the shift sales now.`
+        : `${senderName} sent you a handover that needs your confirmation.`;
   const payload = JSON.stringify({
-    title: recordSaleReady ? "Record sale ready" : "Incoming shift handover",
-    body: recordSaleReady
-      ? `${senderName} confirmed the shift handover. Record the shift sales now.`
-      : `${senderName} sent you a handover that needs your confirmation.`,
-    tag: recordSaleReady ? `record-sale-${handoverId}` : `handover-${handoverId}`,
-    url: recordSaleReady
-      ? "/attendant-dashboard.html"
+    title,
+    body: message,
+    tag: adminDsrReady ? `admin-dsr-${handoverId}`
+      : adminPendingSales ? `admin-sales-${handoverId}`
+      : recordSaleReady ? `record-sale-${handoverId}` : `handover-${handoverId}`,
+    url: adminDsrReady ? `/admin-daily-report.html#dsr-${encodeURIComponent(handoverId)}`
+      : adminPendingSales ? "/admin-sales.html"
+      : recordSaleReady ? "/attendant-dashboard.html"
       : `/attendant-dashboard.html?handover=${encodeURIComponent(handoverId)}`,
+    icon: adminNotification ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg",
     handover_id: handoverId,
-    notification_type: recordSaleReady ? "record_sale_ready" : "incoming",
+    notification_type: notificationType,
   });
 
   let sent = 0;
