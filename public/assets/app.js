@@ -1445,6 +1445,15 @@ async function refreshFuelPushControl(button,role){
   button.textContent=!state.supported?'Phone notifications unsupported':
    (enabled?'Disable phone notifications':'Enable phone notifications');
   button.setAttribute('aria-pressed',String(enabled));
+  // Keep the action color clear and consistent on both Admin and Attendant dashboards.
+  button.style.background=enabled?'#fff0ee':'#e8f8ef';
+  button.style.border='1px solid '+(enabled?'#f0b8b3':'#a8dfbd');
+  button.style.color=enabled?'#b42318':'#167647';
+  button.style.padding='10px 14px';
+  button.style.borderRadius='10px';
+  button.style.fontWeight='800';
+  button.style.cursor='pointer';
+  button.style.transition='background .15s ease,border-color .15s ease,color .15s ease';
   button.title=state.permission==='denied'?'Notifications are blocked in Android/browser settings. Allow them there before enabling.':'';
  }catch(e){
   button.disabled=false;button.textContent='Retry notification status';button.dataset.pushEnabled='false';
