@@ -1532,6 +1532,51 @@ function showFuelPushConfirm(action,role){
   modal.querySelector('.fuel-push-accept').focus({preventScroll:true});
  });
 }
+function showFuelInboxPopup(item){
+ const id='fuel-inbox-popup-card';
+ document.getElementById(id)?.remove();
+ let style=document.getElementById('fuel-inbox-popup-style');
+ if(!style){
+  style=document.createElement('style');style.id='fuel-inbox-popup-style';
+  style.textContent=`
+   .fuel-inbox-popup{position:fixed;z-index:5001;top:calc(16px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-12px);width:min(440px,calc(100vw - 28px));box-sizing:border-box;display:flex;align-items:flex-start;gap:13px;padding:15px 42px 15px 15px;border:1px solid #dbe5f5;border-radius:16px;background:var(--card-bg,#fff);box-shadow:0 16px 44px rgba(16,24,40,.22);color:var(--text-primary,#182230);opacity:0;animation:fuelInboxPopupIn .24s ease-out forwards;cursor:pointer}
+   .fuel-inbox-popup.is-critical,.fuel-inbox-popup.is-warning{border-color:#f2d3d5}
+   .fuel-inbox-popup-icon{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:13px;background:#eef4ff;color:#2459a9;font-size:21px;font-weight:900}
+   .fuel-inbox-popup.is-critical .fuel-inbox-popup-icon,.fuel-inbox-popup.is-warning .fuel-inbox-popup-icon{background:#fff0f0;color:#c4323e}
+   .fuel-inbox-popup-copy{min-width:0;padding-top:1px}
+   .fuel-inbox-popup-kicker{margin:0 0 4px;color:#2459a9;font-size:10px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}
+   .fuel-inbox-popup.is-critical .fuel-inbox-popup-kicker,.fuel-inbox-popup.is-warning .fuel-inbox-popup-kicker{color:#b4232f}
+   .fuel-inbox-popup-title{margin:0;font-size:15px;font-weight:850;line-height:1.35;color:var(--text-primary,#182230)}
+   .fuel-inbox-popup-message{margin:5px 0 0;color:var(--text-secondary,#667085);font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+   .fuel-inbox-popup-link{display:inline-block;margin-top:8px;color:#2459a9;font-size:11px;font-weight:800}
+   .fuel-inbox-popup-close{position:absolute;top:8px;right:9px;width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:#667085;font-size:20px;line-height:1;cursor:pointer}
+   .fuel-inbox-popup-close:hover{background:#f2f4f7}
+   @keyframes fuelInboxPopupIn{to{opacity:1;transform:translate(-50%,0)}}
+   @media(prefers-reduced-motion:reduce){.fuel-inbox-popup{animation:none;opacity:1;transform:translate(-50%,0)}}
+  `;
+  document.head.appendChild(style);
+ }
+ const card=document.createElement('section');
+ card.id=id;card.className='fuel-inbox-popup'+(item.level==='critical'?' is-critical':item.level==='warning'?' is-warning':'');
+ card.setAttribute('role','status');card.setAttribute('aria-live','polite');card.tabIndex=0;
+ const icon=item.level==='critical'||item.level==='warning'?'!':'i';
+ const copy=document.createElement('div');copy.className='fuel-inbox-popup-copy';
+ const kicker=document.createElement('p');kicker.className='fuel-inbox-popup-kicker';kicker.textContent=item.level==='critical'?'Urgent notification':item.level==='warning'?'Action required':'New notification';
+ const title=document.createElement('h2');title.className='fuel-inbox-popup-title';title.textContent=item.title||'New notification';
+ const message=document.createElement('p');message.className='fuel-inbox-popup-message';message.textContent=item.detail||'Open the notifications panel to review this update.';
+ const link=document.createElement('span');link.className='fuel-inbox-popup-link';link.textContent='Tap to view details';
+ copy.append(kicker,title,message,link);
+ const symbol=document.createElement('div');symbol.className='fuel-inbox-popup-icon';symbol.setAttribute('aria-hidden','true');symbol.textContent=icon;
+ const close=document.createElement('button');close.type='button';close.className='fuel-inbox-popup-close';close.setAttribute('aria-label','Dismiss notification');close.textContent='×';
+ const dismiss=()=>{if(card.isConnected)card.remove();};
+ close.addEventListener('click',event=>{event.stopPropagation();dismiss();});
+ const open=()=>{if(item.href)window.location.href=item.href;else dismiss();};
+ card.addEventListener('click',open);
+ card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open();}});
+ card.append(symbol,copy,close);document.body.appendChild(card);
+ const timer=setTimeout(dismiss,6500);
+ card.addEventListener('DOMNodeRemoved',()=>clearTimeout(timer),{once:true});
+}
 function showFuelPushResult(enabled,message){
  const id='fuel-push-result-card';
  document.getElementById(id)?.remove();
@@ -1827,6 +1872,20 @@ async function loadStationNotifications(){
   }
   items.sort((a,b)=>(Number(b.isFavorite)-Number(a.isFavorite))||(Number(a.isRead)-Number(b.isRead))||(rank[a.level]??9)-(rank[b.level]??9));
   items.forEach(item=>{if(!item.date)item.date=new Date().toISOString();});
+  // Surface unread in-app inbox alerts as a compact top-of-screen card, matching
+  // the Phone notifications enabled/disabled confirmation card. Avoid repeating
+  // the same alert on every inbox refresh in this browser session.
+  try{
+    const seenKey='fuelInboxPopupSeenV1';
+    const seen=JSON.parse(sessionStorage.getItem(seenKey)||'{}')||{};
+    const unread=items.filter(item=>!item.isRead);
+    const fresh=unread.filter(item=>!seen[item.key]);
+    const selected=fresh[0]||(!sessionStorage.getItem('fuelInboxPopupInitializedV1')?unread[0]:null);
+    items.forEach(item=>{seen[item.key]=true;});
+    sessionStorage.setItem(seenKey,JSON.stringify(seen));
+    sessionStorage.setItem('fuelInboxPopupInitializedV1','1');
+    if(selected)showFuelInboxPopup(selected);
+  }catch(popupError){console.warn('Could not display inbox notification popup.',popupError);}
   const unreadCount=items.filter(item=>!item.isRead).length;
   if(count)count.textContent=String(unreadCount);if(status)status.textContent=failed?'Some checks unavailable':'Updated just now';
   const inboxFilterDefaults={from:'',to:'',status:'all',priority:'all',favorites:false};
