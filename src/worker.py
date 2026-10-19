@@ -4040,7 +4040,7 @@ def confirm_sale_confirmation(takeover_id):
         if ts == 200 and rows:
             ss, shifts = sb("shifts", params={"id":"eq."+str(rows[0].get("shift_id") or ""),"select":"employee_id","limit":"1"})
             if ss == 200 and shifts and shifts[0].get("employee_id"):
-                deliver_handover_push(str(shifts[0]["employee_id"]), str(takeover_id), "Fuel Shift System", "attendant_sales_confirmed")
+                deliver_handover_push(str(shifts[0]["employee_id"]), str(takeover_id), _notification_employee_name(session.get("employee_id")), "attendant_sales_confirmed")
     except Exception:
         pass
 
@@ -4086,7 +4086,7 @@ def confirm_sale_confirmation(takeover_id):
                         "p_generated_by":session["employee_id"],
                         "p_revision_reason":None
                     })
-                    _notify_admin_push(report_day.isoformat(), "Fuel Shift System", "admin_dsr_confirmed_stock")
+                    _notify_admin_push(report_day.isoformat(), _notification_employee_name(session.get("employee_id")), "admin_dsr_confirmed_stock")
                     # This path can also finalize the DSR after the last individual
                     # sales confirmation, so notify every attendant on that date.
                     try:
@@ -4237,6 +4237,21 @@ def _notify_admin_low_stock():
             if tank_id: _notify_admin_push(tank_id, "Fuel Shift System", "admin_low_stock")
     except Exception: return
 
+def _notification_employee_name(employee_id):
+    """Return the display name for an employee-triggered push notification."""
+    try:
+        employee_id = str(employee_id or "").strip()
+        if not employee_id:
+            return "A team member"
+        status, employees = sb("employees", params={
+            "id": "eq." + employee_id, "select": "name", "limit": "1"
+        })
+        if status == 200 and isinstance(employees, list) and employees:
+            return str(employees[0].get("name") or "A team member").strip() or "A team member"
+    except Exception:
+        pass
+    return "A team member"
+
 def _notify_admin_sales_and_dsr(takeovers):
     # Notify for submitted sales and only notify DSR when the authoritative
     # readiness snapshot says the report can actually be confirmed.
@@ -4250,23 +4265,24 @@ def _notify_admin_sales_and_dsr(takeovers):
             takeover_id = str(takeover.get("id") or "")
             if not takeover_id:
                 continue
-            if str(takeover.get("sales_status") or "") == "pending_admin":
-                _notify_admin_push(takeover_id, "Fuel Shift System", "admin_pending_sales")
             shift_id = str(takeover.get("shift_id") or "")
             if not shift_id:
                 continue
             ss, shifts = sb("shifts", params={
-                "id": "eq." + shift_id, "select": "id,start_time", "limit": "1"
+                "id": "eq." + shift_id, "select": "id,start_time,employee_id", "limit": "1"
             })
             if ss != 200 or not shifts:
                 continue
+            attendant_name = _notification_employee_name(shifts[0].get("employee_id"))
+            if str(takeover.get("sales_status") or "") == "pending_admin":
+                _notify_admin_push(takeover_id, attendant_name, "admin_pending_sales")
             report_day = _local_date_from_iso(shifts[0].get("start_time"))
             if not report_day or report_day.isoformat() in seen_dates:
                 continue
             seen_dates.add(report_day.isoformat())
             snapshot, err, status = _daily_confirmation_snapshot(report_day)
             if not err and status == 200 and snapshot.get("can_confirm"):
-                _notify_admin_push(report_day.isoformat(), "Fuel Shift System", "admin_dsr_ready")
+                _notify_admin_push(report_day.isoformat(), attendant_name, "admin_dsr_ready")
     except Exception:
         return
 
@@ -4622,7 +4638,7 @@ def confirm_daily_report(report_date):
     _drive_after_dsr_confirm(report_day)
     # Send the final live tank inventory to every active admin's subscribed devices
     # only after this request has newly confirmed the DSR.
-    _notify_admin_push(report_date, "Fuel Shift System", "admin_dsr_confirmed_stock")
+    _notify_admin_push(report_date, _notification_employee_name(session.get("employee_id")), "admin_dsr_confirmed_stock")
 
     # Notify each attendant who worked on this report date after DSR approval.
     try:
