@@ -40,7 +40,8 @@ Deno.serve(async (req: Request) => {
   const recordSaleReady = notificationType === "record_sale_ready";
   const adminPendingSales = notificationType === "admin_pending_sales";
   const adminDsrReady = notificationType === "admin_dsr_ready";
-  const adminNotification = adminPendingSales || adminDsrReady;
+  const adminDsrConfirmedStock = notificationType === "admin_dsr_confirmed_stock";
+  const adminNotification = adminPendingSales || adminDsrReady || adminDsrConfirmedStock;
 
   const restHeaders = {
     apikey: serviceKey,
@@ -59,29 +60,52 @@ Deno.serve(async (req: Request) => {
   if (!subscriptions.length) return json({ sent: 0, expired: 0, reason: "No subscribed devices" });
 
   webpush.setVapidDetails(subject, publicKey, privateKey);
-  const title = adminPendingSales ? "Sales pending confirmation"
+  let stockLines: string[] = [];
+  if (adminDsrConfirmedStock) {
+    const tanksUrl = new URL("/rest/v1/tanks", supabaseUrl);
+    tanksUrl.searchParams.set("select", "tank_code,product,current_liters,active");
+    tanksUrl.searchParams.set("order", "tank_code.asc");
+    const tanksResponse = await fetch(tanksUrl, { headers: restHeaders });
+    if (tanksResponse.ok) {
+      const tanks = await tanksResponse.json() as Array<{tank_code?: string; product?: string; current_liters?: number | string; active?: boolean}>;
+      stockLines = tanks.map((tank) => {
+        const code = String(tank.tank_code || "Tank");
+        const product = String(tank.product || "Unknown product");
+        const amount = Number(tank.current_liters);
+        const liters = Number.isFinite(amount) ? amount.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—";
+        return `${code} • ${product}: ${liters} L`;
+      });
+    }
+  }
+  const title = adminDsrConfirmedStock ? `DSR confirmed • Tank stocks (${stockLines.length})`
+    : adminPendingSales ? "Sales pending confirmation"
     : adminDsrReady ? "DSR ready for confirmation"
     : recordSaleReady ? "Record sale ready" : "Incoming shift handover";
-  const message = adminPendingSales
-    ? "A shift sale has been submitted and is waiting for administrator confirmation."
-    : adminDsrReady
-      ? `The daily sales report for ${handoverId} is ready for review and confirmation.`
-      : recordSaleReady
-        ? `${senderName} confirmed the shift handover. Record the shift sales now.`
-        : `${senderName} sent you a handover that needs your confirmation.`;
+  const message = adminDsrConfirmedStock
+    ? (stockLines.length ? `DSR ${handoverId} confirmed. Current tank stocks:\n${stockLines.join("\n")}` : `DSR ${handoverId} confirmed. Tank stock details are currently unavailable; open Tanks to refresh.`)
+    : adminPendingSales
+      ? "A shift sale has been submitted and is waiting for administrator confirmation."
+      : adminDsrReady
+        ? `The daily sales report for ${handoverId} is ready for review and confirmation.`
+        : recordSaleReady
+          ? `${senderName} confirmed the shift handover. Record the shift sales now.`
+          : `${senderName} sent you a handover that needs your confirmation.`;
   const payload = JSON.stringify({
     title,
     body: message,
-    tag: adminDsrReady ? `admin-dsr-${handoverId}`
+    tag: adminDsrConfirmedStock ? `admin-dsr-stock-${handoverId}`
+      : adminDsrReady ? `admin-dsr-${handoverId}`
       : adminPendingSales ? `admin-sales-${handoverId}`
       : recordSaleReady ? `record-sale-${handoverId}` : `handover-${handoverId}`,
-    url: adminDsrReady ? `/admin-daily-report.html#dsr-${encodeURIComponent(handoverId)}`
+    url: adminDsrConfirmedStock ? "/admin-inventory.html"
+      : adminDsrReady ? `/admin-daily-report.html#dsr-${encodeURIComponent(handoverId)}`
       : adminPendingSales ? "/admin-sales.html"
       : recordSaleReady ? "/attendant-dashboard.html"
       : `/attendant-dashboard.html?handover=${encodeURIComponent(handoverId)}`,
     icon: adminNotification ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg",
     handover_id: handoverId,
     notification_type: notificationType,
+    stock_lines: stockLines,
   });
 
   let sent = 0;
