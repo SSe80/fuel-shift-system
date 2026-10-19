@@ -63,6 +63,7 @@ Deno.serve(async (req: Request) => {
   let stockLines: string[] = [];
   if (adminDsrConfirmedStock) {
     const tanksUrl = new URL("/rest/v1/tanks", supabaseUrl);
+    tanksUrl.searchParams.set("active", "eq.true");
     tanksUrl.searchParams.set("select", "tank_code,product,current_liters,active");
     tanksUrl.searchParams.set("order", "tank_code.asc");
     const tanksResponse = await fetch(tanksUrl, { headers: restHeaders });
