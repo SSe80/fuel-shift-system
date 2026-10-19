@@ -1038,7 +1038,8 @@ async function userDashboard(){
       paint(pending,employees);
       paintRecordSaleReady(readySales);
       if(previousPendingIds.size&&fresh.length){
-        if('Notification'in window&&Notification.permission==='granted'){try{new Notification(fresh.length===1?'New shift handover':'New shift handovers',{body:fresh.length===1?'A handover is waiting for your confirmation.':fresh.length+' handovers are waiting for your confirmation.',tag:'fuel-handover-dashboard',renotify:true});}catch(_){}}
+        // Native OS notifications are delivered by the service worker push event.
+        // Keep only the in-app toast here to avoid duplicate OS notifications.
         if(typeof toast==='function')toast(fresh.length===1?'New incoming shift handover':'You have '+fresh.length+' new incoming shift handovers');
       }
       previousPendingIds=ids;
@@ -1416,7 +1417,13 @@ async function syncFuelAppPushSubscription(requestPermission=false){
   await navigator.serviceWorker.ready;
   let subscription=await registration.pushManager.getSubscription();
   if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(atob((()=>{const b=keyData.publicKey.replace(/-/g,'+').replace(/_/g,'/');return b+'='.repeat((4-b.length%4)%4)})()),c=>c.charCodeAt(0))});
-  await api('/api/push/subscribe',{method:'POST',body:JSON.stringify({subscription:subscription.toJSON()})});
+  try{
+   await api('/api/push/subscribe',{method:'POST',body:JSON.stringify({subscription:subscription.toJSON()})});
+  }catch(saveError){
+   // Do not leave an unsaved browser subscription that makes the UI claim push is enabled.
+   try{await subscription.unsubscribe();}catch(cleanupError){console.warn('Could not clean up unsaved push subscription',cleanupError);}
+   throw saveError;
+  }
   return {enabled:true,permission:'granted'};
  })();
  try{return await window.__fuelPushSyncInFlight;}finally{window.__fuelPushSyncInFlight=null;}
@@ -1581,16 +1588,42 @@ function setupFuelPushControl(button,role){
   });
  }
  refreshFuelPushControl(button,role);
- // Notifications default to enabled where Android/browser permission has already been granted.
- // Respect an explicit disable choice on this installed app.
+ // Phone notifications are on by default. Existing OS permission is subscribed
+ // automatically; where permission has never been granted, invite each signed-in
+ // role to enable it once. Browsers require a user gesture for the OS permission.
  if(!fuelPushWasManuallyDisabled(role)){
-  getFuelPushSubscription().then(state=>{
-   if(state.supported&&state.permission==='granted'&&!state.subscription){
-    syncFuelAppPushSubscription(false).then(result=>{
-     if(result.enabled){button.dataset.pushEnabled='true';button.textContent='Disable phone notifications';button.setAttribute('aria-pressed','true');}
-    }).catch(e=>console.warn('Default phone notification subscription failed',e));
+  getFuelPushSubscription().then(async state=>{
+   if(!state.supported)return;
+   if(state.permission==='granted'&&!state.subscription){
+    const result=await syncFuelAppPushSubscription(false);
+    if(result.enabled){
+     button.dataset.pushEnabled='true';button.textContent='Disable phone notifications';button.setAttribute('aria-pressed','true');
+    }
+    return;
    }
-  }).catch(e=>console.warn('Default phone notification status check failed',e));
+   if(state.permission==='default'){
+    let alreadyPrompted=false;
+    try{alreadyPrompted=sessionStorage.getItem('fuelPushOnboardingPrompted:'+role)==='1';}catch(_){}
+    if(alreadyPrompted)return;
+    try{sessionStorage.setItem('fuelPushOnboardingPrompted:'+role,'1');}catch(_){}
+    // The modal's explicit Enable button is the required user gesture for
+    // Notification.requestPermission(); never claim OS push is enabled early.
+    if(await showFuelPushConfirm('enable',role)){
+     button.disabled=true;button.textContent='Enabling…';
+     try{
+      const result=await syncFuelAppPushSubscription(true);
+      if(!result.enabled)throw new Error('Notifications were not enabled. Please allow permission and try again.');
+      setFuelPushManuallyDisabled(role,false);
+      await refreshFuelPushControl(button,role);
+      showFuelPushResult(true,'Phone notifications are enabled on this device. Important alerts will arrive while the app is closed.');
+     }catch(e){
+      console.warn('Default phone notification setup needs permission',e);
+      if(typeof toast==='function')toast(e.message||'Allow phone notifications to finish setup.');
+      await refreshFuelPushControl(button,role);
+     }finally{button.disabled=false;}
+    }
+   }
+  }).catch(e=>console.warn('Default phone notification setup failed',e));
  }
 }
 async function loadStationNotifications(){

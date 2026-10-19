@@ -4165,9 +4165,12 @@ async def _deliver_handover_push(to_employee_id, handover_id, sender_name, notif
             })
         }
         response = await fetch(base + "/functions/v1/send-handover-push", options)
+        response_text = await response.text()
         # Best effort only: never fail a handover operation because push delivery failed.
-        await response.text()
-    except Exception:
+        if not response.ok:
+            print("Push delivery rejected: status=" + str(response.status) + " body=" + str(response_text)[:500])
+    except Exception as exc:
+        print("Push delivery request failed: " + str(exc)[:500])
         return
 
 def deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type="incoming"):
