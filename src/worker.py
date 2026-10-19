@@ -4034,6 +4034,16 @@ def confirm_sale_confirmation(takeover_id):
     })
     if status>=400:return jsonify(result),status
 
+    # Notify the attendant who recorded this shift's sales after admin approval.
+    try:
+        ts, rows = sb("shift_takeovers", params={"id":"eq."+str(takeover_id),"select":"shift_id","limit":"1"})
+        if ts == 200 and rows:
+            ss, shifts = sb("shifts", params={"id":"eq."+str(rows[0].get("shift_id") or ""),"select":"employee_id","limit":"1"})
+            if ss == 200 and shifts and shifts[0].get("employee_id"):
+                deliver_handover_push(str(shifts[0]["employee_id"]), str(takeover_id), "Fuel Shift System", "attendant_sales_confirmed")
+    except Exception:
+        pass
+
     # If this individual confirmation completes every shift that started on
     # the same Addis Ababa report date, promote that DSR directly to history.
     # This preserves the two admin confirmation paths: individual sales or
