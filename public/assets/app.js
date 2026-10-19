@@ -806,7 +806,7 @@ async function userDashboard(){
       const nozzleReadings=readings.map((r,i)=>
         '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(r.reading)+'</div><div class="pending-nozzle-code">'+h(r.nozzle_id||n?.nozzle_code||shift?.nozzle_id)+'</div></div>'
       ).join('');
-      return '<div class="card active-shift-card pending-shift-card handover-receive-card">'+
+      return '<div class="card active-shift-card pending-shift-card handover-receive-card" data-handover-id="'+h(x.id)+'">'+
         '<div class="active-shift-head"><div><span class="section-kicker">PENDING SHIFT</span><h3>Shift Confirmation</h3><p>Review the incoming shift before starting sales.</p></div><span class="badge pending-shift-badge">Pending</span></div>'+
         '<div class="active-shift-meta">'+
           '<div><span>Dispenser</span><strong>'+h(x.source_nozzle_code||n?.nozzle_code||shift?.nozzle_id||x.shift_id)+'</strong></div>'+
@@ -1032,7 +1032,7 @@ async function userDashboard(){
     if(!handoverId||!document.body.classList.contains('attendant-dashboard-page'))return;
     try{
       await userDashboard();
-      const findCard=()=>document.querySelector('#shift .handover-receive-card, #shift .pending-confirmation-card, #shift .handover-pending-card');
+      const findCard=()=>document.querySelector('#shift .handover-receive-card[data-handover-id="'+CSS.escape(handoverId)+'"]')||document.querySelector('#shift .handover-receive-card, #shift .pending-confirmation-card, #shift .handover-pending-card');
       let card=findCard();
       if(!card){
         await new Promise(resolve=>window.setTimeout(resolve,350));
