@@ -3368,6 +3368,9 @@ def create_purchase():
         "p_compartment_liters":data.get("compartment_liters")
     })
     if status>=400:return jsonify({"error":result}),status
+    purchase_obj=result.get("purchase") if isinstance(result,dict) else None
+    purchase_id=(purchase_obj or {}).get("id") if isinstance(purchase_obj,dict) else None
+    if purchase_id: _notify_admin_push(str(purchase_id), "Fuel Shift System", "admin_purchase_pending")
     purchase_remark=str(data.get("purchase_remark") or "").strip()
     if purchase_remark:
         if len(purchase_remark)>5000:return jsonify({"error":"Purchase remark must be 5000 characters or fewer"}),400
@@ -3429,6 +3432,7 @@ def discharge_purchase(purchase_id):
         "p_tank_liters_before":tank_liters_before
     })
     if status>=400:return jsonify({"error":result}),status
+    _notify_admin_low_stock()
     return jsonify(result),200
 
 @app.get("/api/accounting/reconciliation")
@@ -3785,6 +3789,7 @@ def record_shift_takeover_sales_batch():
         })
         if fresh_status == 200:
             _notify_admin_sales_and_dsr(fresh_rows)
+            _notify_admin_low_stock()
     except Exception:
         pass
     return jsonify(result),200
@@ -3812,6 +3817,7 @@ def record_shift_takeover_sale(takeover_id):
         })
         if fresh_status == 200:
             _notify_admin_sales_and_dsr(fresh_rows)
+            _notify_admin_low_stock()
     except Exception:
         pass
     return jsonify(result),200
@@ -4187,6 +4193,20 @@ def _notify_admin_push(reference_id, sender_name, notification_type):
                 )
     except Exception:
         return
+
+def _notify_admin_low_stock():
+    """Notify every active admin when a tank falls below 10% of its capacity."""
+    try:
+        status, tanks = sb("tanks", params={"active":"eq.true","select":"id,tank_code,product,current_liters,capacity_liters","limit":"1000"})
+        if status != 200 or not isinstance(tanks, list): return
+        for tank in tanks:
+            try:
+                capacity=float(tank.get("capacity_liters") or 0); current=float(tank.get("current_liters") or 0)
+            except (TypeError,ValueError): continue
+            if capacity <= 0 or current < 0 or current / capacity >= 0.10: continue
+            tank_id=str(tank.get("id") or "")
+            if tank_id: _notify_admin_push(tank_id, "Fuel Shift System", "admin_low_stock")
+    except Exception: return
 
 def _notify_admin_sales_and_dsr(takeovers):
     # Notify for submitted sales and only notify DSR when the authoritative
