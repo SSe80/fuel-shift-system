@@ -4155,6 +4155,30 @@ def push_subscribe():
         return jsonify({"error": "Could not save phone notification subscription"}), 502
     return jsonify({"ok": True}), 201
 
+@app.post("/api/push/test")
+def push_test():
+    auth = require_login()
+    if auth: return auth
+    if session.get("role") not in ("attendant", "admin"):
+        return jsonify({"error": "Attendant or administrator account required"}), 403
+    employee_id = str(session.get("employee_id") or "")
+    if not employee_id:
+        return jsonify({"error": "Please sign in again before testing notifications"}), 401
+    result = deliver_handover_push(
+        employee_id,
+        "test-" + str(int(time.time())),
+        "Fuel Shift System",
+        "test"
+    )
+    if not isinstance(result, dict) or not result.get("ok"):
+        return jsonify({"error": "The push service could not send a test notification", "details": result or {}}), 502
+    delivery = result.get("result") if isinstance(result.get("result"), dict) else {}
+    if int(delivery.get("subscribed_devices") or 0) < 1:
+        return jsonify({"error": "This phone is not registered for push notifications. Enable phone notifications and try again.", "details": delivery}), 409
+    if int(delivery.get("sent") or 0) < 1:
+        return jsonify({"error": "The push provider did not accept the test notification. Check notification permissions and try again.", "details": delivery}), 502
+    return jsonify({"ok": True, "provider_accepted": int(delivery.get("sent") or 0), "failed": int(delivery.get("failed") or 0)}), 200
+
 @app.post("/api/push/unsubscribe")
 def push_unsubscribe():
     auth = require_login()
@@ -4192,12 +4216,17 @@ async def _deliver_handover_push(to_employee_id, handover_id, sender_name, notif
         }
         response = await fetch(base + "/functions/v1/send-handover-push", options)
         response_text = await response.text()
+        try:
+            response_data = json.loads(response_text) if response_text else {}
+        except Exception:
+            response_data = {}
         # Best effort only: never fail a handover operation because push delivery failed.
         if not response.ok:
             print("Push delivery rejected: status=" + str(response.status) + " body=" + str(response_text)[:500])
+        return {"ok": bool(response.ok), "status": int(response.status), "result": response_data}
     except Exception as exc:
         print("Push delivery request failed: " + str(exc)[:500])
-        return
+        return {"ok": False, "error": str(exc)[:300]}
 
 def deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type="incoming"):
     return run_sync(_deliver_handover_push(to_employee_id, handover_id, sender_name, notification_type))
