@@ -1865,7 +1865,7 @@ async function adminDashboard(){
     await window.stationCurrencyReady;
     const me=await currentUser(); if(me.role!=='admin')return showSessionRecovery('admin');
     await loadAccountingPeriod();
-    const [allTanks,sales,allShifts,allProducts,allDispensers,employees,purchases,inventory,movements]=await Promise.all([api('/api/tanks'),api('/api/sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles'),api('/api/users'),api('/api/purchases'),api('/api/inventory-summary'),api('/api/tank-movements')]);
+    const [allTanks,todaySalesSummary,allShifts,allProducts,allDispensers,employees,purchases,inventory,movements]=await Promise.all([api('/api/tanks'),api('/api/dashboard/today-sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles'),api('/api/users'),api('/api/purchases'),api('/api/inventory-summary'),api('/api/tank-movements')]);
     const products=allProducts.filter(p=>p.active===true);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
@@ -1874,13 +1874,12 @@ async function adminDashboard(){
     const activeEmployees=employees.filter(e=>e.active===true);
     const activeEmployeeIds=new Set(activeEmployees.map(e=>e.id));
     const shifts=allShifts.filter(s=>activeEmployeeIds.has(s.employee_id) && dispensers.some(d=>d.id===s.nozzle_id));
-    const today=new Date().toISOString().slice(0,10);
-    const todaySales=sales.filter(s=>String(s.sale_time||'').slice(0,10)===today);
-    const total=todaySales.reduce((a,s)=>a+Number(s.amount||0),0);
+    const todaySalesCount=Number(todaySalesSummary?.count||0);
+    const total=Number(todaySalesSummary?.amount||0);
     const activeShifts=shifts.filter(s=>s.status==='active');
     const low=tanks.filter(t=>Number(t.capacity_liters)>0&&Number(t.current_liters)/Number(t.capacity_liters)<=.1);
     const el=id=>document.getElementById(id);
-    if(el('sales'))el('sales').textContent=todaySales.length; if(el('sales-total'))el('sales-total').textContent=money(total);
+    if(el('sales'))el('sales').textContent=todaySalesCount; if(el('sales-total'))el('sales-total').textContent=money(total);
     if(el('active-shifts'))el('active-shifts').textContent=activeShifts.length; if(el('tank-count'))el('tank-count').textContent=tanks.length; if(el('alerts'))el('alerts').textContent=low.length;
     if(el('product-count'))el('product-count').textContent=products.length; if(el('dispenser-count'))el('dispenser-count').textContent=dispensers.length; if(el('attendant-count'))el('attendant-count').textContent=activeEmployees.filter(e=>e.role==='attendant').length;
     await loadAccountingReconciliation();
