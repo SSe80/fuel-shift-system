@@ -66,22 +66,44 @@ body.admin-settings-page #drive-settings-section .section-heading p{
 </style>
 
 <style>
-/* Keep the dispenser activation panel near the top of the visible screen. */
-#dispenser-activate-modal {
+/* Position the dispenser-activation dialog at the top of the viewport,
+   rather than vertically centering it. Keep the full card scrollable on small screens. */
+#dispenser-activate-modal.modal.open {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex !important;
   align-items: flex-start !important;
   justify-content: center !important;
+  overflow-x: hidden !important;
   overflow-y: auto !important;
-  padding: max(12px, env(safe-area-inset-top)) 12px 20px !important;
-  box-sizing: border-box;
+  padding: max(4px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)) !important;
+  box-sizing: border-box !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
 }
-#dispenser-activate-modal > .modal-card {
+#dispenser-activate-modal.modal.open > .modal-card {
+  align-self: flex-start !important;
+  flex: 0 0 auto !important;
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
   margin: 0 auto !important;
-  max-height: calc(100dvh - 32px) !important;
+  width: min(620px, 100%) !important;
+  max-width: 620px !important;
+  max-height: calc(100dvh - max(14px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) !important;
+  overflow-x: hidden !important;
   overflow-y: auto !important;
-  overscroll-behavior: contain;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  box-sizing: border-box !important;
 }
 @media (max-height: 700px) {
-  #dispenser-activate-modal > .modal-card { max-height: calc(100dvh - 20px) !important; }
+  #dispenser-activate-modal.modal.open > .modal-card {
+    max-height: calc(100dvh - max(10px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) !important;
+  }
+}
+@media (max-width: 480px) {
+  #dispenser-activate-modal.modal.open { padding-left: 8px !important; padding-right: 8px !important; }
 }
 </style>
 </head>
