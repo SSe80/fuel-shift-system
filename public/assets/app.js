@@ -1038,7 +1038,8 @@ async function userDashboard(){
       paint(pending,employees);
       paintRecordSaleReady(readySales);
       if(previousPendingIds.size&&fresh.length){
-        if('Notification'in window&&Notification.permission==='granted'){try{new Notification(fresh.length===1?'New shift handover':'New shift handovers',{body:fresh.length===1?'A handover is waiting for your confirmation.':fresh.length+' handovers are waiting for your confirmation.',tag:'fuel-handover-dashboard',renotify:true});}catch(_){}}
+        // Native OS notifications are delivered by the service worker push event.
+        // Keep only the in-app toast here to avoid duplicate OS notifications.
         if(typeof toast==='function')toast(fresh.length===1?'New incoming shift handover':'You have '+fresh.length+' new incoming shift handovers');
       }
       previousPendingIds=ids;
@@ -1416,7 +1417,13 @@ async function syncFuelAppPushSubscription(requestPermission=false){
   await navigator.serviceWorker.ready;
   let subscription=await registration.pushManager.getSubscription();
   if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(atob((()=>{const b=keyData.publicKey.replace(/-/g,'+').replace(/_/g,'/');return b+'='.repeat((4-b.length%4)%4)})()),c=>c.charCodeAt(0))});
-  await api('/api/push/subscribe',{method:'POST',body:JSON.stringify({subscription:subscription.toJSON()})});
+  try{
+   await api('/api/push/subscribe',{method:'POST',body:JSON.stringify({subscription:subscription.toJSON()})});
+  }catch(saveError){
+   // Do not leave an unsaved browser subscription that makes the UI claim push is enabled.
+   try{await subscription.unsubscribe();}catch(cleanupError){console.warn('Could not clean up unsaved push subscription',cleanupError);}
+   throw saveError;
+  }
   return {enabled:true,permission:'granted'};
  })();
  try{return await window.__fuelPushSyncInFlight;}finally{window.__fuelPushSyncInFlight=null;}
