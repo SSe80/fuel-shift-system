@@ -1,4 +1,4 @@
-const CACHE_NAME = "fuel-shift-shell-v41";
+const CACHE_NAME = "fuel-shift-shell-v42";
 const SHELL = [
   "/admin-login.html",
   "/admin-logistics.html",
@@ -135,16 +135,26 @@ self.addEventListener("push", event => {
     tag: String(data.tag || ("fuel-handover-" + (data.handover_id || "pending"))),
     renotify: true,
     requireInteraction: true,
+    silent: false,
     vibrate: [180, 80, 180],
     timestamp: Date.now(),
     lang: "en",
     dir: "auto",
     data: { url: String(data.url || "/attendant-dashboard.html"), handover_id: data.handover_id || null, notification_type: data.notification_type || "incoming", stock_lines: stockLines }
   };
-  // On supported Android browsers, use a richer expanded notification for tank inventory.
+  // Keep admin and attendant phone notifications visually consistent while
+  // giving each notification a clear, relevant next action.
   if (data.notification_type === "admin_dsr_confirmed_stock" && stockLines.length) {
     options.body = stockLines.join("\n");
     options.actions = [{ action: "view", title: "View tanks" }];
+  } else if (data.notification_type === "admin_pending_sales") {
+    options.actions = [{ action: "review", title: "Review sales" }];
+  } else if (data.notification_type === "admin_dsr_ready") {
+    options.actions = [{ action: "review", title: "Review DSR" }];
+  } else if (data.notification_type === "record_sale_ready") {
+    options.actions = [{ action: "record", title: "Record sale" }];
+  } else {
+    options.actions = [{ action: "handover", title: "Open handover" }];
   }
   event.waitUntil(self.registration.showNotification(String(data.title || "Fuel Shift System"), options));
 });
