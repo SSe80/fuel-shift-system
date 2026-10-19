@@ -1,4 +1,4 @@
-const CACHE_NAME = "fuel-shift-shell-v47";
+const CACHE_NAME = "fuel-shift-shell-v48";
 const SHELL = [
   "/admin-login.html",
   "/admin-logistics.html",
@@ -7,7 +7,8 @@ const SHELL = [
   "/admin-manifest.webmanifest",
   "/icons/app-icon.svg",
   "/icons/attendant-icon.svg",
-  "/icons/admin-icon.svg"
+  "/icons/admin-icon.svg",
+  "/icons/notification-mea.svg"
 ];
 
 self.addEventListener("install", event => {
@@ -130,8 +131,8 @@ self.addEventListener("push", event => {
   const stockLines = Array.isArray(data.stock_lines) ? data.stock_lines.map(line => String(line)) : [];
   const options = {
     body: String(data.body || "A shift handover is waiting for your confirmation."),
-    icon: String(data.icon || (isAdmin ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg")),
-    badge: String(isAdmin ? "/icons/admin-icon.svg" : "/icons/attendant-icon.svg"),
+    icon: String(data.icon || "/icons/notification-mea.svg"),
+    badge: "/icons/notification-mea.svg",
     tag: String(data.tag || ("fuel-handover-" + (data.handover_id || "pending"))),
     // Stable tags replace the existing alert without buzzing again when an event is reprocessed.
     renotify: false,
