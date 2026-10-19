@@ -1026,7 +1026,28 @@ async function userDashboard(){
       previousPendingIds=ids;
     }catch(_){}finally{polling=false;}
   }
-  function start(){if(!document.body.classList.contains('attendant-dashboard-page')||intervalStarted)return;intervalStarted=true;poll();window.setInterval(poll,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll();});}
+  async function openLinkedHandover(){
+    const params=new URLSearchParams(window.location.search);
+    const handoverId=params.get('handover');
+    if(!handoverId||!document.body.classList.contains('attendant-dashboard-page'))return;
+    try{
+      await userDashboard();
+      const findCard=()=>document.querySelector('#shift .handover-receive-card, #shift .pending-confirmation-card, #shift .handover-pending-card');
+      let card=findCard();
+      if(!card){
+        await new Promise(resolve=>window.setTimeout(resolve,350));
+        card=findCard();
+      }
+      if(card){
+        card.scrollIntoView({behavior:'smooth',block:'center'});
+        card.setAttribute('tabindex','-1');
+        card.focus({preventScroll:true});
+      }else{
+        document.getElementById('shift')?.scrollIntoView({behavior:'smooth',block:'start'});
+      }
+    }catch(_){}
+  }
+  function start(){if(!document.body.classList.contains('attendant-dashboard-page')||intervalStarted)return;intervalStarted=true;poll();window.setInterval(poll,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll();});openLinkedHandover();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
 
