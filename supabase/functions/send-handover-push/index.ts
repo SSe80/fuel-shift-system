@@ -17,7 +17,11 @@ Deno.serve(async (req: Request) => {
 
   const publicKey = Deno.env.get("VAPID_PUBLIC_KEY") || "";
   const privateKey = Deno.env.get("VAPID_PRIVATE_KEY") || "";
-  const subject = Deno.env.get("VAPID_SUBJECT") || "mailto:admin@example.com";
+  const configuredSubject = (Deno.env.get("VAPID_SUBJECT") || "mailto:admin@example.com").trim();
+  // web-push requires a mailto: URI or HTTPS URL; deployments may store a bare email.
+  const subject = /^mailto:/i.test(configuredSubject) || /^https:\/\//i.test(configuredSubject)
+    ? configuredSubject
+    : `mailto:${configuredSubject}`;
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
   if (!publicKey || !privateKey || !supabaseUrl || !serviceKey) {
