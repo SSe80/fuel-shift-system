@@ -1,4 +1,4 @@
-const CACHE_NAME = "fuel-shift-shell-v43";
+const CACHE_NAME = "fuel-shift-shell-v44";
 const SHELL = [
   "/admin-login.html",
   "/admin-logistics.html",
@@ -151,6 +151,12 @@ self.addEventListener("push", event => {
     options.body = stockLines.join("\n");
     options.renotify = false;
     options.actions = [{ action: "view", title: "View tank stocks" }];
+  } else if (data.notification_type === "admin_low_stock") {
+    options.renotify = false;
+    options.actions = [{ action: "view", title: "View inventory" }];
+  } else if (data.notification_type === "admin_purchase_pending") {
+    options.renotify = false;
+    options.actions = [{ action: "view", title: "View purchase" }];
   } else if (data.notification_type === "admin_pending_sales") {
     options.actions = [{ action: "review", title: "Review sales" }];
   } else if (data.notification_type === "admin_dsr_ready") {
