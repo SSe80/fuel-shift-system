@@ -2866,6 +2866,29 @@ def sales():
     status,rows=sb("sales",params=params)
     return jsonify(rows),status
 
+@app.get("/api/dashboard/today-sales")
+def dashboard_today_sales():
+    auth=require_admin()
+    if auth:return auth
+    # Use the current shift-takeover workflow and Addis Ababa's calendar date.
+    # Only admin-confirmed shift sales are included; payment-method rows are
+    # not summed individually, avoiding duplicate dashboard totals.
+    today=(datetime.now(timezone.utc)+timedelta(hours=3)).date()
+    ss,shift_rows=sb("shifts",params={"select":"id,start_time","limit":"5000"})
+    if ss>=400:return jsonify({"error":"Unable to load shifts for today's sales"}),ss
+    today_shift_ids={str(row.get("id")) for row in (shift_rows or [])
+                     if _local_date_from_iso(row.get("start_time"))==today}
+    if not today_shift_ids:return jsonify({"date":today.isoformat(),"count":0,"amount":0}),200
+    ts,takeovers=sb("shift_takeovers",params={
+        "select":"id,shift_id,sales_status,total_sales_amount",
+        "sales_status":"eq.confirmed",
+        "limit":"5000"
+    })
+    if ts>=400:return jsonify({"error":"Unable to load confirmed shift sales"}),ts
+    rows=[row for row in (takeovers or []) if str(row.get("shift_id")) in today_shift_ids]
+    total=sum(float(row.get("total_sales_amount") or 0) for row in rows)
+    return jsonify({"date":today.isoformat(),"count":len(rows),"amount":round(total,2)}),200
+
 @app.post("/api/sales")
 def create_sale():
     # Fuel-volume sales are authoritative from nozzle meter reconciliation.
