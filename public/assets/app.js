@@ -700,6 +700,8 @@ async function userDashboard(){
     await window.stationCurrencyReady;
     const me=await currentUser();
     if(me.role!=='attendant')return showSessionRecovery('attendant');
+    // Register this signed-in device on every app entry when OS permission is already granted.
+    ensureFuelPushRegisteredOnLogin('attendant');
     document.getElementById('name').textContent=me.name;
     let [shifts,nozzles,products,tanks,handovers,employees,takeovers,saleTypes,deactivationRequests,stationSettings]=await Promise.all([
       api('/api/shifts').catch(()=>[]),
@@ -1429,6 +1431,21 @@ async function syncFuelAppPushSubscription(requestPermission=false){
  try{return await window.__fuelPushSyncInFlight;}finally{window.__fuelPushSyncInFlight=null;}
 }
 
+async function ensureFuelPushRegisteredOnLogin(role){
+ // A site cannot silently grant OS notification permission. If permission was
+ // granted previously, create/repair the subscription and bind it to this login.
+ if(fuelPushWasManuallyDisabled(role))return;
+ try{
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const state=await getFuelPushSubscription();
+  if(!state.supported)return;
+  const result=await syncFuelAppPushSubscription(false);
+  if(!result.enabled)throw new Error('Push subscription was not enabled.');
+  console.info('Fuel Shift phone push subscription synchronized for signed-in role:',role);
+ }catch(e){
+  console.warn('Could not auto-register this signed-in device for push notifications:',e);
+ }
+}
 async function getFuelPushSubscription(){
  if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))return {supported:false,permission:'unsupported',subscription:null};
  const registration=await navigator.serviceWorker.getRegistration('/')||await navigator.serviceWorker.register('/service-worker.js');
@@ -1911,6 +1928,8 @@ async function adminDashboard(){
   try{
     await window.stationCurrencyReady;
     const me=await currentUser(); if(me.role!=='admin')return showSessionRecovery('admin');
+    // Register this signed-in device on every app entry when OS permission is already granted.
+    ensureFuelPushRegisteredOnLogin('admin');
     await loadAccountingPeriod();
     const [allTanks,todaySalesSummary,allShifts,allProducts,allDispensers,employees,purchases,inventory,movements]=await Promise.all([api('/api/tanks'),api('/api/dashboard/today-sales'),api('/api/shifts'),api('/api/products'),api('/api/nozzles'),api('/api/users'),api('/api/purchases'),api('/api/inventory-summary'),api('/api/tank-movements')]);
     const products=allProducts.filter(p=>p.active===true);
