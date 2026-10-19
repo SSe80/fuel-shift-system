@@ -1932,7 +1932,9 @@ async function loadStationNotifications(){
     const unread=items.filter(item=>!item.isRead);
     const fresh=unread.filter(item=>!seen[item.key]);
     const selected=fresh[0]||(!sessionStorage.getItem('fuelInboxPopupInitializedV1')?unread[0]:null);
-    items.forEach(item=>{seen[item.key]=true;});
+    // Mark only the item actually shown. If several notifications arrive together,
+    // leave the remaining unread items eligible for popups on the next inbox refresh.
+    if(selected)seen[selected.key]=true;
     sessionStorage.setItem(seenKey,JSON.stringify(seen));
     sessionStorage.setItem('fuelInboxPopupInitializedV1','1');
     if(selected)showFuelInboxPopup(selected);
