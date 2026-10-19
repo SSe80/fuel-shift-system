@@ -41,7 +41,9 @@ Deno.serve(async (req: Request) => {
   const adminPendingSales = notificationType === "admin_pending_sales";
   const adminDsrReady = notificationType === "admin_dsr_ready";
   const adminDsrConfirmedStock = notificationType === "admin_dsr_confirmed_stock";
-  const adminNotification = adminPendingSales || adminDsrReady || adminDsrConfirmedStock;
+  const adminLowStock = notificationType === "admin_low_stock";
+  const adminPurchasePending = notificationType === "admin_purchase_pending";
+  const adminNotification = adminPendingSales || adminDsrReady || adminDsrConfirmedStock || adminLowStock || adminPurchasePending;
 
   const restHeaders = {
     apikey: serviceKey,
@@ -61,6 +63,25 @@ Deno.serve(async (req: Request) => {
 
   webpush.setVapidDetails(subject, publicKey, privateKey);
   let stockLines: string[] = [];
+  let inventoryMessage = "";
+  if (adminLowStock) {
+    const u = new URL("/rest/v1/tanks", supabaseUrl);
+    u.searchParams.set("id", `eq.${handoverId}`);
+    u.searchParams.set("select", "tank_code,product,current_liters,capacity_liters");
+    const r = await fetch(u, { headers: restHeaders });
+    if (r.ok) {
+      const rows = await r.json() as Array<{tank_code?:string;product?:string;current_liters?:number|string;capacity_liters?:number|string}>;
+      const t=rows[0];
+      if(t) { const cur=Number(t.current_liters), cap=Number(t.capacity_liters); inventoryMessage=`${t.product||"Fuel"} · ${t.tank_code||"Tank"}: ${Number.isFinite(cur)?cur.toLocaleString("en-US",{maximumFractionDigits:2}):"—"} L remaining (${cap>0&&Number.isFinite(cur)?(cur/cap*100).toFixed(1)+"%":"capacity unavailable"}).`; }
+    }
+  } else if (adminPurchasePending) {
+    const u = new URL("/rest/v1/purchases", supabaseUrl);
+    u.searchParams.set("id", `eq.${handoverId}`);
+    u.searchParams.set("select", "invoice_number,product,quantity_liters,status");
+    const r=await fetch(u,{headers:restHeaders});
+    if(r.ok) { const rows=await r.json() as Array<{invoice_number?:string;product?:string;quantity_liters?:number|string}>;
+      const p=rows[0]; if(p) inventoryMessage=`Invoice ${p.invoice_number||"—"} · ${p.product||"Fuel"} · ${Number(p.quantity_liters||0).toLocaleString("en-US")} L is awaiting discharge.`; }
+  }
   if (adminDsrConfirmedStock) {
     // Read active tank inventory and product colour metadata so each line in
     // the single phone notification is easy to scan by product.
@@ -123,11 +144,17 @@ Deno.serve(async (req: Request) => {
       });
     }
   }
-  const title = adminDsrConfirmedStock ? `DSR ${handoverId} confirmed · Tank stocks (${stockLines.length})`
+  const title = adminLowStock ? "Low fuel stock alert"
+    : adminPurchasePending ? "Purchase awaiting discharge"
+    : adminDsrConfirmedStock ? `DSR ${handoverId} confirmed · Tank stocks (${stockLines.length})`
     : adminPendingSales ? "Sales pending confirmation"
     : adminDsrReady ? "DSR ready for confirmation"
     : recordSaleReady ? "Record sale ready" : "Incoming shift handover";
-  const message = adminDsrConfirmedStock
+  const message = adminLowStock
+    ? (inventoryMessage || "An active tank is below 10% capacity. Open Inventory to review stock.")
+    : adminPurchasePending
+      ? (inventoryMessage || "A purchase is awaiting discharge. Open Purchases to review it.")
+    : adminDsrConfirmedStock
     ? (stockLines.length ? `Report date: ${handoverId}\n\n${stockLines.join("\n")}` : `Report date: ${handoverId}\nTank stock details are unavailable. Open Tanks to refresh.`)
     : adminPendingSales
       ? "A shift sale has been submitted and is waiting for administrator confirmation."
@@ -139,11 +166,15 @@ Deno.serve(async (req: Request) => {
   const payload = JSON.stringify({
     title,
     body: message,
-    tag: adminDsrConfirmedStock ? `admin-dsr-stock-${handoverId}`
+    tag: adminLowStock ? `admin-low-stock-${handoverId}`
+      : adminPurchasePending ? `admin-purchase-pending-${handoverId}`
+      : adminDsrConfirmedStock ? `admin-dsr-stock-${handoverId}`
       : adminDsrReady ? `admin-dsr-${handoverId}`
       : adminPendingSales ? `admin-sales-${handoverId}`
       : recordSaleReady ? `record-sale-${handoverId}` : `handover-${handoverId}`,
-    url: adminDsrConfirmedStock ? "/admin-inventory.html"
+    url: adminLowStock ? "/admin-inventory.html"
+      : adminPurchasePending ? "/admin-purchases.html"
+      : adminDsrConfirmedStock ? "/admin-inventory.html"
       : adminDsrReady ? `/admin-daily-report.html#dsr-${encodeURIComponent(handoverId)}`
       : adminPendingSales ? "/admin-sales.html"
       : recordSaleReady ? "/attendant-dashboard.html"
