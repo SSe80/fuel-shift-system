@@ -4047,6 +4047,7 @@ def confirm_sale_confirmation(takeover_id):
                         "p_generated_by":session["employee_id"],
                         "p_revision_reason":None
                     })
+                    _notify_admin_push(report_day.isoformat(), "Fuel Shift System", "admin_dsr_confirmed_stock")
 
     return jsonify(result),200
 
@@ -4547,6 +4548,9 @@ def confirm_daily_report(report_date):
     },prefer="resolution=merge-duplicates,return=representation")
     if us>=400:return jsonify(updated),us
     _drive_after_dsr_confirm(report_day)
+    # Send the final live tank inventory to every active admin's subscribed devices
+    # only after this request has newly confirmed the DSR.
+    _notify_admin_push(report_date, "Fuel Shift System", "admin_dsr_confirmed_stock")
     return jsonify({
         "confirmed":True,
         "already_confirmed":False,
