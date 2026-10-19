@@ -123,7 +123,7 @@ Deno.serve(async (req: Request) => {
       });
     }
   }
-  const title = adminDsrConfirmedStock ? `DSR confirmed · Tank stock summary (${stockLines.length})`
+  const title = adminDsrConfirmedStock ? `DSR ${handoverId} confirmed · Tank stocks (${stockLines.length})`
     : adminPendingSales ? "Sales pending confirmation"
     : adminDsrReady ? "DSR ready for confirmation"
     : recordSaleReady ? "Record sale ready" : "Incoming shift handover";
