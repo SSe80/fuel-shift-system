@@ -1451,6 +1451,54 @@ async function refreshFuelPushControl(button,role){
   console.warn('Could not read phone notification state',e);
  }
 }
+function showFuelPushConfirm(action,role){
+ return new Promise(resolve=>{
+  const existing=document.getElementById('fuel-push-confirm-modal');
+  if(existing)existing.remove();
+  let style=document.getElementById('fuel-push-confirm-style');
+  if(!style){
+   style=document.createElement('style');style.id='fuel-push-confirm-style';
+   style.textContent=`
+    #fuel-push-confirm-modal{position:fixed;inset:0;z-index:100500;display:grid;place-items:center;padding:20px;background:rgba(15,23,42,.58);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);animation:fuelPushFadeIn .16s ease-out}
+    #fuel-push-confirm-modal *{box-sizing:border-box}
+    #fuel-push-confirm-modal .fuel-push-confirm-card{width:min(100%,390px);overflow:hidden;border:1px solid rgba(255,255,255,.7);border-radius:22px;background:var(--card-bg,#fff);color:var(--text-primary,#101828);box-shadow:0 24px 80px rgba(0,0,0,.28);animation:fuelPushCardIn .2s ease-out}
+    #fuel-push-confirm-modal .fuel-push-confirm-top{padding:25px 24px 20px;text-align:center}
+    #fuel-push-confirm-modal .fuel-push-confirm-icon{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 15px;border-radius:18px;font-size:27px;font-weight:900}
+    #fuel-push-confirm-modal[data-action="enable"] .fuel-push-confirm-icon{background:#e8f8ef;color:#12804a}
+    #fuel-push-confirm-modal[data-action="disable"] .fuel-push-confirm-icon{background:#fff0ee;color:#c43226}
+    #fuel-push-confirm-modal .fuel-push-confirm-eyebrow{margin:0 0 7px;font-size:10px;font-weight:850;letter-spacing:1.5px;color:#667085}
+    #fuel-push-confirm-modal h2{margin:0;font-size:21px;line-height:1.25;font-weight:850;letter-spacing:-.45px}
+    #fuel-push-confirm-modal .fuel-push-confirm-message{margin:11px auto 0;max-width:310px;color:var(--text-secondary,#667085);font-size:13px;line-height:1.65}
+    #fuel-push-confirm-modal .fuel-push-confirm-note{display:flex;align-items:flex-start;gap:9px;margin:18px 0 0;padding:11px 12px;border:1px solid #e4e7ec;border-radius:12px;background:rgba(152,162,179,.08);text-align:left;color:var(--text-secondary,#475467);font-size:11px;line-height:1.5}
+    #fuel-push-confirm-modal .fuel-push-confirm-note span:first-child{font-size:14px;line-height:1.3}
+    #fuel-push-confirm-modal .fuel-push-confirm-actions{display:flex;gap:10px;padding:16px 20px 20px;border-top:1px solid #eaecf0;background:rgba(152,162,179,.05)}
+    #fuel-push-confirm-modal .fuel-push-confirm-actions button{flex:1;min-height:46px;padding:11px 14px;border:1px solid transparent;border-radius:12px;font:inherit;font-size:13px;font-weight:800;cursor:pointer;transition:transform .12s ease,filter .12s ease}
+    #fuel-push-confirm-modal .fuel-push-confirm-actions button:active{transform:scale(.98)}
+    #fuel-push-confirm-modal .fuel-push-cancel{background:var(--card-bg,#fff);border-color:#d0d5dd!important;color:#344054}
+    #fuel-push-confirm-modal .fuel-push-accept{color:#fff}
+    #fuel-push-confirm-modal[data-action="enable"] .fuel-push-accept{background:#16804a}
+    #fuel-push-confirm-modal[data-action="disable"] .fuel-push-accept{background:#c43226}
+    #fuel-push-confirm-modal button:focus-visible{outline:3px solid #84caff;outline-offset:3px}
+    @keyframes fuelPushFadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes fuelPushCardIn{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @media(max-width:420px){#fuel-push-confirm-modal{padding:16px}#fuel-push-confirm-modal .fuel-push-confirm-top{padding:23px 19px 18px}#fuel-push-confirm-modal h2{font-size:20px}#fuel-push-confirm-modal .fuel-push-confirm-actions{padding:14px 16px 17px}}
+    @media(prefers-reduced-motion:reduce){#fuel-push-confirm-modal,#fuel-push-confirm-modal .fuel-push-confirm-card{animation:none}#fuel-push-confirm-modal button{transition:none}}
+   `;
+   document.head.appendChild(style);
+  }
+  const isEnable=action==='enable',roleName=role==='admin'?'Admin':'Attendant';
+  const modal=document.createElement('div');modal.id='fuel-push-confirm-modal';modal.dataset.action=action;
+  modal.innerHTML='<section class="fuel-push-confirm-card" role="dialog" aria-modal="true" aria-labelledby="fuel-push-confirm-title" aria-describedby="fuel-push-confirm-message"><div class="fuel-push-confirm-top"><div class="fuel-push-confirm-icon" aria-hidden="true">'+(isEnable?'♧':'−')+'</div><p class="fuel-push-confirm-eyebrow">PHONE NOTIFICATIONS · '+roleName.toUpperCase()+'</p><h2 id="fuel-push-confirm-title">'+(isEnable?'Enable phone notifications?':'Disable phone notifications?')+'</h2><p class="fuel-push-confirm-message" id="fuel-push-confirm-message">'+(isEnable?'Receive important shift and system alerts on this phone, even when the app is closed.':'Stop receiving push alerts on this phone while the app is closed. Your in-dashboard notifications will continue to work.')+'</p><div class="fuel-push-confirm-note"><span aria-hidden="true">'+(isEnable?'ⓘ':'✓')+'</span><span>'+(isEnable?'Android may ask you to allow notifications if permission has not been granted yet.':'You can turn phone notifications back on at any time from this dashboard.')+'</span></div></div><div class="fuel-push-confirm-actions"><button type="button" class="fuel-push-cancel">Cancel</button><button type="button" class="fuel-push-accept">'+(isEnable?'Enable notifications':'Disable notifications')+'</button></div></section>';
+  const finish=value=>{document.removeEventListener('keydown',onKey);modal.remove();resolve(value);};
+  const onKey=e=>{if(e.key==='Escape'){e.preventDefault();finish(false);}};
+  modal.addEventListener('click',e=>{if(e.target===modal)finish(false);});
+  modal.querySelector('.fuel-push-cancel').addEventListener('click',()=>finish(false));
+  modal.querySelector('.fuel-push-accept').addEventListener('click',()=>finish(true));
+  document.addEventListener('keydown',onKey);
+  document.body.appendChild(modal);
+  modal.querySelector('.fuel-push-accept').focus({preventScroll:true});
+ });
+}
 function setupFuelPushControl(button,role){
  if(!button)return;
  button.type='button';
@@ -1459,10 +1507,7 @@ function setupFuelPushControl(button,role){
   button.addEventListener('click',async()=>{
    const wasEnabled=button.dataset.pushEnabled==='true';
    const action=wasEnabled?'disable':'enable';
-   const prompt=wasEnabled
-    ?'Disable phone push notifications for this '+(role==='admin'?'Admin':'Attendant')+' app? You will no longer receive push alerts while the app is closed. In-dashboard alerts will remain available.'
-    :'Enable phone push notifications for this '+(role==='admin'?'Admin':'Attendant')+' app? The app will ask Android/browser permission if needed.';
-   if(!window.confirm(prompt))return;
+   if(!await showFuelPushConfirm(action,role))return;
    button.disabled=true;
    button.textContent=wasEnabled?'Disabling…':'Enabling…';
    try{
