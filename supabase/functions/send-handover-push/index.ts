@@ -62,28 +62,72 @@ Deno.serve(async (req: Request) => {
   webpush.setVapidDetails(subject, publicKey, privateKey);
   let stockLines: string[] = [];
   if (adminDsrConfirmedStock) {
+    // Read active tank inventory and product colour metadata so each line in
+    // the single phone notification is easy to scan by product.
     const tanksUrl = new URL("/rest/v1/tanks", supabaseUrl);
     tanksUrl.searchParams.set("active", "eq.true");
     tanksUrl.searchParams.set("select", "tank_code,product,current_liters,active");
     tanksUrl.searchParams.set("order", "tank_code.asc");
-    const tanksResponse = await fetch(tanksUrl, { headers: restHeaders });
+    const [tanksResponse, productsResponse] = await Promise.all([
+      fetch(tanksUrl, { headers: restHeaders }),
+      fetch(new URL("/rest/v1/products?select=*", supabaseUrl), { headers: restHeaders }),
+    ]);
+    const products: Array<Record<string, unknown>> = productsResponse.ok
+      ? await productsResponse.json() as Array<Record<string, unknown>>
+      : [];
+    const normalize = (value: unknown) => String(value || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    const productColor = (productName: string) => {
+      const match = products.find((item) =>
+        [item.name, item.product, item.product_name, item.code, item.product_code, item.product_type]
+          .some((value) => normalize(value) === normalize(productName))
+      );
+      if (!match) return "";
+      const raw = Object.entries(match).find(([key, value]) =>
+        /color|colour|hex/i.test(key) && typeof value === "string" && /^#?[0-9a-f]{3,8}$/i.test(value.trim())
+      )?.[1];
+      return typeof raw === "string" ? raw.trim().replace(/^#/, "") : "";
+    };
+    const colorDot = (hex: string) => {
+      if (!hex) return "🔹";
+      let value = hex;
+      if (value.length === 3) value = value.split("").map((part) => part + part).join("");
+      if (value.length !== 6) return "🔹";
+      const r = parseInt(value.slice(0, 2), 16);
+      const g = parseInt(value.slice(2, 4), 16);
+      const b = parseInt(value.slice(4, 6), 16);
+      const palette = [
+        { emoji: "🔴", rgb: [235, 55, 55] },
+        { emoji: "🟠", rgb: [245, 145, 35] },
+        { emoji: "🟡", rgb: [245, 205, 45] },
+        { emoji: "🟢", rgb: [45, 175, 95] },
+        { emoji: "🔵", rgb: [50, 125, 235] },
+        { emoji: "🟣", rgb: [150, 80, 205] },
+        { emoji: "⚫", rgb: [45, 45, 45] },
+        { emoji: "⚪", rgb: [220, 220, 220] },
+      ];
+      return palette.sort((a, b) =>
+        (a.rgb[0] - r) ** 2 + (a.rgb[1] - g) ** 2 + (a.rgb[2] - b) ** 2 -
+        ((b.rgb[0] - r) ** 2 + (b.rgb[1] - g) ** 2 + (b.rgb[2] - b) ** 2)
+      )[0].emoji;
+    };
     if (tanksResponse.ok) {
       const tanks = await tanksResponse.json() as Array<{tank_code?: string; product?: string; current_liters?: number | string; active?: boolean}>;
       stockLines = tanks.map((tank) => {
         const code = String(tank.tank_code || "Tank");
         const product = String(tank.product || "Unknown product");
         const amount = Number(tank.current_liters);
-        const liters = Number.isFinite(amount) ? amount.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—";
-        return `${code} • ${product}: ${liters} L`;
+        const liters = Number.isFinite(amount) ? amount.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : "—";
+        const dot = colorDot(productColor(product));
+        return `${dot} ${product}  ·  ${code}  —  ${liters} L`;
       });
     }
   }
-  const title = adminDsrConfirmedStock ? `DSR confirmed • Tank stocks (${stockLines.length})`
+  const title = adminDsrConfirmedStock ? `DSR confirmed · Tank stock summary (${stockLines.length})`
     : adminPendingSales ? "Sales pending confirmation"
     : adminDsrReady ? "DSR ready for confirmation"
     : recordSaleReady ? "Record sale ready" : "Incoming shift handover";
   const message = adminDsrConfirmedStock
-    ? (stockLines.length ? `DSR ${handoverId} confirmed. Current tank stocks:\n${stockLines.join("\n")}` : `DSR ${handoverId} confirmed. Tank stock details are currently unavailable; open Tanks to refresh.`)
+    ? (stockLines.length ? `Report date: ${handoverId}\n\n${stockLines.join("\n")}` : `Report date: ${handoverId}\nTank stock details are unavailable. Open Tanks to refresh.`)
     : adminPendingSales
       ? "A shift sale has been submitted and is waiting for administrator confirmation."
       : adminDsrReady
