@@ -968,22 +968,7 @@ async function userDashboard(){
       pushControl.style.cssText='display:flex;justify-content:flex-end;margin:-4px 0 12px;';
       pushControl.innerHTML='<button type="button" id="incoming-handover-push-enable" style="border:1px solid #d0d5dd;border-radius:10px;padding:9px 12px;background:#fff;color:#344054;font-weight:750;font-size:12px;">Enable phone notifications</button>';
       heading.insertAdjacentElement('afterend',pushControl);
-      const pushButton=pushControl.querySelector('button');
-      const permission=('Notification' in window)?Notification.permission:'unsupported';
-      pushButton.textContent=permission==='granted'?'App notifications enabled':'Turn on app notifications';
-      pushButton.disabled=permission==='granted';
-      if(permission==='granted'){
-        syncFuelAppPushSubscription().then(()=>{pushButton.textContent='App notifications enabled';pushButton.disabled=true;}).catch(e=>console.warn('Attendant app push sync failed',e));
-      }else if(permission!=='unsupported'){
-        pushButton.addEventListener('click',async()=>{
-          try{
-            pushButton.disabled=true;pushButton.textContent='Enabling…';
-            const result=await syncFuelAppPushSubscription(true);
-            if(!result.enabled)throw new Error('Allow notifications for the installed Fuel Shift Attendant app, then try again.');
-            pushButton.textContent='App notifications enabled';
-          }catch(e){pushButton.disabled=false;pushButton.textContent='Turn on app notifications';if(typeof toast==='function')toast(e.message||'Could not enable app notifications.');else alert(e.message||'Could not enable app notifications.');}
-        });
-      }
+      setupFuelPushControl(pushControl.querySelector('button'),'attendant');
     }
     panel=document.createElement('section');panel.id='incoming-handover-notification';panel.className='incoming-handover-notification';panel.setAttribute('aria-live','polite');panel.hidden=true;
     panel.innerHTML='<div class="incoming-handover-notification-mark" aria-hidden="true">↔</div><div class="incoming-handover-notification-copy"><strong id="incoming-handover-notification-title">Incoming shift handover</strong><span id="incoming-handover-notification-detail"></span></div><button type="button" id="incoming-handover-notification-review">Review handover</button>';
@@ -1437,12 +1422,76 @@ async function syncFuelAppPushSubscription(requestPermission=false){
  try{return await window.__fuelPushSyncInFlight;}finally{window.__fuelPushSyncInFlight=null;}
 }
 
+async function getFuelPushSubscription(){
+ if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))return {supported:false,permission:'unsupported',subscription:null};
+ const registration=await navigator.serviceWorker.getRegistration('/')||await navigator.serviceWorker.register('/service-worker.js');
+ const subscription=await registration.pushManager.getSubscription();
+ return {supported:true,permission:Notification.permission,subscription};
+}
+async function refreshFuelPushControl(button,role){
+ if(!button)return;
+ try{
+  const state=await getFuelPushSubscription();
+  button.dataset.pushEnabled=String(!!(state.supported&&state.permission==='granted'&&state.subscription));
+  button.disabled=!state.supported;
+  button.textContent=!state.supported?'Phone notifications unsupported':
+   (button.dataset.pushEnabled==='true'?'Disable phone notifications':'Enable phone notifications');
+  button.setAttribute('aria-pressed',button.dataset.pushEnabled);
+  button.title=state.permission==='denied'?'Notifications are blocked in Android/browser settings. Allow them there before enabling.':'';
+ }catch(e){
+  button.disabled=false;button.textContent='Retry notification status';button.dataset.pushEnabled='false';
+  console.warn('Could not read phone notification state',e);
+ }
+}
+function setupFuelPushControl(button,role){
+ if(!button)return;
+ button.type='button';
+ if(button.dataset.pushToggleBound!=='1'){
+  button.dataset.pushToggleBound='1';
+  button.addEventListener('click',async()=>{
+   const wasEnabled=button.dataset.pushEnabled==='true';
+   const action=wasEnabled?'disable':'enable';
+   const prompt=wasEnabled
+    ?'Disable phone push notifications for this '+(role==='admin'?'Admin':'Attendant')+' app? You will no longer receive push alerts while the app is closed. In-dashboard alerts will remain available.'
+    :'Enable phone push notifications for this '+(role==='admin'?'Admin':'Attendant')+' app? The app will ask Android/browser permission if needed.';
+   if(!window.confirm(prompt))return;
+   button.disabled=true;
+   button.textContent=wasEnabled?'Disabling…':'Enabling…';
+   try{
+    if(wasEnabled){
+     const state=await getFuelPushSubscription();
+     if(state.subscription){
+      await api('/api/push/unsubscribe',{method:'POST',body:JSON.stringify({endpoint:state.subscription.endpoint})});
+      const removed=await state.subscription.unsubscribe();
+      if(!removed)throw new Error('The phone subscription could not be removed. Please try again.');
+     }
+     button.dataset.pushEnabled='false';
+    }else{
+     const result=await syncFuelAppPushSubscription(true);
+     if(!result.enabled)throw new Error(result.permission==='denied'
+      ?'Notifications are blocked by Android/browser settings. Allow notifications for the Fuel Shift System app in system settings, then try again.'
+      :'Notifications were not enabled. Please allow permission and try again.');
+     button.dataset.pushEnabled='true';
+    }
+    await refreshFuelPushControl(button,role);
+    if(typeof toast==='function')toast(wasEnabled?'Phone notifications disabled.':'Phone notifications enabled.');
+   }catch(e){
+    if(typeof toast==='function')toast(e.message||('Could not '+action+' phone notifications.'));
+    else alert(e.message||('Could not '+action+' phone notifications.'));
+    await refreshFuelPushControl(button,role);
+   }finally{
+    button.disabled=false;
+   }
+  });
+ }
+ refreshFuelPushControl(button,role);
+}
 async function loadStationNotifications(){
  const list=document.getElementById('station-notifications-list'),count=document.getElementById('station-notifications-count'),status=document.getElementById('station-notifications-status');
  if(!list)return;
  const esc=v=>h(String(v==null?'':v));let items=[];const add=(key,level,title,detail,href,meta='',date=null)=>items.push({key,level,title,detail,href,meta,date:date||null});
  const arr=v=>Array.isArray(v)?v:[],first=(o,keys)=>{for(const k of keys)if(o&&o[k]!=null&&o[k]!=='')return o[k];return null;};
- // Auto-register this installed admin app whenever OS notification permission is already granted.
+ // Explicitly controlled phone-push setting; never silently re-enable after the user disables it.
  if(document.body.classList.contains('admin-shell')){
   const host=document.querySelector('.station-notifications-heading');
   let btn=document.getElementById('admin-push-enable');
@@ -1451,24 +1500,7 @@ async function loadStationNotifications(){
    btn.style.cssText='margin-top:8px;border:1px solid #d0d5dd;border-radius:10px;padding:9px 12px;background:#fff;color:#344054;font-weight:750;font-size:12px;';
    host.appendChild(btn);
   }
-  if(btn){
-   const permission=('Notification' in window)?Notification.permission:'unsupported';
-   btn.textContent=permission==='granted'?'Admin app notifications enabled':'Turn on admin app notifications';
-   btn.disabled=permission==='granted';
-   if(permission==='granted'&&btn.dataset.pushSyncStarted!=='1'){
-    btn.dataset.pushSyncStarted='1';
-    syncFuelAppPushSubscription().catch(e=>{btn.dataset.pushSyncStarted='0';console.warn('Admin app push sync failed',e);});
-   }else if(permission!=='granted'&&permission!=='unsupported'){
-    btn.addEventListener('click',async()=>{
-     btn.disabled=true;btn.textContent='Enabling…';
-     try{
-      const result=await syncFuelAppPushSubscription(true);
-      if(!result.enabled)throw new Error('Allow notifications for the installed Fuel Shift Admin app, then try again.');
-      btn.textContent='Admin app notifications enabled';
-     }catch(e){btn.disabled=false;btn.textContent='Turn on admin app notifications';if(typeof toast==='function')toast(e.message||'Could not enable app notifications.');else alert(e.message||'Could not enable app notifications.');}
-    });
-   }
-  }
+  if(btn)setupFuelPushControl(btn,'admin');
  }
  try{
   const results=await Promise.allSettled([api('/api/reports/daily/confirmations'),api('/api/tanks'),api('/api/products'),api('/api/purchases'),api('/api/accounting/reconciliation'),api('/api/tank-difference-alerts'),api('/api/sales/confirmations')]);
