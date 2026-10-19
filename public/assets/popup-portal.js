@@ -35,6 +35,31 @@
       'body.attendant-dashboard-page #admin-sale-history-details.modal.open > .modal-backdrop + .modal-card > #admin-sale-history-details-content { display:block!important; flex:none!important; height:auto!important; min-height:0!important; max-height:none!important; overflow:visible!important; touch-action:auto!important; }',
     ].join('\n');
     document.head.appendChild(style);
+
+    /* Unified notification and confirmation popup design across Admin and Attendant panels. */
+    var notificationStyle = document.createElement('style');
+    notificationStyle.id = 'fuel-shift-unified-popup-theme';
+    notificationStyle.textContent = [
+      'body.admin-control-ui .modal > .modal-card { border:1px solid #dbe4ef!important; border-radius:20px!important; background:#fff!important; box-shadow:0 28px 80px rgba(15,23,42,.24),0 6px 20px rgba(15,23,42,.08)!important; color:#172b46!important; overflow:hidden!important; }',
+      'body.admin-control-ui .modal > .modal-card > .top { padding:18px 20px 15px!important; border-bottom:1px solid #e8edf4!important; background:linear-gradient(135deg,#f8fafc 0%,#fff 72%)!important; gap:14px!important; }',
+      'body.admin-control-ui .modal > .modal-card > .top h2, body.admin-control-ui .modal > .modal-card > .top h3 { color:#142238!important; font-weight:800!important; letter-spacing:-.025em!important; line-height:1.25!important; }',
+      'body.admin-control-ui .modal > .modal-card .modal-close { display:inline-flex!important; align-items:center!important; justify-content:center!important; flex:0 0 38px!important; width:38px!important; height:38px!important; min-height:38px!important; border:1px solid #dce4ee!important; border-radius:12px!important; background:#fff!important; color:#526277!important; font-size:24px!important; font-weight:500!important; box-shadow:0 2px 5px rgba(16,24,40,.04)!important; }',
+      'body.admin-control-ui .modal > .modal-card .modal-close:hover { background:#f1f5f9!important; color:#172b46!important; }',
+      'body.admin-control-ui .modal > .modal-card .row:last-child { gap:10px!important; padding:16px 20px 20px!important; }',
+      'body.admin-control-ui .modal > .modal-card .row:last-child button, body.admin-control-ui .modal > .modal-card .popup-actions button { min-height:44px!important; padding:11px 17px!important; border-radius:12px!important; font-size:14px!important; font-weight:800!important; letter-spacing:.005em!important; transition:transform .16s ease,box-shadow .16s ease,background .16s ease!important; }',
+      'body.admin-control-ui .modal > .modal-card .row:last-child button:active, body.admin-control-ui .modal > .modal-card .popup-actions button:active { transform:scale(.985)!important; }',
+      'body.admin-control-ui .modal > .modal-backdrop { background:rgba(15,23,42,.56)!important; -webkit-backdrop-filter:blur(4px)!important; backdrop-filter:blur(4px)!important; }',
+      'body.admin-control-ui .toast { z-index:20000!important; box-sizing:border-box!important; width:min(420px,calc(100vw - 28px))!important; max-width:calc(100vw - 28px)!important; padding:15px 17px!important; border:1px solid #d8e2ef!important; border-left:5px solid #2563eb!important; border-radius:16px!important; background:#fff!important; color:#172b46!important; box-shadow:0 18px 48px rgba(15,23,42,.2)!important; font-size:14px!important; font-weight:650!important; line-height:1.5!important; }',
+      'body.admin-control-ui .toast.success, body.admin-control-ui .toast.toast-success, body.admin-control-ui .toast.is-success { border-left-color:#16a34a!important; }',
+      'body.admin-control-ui .toast.error, body.admin-control-ui .toast.toast-error, body.admin-control-ui .toast.is-error { border-left-color:#dc2626!important; }',
+      'body.admin-control-ui .toast.warning, body.admin-control-ui .toast.toast-warning, body.admin-control-ui .toast.is-warning { border-left-color:#d97706!important; }',
+      'body.admin-control-ui .toast.info, body.admin-control-ui .toast.toast-info, body.admin-control-ui .toast.is-info { border-left-color:#2563eb!important; }',
+      'body.admin-control-ui .station-notification-row { border-radius:13px!important; transition:background .16s ease,border-color .16s ease,transform .16s ease!important; }',
+      'body.admin-control-ui .station-notification-row:hover { background:#f8fafc!important; }',
+      '@media(max-width:640px) { body.admin-control-ui .modal > .modal-card { border-radius:17px!important; } body.admin-control-ui .modal > .modal-card > .top { padding:15px 15px 13px!important; } body.admin-control-ui .modal > .modal-card .row:last-child { padding:13px 15px 15px!important; gap:8px!important; } body.admin-control-ui .modal > .modal-card .row:last-child button, body.admin-control-ui .modal > .modal-card .popup-actions button { min-height:44px!important; padding:10px 12px!important; font-size:13px!important; } body.admin-control-ui .toast { width:calc(100vw - 24px)!important; max-width:calc(100vw - 24px)!important; padding:13px 14px!important; border-radius:14px!important; } }'
+    ].join('\\n');
+    document.head.appendChild(notificationStyle);
+
   }
   function start() {
     if (!document.body || !document.body.classList.contains('admin-control-ui')) return;
