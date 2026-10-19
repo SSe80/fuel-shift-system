@@ -806,7 +806,7 @@ async function userDashboard(){
       const nozzleReadings=readings.map((r,i)=>
         '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(r.reading)+'</div><div class="pending-nozzle-code">'+h(r.nozzle_id||n?.nozzle_code||shift?.nozzle_id)+'</div></div>'
       ).join('');
-      return '<div class="card active-shift-card pending-shift-card handover-receive-card">'+
+      return '<div class="card active-shift-card pending-shift-card handover-receive-card" data-handover-id="'+h(x.id)+'">'+
         '<div class="active-shift-head"><div><span class="section-kicker">PENDING SHIFT</span><h3>Shift Confirmation</h3><p>Review the incoming shift before starting sales.</p></div><span class="badge pending-shift-badge">Pending</span></div>'+
         '<div class="active-shift-meta">'+
           '<div><span>Dispenser</span><strong>'+h(x.source_nozzle_code||n?.nozzle_code||shift?.nozzle_id||x.shift_id)+'</strong></div>'+
@@ -951,6 +951,106 @@ async function userDashboard(){
     else{const s=document.getElementById('employee-status');if(s)s.textContent=e.message;}
   }
 }
+
+/* Incoming handover notifications: live dashboard alert and OS notification while the dashboard is open. */
+(function(){
+  if(window.__fuelHandoverDashboardNotifications)return;
+  window.__fuelHandoverDashboardNotifications=true;
+  let previousPendingIds=new Set(), polling=false, intervalStarted=false;
+  function ensurePanel(){
+    let panel=document.getElementById('incoming-handover-notification');
+    if(panel)return panel;
+    const heading=document.querySelector('body.attendant-dashboard-page .page-heading');
+    if(!heading)return null;
+    let pushControl=document.getElementById('incoming-handover-push-control');
+    if(!pushControl){
+      pushControl=document.createElement('div');pushControl.id='incoming-handover-push-control';
+      pushControl.style.cssText='display:flex;justify-content:flex-end;margin:-4px 0 12px;';
+      pushControl.innerHTML='<button type="button" id="incoming-handover-push-enable" style="border:1px solid #d0d5dd;border-radius:10px;padding:9px 12px;background:#fff;color:#344054;font-weight:750;font-size:12px;">Enable phone notifications</button>';
+      heading.insertAdjacentElement('afterend',pushControl);
+      pushControl.querySelector('button').addEventListener('click',async()=>{
+        const btn=pushControl.querySelector('button');
+        try{
+          if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))throw new Error('This browser does not support phone push notifications.');
+          if(!window.isSecureContext)throw new Error('Phone notifications require HTTPS.');
+          btn.disabled=true;btn.textContent='Enabling…';
+          const permission=await Notification.requestPermission();
+          if(permission!=='granted')throw new Error('Allow notifications in your browser settings, then try again.');
+          const keyData=await api('/api/push/public-key');
+          const registration=await navigator.serviceWorker.register('/service-worker.js');
+          await navigator.serviceWorker.ready;
+          let subscription=await registration.pushManager.getSubscription();
+          if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(atob((()=>{const b=keyData.publicKey.replace(/-/g,'+').replace(/_/g,'/');return b+'='.repeat((4-b.length%4)%4)})()),c=>c.charCodeAt(0))});
+          await api('/api/push/subscribe',{method:'POST',body:JSON.stringify({subscription:subscription.toJSON()})});
+          btn.textContent='Phone notifications enabled';
+          if(typeof toast==='function')toast('Phone notifications are enabled on this device.');
+        }catch(e){btn.disabled=false;btn.textContent='Enable phone notifications';if(typeof toast==='function')toast(e.message||'Could not enable phone notifications.');else alert(e.message||'Could not enable phone notifications.');}
+      });
+    }
+    panel=document.createElement('section');panel.id='incoming-handover-notification';panel.className='incoming-handover-notification';panel.setAttribute('aria-live','polite');panel.hidden=true;
+    panel.innerHTML='<div class="incoming-handover-notification-mark" aria-hidden="true">↔</div><div class="incoming-handover-notification-copy"><strong id="incoming-handover-notification-title">Incoming shift handover</strong><span id="incoming-handover-notification-detail"></span></div><button type="button" id="incoming-handover-notification-review">Review handover</button>';
+    heading.insertAdjacentElement('afterend',panel);
+    const style=document.createElement('style');style.id='incoming-handover-notification-style';
+    style.textContent='#incoming-handover-notification{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:14px 16px;border:1px solid #f2c66d;border-radius:16px;background:#fff9eb;color:#344054;box-shadow:0 5px 18px rgba(16,24,40,.05)}#incoming-handover-notification[hidden]{display:none}#incoming-handover-notification .incoming-handover-notification-mark{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#ffefc2;color:#925f00;font-size:20px;font-weight:900}#incoming-handover-notification .incoming-handover-notification-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}#incoming-handover-notification strong{font-size:13px;font-weight:850}#incoming-handover-notification span{font-size:12px;color:#667085}#incoming-handover-notification button{flex:0 0 auto;min-height:38px;padding:8px 12px;border:0;border-radius:10px;background:#182230;color:#fff;font-size:12px;font-weight:800}@media(max-width:520px){#incoming-handover-notification{align-items:flex-start;flex-wrap:wrap}#incoming-handover-notification .incoming-handover-notification-copy{padding-top:2px}#incoming-handover-notification button{width:100%}}';
+    document.head.appendChild(style);
+    panel.querySelector('#incoming-handover-notification-review').addEventListener('click',async()=>{
+      try{await userDashboard();const card=document.querySelector('#shift .handover-receive-card, #shift .pending-confirmation-card, #shift .handover-pending-card');if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.setAttribute('tabindex','-1');card.focus({preventScroll:true});}else document.getElementById('shift')?.scrollIntoView({behavior:'smooth',block:'start'});}
+      catch(_){if(typeof toast==='function')toast('Could not refresh incoming handovers. Please try again.');}
+    });
+    return panel;
+  }
+  function paint(pending,employees){
+    const panel=ensurePanel();if(!panel)return;
+    if(!pending.length){panel.hidden=true;return;}
+    const names=Object.fromEntries((Array.isArray(employees)?employees:[]).map(e=>[String(e.id),e.name]));
+    const sender=names[String(pending[0].from_employee_id)]||'Another attendant';
+    panel.hidden=false;
+    panel.querySelector('#incoming-handover-notification-title').textContent=pending.length===1?'Incoming shift handover':'Incoming shift handovers';
+    panel.querySelector('#incoming-handover-notification-detail').textContent=pending.length===1?sender+' sent you a handover that needs your confirmation.':pending.length+' handovers are waiting for your confirmation. Most recent from '+sender+'.';
+    panel.querySelector('#incoming-handover-notification-review').textContent=pending.length===1?'Review handover':'Review '+pending.length+' handovers';
+  }
+  async function poll(){
+    if(polling||document.hidden||!document.body.classList.contains('attendant-dashboard-page'))return;
+    polling=true;
+    try{
+      const [me,handovers,employees]=await Promise.all([currentUser(),api('/api/handovers'),api('/api/users').catch(()=>[])]);
+      if(me.role!=='attendant')return;
+      const pending=(Array.isArray(handovers)?handovers:[]).filter(x=>x.status==='pending'&&String(x.to_employee_id)===String(me.id));
+      const ids=new Set(pending.map(x=>String(x.id)));
+      const fresh=pending.filter(x=>!previousPendingIds.has(String(x.id)));
+      paint(pending,employees);
+      if(previousPendingIds.size&&fresh.length){
+        if('Notification'in window&&Notification.permission==='granted'){try{new Notification(fresh.length===1?'New shift handover':'New shift handovers',{body:fresh.length===1?'A handover is waiting for your confirmation.':fresh.length+' handovers are waiting for your confirmation.',tag:'fuel-handover-dashboard',renotify:true});}catch(_){}}
+        if(typeof toast==='function')toast(fresh.length===1?'New incoming shift handover':'You have '+fresh.length+' new incoming shift handovers');
+      }
+      previousPendingIds=ids;
+    }catch(_){}finally{polling=false;}
+  }
+  async function openLinkedHandover(){
+    const params=new URLSearchParams(window.location.search);
+    const handoverId=params.get('handover');
+    if(!handoverId||!document.body.classList.contains('attendant-dashboard-page'))return;
+    try{
+      await userDashboard();
+      const findCard=()=>document.querySelector('#shift .handover-receive-card[data-handover-id="'+CSS.escape(handoverId)+'"]')||document.querySelector('#shift .handover-receive-card, #shift .pending-confirmation-card, #shift .handover-pending-card');
+      let card=findCard();
+      if(!card){
+        await new Promise(resolve=>window.setTimeout(resolve,350));
+        card=findCard();
+      }
+      if(card){
+        card.scrollIntoView({behavior:'smooth',block:'center'});
+        card.setAttribute('tabindex','-1');
+        card.focus({preventScroll:true});
+      }else{
+        document.getElementById('shift')?.scrollIntoView({behavior:'smooth',block:'start'});
+      }
+    }catch(_){}
+  }
+  function start(){if(!document.body.classList.contains('attendant-dashboard-page')||intervalStarted)return;intervalStarted=true;poll();window.setInterval(poll,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll();});openLinkedHandover();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+
 async function loadAttendantShiftPage(){
   try{
     const me=await currentUser();

@@ -4,7 +4,7 @@ import os, base64, hmac, secrets, hashlib, json, math, re
 from datetime import datetime, timezone, date, timedelta
 from functools import wraps
 from pyodide.ffi import run_sync, to_js
-from js import crypto, Uint8Array, Object
+from js import crypto, Uint8Array, Object, fetch
 from supabase_rest import request as sb_request
 import drive
 
@@ -4042,6 +4042,87 @@ def cancel_sale_confirmation(takeover_id):
     if status>=400:return jsonify(result),status
     return jsonify(result),200
 
+@app.get("/api/push/public-key")
+def push_public_key():
+    auth = require_login()
+    if auth: return auth
+    public_key = str(getattr(env(), "VAPID_PUBLIC_KEY", "") or "").strip()
+    if not public_key:
+        return jsonify({"error": "Phone push notifications are not configured yet"}), 503
+    return jsonify({"publicKey": public_key}), 200
+
+@app.post("/api/push/subscribe")
+def push_subscribe():
+    auth = require_login()
+    if auth: return auth
+    if session.get("role") != "attendant":
+        return jsonify({"error": "Attendant account required"}), 403
+    data = request.get_json(silent=True) or {}
+    sub = data.get("subscription") if isinstance(data.get("subscription"), dict) else data
+    keys = sub.get("keys") if isinstance(sub.get("keys"), dict) else {}
+    endpoint = str(sub.get("endpoint", "")).strip()
+    p256dh = str(keys.get("p256dh", "")).strip()
+    auth_key = str(keys.get("auth", "")).strip()
+    if not endpoint.startswith("https://") or len(endpoint) > 4096 or not p256dh or not auth_key:
+        return jsonify({"error": "Invalid browser push subscription"}), 400
+    body = {
+        "employee_id": str(session["employee_id"]),
+        "endpoint": endpoint,
+        "p256dh": p256dh,
+        "auth": auth_key,
+        "user_agent": str(request.headers.get("User-Agent", ""))[:500],
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    status, result = sb("push_subscriptions", method="POST",
+        params={"on_conflict": "endpoint"},
+        body=body, prefer="resolution=merge-duplicates,return=minimal")
+    if status >= 400:
+        return jsonify({"error": "Could not save phone notification subscription"}), 502
+    return jsonify({"ok": True}), 201
+
+@app.post("/api/push/unsubscribe")
+def push_unsubscribe():
+    auth = require_login()
+    if auth: return auth
+    data = request.get_json(silent=True) or {}
+    endpoint = str(data.get("endpoint", "")).strip()
+    if not endpoint.startswith("https://") or len(endpoint) > 4096:
+        return jsonify({"error": "Invalid push endpoint"}), 400
+    status, result = sb("push_subscriptions", method="DELETE", params={
+        "employee_id": "eq." + str(session["employee_id"]),
+        "endpoint": "eq." + endpoint
+    })
+    if status >= 400:
+        return jsonify({"error": "Could not disable phone notifications"}), 502
+    return jsonify({"ok": True}), 200
+
+async def _deliver_handover_push(to_employee_id, handover_id, sender_name):
+    token = str(getattr(env(), "PUSH_DELIVERY_TOKEN", "") or "").strip()
+    base = str(getattr(env(), "SUPABASE_URL", "") or "").strip().rstrip("/")
+    if not token or not base or not handover_id:
+        return
+    try:
+        options = {
+            "method": "POST",
+            "headers": Object.fromEntries([
+                ("Authorization", "Bearer " + token),
+                ("Content-Type", "application/json")
+            ]),
+            "body": json.dumps({
+                "to_employee_id": str(to_employee_id),
+                "handover_id": str(handover_id),
+                "sender_name": str(sender_name or "Another attendant")
+            })
+        }
+        response = await fetch(base + "/functions/v1/send-handover-push", options)
+        # Best effort only: never fail a submitted handover because push delivery failed.
+        await response.text()
+    except Exception:
+        return
+
+def deliver_handover_push(to_employee_id, handover_id, sender_name):
+    return run_sync(_deliver_handover_push(to_employee_id, handover_id, sender_name))
+
 @app.post("/api/handovers")
 def create_handover():
     eid=session.get("employee_id")
@@ -4056,6 +4137,27 @@ def create_handover():
     if not shift_id or not to_id:return jsonify({"error":"Shift and receiving user are required"}),400
     status,result=rpc("submit_shift_handover",{"p_shift_id":shift_id,"p_from_employee_id":eid,"p_to_employee_id":to_id,"p_closing_reading":reading,"p_closing_mm":mm,"p_closing_liters":liters,"p_closing_nozzle_readings":closing_nozzle_readings})
     if status>=400:return jsonify({"error":result}),status
+    # Push is best-effort: submission success must not depend on a phone's push service.
+    try:
+        hs, handovers = sb("handovers", params={
+            "shift_id": "eq." + shift_id,
+            "from_employee_id": "eq." + str(eid),
+            "to_employee_id": "eq." + to_id,
+            "status": "eq.pending",
+            "select": "id,created_at",
+            "order": "created_at.desc",
+            "limit": "1"
+        })
+        if hs == 200 and handovers:
+            es, employees = sb("employees", params={
+                "id": "eq." + str(eid),
+                "select": "name",
+                "limit": "1"
+            })
+            sender_name = employees[0].get("name", "Another attendant") if es == 200 and employees else "Another attendant"
+            deliver_handover_push(to_id, handovers[0].get("id"), sender_name)
+    except Exception:
+        pass
     return jsonify(result),201
 
 @app.post("/api/handovers/<handover_id>/confirm")
