@@ -4034,6 +4034,16 @@ def confirm_sale_confirmation(takeover_id):
     })
     if status>=400:return jsonify(result),status
 
+    # Notify the attendant who recorded this shift's sales after admin approval.
+    try:
+        ts, rows = sb("shift_takeovers", params={"id":"eq."+str(takeover_id),"select":"shift_id","limit":"1"})
+        if ts == 200 and rows:
+            ss, shifts = sb("shifts", params={"id":"eq."+str(rows[0].get("shift_id") or ""),"select":"employee_id","limit":"1"})
+            if ss == 200 and shifts and shifts[0].get("employee_id"):
+                deliver_handover_push(str(shifts[0]["employee_id"]), str(takeover_id), "Fuel Shift System", "attendant_sales_confirmed")
+    except Exception:
+        pass
+
     # If this individual confirmation completes every shift that started on
     # the same Addis Ababa report date, promote that DSR directly to history.
     # This preserves the two admin confirmation paths: individual sales or
@@ -4077,6 +4087,22 @@ def confirm_sale_confirmation(takeover_id):
                         "p_revision_reason":None
                     })
                     _notify_admin_push(report_day.isoformat(), "Fuel Shift System", "admin_dsr_confirmed_stock")
+                    # This path can also finalize the DSR after the last individual
+                    # sales confirmation, so notify every attendant on that date.
+                    try:
+                        day_start = report_day.isoformat() + "T00:00:00+03:00"
+                        next_day_start = (report_day + timedelta(days=1)).isoformat() + "T00:00:00+03:00"
+                        ds, day_shifts = sb("shifts", params={
+                            "start_time":"gte." + day_start,
+                            "and":"(start_time.lt." + next_day_start + ")",
+                            "select":"employee_id",
+                            "limit":"10000"
+                        })
+                        if ds == 200 and isinstance(day_shifts, list):
+                            for attendant_id in sorted(set(str(row.get("employee_id")) for row in day_shifts if row.get("employee_id"))):
+                                deliver_handover_push(attendant_id, report_day.isoformat(), "Fuel Shift System", "attendant_dsr_confirmed")
+                    except Exception:
+                        pass
 
     return jsonify(result),200
 
@@ -4597,6 +4623,23 @@ def confirm_daily_report(report_date):
     # Send the final live tank inventory to every active admin's subscribed devices
     # only after this request has newly confirmed the DSR.
     _notify_admin_push(report_date, "Fuel Shift System", "admin_dsr_confirmed_stock")
+
+    # Notify each attendant who worked on this report date after DSR approval.
+    try:
+        day_start = report_day.isoformat() + "T00:00:00+03:00"
+        next_day_start = (report_day + timedelta(days=1)).isoformat() + "T00:00:00+03:00"
+        ss, report_shifts = sb("shifts", params={
+            "start_time":"gte." + day_start,
+            "and":"(start_time.lt." + next_day_start + ")",
+            "select":"id,employee_id",
+            "limit":"10000"
+        })
+        if ss == 200 and isinstance(report_shifts, list):
+            attendant_ids = sorted(set(str(row.get("employee_id")) for row in report_shifts if row.get("employee_id")))
+            for attendant_id in attendant_ids:
+                deliver_handover_push(attendant_id, report_date, "Fuel Shift System", "attendant_dsr_confirmed")
+    except Exception:
+        pass
     return jsonify({
         "confirmed":True,
         "already_confirmed":False,
