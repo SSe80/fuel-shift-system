@@ -82,7 +82,7 @@ Deno.serve(async (req: Request) => {
     : adminDsrReady ? "DSR ready for confirmation"
     : recordSaleReady ? "Record sale ready" : "Incoming shift handover";
   const message = adminDsrConfirmedStock
-    ? (stockLines.length ? `DSR ${handoverId} confirmed. Current tank stocks:\\n${stockLines.join("\\n")}` : `DSR ${handoverId} confirmed. Tank stock details are currently unavailable; open Tanks to refresh.`)
+    ? (stockLines.length ? `DSR ${handoverId} confirmed. Current tank stocks:\n${stockLines.join("\n")}` : `DSR ${handoverId} confirmed. Tank stock details are currently unavailable; open Tanks to refresh.`)
     : adminPendingSales
       ? "A shift sale has been submitted and is waiting for administrator confirmation."
       : adminDsrReady
@@ -97,7 +97,7 @@ Deno.serve(async (req: Request) => {
       : adminDsrReady ? `admin-dsr-${handoverId}`
       : adminPendingSales ? `admin-sales-${handoverId}`
       : recordSaleReady ? `record-sale-${handoverId}` : `handover-${handoverId}`,
-    url: adminDsrConfirmedStock ? "/admin-tanks.html"
+    url: adminDsrConfirmedStock ? "/admin-inventory.html"
       : adminDsrReady ? `/admin-daily-report.html#dsr-${encodeURIComponent(handoverId)}`
       : adminPendingSales ? "/admin-sales.html"
       : recordSaleReady ? "/attendant-dashboard.html"
