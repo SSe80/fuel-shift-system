@@ -4087,6 +4087,22 @@ def confirm_sale_confirmation(takeover_id):
                         "p_revision_reason":None
                     })
                     _notify_admin_push(report_day.isoformat(), "Fuel Shift System", "admin_dsr_confirmed_stock")
+                    # This path can also finalize the DSR after the last individual
+                    # sales confirmation, so notify every attendant on that date.
+                    try:
+                        day_start = report_day.isoformat() + "T00:00:00+03:00"
+                        next_day_start = (report_day + timedelta(days=1)).isoformat() + "T00:00:00+03:00"
+                        ds, day_shifts = sb("shifts", params={
+                            "start_time":"gte." + day_start,
+                            "and":"(start_time.lt." + next_day_start + ")",
+                            "select":"employee_id",
+                            "limit":"10000"
+                        })
+                        if ds == 200 and isinstance(day_shifts, list):
+                            for attendant_id in sorted(set(str(row.get("employee_id")) for row in day_shifts if row.get("employee_id"))):
+                                deliver_handover_push(attendant_id, report_day.isoformat(), "Fuel Shift System", "attendant_dsr_confirmed")
+                    except Exception:
+                        pass
 
     return jsonify(result),200
 
