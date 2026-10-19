@@ -7,7 +7,8 @@ const SHELL = [
   "/admin-manifest.webmanifest",
   "/icons/app-icon.svg",
   "/icons/attendant-icon.svg",
-  "/icons/admin-icon.svg"
+  "/icons/admin-icon.svg",
+  "/icons/notification-mea.svg"
 ];
 
 self.addEventListener("install", event => {
