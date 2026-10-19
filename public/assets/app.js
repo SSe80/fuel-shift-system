@@ -1451,13 +1451,17 @@ async function loadStationNotifications(){
   }
  }
  try{
-  const results=await Promise.allSettled([api('/api/reports/daily/confirmations'),api('/api/tanks'),api('/api/products'),api('/api/purchases'),api('/api/accounting/reconciliation'),api('/api/tank-difference-alerts')]);
-  const val=i=>results[i].status==='fulfilled'?results[i].value:null,dsrs=val(0),tankData=val(1),productData=val(2),purchaseData=val(3),recon=val(4),tankDifferenceAlerts=val(5),products=arr(productData);
+  const results=await Promise.allSettled([api('/api/reports/daily/confirmations'),api('/api/tanks'),api('/api/products'),api('/api/purchases'),api('/api/accounting/reconciliation'),api('/api/tank-difference-alerts'),api('/api/sales/confirmations')]);
+  const val=i=>results[i].status==='fulfilled'?results[i].value:null,dsrs=val(0),tankData=val(1),productData=val(2),purchaseData=val(3),recon=val(4),tankDifferenceAlerts=val(5),pendingSales=val(6),products=arr(productData);
   const productByName=Object.fromEntries(products.map(p=>[String(p.name||'').trim().toLowerCase(),p])),codeFor=p=>productByName[String(p||'').trim().toLowerCase()]?.code_name||p||'Unknown product';
   const tanks=arr(tankData).filter(t=>t.active!==false),low=[],high=[];
   tanks.forEach(t=>{const cap=Number(t.capacity_liters),stock=Number(t.current_liters);if(!(cap>0)||!Number.isFinite(stock))return;if(stock/cap<=.10)low.push(t);else if(stock/cap>=.90)high.push(t);});
   if(low.length)add('low-tanks','warning','Low tank stock',low.length+' tank'+(low.length===1?' is':'s are')+' at or below 10% capacity: '+low.slice(0,4).map(t=>t.tank_code||'Tank').join(', ')+(low.length>4?' and '+(low.length-4)+' more':''),'admin-inventory.html'+(low[0]?.id?'#tank-'+encodeURIComponent(low[0].id):''),low.slice(0,6).map(t=>(t.tank_code||'Tank')+' · '+codeFor(t.product)+' · '+liters(t.current_liters)+' L left').join(' | '));
   if(high.length)add('high-tanks','info','High tank level',high.length+' tank'+(high.length===1?' is':'s are')+' at or above 90% capacity: '+high.slice(0,4).map(t=>t.tank_code||'Tank').join(', ')+(high.length>4?' and '+(high.length-4)+' more':''),'admin-inventory.html'+(high[0]?.id?'#tank-'+encodeURIComponent(high[0].id):''),high.slice(0,6).map(t=>(t.tank_code||'Tank')+' · '+Math.round(Number(t.current_liters)/Number(t.capacity_liters)*100)+'% full').join(' | '));
+  const pendingSalesRows=arr(pendingSales);
+  if(pendingSalesRows.length){
+   add('pending-sales-confirmation','warning','Sales pending confirmation',pendingSalesRows.length+' shift sale record'+(pendingSalesRows.length===1?' is':'s are')+' waiting for administrator review and confirmation.','admin-sales.html',pendingSalesRows.slice(0,6).map(x=>String(x.dispenser_code||x.nozzle_code||x.shift_id||x.id||'Shift sale')).join(' · '));
+  }
   const pendingDsr=arr(dsrs).filter(x=>x.status==='pending'||x.status==='waiting');
   if(arr(dsrs).length){
    const ready=pendingDsr.filter(x=>x.status==='pending'&&x.report_day_closed!==false&&x.all_shifts_complete&&x.all_handover_recorded&&x.all_sales_recorded);
