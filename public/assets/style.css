@@ -5705,45 +5705,24 @@ body[data-app-page="attendantDashboard"] .attendant-dsr-card-category > .attenda
   body[data-app-page="attendantDashboard"] .attendant-dsr-card-category > .attendant-dsr-group-cards{gap:10px;padding:11px 11px 12px}
 }
 
-/* Align all three Sales today text lines with the other dashboard metric cards. */
+/* Lower the Sales today accent and its text to match the other metric cards. */
 body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales{
-  padding-top:33px!important;
+  padding-top:55px!important;
 }
-body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales > .station-metric-label{
-  display:block!important;
-  width:100%!important;
-  margin:0 0 12px!important;
-  line-height:1.35!important;
-}
-body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales > b{
-  display:block!important;
-  width:100%!important;
-  margin:0!important;
-  line-height:1.05!important;
-  font-variant-numeric:tabular-nums!important;
-}
-body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales > small{
-  display:block!important;
-  width:100%!important;
-  max-width:100%!important;
-  margin-top:9px!important;
-  white-space:nowrap!important;
-  font-size:clamp(9px,1.1vw,11px)!important;
-  line-height:1.25!important;
-  letter-spacing:-.025em!important;
-  font-variant-numeric:tabular-nums!important;
+body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales::before{
+  top:24px!important;
+  left:13px!important;
+  right:auto!important;
+  width:46px!important;
+  height:5px!important;
+  border-radius:99px!important;
 }
 @media(max-width:560px){
   body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales{
-    padding:33px 9px 11px 11px!important;
+    padding:55px 9px 11px 11px!important;
   }
-  body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales > .station-metric-label{
-    margin-bottom:10px!important;
-  }
-  body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales > small{
-    margin-top:8px!important;
-    font-size:10px!important;
-    letter-spacing:-.04em!important;
+  body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-sales::before{
+    top:24px!important;
+    left:11px!important;
   }
 }
-
