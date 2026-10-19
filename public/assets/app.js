@@ -980,7 +980,7 @@ async function userDashboard(){
           const registration=await navigator.serviceWorker.register('/service-worker.js');
           await navigator.serviceWorker.ready;
           let subscription=await registration.pushManager.getSubscription();
-          if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(atob(keyData.publicKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0))});
+          if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(atob((()=>{const b=keyData.publicKey.replace(/-/g,'+').replace(/_/g,'/');return b+'='.repeat((4-b.length%4)%4)})()),c=>c.charCodeAt(0))});
           await api('/api/push/subscribe',{method:'POST',body:JSON.stringify({subscription:subscription.toJSON()})});
           btn.textContent='Phone notifications enabled';
           if(typeof toast==='function')toast('Phone notifications are enabled on this device.');
