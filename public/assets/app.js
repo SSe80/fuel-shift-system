@@ -1700,27 +1700,7 @@ function setupFuelPushControl(button,role){
    }
   });
  }
- if(button.parentElement&&!button.parentElement.querySelector('[data-fuel-push-test]')){
-  const testButton=document.createElement('button');
-  testButton.type='button';testButton.dataset.fuelPushTest='1';
-  testButton.textContent='Send test notification';
-  testButton.style.cssText='display:block;width:fit-content;max-width:100%;margin:8px 0 0;padding:9px 12px;border:1px solid #d0d5dd;border-radius:10px;background:#fff;color:#344054;font-weight:750;font-size:12px;cursor:pointer';
-  testButton.addEventListener('click',async()=>{
-   testButton.disabled=true;testButton.textContent='Sending test…';
-   try{
-    const result=await api('/api/push/test',{method:'POST',body:JSON.stringify({})});
-    const accepted=Number(result.provider_accepted||0);
-    if(accepted>0){
-     if(typeof toast==='function')toast('Test push accepted for delivery. Check this phone’s notification tray.');
-     else alert('Test push accepted for delivery. Check this phone’s notification tray.');
-    }else throw new Error('The push provider did not accept this test.');
-   }catch(e){
-    const message=e&&e.message?e.message:'Could not send a test notification.';
-    if(typeof toast==='function')toast(message);else alert(message);
-   }finally{testButton.disabled=false;testButton.textContent='Send test notification';}
-  });
-  button.insertAdjacentElement('afterend',testButton);
- }
+
  refreshFuelPushControl(button,role);
  // Phone notifications are on by default. Existing OS permission is subscribed
  // automatically; where permission has never been granted, invite each signed-in
