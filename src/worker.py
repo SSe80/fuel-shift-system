@@ -4567,11 +4567,21 @@ def _daily_confirmation_snapshot(report_date):
             )
         except (TypeError, ValueError):
             return False
+    def has_submitted_sales_record(takeover):
+        # A fully returned shift can legitimately have zero net sales and no
+        # positive-amount detail rows. The sales RPC still marks that explicit
+        # submission pending_admin, so do not misreport it as missing sales.
+        return (
+            bool(takeover.get("sales_submitted_at"))
+            and str(takeover.get("sales_status") or "") in ("pending_admin", "confirmed")
+        )
+
     missing_sales_shifts=[
         str(x.get("id")) for x in shifts
         if len(takeovers_by_shift.get(str(x.get("id")),[]))==1
         and not is_zero_dispense_shift(takeovers_by_shift[str(x.get("id"))][0])
         and sale_count_by_takeover.get(str(takeovers_by_shift[str(x.get("id"))][0].get("id")),0)==0
+        and not has_submitted_sales_record(takeovers_by_shift[str(x.get("id"))][0])
     ]
     unsubmitted_sales_shifts=[
         str(x.get("id")) for x in shifts
