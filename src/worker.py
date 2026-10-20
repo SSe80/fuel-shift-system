@@ -4304,6 +4304,11 @@ def create_handover():
     to_id=str(data.get("to_employee_id","")).strip()
     shift_id=str(data.get("shift_id","")).strip()
     if not shift_id or not to_id:return jsonify({"error":"Shift and receiving user are required"}),400
+    # A source shift can have only one takeover. Do not create stale handovers
+    # for a shift whose takeover has already been recorded.
+    ts,takeovers=sb("shift_takeovers",params={"shift_id":"eq."+shift_id,"select":"id","limit":"1"})
+    if ts!=200:return jsonify({"error":"Unable to verify whether this shift was already taken over"}),ts
+    if takeovers:return jsonify({"error":"This shift already has a takeover record. Use the existing shift record; do not submit another handover."}),409
     status,result=rpc("submit_shift_handover",{"p_shift_id":shift_id,"p_from_employee_id":eid,"p_to_employee_id":to_id,"p_closing_reading":reading,"p_closing_mm":mm,"p_closing_liters":liters,"p_closing_nozzle_readings":closing_nozzle_readings})
     if status>=400:return jsonify({"error":result}),status
     # Push is best-effort: submission success must not depend on a phone's push service.
@@ -4352,6 +4357,11 @@ def confirm_handover(handover_id):
     })
     if hs!=200 or not hr:return jsonify({"error":"Pending handover not found"}),404
     handover=hr[0]
+    # Guard before calling the RPC so the UI receives a clear conflict instead
+    # of the raw PostgreSQL duplicate-key error.
+    ts,takeovers=sb("shift_takeovers",params={"shift_id":"eq."+str(handover.get("shift_id") or ""),"select":"id","limit":"1"})
+    if ts!=200:return jsonify({"error":"Unable to verify whether this shift was already taken over"}),ts
+    if takeovers:return jsonify({"error":"This shift already has a takeover record. This pending handover is stale; refresh the app and use the existing shift record."}),409
     try:
         reading=float(handover.get("closing_reading") or 0)
         mm=float(handover.get("closing_mm") or 0)
