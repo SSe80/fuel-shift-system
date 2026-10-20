@@ -50,6 +50,22 @@ body{background:#f7f9fc!important;color:#182230!important;font-family:Inter,"Seg
 @media(max-width:760px){.logistics-sidebar{height:64px!important;min-height:64px!important;padding:0 10px!important;gap:8px!important}.logistics-brand{display:none!important}.logistics-nav{justify-content:flex-start!important;gap:4px!important}.logistics-nav a{padding:11px!important;font-size:12px!important}.logistics-nav a span{display:none!important}.logistics-logout{padding:10px!important;font-size:12px!important}.logistics-main .wrap{padding:20px 15px 32px!important}}
 @media(max-width:480px){.logistics-sidebar{height:58px!important;min-height:58px!important;padding:0 7px!important}.logistics-nav a{padding:10px!important;font-size:11px!important}.logistics-logout{padding:9px!important;font-size:11px!important}.logistics-main .wrap{padding:16px 12px 28px!important}}
 </style>
+<style id="contracted-truck-drive-styles">
+.contracted-drive-card .logistics-fees-head .truck-card-icon{background:#eff6ff;border-color:#dbeafe;color:#1d4ed8}
+.contracted-drive-help{margin:0 0 17px;color:#475467;font-size:12px;line-height:1.7}
+.contracted-drive-card .fee-rate-field{margin-bottom:12px}
+.contracted-drive-card .fee-rate-field input{box-sizing:border-box;min-height:43px}
+.contracted-drive-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+.contracted-drive-actions button{min-height:39px}
+#logistics-drive-status{overflow-wrap:anywhere;line-height:1.55;margin:13px 0 0}
+#logistics-drive-status.fee-feedback{padding:10px 12px}
+#logistics-drive-status.fee-feedback.success{background:#ecfdf3;border:1px solid #abefc6;color:#067647}
+#logistics-drive-status.fee-feedback.error{background:#fef3f2;border:1px solid #fecdca;color:#b42318}
+.truck-action.drive{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}
+.truck-drive-link{display:inline-flex;justify-content:center;margin:0 0 16px;padding:10px 13px;border:1px solid #bfdbfe;border-radius:9px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:800;text-decoration:none}
+.truck-drive-link[hidden]{display:none}
+@media(max-width:560px){.contracted-drive-actions{display:grid;grid-template-columns:1fr}.contracted-drive-actions button{width:100%}}
+</style>
 </head>
 <body class="admin-shell admin-control-ui" data-app-page="adminDashboard">
 <div class="logistics-layout">
@@ -62,11 +78,13 @@ body{background:#f7f9fc!important;color:#182230!important;font-family:Inter,"Seg
 <div class="logistics-main"><main class="wrap">
 <header class="settings-header control-page-header"><div><span class="eyebrow">LOGISTICS SETTINGS</span><h1>Logistics Settings</h1><p class="truck-muted">Manage truck registrations and compartment calibration files separately from the main Admin Settings.</p></div></header>
 <section class="truck-panel truck-management-card" aria-labelledby="truckListTitle"><div class="truck-panel-head"><div class="truck-panel-title"><span class="truck-card-icon" aria-hidden="true">🚚</span><div><h2 id="truckListTitle">Truck Management</h2><p class="truck-muted">Add trucks, update details, and manage compartment calibration.</p></div></div><div class="truck-panel-actions"><span class="truck-count" id="truckCount">0 trucks</span><button class="truck-primary" id="addTruckBtn" type="button">＋ Add truck</button></div></div><div class="truck-list-wrap"><div id="truckList" class="truck-empty">No trucks added yet. Select <b>Add truck</b> to register the first truck and its compartment calibration.</div></div></section>
+<section class="truck-panel logistics-fees-card contracted-drive-card" aria-labelledby="contractedDriveTitle"><div class="logistics-fees-head"><span class="truck-card-icon" aria-hidden="true">☁</span><div><h2 id="contractedDriveTitle">Google Drive Upload</h2><p class="truck-muted">Store each registered truck’s calibration CSVs and a designed two-page PDF in Google Drive.</p></div></div><div class="logistics-fees-body"><p class="contracted-drive-help">Create a folder named <strong>Contracted Trucks</strong> in the Google Drive account you connect below, then paste its folder link. When a truck is saved, the app creates a folder using the truck and trailer plate numbers, then adds a <strong>Data</strong> folder for the separate compartment CSV files. A two-page truck calibration report is stored beside Data.</p><div class="fee-rate-field"><label for="logistics-trucks-drive-link">Contracted Trucks folder link</label><input id="logistics-trucks-drive-link" type="url" inputmode="url" autocomplete="url" placeholder="https://drive.google.com/drive/folders/…"></div><div class="fee-actions contracted-drive-actions"><button type="button" class="truck-primary" id="logistics-drive-connect-btn">Connect Google Drive</button><button type="button" class="fee-edit-button" id="logistics-drive-save-btn">Save folder link</button><button type="button" class="fee-edit-button" id="logistics-drive-test-btn">Test connection</button></div><p id="logistics-drive-status" class="truck-muted" role="status" aria-live="polite">Loading Drive settings…</p></div></section>
+
 <section class="truck-panel logistics-fees-card" aria-labelledby="logisticsFeesTitle"><div class="logistics-fees-head"><span class="truck-card-icon" aria-hidden="true">🧾</span><div><h2 id="logisticsFeesTitle">Logistics Fees</h2><p class="truck-muted">Products are synced from the main Admin Settings. Set a delivery fee per litre for each listed product.</p></div></div><div class="logistics-fees-body"><span id="feeProductSyncStatus" role="status" hidden></span><div class="fee-rate-list" id="feeRateList" aria-live="polite"></div><div class="fee-feedback" id="feeFeedback" role="status"></div><div class="fee-edit-overlay" id="feeEditOverlay" hidden><section class="fee-edit-card" role="dialog" aria-modal="true" aria-labelledby="feeEditTitle"><div class="fee-edit-head"><div><h3 id="feeEditTitle">Edit delivery fee</h3><p id="feeEditProductName"></p></div><button type="button" class="fee-edit-close" id="feeEditClose" aria-label="Close edit card">×</button></div><form id="feeEditForm"><div class="fee-rate-field"><label for="feeEditInput">Fee per litre (ETB)</label><input id="feeEditInput" name="fee" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 3.14" required /></div><div class="fee-edit-actions"><button type="button" class="fee-edit-cancel" id="feeEditCancel">Cancel</button><button type="submit" class="fee-save" id="feeEditSave">Review edit</button></div></form></section></div><div class="fee-edit-overlay" id="feeConfirmOverlay" hidden><section class="fee-edit-card fee-confirm-card" role="dialog" aria-modal="true" aria-labelledby="feeConfirmTitle"><div class="fee-confirm-icon">?</div><h3 id="feeConfirmTitle">Confirm fee update</h3><p id="feeConfirmMessage">Review the change before updating the shared database.</p><div class="fee-confirm-values"><div><span>Product</span><strong id="feeConfirmProduct"></strong></div><div><span>Previous fee</span><strong id="feeConfirmOld"></strong></div><div><span>New fee</span><strong id="feeConfirmNew"></strong></div></div><div class="fee-edit-actions"><button type="button" class="fee-edit-cancel" id="feeConfirmCancel">Go back</button><button type="button" class="fee-save" id="feeConfirmApply">Confirm update</button></div></section></div><div class="fee-edit-overlay" id="feeResultOverlay" hidden><section class="fee-edit-card fee-result-card" role="dialog" aria-modal="true" aria-labelledby="feeResultTitle"><div class="fee-result-icon"><span aria-hidden="true">✓</span></div><h3 id="feeResultTitle">Fee Updated</h3><p id="feeResultMessage">The delivery fee was updated successfully.</p><button type="button" class="fee-save" id="feeResultDone">Done</button></section></div><div class="fee-formula"><strong>Calculation:</strong> delivery fee = delivered litres × that product’s fee per litre.<br>Example: 1,000 L × ETB 3.14/L = <strong>ETB 3,140.00</strong>. Enter each product’s actual rate below; the example is illustrative.</div></div></section>
 
 </main></div></div>
 
-<div class="truck-success-overlay" id="truckSuccessOverlay" aria-hidden="true"><section class="truck-success-card" role="dialog" aria-modal="true" aria-labelledby="truckSuccessTitle" aria-describedby="truckSuccessMessage"><div class="truck-success-icon" aria-hidden="true">✓</div><h2 id="truckSuccessTitle">Truck added successfully</h2><p id="truckSuccessMessage">The truck details and calibration information have been saved.</p><button class="truck-success-close" id="truckSuccessClose" type="button">Done</button></section></div><div class="truck-success-overlay" id="truckConfirmOverlay" aria-hidden="true"><section class="truck-success-card truck-confirm-card" role="dialog" aria-modal="true" aria-labelledby="truckConfirmTitle" aria-describedby="truckConfirmMessage"><div class="truck-confirm-icon" aria-hidden="true">!</div><h2 id="truckConfirmTitle">Confirm truck action</h2><p id="truckConfirmMessage">Please confirm this action.</p><div class="truck-confirm-actions"><button class="truck-confirm-cancel" id="truckConfirmCancel" type="button">Cancel</button><button class="truck-confirm-proceed" id="truckConfirmProceed" type="button">Confirm</button></div></section></div>
+<div class="truck-success-overlay" id="truckSuccessOverlay" aria-hidden="true"><section class="truck-success-card" role="dialog" aria-modal="true" aria-labelledby="truckSuccessTitle" aria-describedby="truckSuccessMessage"><div class="truck-success-icon" aria-hidden="true">✓</div><h2 id="truckSuccessTitle">Truck added successfully</h2><p id="truckSuccessMessage">The truck details and calibration information have been saved.</p><a id="truckSuccessDriveLink" class="truck-drive-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Open truck folder in Google Drive ↗</a><button class="truck-success-close" id="truckSuccessClose" type="button">Done</button></section></div><div class="truck-success-overlay" id="truckConfirmOverlay" aria-hidden="true"><section class="truck-success-card truck-confirm-card" role="dialog" aria-modal="true" aria-labelledby="truckConfirmTitle" aria-describedby="truckConfirmMessage"><div class="truck-confirm-icon" aria-hidden="true">!</div><h2 id="truckConfirmTitle">Confirm truck action</h2><p id="truckConfirmMessage">Please confirm this action.</p><div class="truck-confirm-actions"><button class="truck-confirm-cancel" id="truckConfirmCancel" type="button">Cancel</button><button class="truck-confirm-proceed" id="truckConfirmProceed" type="button">Confirm</button></div></section></div>
 
 <div class="wizard-overlay" id="truckWizard" aria-hidden="true">
 <section class="wizard-dialog" role="dialog" aria-modal="true" aria-labelledby="wizardTitle">
@@ -198,7 +216,7 @@ function renderTrucks(){
   const name=document.createElement('strong');name.textContent=truck.driverName||'Unnamed driver';info.append(plate,name);main.append(info);
   const side=document.createElement('div');side.className='truck-row-side';const status=document.createElement('span');status.className='truck-status'+(truck.isActive===false?' off':'');status.textContent=truck.isActive===false?'Inactive':'Active';side.append(status);
   const details=document.createElement('div');details.className='truck-details';const grid=document.createElement('div');grid.className='truck-detail-grid';grid.append(detail('Driver',truck.driverName),detail('Phone',truck.driverPhone),detail('Truck plate',truck.plate),detail('Trailer plate',truck.trailerPlate||'Not provided'),detail('Compartments',String(truck.compartmentCount)),detail('Registered',truck.createdAt?new Date(truck.createdAt).toLocaleDateString():'—'));details.append(grid);
-  const actions=document.createElement('div');actions.className='truck-actions';actions.append(actionButton('Edit','edit',()=>openEditWizard(truck.id)));actions.append(actionButton(truck.isActive===false?'Activate':'Deactivate','deactivate',()=>toggleTruckActive(truck.id)));actions.append(actionButton('Remove','remove',()=>removeTruck(truck.id)));details.append(actions);
+  const actions=document.createElement('div');actions.className='truck-actions';actions.append(actionButton('Edit','edit',()=>openEditWizard(truck.id)));actions.append(actionButton('Upload to Drive','drive',()=>uploadTruckToDrive(truck.id)));actions.append(actionButton(truck.isActive===false?'Activate':'Deactivate','deactivate',()=>toggleTruckActive(truck.id)));actions.append(actionButton('Remove','remove',()=>removeTruck(truck.id)));details.append(actions);
   const toggle=()=>{const expanded=row.classList.toggle('expanded');main.setAttribute('aria-expanded',String(expanded))};row.addEventListener('click',e=>{if(e.target.closest('button,a,input,select,textarea,label'))return;toggle()});main.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();toggle()}});
   row.append(main,side,details);list.append(row);
  })
@@ -252,9 +270,79 @@ async function syncTrucksWithDatabase(){
  }
 }
 
-function showTruckSuccess(action,plate){
- const successOverlay=$('truckSuccessOverlay'),title=$('truckSuccessTitle'),message=$('truckSuccessMessage');
- if(action==='removed'){title.textContent='Truck Removed';message.textContent='Truck '+(plate||'record')+' has been removed successfully.'}
+
+
+function setTruckDriveStatus(message,type){
+ const el=$('logistics-drive-status');if(!el)return;
+ el.textContent=message;el.className=type?'fee-feedback show '+type:'truck-muted';
+}
+async function loadTruckDriveSettings(){
+ try{
+  const response=await fetch('/api/drive/settings',{credentials:'same-origin',headers:{Accept:'application/json','X-Fuel-Role':'admin'}});
+  const settings=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(settings.error||'Could not load Google Drive settings ('+response.status+').');
+  const input=$('logistics-trucks-drive-link');
+  if(input)input.value=settings.contracted_trucks_folder_id?'https://drive.google.com/drive/folders/'+settings.contracted_trucks_folder_id:'';
+  let connected=false,email='';
+  try{
+   const oauth=await fetch('/api/drive/oauth/status',{credentials:'same-origin',headers:{Accept:'application/json','X-Fuel-Role':'admin'}});
+   const info=await oauth.json().catch(()=>({}));connected=!!(oauth.ok&&info.connected);email=info.google_email||info.email||'';
+  }catch(_){}
+  const rootSet=!!settings.contracted_trucks_folder_id;
+  setTruckDriveStatus((connected?'Google Drive connected'+(email?' ('+email+')':'')+'. ':'Google Drive is not connected. ')+(rootSet?'Contracted Trucks folder link is saved.':'Paste the Drive folder link and save it.'),null);
+ }catch(error){setTruckDriveStatus(error.message||'Could not load Drive settings.','error')}
+}
+async function saveTruckDriveSettings(){
+ const input=$('logistics-trucks-drive-link'),button=$('logistics-drive-save-btn');
+ if(!input)return;
+ button.disabled=true;button.textContent='Saving…';
+ try{
+  const response=await fetch('/api/drive/settings',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:JSON.stringify({contracted_trucks_link:input.value.trim()})});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||'Could not save the Contracted Trucks folder link ('+response.status+').');
+  input.value=result.contracted_trucks_folder_id?'https://drive.google.com/drive/folders/'+result.contracted_trucks_folder_id:'';
+  setTruckDriveStatus(result.contracted_trucks_folder_id?'Contracted Trucks folder link saved. Test the connection before uploading truck records.':'Contracted Trucks folder link cleared. Drive uploads will remain disabled.',result.contracted_trucks_folder_id?'success':null);
+ }catch(error){setTruckDriveStatus(error.message||'Could not save the folder link.','error')}
+ finally{button.disabled=false;button.textContent='Save folder link'}
+}
+async function testTruckDriveConnection(){
+ const button=$('logistics-drive-test-btn');button.disabled=true;button.textContent='Testing…';setTruckDriveStatus('Checking folder access…',null);
+ try{
+  const response=await fetch('/api/drive/trucks/test',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:'{}'});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.ok)throw new Error(result.error||'Google Drive folder test failed ('+response.status+').');
+  setTruckDriveStatus('Connected. The Google account can write to “‘'+(result.folder&&result.folder.name||'Contracted Trucks')+'”’. New truck uploads are ready.', 'success');
+ }catch(error){setTruckDriveStatus(error.message||'Google Drive connection test failed.','error')}
+ finally{button.disabled=false;button.textContent='Test connection'}
+}
+async function uploadTruckToDrive(id){
+ const truck=getTrucks().find(item=>String(item.id)===String(id));
+ if(!truck){setTruckDriveStatus('Could not find this truck. Reload the truck list and try again.','error');return}
+ setTruckDriveStatus('Uploading '+(truck.plate||'truck')+' calibration files and generating its two-page PDF…',null);
+ try{
+  const response=await fetch('/api/logistics/trucks/'+encodeURIComponent(id)+'/drive-upload',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:'{}'});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error((result.error||'Drive upload failed ('+response.status+').'));
+  setTruckDriveStatus('Uploaded '+(truck.plate||'truck')+' to Google Drive. '+(result.csv_files||[]).length+' CSV file(s) and a two-page PDF are saved.','success');
+  showTruckSuccess('driveUploaded',truck.plate,result);
+ }catch(error){const info={status:'failed',message:error.message||'Drive upload failed.'};setTruckDriveStatus(info.message,'error');showTruckSuccess('driveUploadFailed',truck.plate,info)}
+}
+
+function showTruckSuccess(action,plate,driveUpload){
+ const successOverlay=$('truckSuccessOverlay'),title=$('truckSuccessTitle'),message=$('truckSuccessMessage'),driveLink=$('truckSuccessDriveLink');
+ if(driveLink){driveLink.hidden=true;driveLink.removeAttribute('href')}
+ if(driveUpload&&driveUpload.status==='uploaded'){
+  if(driveLink&&driveUpload.truck_folder_url){driveLink.href=driveUpload.truck_folder_url;driveLink.hidden=false}
+  const fileCount=Array.isArray(driveUpload.csv_files)?driveUpload.csv_files.length:0;
+  title.textContent=action==='driveUploaded'?'Drive Upload Complete':(action===true?'Truck updated and archived':'Truck registered and archived');
+  message.textContent='Truck '+(plate||'record')+' is saved. '+fileCount+' compartment CSV file(s) and the two-page calibration PDF were uploaded to Google Drive.';
+ }else if(driveUpload&&driveUpload.status==='not_configured'){
+  title.textContent='Truck saved — Drive not configured';
+  message.textContent='Truck '+(plate||'record')+' is saved, but Drive upload is not configured. Add the Contracted Trucks folder link in Logistics Settings, then use Upload to Drive to retry.';
+ }else if(driveUpload&&driveUpload.status==='failed'){
+  title.textContent='Truck saved — Drive upload needs attention';
+  message.textContent='Truck '+(plate||'record')+' is saved, but the Drive upload failed. '+(driveUpload.message||'Use Upload to Drive to retry.');
+ }else if(action==='removed'){title.textContent='Truck Removed';message.textContent='Truck '+(plate||'record')+' has been removed successfully.'}
  else if(action==='deactivate'){title.textContent='Truck Deactivated';message.textContent='Truck '+(plate||'record')+' has been deactivated successfully.'}
  else if(action==='activate'){title.textContent='Truck Activated';message.textContent='Truck '+(plate||'record')+' has been activated successfully.'}
  else if(action===true){title.textContent='Truck updated successfully';message.textContent='Changes to truck '+(plate||'details')+' have been saved successfully.'}
@@ -275,7 +363,7 @@ async function confirmTruck(){
   const trucks=getTrucks(),index=trucks.findIndex(item=>item.id===record.id||String(item.plate).toUpperCase()===record.plate);
   if(index>=0)trucks[index]={...record,...result};else trucks.push({...record,...result});
   localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));
-  closeWizard();renderTrucks();showTruckSuccess(index>=0,record.plate);
+  closeWizard();renderTrucks();showTruckSuccess(index>=0,record.plate,result.driveUpload);
  }catch(error){
   try{const trucks=getTrucks(),index=trucks.findIndex(item=>item.id===record.id);if(index>=0)trucks[index]=record;else trucks.push(record);localStorage.setItem(STORAGE_KEY,JSON.stringify(trucks));}catch(_){}
   setError(2,(error.message||'Could not save truck to the database.')+' Your entry was kept in this browser as a backup; retry after reconnecting.');
@@ -290,6 +378,10 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.c
 let touchStartX=0,touchStartY=0;
 $('wizardViewport').addEventListener('touchstart',e=>{const t=e.touches[0];touchStartX=t.clientX;touchStartY=t.clientY},{passive:true});
 $('wizardViewport').addEventListener('touchend',e=>{const t=e.changedTouches[0],dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;if(Math.abs(dx)>85&&Math.abs(dx)>Math.abs(dy)*1.25){if(dx<0&&step<2){if(validateStep())showStep(step+1)}else if(dx>0&&step>0)showStep(step-1)}},{passive:true});
+$('logistics-drive-connect-btn').addEventListener('click',()=>{window.location.href='/api/drive/oauth/start'});
+$('logistics-drive-save-btn').addEventListener('click',saveTruckDriveSettings);
+$('logistics-drive-test-btn').addEventListener('click',testTruckDriveConnection);
+loadTruckDriveSettings();
 renderTrucks();
 syncTrucksWithDatabase();
 // Delivery fees follow the product catalogue managed in main Admin Settings.
