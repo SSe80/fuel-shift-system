@@ -510,10 +510,9 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
   DriveQueue.start({
     msr: async function(key){
       if(!/^\d{4}-\d{2}$/.test(String(key||'')))return null;
-      if(!lastExportData||lastExportData.month!==key||!lastExportData.daily||!lastExportData.daily.length){
-        $('msr-month').value=key;
-        await load();
-      }
+      // Do not let background Drive-queue processing change the month the admin is viewing.
+      // A queued report is built only when its month is already selected and loaded.
+      if($('msr-month').value!==key)return null;
       if(!lastExportData||lastExportData.month!==key||!lastExportData.daily||!lastExportData.daily.length)return null;
       return await buildMonthlySalesReportPdfBlob(lastExportData);
     }
