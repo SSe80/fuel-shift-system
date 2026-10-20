@@ -2084,17 +2084,39 @@ def update_tank_dip(tank_id):
     auth=require_admin()
     if auth:return auth
     data=request.get_json(silent=True) or {}
-    try:
-        dip_mm=float(data.get("mm"))
-    except (TypeError,ValueError):
-        return jsonify({"error":"Enter a valid dip reading in millimeters"}),400
-    if dip_mm < 0:
-        return jsonify({"error":"Dip reading cannot be negative"}),400
-
     ts,rows=sb("tanks",params={"id":"eq."+tank_id,"select":"id,tank_code,capacity_liters,calibration_mm,calibration_liters,calibration_points","limit":"1"})
     if ts!=200:return jsonify(rows),ts
     if not rows:return jsonify({"error":"Tank not found"}),404
     tank=rows[0]
+    now=datetime.now(timezone.utc).isoformat()
+
+    # New operational input accepts liters directly; never run a liter value
+    # through the height-to-volume calibration curve.
+    if "liters" in data:
+        try: stock_liters=float(data.get("liters"))
+        except (TypeError,ValueError):return jsonify({"error":"Enter a valid tank stock in liters"}),400
+        if not math.isfinite(stock_liters) or stock_liters<0:
+            return jsonify({"error":"Tank stock liters must be a finite, non-negative number"}),400
+        capacity=float(tank.get("capacity_liters") or 0)
+        if stock_liters>capacity:
+            return jsonify({"error":"Tank stock cannot exceed tank capacity"}),400
+        status,result=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body={
+            "current_liters":stock_liters,
+            "updated_at":now
+        },prefer="return=representation")
+        if status>=400:return jsonify(result),status
+        return jsonify({
+            "ok":True,
+            "tank":result[0] if isinstance(result,list) and result else result,
+            "liters":stock_liters,
+            "unit":"liters"
+        }),200
+
+    # Legacy compatibility: older clients may still send a physical height in mm.
+    try: dip_mm=float(data.get("mm"))
+    except (TypeError,ValueError):return jsonify({"error":"Enter a valid tank stock in liters"}),400
+    if not math.isfinite(dip_mm) or dip_mm<0:
+        return jsonify({"error":"Dip reading cannot be negative"}),400
     points=tank.get("calibration_points")
     liters_value=None
     if isinstance(points,list) and len(points)>=2:
@@ -2127,8 +2149,6 @@ def update_tank_dip(tank_id):
     capacity=float(tank.get("capacity_liters") or 0)
     if liters_value > capacity:
         return jsonify({"error":"The converted liters exceed tank capacity. Check the dip reading or calibration reference."}),400
-
-    now=datetime.now(timezone.utc).isoformat()
     status,result=sb("tanks",method="PATCH",params={"id":"eq."+tank_id},body={
         "current_mm":dip_mm,
         "current_liters":liters_value,
@@ -2142,15 +2162,14 @@ def update_tank_dip(tank_id):
         "liters":liters_value
     }),200
 
-
 @app.patch("/api/tanks/<tank_id>/stock")
 def update_tank_stock(tank_id):
     auth=require_admin()
     if auth:return auth
     data=request.get_json(silent=True) or {}
     try: stock=float(data.get("stock_liters"))
-    except (TypeError,ValueError): return jsonify({"error":"Invalid physical tank stock reading"}),400
-    if stock<0:return jsonify({"error":"Tank stock cannot be negative"}),400
+    except (TypeError,ValueError): return jsonify({"error":"Invalid tank stock in liters"}),400
+    if not math.isfinite(stock) or stock<0:return jsonify({"error":"Tank stock must be a finite, non-negative liter value"}),400
     remark=str(data.get("remark") or "").strip()
     if len(remark)>1000:return jsonify({"error":"Remark is too long"}),400
     purchase_id=str(data.get("purchase_id") or "").strip()
@@ -2779,14 +2798,18 @@ def create_shift():
             opening_tank_liters=float(opening_tank_liters)
         except (TypeError,ValueError):
             return jsonify({"error":"Invalid tank opening liters"}),400
-        if opening_tank_liters < 0:
-            return jsonify({"error":"Tank opening liters cannot be negative"}),400
-        try:
-            opening_tank_dip_mm=float(opening_tank_dip_mm)
-        except (TypeError,ValueError):
-            return jsonify({"error":"Enter a valid tank opening dip in millimeters"}),400
-        if opening_tank_dip_mm < 0:
-            return jsonify({"error":"Tank opening dip cannot be negative"}),400
+        if not math.isfinite(opening_tank_liters) or opening_tank_liters < 0:
+            return jsonify({"error":"Tank opening liters must be a finite, non-negative number"}),400
+        # Retain optional mm metadata for old clients only. New forms submit liters.
+        if opening_tank_dip_mm not in (None, ""):
+            try:
+                opening_tank_dip_mm=float(opening_tank_dip_mm)
+            except (TypeError,ValueError):
+                return jsonify({"error":"Legacy tank dip metadata must be numeric"}),400
+            if not math.isfinite(opening_tank_dip_mm) or opening_tank_dip_mm < 0:
+                return jsonify({"error":"Legacy tank dip metadata cannot be negative"}),400
+        else:
+            opening_tank_dip_mm=None
         for item in activation_nozzles:
             if not isinstance(item,dict) or not str(item.get("nozzle_id","")).strip():
                 return jsonify({"error":"Invalid nozzle activation data"}),400
@@ -2811,7 +2834,8 @@ def create_shift():
     if activation_nozzles is not None:
         body["activation_nozzles"]=activation_nozzles
         body["opening_tank_liters"]=opening_tank_liters
-        body["opening_tank_dip_mm"]=opening_tank_dip_mm
+        if opening_tank_dip_mm is not None:
+            body["opening_tank_dip_mm"]=opening_tank_dip_mm
     status,result=sb("shifts",method="POST",body=body,prefer="return=representation")
     if status>=400:
         if status==409 or (isinstance(result,dict) and result.get("code")=="23505"):

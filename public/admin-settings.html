@@ -277,7 +277,7 @@ body.admin-settings-page #drive-settings-section .section-heading p{
           <div id="edit-tank-calibration-verification" class="tank-calibration-verification" style="margin-top:8px;padding:10px;border:1px solid var(--border-color,#ddd);border-radius:10px;">
             <div style="font-weight:700;margin-bottom:6px;">Calibration verification</div>
             <div id="edit-tank-calibration-point-count" class="muted">No calibration loaded.</div>
-            <label style="margin-top:8px;">Test dip (mm)
+            <label style="margin-top:8px;">Calibration test height (mm)
               <input id="edit-tank-calibration-test-mm" type="number" min="0" step="0.1" placeholder="e.g. 1600" oninput="verifyTankCalibrationDip(this.value)">
             </label>
             <div id="edit-tank-calibration-test-result" class="muted" style="margin-top:6px;">Enter a dip to verify the calibration.</div>
@@ -320,10 +320,9 @@ body.admin-settings-page #drive-settings-section .section-heading p{
         <p id="dispenser-activate-message">Select the Attendant and enter the opening nozzle meter readings. This creates a pending shift assignment; the selected Attendant must confirm it with their PIN on the Attendant Dashboard.</p>
         <div id="dispenser-nozzle-activation-list" class="form"></div>
         <div class="form dispenser-opening-tank-dip-field">
-          <label id="dispenser-activation-tank-label" for="dispenser-activation-tank-dip">Tank opening dip (mm)</label>
-          <input id="dispenser-activation-tank-dip" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter measured tank dip in mm" oninput="updateDispenserActivationDip(this.value)" required>
-          <p class="muted" style="margin:4px 0 0;font-size:12px">Opening stock: <strong id="dispenser-activation-tank-equivalent">Enter a dip to calculate liters.</strong></p>
-          <input id="dispenser-activation-tank-liters" type="hidden" value="">
+          <label id="dispenser-activation-tank-label" for="dispenser-activation-tank-liters-input">Tank opening stock (liters)</label>
+          <input id="dispenser-activation-tank-liters-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Enter opening stock in liters" oninput="updateDispenserActivationLiters(this.value)" required>
+          <p class="muted" style="margin:4px 0 0;font-size:12px">Opening stock: <strong id="dispenser-activation-tank-equivalent">Enter stock in liters.</strong></p>
         </div>
         <div class="form">
           <label>Attendant<select id="dispenser-activation-employee" required><option value="">Select attendant</option></select></label>
@@ -477,7 +476,7 @@ body.admin-settings-page .settings-group-heading[aria-labelledby="drive-settings
 
   <div id="settings-status" class="settings-status muted"></div>
 </main>
-<script src="assets/app.js?v=dsr-design-202610180303"></script>
+<script src="assets/app.js?v=tank-stock-liters-20261020"></script>
 <script src="assets/tank-calibration.js?v=20261006-03"></script>
 <script src="assets/app-boot.js?v=20261015-no-auto-logout1"></script><div id="station-currency-modal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" onclick="closeStationCurrencyModal()"></div>
