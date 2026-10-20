@@ -587,13 +587,13 @@ def _truck_pdf_pages(truck, compartments, root_url, truck_url, data_url):
         return "%.3f %.3f %.3f %s" % (rgb[0], rgb[1], rgb[2], op)
 
     def rect(c, x, y, w, h, fill, stroke=None):
+        if fill:
+            c.append(color(fill))
+            c.append("%.2f %.2f %.2f %.2f re f" % (x, y, w, h))
         if stroke:
             c.append(color(stroke, "RG"))
             c.append("0.8 w")
             c.append("%.2f %.2f %.2f %.2f re S" % (x, y, w, h))
-        if fill:
-            c.append(color(fill))
-            c.append("%.2f %.2f %.2f %.2f re f" % (x, y, w, h))
 
     def txt(c, x, y, value, size=10, bold=False, rgb=ink, max_chars=150):
         value = _pdf_ascii(value)[:max_chars]
