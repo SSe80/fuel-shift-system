@@ -4310,7 +4310,7 @@ function downloadPurchaseDetailPdf(){
       {label:'Product',value:productName},
       {label:'Invoice number',value:invoice},
       {label:'Purchase date',value:purchaseDate},
-      {label:'Ordered quantity',value:fmtL(ordered)},
+      {label:'Dispatched Quantity',value:fmtL(ordered)},
       {label:'Difference',value:signedL(difference)}
     ],
     truck:[
