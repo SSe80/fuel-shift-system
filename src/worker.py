@@ -1664,121 +1664,436 @@ def logistics_save_product_fees():
         saved+=1
     return jsonify({"ok":True,"saved":saved}),200
 
+def _logistics_delivery_is_eligible(row):
+    return bool(
+        row
+        and row.get("status") == "completed"
+        and row.get("eligible_at")
+        and row.get("tank_id")
+        and row.get("tank_opening_liters") is not None
+        and row.get("tank_closing_liters") is not None
+        and row.get("tank_difference_liters") is not None
+        and float(row.get("delivered_liters") or 0) > 0
+    )
+
+
+def _logistics_is_uuid(value):
+    return bool(re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}", str(value or "").strip()))
+
+
+def _logistics_tank_matches_delivery(tank_id, delivery):
+    if not tank_id:
+        return False
+    ts, tanks = sb("tanks", params={"id": "eq." + str(tank_id), "select": "id,product,product_id", "limit": "1"})
+    if ts != 200:
+        return False
+    if not tanks:
+        return False
+    tank = tanks[0]
+    tank_product_id = str(tank.get("product_id") or "")
+    delivery_product_id = str(delivery.get("product_id") or "")
+    tank_product = str(tank.get("product") or "").strip().casefold()
+    delivery_product = str(delivery.get("product_name") or "").strip().casefold()
+    return (tank_product_id == delivery_product_id) if tank_product_id else tank_product == delivery_product
+
+
 @app.get("/api/logistics/deliveries")
 def logistics_list_deliveries():
-    auth=_logistics_admin_auth()
-    if auth:return auth
-    status,rows=sb("logistics_deliveries",params={"select":"*","order":"delivery_date.desc","limit":"1000"})
-    if status!=200:return jsonify({"error":"Unable to load delivery history","details":rows}),status
-    cs,compartments=sb("logistics_delivery_compartments",params={"select":"*","order":"compartment_number.asc","limit":"5000"})
-    if cs!=200:return jsonify({"error":"Unable to load delivery compartment details","details":compartments}),cs
-    grouped={}
-    for item in compartments or []:grouped.setdefault(str(item.get("delivery_id")),[]).append(item)
-    for row in rows or []:row["compartments"]=grouped.get(str(row.get("id")),[])
-    return jsonify(rows or []),200
+    auth = _logistics_admin_auth()
+    if auth:
+        return auth
+    status, rows = sb("logistics_deliveries", params={"select": "*", "order": "delivery_date.desc", "limit": "1000"})
+    if status != 200:
+        return jsonify({"error": "Unable to load logistics deliveries", "details": rows}), status
+    cs, compartments = sb("logistics_delivery_compartments", params={"select": "*", "order": "compartment_number.asc", "limit": "5000"})
+    if cs != 200:
+        return jsonify({"error": "Unable to load delivery compartment details", "details": compartments}), cs
+    grouped = {}
+    for item in compartments or []:
+        grouped.setdefault(str(item.get("delivery_id")), []).append(item)
+    for row in rows or []:
+        row["compartments"] = grouped.get(str(row.get("id")), [])
+        row["eligible_for_payment"] = _logistics_delivery_is_eligible(row)
+        row["transport_payment_status"] = row.get("transport_payment_status") or "unpaid"
+    return jsonify(rows or []), 200
+
 
 @app.post("/api/logistics/deliveries")
 def logistics_create_delivery():
-    auth=_logistics_admin_auth()
-    if auth:return auth
-    data=request.get_json(silent=True) or {}
-    requested_product_id=str(data.get("product_id") or "").strip()
-    requested_product_name=str(data.get("product_name") or "").strip()
+    auth = _logistics_admin_auth()
+    if auth:
+        return auth
+    data = request.get_json(silent=True) or {}
+    requested_product_id = str(data.get("product_id") or "").strip()
+    requested_product_name = str(data.get("product_name") or "").strip()
     if not requested_product_name and not requested_product_id:
-        return jsonify({"error":"Choose a product for this delivery"}),400
-    ps,products=sb("products",params={"select":"id,name,code_name,active","limit":"1000"})
-    if ps!=200:return jsonify({"error":"Unable to load product catalogue","details":products}),ps
-    product_by_id=next((p for p in products if str(p.get("id"))==requested_product_id),None) if requested_product_id else None
-    product_by_name=next((p for p in products if requested_product_name.casefold() in
-                          (str(p.get("name") or "").strip().casefold(),
-                           str(p.get("code_name") or "").strip().casefold())),None) if requested_product_name else None
+        return jsonify({"error": "Choose a product for this delivery"}), 400
+    ps, products = sb("products", params={"select": "id,name,code_name,active", "limit": "1000"})
+    if ps != 200:
+        return jsonify({"error": "Unable to load product catalogue", "details": products}), ps
+    product_by_id = next((p for p in products if str(p.get("id")) == requested_product_id), None) if requested_product_id else None
+    product_by_name = next((p for p in products if requested_product_name.casefold() in (
+        str(p.get("name") or "").strip().casefold(),
+        str(p.get("code_name") or "").strip().casefold()
+    )), None) if requested_product_name else None
     if requested_product_id and not product_by_id:
-        return jsonify({"error":"Product ID does not exist in the catalogue","product_id":requested_product_id}),400
-    if product_by_id and product_by_name and str(product_by_id.get("id"))!=str(product_by_name.get("id")):
-        return jsonify({"error":"Product name and product ID refer to different products"}),400
-    product=product_by_id or product_by_name
-    if not product:return jsonify({"error":"Product not found in catalogue","product_name":requested_product_name}),404
-    if not product.get("active"):return jsonify({"error":"Product is inactive"}),400
-    product_id=str(product["id"])
-    product_name=str(product.get("code_name") or product["name"]).strip()
+        return jsonify({"error": "Product ID does not exist in the catalogue", "product_id": requested_product_id}), 400
+    if product_by_id and product_by_name and str(product_by_id.get("id")) != str(product_by_name.get("id")):
+        return jsonify({"error": "Product name and product ID refer to different products"}), 400
+    product = product_by_id or product_by_name
+    if not product:
+        return jsonify({"error": "Product not found in catalogue", "product_name": requested_product_name}), 404
+    if not product.get("active"):
+        return jsonify({"error": "Product is inactive"}), 400
+
+    product_id = str(product["id"])
+    product_name = str(product.get("code_name") or product["name"]).strip()
     try:
-        delivered=float(data.get("delivered_liters") or 0)
-        fee=float(data.get("fee_per_liter") or 0)
-        ordered=None if data.get("ordered_liters") in (None,"") else float(data.get("ordered_liters"))
-    except (TypeError,ValueError):return jsonify({"error":"Liters and fee must be numeric"}),400
-    if not math.isfinite(delivered) or delivered<0 or not math.isfinite(fee) or fee<0 or (ordered is not None and (not math.isfinite(ordered) or ordered<0)):
-        return jsonify({"error":"Liters and fee must be non-negative valid numbers"}),400
-    truck_id=str(data.get("truck_id") or "").strip()
-    if truck_id:
-        ts,trucks=sb("logistics_trucks",params={"id":"eq."+truck_id,"select":"id,truck_code,registration_number,driver_name","limit":"1"})
-        if ts!=200:return jsonify({"error":"Unable to verify selected truck","details":trucks}),ts
-        if not trucks:return jsonify({"error":"Selected truck was not found in the database"}),404
-        truck=trucks[0]
-    else:truck=None
-    tank_id=str(data.get("tank_id") or "").strip()
-    if tank_id:
-        ts,tanks=sb("tanks",params={"id":"eq."+tank_id,"select":"id,product,product_id","limit":"1"})
-        if ts!=200:return jsonify({"error":"Unable to verify selected tank","details":tanks}),ts
-        if not tanks:return jsonify({"error":"Selected tank was not found"}),404
-        tank=tanks[0]
-        tank_product_id=str(tank.get("product_id") or "")
-        tank_product_name=str(tank.get("product") or "").strip().casefold()
-        if (tank_product_id and tank_product_id!=product_id) or (not tank_product_id and tank_product_name not in
-                (str(product.get("name") or "").strip().casefold(),str(product.get("code_name") or "").strip().casefold())):
-            return jsonify({"error":"Selected tank is assigned to a different product"}),400
-    status_value=str(data.get("status") or "completed").strip().lower()
-    if status_value not in ("draft","in_progress","completed","cancelled"):return jsonify({"error":"Invalid delivery status"}),400
-    date_value=str(data.get("delivery_date") or datetime.now(timezone.utc).isoformat()).strip()
-    try:datetime.fromisoformat(date_value.replace("Z","+00:00"))
-    except ValueError:return jsonify({"error":"Invalid delivery date"}),400
-    now=datetime.now(timezone.utc).isoformat()
-    body={"delivery_reference":str(data.get("delivery_reference") or "").strip() or None,"delivery_date":date_value,
-          "truck_id":truck.get("id") if truck else None,"truck_code_snapshot":truck.get("truck_code") if truck else None,
-          "registration_snapshot":truck.get("registration_number") if truck else None,"driver_name_snapshot":truck.get("driver_name") if truck else None,
-          "supplier_name":str(data.get("supplier_name") or "").strip() or None,"product_id":product_id or None,"product_name":product_name,
-          "ordered_liters":ordered,"delivered_liters":delivered,"fee_per_liter":fee,"status":status_value,
-          "tank_id":tank_id or None,"tank_opening_liters":None if data.get("tank_opening_liters") in (None, "") else float(data.get("tank_opening_liters")),
-          "tank_closing_liters":None if data.get("tank_closing_liters") in (None, "") else float(data.get("tank_closing_liters")),"tank_difference_liters":None if data.get("tank_difference_liters") in (None, "") else float(data.get("tank_difference_liters")),
-          "notes":str(data.get("notes") or "").strip() or None,"created_by":str(session.get("employee_id") or ""),
-          "completed_at":now if status_value=="completed" else None,"updated_at":now}
-    status,result=sb("logistics_deliveries",method="POST",body=body,prefer="return=representation")
-    if status>=400:return jsonify({"error":"Unable to save delivery record","details":result}),status
-    saved=(result or [None])[0] if isinstance(result,list) else result
-    if not isinstance(saved,dict) or not saved.get("id"):return jsonify({"error":"Delivery may have saved but could not be reloaded"}),500
-    compartment_items=data.get("compartments") if isinstance(data.get("compartments"),list) else []
-    rows=[]
-    for index,item in enumerate(compartment_items):
-        if not isinstance(item,dict):continue
-        try:liters=float(item.get("delivered_liters") or 0)
-        except (TypeError,ValueError):return jsonify({"error":"Compartment liters must be numeric"}),400
-        if not math.isfinite(liters) or liters<0:return jsonify({"error":"Compartment liters must be non-negative"}),400
-        rows.append({"delivery_id":saved["id"],"compartment_number":int(item.get("compartment_number") or index+1),
-                     "truck_compartment_id":item.get("truck_compartment_id") or None,"capacity_liters":item.get("capacity_liters") or None,
-                     "delivered_liters":liters,"dip_before_mm":item.get("dip_before_mm"),"dip_after_mm":item.get("dip_after_mm"),
-                     "calculated_liters":item.get("calculated_liters"),"notes":item.get("notes")})
-    if rows:
-        cs,created=sb("logistics_delivery_compartments",method="POST",body=rows,prefer="return=representation")
-        if cs>=400:return jsonify({"error":"Delivery saved, but compartment details failed to save","delivery_id":saved["id"],"details":created}),cs
-    return jsonify(saved),201
+        ordered = None if data.get("ordered_liters") in (None, "") else float(data.get("ordered_liters"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Ordered litres must be numeric"}), 400
+    if ordered is not None and (not math.isfinite(ordered) or ordered < 0):
+        return jsonify({"error": "Ordered litres must be a valid non-negative number"}), 400
+
+    truck_id = str(data.get("truck_id") or "").strip()
+    if not truck_id:
+        return jsonify({"error": "Choose a registered truck for this delivery"}), 400
+    ts, trucks = sb("logistics_trucks", params={"id": "eq." + truck_id, "select": "id,truck_code,registration_number,driver_name,active", "limit": "1"})
+    if ts != 200:
+        return jsonify({"error": "Unable to verify selected truck", "details": trucks}), ts
+    if not trucks:
+        return jsonify({"error": "Selected truck was not found in the database"}), 404
+    truck = trucks[0]
+    if truck.get("active") is False:
+        return jsonify({"error": "The selected truck is inactive"}), 400
+
+    date_value = str(data.get("delivery_date") or datetime.now(timezone.utc).isoformat()).strip()
+    try:
+        datetime.fromisoformat(date_value.replace("Z", "+00:00"))
+    except ValueError:
+        return jsonify({"error": "Invalid delivery date"}), 400
+
+    status_value = str(data.get("status") or "draft").strip().lower()
+    if status_value not in ("draft", "in_progress"):
+        return jsonify({"error": "Create the delivery as a draft or in progress; complete it only after discharge and tank-stock recording."}), 400
+
+    now = datetime.now(timezone.utc).isoformat()
+    body = {
+        "delivery_reference": str(data.get("delivery_reference") or "").strip() or None,
+        "delivery_date": date_value,
+        "truck_id": truck.get("id"),
+        "truck_code_snapshot": truck.get("truck_code") or truck.get("registration_number"),
+        "registration_snapshot": truck.get("registration_number"),
+        "driver_name_snapshot": truck.get("driver_name"),
+        "supplier_name": str(data.get("supplier_name") or "").strip() or None,
+        "product_id": product_id,
+        "product_name": product_name,
+        "ordered_liters": ordered,
+        "delivered_liters": 0,
+        "fee_per_liter": 0,
+        "total_fee": 0,
+        "status": status_value,
+        "transport_payment_status": "unpaid",
+        "tank_id": None,
+        "tank_opening_liters": None,
+        "tank_closing_liters": None,
+        "tank_difference_liters": None,
+        "notes": str(data.get("notes") or "").strip() or None,
+        "created_by": str(session.get("employee_id") or ""),
+        "completed_at": None,
+        "updated_at": now
+    }
+    status, result = sb("logistics_deliveries", method="POST", body=body, prefer="return=representation")
+    if status >= 400:
+        return jsonify({"error": "Unable to save delivery record", "details": result}), status
+    saved = (result or [None])[0] if isinstance(result, list) else result
+    if not isinstance(saved, dict) or not saved.get("id"):
+        return jsonify({"error": "Delivery may have saved but could not be reloaded"}), 500
+    return jsonify(saved), 201
+
 
 @app.patch("/api/logistics/deliveries/<delivery_id>")
 def logistics_update_delivery(delivery_id):
-    auth=_logistics_admin_auth()
-    if auth:return auth
-    data=request.get_json(silent=True) or {}
-    body={}
+    auth = _logistics_admin_auth()
+    if auth:
+        return auth
+    ds, matches = sb("logistics_deliveries", params={"id": "eq." + delivery_id, "select": "*", "limit": "1"})
+    if ds != 200:
+        return jsonify({"error": "Unable to load delivery before updating", "details": matches}), ds
+    if not matches:
+        return jsonify({"error": "Delivery not found"}), 404
+    existing = matches[0]
+    data = request.get_json(silent=True) or {}
+    requested_status = str(data.get("status") or existing.get("status") or "").strip().lower()
+
+    if existing.get("status") == "completed":
+        unsupported = [key for key in data if key != "notes" and not (key == "status" and requested_status == "completed")]
+        if unsupported:
+            return jsonify({"error": "Completed delivery quantities and stock readings are frozen. Use the audited financial correction action for ordered quantity or charge changes."}), 409
+        if "notes" in data:
+            note_body = {"notes": str(data.get("notes") or "").strip() or None, "updated_at": datetime.now(timezone.utc).isoformat()}
+            us, updated = sb("logistics_deliveries", method="PATCH", params={"id": "eq." + delivery_id}, body=note_body, prefer="return=representation")
+            if us >= 400:
+                return jsonify({"error": "Unable to update delivery notes", "details": updated}), us
+            return jsonify((updated or [existing])[0]), 200
+        return jsonify(existing), 200
+
+    if requested_status == "completed":
+        try:
+            delivered = float(data.get("delivered_liters", existing.get("delivered_liters") or 0))
+            opening = data.get("tank_opening_liters", existing.get("tank_opening_liters"))
+            closing = data.get("tank_closing_liters", existing.get("tank_closing_liters"))
+            difference = data.get("tank_difference_liters", existing.get("tank_difference_liters"))
+            opening = None if opening in (None, "") else float(opening)
+            closing = None if closing in (None, "") else float(closing)
+            difference = None if difference in (None, "") else float(difference)
+        except (TypeError, ValueError):
+            return jsonify({"error": "Delivered litres and tank-stock readings must be numeric"}), 400
+        tank_id = str(data.get("tank_id") or existing.get("tank_id") or "").strip()
+        if not math.isfinite(delivered) or delivered <= 0 or opening is None or closing is None or difference is None:
+            return jsonify({"error": "Record delivered litres, destination tank, opening stock, closing stock and tank difference before completing the delivery."}), 400
+        if not math.isfinite(opening) or opening < 0 or not math.isfinite(closing) or closing < 0 or not math.isfinite(difference):
+            return jsonify({"error": "Tank-stock readings must be valid numbers; opening and closing stock cannot be negative."}), 400
+        if not _logistics_tank_matches_delivery(tank_id, existing):
+            return jsonify({"error": "Choose a valid tank assigned to this delivery's product."}), 400
+        rpc_body = {
+            "p_delivery_id": delivery_id,
+            "p_tank_id": tank_id,
+            "p_tank_opening_liters": opening,
+            "p_tank_closing_liters": closing,
+            "p_tank_difference_liters": difference,
+            "p_delivered_liters": delivered,
+            "p_notes": str(data.get("notes", existing.get("notes") or "") or "").strip() or None,
+            "p_actor_id": str(session.get("employee_id") or "")
+        }
+        cs, completed = sb("rpc/complete_logistics_delivery", method="POST", body=rpc_body)
+        if cs >= 400:
+            details = completed.get("message") if isinstance(completed, dict) else completed
+            return jsonify({"error": details or "Unable to complete delivery", "details": completed}), cs
+        return jsonify(completed), 200
+
+    if requested_status not in ("draft", "in_progress", "cancelled"):
+        return jsonify({"error": "Invalid delivery status"}), 400
+    if existing.get("status") == "cancelled" and requested_status != "cancelled":
+        return jsonify({"error": "A cancelled delivery cannot be reopened."}), 409
+
+    body = {"updated_at": datetime.now(timezone.utc).isoformat()}
     if "status" in data:
-        value=str(data.get("status") or "").strip().lower()
-        if value not in ("draft","in_progress","completed","cancelled"):return jsonify({"error":"Invalid delivery status"}),400
-        body["status"]=value
-        body["completed_at"]=datetime.now(timezone.utc).isoformat() if value=="completed" else None
-    if "notes" in data:body["notes"]=str(data.get("notes") or "").strip() or None
-    if not body:return jsonify({"error":"No supported delivery fields supplied"}),400
-    body["updated_at"]=datetime.now(timezone.utc).isoformat()
-    status,result=sb("logistics_deliveries",method="PATCH",params={"id":"eq."+delivery_id},body=body,prefer="return=representation")
-    if status>=400:return jsonify({"error":"Unable to update delivery","details":result}),status
-    if not result:return jsonify({"error":"Delivery not found"}),404
-    return jsonify(result[0]),200
+        body["status"] = requested_status
+    if "notes" in data:
+        body["notes"] = str(data.get("notes") or "").strip() or None
+    if "delivered_liters" in data:
+        try:
+            delivered = float(data.get("delivered_liters") or 0)
+        except (TypeError, ValueError):
+            return jsonify({"error": "Delivered litres must be numeric"}), 400
+        if not math.isfinite(delivered) or delivered < 0:
+            return jsonify({"error": "Delivered litres must be a valid non-negative number"}), 400
+        body["delivered_liters"] = delivered
+    if "tank_id" in data:
+        body["tank_id"] = str(data.get("tank_id") or "").strip() or None
+    for key in ("tank_opening_liters", "tank_closing_liters", "tank_difference_liters"):
+        if key in data:
+            raw = data.get(key)
+            if raw in (None, ""):
+                body[key] = None
+            else:
+                try:
+                    number = float(raw)
+                except (TypeError, ValueError):
+                    return jsonify({"error": "Tank-stock readings must be numeric"}), 400
+                if not math.isfinite(number) or (key != "tank_difference_liters" and number < 0):
+                    return jsonify({"error": "Tank-stock readings must be valid numbers"}), 400
+                body[key] = number
+    if len(body) == 1:
+        return jsonify({"error": "No supported delivery fields supplied"}), 400
+    us, updated = sb("logistics_deliveries", method="PATCH", params={"id": "eq." + delivery_id}, body=body, prefer="return=representation")
+    if us >= 400:
+        return jsonify({"error": "Unable to update delivery", "details": updated}), us
+    if not updated:
+        return jsonify({"error": "Delivery not found"}), 404
+    return jsonify(updated[0]), 200
+
+
+@app.patch("/api/logistics/deliveries/<delivery_id>/financial-correction")
+def logistics_correct_delivery_financials(delivery_id):
+    auth = _logistics_admin_auth()
+    if auth:
+        return auth
+    data = request.get_json(silent=True) or {}
+    reason = str(data.get("reason") or "").strip()
+    if not reason:
+        return jsonify({"error": "A correction reason is required"}), 400
+    ordered = None
+    charge = None
+    try:
+        if "ordered_liters" in data and data.get("ordered_liters") not in (None, ""):
+            ordered = float(data.get("ordered_liters"))
+        if "total_fee" in data and data.get("total_fee") not in (None, ""):
+            charge = float(data.get("total_fee"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Corrected quantity and charge must be numeric"}), 400
+    if ordered is None and charge is None:
+        return jsonify({"error": "Enter a corrected ordered quantity, frozen charge, or both"}), 400
+    if (ordered is not None and (not math.isfinite(ordered) or ordered < 0)) or (charge is not None and (not math.isfinite(charge) or charge < 0)):
+        return jsonify({"error": "Corrected quantity and charge must be valid non-negative numbers"}), 400
+    cs, result = sb("rpc/correct_logistics_delivery_financials", method="POST", body={
+        "p_delivery_id": delivery_id,
+        "p_ordered_liters": ordered,
+        "p_total_fee": charge,
+        "p_reason": reason,
+        "p_actor_id": str(session.get("employee_id") or "")
+    })
+    if cs >= 400:
+        details = result.get("message") if isinstance(result, dict) else result
+        return jsonify({"error": details or "Unable to save audited correction", "details": result}), cs
+    return jsonify(result), 200
+
+
+@app.get("/api/logistics/deliveries/<delivery_id>/audit")
+def logistics_delivery_audit(delivery_id):
+    auth = _logistics_admin_auth()
+    if auth:
+        return auth
+    status, rows = sb("logistics_delivery_audit", params={
+        "delivery_id": "eq." + delivery_id,
+        "select": "*",
+        "order": "created_at.desc",
+        "limit": "200"
+    })
+    if status != 200:
+        return jsonify({"error": "Unable to load delivery audit history", "details": rows}), status
+    return jsonify(rows or []), 200
+
+
+@app.get("/api/logistics/transport-transactions")
+def logistics_list_transport_transactions():
+    auth = _logistics_admin_auth()
+    if auth:
+        return auth
+    status, transactions = sb("logistics_transport_transactions", params={
+        "select": "*",
+        "order": "created_at.desc",
+        "limit": "1000"
+    })
+    if status != 200:
+        return jsonify({"error": "Unable to load transport payment history", "details": transactions}), status
+    is_, items = sb("logistics_transport_payment_items", params={
+        "select": "*",
+        "order": "created_at.desc",
+        "limit": "5000"
+    })
+    if is_ != 200:
+        return jsonify({"error": "Unable to load transport payment details", "details": items}), is_
+    ds, deliveries = sb("logistics_deliveries", params={
+        "select": "id,delivery_reference,delivery_date,truck_code_snapshot,registration_snapshot,driver_name_snapshot,product_name,ordered_liters,delivered_liters,fee_per_liter,total_fee,status,transport_payment_status,eligible_at",
+        "order": "delivery_date.desc",
+        "limit": "1000"
+    })
+    if ds != 200:
+        return jsonify({"error": "Unable to load linked delivery details", "details": deliveries}), ds
+
+    delivery_map = {str(row.get("id")): row for row in (deliveries or [])}
+    grouped = {}
+    for item in items or []:
+        grouped.setdefault(str(item.get("transaction_id")), []).append(item)
+    reversed_by = {
+        str(tx.get("original_transaction_id")): tx
+        for tx in (transactions or [])
+        if tx.get("transaction_type") == "reversal" and tx.get("original_transaction_id")
+    }
+
+    output = []
+    for tx in transactions or []:
+        related_id = str(tx.get("original_transaction_id")) if tx.get("transaction_type") == "reversal" else str(tx.get("id"))
+        linked = []
+        for item in grouped.get(related_id, []):
+            delivery = delivery_map.get(str(item.get("delivery_id")))
+            if delivery:
+                linked.append({
+                    "id": delivery.get("id"),
+                    "delivery_reference": delivery.get("delivery_reference"),
+                    "delivery_date": delivery.get("delivery_date"),
+                    "truck_code_snapshot": delivery.get("truck_code_snapshot"),
+                    "registration_snapshot": delivery.get("registration_snapshot"),
+                    "driver_name_snapshot": delivery.get("driver_name_snapshot"),
+                    "product_name": delivery.get("product_name"),
+                    "ordered_liters": delivery.get("ordered_liters"),
+                    "delivered_liters": delivery.get("delivered_liters"),
+                    "fee_per_liter": delivery.get("fee_per_liter"),
+                    "total_fee": delivery.get("total_fee"),
+                    "charge_snapshot": item.get("charge_snapshot")
+                })
+        tx["deliveries"] = linked
+        tx["is_reversed"] = str(tx.get("id")) in reversed_by
+        tx["reversal"] = reversed_by.get(str(tx.get("id")))
+        output.append(tx)
+    return jsonify(output), 200
+
+
+@app.post("/api/logistics/transport-payments")
+def logistics_record_transport_payment():
+    auth = _logistics_admin_auth()
+    if auth:
+        return auth
+    data = request.get_json(silent=True) or {}
+    ids = data.get("delivery_ids")
+    reference = str(data.get("reference") or "").strip()
+    if not isinstance(ids, list) or not ids or len(ids) > 500:
+        return jsonify({"error": "Select between 1 and 500 eligible deliveries"}), 400
+    if any(not _logistics_is_uuid(item) for item in ids):
+        return jsonify({"error": "The selected delivery list contains an invalid ID"}), 400
+    if len(set(str(item) for item in ids)) != len(ids):
+        return jsonify({"error": "A delivery can only be included once in a payment"}), 400
+    if not reference:
+        return jsonify({"error": "A payment reference is required"}), 400
+    try:
+        amount = float(data.get("amount"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "The payment amount is invalid"}), 400
+    if not math.isfinite(amount) or amount < 0:
+        return jsonify({"error": "The payment amount must be a valid non-negative amount"}), 400
+    actor = str(session.get("employee_id") or "")
+    if not _logistics_is_uuid(actor):
+        return jsonify({"error": "The admin session is missing a valid employee ID"}), 401
+    status, result = sb("rpc/record_logistics_transport_payment", method="POST", body={
+        "p_delivery_ids": ids,
+        "p_reference": reference,
+        "p_amount": str(amount),
+        "p_created_by": actor
+    })
+    if status >= 400:
+        details = result.get("message") if isinstance(result, dict) else result
+        return jsonify({"error": details or "Unable to record transport payment", "details": result}), status
+    return jsonify(result), 201
+
+
+@app.post("/api/logistics/transport-payments/<transaction_id>/reverse")
+def logistics_reverse_transport_payment(transaction_id):
+    auth = _logistics_admin_auth()
+    if auth:
+        return auth
+    if not _logistics_is_uuid(transaction_id):
+        return jsonify({"error": "Invalid payment transaction ID"}), 400
+    data = request.get_json(silent=True) or {}
+    reference = str(data.get("reference") or "").strip()
+    reason = str(data.get("reason") or "").strip()
+    if not reference or not reason:
+        return jsonify({"error": "A reversal reference and reason are required"}), 400
+    actor = str(session.get("employee_id") or "")
+    if not _logistics_is_uuid(actor):
+        return jsonify({"error": "The admin session is missing a valid employee ID"}), 401
+    status, result = sb("rpc/reverse_logistics_transport_payment", method="POST", body={
+        "p_transaction_id": transaction_id,
+        "p_reference": reference,
+        "p_reason": reason,
+        "p_created_by": actor
+    })
+    if status >= 400:
+        details = result.get("message") if isinstance(result, dict) else result
+        return jsonify({"error": details or "Unable to reverse transport payment", "details": result}), status
+    return jsonify(result), 201
+
 
 @app.get("/api/products")
 def products():
