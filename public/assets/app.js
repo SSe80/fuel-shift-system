@@ -621,7 +621,7 @@ function openDispenserDeactivationConfirmation(id){
   const tank=(window.dashboardTankRecords||[]).find(t=>String(t.id)===String(n.tank_id));
   if(summary)summary.innerHTML='<b>Tank:</b> '+h(tank?.tank_code||n.tank_id||'Connected tank')+' &nbsp; <b>Opening tank:</b> '+liters(shift.opening_tank_liters)+' L';
   if(list)list.innerHTML=readings.map((r,i)=>'<div class="card" style="margin:0 0 8px;padding:10px"><div class="top"><strong>'+h(r.nozzle_code||r.nozzle_id||('Nozzle '+(i+1)))+'</strong><span>Opening '+reading(r.opening_reading)+'</span></div><label>Closing reading<input class="deactivation-closing-reading" data-nozzle-id="'+h(r.nozzle_id)+'" type="number" min="'+h(r.opening_reading||0)+'" step="0.01" inputmode="decimal" placeholder="Enter closing reading" required></label></div>').join('');
-  const stock=document.getElementById('dispenser-deactivation-tank-stock'); if(stock){stock.value='';updateDispenserDeactivationDip('');}
+  const stock=document.getElementById('dispenser-deactivation-tank-stock'); if(stock){stock.value='';updateDispenserDeactivationStock('');}
   const pin=document.getElementById('dispenser-deactivation-pin'); if(pin)pin.value='';
   const error=document.getElementById('dispenser-deactivation-error'); if(error){error.textContent='';error.style.display='none';}
   modal.classList.add('open');modal.setAttribute('aria-hidden','false');
