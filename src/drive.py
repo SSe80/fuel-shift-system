@@ -501,8 +501,9 @@ def _truck_points(compartment):
 
 
 def _truck_csv_bytes(points):
-    rows = ["height_mm,litres"]
-    rows.extend(_truck_number(height) + "," + _truck_number(litres) for height, litres in points)
+    # Keep the upload order compatible with the truck-registration importer: volume first, height second.
+    rows = ["litres,mm"]
+    rows.extend(_truck_number(litres) + "," + _truck_number(height) for height, litres in points)
     return ("\ufeff" + "\r\n".join(rows) + "\r\n").encode("utf-8")
 
 
