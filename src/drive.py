@@ -664,16 +664,17 @@ def _truck_pdf_pages(truck, compartments, root_url, truck_url, data_url):
     txt(c, 40, 503, "Height-to-volume reference tables · Truck " + plate + ((" / Trailer " + trailer) if trailer else ""), 9, False, (0.86, 0.90, 0.95), 110)
     txt(c, 40, 459, "Each column is a separate compartment CSV. Height is measured in millimetres; volume is in litres.", 8.2, False, muted, 130)
 
-    left, right, gap = 40.0, 802.0, 9.0
     n = max(1, len(rows))
+    left, right = 40.0, 802.0
+    gap = min(9.0, max(0.5, (right - left) / (2 * n)))
     col_w = (right - left - gap * (n - 1)) / n
     table_top, table_bottom = 440.0, 48.0
     table_height = table_top - table_bottom
     points_by_comp = [_truck_points(row) for row in rows]
     max_points = max([len(points) for points in points_by_comp] or [1])
-    row_h = min(14.0, table_height / (max_points + 2))
-    row_h = max(2.7, row_h)
-    font_size = max(3.2, min(8.0, row_h * 0.62))
+    # Reserve room for the table headings and point-count footer before scaling rows.
+    row_h = min(14.0, (table_height - 81.0) / max(1, max_points))
+    font_size = max(1.5, min(8.0, row_h * 0.62))
     for i, item in enumerate(rows):
         x = left + i * (col_w + gap)
         rect(c, x, table_bottom, col_w, table_height, white, line_color)
@@ -687,16 +688,13 @@ def _truck_pdf_pages(truck, compartments, root_url, truck_url, data_url):
             txt(c, x + 6, table_top - 55, "No calibration data", max(5.5, font_size), False, muted, 25)
         for j, (height, litres) in enumerate(pts):
             y = table_top - 51 - (j * row_h)
-            if y < table_bottom + 2:
-                # With exceptionally large CSVs, compress further instead of silently omitting points.
-                y = table_top - 51 - (j * (table_height - 54) / max(1, len(pts)))
             if j % 2 == 0:
-                rect(c, x + 1, y - 3, max(1, col_w - 2), max(2, row_h), pale)
+                rect(c, x + 1, y - row_h * 0.25, max(1, col_w - 2), max(0.5, row_h), pale)
             txt(c, x + 6, y, _truck_number(height), font_size, False, ink, 18)
             txt(c, x + col_w * 0.52, y, _truck_number(litres), font_size, False, ink, 18)
         if points_by_comp[i]:
-            footer_y = max(table_bottom + 8, table_top - 51 - len(points_by_comp[i]) * row_h)
-            txt(c, x + 6, footer_y, str(len(points_by_comp[i])) + " points", max(4.4, min(7, font_size)), True, blue, 18)
+            footer_y = table_bottom + 10
+            txt(c, x + 6, footer_y, str(len(points_by_comp[i])) + " points", max(2.2, min(7, font_size)), True, blue, 18)
 
     if not rows:
         rect(c, 40, 340, 762, 70, pale, line_color)
