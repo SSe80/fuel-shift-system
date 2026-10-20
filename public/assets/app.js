@@ -5633,9 +5633,9 @@ async function openDashboardHandover(shiftId){
           '<input id="handover-nozzle-reading-'+i+'" type="number"'+minAttr+' step="0.01" placeholder="'+placeholder+'" required></label>';
       }).join('');
     }
-    const closingLiters=document.getElementById('handover-closing-liters');
-    if(closingLiters)closingLiters.value='';
-    if(closingLiters)closingLiters.setAttribute('data-tank-id',nozzle?.tank_id||'');
+    const closingLitersInput=document.getElementById('handover-closing-liters-input');
+    if(closingLitersInput)closingLitersInput.value='';
+    if(closingLitersInput)closingLitersInput.setAttribute('data-tank-id',nozzle?.tank_id||'');
 
     openHandoverInputModal();
   }catch(e){toast(e.message);}
@@ -6701,9 +6701,8 @@ async function _confirmGenericActivationReview(){
 }
 function confirmGenericActivation(){return _confirmGenericActivationReview();}
 async function confirmDispenserActivation(){
-  // Assign Shift must use the tank dip entered during dispenser activation.
-  // _confirmDispenserActivation converts dip (mm) to liters from the tank calibration;
-  // do not read the hidden liters field here or ask the user to enter liters manually.
+  // Assign Shift uses the opening tank stock in liters entered during dispenser activation.
+  // The submitted value is already liters and must not be converted through the height calibration.
   return _confirmDispenserActivation();
 }
 async function _toggleNozzleConfirmed(id){return _toggleNozzle(id,true);}
