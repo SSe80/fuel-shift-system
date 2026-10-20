@@ -2033,6 +2033,24 @@ async function adminInbox(){
  }catch(e){const list=document.getElementById('station-notifications-list');if(list)list.innerHTML='<div class="station-notification-empty">Could not load the inbox. Please refresh and try again.</div>';}
 }
 
+let adminNotificationPollingStarted=false;
+let adminNotificationPollInFlight=false;
+function startAdminNotificationPolling(){
+  if(adminNotificationPollingStarted||!document.body?.classList.contains('admin-shell')||!document.getElementById('station-notifications-list'))return;
+  adminNotificationPollingStarted=true;
+  const refresh=async()=>{
+    if(document.hidden||adminNotificationPollInFlight)return;
+    adminNotificationPollInFlight=true;
+    try{await loadStationNotifications();}
+    catch(error){console.warn('Admin notification refresh failed.',error);}
+    finally{adminNotificationPollInFlight=false;}
+  };
+  // Refresh the admin dashboard inbox while it remains open, without
+  // reloading the whole dashboard or repeatedly firing the same popup.
+  window.setInterval(refresh,20000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+}
+
 async function adminDashboard(){
   try{
     await window.stationCurrencyReady;
@@ -2073,6 +2091,7 @@ async function adminDashboard(){
     await loadAccountingReconciliation();
     await loadStationReconciliationAlerts();
     await loadStationNotifications();
+    startAdminNotificationPolling();
     if(el('products')){
       const shownProducts=products.slice(0,4);
       el('products').innerHTML=shownProducts.length?shownProducts.map(p=>{
