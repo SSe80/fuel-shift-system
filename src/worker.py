@@ -6197,7 +6197,13 @@ def _drive_after_dsr_confirm(report_day):
 def _drive_settings():
     st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,purchase_folder_id,admin_audit_folder_id,admin_audit_sheet_id,contracted_trucks_folder_id,updated_at"})
     if st >= 400:
-        return None
+        # A code deployment can precede its additive migration. Keep existing Drive
+        # exports/settings operational until contracted_trucks_folder_id is applied.
+        st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,purchase_folder_id,admin_audit_folder_id,admin_audit_sheet_id,updated_at"})
+        if st >= 400:
+            return None
+        for item in rows or []:
+            item.setdefault("contracted_trucks_folder_id", None)
     return (rows or [{}])[0]
 
 def _drive_oauth_redirect_uri():
