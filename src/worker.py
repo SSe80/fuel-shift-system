@@ -1685,16 +1685,25 @@ def _logistics_tank_matches_delivery(tank_id, delivery):
     if not tank_id:
         return False
     ts, tanks = sb("tanks", params={"id": "eq." + str(tank_id), "select": "id,product,product_id", "limit": "1"})
-    if ts != 200:
-        return False
-    if not tanks:
+    if ts != 200 or not tanks:
         return False
     tank = tanks[0]
     tank_product_id = str(tank.get("product_id") or "")
     delivery_product_id = str(delivery.get("product_id") or "")
+    if tank_product_id:
+        return bool(delivery_product_id) and tank_product_id == delivery_product_id
     tank_product = str(tank.get("product") or "").strip().casefold()
-    delivery_product = str(delivery.get("product_name") or "").strip().casefold()
-    return (tank_product_id == delivery_product_id) if tank_product_id else tank_product == delivery_product
+    product_names = {str(delivery.get("product_name") or "").strip().casefold()}
+    if delivery_product_id:
+        ps, products = sb("products", params={"id": "eq." + delivery_product_id, "select": "id,name,code_name", "limit": "1"})
+        if ps != 200:
+            return False
+        if products:
+            product_names.update({
+                str(products[0].get("name") or "").strip().casefold(),
+                str(products[0].get("code_name") or "").strip().casefold()
+            })
+    return bool(tank_product and tank_product in product_names)
 
 
 @app.get("/api/logistics/deliveries")
@@ -3794,6 +3803,40 @@ def update_purchase_remark(purchase_id):
     return jsonify({"ok":True,"purchase_id":str(purchase_id),"purchase_remark":remark,
                     "drive_pdf_uploaded":bool(drive_export.get("ok")),
                     "drive_pdf_error":drive_export.get("error")}),200
+
+@app.patch("/api/purchases/<purchase_id>/shortage-payment")
+def update_purchase_shortage_payment(purchase_id):
+    auth = require_admin()
+    if auth:
+        return auth
+    data = request.get_json(silent=True) or {}
+    value = str(data.get("shortage_payment_status") or "").strip().lower()
+    if value not in ("paid", "unpaid"):
+        return jsonify({"error": "Choose Paid or Unpaid for fuel-shortage payment status"}), 400
+    ps, rows = sb("purchases", params={"id": "eq." + str(purchase_id), "select": "id", "limit": "1"})
+    if ps != 200:
+        return jsonify({"error": "Unable to verify purchase", "details": rows}), ps
+    if not rows:
+        return jsonify({"error": "Purchase not found"}), 404
+    now = datetime.now(timezone.utc).isoformat()
+    body = {
+        "shortage_payment_status": value,
+        "shortage_payment_updated_at": now,
+        "shortage_payment_updated_by": str(session.get("employee_id") or "")
+    }
+    status, result = sb("purchases", method="PATCH", params={"id": "eq." + str(purchase_id)}, body=body, prefer="return=representation")
+    if status >= 400:
+        return jsonify({"error": "Fuel-shortage payment status could not be saved", "details": result}), status
+    drive_export = _auto_upload_completed_purchase_pdf(purchase_id)
+    return jsonify({
+        "ok": True,
+        "purchase_id": str(purchase_id),
+        "shortage_payment_status": value,
+        "shortage_payment_updated_at": now,
+        "drive_pdf_uploaded": bool(drive_export.get("ok")),
+        "drive_pdf_error": drive_export.get("error")
+    }), 200
+
 
 @app.post("/api/purchases/<purchase_id>/discharge")
 def discharge_purchase(purchase_id):
