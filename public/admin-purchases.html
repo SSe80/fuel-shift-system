@@ -2048,7 +2048,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     if(!tankStockCarousel.events.length&&!hasHistory){closeTankStockCard();return;}
     const slideCount=tankStockCarousel.events.length+1;
     tankStockCarousel.index=Math.max(0,Math.min(tankStockCarousel.index,slideCount-1));
-    const remark=tankStockCarousel.remark||tankStockCarousel.events[tankStockCarousel.events.length-1]?.event?.tank_stock_remark||'',shortagePaymentStatus=tankStockCarousel.shortagePaymentStatus||p.shortage_payment_status||'unpaid';
+    const remark=tankStockCarousel.remark??tankStockCarousel.events[tankStockCarousel.events.length-1]?.event?.tank_stock_remark??p.discharge_history?.[p.discharge_history.length-1]?.tank_stock_remark??'',shortagePaymentStatus=tankStockCarousel.shortagePaymentStatus||p.shortage_payment_status||'unpaid';
     track.innerHTML=tankStockCarousel.events.map((item,pos)=>{
       const e=item.event,tank=purchaseDetailTanks?.find(t=>String(t.id)===String(e.tank_id));
       const beforeRaw=e.physical_tank_liters_before??e.tank_liters_before,hasBefore=beforeRaw!==undefined&&beforeRaw!==null&&Number.isFinite(Number(beforeRaw)),before=hasBefore?Number(beforeRaw):null,discharged=Number(e.discharged_quantity_liters||0),expectedRaw=e.tank_liters_after,expected=expectedRaw!==undefined&&expectedRaw!==null&&Number.isFinite(Number(expectedRaw))?Number(expectedRaw):(hasBefore?before+discharged:null);
@@ -2116,7 +2116,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
   window.stepTankStockSlide=function(direction){window.goTankStockSlide(tankStockCarousel.index+direction);};
   window.openTankStockCard=function(purchaseId){
     const modal=document.getElementById('tank-stock-modal');if(!modal)return;
-    tankStockCarousel={purchaseId:String(purchaseId||''),events:getTankStockEvents(purchaseId),index:0,readings:{},remark:'',remarkSaved:false,shortagePaymentStatus:String((purchaseDetailData||[]).find(p=>String(p.id)===String(purchaseId))?.shortage_payment_status||'unpaid')};
+    tankStockCarousel={purchaseId:String(purchaseId||''),events:getTankStockEvents(purchaseId),index:0,readings:{},remark:String((((purchaseDetailData||[]).find(p=>String(p.id)===String(purchaseId))?.discharge_history)||[]).slice(-1)[0]?.tank_stock_remark||''),remarkSaved:false,shortagePaymentStatus:String((purchaseDetailData||[]).find(p=>String(p.id)===String(purchaseId))?.shortage_payment_status||'unpaid')};
     if(!tankStockCarousel.events.length&&!Array.isArray((purchaseDetailData||[]).find(p=>String(p.id)===String(purchaseId))?.discharge_history)){openPurchaseFailed('No discharge history is available for this purchase.','Tank Stock Unavailable');return;}if(!tankStockCarousel.events.length&&!((purchaseDetailData||[]).find(p=>String(p.id)===String(purchaseId))?.discharge_history||[]).length){openPurchaseFailed('No discharge operations are available for this purchase.','Tank Stock Unavailable');return;}
     renderTankStockCarousel();bindTankStockSwipe();modal.classList.add('open');modal.setAttribute('aria-hidden','false');
   };
