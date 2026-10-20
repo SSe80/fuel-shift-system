@@ -909,11 +909,16 @@ async function userDashboard(){
     const activeForDisplay=active.filter(s=>!pendingOutgoingHandovers.some(x=>String(x.shift_id)===String(s.id))&&!pendingDeactivationShiftIds.has(String(s.id)));
     const activeHtml=attendantDsrGroups(activeForDisplay,s=>s.start_time||s.started_at||s.created_at,s=>{
       const n=nozzles.find(x=>x.id===s.nozzle_id);
-      const readings=Array.isArray(s.activation_nozzles)&&s.activation_nozzles.length
-        ?s.activation_nozzles
-        :[{nozzle_id:n?.nozzle_code||s.nozzle_id,opening_reading:s.opening_reading}];
+      // The normalized physical-nozzle readings are authoritative for active shifts.
+      // Legacy activation_nozzles can contain pre-handover values and must not override
+      // a corrected opening reading carried forward from the previous attendant.
+      const readings=Array.isArray(s.nozzle_readings)&&s.nozzle_readings.length
+        ?s.nozzle_readings
+        :(Array.isArray(s.activation_nozzles)&&s.activation_nozzles.length
+          ?s.activation_nozzles
+          :[{nozzle_id:n?.nozzle_code||s.nozzle_id,opening_reading:s.opening_reading}]);
       const nozzleReadings=readings.map((x,i)=>
-        '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(x.opening_reading ?? x.reading)+'</div><div class="pending-nozzle-code">'+h(x.nozzle_id||n?.nozzle_code||s.nozzle_id)+'</div></div>'
+        '<div class="pending-nozzle-reading"><div class="pending-nozzle-top"><span class="pending-nozzle-pill">Nozzle '+(i+1)+'</span></div><div class="pending-nozzle-number">'+reading(x.opening_reading ?? x.reading)+'</div><div class="pending-nozzle-code">'+h(x.nozzle_code||x.nozzle_id||n?.nozzle_code||s.nozzle_id)+'</div></div>'
       ).join('');
       return '<div class="card dashboard-purchase-card active active-shift-card">'+
         '<div class="active-shift-head"><div><span class="section-kicker">ACTIVE SHIFT</span><h3>Shift in Progress</h3><p>Sales are active on this dispenser.</p></div><span class="badge active-shift-badge">Active</span></div>'+
