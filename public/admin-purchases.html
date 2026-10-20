@@ -1008,8 +1008,7 @@
     <section class="purchase-wizard-step active" data-purchase-step="1">
       <div class="purchase-field purchase-product-field"><label>Product</label><select id="purchase-product" required aria-hidden="true" tabindex="-1"><option value="">Select product</option></select><div id="purchase-product-options" class="purchase-product-options" role="group" aria-label="Choose fuel product"><p class="muted">Loading products…</p></div></div>
       <div class="purchase-field"><label for="purchase-invoice">Invoice number</label><input id="purchase-invoice" type="text" placeholder="Invoice number" autocomplete="off" required></div>
-      <div class="purchase-field purchase-wide"><label for="purchase-ordered-quantity">Ordered quantity</label><div class="purchase-input-unit"><input id="purchase-ordered-quantity" type="text" inputmode="decimal" autocomplete="off" placeholder="0" required><span>Liters</span></div></div>
-      <div class="purchase-field purchase-wide"><label for="purchase-remark">Purchase remark <span style="font-weight:500;color:#667085">(optional)</span></label><textarea id="purchase-remark" rows="3" maxlength="5000" placeholder="e.g. The difference volume (169 L) is not paid."></textarea></div>
+      <div class="purchase-field purchase-wide"><label for="purchase-ordered-quantity">Dispatched Quantity</label><div class="purchase-input-unit"><input id="purchase-ordered-quantity" type="text" inputmode="decimal" autocomplete="off" placeholder="0" required><span>Liters</span></div></div>
       <div class="purchase-wizard-actions"><button type="button" onclick="closePurchaseModal()">Return</button><button type="button" class="primary" onclick="continuePurchaseStep(1)">Continue</button></div>
     </section>
     <section class="purchase-wizard-step" data-purchase-step="2">
