@@ -3553,7 +3553,7 @@ def purchase_pdf(purchase_id):
         "Purchase date: "+clean(p.get("purchase_date") or p.get("created_at") or "—"),
         "",
         "PURCHASE OVERVIEW",
-        "Ordered: "+fmt(p.get("ordered_quantity_liters"))+" L",
+        "Dispatched Quantity: "+fmt(p.get("ordered_quantity_liters"))+" L",
         "Delivered: "+fmt(delivered)+" L",
         "Discharged: "+fmt(discharged)+" L",
         "Remaining: "+fmt(remaining)+" L",
@@ -3767,7 +3767,7 @@ def create_purchase():
     try: qty=float(data.get("quantity_liters",0))
     except (TypeError,ValueError):return jsonify({"error":"Invalid quantity"}),400
     try: ordered=float(data.get("ordered_quantity_liters")) if data.get("ordered_quantity_liters") is not None else None
-    except (TypeError,ValueError):return jsonify({"error":"Invalid ordered quantity"}),400
+    except (TypeError,ValueError):return jsonify({"error":"Invalid dispatched quantity"}),400
     if not product or qty<=0:return jsonify({"error":"Product and positive quantity are required"}),400
 
     compartments=data.get("truck_compartments")
