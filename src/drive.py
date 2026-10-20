@@ -772,7 +772,7 @@ async def _store_contracted_truck(e, root_id, truck, compartments):
     pages = _truck_pdf_pages(truck, sorted_compartments, root_url, truck_folder_url, data_folder_url)
     pdf = _build_two_page_pdf(pages)
     pdf_name = "Truck-" + _truck_clean_name(plate) + "-Calibration-Report.pdf"
-    pdf_id, pdf_url = await _upload_pdf(token, truck_folder_id, pdf_name, pdf)
+    pdf_id, pdf_url = await _upload_pdf(token, data_folder_id, pdf_name, pdf)
     return {
         "status": "uploaded",
         "message": "Calibration CSVs and the two-page truck report were uploaded.",
