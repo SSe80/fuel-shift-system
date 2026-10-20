@@ -5736,7 +5736,7 @@ async function confirmHandoverSubmission(){
     showAttendantActionResult('failed','Handover submission failed',e.message||'The handover could not be submitted.');
   }
 }
-async async function loadPendingHandovers(){
+async function loadPendingHandovers(){
   try{
     const [hs,emps,tanks]=await Promise.all([api('/api/handovers'),api('/api/users').catch(()=>[]),api('/api/tanks').catch(()=>[])]);
     const names=Object.fromEntries(emps.map(e=>[e.id,e.name]));
