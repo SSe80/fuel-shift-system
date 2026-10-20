@@ -392,10 +392,10 @@ async def check_folder(token, folder_id):
     return {"id": data["id"], "name": data.get("name", "")}
 
 
-def _multipart(metadata, pdf_bytes):
+def _multipart(metadata, pdf_bytes, content_type="application/pdf"):
     boundary = "fsboundary" + uuid.uuid4().hex
-    head = ("--%s\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n%s\r\n--%s\r\nContent-Type: application/pdf\r\n\r\n"
-            % (boundary, json.dumps(metadata), boundary)).encode()
+    head = ("--%s\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n%s\r\n--%s\r\nContent-Type: %s\r\n\r\n"
+            % (boundary, json.dumps(metadata), boundary, content_type)).encode()
     tail = ("\r\n--%s--" % boundary).encode()
     return boundary, head + pdf_bytes + tail
 
@@ -460,6 +460,338 @@ def store_pdf(e, root_id, subfolder, file_name, pdf_bytes):
     """Create the monthly/yearly subfolder if needed, then upload (or overwrite) the PDF.
     Returns (drive_file_id, web_view_link)."""
     return run_sync(_store(e, root_id, subfolder, file_name, pdf_bytes))
+
+
+
+def _truck_clean_name(value):
+    value = re.sub(r"[^\w .-]+", "-", str(value or "").strip(), flags=re.UNICODE)
+    value = re.sub(r"\s+", " ", value).strip(" ._-")
+    return value[:100] or "Unknown"
+
+
+def _truck_number(value):
+    try:
+        number = float(value)
+        if number != number or abs(number) == float("inf"):
+            return "0"
+        return format(number, ".12g")
+    except Exception:
+        return "0"
+
+
+def _truck_points(compartment):
+    details = compartment.get("calibration_points")
+    if not isinstance(details, dict):
+        details = {}
+    points = details.get("calibrationTable", details.get("points", []))
+    result = []
+    for point in points if isinstance(points, list) else []:
+        if not isinstance(point, dict):
+            continue
+        height = point.get("height_mm", point.get("height", point.get("mm")))
+        litres = point.get("litres", point.get("liters", point.get("volume_liters")))
+        try:
+            h, l = float(height), float(litres)
+            if h < 0 or l < 0 or h != h or l != l or abs(h) == float("inf") or abs(l) == float("inf"):
+                continue
+            result.append((h, l))
+        except Exception:
+            continue
+    return result
+
+
+def _truck_csv_bytes(points):
+    # Keep the upload order compatible with the truck-registration importer: volume first, height second.
+    rows = ["litres,mm"]
+    rows.extend(_truck_number(litres) + "," + _truck_number(height) for height, litres in points)
+    return ("\ufeff" + "\r\n".join(rows) + "\r\n").encode("utf-8")
+
+
+async def _upload_csv(token, folder_id, name, csv_bytes):
+    existing = await _find_child(token, folder_id, name)
+    if existing:
+        status, data = await _http(
+            UPLOAD_API + "/" + existing + "?uploadType=media&supportsAllDrives=true&fields=id,webViewLink",
+            "PATCH", dict(_auth(token), **{"Content-Type": "text/csv; charset=UTF-8"}),
+            Uint8Array.new(to_js(list(csv_bytes))))
+        if status >= 400 or not isinstance(data, dict) or not data.get("id"):
+            raise _gerr("Update existing calibration CSV", status, data)
+        return data["id"], data.get("webViewLink")
+
+    boundary, body = _multipart(
+        {"name": name, "parents": [folder_id], "mimeType": "text/csv"}, csv_bytes, "text/csv")
+    status, data = await _http(
+        UPLOAD_API + "?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink",
+        "POST", dict(_auth(token), **{"Content-Type": "multipart/related; boundary=" + boundary}),
+        Uint8Array.new(to_js(list(body))))
+    if status < 400 and isinstance(data, dict) and data.get("id"):
+        return data["id"], data.get("webViewLink")
+
+    multipart_error = "%s" % _gerr("Calibration CSV upload", status, data)
+    status, data = await _http(
+        UPLOAD_API + "?uploadType=media&supportsAllDrives=true&fields=id",
+        "POST", dict(_auth(token), **{"Content-Type": "text/csv; charset=UTF-8"}),
+        Uint8Array.new(to_js(list(csv_bytes))))
+    if status >= 400 or not isinstance(data, dict) or not data.get("id"):
+        raise DriveError("%s; media upload fallback failed: %s" %
+                         (multipart_error, str(_gerr("Calibration CSV upload fallback", status, data))), 502)
+    file_id = data["id"]
+    metadata = json.dumps({"name": name, "mimeType": "text/csv"})
+    status, meta = await _http(
+        DRIVE_API + "/" + file_id + "?addParents=" + _urlq(folder_id) +
+        "&supportsAllDrives=true&fields=id,webViewLink",
+        "PATCH", dict(_auth(token), **{"Content-Type": "application/json"}), metadata)
+    if status >= 400 or not isinstance(meta, dict) or not meta.get("id"):
+        raise DriveError("CSV content uploaded but Drive could not place/name it: %s" %
+                         str(_gerr("Set CSV metadata", status, meta)), 502)
+    return meta["id"], meta.get("webViewLink")
+
+
+def _pdf_ascii(value):
+    # Built-in Helvetica fonts do not cover arbitrary Unicode. Keep the report portable.
+    return str(value if value is not None else "").encode("ascii", "replace").decode("ascii")
+
+
+def _pdf_escape(value):
+    value = _pdf_ascii(value)
+    return value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)").replace("\r", " ").replace("\n", " ")
+
+
+def _pdf_stamp(value):
+    value = str(value or "").strip()
+    if not value:
+        return "Not recorded"
+    try:
+        from datetime import datetime
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return dt.strftime("%d %b %Y, %H:%M UTC")
+    except Exception:
+        return value[:25]
+
+
+def _truck_pdf_pages(truck, compartments, root_url, truck_url, data_url):
+    # PDF uses vector shapes and embedded text only; no extra package or browser is required.
+    navy = (0.075, 0.13, 0.23)
+    blue = (0.12, 0.29, 0.52)
+    gold = (0.91, 0.66, 0.22)
+    ink = (0.10, 0.15, 0.22)
+    muted = (0.37, 0.42, 0.49)
+    pale = (0.95, 0.97, 0.99)
+    line_color = (0.84, 0.88, 0.92)
+    white = (1, 1, 1)
+
+    def new_canvas():
+        return []
+
+    def color(rgb, op="rg"):
+        return "%.3f %.3f %.3f %s" % (rgb[0], rgb[1], rgb[2], op)
+
+    def rect(c, x, y, w, h, fill, stroke=None):
+        if fill:
+            c.append(color(fill))
+            c.append("%.2f %.2f %.2f %.2f re f" % (x, y, w, h))
+        if stroke:
+            c.append(color(stroke, "RG"))
+            c.append("0.8 w")
+            c.append("%.2f %.2f %.2f %.2f re S" % (x, y, w, h))
+
+    def txt(c, x, y, value, size=10, bold=False, rgb=ink, max_chars=150):
+        value = _pdf_ascii(value)[:max_chars]
+        c.append(color(rgb))
+        c.append("BT /%s %.2f Tf %.2f %.2f Td (%s) Tj ET" %
+                 ("F2" if bold else "F1", size, x, y, _pdf_escape(value)))
+
+    def rule(c, x1, y1, x2, y2, rgb=line_color, width=0.7):
+        c.append(color(rgb, "RG"))
+        c.append("%.2f w %.2f %.2f m %.2f %.2f l S" % (width, x1, y1, x2, y2))
+
+    def card(c, x, y, w, h, label, value, foot=None):
+        rect(c, x, y, w, h, white, line_color)
+        txt(c, x + 14, y + h - 18, label.upper(), 7.1, True, muted, 40)
+        txt(c, x + 14, y + h - 39, value or "Not provided", 12, True, ink, 48)
+        if foot:
+            txt(c, x + 14, y + 10, foot, 7.2, False, muted, 66)
+
+    plate = str(truck.get("truck_code") or truck.get("registration_number") or "UNKNOWN").strip()
+    trailer = str(truck.get("trailer_plate") or "").strip()
+    driver = str(truck.get("driver_name") or "Not provided").strip()
+    phone = str(truck.get("driver_phone") or "Not provided").strip()
+    count = str(truck.get("compartment_count") or len(compartments) or 0)
+    registered = _pdf_stamp(truck.get("created_at"))
+    updated = _pdf_stamp(truck.get("updated_at"))
+    state = "ACTIVE" if truck.get("active", True) is not False else "INACTIVE"
+    path_name = plate + ((" - " + trailer) if trailer else "")
+    rows = sorted(compartments or [], key=lambda item: int(item.get("compartment_number") or 0))
+
+    # PAGE 1 — truck identity, registration metadata, and storage path.
+    c = new_canvas()
+    rect(c, 0, 485, 842, 110, navy)
+    rect(c, 0, 480, 842, 5, gold)
+    txt(c, 40, 559, "FUEL SHIFT SYSTEM  /  LOGISTICS", 9, True, gold)
+    txt(c, 40, 526, "CONTRACTED TRUCK RECORD", 23, True, white)
+    txt(c, 40, 504, "Registration details and calibration archive", 10, False, (0.86, 0.90, 0.95))
+    rect(c, 708, 528, 92, 25, blue)
+    txt(c, 722, 537, state, 9, True, white)
+
+    rect(c, 40, 426, 762, 38, pale, line_color)
+    txt(c, 54, 449, "PRIMARY REGISTRATION", 7.0, True, muted)
+    txt(c, 54, 434, path_name, 15, True, navy, 55)
+
+    card(c, 40, 348, 365, 64, "Truck plate", plate)
+    card(c, 432, 348, 370, 64, "Trailer plate", trailer or "Not registered")
+    card(c, 40, 271, 365, 64, "Registered driver", driver)
+    card(c, 432, 271, 370, 64, "Driver contact", phone)
+    card(c, 40, 194, 365, 64, "Compartments", count, "Calibration tables included on page 2")
+    card(c, 432, 194, 370, 64, "Registration status", state, "Updated: " + updated[:30])
+
+    rect(c, 40, 65, 762, 108, pale, line_color)
+    txt(c, 56, 151, "GOOGLE DRIVE STORAGE", 9, True, navy)
+    txt(c, 56, 132, "Root folder  ·  " + root_url, 7.8, False, muted, 124)
+    txt(c, 56, 115, "Truck folder  ·  " + truck_url, 7.8, False, blue, 124)
+    txt(c, 56, 98, "Data folder  ·  " + data_url, 7.8, False, blue, 124)
+    txt(c, 56, 78, "Registered  ·  " + registered, 8, False, ink, 90)
+
+    rule(c, 40, 42, 802, 42)
+    txt(c, 40, 25, "CONTROLLED RECORD  |  Keep calibration CSVs together with this PDF.", 7.2, False, muted)
+    txt(c, 755, 25, "PAGE 1 / 2", 7.2, True, blue)
+    first = "\n".join(c)
+
+    # PAGE 2 — all compartment calibration tables arranged side by side.
+    c = new_canvas()
+    rect(c, 0, 485, 842, 110, navy)
+    rect(c, 0, 480, 842, 5, gold)
+    txt(c, 40, 559, "FUEL SHIFT SYSTEM  /  LOGISTICS", 9, True, gold)
+    txt(c, 40, 526, "COMPARTMENT CALIBRATION MATRIX", 22, True, white)
+    txt(c, 40, 503, "Height-to-volume reference tables · Truck " + plate + ((" / Trailer " + trailer) if trailer else ""), 9, False, (0.86, 0.90, 0.95), 110)
+    txt(c, 40, 459, "Each column is a separate compartment CSV. Height is measured in millimetres; volume is in litres.", 8.2, False, muted, 130)
+
+    n = max(1, len(rows))
+    left, right = 40.0, 802.0
+    gap = min(9.0, max(0.5, (right - left) / (2 * n)))
+    col_w = (right - left - gap * (n - 1)) / n
+    table_top, table_bottom = 440.0, 48.0
+    table_height = table_top - table_bottom
+    points_by_comp = [_truck_points(row) for row in rows]
+    max_points = max([len(points) for points in points_by_comp] or [1])
+    # Reserve room for the table headings and point-count footer before scaling rows.
+    row_h = min(14.0, (table_height - 81.0) / max(1, max_points))
+    font_size = max(1.5, min(8.0, row_h * 0.62))
+    for i, item in enumerate(rows):
+        x = left + i * (col_w + gap)
+        rect(c, x, table_bottom, col_w, table_height, white, line_color)
+        rect(c, x, table_top - 26, col_w, 26, blue)
+        comp_no = item.get("compartment_number") or (i + 1)
+        txt(c, x + 6, table_top - 17, "COMPARTMENT " + str(comp_no), min(8.5, max(4.7, col_w / 15)), True, white, 25)
+        txt(c, x + 6, table_top - 37, "HEIGHT mm", font_size, True, muted, 18)
+        txt(c, x + col_w * 0.52, table_top - 37, "LITRES", font_size, True, muted, 12)
+        pts = points_by_comp[i]
+        if not pts:
+            txt(c, x + 6, table_top - 55, "No calibration data", max(5.5, font_size), False, muted, 25)
+        for j, (height, litres) in enumerate(pts):
+            y = table_top - 51 - (j * row_h)
+            if j % 2 == 0:
+                rect(c, x + 1, y - row_h * 0.25, max(1, col_w - 2), max(0.5, row_h), pale)
+            txt(c, x + 6, y, _truck_number(height), font_size, False, ink, 18)
+            txt(c, x + col_w * 0.52, y, _truck_number(litres), font_size, False, ink, 18)
+        if points_by_comp[i]:
+            footer_y = table_bottom + 10
+            txt(c, x + 6, footer_y, str(len(points_by_comp[i])) + " points", max(2.2, min(7, font_size)), True, blue, 18)
+
+    if not rows:
+        rect(c, 40, 340, 762, 70, pale, line_color)
+        txt(c, 60, 378, "No compartment records were available when this report was generated.", 12, True, ink)
+        txt(c, 60, 358, "Edit the truck and add one calibration CSV for each compartment.", 9, False, muted)
+    rule(c, 40, 42, 802, 42)
+    txt(c, 40, 25, "CALIBRATION REFERENCE  |  Verify that the correct CSV is assigned to each compartment.", 7.0, False, muted, 115)
+    txt(c, 755, 25, "PAGE 2 / 2", 7.2, True, blue)
+    second = "\n".join(c)
+    return [first, second]
+
+
+def _build_two_page_pdf(page_streams):
+    objects = {}
+    objects[1] = b"<< /Type /Catalog /Pages 2 0 R >>"
+    objects[2] = b"<< /Type /Pages /Kids [5 0 R 7 0 R] /Count 2 >>"
+    objects[3] = b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+    objects[4] = b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>"
+    for index, stream in enumerate(page_streams):
+        page_id = 5 + index * 2
+        stream_id = page_id + 1
+        content = stream.encode("latin-1", "replace")
+        objects[page_id] = (
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] "
+            "/Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> "
+            "/Contents %d 0 R >>" % stream_id
+        ).encode()
+        objects[stream_id] = (
+            b"<< /Length " + str(len(content)).encode() + b" >>\nstream\n" +
+            content + b"\nendstream"
+        )
+    pdf = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = [0]
+    for object_id in range(1, 9):
+        offsets.append(len(pdf))
+        pdf.extend(str(object_id).encode() + b" 0 obj\n")
+        pdf.extend(objects[object_id])
+        pdf.extend(b"\nendobj\n")
+    xref = len(pdf)
+    pdf.extend(b"xref\n0 9\n0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        pdf.extend(("%010d 00000 n \n" % offset).encode())
+    pdf.extend(b"trailer\n<< /Size 9 /Root 1 0 R >>\nstartxref\n")
+    pdf.extend(str(xref).encode() + b"\n%%EOF\n")
+    return bytes(pdf)
+
+
+async def _store_contracted_truck(e, root_id, truck, compartments):
+    token = await _drive_access_token(e)
+    root = await check_folder(token, root_id)
+    plate = str(truck.get("truck_code") or truck.get("registration_number") or "UNKNOWN").strip().upper()
+    trailer = str(truck.get("trailer_plate") or "").strip().upper()
+    folder_name = _truck_clean_name(plate + ((" - " + trailer) if trailer else ""))
+    truck_folder_id = await _ensure_folder(token, root_id, folder_name)
+    data_folder_id = await _ensure_folder(token, truck_folder_id, "Data")
+    truck_folder_url = "https://drive.google.com/drive/folders/" + truck_folder_id
+    data_folder_url = "https://drive.google.com/drive/folders/" + data_folder_id
+    root_url = "https://drive.google.com/drive/folders/" + root_id
+
+    stored_csvs = []
+    sorted_compartments = sorted(compartments or [], key=lambda item: int(item.get("compartment_number") or 0))
+    for index, item in enumerate(sorted_compartments):
+        points = _truck_points(item)
+        if len(points) < 2:
+            raise DriveError("Compartment %s has no valid calibration table to upload." %
+                             str(item.get("compartment_number") or index + 1), 400)
+        comp_no = int(item.get("compartment_number") or index + 1)
+        name = "Compartment-%02d.csv" % comp_no
+        file_id, link = await _upload_csv(token, data_folder_id, name, _truck_csv_bytes(points))
+        stored_csvs.append({"compartment": comp_no, "name": name, "file_id": file_id,
+                            "url": link or ("https://drive.google.com/file/d/" + file_id + "/view"),
+                            "points": len(points)})
+
+    pages = _truck_pdf_pages(truck, sorted_compartments, root_url, truck_folder_url, data_folder_url)
+    pdf = _build_two_page_pdf(pages)
+    pdf_name = "Truck-" + _truck_clean_name(plate) + "-Calibration-Report.pdf"
+    pdf_id, pdf_url = await _upload_pdf(token, truck_folder_id, pdf_name, pdf)
+    return {
+        "status": "uploaded",
+        "message": "Calibration CSVs and the two-page truck report were uploaded.",
+        "root_folder_id": root_id,
+        "root_folder_url": root_url,
+        "truck_folder_id": truck_folder_id,
+        "truck_folder_url": truck_folder_url,
+        "data_folder_id": data_folder_id,
+        "data_folder_url": data_folder_url,
+        "csv_files": stored_csvs,
+        "pdf_file_id": pdf_id,
+        "pdf_url": pdf_url or ("https://drive.google.com/file/d/" + pdf_id + "/view"),
+        "path": folder_name + "/Data"
+    }
+
+
+def store_contracted_truck(e, root_id, truck, compartments):
+    """Ensure the contracted-truck folder tree exists, upsert each compartment CSV and its two-page PDF."""
+    return run_sync(_store_contracted_truck(e, root_id, truck, compartments))
 
 
 async def _check_both(e, folders):

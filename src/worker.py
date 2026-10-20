@@ -1449,6 +1449,26 @@ def _logistics_truck_to_ui(row, compartments):
         "isActive":row.get("active", True)
     }
 
+
+def _upload_registered_truck_to_drive(truck_row, compartment_rows):
+    """Best-effort Drive sync. Truck registration remains successful if Drive is unavailable."""
+    try:
+        settings = _drive_settings() or {}
+        root_id = settings.get("contracted_trucks_folder_id")
+        if not root_id:
+            return {
+                "status": "not_configured",
+                "message": "Save the Contracted Trucks folder link in Logistics Settings to enable Drive uploads."
+            }
+        return drive.store_contracted_truck(env(), str(root_id), truck_row, compartment_rows or [])
+    except drive.DriveError as err:
+        return {"status": "failed", "message": str(err)}
+    except Exception as err:
+        app.logger.exception("Contracted truck Google Drive upload failed")
+        return {"status": "failed", "message": "Drive upload failed: " + (str(err) or type(err).__name__)[:240]}
+
+
+
 @app.get("/api/logistics/trucks")
 def logistics_list_trucks():
     auth=_logistics_admin_auth()
@@ -1526,7 +1546,42 @@ def logistics_save_truck():
     if rows:
         cs,created=sb("logistics_truck_compartments",method="POST",body=rows,prefer="return=representation")
         if cs>=400:return jsonify({"error":"Truck saved, but compartment calibration could not be saved","details":created}),cs
-    return jsonify(_logistics_truck_to_ui(saved,rows)),200
+    ui_truck = _logistics_truck_to_ui(saved, rows)
+    ui_truck["driveUpload"] = _upload_registered_truck_to_drive(saved, rows)
+    return jsonify(ui_truck), 200
+
+
+@app.post("/api/logistics/trucks/<truck_key>/drive-upload")
+def logistics_upload_truck_to_drive(truck_key):
+    auth = _logistics_admin_auth()
+    if auth:
+        return auth
+    if not truck_key:
+        return jsonify({"error": "Truck identifier is required"}), 400
+    status, found = sb("logistics_trucks", params={
+        "legacy_local_id": "eq." + truck_key, "select": "*", "limit": "1"})
+    if status != 200:
+        return jsonify({"error": "Unable to find truck", "details": found}), status
+    if not found and len(truck_key) >= 32 and "-" in truck_key:
+        status, found = sb("logistics_trucks", params={
+            "id": "eq." + truck_key, "select": "*", "limit": "1"})
+        if status != 200:
+            return jsonify({"error": "Unable to find truck", "details": found}), status
+    if not found:
+        return jsonify({"error": "Truck not found"}), 404
+    truck = found[0]
+    compartment_status, compartments = sb("logistics_truck_compartments", params={
+        "truck_id": "eq." + str(truck.get("id")),
+        "select": "*", "order": "compartment_number.asc", "limit": "1000"})
+    if compartment_status >= 400:
+        return jsonify({"error": "Unable to load truck calibration data", "details": compartments}), compartment_status
+    uploaded = _upload_registered_truck_to_drive(truck, compartments or [])
+    if uploaded.get("status") == "uploaded":
+        return jsonify(uploaded), 200
+    code = 409 if uploaded.get("status") == "not_configured" else 502
+    return jsonify({"error": uploaded.get("message", "Drive upload failed"), "driveUpload": uploaded}), code
+
+
 
 @app.delete("/api/logistics/trucks/<truck_key>")
 def logistics_delete_truck(truck_key):
@@ -6140,9 +6195,15 @@ def _drive_after_dsr_confirm(report_day):
         app.logger.exception("drive enqueue failed")
 
 def _drive_settings():
-    st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,purchase_folder_id,admin_audit_folder_id,admin_audit_sheet_id,updated_at"})
+    st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,purchase_folder_id,admin_audit_folder_id,admin_audit_sheet_id,contracted_trucks_folder_id,updated_at"})
     if st >= 400:
-        return None
+        # A code deployment can precede its additive migration. Keep existing Drive
+        # exports/settings operational until contracted_trucks_folder_id is applied.
+        st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,purchase_folder_id,admin_audit_folder_id,admin_audit_sheet_id,updated_at"})
+        if st >= 400:
+            return None
+        for item in rows or []:
+            item.setdefault("contracted_trucks_folder_id", None)
     return (rows or [{}])[0]
 
 def _drive_oauth_redirect_uri():
@@ -6261,7 +6322,8 @@ def drive_get_settings():
         return jsonify({"error": "Drive settings unavailable"}), 500
     return jsonify({"dsr_folder_id": row.get("dsr_folder_id"), "msr_folder_id": row.get("msr_folder_id"),
                     "purchase_folder_id": row.get("purchase_folder_id"), "admin_audit_folder_id": row.get("admin_audit_folder_id"),
-                    "admin_audit_sheet_id": row.get("admin_audit_sheet_id"), "updated_at": row.get("updated_at")}), 200
+                    "admin_audit_sheet_id": row.get("admin_audit_sheet_id"),
+                    "contracted_trucks_folder_id": row.get("contracted_trucks_folder_id"), "updated_at": row.get("updated_at")}), 200
 
 @app.put("/api/drive/settings")
 def drive_put_settings():
@@ -6270,7 +6332,7 @@ def drive_put_settings():
     data = request.get_json(silent=True) or {}
     current_settings = _drive_settings() or {}
     update = {"updated_at": datetime.now(timezone.utc).isoformat()}
-    for field, key in (("dsr_link", "dsr_folder_id"), ("msr_link", "msr_folder_id"), ("purchase_link", "purchase_folder_id"), ("admin_audit_link", "admin_audit_folder_id")):
+    for field, key in (("dsr_link", "dsr_folder_id"), ("msr_link", "msr_folder_id"), ("purchase_link", "purchase_folder_id"), ("admin_audit_link", "admin_audit_folder_id"), ("contracted_trucks_link", "contracted_trucks_folder_id")):
         if field in data:
             raw = str(data.get(field) or "").strip()
             if not raw:
@@ -6308,6 +6370,27 @@ def drive_test():
     return jsonify({"ok": not missing, "folders": result, "missing": missing,
                     "admin_audit_configured": bool(folders.get("admin_audit")),
                     "admin_audit_sheet_configured": bool(row.get("admin_audit_sheet_id"))}), 200
+
+
+@app.post("/api/drive/trucks/test")
+def drive_test_contracted_trucks():
+    auth = require_admin()
+    if auth:
+        return auth
+    row = _drive_settings() or {}
+    folder_id = row.get("contracted_trucks_folder_id")
+    if not folder_id:
+        return jsonify({"ok": False, "error": "Save the Contracted Trucks folder link in Logistics Settings first."}), 409
+    try:
+        result = drive.test_folders(env(), {"contracted_trucks": folder_id})
+        return jsonify({"ok": True, "folder": result.get("contracted_trucks")}), 200
+    except drive.DriveError as err:
+        return jsonify({"ok": False, "error": str(err)}), err.status
+    except Exception as err:
+        app.logger.exception("Contracted Trucks Drive connection test failed")
+        return jsonify({"ok": False, "error": "Drive test failed: " + (str(err) or type(err).__name__)[:240]}), 502
+
+
 
 @app.get("/api/drive/queue")
 def drive_queue():
