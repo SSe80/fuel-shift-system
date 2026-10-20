@@ -1865,6 +1865,10 @@ def logistics_update_delivery(delivery_id):
             return jsonify({"error": "Tank-stock readings must be valid numbers; opening and closing stock cannot be negative."}), 400
         if not _logistics_tank_matches_delivery(tank_id, existing):
             return jsonify({"error": "Choose a valid tank assigned to this delivery's product."}), 400
+        # The accounting difference is physical closing stock minus the expected
+        # balance (opening stock + total delivered quantity); never trust a
+        # client-supplied difference for a completed delivery.
+        difference = round(closing - (opening + delivered), 3)
         rpc_body = {
             "p_delivery_id": delivery_id,
             "p_tank_id": tank_id,
