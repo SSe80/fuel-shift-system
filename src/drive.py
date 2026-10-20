@@ -464,7 +464,7 @@ def store_pdf(e, root_id, subfolder, file_name, pdf_bytes):
 
 
 def _truck_clean_name(value):
-    value = re.sub(r"[^A-Za-z0-9 ._-]+", "-", str(value or "").strip())
+    value = re.sub(r"[^\\w .-]+", "-", str(value or "").strip(), flags=re.UNICODE)
     value = re.sub(r"\s+", " ", value).strip(" ._-")
     return value[:100] or "Unknown"
 
