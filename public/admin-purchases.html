@@ -1501,7 +1501,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
       const orderedQuantity=parseQuantity(document.getElementById('purchase-ordered-quantity')?.value);
       if(!product){setStatus('Please select a product before continuing.',true);return;}
       if(!invoice){setStatus('Enter the invoice number before continuing.',true);return;}
-      if(!Number.isFinite(orderedQuantity)||orderedQuantity<=0){setStatus('Enter a valid ordered quantity before continuing.',true);return;}
+      if(!Number.isFinite(orderedQuantity)||orderedQuantity<=0){setStatus('Enter a valid dispatched quantity before continuing.',true);return;}
     }
     if(step===2){
       const type=purchaseTruckType;
@@ -1549,12 +1549,12 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     const difference=delivered-ordered;
     const abs=Math.abs(difference);
     const matches= Math.abs(difference) < 0.000001;
-    const diffText=matches?'Matches ordered quantity':difference>0?'Over delivered by '+purchaseLiters(abs)+' L':'Short delivered by '+purchaseLiters(abs)+' L';
+    const diffText=matches?'Matches dispatched quantity':difference>0?'Over delivered by '+purchaseLiters(abs)+' L':'Short delivered by '+purchaseLiters(abs)+' L';
     const rows=inputs.map((input,i)=>'<div class="purchase-review-row"><span>Compartment '+(i+1)+(purchaseTruckType==='contracted'?' · Dip '+purchaseH(input.value)+' mm':'')+'</span><strong>'+purchaseLiters(getPurchaseCompartmentLiters(input))+' L</strong></div>').join('');
     const selectedProduct=purchaseProducts.find(p=>String(p.name||'').toLowerCase()===String(productValue||'').toLowerCase()); const productCode=selectedProduct?.code_name||product||'—';
-    review.innerHTML='<div class="purchase-review-section"><h4>1. Order</h4><div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(productCode)+'</strong></div><div class="purchase-review-row"><span>Invoice number</span><strong>'+purchaseH(invoice)+'</strong></div><div class="purchase-review-row"><span>Ordered quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div></div>'+
+    review.innerHTML='<div class="purchase-review-section"><h4>1. Order</h4><div class="purchase-review-row"><span>Product</span><strong>'+purchaseH(productCode)+'</strong></div><div class="purchase-review-row"><span>Invoice number</span><strong>'+purchaseH(invoice)+'</strong></div><div class="purchase-review-row"><span>Dispatched Quantity</span><strong>'+purchaseLiters(ordered)+' L</strong></div></div>'+
       '<div class="purchase-review-section"><h4>2. Truck</h4><div class="purchase-review-row"><span>Truck type</span><strong>'+purchaseH(truckTypeLabel)+'</strong></div>'+(truckType==='contracted'?'<div class="purchase-review-row"><span>Registered truck</span><strong>'+purchaseH(registeredTruckLabel)+'</strong></div>':'')+'<div class="purchase-review-row"><span>Driver name</span><strong>'+purchaseH(driver)+'</strong></div><div class="purchase-review-row"><span>Driver phone</span><strong>'+purchaseH(phone)+'</strong></div><div class="purchase-review-row"><span>Plate number</span><strong>'+purchaseH(plate)+'</strong></div><div class="purchase-review-row"><span>Compartments</span><strong>'+count+'</strong></div></div>'+
-      '<div class="purchase-review-section"><h4>3. Quantity</h4>'+rows+'<div class="purchase-review-row"><span>Delivered quantity</span><strong>'+purchaseLiters(delivered)+' L</strong></div><div class="purchase-review-difference '+(matches?'match':'mismatch')+'"><span>Difference</span><strong>'+purchaseH(diffText)+'</strong></div>'+(matches?'':'<label class="purchase-review-ack"><input type="checkbox" id="purchase-quantity-mismatch-ack" onchange="updatePurchaseMismatchAcknowledgement()"> <span>I have reviewed the ordered quantity versus delivered quantity and acknowledge that they are different.</span></label>')+'</div>';
+      '<div class="purchase-review-section"><h4>3. Quantity</h4>'+rows+'<div class="purchase-review-row"><span>Delivered quantity</span><strong>'+purchaseLiters(delivered)+' L</strong></div><div class="purchase-review-difference '+(matches?'match':'mismatch')+'"><span>Difference</span><strong>'+purchaseH(diffText)+'</strong></div>'+(matches?'':'<label class="purchase-review-ack"><input type="checkbox" id="purchase-quantity-mismatch-ack" onchange="updatePurchaseMismatchAcknowledgement()"> <span>I have reviewed the dispatched quantity versus delivered quantity and acknowledge that they are different.</span></label>')+'</div>';
     const confirmButton=document.querySelector('#purchase-modal .purchase-wizard-actions button[onclick="performCreatePurchase()"]');
     if(confirmButton){confirmButton.disabled=!matches;}
   }
@@ -1656,7 +1656,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
         '<div><span>Undischarged quantity</span><strong>'+purchaseH(purchaseLiters(remaining))+' L</strong></div>'+
         '<div><span>Purchase date</span><strong>'+purchaseH(p.purchase_date?new Date(p.purchase_date).toLocaleString():'—')+'</strong></div>'+
       '</div></section>'+
-      '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Order</h4></div>'+rows([['Product',productCode],['Invoice number',p.invoice_number||'—'],['Ordered quantity',purchaseLiters(ordered)+' L'],['Difference',difference]])+'</section>'+
+      '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Order</h4></div>'+rows([['Product',productCode],['Invoice number',p.invoice_number||'—'],['Dispatched Quantity',purchaseLiters(ordered)+' L'],['Difference',difference]])+'</section>'+
       '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Truck & Driver</h4></div>'+rows([['Driver name',p.driver_name||'—'],['Driver phone',p.driver_phone||'—'],['Plate number',window.purchaseDisplayPlate(p)],['Compartments',String(p.truck_compartments||'—')]])+(compartments.length?'<div class="purchase-detail-compartments"><h5>Compartment quantities</h5>'+compartmentRows+'</div>':'')+'</section>'+
       (tankSections?'<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Tanks</h4><span>'+tankEntries.length+' tank'+(tankEntries.length===1?'':'s')+'</span></div>'+tankSections+'</section>':'')+
       '<section class="purchase-detail-section"><div class="purchase-detail-section-head"><h4>Delivery</h4><span class="purchase-detail-delivery-status">'+purchaseH(statusText||'—')+'</span></div>'+rows([['Delivered quantity',purchaseLiters(total)+' L'],['Discharged quantity',purchaseLiters(discharged)+' L'],['Undischarged quantity',purchaseLiters(remaining)+' L'],['Difference',difference],['Fully discharged at',p.discharged_at?new Date(p.discharged_at).toLocaleString():'Not yet'],['Fuel-shortage payment',String(p.shortage_payment_status||'unpaid').toUpperCase()]])+'</section>'+
@@ -2250,7 +2250,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     const compartments=Number(document.getElementById('purchase-truck-compartments')?.value||0);
     const quantityMismatch=Math.abs(q-orderedQuantity)>=0.000001;
     const mismatchAcknowledged=!!document.getElementById('purchase-quantity-mismatch-ack')?.checked;
-    if(quantityMismatch&&!mismatchAcknowledged){setStatus('Please acknowledge the ordered versus delivered quantity difference before confirming.',true);return;}
+    if(quantityMismatch&&!mismatchAcknowledged){setStatus('Please acknowledge the dispatched versus delivered quantity difference before confirming.',true);return;}
     if(!product||!invoice||!Number.isFinite(orderedQuantity)||orderedQuantity<=0||!compartments||compartmentInputs.length!==compartments||!Number.isFinite(q)||q<=0){setStatus('Purchase details are incomplete. Enter the product, invoice, quantity, and truck details.',true);return;}
     try{
       setStatus('Confirming purchase…',false);
@@ -2259,7 +2259,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
         '<div class="purchase-confirmation-row"><span>Product</span><strong>'+purchaseH(product)+'</strong></div>'+
         '<div class="purchase-confirmation-row"><span>Invoice</span><strong>'+purchaseH(invoice)+'</strong></div>'+
         '<div class="purchase-confirmation-row"><span>Truck / trailer plate</span><strong>'+purchaseH(plateNumber||'—')+'</strong></div>'+
-        '<div class="purchase-confirmation-row"><span>Ordered quantity</span><strong>'+purchaseLiters(orderedQuantity)+' L</strong></div>'+
+        '<div class="purchase-confirmation-row"><span>Dispatched Quantity</span><strong>'+purchaseLiters(orderedQuantity)+' L</strong></div>'+
         '<div class="purchase-confirmation-row"><span>Delivered quantity</span><strong>'+purchaseLiters(q)+' L</strong></div>';
       document.getElementById('purchase-ordered-quantity').value='';
       document.getElementById('purchase-driver-name').value='';
