@@ -1891,6 +1891,18 @@ def logistics_update_delivery(delivery_id):
         body["status"] = requested_status
     if "notes" in data:
         body["notes"] = str(data.get("notes") or "").strip() or None
+    if "ordered_liters" in data:
+        raw_ordered = data.get("ordered_liters")
+        if raw_ordered in (None, ""):
+            body["ordered_liters"] = None
+        else:
+            try:
+                ordered = float(raw_ordered)
+            except (TypeError, ValueError):
+                return jsonify({"error": "Ordered litres must be numeric"}), 400
+            if not math.isfinite(ordered) or ordered < 0:
+                return jsonify({"error": "Ordered litres must be a valid non-negative number"}), 400
+            body["ordered_liters"] = ordered
     if "delivered_liters" in data:
         try:
             delivered = float(data.get("delivered_liters") or 0)
