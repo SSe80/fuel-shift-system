@@ -311,7 +311,7 @@ async function testTruckDriveConnection(){
   const response=await fetch('/api/drive/trucks/test',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-Fuel-Role':'admin'},body:'{}'});
   const result=await response.json().catch(()=>({}));
   if(!response.ok||!result.ok)throw new Error(result.error||'Google Drive folder test failed ('+response.status+').');
-  setTruckDriveStatus('Connected. The Google account can write to “‘'+(result.folder&&result.folder.name||'Contracted Trucks')+'”’. New truck uploads are ready.', 'success');
+  setTruckDriveStatus('Connected. The Google account can write to “'+(result.folder&&result.folder.name||'Contracted Trucks')+'”. New truck uploads are ready.', 'success');
  }catch(error){setTruckDriveStatus(error.message||'Google Drive connection test failed.','error')}
  finally{button.disabled=false;button.textContent='Test connection'}
 }
