@@ -17,33 +17,31 @@ dialog{width:min(620px,calc(100% - 20px));max-height:90dvh;overflow:auto;padding
 <header class="head"><div><div class="eyebrow">ADMIN LOGISTICS</div><h1>Deliveries</h1><p class="muted">Delivery registration and delivery records are available on the Logistics Dashboard.</p></div><a href="admin-logistics-history.html" style="font-size:12px;font-weight:800;color:#1d4ed8;text-decoration:none">Payment history →</a></header>
 <section class="stats"><div class="stat"><span>Eligible unpaid</span><b id="s-unpaid">—</b></div><div class="stat"><span>Transport due · ETB</span><b id="s-due">—</b></div><div class="stat"><span>Completed liters</span><b id="s-liters">—</b></div><div class="stat"><span>Completed deliveries</span><b id="s-completed">—</b></div></section>
 
+
+<section class="panel" id="transport-payment"><div class="panel-head"><div><h2>Transport payment</h2><p class="muted">Select eligible completed unpaid deliveries. Payment must equal the exact combined recorded charges. Paid deliveries cannot be selected.</p></div><button class="plain" id="payment-refresh" type="button">Refresh</button></div><div class="panel-body"><div class="toolbar"><label style="font-size:11px;font-weight:800"><input id="payment-select-all" type="checkbox"> Select all eligible unpaid</label><strong id="payment-selection-total" style="font-size:12px">ETB 0.00 · 0 selected</strong></div><div id="payment-list" class="loading">Loading eligible deliveries…</div><div class="row"><button id="payment-review" class="primary" type="button" disabled>Review payment</button><span class="notice">Payments are immutable transactions. Corrections require a separate reversal transaction.</span></div></div></section>
+<dialog id="payment-review-dialog"><div class="dh"><div><h2>Review transport payment</h2><p class="muted">Confirm the selected deliveries and exact total before recording payment.</p></div><button class="close" type="button" data-payment-close>×</button></div><div class="db"><div id="payment-review-list"></div><p id="payment-review-total" style="font-weight:850"></p><div class="field"><label for="payment-reference">Payment reference (required)</label><input id="payment-reference" maxlength="160" required placeholder="Receipt / transaction reference"></div><label style="display:flex;align-items:flex-start;gap:8px;margin-top:13px;font-size:11px;font-weight:800"><input id="payment-reviewed" type="checkbox"> I reviewed the selected deliveries, reference, and exact total.</label><p id="payment-message" aria-live="polite"></p></div><div class="da"><button type="button" class="plain" data-payment-close>Cancel</button><button id="payment-confirm" type="button" class="primary" disabled>Confirm payment</button></div></dialog>
+
 <section class="panel"><div class="panel-head"><div><h2>Delivery management</h2><p class="muted">Register new deliveries, view delivery records, complete discharges, and manage eligible transport payments from the dashboard.</p></div></div><div class="panel-body"><a class="primary" href="admin-logistics-dashboard.html" style="display:inline-block;text-decoration:none">Open Logistics Dashboard →</a></div></section>
 
 </main>
 <script>
 (function(){
 'use strict';
-const $=id=>document.getElementById(id);
-const H={Accept:'application/json','Content-Type':'application/json','X-Fuel-Role':'admin'};
-const num=v=>Number.isFinite(Number(v))?Number(v):0;
-const fmt=v=>num(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-const lit=v=>num(v).toLocaleString('en-US',{maximumFractionDigits:3});
-async function loadStats(){
- try{
-  const r=await fetch('/api/logistics/deliveries',{credentials:'same-origin',cache:'no-store',headers:H});
-  const rows=await r.json();
-  if(!r.ok)throw new Error(rows.error||'Unable to load delivery summary');
-  const deliveries=Array.isArray(rows)?rows:[];
-  const completed=deliveries.filter(d=>d.status==='completed');
-  const unpaid=completed.filter(d=>d.eligible_for_payment===true&&(d.transport_payment_status||'unpaid')==='unpaid');
-  $('s-unpaid').textContent=unpaid.length;
-  $('s-due').textContent=fmt(unpaid.reduce((a,d)=>a+num(d.total_fee),0));
-  $('s-liters').textContent=lit(completed.reduce((a,d)=>a+num(d.delivered_liters),0));
-  $('s-completed').textContent=completed.length;
- }catch(e){
-  ['s-unpaid','s-due','s-liters','s-completed'].forEach(id=>$(id).textContent='—');
- }
-}
-loadStats();
+const $=id=>document.getElementById(id),H={Accept:'application/json','Content-Type':'application/json','X-Fuel-Role':'admin'},S={deliveries:[],selected:new Set()};
+const num=v=>Number.isFinite(Number(v))?Number(v):0,fmt=v=>num(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),lit=v=>num(v).toLocaleString('en-US',{maximumFractionDigits:3}),cash=v=>'ETB '+fmt(v),esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),dt=v=>{const d=new Date(v);return v&&!Number.isNaN(d.getTime())?d.toLocaleString():'—'};
+const elig=d=>d.eligible_for_payment===true&&d.status==='completed'&&(d.transport_payment_status||'unpaid')==='unpaid';
+const selected=()=>S.deliveries.filter(d=>S.selected.has(String(d.id))&&elig(d));
+async function api(url,opts){const r=await fetch(url,{credentials:'same-origin',cache:'no-store',...opts,headers:{...H,...(opts&&opts.headers||{})}}),j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||'Request failed ('+r.status+')');return j}
+function stats(){const c=S.deliveries.filter(d=>d.status==='completed'),u=c.filter(elig);$('s-unpaid').textContent=u.length;$('s-due').textContent=fmt(u.reduce((a,d)=>a+num(d.total_fee),0));$('s-liters').textContent=lit(c.reduce((a,d)=>a+num(d.delivered_liters),0));$('s-completed').textContent=c.length}
+function paySummary(){const rows=selected(),eligible=S.deliveries.filter(elig);$('payment-selection-total').textContent=cash(rows.reduce((a,d)=>a+num(d.total_fee),0))+' · '+rows.length+' selected';$('payment-review').disabled=!rows.length;$('payment-select-all').checked=eligible.length>0&&eligible.every(d=>S.selected.has(String(d.id)))}
+function renderPayment(){const rows=S.deliveries.filter(elig);$('payment-list').className='';$('payment-list').innerHTML=rows.map(d=>'<article class="delivery"><div class="delivery-top"><div><div class="delivery-title"><label><input type="checkbox" data-payment-pick="'+esc(d.id)+'" '+(S.selected.has(String(d.id))?'checked':'')+'> '+esc(d.delivery_reference||('Delivery '+String(d.id).slice(0,8)))+' · '+esc(d.product_name)+'</label></div><div class="sub">'+esc(dt(d.delivery_date))+' · '+esc(d.truck_code_snapshot||d.registration_snapshot||'Truck')+(d.supplier_name?' · '+esc(d.supplier_name):'')+'</div><div class="sub">Delivered '+lit(d.delivered_liters)+' L · Applied rate ETB '+num(d.fee_per_liter).toLocaleString('en-US',{maximumFractionDigits:4})+'/L</div></div><b class="money">'+cash(d.total_fee)+'</b></div><div class="meta"><div><span>Ordered quantity</span><b>'+(d.ordered_liters==null?'—':lit(d.ordered_liters)+' L')+'</b></div><div><span>Delivered</span><b>'+lit(d.delivered_liters)+' L</b></div><div><span>Transport charge</span><b>'+cash(d.total_fee)+'</b></div><div><span>Eligible date</span><b>'+esc(dt(d.eligible_at))+'</b></div><div><span>Payment status</span><b>Unpaid · Eligible</b></div></div></article>').join('')||'<div class="empty">No completed unpaid deliveries are currently eligible for transport payment.</div>';paySummary()}
+async function load(){$('payment-list').className='loading';$('payment-list').textContent='Loading eligible deliveries…';try{const rows=await api('/api/logistics/deliveries');S.deliveries=Array.isArray(rows)?rows:[];const ids=new Set(S.deliveries.filter(elig).map(d=>String(d.id)));S.selected=new Set([...S.selected].filter(id=>ids.has(id)));stats();renderPayment()}catch(e){$('payment-list').className='error';$('payment-list').textContent=e.message;['s-unpaid','s-due','s-liters','s-completed'].forEach(id=>$(id).textContent='—')}}
+$('payment-list').addEventListener('change',e=>{const c=e.target.closest('[data-payment-pick]');if(!c)return;c.checked?S.selected.add(c.dataset.paymentPick):S.selected.delete(c.dataset.paymentPick);paySummary()});
+$('payment-select-all').addEventListener('change',()=>{S.deliveries.filter(elig).forEach(d=>$('payment-select-all').checked?S.selected.add(String(d.id)):S.selected.delete(String(d.id)));renderPayment()});
+$('payment-review').addEventListener('click',()=>{const rows=selected();if(!rows.length)return;$('payment-reference').value='';$('payment-reviewed').checked=false;$('payment-confirm').disabled=true;$('payment-message').textContent='';$('payment-review-list').innerHTML=rows.map(d=>'<div class="review-item"><div><b>'+esc(d.delivery_reference||String(d.id).slice(0,8))+' · '+esc(d.product_name)+'</b><small>'+esc(d.truck_code_snapshot||d.registration_snapshot||'Truck')+' · '+lit(d.delivered_liters)+' L</small></div><b>'+cash(d.total_fee)+'</b></div>').join('');$('payment-review-total').textContent=rows.length+' deliveries · exact total '+cash(rows.reduce((a,d)=>a+num(d.total_fee),0));$('payment-review-dialog').showModal()});
+function updateConfirm(){$('payment-confirm').disabled=!$('payment-reviewed').checked||!$('payment-reference').value.trim()}
+$('payment-reviewed').addEventListener('change',updateConfirm);$('payment-reference').addEventListener('input',updateConfirm);
+$('payment-confirm').addEventListener('click',async()=>{const rows=selected(),ref=$('payment-reference').value.trim();if(!rows.length||!ref||!$('payment-reviewed').checked)return;if(!confirm('Confirm recording '+rows.length+' transport deliveries for '+cash(rows.reduce((a,d)=>a+num(d.total_fee),0))+' with reference '+ref+'?'))return;const b=$('payment-confirm');b.disabled=true;$('payment-message').textContent='Recording immutable payment…';try{await api('/api/logistics/transport-payments',{method:'POST',body:JSON.stringify({delivery_ids:rows.map(d=>d.id),reference:ref,amount:Number(rows.reduce((a,d)=>a+num(d.total_fee),0).toFixed(2))})});$('payment-review-dialog').close();S.selected.clear();window.location.href='admin-logistics-history.html?payment=recorded'}catch(err){$('payment-message').className='error';$('payment-message').textContent=err.message}finally{b.disabled=false;updateConfirm()}});
+document.querySelectorAll('[data-payment-close]').forEach(b=>b.addEventListener('click',()=>$('payment-review-dialog').close()));$('payment-refresh').addEventListener('click',load);load();
 })();
 </script></body></html>
