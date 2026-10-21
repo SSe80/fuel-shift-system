@@ -3849,7 +3849,10 @@ function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,mont
     {label:'Top product',value:topProd?(topProd.code||'Product'):'—',sub:topProd?money(topProd.sales):''}];
   const totalL=products.reduce((n,p)=>n+num(p.liters),0);
   const dispenserRowsV2=nozList.map(n=>{const q=String(n.product||'').trim().toLowerCase();const rec=recByName[q]||recByCode[q];const col=rec?msrHex(rec.color,[100,116,139]):[100,116,139];return{dot:col,cells:[String(n.nozzle_code||'Dispenser'),rec?(rec.code_name||rec.name):String(n.product||'—'),String(n.nozzle_count||1)]};});
-  return {dispenserRowsV2,productCentre:fmt(totalL),highlights,productChart,attendantChart,rankChart,productRowsV2,saleTypeRowsV2,attRowsV2,dailyRowsV2,notesStrip,
+  const purchaseRowsV2=(Array.isArray(data.purchases)?data.purchases:[]).map(p=>({cells:[String(p.product||'Unknown product'),String(num(p.count)),fmt(p.dispatched)+' L',fmt(p.delivered)+' L',fmt(p.discharged)+' L',fmt(p.remaining)+' L']}));
+  const purchaseComparisonRowsV2=(Array.isArray(data.purchaseComparisons)?data.purchaseComparisons:[]).map((p,i,a)=>{const prev=a[i-1],delta=prev&&num(prev.delivered)!==0?(num(p.delivered)-num(prev.delivered))/Math.abs(num(prev.delivered))*100:null;return{cells:[monthLabel(p.month),String(num(p.count)),fmt(p.dispatched)+' L',fmt(p.delivered)+' L',fmt(p.discharged)+' L',fmt(p.remaining)+' L',delta==null?'—':(delta>0?'+':'')+delta.toFixed(1)+'%']};});
+  if(data.purchaseSummary)purchaseRowsV2.push({bold:true,cells:['MONTH TOTAL',String(num(data.purchaseSummary.count)),fmt(data.purchaseSummary.dispatched)+' L',fmt(data.purchaseSummary.delivered)+' L',fmt(data.purchaseSummary.discharged)+' L',fmt(data.purchaseSummary.remaining)+' L']});
+  return {dispenserRowsV2,purchaseRowsV2,purchaseComparisonRowsV2,productCentre:fmt(totalL),highlights,productChart,attendantChart,rankChart,productRowsV2,saleTypeRowsV2,attRowsV2,dailyRowsV2,notesStrip,
     dailyRows:[],productRows:[],attendants:[],notesLeft:[],notesRight:[],rightTitle:''};
 }
 function msrNiceAxis(max){
@@ -3986,6 +3989,29 @@ function createMsrReportPdfV2(r){
   d.text('RECONCILIATION NOTE',M+10,noteY+14,6.5,true,GREY);
   d.text('Returned-fuel values are separate from net fuel sold and calculated sales.',M+10,noteY+29,7.5,false,INK);
   d.text('Based on confirmed daily reports. Current-month totals remain provisional until all expected DSRs are confirmed.',M,H-22,6.5,false,GREY);
+  // PAGE 3 — purchase statistics use purchase date, separate from sales.
+  d.newPage();
+  header('Product purchases and comparison');
+  d.markContent(72);
+  section(M,88,'Purchase statistics');
+  const ps=r.purchaseSummary||{},pKpis=[
+    {label:'Purchase records',value:String(num(ps.count))},
+    {label:'Dispatched quantity',value:fmt(ps.dispatched)+' L'},
+    {label:'Delivered quantity',value:fmt(ps.delivered)+' L'},
+    {label:'Discharged quantity',value:fmt(ps.discharged)+' L'}
+  ];
+  const pGap=8,pW=(CW-pGap*3)/4,pY=110,pH=48;
+  pKpis.forEach((it,i)=>{const x=M+i*(pW+pGap);card(x,pY,pW,pH,WHITE);d.text(d.fit(it.label.toUpperCase(),6.1,true,pW-14),x+7,pY+15,6.1,true,GREY);let fs=10;while(fs>7&&d.tw(it.value,fs,true)>pW-14)fs-=.5;d.text(d.fit(it.value,fs,true,pW-14),x+7,pY+34,fs,true,INK);});
+  d.text('Purchases are assigned to the month of the purchase date. These quantities are not sales.',M,173,7.2,false,GREY);
+  section(M,191,'Product purchase breakdown');
+  const purchaseRows=(r.purchaseRowsV2||[]).length?r.purchaseRowsV2:[{cells:['No purchase records','—','—','—','—','—']}];
+  let py=table(M,212,CW,[{h:'Product',x:8,max:115},{h:'Records',x:165,a:'r'},{h:'Dispatched',x:245,a:'r'},{h:'Delivered',x:320,a:'r'},{h:'Discharged',x:395,a:'r'},{h:'Remaining',x:CW-8,a:'r'}],purchaseRows,20);
+  if(py<H-180){
+    section(M,py,'Purchase month comparison');py+=21;
+    const cmp=(r.purchaseComparisonRowsV2||[]).slice(-8);
+    table(M,py,CW,[{h:'Month',x:8,max:105},{h:'Records',x:150,a:'r'},{h:'Dispatched',x:225,a:'r'},{h:'Delivered',x:300,a:'r'},{h:'Discharged',x:375,a:'r'},{h:'Remaining',x:450,a:'r'},{h:'Change',x:CW-8,a:'r'}],cmp.length?cmp:[{cells:['No comparison data','—','—','—','—','—','—']}],19);
+  }
+  d.text('Purchase statistics are grouped by purchase date; discharge quantities show recorded physical discharge.',M,H-22,6.5,false,GREY);
   return d.finish(r.footer,'MSR - '+r.title);
 }
 function createMsrReportPdf(r){
