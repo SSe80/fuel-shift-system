@@ -7002,7 +7002,7 @@ def ai_analyst_ask():
         + "\n\nVerified station data JSON:\n"
         + json.dumps(station_data, separators=(",", ":"), ensure_ascii=False)
     )
-    model = str(getattr(env(), "OPENAI_MODEL", "") or "gpt-6-astra").strip()
+    model = str(getattr(env(), "OPENAI_MODEL", "") or "gpt-6.1-sol").strip()
     try:
         provider_status, provider_data = run_sync(_ai_openai_request(api_key, model, prompt))
     except Exception:
