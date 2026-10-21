@@ -212,7 +212,7 @@ Deno.serve(async (req: Request) => {
       const response = await webpush.sendNotification({
         endpoint: sub.endpoint,
         keys: { p256dh: sub.p256dh, auth: sub.auth },
-      }, payload, { TTL: 60 * 60 });
+      }, payload, { TTL: 24 * 60 * 60, urgency: "high" });
       sent++;
       // Provider acceptance confirms delivery was queued, not that the phone displayed it.
       console.info("Push provider accepted notification", {
