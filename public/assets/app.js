@@ -3850,7 +3850,7 @@ function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,mont
   const totalL=products.reduce((n,p)=>n+num(p.liters),0);
   const dispenserRowsV2=nozList.map(n=>{const q=String(n.product||'').trim().toLowerCase();const rec=recByName[q]||recByCode[q];const col=rec?msrHex(rec.color,[100,116,139]):[100,116,139];return{dot:col,cells:[String(n.nozzle_code||'Dispenser'),rec?(rec.code_name||rec.name):String(n.product||'—'),String(n.nozzle_count||1)]};});
   const purchaseRowsV2=(Array.isArray(data.purchases)?data.purchases:[]).map(p=>({cells:[String(p.product||'Unknown product'),String(num(p.count)),fmt(p.dispatched)+' L',fmt(p.delivered)+' L',fmt(p.discharged)+' L',fmt(p.remaining)+' L']}));
-  const purchaseComparisonRowsV2=(Array.isArray(data.purchaseComparisons)?data.purchaseComparisons:[]).map((p,i,a)=>{const prev=a[i-1],delta=prev&&num(prev.delivered)!==0?(num(p.delivered)-num(prev.delivered))/Math.abs(num(prev.delivered))*100:null;return{cells:[monthLabel(p.month),String(num(p.count)),fmt(p.dispatched)+' L',fmt(p.delivered)+' L',fmt(p.discharged)+' L',fmt(p.remaining)+' L',delta==null?'—':(delta>0?'+':'')+delta.toFixed(1)+'%']};});
+  const purchaseComparisonRowsV2=(()=>{const rows=(Array.isArray(data.purchaseComparisons)?data.purchaseComparisons:[]).flatMap(p=>(Array.isArray(p.productRows)?p.productRows:[]).map(x=>({...x,month:p.month}))).sort((a,b)=>String(a.product).localeCompare(String(b.product))||String(a.month).localeCompare(String(b.month)));return rows.map((p,i)=>{const prev=[...rows.slice(0,i)].reverse().find(x=>x.product===p.product);const delta=prev&&num(prev.delivered)!==0?(num(p.delivered)-num(prev.delivered))/Math.abs(num(prev.delivered))*100:null;return{cells:[String(p.product||'Unknown product'),monthLabel(p.month),String(num(p.count)),fmt(p.dispatched)+' L',fmt(p.delivered)+' L',fmt(p.discharged)+' L',fmt(p.remaining)+' L',delta==null?'—':(delta>0?'+':'')+delta.toFixed(1)+'%']};});})();
   if(data.purchaseSummary)purchaseRowsV2.push({bold:true,cells:['MONTH TOTAL',String(num(data.purchaseSummary.count)),fmt(data.purchaseSummary.dispatched)+' L',fmt(data.purchaseSummary.delivered)+' L',fmt(data.purchaseSummary.discharged)+' L',fmt(data.purchaseSummary.remaining)+' L']});
   return {dispenserRowsV2,purchaseRowsV2,purchaseComparisonRowsV2,purchaseSummary:data.purchaseSummary||{},productCentre:fmt(totalL),highlights,productChart,attendantChart,rankChart,productRowsV2,saleTypeRowsV2,attRowsV2,dailyRowsV2,notesStrip,
     dailyRows:[],productRows:[],attendants:[],notesLeft:[],notesRight:[],rightTitle:''};
@@ -4009,7 +4009,7 @@ function createMsrReportPdfV2(r){
   if(py<H-180){
     section(M,py,'Purchase month comparison');py+=21;
     const cmp=(r.purchaseComparisonRowsV2||[]).slice(-8);
-    table(M,py,CW,[{h:'Month',x:8,max:105},{h:'Records',x:150,a:'r'},{h:'Dispatched',x:225,a:'r'},{h:'Delivered',x:300,a:'r'},{h:'Discharged',x:375,a:'r'},{h:'Remaining',x:450,a:'r'},{h:'Change',x:CW-8,a:'r'}],cmp.length?cmp:[{cells:['No comparison data','—','—','—','—','—','—']}],19);
+    table(M,py,CW,[{h:'Product',x:8,max:76},{h:'Month',x:90,max:80},{h:'Records',x:174,a:'r'},{h:'Dispatched',x:232,a:'r'},{h:'Delivered',x:292,a:'r'},{h:'Discharged',x:352,a:'r'},{h:'Remaining',x:412,a:'r'},{h:'Change',x:CW-8,a:'r'}],cmp.length?cmp:[{cells:['No comparison data','—','—','—','—','—','—','—']}],19);
   }
   d.text('Purchase statistics are grouped by purchase date; discharge quantities show recorded physical discharge.',M,H-22,6.5,false,GREY);
   return d.finish(r.footer,'MSR - '+r.title);
