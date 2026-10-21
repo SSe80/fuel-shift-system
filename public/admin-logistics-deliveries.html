@@ -1,14 +1,49 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex">
-<title>Deliveries moved | Fuel Shift System</title>
-<meta http-equiv="refresh" content="0;url=admin-logistics-dashboard.html">
-<script>location.replace("admin-logistics-dashboard.html");</script>
-</head>
-<body>
-<p>Delivery registration and records are now part of the <a href="admin-logistics-dashboard.html">Logistics Dashboard</a>.</p>
-</body>
-</html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111827">
+<link rel="manifest" href="/admin-manifest.webmanifest"><link rel="icon" href="/icons/admin-icon.svg" type="image/svg+xml">
+<title>Logistics Deliveries | Fuel Shift System</title><link rel="stylesheet" href="assets/style.css?v=20261020-logistics"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261020-logistics">
+<style>
+:root{color-scheme:light;--ink:#182230;--muted:#667085;--line:#e1e8f0;--blue:#2563eb}*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:var(--ink);font-family:Inter,"Segoe UI",Arial,sans-serif}body.admin-shell{padding-top:0!important}
+.logistics-sidebar{position:relative!important;top:auto!important;width:100%!important;height:auto!important;min-height:63px!important;padding:0 15px!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important;background:#111827!important;border:0!important;border-bottom:1px solid #263349!important}.logistics-brand{display:flex;align-items:center;gap:9px;flex:0 0 auto}.logistics-mark{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:#1f2937;border:1px solid #374151;color:#fbbf24;font-weight:900}.logistics-brand strong{display:block;color:#fff;font-size:12px}.logistics-brand small{display:block;color:#9ca3af;font-size:10px;margin-top:3px}.logistics-nav{flex:1;min-width:0;display:flex;gap:4px;justify-content:center;overflow-x:auto;white-space:nowrap}.logistics-nav a{display:flex;align-items:center;padding:10px 11px;color:#d1d5db;border-radius:9px;text-decoration:none;font-size:12px;font-weight:750}.logistics-nav a.active,.logistics-nav a:hover{background:#273449;color:#fff}.logistics-logout{flex:0 0 auto;border:1px solid #7f1d1d;border-radius:9px;padding:9px 11px;background:#111827;color:#fecaca;font-size:12px;font-weight:750;cursor:pointer}
+main{max-width:1200px;margin:auto;padding:24px 20px 45px}.head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:17px;margin-bottom:18px;border-bottom:1px solid var(--line)}.eyebrow{font-size:10px;font-weight:850;letter-spacing:1.2px;color:#2563eb}h1{font-size:clamp(25px,4vw,34px);margin:7px 0 5px;letter-spacing:-.6px}.muted{font-size:12px;line-height:1.5;color:var(--muted)}.head p{margin:0}.primary,.secondary,.plain,.danger{border:0;border-radius:9px;padding:10px 12px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}.primary{background:#2563eb;color:white}.secondary{border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8}.plain{border:1px solid #d0d5dd;background:#fff;color:#344054}.danger{border:1px solid #fecdca;background:#fff1f0;color:#b42318}.primary:disabled,.secondary:disabled{opacity:.45;cursor:not-allowed}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px}.stat,.panel{background:white;border:1px solid var(--line);border-radius:14px;box-shadow:0 3px 14px #10182806}.stat{padding:14px}.stat span{display:block;color:var(--muted);font-size:9px;font-weight:850;letter-spacing:.05em;text-transform:uppercase}.stat b{display:block;margin-top:7px;font-size:22px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.panel{margin-bottom:15px;overflow:hidden}.panel-head{padding:15px 16px;border-bottom:1px solid #edf1f5;display:flex;align-items:center;justify-content:space-between;gap:10px}.panel-head h2{margin:0;font-size:15px}.panel-head p{margin:5px 0 0}.panel-body{padding:15px 16px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.field{display:grid;gap:5px;min-width:0}.field.full{grid-column:1/-1}.field label{font-size:10px;color:#475467;font-weight:800}.field input,.field select,.field textarea{width:100%;min-width:0;min-height:39px;padding:8px 9px;border:1px solid #cfd8e3;border-radius:9px;background:#fff;color:#182230;font:inherit;font-size:12px}.field textarea{min-height:65px;resize:vertical}.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:12px}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:9px;flex-wrap:wrap}.search{width:min(100%,340px);min-height:39px;padding:9px 10px;border:1px solid #cfd8e3;border-radius:9px;font:inherit;font-size:12px}.delivery{padding:14px 15px;border-bottom:1px solid #edf1f5}.delivery:last-child{border-bottom:0}.delivery-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.delivery-title{font-size:13px;font-weight:850;overflow-wrap:anywhere}.sub{color:var(--muted);font-size:11px;line-height:1.5;margin-top:4px}.money{font-size:15px;font-weight:900;color:#1d4ed8;white-space:nowrap}.pill{display:inline-flex;padding:4px 7px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:9px;font-weight:850;text-transform:uppercase}.green{background:#ecfdf3;color:#067647}.amber{background:#fffaeb;color:#b54708}.red{background:#fef3f2;color:#b42318}.meta{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:11px}.meta>div{padding:8px 9px;border:1px solid #edf1f5;border-radius:8px;background:#fafbfc;min-width:0}.meta span{display:block;font-size:9px;color:#7b8794;font-weight:800;text-transform:uppercase}.meta b{display:block;margin-top:4px;font-size:10px;overflow-wrap:anywhere}.empty,.loading{padding:27px 12px;text-align:center;color:var(--muted);font-size:12px}.notice{padding:9px 11px;background:#f8fbff;border:1px solid #dbeafe;color:#344054;border-radius:9px;font-size:11px;line-height:1.5}.error{padding:10px;border:1px solid #fecdca;border-radius:9px;background:#fef3f2;color:#b42318;font-size:12px}.ok{color:#067647;font-size:11px}
+dialog{width:min(620px,calc(100% - 20px));max-height:90dvh;overflow:auto;padding:0;border:1px solid #dbe3ed;border-radius:15px;background:white;color:var(--ink);box-shadow:0 24px 70px #0f172a40}dialog::backdrop{background:#10182880;backdrop-filter:blur(2px)}.dh{padding:15px 17px;border-bottom:1px solid #edf1f5;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.dh h2{font-size:16px;margin:0}.db{padding:15px 17px}.da{padding:12px 17px;border-top:1px solid #edf1f5;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.close{background:white;border:1px solid #d0d5dd;border-radius:8px;font-size:20px;padding:3px 9px;cursor:pointer}.review-item{display:flex;justify-content:space-between;gap:10px;padding:9px;border:1px solid var(--line);border-radius:8px;margin:7px 0;font-size:11px}.review-item small{display:block;color:var(--muted);margin-top:4px}
+@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.meta{grid-template-columns:repeat(3,minmax(0,1fr))}.logistics-brand{display:none}.logistics-nav{justify-content:flex-start}}
+@media(max-width:560px){main{padding:17px 11px 32px}.logistics-sidebar{padding:0 5px!important;min-height:55px!important;gap:3px!important}.logistics-nav{gap:2px}.logistics-nav a{padding:9px 7px;font-size:10px}.logistics-logout{padding:8px;font-size:10px}.head{flex-direction:column}.stats{gap:7px}.stat{padding:11px}.stat b{font-size:18px}.panel-head,.panel-body{padding:12px}.grid{gap:8px}.meta{grid-template-columns:1fr 1fr}.delivery{padding:12px 10px}.delivery-top{flex-direction:column}.money{font-size:14px}.search{width:100%}}
+</style><script src="assets/logistics-auth.js?v=20261019-session-logout-fix"></script></head>
+<body class="admin-shell admin-control-ui" data-app-page="adminLogisticsDeliveries">
+<aside class="logistics-sidebar"><div class="logistics-brand"><span class="logistics-mark">AL</span><div><strong>ADMIN LOGISTICS</strong><small>Fuel Shift System</small></div></div><nav class="logistics-nav"><a href="admin-logistics-dashboard.html">⌂ Dashboard</a><a href="admin-logistics-truck.html">🚚 Trucks</a><a class="active" href="admin-logistics-deliveries.html">📦 Deliveries</a><a href="admin-logistics-history.html">↻ History</a><a href="admin-logistics-settings.html">⚙ Settings</a></nav><button class="logistics-logout" data-logistics-logout type="button">Log out</button></aside>
+<main>
+<header class="head"><div><div class="eyebrow">ADMIN LOGISTICS</div><h1>Deliveries</h1><p class="muted">Delivery registration and delivery records are available on the Logistics Dashboard.</p></div><a href="admin-logistics-history.html" style="font-size:12px;font-weight:800;color:#1d4ed8;text-decoration:none">Payment history →</a></header>
+<section class="stats"><div class="stat"><span>Eligible unpaid</span><b id="s-unpaid">—</b></div><div class="stat"><span>Transport due · ETB</span><b id="s-due">—</b></div><div class="stat"><span>Completed liters</span><b id="s-liters">—</b></div><div class="stat"><span>Completed deliveries</span><b id="s-completed">—</b></div></section>
+
+<section class="panel"><div class="panel-head"><div><h2>Delivery management</h2><p class="muted">Register new deliveries, view delivery records, complete discharges, and manage eligible transport payments from the dashboard.</p></div></div><div class="panel-body"><a class="primary" href="admin-logistics-dashboard.html" style="display:inline-block;text-decoration:none">Open Logistics Dashboard →</a></div></section>
+
+</main>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const H={Accept:'application/json','Content-Type':'application/json','X-Fuel-Role':'admin'};
+const num=v=>Number.isFinite(Number(v))?Number(v):0;
+const fmt=v=>num(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const lit=v=>num(v).toLocaleString('en-US',{maximumFractionDigits:3});
+async function loadStats(){
+ try{
+  const r=await fetch('/api/logistics/deliveries',{credentials:'same-origin',cache:'no-store',headers:H});
+  const rows=await r.json();
+  if(!r.ok)throw new Error(rows.error||'Unable to load delivery summary');
+  const deliveries=Array.isArray(rows)?rows:[];
+  const completed=deliveries.filter(d=>d.status==='completed');
+  const unpaid=completed.filter(d=>d.eligible_for_payment===true&&(d.transport_payment_status||'unpaid')==='unpaid');
+  $('s-unpaid').textContent=unpaid.length;
+  $('s-due').textContent=fmt(unpaid.reduce((a,d)=>a+num(d.total_fee),0));
+  $('s-liters').textContent=lit(completed.reduce((a,d)=>a+num(d.delivered_liters),0));
+  $('s-completed').textContent=completed.length;
+ }catch(e){
+  ['s-unpaid','s-due','s-liters','s-completed'].forEach(id=>$(id).textContent='—');
+ }
+}
+loadStats();
+})();
+</script></body></html>
