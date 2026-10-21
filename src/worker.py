@@ -6739,7 +6739,7 @@ def ai_analyst_ask():
             person["amount_etb"] += amount
         if len(recent_sales) < 12:
             recent_sales.append({
-                "date": day or None, "product": product, "liters": round(liters, 3),
+                "date": day or None, "ledger_label": product, "liters": round(liters, 3),
                 "amount_etb": round(amount, 2), "payment_method": method
             })
 
@@ -6979,7 +6979,7 @@ def ai_analyst_ask():
     handover_month_list = [{"month": month, **values} for month, values in sorted(handover_months.items(), reverse=True)[:24]]
     dsr_month_list = [{"month": month, **values} for month, values in sorted(dsr_confirmations_by_month.items(), reverse=True)[:24]]
     sales_product_month_list = [
-        {"month": month, "product": product, **values}
+        {"month": month, "ledger_label": product, **values}
         for (month, product), values in sorted(sales_product_months.items(), key=lambda item: (item[0][0], item[1]["amount_etb"]), reverse=True)[:60]
     ]
     purchase_product_month_list = [
@@ -6987,7 +6987,7 @@ def ai_analyst_ask():
         for (month, product), values in sorted(purchases_product_months.items(), key=lambda item: (item[0][0], item[1]["delivered_liters"]), reverse=True)[:60]
     ]
     attendant_list = sorted(attendants.values(), key=lambda item: item["amount_etb"], reverse=True)[:12]
-    top_products = [{"product": product, **values} for product, values in sorted(sales_products.items(), key=lambda item: item[1]["amount_etb"], reverse=True)[:15]]
+    top_products = [{"ledger_label": product, **values} for product, values in sorted(sales_products.items(), key=lambda item: item[1]["amount_etb"], reverse=True)[:15]]
     truncation = []
     for label, rows, maximum in (
         ("sales", sales_rows, 10000), ("purchases", purchases_rows, 5000),
