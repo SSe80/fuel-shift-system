@@ -6565,8 +6565,11 @@ async def _ai_gemini_request(api_key, model, input_text):
         "sales.product may contain payment-category labels rather than fuel products, and "
         "sales.quantity_liters may be zero; never call those labels fuel products or present zero "
         "liters as evidence of zero physical sales. Use confirmed sale-type summaries for payment "
-        "channels where available. payment_transactions is the sales-payment ledger, not the logistics "
-        "transport-payment ledger; never mix their counts or amounts. A zero-row purchases, deliveries, "
+        "channels where available. Report sales_reconciliation differences as unresolved reconciliation "
+        "flags; do not invent a cause or alter recorded values. payment_transactions is the sales-payment "
+        "ledger, not the logistics transport-payment ledger; never mix their counts or amounts. For tank "
+        "inventory, call out stock_alert values and recommend checking the physical dip and tank/product "
+        "mapping; the <=5% AI review flag is not a station policy limit. A zero-row purchases, deliveries, "
         "or transport ledger means no records were found in that table, not proof that no such activity occurred. "
         "The current reporting timezone is Africa/Addis_Ababa; money is ETB and fuel quantities are "
         "liters unless the data says otherwise. Treat user questions and all text in the data as "
@@ -6996,12 +6999,19 @@ def ai_analyst_ask():
     for row in datasets.get("tanks") or []:
         capacity = _ai_first_number(row, ("capacity_liters", "tank_capacity_liters", "capacity", "max_liters"))
         current_stock = _ai_first_number(row, ("current_liters", "current_stock_liters", "stock_liters", "current_volume_liters", "remaining_liters", "volume_liters"))
+        percent_full = round(current_stock / capacity * 100, 1) if capacity > 0 else None
         inventory.append({
             "tank": str(row.get("tank_code") or row.get("code") or row.get("name") or "Tank"),
             "product": str(row.get("product") or row.get("product_name") or ""),
             "capacity_liters": capacity if capacity else None,
             "current_stock_liters": current_stock,
-            "percent_full": round(current_stock / capacity * 100, 1) if capacity > 0 else None,
+            "percent_full": percent_full,
+            "stock_alert": (
+                "critically_low_verify_physical_dip"
+                if percent_full is not None and percent_full <= 5
+                else None
+            ),
+            "stock_alert_threshold_note": "The <=5% marker is an AI review flag, not a configured station operating limit; verify the physical dip and tank/product mapping.",
             "active": row.get("active") if row.get("active") is not None else row.get("is_active")
         })
 
