@@ -6641,6 +6641,10 @@ def ai_analyst_ask():
         ("shifts", "shifts", {"select": "*", "order": "start_time.desc", "limit": "5000"}),
         ("handovers", "shift_takeovers", {"select": "*", "order": "shift_ended_at.desc", "limit": "5000"}),
         ("dsr_confirmations", "daily_report_confirmations", {"select": "report_date,status,confirmed_at", "order": "report_date.desc", "limit": "5000"}),
+        ("daily_reports", "daily_reports", {"select": "report_date,total_sales_liters,total_sales_amount,total_purchases_liters,notes,calculated_sales_amount,entered_payment_amount,financial_difference", "order": "report_date.desc", "limit": "5000"}),
+        ("payment_transactions", "payment_transactions", {"select": "*", "order": "recorded_at.desc", "limit": "5000"}),
+        ("shift_takeover_sales", "shift_takeover_sales", {"select": "*", "order": "created_at.desc", "limit": "5000"}),
+        ("sale_types", "sale_types", {"select": "id,name,active", "limit": "500"}),
         ("employees", "employees", {"select": "id,name,role,active", "limit": "1000"}),
         ("products", "products", {"select": "*", "limit": "1000"}),
         ("tanks", "tanks", {"select": "*", "limit": "1000"})
@@ -6668,6 +6672,10 @@ def ai_analyst_ask():
     shift_rows = datasets.get("shifts") or []
     handover_rows = datasets.get("handovers") or []
     confirmation_rows = datasets.get("dsr_confirmations") or []
+    daily_report_rows = datasets.get("daily_reports") or []
+    payment_transaction_rows = datasets.get("payment_transactions") or []
+    takeover_sale_rows = datasets.get("shift_takeover_sales") or []
+    sale_type_rows = datasets.get("sale_types") or []
     employee_map = {
         str(row.get("id")): str(row.get("name") or "Unknown attendant")
         for row in datasets.get("employees") or []
@@ -6837,7 +6845,11 @@ def ai_analyst_ask():
 
     dsr_confirmations_by_month = {}
     dsr_confirmation_statuses = {}
+    dsr_status_by_date = {}
     for row in confirmation_rows:
+        report_date = str(row.get("report_date") or "")[:10]
+        if report_date:
+            dsr_status_by_date[report_date] = str(row.get("status") or "not recorded").strip().lower()
         month = _ai_month(row.get("report_date"))
         status_text = str(row.get("status") or "not recorded").strip().lower()
         dsr_confirmation_statuses[status_text] = dsr_confirmation_statuses.get(status_text, 0) + 1
@@ -6848,6 +6860,35 @@ def ai_analyst_ask():
                 bucket["confirmed_days"] += 1
             if status_text == "waiting":
                 bucket["waiting_days"] += 1
+
+    # Compare DSR status with actual shift activity by Addis Ababa calendar date.
+    # Days with no shift records are reported separately; no shift row alone does
+    # not prove the station was closed or that a report was required.
+    try:
+        month_start_date = date.fromisoformat(current_month + "-01")
+    except Exception:
+        month_start_date = _addis_today().replace(day=1)
+    today_date = _addis_today()
+    shift_activity_dates = set()
+    for row in shift_rows:
+        shift_day = _ai_date(row.get("start_time") or row.get("created_at"))
+        if shift_day and shift_day.startswith(current_month) and shift_day <= today:
+            shift_activity_dates.add(shift_day)
+    dates_with_shifts_missing_confirmed_dsr = [
+        day for day in sorted(shift_activity_dates)
+        if dsr_status_by_date.get(day) != "confirmed"
+    ]
+    dates_with_shifts_confirmed_dsr = [
+        day for day in sorted(shift_activity_dates)
+        if dsr_status_by_date.get(day) == "confirmed"
+    ]
+    dates_without_shift_records = []
+    cursor_day = month_start_date
+    while cursor_day <= today_date:
+        day_text = cursor_day.isoformat()
+        if day_text not in shift_activity_dates:
+            dates_without_shift_records.append(day_text)
+        cursor_day += timedelta(days=1)
 
     shift_months = {}
     shift_statuses = {}
@@ -6871,6 +6912,35 @@ def ai_analyst_ask():
         bucket = transport_by_type.setdefault(kind, {"records": 0, "amount_etb": 0.0})
         bucket["records"] += 1
         bucket["amount_etb"] += _ai_first_number(row, ("amount", "total_amount", "payment_amount"))
+
+    # Current sales.product values are sale/payment labels, not fuel products.
+    # Use confirmed shift_takeover_sales joined to sale_types for payment reporting.
+    sale_type_map = {
+        str(row.get("id")): str(row.get("name") or "Unknown sale type")
+        for row in sale_type_rows if row.get("id")
+    }
+    takeover_status_by_id = {
+        str(row.get("id")): str(row.get("sales_status") or "").strip().lower()
+        for row in handover_rows if row.get("id")
+    }
+    confirmed_payment_types = {}
+    for row in takeover_sale_rows:
+        if takeover_status_by_id.get(str(row.get("takeover_id") or "")) != "confirmed":
+            continue
+        sale_type = sale_type_map.get(str(row.get("sale_type_id") or ""), "Unmapped sale type")
+        bucket = confirmed_payment_types.setdefault(sale_type, {"records": 0, "amount_etb": 0.0})
+        bucket["records"] += 1
+        bucket["amount_etb"] += _ai_first_number(row, ("amount", "submitted_amount"))
+
+    payment_transaction_statuses = {}
+    payment_transaction_methods = {}
+    for row in payment_transaction_rows:
+        state = "confirmed" if row.get("confirmed_at") else "unconfirmed"
+        payment_transaction_statuses[state] = payment_transaction_statuses.get(state, 0) + 1
+        method = str(row.get("payment_method") or "Not recorded").strip() or "Not recorded"
+        bucket = payment_transaction_methods.setdefault(method, {"records": 0, "amount_etb": 0.0})
+        bucket["records"] += 1
+        bucket["amount_etb"] += _ai_first_number(row, ("amount",))
 
     inventory = []
     for row in datasets.get("tanks") or []:
@@ -6915,7 +6985,9 @@ def ai_analyst_ask():
         ("sales", sales_rows, 10000), ("purchases", purchases_rows, 5000),
         ("deliveries", delivery_rows, 1000), ("transport_transactions", transaction_rows, 1000),
         ("shifts", shift_rows, 5000), ("handovers", handover_rows, 5000),
-        ("dsr_confirmations", confirmation_rows, 5000)
+        ("dsr_confirmations", confirmation_rows, 5000), ("daily_reports", daily_report_rows, 5000),
+        ("payment_transactions", payment_transaction_rows, 5000),
+        ("shift_takeover_sales", takeover_sale_rows, 5000)
     ):
         if len(rows) >= maximum:
             truncation.append(label)
@@ -6933,10 +7005,13 @@ def ai_analyst_ask():
             "records_counted": valid_sales_count,
             "total_liters": round(sales_liters_total, 3),
             "total_amount_etb": round(sales_amount_total, 2),
-            "amount_by_payment_method_etb": {key: round(value, 2) for key, value in sales_payment_methods.items()},
+            "amount_by_legacy_ledger_label_etb": {key: round(value, 2) for key, value in sales_payment_methods.items()},
+            "warning": "In current database rows, sales.product contains labels such as Telebirr/TEMC/CBE Birr/Credit rather than fuel names, and quantity_liters is zero. Do not treat this field as fuel-product sales or infer liters from it.",
+            "confirmed_amount_by_sale_type_etb": {key: round(value["amount_etb"], 2) for key, value in confirmed_payment_types.items()},
+            "confirmed_sale_type_record_counts": {key: value["records"] for key, value in confirmed_payment_types.items()},
             "monthly": sales_month_list,
-            "product_totals": top_products,
-            "product_by_month": sales_product_month_list,
+            "ledger_label_totals_not_fuel_products": top_products,
+            "ledger_label_by_month_not_fuel_products": sales_product_month_list,
             "attendant_totals": attendant_list,
             "latest_records": recent_sales
         },
@@ -6963,7 +7038,10 @@ def ai_analyst_ask():
         "transport_payment_transactions": {
             "transaction_records": len(transaction_rows),
             "records_by_transaction_type": transport_by_type,
-            "note": "Reversal transactions are reported separately by transaction type; do not treat gross transaction sums as net paid unless reversals are accounted for."
+            "note": "Reversal transactions are reported separately by transaction type; do not treat gross transaction sums as net paid unless reversals are accounted for.",
+            "payment_ledger_record_count": len(payment_transaction_rows),
+            "payment_ledger_status_counts": payment_transaction_statuses,
+            "payment_ledger_method_counts_and_amounts": {key: {"records": value["records"], "amount_etb": round(value["amount_etb"], 2)} for key, value in payment_transaction_methods.items()}
         },
         "shift_operations": {
             "loaded_shift_count": len(shift_rows),
@@ -6980,7 +7058,24 @@ def ai_analyst_ask():
         },
         "daily_sales_report_confirmations": {
             "status_counts": dsr_confirmation_statuses,
-            "monthly": dsr_month_list
+            "monthly": dsr_month_list,
+            "current_month_to_date": current_month,
+            "as_of_date": today,
+            "dates_with_shift_activity": sorted(shift_activity_dates),
+            "dates_with_shifts_and_confirmed_dsr": dates_with_shifts_confirmed_dsr,
+            "dates_with_shifts_missing_or_not_confirmed_dsr": dates_with_shifts_missing_confirmed_dsr,
+            "calendar_dates_without_shift_records": dates_without_shift_records,
+            "daily_report_register_records": [
+                {
+                    "date": str(row.get("report_date") or "")[:10],
+                    "total_sales_liters": _ai_first_number(row, ("total_sales_liters",)),
+                    "total_sales_amount_etb": _ai_first_number(row, ("total_sales_amount",)),
+                    "total_purchases_liters": _ai_first_number(row, ("total_purchases_liters",)),
+                    "calculated_sales_amount_etb": _ai_first_number(row, ("calculated_sales_amount",)),
+                    "entered_payment_amount_etb": _ai_first_number(row, ("entered_payment_amount",)),
+                    "financial_difference_etb": _ai_first_number(row, ("financial_difference",))
+                } for row in daily_report_rows if str(row.get("report_date") or "")[:7] == current_month
+            ]
         },
         "current_tank_inventory": inventory,
         "product_catalogue": product_catalogue
@@ -7019,7 +7114,8 @@ def ai_analyst_ask():
     coverage_note = (
         "Live data checked " + today + " (Addis Ababa). "
         + str(len(sales_rows)) + " sales, " + str(len(purchases_rows)) + " purchases, "
-        + str(len(delivery_rows)) + " deliveries and " + str(len(confirmation_rows)) + " DSR confirmation records loaded."
+        + str(len(delivery_rows)) + " deliveries, " + str(len(transaction_rows)) + " transport-payment transactions, "
+        + str(len(confirmation_rows)) + " DSR confirmation records and " + str(len(daily_report_rows)) + " daily-report register records loaded."
     )
     if data_warnings:
         coverage_note += " Some datasets could not be loaded: " + ", ".join(data_warnings) + "."
