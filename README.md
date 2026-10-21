@@ -113,3 +113,16 @@ Set these **Supabase Edge Function secrets** for `send-handover-push`:
 The Supabase Edge Function also requires the project-provided `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` environment values. Never put the service-role key or VAPID private key in browser code or the repository.
 
 After configuring secrets, redeploy the Worker so it receives the new secrets, then test subscription on an HTTPS Android browser and submit a handover to that attendant. Push delivery has not been end-to-end tested yet.
+
+
+## AI Data Analyst
+
+The admin-only **AI Data Analyst** page is available at `/admin-ai-analyst.html`. It provides read-only analysis of summarized sales, purchases, inventory, shift/handover status, logistics deliveries, and transport-payment records. AI responses should be checked against official DSR/MSR reports before making financial decisions.
+
+Configure the OpenAI API key as a Cloudflare Worker secret (never commit it or put it in browser code):
+
+```sh
+npx wrangler secret put OPENAI_API_KEY
+```
+
+The Worker uses the `gpt-6-astra` model by default. To use another model available to your API project, configure `OPENAI_MODEL` as a Worker secret/variable. Redeploy the Worker after setting the API key. Without `OPENAI_API_KEY`, the page displays a configuration message and will not send station data to the AI provider.
