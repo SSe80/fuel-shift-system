@@ -3852,7 +3852,7 @@ function msrV2Extras(data,daily,products,attendants,ranking,s,money,fmt,num,mont
   const purchaseRowsV2=(Array.isArray(data.purchases)?data.purchases:[]).map(p=>({cells:[String(p.product||'Unknown product'),String(num(p.count)),fmt(p.dispatched)+' L',fmt(p.delivered)+' L',fmt(p.discharged)+' L',fmt(p.remaining)+' L']}));
   const purchaseComparisonRowsV2=(Array.isArray(data.purchaseComparisons)?data.purchaseComparisons:[]).map((p,i,a)=>{const prev=a[i-1],delta=prev&&num(prev.delivered)!==0?(num(p.delivered)-num(prev.delivered))/Math.abs(num(prev.delivered))*100:null;return{cells:[monthLabel(p.month),String(num(p.count)),fmt(p.dispatched)+' L',fmt(p.delivered)+' L',fmt(p.discharged)+' L',fmt(p.remaining)+' L',delta==null?'—':(delta>0?'+':'')+delta.toFixed(1)+'%']};});
   if(data.purchaseSummary)purchaseRowsV2.push({bold:true,cells:['MONTH TOTAL',String(num(data.purchaseSummary.count)),fmt(data.purchaseSummary.dispatched)+' L',fmt(data.purchaseSummary.delivered)+' L',fmt(data.purchaseSummary.discharged)+' L',fmt(data.purchaseSummary.remaining)+' L']});
-  return {dispenserRowsV2,purchaseRowsV2,purchaseComparisonRowsV2,productCentre:fmt(totalL),highlights,productChart,attendantChart,rankChart,productRowsV2,saleTypeRowsV2,attRowsV2,dailyRowsV2,notesStrip,
+  return {dispenserRowsV2,purchaseRowsV2,purchaseComparisonRowsV2,purchaseSummary:data.purchaseSummary||{},productCentre:fmt(totalL),highlights,productChart,attendantChart,rankChart,productRowsV2,saleTypeRowsV2,attRowsV2,dailyRowsV2,notesStrip,
     dailyRows:[],productRows:[],attendants:[],notesLeft:[],notesRight:[],rightTitle:''};
 }
 function msrNiceAxis(max){
