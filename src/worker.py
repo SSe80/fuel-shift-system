@@ -3424,7 +3424,7 @@ def purchases():
     auth=require_admin()
     if auth:return auth
     status_filter=str(request.args.get("status") or "").strip()
-    params={"select":"*","order":"purchase_date.desc","limit":"200"}
+    params={"select":"*","order":"purchase_date.desc","limit":"10000"}
     if status_filter in ("pending_discharge","discharged","cancelled"):
         params["status"]="eq."+status_filter
     status,rows=sb("purchases",params=params)
