@@ -6883,7 +6883,7 @@ def ai_analyst_ask():
         if str(handover_row.get("sales_status") or "").strip().lower() != "confirmed":
             continue
         shift_key = str(handover_row.get("shift_id") or "")
-        ledger = sales_by_shift.get(shift_key, {"amount_etb": 0.0, "liters": 0.0, "records": 0})
+        ledger = sales_by_shift.get(shift_key, {"amount_etb": 0.0, "liters": 0.0, "records": 0, "has_liter_data": False})
         handover_amount = _ai_first_number(handover_row, ("total_sales_amount", "sales_amount"))
         handover_liters = _ai_first_number(handover_row, ("total_sales_liters", "sales_liters"))
         shift_sales_reconciliation.append({
