@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#2563eb">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fuel Admin">
+<link rel="manifest" href="/admin-manifest.webmanifest">
+<link rel="icon" href="/icons/admin-icon.svg" type="image/svg+xml">
+<title>AI Data Analyst · Fuel Shift</title>
+<link rel="stylesheet" href="assets/style.css?v=ai-analyst-20261021">
+<link rel="stylesheet" href="assets/admin-control-pages.css?v=20261010-03">
+<style>
+body.ai-analyst-page{background:#f4f7fb;color:#172033}
+.ai-analyst-page .wrap{max-width:1180px;padding:16px 20px 44px}
+.ai-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:16px;align-items:start}
+.ai-page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:8px 0 20px}
+.ai-kicker{font-size:10px;letter-spacing:.15em;font-weight:900;color:#2563eb}
+.ai-page-head h1{margin:5px 0 8px;font-size:clamp(26px,3.2vw,36px);letter-spacing:-.045em;line-height:1.1;color:#14243a}
+.ai-page-head p{max-width:690px;margin:0;color:#697b90;font-size:13px;line-height:1.6}
+.ai-read-only{flex:0 0 auto;border:1px solid #bfe6d1;border-radius:999px;background:#f0fbf5;color:#167447;padding:8px 11px;font-size:10px;font-weight:900;letter-spacing:.06em}
+.ai-card{border:1px solid #e0e8f1;border-radius:18px;background:#fff;box-shadow:0 8px 26px rgba(25,45,75,.045);overflow:hidden}
+.ai-chat-card{min-width:0}
+.ai-chat-top{display:flex;align-items:center;gap:12px;padding:17px 18px;border-bottom:1px solid #eaf0f6}
+.ai-icon{display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;border-radius:13px;background:linear-gradient(145deg,#e5f0ff,#f3f7ff);border:1px solid #d9e7fc;color:#245fbc;font-size:22px;font-weight:900}
+.ai-chat-top h2{margin:0;color:#182b43;font-size:16px}
+.ai-chat-top p{margin:4px 0 0;color:#78869a;font-size:11px;line-height:1.45}
+.ai-status-pill{margin-left:auto;padding:6px 8px;border:1px solid #e0e8f0;background:#f8fafc;border-radius:8px;font-size:9px;font-weight:900;letter-spacing:.06em;color:#64748b;white-space:nowrap}
+.ai-chat-content{padding:18px;min-height:260px}
+.ai-welcome{padding:18px;border:1px solid #dce9fb;border-radius:14px;background:linear-gradient(120deg,#f5f9ff,#fff);margin-bottom:16px}
+.ai-welcome h3{margin:0 0 7px;font-size:16px;color:#183d6b}
+.ai-welcome p{margin:0;color:#61758c;font-size:12px;line-height:1.65}
+.ai-message-list{display:grid;gap:13px}
+.ai-message{display:grid;grid-template-columns:30px minmax(0,1fr);gap:9px;align-items:start}
+.ai-message.user{grid-template-columns:minmax(0,1fr) 30px}
+.ai-message-avatar{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eaf2ff;border:1px solid #d6e5fc;color:#285da7;font-size:10px;font-weight:900}
+.ai-message.user .ai-message-avatar{grid-column:2;grid-row:1;background:#e8f7ee;border-color:#d2eddd;color:#24724a}
+.ai-message-body{min-width:0;padding:12px 13px;border:1px solid #e3eaf3;border-radius:4px 13px 13px 13px;background:#fbfdff;color:#27384e;font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.ai-message.user .ai-message-body{grid-column:1;grid-row:1;background:#f0f8f3;border-color:#d8eddf;border-radius:13px 4px 13px 13px}
+.ai-message-meta{margin-top:6px;padding:0 2px;color:#8693a5;font-size:10px;line-height:1.4}
+.ai-message.user .ai-message-meta{text-align:right}
+.ai-typing{display:inline-flex;align-items:center;gap:7px;color:#6b7d92;font-size:12px}
+.ai-typing:before{content:"";width:7px;height:7px;border-radius:50%;background:#5489d6;box-shadow:11px 0 #91b6ec,22px 0 #c8dbf6;margin-right:21px}
+.ai-composer{padding:15px 18px 17px;border-top:1px solid #eaf0f6;background:#fcfdff}
+.ai-composer label{display:block;margin:0 0 8px;color:#4c5d73;font-size:11px;font-weight:800}
+.ai-compose-row{display:flex;align-items:flex-end;gap:10px}
+.ai-compose-row textarea{display:block;min-height:52px;max-height:160px;flex:1;min-width:0;resize:vertical;padding:12px 13px;border:1px solid #cfd9e6;border-radius:12px;background:#fff;color:#192c43;font:inherit;font-size:13px;line-height:1.45;outline:none}
+.ai-compose-row textarea:focus{border-color:#4381ce;box-shadow:0 0 0 3px #4381ce1a}
+.ai-send{min-height:47px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 17px;border:1px solid #2563eb;border-radius:12px;background:#2563eb;color:#fff;font-size:12px;font-weight:850;cursor:pointer;white-space:nowrap}
+.ai-send:disabled{opacity:.55;cursor:wait}
+.ai-composer-foot{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:8px;color:#8693a5;font-size:10px;line-height:1.45}
+.ai-clear{border:0;background:transparent;color:#426a9f;font-size:10px;font-weight:800;cursor:pointer;padding:5px}
+.ai-side-card{padding:17px}
+.ai-side-card h3{margin:0 0 5px;color:#20334c;font-size:14px}
+.ai-side-card>p{margin:0 0 14px;color:#748398;font-size:11px;line-height:1.55}
+.ai-prompts{display:grid;gap:8px}
+.ai-prompt{display:block;width:100%;text-align:left;padding:11px 12px;border:1px solid #e0e8f1;border-radius:11px;background:#fff;color:#2f4865;font:inherit;font-size:11px;font-weight:750;line-height:1.45;cursor:pointer;transition:border-color .15s,background .15s}
+.ai-prompt:hover{border-color:#b8d2f6;background:#f6faff}
+.ai-prompt span{display:block;margin-top:4px;color:#8997a9;font-size:10px;font-weight:500}
+.ai-trust-card{margin-top:13px;padding:15px;border:1px solid #f0dfb9;border-radius:14px;background:#fffbf3}
+.ai-trust-card strong{display:block;margin-bottom:6px;color:#895b15;font-size:11px}
+.ai-trust-card p{margin:0;color:#856d47;font-size:10px;line-height:1.6}
+.ai-section-label{margin:17px 0 8px;font-size:9px;letter-spacing:.12em;font-weight:900;color:#8290a3}
+@media(max-width:860px){.ai-layout{grid-template-columns:1fr}.ai-side-column{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ai-trust-card{margin-top:0}.ai-side-card{padding:15px}}
+@media(max-width:600px){.ai-analyst-page .wrap{padding:9px 12px 28px}.ai-page-head{flex-direction:column;gap:11px;margin:8px 0 15px}.ai-page-head h1{font-size:28px}.ai-layout{gap:12px}.ai-chat-top{padding:14px}.ai-chat-content{padding:12px;min-height:200px}.ai-composer{padding:12px}.ai-compose-row{align-items:stretch;flex-direction:column}.ai-send{width:100%}.ai-chat-top p{max-width:210px}.ai-status-pill{font-size:8px;padding:5px 6px}.ai-side-column{grid-template-columns:1fr}.ai-side-card{padding:14px}.ai-message-body{font-size:12px}}
+</style>
+</head>
+<body class="admin-shell admin-control-ui ai-analyst-page" data-app-page="adminAIAnalyst">
+<button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
+<aside class="admin-sidebar" aria-label="Admin navigation">
+  <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Admin Control</small></div></div>
+  <nav class="admin-sidebar-nav">
+    <a href="admin-dashboard.html" data-admin-nav="dashboard"><span>⌂</span><b>Dashboard</b></a>
+    <a href="admin-purchases.html" data-admin-nav="purchases"><span>▣</span><b>Purchases</b></a>
+    <a href="admin-sales.html" data-admin-nav="sales"><span>↗</span><b>Sales</b></a>
+    <a href="admin-daily-report.html" data-admin-nav="daily-report"><span>▤</span><b>DSR</b></a>
+    <a href="admin-monthly-report.html" data-admin-nav="monthly-report"><span>▦</span><b>MSR</b></a>
+    <a href="admin-ai-analyst.html" class="active" data-admin-nav="ai-analyst"><span>✦</span><b>AI Analyst</b></a>
+    <a href="admin-settings.html" data-admin-nav="settings"><span>⚙</span><b>Settings</b></a>
+  </nav>
+  <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
+</aside>
+<main class="wrap">
+  <header class="ai-page-head">
+    <div><span class="ai-kicker">STATION INTELLIGENCE</span><h1>AI Data Analyst</h1><p>Ask natural-language questions about sales, purchases, stock, shifts, deliveries and transport payments. Answers are based on live records available to your admin account.</p></div>
+    <span class="ai-read-only">● READ ONLY</span>
+  </header>
+  <div class="ai-layout">
+    <section class="ai-card ai-chat-card" aria-label="AI data analyst chat">
+      <header class="ai-chat-top"><div class="ai-icon" aria-hidden="true">✦</div><div><h2>Ask your station data</h2><p>Trends, comparisons, exceptions and explanations</p></div><span class="ai-status-pill">LIVE DATA</span></header>
+      <div class="ai-chat-content">
+        <div class="ai-welcome" id="ai-welcome"><h3>What would you like to understand?</h3><p>Ask about a month, compare products, find a sales trend, review purchase quantities, or check outstanding delivery and transport-payment patterns. The analyst does not edit records.</p></div>
+        <div class="ai-message-list" id="ai-message-list" aria-live="polite"></div>
+      </div>
+      <form id="ai-form" class="ai-composer">
+        <label for="ai-question">YOUR QUESTION</label>
+        <div class="ai-compose-row"><textarea id="ai-question" name="question" rows="2" maxlength="1200" placeholder="Example: Compare this month's sales and fuel purchases with last month." required></textarea><button type="submit" id="ai-send" class="ai-send"><span>Analyze</span><span aria-hidden="true">→</span></button></div>
+        <div class="ai-composer-foot"><span id="ai-status" aria-live="polite">Ready to analyze station records.</span><button type="button" id="ai-clear" class="ai-clear">Clear conversation</button></div>
+      </form>
+    </section>
+    <aside class="ai-side-column">
+      <section class="ai-card ai-side-card">
+        <h3>Suggested questions</h3><p>Tap a question to send it to the analyst.</p>
+        <div class="ai-prompts">
+          <button type="button" class="ai-prompt" data-prompt="Analyze the latest monthly sales trend and compare the current month to the previous month. Clearly label the current month as month-to-date.">Sales trend<span>Month-over-month changes</span></button>
+          <button type="button" class="ai-prompt" data-prompt="Compare fuel purchases by product and month. Show dispatched, delivered and discharged liters, and identify any notable differences in the available records.">Purchase analysis<span>Product and quantity comparison</span></button>
+          <button type="button" class="ai-prompt" data-prompt="Review recent logistics deliveries and identify completed deliveries that still show unpaid or pending transport payment status. Do not assume a payment has been made without a matching record.">Outstanding transport payments<span>Delivery and payment status</span></button>
+          <button type="button" class="ai-prompt" data-prompt="Analyze the available tank inventory. Identify tanks with low stock or missing capacity readings, and state which underlying values are available.">Stock position<span>Inventory and low-stock checks</span></button>
+          <button type="button" class="ai-prompt" data-prompt="Analyze available attendant sales performance and shifts. Compare recorded totals fairly and state any data limitations before ranking attendants.">Attendant performance<span>Recorded sales and shift activity</span></button>
+          <button type="button" class="ai-prompt" data-prompt="Check the available DSR confirmation and shift handover status data. Summarize incomplete or waiting items and explain what additional data would be needed for a full reconciliation.">Report completeness<span>DSR and handover status</span></button>
+        </div>
+      </section>
+      <div class="ai-trust-card"><strong>How your data is used</strong><p>For each question, a bounded summary of live operational records and selected recent transaction fields is sent from the server to the configured OpenAI API. PINs, login tokens and database credentials are not included. AI answers can be wrong, so verify financial decisions against the official DSR/MSR. This page is read-only.</p></div>
+    </aside>
+  </div>
+</main>
+<script src="assets/app.js?v=ai-analyst-20261021"></script>
+<script src="assets/app-boot.js?v=20261015-no-auto-logout1"></script>
+<script src="assets/admin-control-ui.js?v=20261010-01"></script>
+<script src="assets/popup-portal.js?v=20261011-p1"></script>
+<script>
+(function () {
+  'use strict';
+  const form = document.getElementById('ai-form');
+  const input = document.getElementById('ai-question');
+  const send = document.getElementById('ai-send');
+  const status = document.getElementById('ai-status');
+  const list = document.getElementById('ai-message-list');
+  const welcome = document.getElementById('ai-welcome');
+  const clearButton = document.getElementById('ai-clear');
+  let messages = [];
+  let busy = false;
+
+  function render() {
+    list.replaceChildren();
+    welcome.hidden = messages.length > 0;
+    messages.forEach(function (message) {
+      const item = document.createElement('article');
+      item.className = 'ai-message ' + (message.role === 'user' ? 'user' : 'assistant');
+      const avatar = document.createElement('div');
+      avatar.className = 'ai-message-avatar';
+      avatar.textContent = message.role === 'user' ? 'YOU' : 'AI';
+      const bodyWrap = document.createElement('div');
+      const body = document.createElement('div');
+      body.className = 'ai-message-body';
+      body.textContent = message.content;
+      bodyWrap.appendChild(body);
+      if (message.coverage) {
+        const meta = document.createElement('div');
+        meta.className = 'ai-message-meta';
+        meta.textContent = message.coverage;
+        bodyWrap.appendChild(meta);
+      }
+      item.appendChild(avatar);
+      item.appendChild(bodyWrap);
+      list.appendChild(item);
+    });
+    if (busy) {
+      const item = document.createElement('article');
+      item.className = 'ai-message assistant';
+      const avatar = document.createElement('div');
+      avatar.className = 'ai-message-avatar';
+      avatar.textContent = 'AI';
+      const body = document.createElement('div');
+      body.className = 'ai-message-body';
+      const typing = document.createElement('span');
+      typing.className = 'ai-typing';
+      typing.textContent = 'Reviewing current station records…';
+      body.appendChild(typing);
+      item.appendChild(avatar);
+      item.appendChild(body);
+      list.appendChild(item);
+    }
+    list.scrollIntoView({block:'end',behavior:'smooth'});
+  }
+
+  async function ask(question) {
+    question = String(question || '').trim();
+    if (busy || question.length < 3) return;
+    if (question.length > 1200) {
+      status.textContent = 'Please keep your question to 1,200 characters or fewer.';
+      return;
+    }
+    const previous = messages.slice(-8).map(function (message) {
+      return {role:message.role,content:message.content.slice(0,1200)};
+    });
+    messages.push({role:'user',content:question});
+    input.value = '';
+    busy = true;
+    send.disabled = true;
+    input.disabled = true;
+    status.textContent = 'Checking live station data…';
+    render();
+    try {
+      const result = await api('/api/ai/ask', {
+        method:'POST',
+        body:JSON.stringify({question:question,history:previous})
+      });
+      messages.push({role:'assistant',content:String(result.answer || 'No answer was returned.'),coverage:String(result.coverage || '')});
+      status.textContent = 'Analysis complete. Verify important totals against DSR/MSR.';
+    } catch (error) {
+      messages.push({role:'assistant',content:'I could not complete this analysis. ' + String(error && error.message ? error.message : error)});
+      status.textContent = 'Analysis was not completed.';
+    } finally {
+      busy = false;
+      send.disabled = false;
+      input.disabled = false;
+      render();
+      input.focus();
+    }
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    ask(input.value);
+  });
+  input.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      form.requestSubmit();
+    }
+  });
+  document.querySelectorAll('[data-prompt]').forEach(function (button) {
+    button.addEventListener('click', function () { ask(button.getAttribute('data-prompt')); });
+  });
+  clearButton.addEventListener('click', function () {
+    if (busy) return;
+    messages = [];
+    status.textContent = 'Conversation cleared. Station records are unchanged.';
+    render();
+    input.focus();
+  });
+})();
+</script>
+</body>
+</html>
