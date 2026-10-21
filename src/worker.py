@@ -6552,6 +6552,370 @@ def _ai_add_month(bucket_map, month, metrics):
             bucket[key] = bucket.get(key, 0) + value
 
 
+
+
+def _ai_fetch_dataset(table, params, max_records, page_size=1000):
+    """Read a table in pages and detect rows beyond the inspection safety limit."""
+    collected = []
+    max_records = max(1, int(max_records))
+    page_size = max(1, min(1000, int(page_size)))
+    while len(collected) < max_records:
+        page_limit = min(page_size, max_records - len(collected))
+        query = dict(params or {})
+        query["limit"] = str(page_limit)
+        query["offset"] = str(len(collected))
+        try:
+            status, page = sb(table, params=query)
+        except Exception:
+            app.logger.exception("AI Analyst paginated read failed: %s", table)
+            return 500, collected, False, True
+        if status >= 400 or not isinstance(page, list):
+            return (status if status >= 400 else 502), collected, False, True
+        collected.extend(row for row in page if isinstance(row, dict))
+        if len(page) < page_limit:
+            break
+    has_more, read_failed = False, False
+    if len(collected) >= max_records:
+        probe = dict(params or {})
+        probe["limit"] = "1"
+        probe["offset"] = str(max_records)
+        try:
+            status, rows = sb(table, params=probe)
+            if status >= 400 or not isinstance(rows, list):
+                read_failed = True
+            else:
+                has_more = bool(rows)
+        except Exception:
+            read_failed = True
+    return 200, collected, has_more, read_failed
+
+
+_AI_PRIVATE_FIELD_PARTS = (
+    "pin", "password", "secret", "token", "credential", "authorization",
+    "private_key", "api_key", "phone", "email"
+)
+
+
+def _ai_safe_value(value):
+    """Bound and sanitize nested database values before sending evidence to the model."""
+    if value is None or isinstance(value, (bool, int)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, dict):
+        result = {}
+        for key, item in list(value.items())[:60]:
+            name = str(key)
+            if any(part in name.lower() for part in _AI_PRIVATE_FIELD_PARTS):
+                continue
+            result[name] = _ai_safe_value(item)
+        return result
+    if isinstance(value, (list, tuple, set)):
+        values = list(value)
+        result = [_ai_safe_value(item) for item in values[:20]]
+        if len(values) > 20:
+            result.append("... %s additional nested items omitted" % (len(values) - 20))
+        return result
+    value_text = str(value)
+    return value_text if len(value_text) <= 320 else value_text[:320] + "… [text shortened]"
+
+
+def _ai_safe_row(row):
+    result = {}
+    for key, value in (row or {}).items():
+        name = str(key)
+        if not any(part in name.lower() for part in _AI_PRIVATE_FIELD_PARTS):
+            result[name] = _ai_safe_value(value)
+    return result
+
+
+def _ai_row_date(row):
+    for key in (
+        "sale_time", "purchase_date", "delivery_date", "report_date", "shift_ended_at",
+        "start_time", "end_time", "discharged_at", "completed_at", "measured_at",
+        "recorded_at", "changed_at", "created_at", "updated_at", "eligible_at"
+    ):
+        day = _ai_date(row.get(key))
+        if day:
+            return day
+    return ""
+
+
+def _ai_inspect_dataset(label, rows):
+    """Scan every loaded row for field completeness, time coverage, distributions and numeric ranges."""
+    rows = [row for row in (rows or []) if isinstance(row, dict)]
+    if not rows:
+        return {"records_inspected": 0, "fields_seen": [], "date_range": None,
+                "status_counts": {}, "fields_with_missing_values": {},
+                "numeric_field_profiles": {}, "duplicate_candidate_counts": {}}
+    fields = sorted(set(str(key) for row in rows for key in row))
+    missing = {}
+    for key in fields:
+        missing[key] = sum(1 for row in rows if row.get(key) is None or row.get(key) == "")
+    days = [day for day in (_ai_row_date(row) for row in rows) if day]
+
+    status_counts = {}
+    for key in fields:
+        if key != "status" and not key.endswith("_status") and key not in ("classification", "variance_status"):
+            continue
+        counts = {}
+        for row in rows:
+            raw = row.get(key)
+            value = str(raw).strip().lower() if raw is not None and str(raw).strip() else "(missing)"
+            counts[value] = counts.get(value, 0) + 1
+        if counts:
+            status_counts[key] = dict(sorted(counts.items(), key=lambda pair: (-pair[1], pair[0]))[:20])
+
+    numeric = {}
+    numeric_terms = ("liters", "litres", "quantity", "amount", "fee", "price", "stock",
+                     "capacity", "difference", "variance", "volume", "dip", "reading", "rate", "total")
+    for key in fields:
+        if not any(term in key.lower() for term in numeric_terms):
+            continue
+        values = []
+        for row in rows:
+            raw = row.get(key)
+            if raw is None or raw == "" or isinstance(raw, bool):
+                continue
+            try:
+                number = float(raw)
+                if math.isfinite(number):
+                    values.append(number)
+            except (TypeError, ValueError):
+                continue
+        if values:
+            numeric[key] = {"numeric_records": len(values), "minimum": round(min(values), 3),
+                            "maximum": round(max(values), 3), "sum": round(sum(values), 3)}
+        if len(numeric) >= 12:
+            break
+
+    duplicates = {}
+    for key in ("id", "delivery_reference", "reference", "invoice_number", "operation_id"):
+        if key not in fields:
+            continue
+        seen = {}
+        for row in rows:
+            value = str(row.get(key) or "").strip()
+            if value:
+                seen[value] = seen.get(value, 0) + 1
+        repeated = [value for value, count in seen.items() if count > 1]
+        if repeated:
+            duplicates[key] = {"duplicate_value_groups": len(repeated), "examples": repeated[:5],
+                                "note": "Review candidates against business rules; repeated values are not automatically errors."}
+    missing = {key: count for key, count in sorted(missing.items(), key=lambda pair: (-pair[1], pair[0])) if count > 0}
+    return {
+        "records_inspected": len(rows), "fields_seen": fields[:100],
+        "date_range": {"first": min(days), "last": max(days)} if days else None,
+        "status_counts": status_counts, "fields_with_missing_values": dict(list(missing.items())[:18]),
+        "numeric_field_profiles": numeric, "duplicate_candidate_counts": duplicates
+    }
+
+
+def _ai_record_review_flags(label, row):
+    """Flag record patterns to verify; these are not confirmed errors."""
+    flags = []
+    status = str(row.get("status") or "").strip().lower()
+    sales_status = str(row.get("sales_status") or "").strip().lower()
+    payment_status = str(row.get("transport_payment_status") or "").strip().lower()
+    cancelled = status in ("cancelled", "canceled", "void", "deleted", "reversed")
+
+    if label == "purchases" and not cancelled:
+        dispatched = _ai_first_number(row, ("ordered_quantity_liters", "quantity_liters"))
+        delivered = _ai_first_number(row, ("delivered_quantity_liters", "quantity_liters", "ordered_quantity_liters"))
+        discharged = _ai_first_number(row, ("discharged_quantity_liters",))
+        history = row.get("discharge_history")
+        if isinstance(history, str):
+            try:
+                history = json.loads(history)
+            except Exception:
+                history = None
+        has_operation = isinstance(history, list) and any(
+            isinstance(item, dict) and (item.get("discharge_datetime") or item.get("operation_id")
+            or _ai_first_number(item, ("discharged_quantity_liters", "quantity_liters")) > 0) for item in history
+        )
+        if status == "discharged" and discharged <= 0.0005 and not row.get("discharged_at") and not has_operation:
+            flags.append("Marked discharged but no discharge quantity, timestamp, or history operation is recorded")
+        if dispatched > 0 and delivered + 0.05 < dispatched:
+            flags.append("Delivered quantity is below dispatched/ordered quantity; verify shortage or partial delivery")
+        if delivered > 0 and discharged > delivered + 0.05:
+            flags.append("Discharged quantity exceeds delivered quantity; verify the quantity basis and records")
+
+    if label == "deliveries" and not cancelled:
+        ordered = _ai_first_number(row, ("ordered_liters", "ordered_quantity_liters"))
+        delivered = _ai_first_number(row, ("delivered_liters", "delivered_quantity_liters"))
+        fee = _ai_first_number(row, ("total_fee", "transport_fee"))
+        if ordered > 0 and delivered + 0.05 < ordered:
+            flags.append("Delivered litres are below ordered litres; verify shortage/partial-delivery evidence")
+        if status == "completed" and payment_status == "unpaid" and fee > 0:
+            flags.append("Completed delivery has a recorded transport fee but payment status is unpaid")
+        if status == "completed" and not row.get("eligible_at"):
+            flags.append("Completed delivery is missing its payment-eligibility timestamp")
+
+    if label == "shifts" and row.get("start_time") and not row.get("end_time") and status not in ("cancelled", "canceled", "void"):
+        flags.append("Shift has a start time but no end time; confirm whether it remains open")
+    if label in ("handovers", "handovers_legacy") and sales_status and sales_status != "confirmed":
+        flags.append("Handover sales status is not confirmed")
+    if label == "dsr_confirmations" and status and status != "confirmed":
+        flags.append("Daily report confirmation status is not confirmed")
+    if label == "daily_reports":
+        difference = row.get("financial_difference")
+        if difference is not None and str(difference).strip() and abs(_ai_number(difference)) > 0.01:
+            flags.append("Daily report register has a non-zero financial difference; reconcile source details")
+    if label == "tanks":
+        capacity = _ai_first_number(row, ("capacity_liters", "tank_capacity_liters", "capacity", "max_liters"))
+        stock = _ai_first_number(row, ("current_liters", "current_stock_liters", "stock_liters", "current_volume_liters", "remaining_liters", "volume_liters"))
+        if capacity <= 0:
+            flags.append("Tank capacity is missing or non-positive; stock percentage cannot be verified")
+        elif stock > capacity + 0.05:
+            flags.append("Recorded tank stock exceeds capacity; verify physical dip and tank mapping")
+    if label == "tank_movements":
+        kind = str(row.get("movement_type") or "").strip().lower()
+        quantity = _ai_first_number(row, ("quantity_liters", "liters", "amount_liters"))
+        if kind not in ("adjustment", "correction") and quantity <= 0:
+            flags.append("Tank movement has a non-positive quantity outside adjustment/correction types")
+    if label == "accounting_exceptions" and str(row.get("status") or "").strip().lower() not in ("resolved", "approved", "rejected", "closed"):
+        flags.append("Accounting exception remains open or under review")
+    if label == "tank_closing_snapshots":
+        variance = str(row.get("variance_status") or "").strip().upper()
+        if variance in ("WARNING", "CRITICAL"):
+            flags.append("Controlled-period tank closing is marked " + variance.lower() + "; review physical/expected closing evidence")
+    if label == "payment_transactions" and not row.get("confirmed_at"):
+        flags.append("Sales/payment transaction has no confirmation timestamp")
+    return flags
+
+
+def _ai_collect_review_findings(datasets):
+    findings = {}
+    for label, rows in (datasets or {}).items():
+        for row in rows or []:
+            if not isinstance(row, dict):
+                continue
+            for finding in _ai_record_review_flags(label, row):
+                key = label + ": " + finding
+                item = findings.setdefault(key, {"dataset": label, "finding": finding, "count": 0, "examples": []})
+                item["count"] += 1
+                if len(item["examples"]) < 5:
+                    ref = row.get("id") or row.get("delivery_reference") or row.get("invoice_number") or row.get("shift_id") or row.get("report_date")
+                    item["examples"].append({
+                        "record_reference": str(ref or "not available")[:100],
+                        "date": _ai_row_date(row) or None,
+                        "status": str(row.get("status") or row.get("sales_status") or row.get("variance_status") or "")[:50] or None,
+                        "product": str(row.get("product_name") or row.get("product") or "")[:80] or None,
+                        "quantity_liters": _ai_first_number(row, ("delivered_liters", "ordered_liters", "discharged_quantity_liters", "quantity_liters")) if any(key in row for key in ("delivered_liters", "ordered_liters", "discharged_quantity_liters", "quantity_liters")) else None,
+                        "amount_etb": _ai_first_number(row, ("total_fee", "amount", "financial_difference")) if any(key in row for key in ("total_fee", "amount", "financial_difference")) else None
+                    })
+    return sorted(findings.values(), key=lambda item: (-item["count"], item["dataset"], item["finding"]))[:45]
+
+
+def _ai_build_detail_evidence(question, datasets):
+    """Include all sanitized rows when the prompt budget permits; otherwise select evidence rows."""
+    complete = []
+    chars = 2
+    fits = True
+    for label, rows in (datasets or {}).items():
+        for row in rows or []:
+            entry = {"dataset": label, "record": _ai_safe_row(row)}
+            size = len(json.dumps(entry, separators=(",", ":"), ensure_ascii=False))
+            if chars + size + 1 > 30000:
+                fits = False
+                break
+            complete.append(entry)
+            chars += size + 1
+        if not fits:
+            break
+    if fits:
+        return complete, "all_loaded_records", chars
+
+    query = str(question or "").lower()
+    broad = bool(re.search(r"\b(all|every|entire|full|complete|comprehensive|audit|inspect|inspection|detail|detailed|thorough|everything)\b", query))
+    domains = [
+        (r"\b(sales?|revenue|attendant|cashier|payment channel|income)\b",
+         ("sales", "payment_transactions", "shift_takeover_sales", "handovers", "employees", "sale_types", "shifts", "daily_reports", "dsr_confirmations")),
+        (r"\b(purchase|purchases|supplier|dispatched|discharge|invoice)\b",
+         ("purchases", "products", "tank_movements", "tanks", "shifts", "dsr_confirmations", "daily_reports")),
+        (r"\b(tank|stock|inventory|dip|capacity|movement|variance)\b",
+         ("tanks", "tank_movements", "tank_opening_snapshots", "tank_closing_snapshots", "purchases", "deliveries", "products", "accounting_exceptions")),
+        (r"\b(logistics|delivery|deliveries|truck|compartment|transport|freight)\b",
+         ("deliveries", "transport_transactions", "transport_payment_items", "delivery_audit", "delivery_compartments", "trucks", "truck_compartments", "product_fees", "purchases", "tanks")),
+        (r"\b(dsr|msr|report|reporting|month|monthly|daily|confirmation|handover|shift)\b",
+         ("daily_reports", "dsr_confirmations", "daily_report_revisions", "shifts", "handovers", "shift_takeover_sales", "shift_nozzle_readings", "sales", "purchases")),
+        (r"\b(accounting|exception|audit|financial|reconciliation|ledger|difference|discrepancy)\b",
+         ("accounting_periods", "accounting_exceptions", "accounting_exception_approvals", "tank_opening_snapshots", "tank_closing_snapshots", "tank_movements", "daily_reports", "purchases", "sales", "deliveries", "delivery_audit", "transport_transactions")),
+        (r"\b(product|price|selling price|catalogue|catalog)\b",
+         ("products", "product_price_history", "product_fees", "purchases", "sales", "tanks", "nozzles")),
+        (r"\b(dispenser|nozzle|reading|meter)\b",
+         ("nozzles", "dispensers", "dispenser_nozzles", "shift_nozzle_readings", "shifts", "tanks", "products"))
+    ]
+    relevant = set()
+    for pattern, labels in domains:
+        if re.search(pattern, query):
+            relevant.update(labels)
+
+    month = ""
+    focus_date = ""
+    date_match = re.search(r"\b(20\d{2})[-/](0?[1-9]|1[0-2])[-/]([0-3]?\d)\b", query)
+    if date_match:
+        focus_date = "%04d-%02d-%02d" % (int(date_match.group(1)), int(date_match.group(2)), int(date_match.group(3)))
+        month = focus_date[:7]
+    else:
+        date_match = re.search(r"\b(20\d{2})[-/](0?[1-9]|1[0-2])\b", query)
+        if date_match:
+            month = "%04d-%02d" % (int(date_match.group(1)), int(date_match.group(2)))
+        else:
+            month_numbers = {"january":"01","february":"02","march":"03","april":"04","may":"05","june":"06",
+                             "july":"07","august":"08","september":"09","october":"10","november":"11","december":"12"}
+            for name, number in month_numbers.items():
+                date_match = re.search(r"\b" + name + r"\s+(20\d{2})\b", query)
+                if date_match:
+                    month = date_match.group(1) + "-" + number
+                    break
+
+    keywords = [word for word in re.findall(r"[a-z0-9-]{3,}", query)
+                if word not in ("the","and","for","with","from","that","this","what","show","give","tell","data",
+                                "detail","detailed","please","about","compare","analyze","analysis","review","inspect",
+                                "full","complete","all","every","records","record","station","current","previous",
+                                "month","monthly","daily","report","reports","using","latest","available")
+                and not re.fullmatch(r"20\d{2}", word)]
+    candidates = []
+    for label, rows in (datasets or {}).items():
+        for index, row in enumerate(rows or []):
+            if not isinstance(row, dict):
+                continue
+            day = _ai_row_date(row)
+            flags = _ai_record_review_flags(label, row)
+            score = len(flags) * 6 + (4 if label in relevant else 0)
+            if month and day.startswith(month):
+                score += 14
+            if focus_date and day == focus_date:
+                score += 12
+            if keywords:
+                searchable = json.dumps(_ai_safe_row(row), ensure_ascii=False, separators=(",", ":")).lower()
+                score += min(12, 2 * sum(1 for word in keywords if word in searchable))
+            if index < 2:
+                score += 1
+            candidates.append({"score":score, "dataset":label, "index":index,
+                               "record":_ai_safe_row(row), "flags":flags, "relevant":label in relevant})
+    candidates.sort(key=lambda item: (-item["score"], item["dataset"], item["index"]))
+    selected, counts, chars = [], {}, 2
+    for item in candidates:
+        label = item["dataset"]
+        table_cap = 8 if item["relevant"] else (4 if broad else 1)
+        if counts.get(label, 0) >= table_cap:
+            continue
+        entry = {"dataset":label, "review_flags":item["flags"], "record":item["record"]}
+        size = len(json.dumps(entry, separators=(",", ":"), ensure_ascii=False))
+        if chars + size + 1 > 42000:
+            continue
+        selected.append(entry)
+        counts[label] = counts.get(label, 0) + 1
+        chars += size + 1
+        if len(selected) >= 100:
+            break
+    return selected, "question_relevant_and_flagged_rows", chars
+
+
 async def _ai_gemini_request(api_key, model, input_text):
     instructions = (
         "You are the read-only AI Data Analyst for a fuel station operations system. "
@@ -6579,12 +6943,21 @@ async def _ai_gemini_request(api_key, model, input_text):
         "created, paid, corrected, or deleted any record. This tool is analysis-only. Show the period "
         "and evidence for important conclusions, distinguish correlation from cause, and keep the "
         "answer practical and readable. When comparing a partial current month with a completed "
-        "month, explicitly warn that the current month is month-to-date."
+        "month, explicitly warn that the current month is month-to-date. Treat deep_detail_inspection "
+        "as required evidence: review every dataset profile and cross-record finding before answering. "
+        "Use row-level IDs, dates, statuses, quantities and amounts where available. Separate recorded facts, "
+        "calculated differences, and possible explanations. For broad audits, report category counts and examples "
+        "for missing fields, duplicate candidates, incomplete statuses, tank/delivery variances, unpaid eligible "
+        "transport fees, unconfirmed reports and open accounting exceptions when present. These are review flags, "
+        "not proven errors. State which tables failed, reached a cap, or have selected rather than complete raw "
+        "detail. Never imply all raw rows were supplied when row_level_detail_evidence_mode is "
+        "question_relevant_and_flagged_rows. Give the answer, evidence, comparisons, review findings, practical "
+        "checks and coverage limitations clearly."
     )
     body = {
         "systemInstruction": {"parts": [{"text": instructions}]},
         "contents": [{"role": "user", "parts": [{"text": input_text}]}],
-        "generationConfig": {"maxOutputTokens": 1400, "temperature": 0.2}
+        "generationConfig": {"maxOutputTokens": 2000, "temperature": 0.15}
     }
     options = {
         "method": "POST",
@@ -6649,32 +7022,54 @@ def ai_analyst_ask():
     # secret. A failed optional dataset becomes a visible coverage warning rather
     # than breaking all of the other analysis.
     specs = [
-        ("sales", "sales", {"select": "*", "order": "sale_time.desc", "limit": "10000"}),
-        ("purchases", "purchases", {"select": "*", "order": "purchase_date.desc", "limit": "5000"}),
-        ("deliveries", "logistics_deliveries", {"select": "*", "order": "delivery_date.desc", "limit": "1000"}),
-        ("transport_transactions", "logistics_transport_transactions", {"select": "*", "order": "created_at.desc", "limit": "1000"}),
-        ("shifts", "shifts", {"select": "*", "order": "start_time.desc", "limit": "5000"}),
-        ("handovers", "shift_takeovers", {"select": "*", "order": "shift_ended_at.desc", "limit": "5000"}),
-        ("dsr_confirmations", "daily_report_confirmations", {"select": "report_date,status,confirmed_at", "order": "report_date.desc", "limit": "5000"}),
-        ("daily_reports", "daily_reports", {"select": "report_date,total_sales_liters,total_sales_amount,total_purchases_liters,notes,calculated_sales_amount,entered_payment_amount,financial_difference", "order": "report_date.desc", "limit": "5000"}),
-        ("payment_transactions", "payment_transactions", {"select": "*", "order": "recorded_at.desc", "limit": "5000"}),
-        ("shift_takeover_sales", "shift_takeover_sales", {"select": "*", "order": "created_at.desc", "limit": "5000"}),
-        ("sale_types", "sale_types", {"select": "id,name,active", "limit": "500"}),
-        ("employees", "employees", {"select": "id,name,role,active", "limit": "1000"}),
-        ("products", "products", {"select": "*", "limit": "1000"}),
-        ("tanks", "tanks", {"select": "*", "limit": "1000"})
+        ("sales", "sales", {"select": "*", "order": "sale_time.desc"}, 10000),
+        ("purchases", "purchases", {"select": "*", "order": "purchase_date.desc"}, 5000),
+        ("deliveries", "logistics_deliveries", {"select": "*", "order": "delivery_date.desc"}, 5000),
+        ("transport_transactions", "logistics_transport_transactions", {"select": "*", "order": "created_at.desc"}, 5000),
+        ("transport_payment_items", "logistics_transport_payment_items", {"select": "*", "order": "created_at.desc"}, 10000),
+        ("delivery_audit", "logistics_delivery_audit", {"select": "*", "order": "created_at.desc"}, 5000),
+        ("delivery_compartments", "logistics_delivery_compartments", {"select": "*", "order": "created_at.desc"}, 5000),
+        ("trucks", "logistics_trucks", {"select": "*", "order": "created_at.desc"}, 1000),
+        ("truck_compartments", "logistics_truck_compartments", {"select": "*", "order": "created_at.desc"}, 2000),
+        ("product_fees", "logistics_product_fees", {"select": "*", "order": "product_name.asc"}, 1000),
+        ("shifts", "shifts", {"select": "*", "order": "start_time.desc"}, 5000),
+        ("handovers", "shift_takeovers", {"select": "*", "order": "shift_ended_at.desc"}, 5000),
+        ("dsr_confirmations", "daily_report_confirmations", {"select": "*", "order": "report_date.desc"}, 5000),
+        ("daily_reports", "daily_reports", {"select": "*", "order": "report_date.desc"}, 5000),
+        ("daily_report_revisions", "daily_report_revisions", {"select": "*", "order": "created_at.desc"}, 5000),
+        ("payment_transactions", "payment_transactions", {"select": "*", "order": "recorded_at.desc"}, 5000),
+        ("shift_takeover_sales", "shift_takeover_sales", {"select": "*", "order": "created_at.desc"}, 5000),
+        ("sale_types", "sale_types", {"select": "*", "order": "name.asc"}, 500),
+        ("employees", "employees", {"select": "id,name,role,active", "order": "name.asc"}, 1000),
+        ("products", "products", {"select": "*", "order": "name.asc"}, 1000),
+        ("product_price_history", "product_price_history", {"select": "*", "order": "created_at.desc"}, 5000),
+        ("tanks", "tanks", {"select": "*", "order": "tank_code.asc"}, 1000),
+        ("tank_movements", "tank_movements", {"select": "*", "order": "created_at.desc"}, 10000),
+        ("tank_opening_snapshots", "tank_opening_snapshots", {"select": "*", "order": "created_at.desc"}, 5000),
+        ("tank_closing_snapshots", "tank_closing_snapshots", {"select": "*", "order": "created_at.desc"}, 5000),
+        ("accounting_periods", "accounting_periods", {"select": "*", "order": "created_at.desc"}, 500),
+        ("accounting_exceptions", "accounting_exceptions", {"select": "*", "order": "created_at.desc"}, 5000),
+        ("accounting_exception_approvals", "accounting_exception_approvals", {"select": "*", "order": "created_at.desc"}, 5000),
+        ("nozzles", "nozzles", {"select": "*", "order": "nozzle_code.asc"}, 1000),
+        ("dispensers", "dispensers", {"select": "*", "order": "dispenser_code.asc"}, 1000),
+        ("dispenser_nozzles", "dispenser_nozzles", {"select": "*", "order": "id.asc"}, 2000),
+        ("shift_nozzle_readings", "shift_nozzle_readings", {"select": "*", "order": "created_at.desc"}, 10000)
     ]
     datasets = {}
     data_warnings = []
-    for label, table, params in specs:
+    truncation = []
+    record_limits = {}
+    for label, table, params, maximum in specs:
+        record_limits[label] = maximum
         try:
-            status, rows = sb(table, params=params)
-            if status >= 400:
-                datasets[label] = []
+            read_status, rows, has_more, read_failed = _ai_fetch_dataset(table, params, maximum)
+            datasets[label] = rows if isinstance(rows, list) else []
+            if read_status >= 400 or read_failed:
                 data_warnings.append(label)
-                app.logger.warning("AI Analyst could not read dataset %s (HTTP %s)", label, status)
-            else:
-                datasets[label] = rows if isinstance(rows, list) else []
+                app.logger.warning("AI Analyst dataset unavailable/partial: %s (HTTP %s; rows=%s)",
+                                   label, read_status, len(datasets[label]))
+            if has_more:
+                truncation.append(label)
         except Exception:
             datasets[label] = []
             data_warnings.append(label)
@@ -7069,6 +7464,13 @@ def ai_analyst_ask():
             "selling_price_etb": _ai_first_number(row, ("selling_price", "selling_price_per_liter", "price_per_liter", "unit_price")) or None
         })
 
+    dataset_inspection_profiles = {
+        label: _ai_inspect_dataset(label, rows)
+        for label, rows in datasets.items()
+    }
+    record_review_findings = _ai_collect_review_findings(datasets)
+    row_level_detail_evidence, raw_detail_mode, raw_detail_chars = _ai_build_detail_evidence(question, datasets)
+
     sales_month_list = [{"month": month, **values, "partial_month": month == current_month} for month, values in sorted(sales_months.items(), reverse=True)[:24]]
     purchase_month_list = [{"month": month, **values, "partial_month": month == current_month} for month, values in sorted(purchases_months.items(), reverse=True)[:24]]
     delivery_month_list = [{"month": month, **values, "partial_month": month == current_month} for month, values in sorted(deliveries_months.items(), reverse=True)[:24]]
@@ -7085,18 +7487,6 @@ def ai_analyst_ask():
     ]
     attendant_list = sorted(attendants.values(), key=lambda item: item["amount_etb"], reverse=True)[:12]
     top_products = [{"ledger_label": product, **values} for product, values in sorted(sales_products.items(), key=lambda item: item[1]["amount_etb"], reverse=True)[:15]]
-    truncation = []
-    for label, rows, maximum in (
-        ("sales", sales_rows, 10000), ("purchases", purchases_rows, 5000),
-        ("deliveries", delivery_rows, 1000), ("transport_transactions", transaction_rows, 1000),
-        ("shifts", shift_rows, 5000), ("handovers", handover_rows, 5000),
-        ("dsr_confirmations", confirmation_rows, 5000), ("daily_reports", daily_report_rows, 5000),
-        ("payment_transactions", payment_transaction_rows, 5000),
-        ("shift_takeover_sales", takeover_sale_rows, 5000)
-    ):
-        if len(rows) >= maximum:
-            truncation.append(label)
-
     station_data = {
         "as_of_date_addis_ababa": today,
         "currency": "ETB",
@@ -7104,7 +7494,9 @@ def ai_analyst_ask():
             "loaded_record_counts": {name: len(rows or []) for name, rows in datasets.items()},
             "datasets_with_read_warnings": data_warnings,
             "datasets_at_record_limit_may_be_truncated": truncation,
-            "scope_note": "Monthly history is derived from the most recent records fetched from each operational table. Transaction-ledger totals can differ from official MSR/DSR figures because confirmed reports apply their own confirmation, return and reconciliation rules."
+            "configured_record_limits": record_limits,
+            "pagination_page_size": 1000,
+            "scope_note": "Rows are fetched in pages up to configured safety limits. Every fetched row is scanned for field completeness, date coverage, status distributions, numeric ranges and review flags. A truncated table has additional rows beyond its limit. Transaction ledgers can differ from official DSR/MSR figures because confirmed reports apply confirmation, return and reconciliation rules."
         },
         "sales_transaction_ledger": {
             "records_counted": valid_sales_count,
@@ -7199,7 +7591,16 @@ def ai_analyst_ask():
             ]
         },
         "current_tank_inventory": inventory,
-        "product_catalogue": product_catalogue
+        "product_catalogue": product_catalogue,
+        "deep_detail_inspection": {
+            "inspection_as_of_addis_ababa": today,
+            "dataset_profiles": dataset_inspection_profiles,
+            "cross_record_review_findings": record_review_findings,
+            "row_level_detail_evidence_mode": raw_detail_mode,
+            "row_level_detail_evidence_character_count": raw_detail_chars,
+            "row_level_detail_evidence": row_level_detail_evidence,
+            "method_note": "Every fetched record was scanned for data quality and patterns. When sanitized raw rows fit within the compact detail budget, all fetched rows are supplied. For larger datasets, full profiles and selected row-level examples are supplied. Tables with additional rows beyond the cap are explicitly marked truncated. Review flags are prompts for verification, not proof of errors."
+        }
     }
 
     conversation_text = []
@@ -7232,11 +7633,15 @@ def ai_analyst_ask():
     if not answer:
         return jsonify({"error": "The AI service returned no readable answer. Please rephrase the question and try again."}), 502
 
+    loaded_total = sum(len(rows or []) for rows in datasets.values())
     coverage_note = (
         "Live data checked " + today + " (Addis Ababa). "
+        + str(loaded_total) + " records inspected across " + str(len(datasets)) + " operational datasets. "
         + str(len(sales_rows)) + " sales, " + str(len(purchases_rows)) + " purchases, "
         + str(len(delivery_rows)) + " deliveries, " + str(len(transaction_rows)) + " transport-payment transactions, "
-        + str(len(confirmation_rows)) + " DSR confirmation records and " + str(len(daily_report_rows)) + " daily-report register records loaded."
+        + str(len(confirmation_rows)) + " DSR confirmation records and " + str(len(daily_report_rows)) + " daily-report register records loaded. "
+        + ("All fetched raw records fit within the compact detail evidence." if raw_detail_mode == "all_loaded_records"
+           else "Per-dataset profiles and selected row-level evidence were supplied; not every raw row was included in the prompt.")
     )
     if data_warnings:
         coverage_note += " Some datasets could not be loaded: " + ", ".join(data_warnings) + "."
