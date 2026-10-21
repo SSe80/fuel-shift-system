@@ -3424,7 +3424,13 @@ def purchases():
     auth=require_admin()
     if auth:return auth
     status_filter=str(request.args.get("status") or "").strip()
-    params={"select":"*","order":"purchase_date.desc","limit":"10000"}
+    start_date=str(request.args.get("from") or "").strip()
+    end_date=str(request.args.get("to") or "").strip()
+    date_range_valid=bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}",start_date) and re.fullmatch(r"\d{4}-\d{2}-\d{2}",end_date) and start_date<end_date)
+    params={"select":"*","order":"purchase_date.desc","limit":"10000" if date_range_valid else "200"}
+    if date_range_valid:
+        # Keep the standard Purchases screen lightweight; MSR requests only its report/comparison window.
+        params["and"]="(purchase_date.gte."+start_date+",purchase_date.lt."+end_date+")"
     if status_filter in ("pending_discharge","discharged","cancelled"):
         params["status"]="eq."+status_filter
     status,rows=sb("purchases",params=params)
