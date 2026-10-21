@@ -1450,7 +1450,11 @@ async function syncFuelAppPushSubscription(requestPermission=false){
  if(window.__fuelPushSyncInFlight)return window.__fuelPushSyncInFlight;
  window.__fuelPushSyncInFlight=(async()=>{
   const keyData=await api('/api/push/public-key');
-  const registration=await navigator.serviceWorker.register('/service-worker.js');
+  const registration=await navigator.serviceWorker.register('/service-worker.js',{updateViaCache:'none'});
+  // Check for the newest worker now so an installed PWA does not keep an old
+  // push handler indefinitely after an update. Push delivery itself remains
+  // handled by the service worker when no app window is open.
+  try{await registration.update();}catch(updateError){console.warn('Could not check for a service-worker update',updateError);}
   await navigator.serviceWorker.ready;
   let subscription=await registration.pushManager.getSubscription();
   if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(atob((()=>{const b=keyData.publicKey.replace(/-/g,'+').replace(/_/g,'/');return b+'='.repeat((4-b.length%4)%4)})()),c=>c.charCodeAt(0))});
@@ -1495,7 +1499,8 @@ async function ensureFuelPushRegisteredOnLogin(role){
 }
 async function getFuelPushSubscription(){
  if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))return {supported:false,permission:'unsupported',subscription:null};
- const registration=await navigator.serviceWorker.getRegistration('/')||await navigator.serviceWorker.register('/service-worker.js');
+ const registration=await navigator.serviceWorker.getRegistration('/')||await navigator.serviceWorker.register('/service-worker.js',{updateViaCache:'none'});
+ try{await registration.update();}catch(updateError){console.warn('Could not check for a service-worker update',updateError);}
  const subscription=await registration.pushManager.getSubscription();
  return {supported:true,permission:Notification.permission,subscription};
 }
