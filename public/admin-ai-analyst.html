@@ -692,19 +692,19 @@ body.ai-analyst-page {
 </aside>
 <main class="wrap">
   <header class="ai-page-head">
-    <div><span class="ai-kicker">STATION INTELLIGENCE</span><h1>AI Data Analyst</h1><p>Ask natural-language questions about sales, purchases, stock, shifts, deliveries and transport payments. Answers are based on live records available to your admin account.</p></div>
+    <div><span class="ai-kicker">STATION INTELLIGENCE</span><h1>AI Data Analyst</h1><p>Inspect live station records in depth: sales, purchases, shifts, DSR/MSR, fuel stock and movements, dispenser readings, delivery compartments, transport payments, price history and accounting exceptions. The analyst checks individual records, trends, data quality and coverage limits.</p></div>
     <span class="ai-read-only">● READ ONLY</span>
   </header>
   <div class="ai-layout">
     <section class="ai-card ai-chat-card" aria-label="AI data analyst chat">
       <header class="ai-chat-top"><div class="ai-icon" aria-hidden="true">✦</div><div><h2>Ask your station data</h2><p>Trends, comparisons, exceptions and explanations</p></div><span class="ai-status-pill">LIVE DATA</span></header>
       <div class="ai-chat-content">
-        <div class="ai-welcome" id="ai-welcome"><h3>What would you like to understand?</h3><p>Ask about a month, compare products, find a sales trend, review purchase quantities, or check outstanding delivery and transport-payment patterns. The analyst does not edit records.</p></div>
+        <div class="ai-welcome" id="ai-welcome"><h3>What would you like to understand?</h3><p>Ask a specific question or request a full audit. The analyst scans loaded records for missing fields, unusual quantities, inconsistent statuses, duplicate candidates, unresolved differences and trends. Every finding is evidence-led; records remain read-only.</p></div>
         <div class="ai-message-list" id="ai-message-list" aria-live="polite"></div>
       </div>
       <form id="ai-form" class="ai-composer">
         <label for="ai-question">YOUR QUESTION</label>
-        <div class="ai-compose-row"><textarea id="ai-question" name="question" rows="2" maxlength="1200" placeholder="Example: Compare this month's sales and fuel purchases with last month." required></textarea><button type="submit" id="ai-send" class="ai-send"><span>Analyze</span><span aria-hidden="true">→</span></button></div>
+        <div class="ai-compose-row"><textarea id="ai-question" name="question" rows="2" maxlength="1200" placeholder="Example: Inspect every available record and report all findings with dates, IDs, figures and coverage limits." required></textarea><button type="submit" id="ai-send" class="ai-send"><span>Analyze</span><span aria-hidden="true">→</span></button></div>
         <div class="ai-composer-foot"><span id="ai-status" aria-live="polite">Ready to analyze station records.</span><button type="button" id="ai-clear" class="ai-clear">Clear conversation</button></div>
       </form>
     </section>
@@ -712,6 +712,7 @@ body.ai-analyst-page {
       <section class="ai-card ai-side-card">
         <h3>Suggested questions</h3><p>Tap a question to send it to the analyst.</p>
         <div class="ai-prompts">
+          <button type="button" class="ai-prompt" data-prompt="Perform a comprehensive read-only audit of every available station dataset. Inspect all supplied row-level records and profiles; report record coverage and limits, missing fields, unusual quantities or amounts, status inconsistencies, duplicate candidates, stock/delivery variances, unpaid eligible transport fees, open accounting exceptions, DSR/shift gaps and month-to-date trends. Give counts, dates, record IDs/references, exact supporting figures, and clear next checks. Distinguish confirmed facts from review flags and never invent missing data.">Full data audit<span>All data domains, exceptions and coverage limits</span></button>
           <button type="button" class="ai-prompt" data-prompt="Analyze the latest monthly sales trend and compare the current month to the previous month. Clearly label the current month as month-to-date.">Sales trend<span>Month-over-month changes</span></button>
           <button type="button" class="ai-prompt" data-prompt="Compare fuel purchases by product and month. Show dispatched, delivered and discharged liters, and identify any notable differences in the available records.">Purchase analysis<span>Product and quantity comparison</span></button>
           <button type="button" class="ai-prompt" data-prompt="Review recent logistics deliveries and identify completed deliveries that still show unpaid or pending transport payment status. Do not assume a payment has been made without a matching record.">Outstanding transport payments<span>Delivery and payment status</span></button>
@@ -720,7 +721,7 @@ body.ai-analyst-page {
           <button type="button" class="ai-prompt" data-prompt="Check the available DSR confirmation and shift handover status data. Summarize incomplete or waiting items and explain what additional data would be needed for a full reconciliation.">Report completeness<span>DSR and handover status</span></button>
         </div>
       </section>
-      <div class="ai-trust-card"><strong>How your data is used</strong><p>For each question, a bounded summary of live operational records and selected recent transaction fields is sent from the server to the configured Gemini API. PINs, login tokens and database credentials are not included. AI answers can be wrong, so verify financial decisions against the official DSR/MSR. This page is read-only.</p></div>
+      <div class="ai-trust-card"><strong>How your data is used</strong><p>For each question, the server paginates through available operational tables and scans loaded rows for data quality, trends, statuses, numeric ranges and review flags. Sanitized row-level evidence and inspection profiles are sent to Gemini; private authentication/contact fields are excluded. Large datasets may require selected examples, and tables can still reach a stated safety limit. Check the coverage note, and verify financial conclusions against official DSR/MSR records. This page is read-only.</p></div>
     </aside>
   </div>
 </main>
@@ -775,7 +776,7 @@ body.ai-analyst-page {
       body.className = 'ai-message-body';
       const typing = document.createElement('span');
       typing.className = 'ai-typing';
-      typing.textContent = 'Reviewing current station records…';
+      typing.textContent = 'Inspecting available records, data quality and anomalies…';
       body.appendChild(typing);
       item.appendChild(avatar);
       item.appendChild(body);
