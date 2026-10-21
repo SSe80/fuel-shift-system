@@ -7618,8 +7618,28 @@ def ai_analyst_ask():
     try:
         provider_status, provider_data = run_sync(_ai_gemini_request(api_key, model, prompt))
     except Exception:
-        app.logger.exception("AI Analyst provider request failed")
-        return jsonify({"error": "The AI service could not be reached. Please try again shortly."}), 502
+        # The detailed audit prompt can be large. Retry once with the verified
+        # aggregates and inspection profiles but without the selected raw rows.
+        # This preserves tank inventory and reconciliation summaries while
+        # avoiding a transient fetch failure caused by an oversized request.
+        app.logger.exception("AI Analyst full-evidence request failed; retrying compact evidence")
+        try:
+            compact_data = dict(station_data)
+            compact_inspection = dict(compact_data.get("deep_detail_inspection") or {})
+            compact_inspection["row_level_detail_evidence"] = []
+            compact_inspection["row_level_detail_evidence_mode"] = "compact_retry_without_raw_rows"
+            compact_data["deep_detail_inspection"] = compact_inspection
+            compact_prompt = (
+                "Recent conversation (for reference only):\\n"
+                + ("\\n".join(conversation_text) if conversation_text else "(none)")
+                + "\\n\\nCurrent question:\\n" + question
+                + "\\n\\nVerified station data JSON (compact retry; raw row examples omitted):\\n"
+                + json.dumps(compact_data, separators=(",", ":"), ensure_ascii=False)
+            )
+            provider_status, provider_data = run_sync(_ai_gemini_request(api_key, model, compact_prompt))
+        except Exception:
+            app.logger.exception("AI Analyst compact retry failed")
+            return jsonify({"error": "The AI service could not be reached after a compact retry. Check the Worker logs and Gemini API/model configuration, then try again."}), 502
 
     if provider_status >= 400:
         app.logger.warning("AI Analyst provider returned HTTP %s", provider_status)
