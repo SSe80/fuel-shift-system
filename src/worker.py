@@ -6856,6 +6856,43 @@ def ai_analyst_ask():
         month = _ai_month(row.get("shift_ended_at") or row.get("created_at"))
         _ai_add_month(handover_months, month, {"confirmed_handover_records": 1, "sales_amount_etb": amount, "sales_liters": liters})
 
+    # Reconcile sales ledger against confirmed shift takeovers at shift level.
+    # This is diagnostic only; it never changes either source ledger.
+    sales_by_shift = {}
+    for sales_row in sales_rows:
+        shift_key = str(sales_row.get("shift_id") or "")
+        if not shift_key:
+            continue
+        status_text = str(sales_row.get("status") or "").strip().lower()
+        if status_text in ("cancelled", "canceled", "void", "deleted", "reversed"):
+            continue
+        sales_bucket = sales_by_shift.setdefault(shift_key, {"amount_etb": 0.0, "liters": 0.0, "records": 0})
+        sales_bucket["amount_etb"] += _ai_first_number(sales_row, ("amount", "total_amount", "sales_amount"))
+        sales_bucket["liters"] += _ai_first_number(sales_row, ("quantity_liters", "liters", "sales_liters"))
+        sales_bucket["records"] += 1
+
+    shift_sales_reconciliation = []
+    for handover_row in handover_rows:
+        if str(handover_row.get("sales_status") or "").strip().lower() != "confirmed":
+            continue
+        shift_key = str(handover_row.get("shift_id") or "")
+        ledger = sales_by_shift.get(shift_key, {"amount_etb": 0.0, "liters": 0.0, "records": 0})
+        handover_amount = _ai_first_number(handover_row, ("total_sales_amount", "sales_amount"))
+        handover_liters = _ai_first_number(handover_row, ("total_sales_liters", "sales_liters"))
+        shift_sales_reconciliation.append({
+            "shift_id": shift_key or None,
+            "date": _ai_date(handover_row.get("shift_ended_at") or handover_row.get("created_at")),
+            "sales_status": "confirmed",
+            "handover_amount_etb": round(handover_amount, 2),
+            "ledger_amount_etb": round(ledger["amount_etb"], 2),
+            "ledger_minus_handover_etb": round(ledger["amount_etb"] - handover_amount, 2),
+            "handover_liters": round(handover_liters, 3),
+            "ledger_liters": round(ledger["liters"], 3),
+            "ledger_minus_handover_liters": round(ledger["liters"] - handover_liters, 3),
+            "sales_ledger_records": ledger["records"],
+            "note": "Per-shift diagnostic only; review differences and do not overwrite records automatically."
+        })
+
     dsr_confirmations_by_month = {}
     dsr_confirmation_statuses = {}
     dsr_status_by_date = {}
@@ -7107,6 +7144,7 @@ def ai_analyst_ask():
             "interpretation_warning": "These are sales/payment transactions linked to shifts and sale types, not logistics transport payments. A generic payment_method value such as 'other' must not override the confirmed sale-type summaries."
         },
         "sales_reconciliation": {
+            "by_confirmed_shift": shift_sales_reconciliation,
             "sales_ledger_amount_etb": round(sales_amount_total, 2),
             "confirmed_handover_amount_etb": round(confirmed_handover_amount, 2),
             "confirmed_handover_liters": round(confirmed_handover_liters, 3),
