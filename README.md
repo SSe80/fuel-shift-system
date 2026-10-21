@@ -119,10 +119,9 @@ After configuring secrets, redeploy the Worker so it receives the new secrets, t
 
 The admin-only **AI Data Analyst** page is available at `/admin-ai-analyst.html`. It provides read-only analysis of summarized sales, purchases, inventory, shift/handover status, logistics deliveries, and transport-payment records. AI responses should be checked against official DSR/MSR reports before making financial decisions.
 
-Configure the OpenAI API key as a Cloudflare Worker secret (never commit it or put it in browser code):
+This feature uses the Google Gemini Developer API. Create a key in [Google AI Studio](https://aistudio.google.com/) and configure it as a **Cloudflare Worker secret** named `GEMINI_API_KEY`. Never commit the key or put it in browser code.
 
-```sh
-npx wrangler secret put OPENAI_API_KEY
-```
+Optional Worker variable:
+- `GEMINI_MODEL` — defaults to `gemini-2.5-flash-lite`. Select a model available to your Google AI Studio project and its current quota.
 
-The Worker uses the `gpt-6.1-sol` model by default, a balanced option for data analysis. To use another model available to your API project, configure `OPENAI_MODEL` as a Worker secret/variable. To use another model available to your API project, configure `OPENAI_MODEL` as a Worker secret/variable. Redeploy the Worker after setting the API key. Without `OPENAI_API_KEY`, the page displays a configuration message and will not send station data to the AI provider.
+After setting the secret, redeploy the Worker. The Gemini API free tier has model-specific rate limits and data-use terms; verify current limits and privacy terms in the [Gemini API pricing documentation](https://ai.google.dev/gemini-api/docs/pricing). Do not send sensitive data unless the provider's terms are suitable for your station.
