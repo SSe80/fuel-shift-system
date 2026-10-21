@@ -6997,7 +6997,7 @@ def ai_analyst_ask():
         + "\n\nVerified station data JSON:\n"
         + json.dumps(station_data, separators=(",", ":"), ensure_ascii=False)
     )
-    model = str(getattr(env(), "GEMINI_MODEL", "") or "gemini-2.5-flash-lite").strip()
+    model = str(getattr(env(), "GEMINI_MODEL", "") or "gemini-3.5-flash-lite").strip()
     try:
         provider_status, provider_data = run_sync(_ai_gemini_request(api_key, model, prompt))
     except Exception:
