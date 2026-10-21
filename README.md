@@ -125,4 +125,4 @@ Configure the OpenAI API key as a Cloudflare Worker secret (never commit it or p
 npx wrangler secret put OPENAI_API_KEY
 ```
 
-The Worker uses the `gpt-6-astra` model by default. To use another model available to your API project, configure `OPENAI_MODEL` as a Worker secret/variable. Redeploy the Worker after setting the API key. Without `OPENAI_API_KEY`, the page displays a configuration message and will not send station data to the AI provider.
+The Worker uses the `gpt-6.1-sol` model by default, a balanced option for data analysis. To use another model available to your API project, configure `OPENAI_MODEL` as a Worker secret/variable. To use another model available to your API project, configure `OPENAI_MODEL` as a Worker secret/variable. Redeploy the Worker after setting the API key. Without `OPENAI_API_KEY`, the page displays a configuration message and will not send station data to the AI provider.
