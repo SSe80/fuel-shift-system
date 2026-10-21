@@ -6564,8 +6564,10 @@ async def _ai_gemini_request(api_key, model, input_text):
         "station was closed or that a report was definitely missed. In the current schema, "
         "sales.product may contain payment-category labels rather than fuel products, and "
         "sales.quantity_liters may be zero; never call those labels fuel products or present zero "
-        "liters as evidence of zero physical sales. Use confirmed sale-type summaries for payment "
-        "channels where available. Report sales_reconciliation differences as unresolved reconciliation "
+        "liters as evidence of zero physical sales. If the sales ledger has only zero-liter rows, describe its "
+        "liter comparison with handovers as unavailable rather than reporting the negative handover volume as a "
+        "meaningful discrepancy. Use confirmed sale-type summaries for payment channels where available. "
+        "Report sales_reconciliation amount differences as unresolved reconciliation "
         "flags; do not invent a cause or alter recorded values. payment_transactions is the sales-payment "
         "ledger, not the logistics transport-payment ledger; never mix their counts or amounts. For tank "
         "inventory, call out stock_alert values and recommend checking the physical dip and tank/product "
@@ -6859,6 +6861,7 @@ def ai_analyst_ask():
     # Reconcile sales ledger against confirmed shift takeovers at shift level.
     # This is diagnostic only; it never changes either source ledger.
     sales_by_shift = {}
+    sales_ledger_has_liter_data = False
     for sales_row in sales_rows:
         shift_key = str(sales_row.get("shift_id") or "")
         if not shift_key:
@@ -6866,9 +6869,13 @@ def ai_analyst_ask():
         status_text = str(sales_row.get("status") or "").strip().lower()
         if status_text in ("cancelled", "canceled", "void", "deleted", "reversed"):
             continue
-        sales_bucket = sales_by_shift.setdefault(shift_key, {"amount_etb": 0.0, "liters": 0.0, "records": 0})
+        row_liters = _ai_first_number(sales_row, ("quantity_liters", "liters", "sales_liters"))
+        if abs(row_liters) > 0.0005:
+            sales_ledger_has_liter_data = True
+        sales_bucket = sales_by_shift.setdefault(shift_key, {"amount_etb": 0.0, "liters": 0.0, "records": 0, "has_liter_data": False})
         sales_bucket["amount_etb"] += _ai_first_number(sales_row, ("amount", "total_amount", "sales_amount"))
-        sales_bucket["liters"] += _ai_first_number(sales_row, ("quantity_liters", "liters", "sales_liters"))
+        sales_bucket["liters"] += row_liters
+        sales_bucket["has_liter_data"] = sales_bucket["has_liter_data"] or abs(row_liters) > 0.0005
         sales_bucket["records"] += 1
 
     shift_sales_reconciliation = []
@@ -6887,10 +6894,11 @@ def ai_analyst_ask():
             "ledger_amount_etb": round(ledger["amount_etb"], 2),
             "ledger_minus_handover_etb": round(ledger["amount_etb"] - handover_amount, 2),
             "handover_liters": round(handover_liters, 3),
-            "ledger_liters": round(ledger["liters"], 3),
-            "ledger_minus_handover_liters": round(ledger["liters"] - handover_liters, 3),
+            "ledger_liters": round(ledger["liters"], 3) if ledger["has_liter_data"] else None,
+            "ledger_minus_handover_liters": round(ledger["liters"] - handover_liters, 3) if ledger["has_liter_data"] else None,
+            "sales_ledger_liter_comparison_available": bool(ledger["has_liter_data"]),
             "sales_ledger_records": ledger["records"],
-            "note": "Per-shift diagnostic only; review differences and do not overwrite records automatically."
+            "note": "Per-shift diagnostic only; raw sales-ledger liters are compared only when nonzero liter data exists. Review differences and do not overwrite records automatically."
         })
 
     dsr_confirmations_by_month = {}
@@ -7149,9 +7157,10 @@ def ai_analyst_ask():
             "confirmed_handover_amount_etb": round(confirmed_handover_amount, 2),
             "confirmed_handover_liters": round(confirmed_handover_liters, 3),
             "ledger_minus_confirmed_handover_amount_etb": round(sales_amount_total - confirmed_handover_amount, 2),
-            "sales_ledger_liters": round(sales_liters_total, 3),
-            "ledger_liters_minus_confirmed_handover_liters": round(sales_liters_total - confirmed_handover_liters, 3),
-            "note": "Differences are reconciliation flags, not proof of an accounting error. Investigate the underlying shift, return, confirmation, and ledger records."
+            "sales_ledger_liters": round(sales_liters_total, 3) if sales_ledger_has_liter_data else None,
+            "sales_ledger_liter_comparison_available": sales_ledger_has_liter_data,
+            "ledger_liters_minus_confirmed_handover_liters": round(sales_liters_total - confirmed_handover_liters, 3) if sales_ledger_has_liter_data else None,
+            "note": "Amount differences are unresolved reconciliation flags, not proof of an accounting error. Raw ledger liters are compared only if the sales ledger contains nonzero liter data; otherwise the volume comparison is unavailable, not zero sales. Investigate underlying shift, return, confirmation, and ledger records."
         },
         "shift_operations": {
             "loaded_shift_count": len(shift_rows),
