@@ -4439,11 +4439,16 @@ async function downloadPurchaseDetailPdf(options){
         {label:'Stock difference',value:signedL(diff),tone:high?C.RED:undefined}
       ]};});
   const purchaseRemark=String(p.purchase_remark||p.purchase_remark_note||p.remark||'').trim();
+  const shortagePaymentStatus=String(p.shortage_payment_status||'unpaid').toLowerCase()==='paid'?'Paid':'Unpaid';
   const tankStockRemarks=history.map(e=>String(e&&e.tank_stock_remark||'').trim()).filter(Boolean);
   const remarkParts=[];
   if(purchaseRemark)remarkParts.push('Purchase note: '+purchaseRemark);
-  tankStockRemarks.forEach((note,i)=>remarkParts.push((tankStockRemarks.length>1?'Discharge note '+(i+1)+': ':'Discharge note: ')+note));
-  const remarkText=remarkParts.join('\n');
+  if(tankStockRemarks.length){
+    tankStockRemarks.forEach((note,i)=>remarkParts.push((tankStockRemarks.length>1?'Shortage payment remark '+(i+1)+': ':'Shortage payment remark: ')+note));
+  }else{
+    remarkParts.push('Shortage payment remark: No remark recorded.');
+  }
+  const remarkText=remarkParts.join('\\n');
   const summaryLine='Difference (delivered - ordered): '+signedL(difference)+'     ·     Fully discharged at: '+fullyAt+'     ·     Status: '+statusLabel;
   const blob=createPurchaseDetailPdfV2({
     title:'Invoice #'+invoice,
@@ -4461,7 +4466,8 @@ async function downloadPurchaseDetailPdf(options){
       {label:'Invoice number',value:invoice},
       {label:'Purchase date',value:purchaseDate},
       {label:'Dispatched Quantity',value:fmtL(ordered)},
-      {label:'Difference',value:signedL(difference)}
+      {label:'Difference',value:signedL(difference)},
+      {label:'Shortage payment',value:shortagePaymentStatus}
     ],
     truck:[
       {label:'Driver name',value:p.driver_name||'—'},
