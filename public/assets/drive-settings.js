@@ -103,7 +103,11 @@
     var q = await api('/api/drive/queue');
     var box = $('drive-queue-list');
     if (!box) return;
-    if (q.status !== 200 || !Array.isArray(q.body)) { box.textContent = 'Queue unavailable.'; return; }
+    if (q.status !== 200 || !Array.isArray(q.body)) {
+      var detail = q.body && (q.body.error || q.body.message);
+      box.textContent = 'Queue unavailable' + (q.status ? ' (HTTP ' + q.status + ')' : '') + (detail ? ': ' + String(detail) : '.');
+      return;
+    }
     maintainReportWorkers(q.body);
     if (!q.body.length) { box.innerHTML = '<p class="muted">Nothing waiting. Confirmed reports and handover sales are saved to Drive.</p>'; return; }
     box.innerHTML = q.body.map(function (i) {
