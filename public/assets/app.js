@@ -2166,31 +2166,39 @@ function renderActivatedProductsGraph(products,sales){
   if(!host)return;
   if(!products.length){host.innerHTML='<div class="empty-content">No activated products to compare.</div>';return;}
   const norm=v=>String(v??'').trim().toLowerCase();
-  const totals=products.map(p=>{
+  const localDayKey=value=>{
+    if(!value)return '';
+    const d=new Date(value);if(Number.isNaN(d.getTime()))return '';
+    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);
+    const part=type=>parts.find(p=>p.type===type)?.value||'';
+    return part('year')+'-'+part('month')+'-'+part('day');
+  };
+  const todayKey=localDayKey(new Date());
+  const dateFromKey=key=>new Date(key+'T12:00:00+03:00');
+  const keyForOffset=offset=>{const d=dateFromKey(todayKey);d.setUTCDate(d.getUTCDate()+offset);return d.toISOString().slice(0,10);};
+  const dayKeys=Array.from({length:7},(_,i)=>keyForOffset(i-6));
+  const validSales=(Array.isArray(sales)?sales:[]).filter(s=>!['cancelled','canceled','void','voided','rejected','deleted'].includes(norm(s.status||s.sales_status)));
+  const productMatches=(p,s)=>{
     const productName=norm(p.name),productCode=norm(p.code_name);
-    const volume=(sales||[]).reduce((sum,s)=>{
-      const saleProduct=norm(s.product),saleCode=norm(s.product_code||s.product_code_name);
-      if(saleProduct!==productName&&saleProduct!==productCode&&saleCode!==productCode)return sum;
-      const q=Number(s.quantity_liters);return sum+(Number.isFinite(q)&&q>0?q:0);
-    },0);
-    return {code:String(p.code_name||p.name||'—'),volume,color:String(p.color||'#1264d8').trim()||'#1264d8'};
-  });
+    const saleProduct=norm(s.product),saleCode=norm(s.product_code||s.product_code_name);
+    return saleProduct===productName||saleProduct===productCode||saleCode===productCode||String(s.product_id||'')===String(p.id);
+  };
+  const totals=products.map(p=>({code:String(p.code_name||p.name||'—'),volume:validSales.reduce((sum,s)=>{
+    if(!productMatches(p,s)||!dayKeys.includes(localDayKey(s.sale_time||s.created_at)))return sum;
+    const q=Number(s.quantity_liters);return sum+(Number.isFinite(q)&&q>0?q:0);
+  },0),color:String(p.color||'#1264d8').trim()||'#1264d8'}));
   const total=totals.reduce((sum,x)=>sum+x.volume,0);
-  const size=240,cx=120,cy=120,r=88;
-  let angle=-Math.PI/2;
+  const size=240,cx=120,cy=120,r=88;let angle=-Math.PI/2;
   const paths=totals.map(x=>{
-    const share=total>0?x.volume/total:1/totals.length;
-    const next=angle+share*Math.PI*2;
-    const large=share>.5?1:0;
+    const share=total>0?x.volume/total:0;if(share<=0)return '';
+    const next=angle+share*Math.PI*2,large=share>.5?1:0;
     const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle),x2=cx+r*Math.cos(next),y2=cy+r*Math.sin(next);
     const d=share>=.999999?'M '+cx+' '+cy+' L '+cx+' '+(cy-r)+' A '+r+' '+r+' 0 1 1 '+(cx-.01)+' '+(cy-r)+' Z':'M '+cx+' '+cy+' L '+x1+' '+y1+' A '+r+' '+r+' 0 '+large+' 1 '+x2+' '+y2+' Z';
-    angle=next;
-    return '<path d="'+d+'" fill="'+h(x.color)+'" stroke="#fff" stroke-width="3" stroke-linejoin="round"><title>'+h(x.code)+' — '+h(liters(x.volume))+' L ('+(share*100).toFixed(1)+'%)</title></path>';
+    angle=next;return '<path d="'+d+'" fill="'+h(x.color)+'" stroke="#fff" stroke-width="3" stroke-linejoin="round"><title>'+h(x.code)+' — '+h(liters(x.volume))+' L ('+(share*100).toFixed(1)+'%)</title></path>';
   }).join('');
-  const legend=totals.map(x=>{const share=total>0?x.volume/total:1/totals.length;return '<div class="activated-products-pie-item"><span class="activated-products-pie-dot" style="background:'+h(x.color)+'"></span><span class="activated-products-pie-code">'+h(x.code)+'</span><strong>'+h(liters(x.volume))+' L</strong><small>'+(share*100).toFixed(1)+'%</small></div>';}).join('');
-  host.innerHTML='<div class="activated-products-graph-head"><div><span class="section-kicker">PRODUCT PERFORMANCE</span><h3>Sales volume by product</h3></div><span class="activated-products-graph-unit">LITERS SOLD</span></div><div class="activated-products-pie-layout"><div class="activated-products-pie-chart"><svg viewBox="0 0 '+size+' '+size+'" role="img" aria-label="Sales volume distribution among activated products">'+paths+'<circle cx="'+cx+'" cy="'+cy+'" r="51" fill="#fff"></circle><text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" class="activated-products-pie-total">'+h(liters(total))+'</text><text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" class="activated-products-pie-total-label">LITERS</text></svg></div><div class="activated-products-pie-legend">'+legend+'</div></div>';
+  const legend=totals.map(x=>{const share=total>0?x.volume/total:0;return '<div class="activated-products-pie-item"><span class="activated-products-pie-dot" style="background:'+h(x.color)+'"></span><span class="activated-products-pie-code">'+h(x.code)+'</span><strong>'+h(liters(x.volume))+' L</strong><small>'+(share*100).toFixed(1)+'%</small></div>';}).join('');
+  host.innerHTML='<div class="activated-products-graph-head"><div><span class="section-kicker">PRODUCT PERFORMANCE</span><h3>Sales volume by product · Last 7 days</h3></div><span class="activated-products-graph-unit">LITERS SOLD</span></div><div class="activated-products-pie-layout"><div class="activated-products-pie-chart"><svg viewBox="0 0 '+size+' '+size+'" role="img" aria-label="Sales volume distribution among activated products during the last 7 days">'+paths+'<circle cx="'+cx+'" cy="'+cy+'" r="51" fill="#fff"></circle><text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" class="activated-products-pie-total">'+h(liters(total))+'</text><text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" class="activated-products-pie-total-label">LITERS</text></svg></div><div class="activated-products-pie-legend">'+legend+'</div></div>'+(total<=0?'<p class="muted activated-products-graph-empty">No recorded sales volume for the last 7 days.</p>':'');
 }
-
 async function adminFuelConfiguration(){
   try{
     await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return showSessionRecovery('admin');
@@ -2223,9 +2231,19 @@ async function adminFuelConfiguration(){
       return '<div class="stat activated-dispenser-card" data-dispenser-id="'+h(d.id)+'" role="button" tabindex="0" aria-label="View '+h(d.nozzle_code||'dispenser')+' details" style="--product-color:'+h(pc)+'"><b>'+h(d.nozzle_code)+'</b><span>'+h(productCode||'—')+' • '+h(tank?.tank_code||'No tank')+'</span><small>Active • '+h(d.nozzle_count||1)+' nozzle(s) • '+(shift?'Shift active — '+h(attendant?.name||'Attendant'):'No active shift')+'</small></div>';
     };
     const renderDispenserGroupGraph=(g,pc)=>{
-      const endDate=new Date(); endDate.setHours(23,59,59,999);
-      const days=Array.from({length:7},(_,i)=>{const d=new Date(endDate);d.setDate(endDate.getDate()-(6-i));return d;});
-      const rows=g.items.map(d=>({d,values:days.map(day=>{const key=day.toISOString().slice(0,10);return (sales||[]).filter(s=>String(s.nozzle_id||'')===String(d.id)&&String(s.sale_time||s.created_at||'').slice(0,10)===key).reduce((sum,s)=>sum+(Number(s.quantity_liters)||0),0);})}));
+      const localDayKey=value=>{
+        if(!value)return '';
+        const date=new Date(value);if(Number.isNaN(date.getTime()))return '';
+        const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+        const part=type=>parts.find(p=>p.type===type)?.value||'';
+        return part('year')+'-'+part('month')+'-'+part('day');
+      };
+      const todayKey=localDayKey(new Date());
+      const dateFromKey=key=>new Date(key+'T12:00:00+03:00');
+      const dayKeys=Array.from({length:7},(_,i)=>{const d=dateFromKey(todayKey);d.setUTCDate(d.getUTCDate()-(6-i));return d.toISOString().slice(0,10);});
+      const days=dayKeys.map(key=>dateFromKey(key));
+      const graphSales=(Array.isArray(sales)?sales:[]).filter(s=>!['cancelled','canceled','void','voided','rejected','deleted'].includes(String(s.status||s.sales_status||'').toLowerCase()));
+      const rows=g.items.map(d=>({d,values:days.map((day,i)=>graphSales.filter(s=>String(s.nozzle_id||'')===String(d.id)&&localDayKey(s.sale_time||s.created_at)===dayKeys[i]).reduce((sum,s)=>{const q=Number(s.quantity_liters);return sum+(Number.isFinite(q)&&q>0?q:0);},0))}));
       const max=Math.max(1,...rows.flatMap(r=>r.values));
       const w=520,hg=150,padL=34,padR=10,padT=12,padB=25,iw=w-padL-padR,ih=hg-padT-padB;
       const x=i=>padL+i*(iw/6), y=v=>padT+ih-(v/max)*ih;
@@ -2234,7 +2252,7 @@ async function adminFuelConfiguration(){
       const labels=days.map((d,i)=>'<text x="'+x(i).toFixed(1)+'" y="'+(hg-7)+'" text-anchor="middle" class="activated-dispenser-graph-label">'+h(d.toLocaleDateString(undefined,{month:'short',day:'numeric'}))+'</text>').join('');
       const legend=rows.map((r,idx)=>'<span class="activated-dispenser-graph-legend-item"><i style="background:'+h(pc)+';opacity:'+Math.max(.38,1-idx*.1).toFixed(2)+'"></i>'+h(r.d.nozzle_code)+'</span>').join('');
       const total=rows.reduce((sum,r)=>sum+r.values.reduce((a,b)=>a+b,0),0);
-      return '<div class="activated-dispenser-graph"><div class="activated-dispenser-graph-head"><div><span class="section-kicker">DISPENSER PERFORMANCE</span><strong>Sales volume · Last 7 days</strong></div><span>'+h(liters(total))+' L</span></div><div class="activated-dispenser-graph-wrap"><svg viewBox="0 0 '+w+' '+hg+'" role="img" aria-label="Dispenser sales volume for the last 7 days">'+grid+'<line x1="'+padL+'" y1="'+(hg-padB)+'" x2="'+(w-padR)+'" y2="'+(hg-padB)+'" class="activated-dispenser-graph-axis"></line>'+lines+labels+'</svg></div><div class="activated-dispenser-graph-legend">'+legend+'</div></div>';
+      return '<div class="activated-dispenser-graph"><div class="activated-dispenser-graph-head"><div><span class="section-kicker">DISPENSER PERFORMANCE</span><strong>Sales volume · Last 7 Addis Ababa days</strong></div><span>'+h(liters(total))+' L</span></div><div class="activated-dispenser-graph-wrap"><svg viewBox="0 0 '+w+' '+hg+'" role="img" aria-label="Dispenser sales volume for the last 7 days">'+grid+'<line x1="'+padL+'" y1="'+(hg-padB)+'" x2="'+(w-padR)+'" y2="'+(hg-padB)+'" class="activated-dispenser-graph-axis"></line>'+lines+labels+'</svg></div><div class="activated-dispenser-graph-legend">'+legend+'</div></div>';
     };
     const renderDispenserGroup=(g)=>{
       const pc=String(g.product.color||'#1264d8').trim()||'#1264d8';
