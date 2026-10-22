@@ -4431,7 +4431,7 @@ def shift_takeovers():
                         row["returned_liters"]=saved.get("returned_liters") or 0
                         row["returned_amount"]=saved.get("returned_amount") or 0
         return jsonify(rows),200
-    params={"select":"*","order":"shift_ended_at.desc","limit":"50"}
+    params={"select":"*","order":"shift_ended_at.desc","limit":"5000"}
     status,rows=sb("shift_takeovers",params=params)
     if status!=200:return jsonify(rows),status
     return jsonify(rows),200
