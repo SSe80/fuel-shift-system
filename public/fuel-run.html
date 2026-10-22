@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fuel Run — Attendant Panel</title><link rel="stylesheet" href="assets/style.css?v=20261014-full-active-dispenser-name1"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261011-attendant-shared-modalfix2"><style>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fuel Up! — Attendant Panel</title><link rel="stylesheet" href="assets/style.css?v=20261014-full-active-dispenser-name1"><link rel="stylesheet" href="assets/admin-control-pages.css?v=20261011-attendant-shared-modalfix2"><style>
 /* Attendant Dashboard — use the same visual language as Admin Purchases */
 .attendant-dashboard-page{background:#f7f9fc;color:#182230}
 .attendant-dashboard-page .wrap{max-width:980px}
@@ -1400,6 +1400,48 @@ body.attendant-dashboard-page .fuel-run-restart{flex:0 0 auto;padding:8px 11px;b
 @media(max-width:560px){body.attendant-dashboard-page .fuel-run-game{height:245px}body.attendant-dashboard-page .fuel-run-player{left:10%;transform:scale(.93);transform-origin:bottom left}body.attendant-dashboard-page .fuel-run-hud{font-size:9px}body.attendant-dashboard-page .fuel-run-controls{align-items:flex-start}body.attendant-dashboard-page .fuel-run-controls>span{max-width:72%}}
 @media(prefers-reduced-motion:reduce){body.attendant-dashboard-page .fuel-run-game.is-running .fuel-run-exhaust{animation:none}}
 
+
+/* Fuel dispensing to cars game */
+body.attendant-dashboard-page .fuel-service-game{background:#fff;border:1px solid #e6eaf0}
+body.attendant-dashboard-page .fuel-service-scene{height:300px;position:relative;overflow:hidden;margin-top:18px;border:1px solid #dce7ef;border-radius:18px;background:linear-gradient(180deg,#e7f6ff 0%,#f5fbff 66%,#d9e5cf 66%,#d9e5cf 100%);isolation:isolate}
+body.attendant-dashboard-page .fuel-service-sky{position:absolute;inset:0 0 34%;overflow:hidden}
+body.attendant-dashboard-page .service-sun{position:absolute;right:14%;top:35px;width:39px;height:39px;border-radius:50%;background:#ffdb83;box-shadow:0 0 0 9px #ffe9bb80}
+body.attendant-dashboard-page .service-cloud{position:absolute;top:70px;left:34%;width:65px;height:16px;border-radius:20px;background:#fff;opacity:.9}
+body.attendant-dashboard-page .service-cloud:before{content:"";position:absolute;left:12px;bottom:4px;width:24px;height:24px;border-radius:50%;background:inherit}
+body.attendant-dashboard-page .service-cloud:after{content:"";position:absolute;left:31px;bottom:3px;width:20px;height:20px;border-radius:50%;background:inherit}
+body.attendant-dashboard-page .service-cloud-two{left:65%;top:110px;transform:scale(.75)}
+body.attendant-dashboard-page .service-station-sign{position:absolute;z-index:1;left:5%;top:22px;display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:8px;background:#b4232f;color:white;box-shadow:0 4px 0 #8e1823;font-size:10px;font-weight:900;letter-spacing:.08em}
+body.attendant-dashboard-page .service-station-sign b{font-size:13px}
+body.attendant-dashboard-page .service-canopy{position:absolute;z-index:1;left:20%;right:13%;top:74px;height:12px;border-radius:5px;background:#c72f3c;box-shadow:0 4px 0 #9d1d2b}
+body.attendant-dashboard-page .service-canopy span{position:absolute;top:10px;bottom:-85px;width:7px;background:#a7b5c3}
+body.attendant-dashboard-page .service-canopy span:first-child{left:8%}.service-canopy span:nth-child(2){left:52%}.service-canopy span:nth-child(3){right:8%}
+body.attendant-dashboard-page .service-ground{position:absolute;bottom:0;left:0;right:0;height:34%;border-top:4px solid #a6b99a;background:repeating-linear-gradient(90deg,#d9e3d0 0 35px,#cbd9c1 35px 70px)}
+body.attendant-dashboard-page .service-car{position:absolute;z-index:2;left:13%;bottom:calc(34% + 8px);width:148px;height:48px;border-radius:24px 34px 9px 9px;background:#d83b45;box-shadow:inset 0 -7px #a8202b;transition:background-color .2s}
+body.attendant-dashboard-page .service-car:before{content:"";position:absolute;left:32px;top:-25px;width:82px;height:31px;border-radius:26px 27px 0 0;background:inherit;filter:brightness(1.08);clip-path:polygon(18% 0,78% 0,100% 100%,0 100%)}
+body.attendant-dashboard-page .service-car-window{position:absolute;z-index:1;left:47px;top:-18px;width:28px;height:18px;border-radius:12px 4px 0 0;background:#b9e7f7;transform:skew(18deg)}
+body.attendant-dashboard-page .service-car-window-back{left:79px;transform:skew(18deg);border-radius:4px 10px 0 0}
+body.attendant-dashboard-page .service-wheel{position:absolute;bottom:-8px;width:27px;height:27px;border:5px solid #263342;border-radius:50%;background:#e8edf2;box-shadow:inset 0 0 0 3px #8793a0}
+body.attendant-dashboard-page .service-wheel-one{left:19px}.service-wheel-two{right:17px}
+body.attendant-dashboard-page .service-car-light{position:absolute;right:2px;top:20px;width:8px;height:11px;border-radius:3px;background:#fff2b2}
+body.attendant-dashboard-page .service-pump{position:absolute;z-index:3;right:14%;bottom:calc(34% + 7px);width:72px;height:126px;border:3px solid #d7dce3;border-radius:9px 9px 4px 4px;background:#f9fafb;box-shadow:0 5px 0 #9ca3af}
+body.attendant-dashboard-page .service-pump-top{margin:-1px -1px 6px;padding:5px 0;border-radius:5px 5px 0 0;background:#b4232f;color:#fff;text-align:center;font-size:10px;font-weight:950;letter-spacing:.1em}
+body.attendant-dashboard-page .service-pump-screen{margin:0 7px;padding:5px 4px;border-radius:4px;background:#172b3d;color:#86f7bc;text-align:center}
+body.attendant-dashboard-page .service-pump-screen small{display:block;font-size:7px}.service-pump-screen b{font-size:13px;letter-spacing:.04em}
+body.attendant-dashboard-page .service-pump-buttons{display:flex;justify-content:center;gap:5px;margin-top:7px}.service-pump-buttons i{width:7px;height:7px;border-radius:50%;background:#31a66a}.service-pump-buttons i:nth-child(2){background:#f5b942}.service-pump-buttons i:nth-child(3){background:#c83a45}
+body.attendant-dashboard-page .service-hose{position:absolute;right:-10px;top:52px;width:19px;height:47px;border:4px solid #374151;border-left:0;border-radius:0 14px 14px 0}
+body.attendant-dashboard-page .service-nozzle{position:absolute;right:-15px;top:86px;width:11px;height:25px;border-radius:3px;background:#374151;transform:rotate(-12deg)}
+body.attendant-dashboard-page .service-game-overlay{position:absolute;z-index:5;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;background:#ffffffd9;backdrop-filter:blur(3px);text-align:center}
+body.attendant-dashboard-page .service-game-overlay[hidden]{display:none!important}.service-overlay-icon{font-size:29px}
+body.attendant-dashboard-page .service-game-overlay h3{margin:5px 0;font-size:21px;color:#182230}.service-game-overlay p{max-width:370px;margin:0;color:#667085;font-size:12px;line-height:1.5}
+body.attendant-dashboard-page .service-game-overlay .fuel-game-primary{margin-top:8px}
+body.attendant-dashboard-page .service-game-panel{margin-top:14px;padding:16px;border:1px solid #e6eaf0;border-radius:16px;background:#fbfcfe}
+body.attendant-dashboard-page .service-meter-label,.service-game-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#667085;font-size:11px;font-weight:850}.service-meter-label b{color:#182230;font-size:13px}
+body.attendant-dashboard-page .service-meter{position:relative;height:13px;margin:9px 0 10px;border-radius:99px;background:#e6ebf0;overflow:hidden}.service-meter>span{display:block;width:0;height:100%;border-radius:99px;background:linear-gradient(90deg,#2f9e63,#8ad5a3);transition:width .04s linear}.service-meter>i{position:absolute;top:-2px;bottom:-2px;right:0;width:3px;background:#b4232f}
+body.attendant-dashboard-page .service-game-meta{font-size:10px}.service-game-meta b{color:#182230}
+body.attendant-dashboard-page .service-dispense-button{display:block;width:100%;min-height:56px;margin-top:14px;border:0;border-radius:14px;background:#16834b;color:#fff;font-size:15px;font-weight:900;letter-spacing:.02em;box-shadow:0 5px 0 #0f6639;touch-action:none;user-select:none;-webkit-user-select:none}
+body.attendant-dashboard-page .service-dispense-button:disabled{background:#aab4bf;box-shadow:0 5px 0 #87919c}.service-dispense-button.is-dispensing{background:#0e6f3e;transform:translateY(3px);box-shadow:0 2px 0 #0b542f}
+body.attendant-dashboard-page .service-game-hint{margin-top:10px;color:#7b8494;font-size:11px;line-height:1.5;text-align:center}
+@media(max-width:560px){body.attendant-dashboard-page .fuel-service-scene{height:270px}body.attendant-dashboard-page .service-station-sign{left:4%;top:16px;transform:scale(.85);transform-origin:top left}body.attendant-dashboard-page .service-car{left:8%;transform:scale(.82);transform-origin:bottom left}body.attendant-dashboard-page .service-pump{right:9%;transform:scale(.88);transform-origin:bottom right}body.attendant-dashboard-page .service-canopy{left:17%;right:8%}body.attendant-dashboard-page .service-game-panel{padding:12px}body.attendant-dashboard-page .service-meter-label{font-size:10px}}
 </style></head>
 <body class="attendant-page attendant-dashboard-page admin-shell admin-control-ui" data-app-page="fuelRun">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
@@ -1415,18 +1457,26 @@ body.attendant-dashboard-page .fuel-run-restart{flex:0 0 auto;padding:8px 11px;b
 <main class="wrap">
   <header class="settings-header"><div><span class="eyebrow">TAKE A QUICK BREAK</span><h1>Fuel Run</h1><p class="muted">A little jumping game between shifts. Beat your best score.</p></div></header>
   <section class="page-heading"><div><span class="section-kicker">MINI GAME</span><h2>Ready to roll?</h2><p>Jump over the fuel drums and keep the truck moving.</p></div></section>
-  <section id="fuel-brain-break" class="fuel-brain-break" aria-labelledby="fuel-game-title">
-  <div class="fuel-game-top"><div class="fuel-game-brand"><span class="fuel-game-icon" aria-hidden="true">⛽</span><div><span class="fuel-game-kicker">A QUICK BREAK</span><h2 id="fuel-game-title">Fuel Run</h2><p>Jump over the obstacles. How far can you drive?</p></div></div><div class="fuel-game-stats"><div><span>SCORE</span><strong id="fuel-run-score">0</strong></div><div><span>BEST</span><strong id="fuel-run-best">0</strong></div></div></div>
-  <div class="fuel-run-game" id="fuel-run-game" tabindex="0" role="button" aria-label="Fuel Run game. Tap or press Space to jump.">
-    <div class="fuel-run-hud"><span id="fuel-run-status">TAP TO START</span><span>SPACE / TAP = JUMP</span></div>
-    <div class="fuel-run-sky" aria-hidden="true"><span class="fuel-run-cloud cloud-one"></span><span class="fuel-run-cloud cloud-two"></span><span class="fuel-run-sun"></span></div>
-    <div class="fuel-run-ground" aria-hidden="true"><span></span></div>
-    <div class="fuel-run-player" id="fuel-run-player" aria-hidden="true"><span class="fuel-run-car-window"></span><span class="fuel-run-wheel wheel-one"></span><span class="fuel-run-wheel wheel-two"></span><span class="fuel-run-exhaust"></span></div>
-    <div class="fuel-run-obstacle" id="fuel-run-obstacle" aria-hidden="true"><span></span></div>
-    <div class="fuel-run-overlay" id="fuel-run-overlay"><div class="fuel-run-overlay-icon" id="fuel-run-overlay-icon">⛽</div><h3 id="fuel-run-overlay-title">Ready to roll?</h3><p id="fuel-run-overlay-copy">Jump over the fuel drums and keep the tanker moving.</p><button type="button" class="fuel-game-primary" id="fuel-run-start">Start game <span aria-hidden="true">→</span></button></div>
+  <section id="fuel-brain-break" class="fuel-brain-break fuel-service-game" aria-labelledby="fuel-game-title">
+  <div class="fuel-game-top"><div class="fuel-game-brand"><span class="fuel-game-icon" aria-hidden="true">⛽</span><div><span class="fuel-game-kicker">STATION CHALLENGE</span><h2 id="fuel-game-title">Fuel Up!</h2><p>Serve each car with the right amount of fuel before time runs out.</p></div></div><div class="fuel-game-stats"><div><span>SCORE</span><strong id="fuel-run-score">0</strong></div><div><span>BEST</span><strong id="fuel-run-best">0</strong></div></div></div>
+  <div class="fuel-service-scene" id="fuel-run-game" aria-label="Fuel dispensing game">
+    <div class="fuel-service-sky"><span class="service-cloud service-cloud-one"></span><span class="service-cloud service-cloud-two"></span><span class="service-sun"></span></div>
+    <div class="service-station-sign"><span>FUEL SHIFT</span><b>WELCOME</b></div>
+    <div class="service-canopy"><span></span><span></span><span></span></div>
+    <div class="service-car" id="fuel-run-player" aria-label="Customer car"><span class="service-car-window"></span><span class="service-car-window service-car-window-back"></span><span class="service-wheel service-wheel-one"></span><span class="service-wheel service-wheel-two"></span><span class="service-car-light"></span></div>
+    <div class="service-pump" id="fuel-run-obstacle"><div class="service-pump-top">FUEL</div><div class="service-pump-screen"><small>ETB/L</small><b id="fuel-run-pump-display">00.0</b></div><div class="service-pump-buttons"><i></i><i></i><i></i></div><div class="service-hose"></div><div class="service-nozzle"></div></div>
+    <div class="service-ground"></div>
+    <div class="service-game-overlay" id="fuel-run-overlay"><div class="service-overlay-icon" id="fuel-run-overlay-icon">⛽</div><h3 id="fuel-run-overlay-title">Ready to fuel up?</h3><p id="fuel-run-overlay-copy">Hold the green dispense button to fill the customer's tank to the target. Release when you reach it!</p><button type="button" class="fuel-game-primary" id="fuel-run-start">Start serving <span aria-hidden="true">→</span></button></div>
   </div>
-  <div class="fuel-run-controls"><span><b>HOW TO PLAY</b> Jump over every drum. The longer you survive, the faster it gets.</span><button type="button" id="fuel-run-restart" class="fuel-run-restart">↻ Restart</button></div>
-  <p class="fuel-game-footnote">Just for fun — no internet connection or station data needed.</p>
+  <div class="service-game-panel">
+    <div class="service-meter-label"><span id="fuel-run-status">WAITING FOR CUSTOMER</span><b><span id="fuel-run-current">0.0</span> / <span id="fuel-run-target">12.0</span> L</b></div>
+    <div class="service-meter"><span id="fuel-run-meter"></span><i id="fuel-run-target-mark"></i></div>
+    <div class="service-game-meta"><span>TIME LEFT <b id="fuel-run-time">30</b>s</span><span id="fuel-run-customer">CUSTOMER 1</span></div>
+    <button type="button" id="fuel-run-dispense" class="service-dispense-button" disabled>⛽ &nbsp; HOLD TO DISPENSE</button>
+    <div class="service-game-hint">Release to stop dispensing. Hit the requested litres without overfilling to earn points.</div>
+  </div>
+  <div class="fuel-run-controls"><span><b>HOW TO PLAY</b> Start the game, then hold the dispense button. Release at the target litres to serve the next car.</span><button type="button" id="fuel-run-restart" class="fuel-run-restart">↻ Restart</button></div>
+  <p class="fuel-game-footnote">Just for fun — no real fuel, money, or station data is used.</p>
 </section>
 </main>
 <script src="assets/app.js?v=attendant-history-cache-20261022-1"></script>
@@ -1435,32 +1485,51 @@ body.attendant-dashboard-page .fuel-run-restart{flex:0 0 auto;padding:8px 11px;b
 <script src="assets/popup-portal.js?v=20261014-details-modal-card-scroll-fix"></script>
 <script id="attendant-fuel-brain-break-script">
 (function(){
-  if(window.__fuelRunGameReady)return;window.__fuelRunGameReady=true;
+  if(window.__fuelServiceGameReady)return;window.__fuelServiceGameReady=true;
   const $=id=>document.getElementById(id);
-  const game=$("fuel-run-game"),player=$("fuel-run-player"),obstacle=$("fuel-run-obstacle"),overlay=$("fuel-run-overlay");
-  if(!game||!player||!obstacle||!overlay)return;
-  let state="ready",score=0,best=0,playerY=0,velocity=0,obstacleX=0,speed=5,lastTime=0,frame=0,raf=0,previousScore=0;
-  const ground=18,gravity=0.72,jumpPower=12.8;
-  function setStatus(s){$("fuel-run-status").textContent=s;}
-  function updateScore(){const shown=Math.floor(score);$("fuel-run-score").textContent=shown;$("fuel-run-best").textContent=best;}
-  function showOverlay(title,copy,button,icon){$("fuel-run-overlay-title").textContent=title;$("fuel-run-overlay-copy").textContent=copy;$("fuel-run-start").innerHTML=button+' <span aria-hidden="true">→</span>';$("fuel-run-overlay-icon").textContent=icon;overlay.hidden=false;}
-  function place(){player.style.bottom=(ground+playerY)+"px";obstacle.style.left=obstacleX+"%";}
-  function reset(){cancelAnimationFrame(raf);state="ready";score=0;playerY=0;velocity=0;speed=5;frame=0;obstacleX=105;player.classList.remove("is-jumping");obstacle.classList.remove("is-hit");game.classList.remove("is-running","is-over");place();updateScore();setStatus("TAP TO START");showOverlay("Ready to roll?","Jump over the fuel drums and keep the tanker moving.","Start game","⛽");}
-  function jump(){if(state==="ready"){start();return;}if(state!=="running")return;if(playerY<=0){velocity=jumpPower;player.classList.add("is-jumping");}}
-  function start(){cancelAnimationFrame(raf);state="running";score=0;playerY=0;velocity=0;speed=5;frame=0;obstacleX=105;lastTime=0;overlay.hidden=true;game.classList.add("is-running");game.classList.remove("is-over");player.classList.remove("is-jumping");obstacle.classList.remove("is-hit");setStatus("RUNNING");place();updateScore();raf=requestAnimationFrame(tick);}
-  function endGame(){state="over";game.classList.remove("is-running");game.classList.add("is-over");obstacle.classList.add("is-hit");best=Math.max(best,Math.floor(score));updateScore();setStatus("RUN OVER");showOverlay("Fuel run over!","You scored "+Math.floor(score)+". Try again and beat your best run.","Play again","🏁");}
-  function tick(now){if(state!=="running")return;const dt=lastTime?Math.min((now-lastTime)/16.67,2):1;lastTime=now;frame+=dt;score+=0.12*dt;speed=Math.min(10.5,5+score/90);obstacleX-=speed*dt*0.23;
-    if(playerY>0||velocity>0){playerY+=velocity*dt;velocity-=gravity*dt;if(playerY<=0){playerY=0;velocity=0;player.classList.remove("is-jumping");}}
-    if(obstacleX< -8){obstacleX=105+Math.random()*28;}
-    // Collision checks use the obstacle and car positions inside the game field.
-    if(obstacleX<23&&obstacleX>9&&playerY<24){place();endGame();return;}
-    place();updateScore();raf=requestAnimationFrame(tick);
+  const startBtn=$("fuel-run-start"),dispenseBtn=$("fuel-run-dispense"),overlay=$("fuel-run-overlay");
+  if(!startBtn||!dispenseBtn||!overlay)return;
+  let state="ready",score=0,best=0,litres=0,target=12,timeLeft=30,last=0,raf=0,holding=false,customer=1,feedbackTimer=0;
+  const cars=["#d83b45","#2677b8","#26966b","#e5a12a","#7257b7"];
+  function fmt(n){return n.toFixed(1);}
+  function update(){
+    $("fuel-run-score").textContent=score;$("fuel-run-best").textContent=best;
+    $("fuel-run-current").textContent=fmt(litres);$("fuel-run-target").textContent=fmt(target);
+    $("fuel-run-meter").style.width=Math.min(100,litres/target*100)+"%";
+    $("fuel-run-target-mark").style.left="100%";$("fuel-run-time").textContent=Math.max(0,Math.ceil(timeLeft));
+    $("fuel-run-pump-display").textContent=fmt(litres).padStart(4,"0");
+    $("fuel-run-customer").textContent="CUSTOMER "+customer;
   }
-  $("fuel-run-start").addEventListener("click",e=>{e.stopPropagation();start();game.focus({preventScroll:true});});
-  $("fuel-run-restart").addEventListener("click",()=>{start();game.focus({preventScroll:true});});
-  game.addEventListener("pointerdown",e=>{if(e.target.closest("button"))return;e.preventDefault();jump();});
-  game.addEventListener("keydown",e=>{if(["Space","ArrowUp"].includes(e.code)){e.preventDefault();if(e.repeat)return;jump();}else if(e.key==="Enter"&&state!=="running"){e.preventDefault();start();}});
-  document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="running"){state="ready";cancelAnimationFrame(raf);game.classList.remove("is-running");setStatus("PAUSED");showOverlay("Take a breather","Your run paused when you left the game.","Resume run","⏸");$("fuel-run-start").onclick=null;$("fuel-run-start").addEventListener("click",()=>start(),{once:true});}});
+  function overlayShow(title,copy,button,icon){$("fuel-run-overlay-title").textContent=title;$("fuel-run-overlay-copy").textContent=copy;$("fuel-run-start").innerHTML=button+' <span aria-hidden="true">→</span>'; $("fuel-run-overlay-icon").textContent=icon;overlay.hidden=false;}
+  function setStatus(t){$("fuel-run-status").textContent=t;}
+  function nextCustomer(){
+    customer++;litres=0;target=Math.round((7+Math.random()*13)*10)/10;
+    $("fuel-run-player").style.backgroundColor=cars[(customer-1)%cars.length];
+    setStatus("CUSTOMER READY");update();
+  }
+  function reset(){
+    cancelAnimationFrame(raf);clearTimeout(feedbackTimer);state="ready";score=0;best=0;litres=0;target=12;timeLeft=30;holding=false;customer=1;
+    dispenseBtn.disabled=true;dispenseBtn.classList.remove("is-dispensing");$("fuel-run-player").style.backgroundColor=cars[0];
+    setStatus("WAITING FOR CUSTOMER");update();overlayShow("Ready to fuel up?","Hold the green dispense button to fill the customer's tank to the target. Release when you reach it!","Start serving","⛽");
+  }
+  function start(){
+    cancelAnimationFrame(raf);state="running";score=0;litres=0;target=Math.round((8+Math.random()*10)*10)/10;timeLeft=30;customer=1;holding=false;
+    dispenseBtn.disabled=false;dispenseBtn.classList.remove("is-dispensing");overlay.hidden=true;setStatus("SERVE THE CUSTOMER");update();last=0;raf=requestAnimationFrame(tick);
+  }
+  function tick(now){
+    if(state!=="running")return;const dt=last?Math.min((now-last)/1000,.05):0;last=now;timeLeft-=dt;
+    if(holding){litres+=dt*7.2;if(litres>=target){litres=target;holding=false;dispenseBtn.classList.remove("is-dispensing");score+=10;best=Math.max(best,score);setStatus("TANK FULL — +10 POINTS");update();nextCustomer();}}
+    if(timeLeft<=0){timeLeft=0;state="over";holding=false;dispenseBtn.disabled=true;dispenseBtn.classList.remove("is-dispensing");best=Math.max(best,score);update();setStatus("SHIFT OVER");overlayShow("Shift complete!","You served "+(customer-1)+" customer(s) and scored "+score+" points. Try again to beat your best.","Play again","🏁");return;}
+    update();raf=requestAnimationFrame(tick);
+  }
+  function beginDispense(e){if(e)e.preventDefault();if(state!=="running"||dispenseBtn.disabled)return;holding=true;dispenseBtn.classList.add("is-dispensing");setStatus("DISPENSING FUEL");}
+  function stopDispense(){if(!holding)return;holding=false;dispenseBtn.classList.remove("is-dispensing");if(state!=="running")return;if(litres>=target){score+=10;best=Math.max(best,score);nextCustomer();}else setStatus("PAUSED — KEEP FILLING");}
+  startBtn.addEventListener("click",e=>{e.stopPropagation();start();});
+  $("fuel-run-restart").addEventListener("click",start);
+  dispenseBtn.addEventListener("pointerdown",beginDispense);
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>dispenseBtn.addEventListener(ev,stopDispense));
+  dispenseBtn.addEventListener("contextmenu",e=>e.preventDefault());
+  document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="running"){holding=false;dispenseBtn.classList.remove("is-dispensing");}});
   reset();
 })();
 </script>
