@@ -80,7 +80,7 @@
   }
   var reportWorkers = {};
   function maintainReportWorkers(items) {
-    ['dsr', 'msr'].forEach(function (kind) {
+    ['dsr', 'msr', 'sale'].forEach(function (kind) {
       var waiting = items.some(function (item) {
         return item.kind === kind && item.status === 'pending' && (item.attempts || 0) < 3;
       });
