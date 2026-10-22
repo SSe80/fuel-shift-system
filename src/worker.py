@@ -1819,7 +1819,7 @@ def _logistics_sync_completed_purchases():
             "tank_closing_liters": None,
             "tank_difference_liters": None,
             "notes": "Linked automatically from fully discharged purchase " + purchase_id,
-            "created_by": None,
+            "created_by": str(session.get("employee_id") or "") or None,
             "updated_at": now
         }
         cs, created = sb("logistics_deliveries", method="POST", body=body, prefer="return=representation")
