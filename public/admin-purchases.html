@@ -2186,6 +2186,15 @@ window.uploadPurchaseDetailPdf=async function(purchase){
         tankStockCarousel.remark=remark;
         tankStockCarousel.remarkSaved=true;
         await loadPurchases();
+        // Upload the refreshed purchase after the remark has been persisted, so
+        // the Drive PDF contains the same recorded tank-stock remark as Download PDF.
+        const refreshedPurchase=(purchaseDetailData||[]).find(row=>String(row.id)===String(p.id))||p;
+        const refreshedHistory=Array.isArray(refreshedPurchase.discharge_history)?refreshedPurchase.discharge_history:[];
+        if(String(refreshedPurchase.status||'').toLowerCase()==='discharged'&&refreshedHistory.length&&refreshedHistory.every(event=>event&&event.tank_stock_recorded===true)){
+          window.currentPurchaseDetailTanks=Array.isArray(purchaseDetailTanks)?purchaseDetailTanks:[];
+          const uploaded=await window.uploadPurchaseDetailPdf(refreshedPurchase);
+          if(uploaded!==true)throw new Error('Tank stock remark was saved, but the updated purchase PDF could not be uploaded to Google Drive.');
+        }
         closeTankStockCard();
         return;
       }
