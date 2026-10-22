@@ -1154,21 +1154,31 @@ async function loadAttendantShiftPage(){
         const receiver=employees.find(e=>String(e.id)===String(t.to_employee_id));
         return {
           time:new Date(t.sales_confirmed_at||t.shift_ended_at),
-          html:'<div class="card shift-takeover-history-card compact-confirmed-sale-card">'+
-            '<div class="top"><div><span class="section-kicker">SALES CONFIRMED</span><h3>'+h(n?.nozzle_code||t.dispenser_code||'Dispenser')+'</h3></div><span class="badge">Confirmed</span></div>'+
-            '<div class="compact-sale-summary"><span>Shift '+h(String(t.shift_id).slice(0,8))+'</span><span>'+liters(t.total_sales_liters)+' L</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
-            '<p class="muted">Admin confirmed '+(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+' • Receiving: '+h(receiver?.name||'—')+'</p>'+
-            '<button type="button" class="btn compact-detail-button attendant-shift-details-button" data-takeover-id="'+h(t.id)+'">Details</button>'+
-          '</div>'
+          html:'<article class="card shift-takeover-history-card compact-confirmed-sale-card attendant-shift-history-item" data-takeover-id="'+h(t.id)+'" tabindex="0" role="button" aria-expanded="false">'+
+            '<div class="attendant-shift-history-date">'+h((t.sales_confirmed_at||t.shift_ended_at)?new Date(t.sales_confirmed_at||t.shift_ended_at).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"}):"Date unavailable")+'</div>'+
+            '<div class="attendant-shift-history-details" hidden>'+
+              '<div class="top"><div><span class="section-kicker">SALES CONFIRMED</span><h3>'+h(n?.nozzle_code||t.dispenser_code||'Dispenser')+'</h3></div><span class="badge">Confirmed</span></div>'+
+              '<div class="compact-sale-summary"><span>Shift '+h(String(t.shift_id).slice(0,8))+'</span><span>'+liters(t.total_sales_liters)+' L</span><strong>'+money(t.total_sales_amount)+'</strong></div>'+
+              '<p class="muted">Admin confirmed '+(t.sales_confirmed_at?new Date(t.sales_confirmed_at).toLocaleString():'—')+' • Receiving: '+h(receiver?.name||'—')+'</p>'+
+            '</div>'+
+          '</article>'
         };
       });
       historyBox.innerHTML=records.sort((a,b)=>b.time-a.time).map(x=>x.html).join('')||'<div class="card"><p>No confirmed sales yet.</p></div>';
-      historyBox.querySelectorAll('.attendant-shift-details-button').forEach(function(btn){
-        btn.addEventListener('click',function(event){
-          event.preventDefault();
-          event.stopPropagation();
-          const takeoverId=this.getAttribute('data-takeover-id');
-          if(takeoverId)openTakeoverDetails(takeoverId);
+      historyBox.querySelectorAll('.attendant-shift-history-item').forEach(function(card){
+        function expandCard(){
+          if(card.getAttribute('aria-expanded')==='true')return;
+          card.setAttribute('aria-expanded','true');
+          card.classList.add('is-expanded');
+          const details=card.querySelector('.attendant-shift-history-details');
+          if(details)details.hidden=false;
+        }
+        card.addEventListener('click',expandCard);
+        card.addEventListener('keydown',function(event){
+          if((event.key==='Enter'||event.key===' ')&&event.target===card){
+            event.preventDefault();
+            expandCard();
+          }
         });
       });
     }
