@@ -68,7 +68,7 @@
 (function(){if("serviceWorker"in navigator)window.addEventListener("load",function(){navigator.serviceWorker.register("/service-worker.js").catch(function(e){console.error("Admin service worker registration failed:",e);});});var pe=null,b=null;window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();pe=e;if(!b){b=document.createElement("button");b.type="button";b.textContent="Install Admin App";b.setAttribute("aria-label","Install Fuel Shift System Admin app");b.style.cssText="position:fixed;z-index:99999;right:16px;bottom:16px;padding:12px 16px;border:0;border-radius:12px;background:#2563eb;color:#fff;font:700 13px Arial,sans-serif;box-shadow:0 5px 18px #0003;cursor:pointer";b.addEventListener("click",async function(){if(!pe)return;pe.prompt();await pe.userChoice;pe=null;b.remove();b=null;});document.body.appendChild(b);}});window.addEventListener("appinstalled",function(){if(b)b.remove();b=null;pe=null;});})();
 </script>
 
-<script src="assets/drive-queue.js?v=sales-export-failure-reporting-20261022"></script>
+<script src="assets/drive-queue.js?v=persist-drive-upload-errors-20261022"></script>
 <script>
 (function () {
   if (!window.DriveQueue || typeof window.downloadAdminSaleHistoryDetails !== 'function') return;
