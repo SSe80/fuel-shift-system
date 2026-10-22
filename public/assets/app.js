@@ -4448,7 +4448,7 @@ async function downloadPurchaseDetailPdf(options){
   }else{
     remarkParts.push('Shortage payment remark: No remark recorded.');
   }
-  const remarkText=remarkParts.join('\\n');
+  const remarkText=remarkParts.join('\n');
   const summaryLine='Difference (delivered - ordered): '+signedL(difference)+'     ·     Fully discharged at: '+fullyAt+'     ·     Status: '+statusLabel;
   const blob=createPurchaseDetailPdfV2({
     title:'Invoice #'+invoice,
@@ -4477,7 +4477,7 @@ async function downloadPurchaseDetailPdf(options){
     ],
     compartments:compOut,
     events:events,
-    remark:remarkText||'No purchase remark recorded.',remarkEmpty:!remarkText,
+    remark:remarkText||'No purchase remark recorded.',remarkEmpty:!purchaseRemark&&!tankStockRemarks.length,
     footer:'Invoice '+invoice+'  ·  '+productName+'  ·  Purchase detail'
   });
   const downloadName='purchase-'+invoice.replace(/[^A-Za-z0-9_-]/g,'_')+'-report.pdf';
