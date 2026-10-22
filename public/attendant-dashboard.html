@@ -2200,20 +2200,8 @@ body.attendant-dashboard-page .attendant-shift-history-item.is-expanded{
 }
 body.attendant-dashboard-page .attendant-shift-history-details:not([hidden]){display:block!important;margin-top:12px!important}
 </style>
-</head><body class="attendant-page attendant-dashboard-page admin-shell admin-control-ui" data-app-page="userDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a><a href="#fuel-brain-break"><span>⚡</span><b>Fuel Brain Break</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div>
-<section id="fuel-brain-break" class="fuel-brain-break" aria-labelledby="fuel-game-title">
-  <div class="fuel-game-top"><div class="fuel-game-brand"><span class="fuel-game-icon" aria-hidden="true">⛽</span><div><span class="fuel-game-kicker">A QUICK BREAK</span><h2 id="fuel-game-title">Fuel Run</h2><p>Jump over the obstacles. How far can you drive?</p></div></div><div class="fuel-game-stats"><div><span>SCORE</span><strong id="fuel-run-score">0</strong></div><div><span>BEST</span><strong id="fuel-run-best">0</strong></div></div></div>
-  <div class="fuel-run-game" id="fuel-run-game" tabindex="0" role="button" aria-label="Fuel Run game. Tap or press Space to jump.">
-    <div class="fuel-run-hud"><span id="fuel-run-status">TAP TO START</span><span>SPACE / TAP = JUMP</span></div>
-    <div class="fuel-run-sky" aria-hidden="true"><span class="fuel-run-cloud cloud-one"></span><span class="fuel-run-cloud cloud-two"></span><span class="fuel-run-sun"></span></div>
-    <div class="fuel-run-ground" aria-hidden="true"><span></span></div>
-    <div class="fuel-run-player" id="fuel-run-player" aria-hidden="true"><span class="fuel-run-car-window"></span><span class="fuel-run-wheel wheel-one"></span><span class="fuel-run-wheel wheel-two"></span><span class="fuel-run-exhaust"></span></div>
-    <div class="fuel-run-obstacle" id="fuel-run-obstacle" aria-hidden="true"><span></span></div>
-    <div class="fuel-run-overlay" id="fuel-run-overlay"><div class="fuel-run-overlay-icon" id="fuel-run-overlay-icon">⛽</div><h3 id="fuel-run-overlay-title">Ready to roll?</h3><p id="fuel-run-overlay-copy">Jump over the fuel drums and keep the tanker moving.</p><button type="button" class="fuel-game-primary" id="fuel-run-start">Start game <span aria-hidden="true">→</span></button></div>
-  </div>
-  <div class="fuel-run-controls"><span><b>HOW TO PLAY</b> Jump over every drum. The longer you survive, the faster it gets.</span><button type="button" id="fuel-run-restart" class="fuel-run-restart">↻ Restart</button></div>
-  <p class="fuel-game-footnote">Just for fun — no internet connection or station data needed.</p>
-</section>
+</head><body class="attendant-page attendant-dashboard-page admin-shell admin-control-ui" data-app-page="userDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a><a href="fuel-run.html"><span>⚡</span><b>Fuel Run</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div>
+
 <div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing stock (liters)<input id="handover-closing-liters-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Enter closing stock in liters" required oninput="updateHandoverClosingLiters(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter stock in liters.</div><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="batch-record-sales-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closeBatchRecordSalesModal()"></div>
 <div class="modal-card takeover-action-modal batch-record-sales-modal-card">
@@ -2484,37 +2472,7 @@ body.attendant-dashboard-page section.attendant-dsr-card-category.card > .card{m
 body.attendant-dashboard-page .card button.primary{width:100%!important}
 </style>
 
-<script id="attendant-fuel-brain-break-script">
-(function(){
-  if(window.__fuelRunGameReady)return;window.__fuelRunGameReady=true;
-  const $=id=>document.getElementById(id);
-  const game=$("fuel-run-game"),player=$("fuel-run-player"),obstacle=$("fuel-run-obstacle"),overlay=$("fuel-run-overlay");
-  if(!game||!player||!obstacle||!overlay)return;
-  let state="ready",score=0,best=0,playerY=0,velocity=0,obstacleX=0,speed=5,lastTime=0,frame=0,raf=0,previousScore=0;
-  const ground=18,gravity=0.72,jumpPower=12.8;
-  function setStatus(s){$("fuel-run-status").textContent=s;}
-  function updateScore(){const shown=Math.floor(score);$("fuel-run-score").textContent=shown;$("fuel-run-best").textContent=best;}
-  function showOverlay(title,copy,button,icon){$("fuel-run-overlay-title").textContent=title;$("fuel-run-overlay-copy").textContent=copy;$("fuel-run-start").innerHTML=button+' <span aria-hidden="true">→</span>';$("fuel-run-overlay-icon").textContent=icon;overlay.hidden=false;}
-  function place(){player.style.bottom=(ground+playerY)+"px";obstacle.style.left=obstacleX+"%";}
-  function reset(){cancelAnimationFrame(raf);state="ready";score=0;playerY=0;velocity=0;speed=5;frame=0;obstacleX=105;player.classList.remove("is-jumping");obstacle.classList.remove("is-hit");game.classList.remove("is-running","is-over");place();updateScore();setStatus("TAP TO START");showOverlay("Ready to roll?","Jump over the fuel drums and keep the tanker moving.","Start game","⛽");}
-  function jump(){if(state==="ready"){start();return;}if(state!=="running")return;if(playerY<=0){velocity=jumpPower;player.classList.add("is-jumping");}}
-  function start(){cancelAnimationFrame(raf);state="running";score=0;playerY=0;velocity=0;speed=5;frame=0;obstacleX=105;lastTime=0;overlay.hidden=true;game.classList.add("is-running");game.classList.remove("is-over");player.classList.remove("is-jumping");obstacle.classList.remove("is-hit");setStatus("RUNNING");place();updateScore();raf=requestAnimationFrame(tick);}
-  function endGame(){state="over";game.classList.remove("is-running");game.classList.add("is-over");obstacle.classList.add("is-hit");best=Math.max(best,Math.floor(score));updateScore();setStatus("RUN OVER");showOverlay("Fuel run over!","You scored "+Math.floor(score)+". Try again and beat your best run.","Play again","🏁");}
-  function tick(now){if(state!=="running")return;const dt=lastTime?Math.min((now-lastTime)/16.67,2):1;lastTime=now;frame+=dt;score+=0.12*dt;speed=Math.min(10.5,5+score/90);obstacleX-=speed*dt*0.23;
-    if(playerY>0||velocity>0){playerY+=velocity*dt;velocity-=gravity*dt;if(playerY<=0){playerY=0;velocity=0;player.classList.remove("is-jumping");}}
-    if(obstacleX< -8){obstacleX=105+Math.random()*28;}
-    // Collision checks use the obstacle and car positions inside the game field.
-    if(obstacleX<23&&obstacleX>9&&playerY<24){place();endGame();return;}
-    place();updateScore();raf=requestAnimationFrame(tick);
-  }
-  $("fuel-run-start").addEventListener("click",e=>{e.stopPropagation();start();game.focus({preventScroll:true});});
-  $("fuel-run-restart").addEventListener("click",()=>{start();game.focus({preventScroll:true});});
-  game.addEventListener("pointerdown",e=>{if(e.target.closest("button"))return;e.preventDefault();jump();});
-  game.addEventListener("keydown",e=>{if(["Space","ArrowUp"].includes(e.code)){e.preventDefault();if(e.repeat)return;jump();}else if(e.key==="Enter"&&state!=="running"){e.preventDefault();start();}});
-  document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="running"){state="ready";cancelAnimationFrame(raf);game.classList.remove("is-running");setStatus("PAUSED");showOverlay("Take a breather","Your run paused when you left the game.","Resume run","⏸");$("fuel-run-start").onclick=null;$("fuel-run-start").addEventListener("click",()=>start(),{once:true});}});
-  reset();
-})();
-</script>
+
 
 </body></html>
 <style id="record-sale-error-layer-fix">
