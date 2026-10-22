@@ -4501,6 +4501,12 @@ def confirm_sale_confirmation(takeover_id):
     })
     if status>=400:return jsonify(result),status
 
+    # Queue the PDF only after the server confirms this shift's handover sales.
+    try:
+        _drive_enqueue_confirmed_shift_sale(takeover_id)
+    except Exception:
+        app.logger.exception("could not queue confirmed shift-sale PDF")
+
     # Notify the attendant who recorded this shift's sales after admin approval.
     try:
         ts, rows = sb("shift_takeovers", params={"id":"eq."+str(takeover_id),"select":"shift_id","limit":"1"})
@@ -7708,6 +7714,86 @@ def _drive_enqueue(kind, report_key, status="pending"):
                  body=body, prefer="resolution=merge-duplicates,return=minimal")
     return st < 400
 
+def _drive_enqueue_sale_key(report_day, takeover_id):
+    """Queue one confirmed handover PDF without resetting an existing export."""
+    if not report_day or not takeover_id:
+        return False
+    key = report_day.isoformat() + "|" + str(takeover_id)
+    settings = _drive_settings() or {}
+    desired = "pending" if settings.get("sales_folder_id") else "waiting"
+    st, rows = sb("drive_export_queue", params={
+        "kind": "eq.sale", "report_key": "eq." + key,
+        "select": "id,status", "limit": "1"})
+    if st >= 400:
+        app.logger.warning("could not check existing shift-sale Drive export: %s", str(rows)[:200])
+        return False
+    if rows:
+        row = rows[0]
+        current = str(row.get("status") or "")
+        if current == "done":
+            return True
+        if desired == "pending" and current == "waiting":
+            us, _ = sb("drive_export_queue", method="PATCH", params={"id": "eq." + str(row["id"])},
+                       body={"status": "pending", "attempts": 0, "last_error": None,
+                             "updated_at": datetime.now(timezone.utc).isoformat()},
+                       prefer="return=minimal")
+            return us < 400
+        return current == "pending"
+    return _drive_enqueue("sale", key, status=desired)
+
+
+def _drive_enqueue_confirmed_shift_sale(takeover_id):
+    """Queue a sales PDF only after the individual shift handover sale is confirmed."""
+    ts, rows = sb("shift_takeovers", params={
+        "id": "eq." + str(takeover_id),
+        "select": "id,shift_id,sales_status,sales_confirmed_at,shift_started_at",
+        "limit": "1"})
+    if ts >= 400 or not rows:
+        return False
+    takeover = rows[0]
+    if str(takeover.get("sales_status") or "").lower() != "confirmed" and not takeover.get("sales_confirmed_at"):
+        return False
+    report_day = _local_date_from_iso(takeover.get("shift_started_at"))
+    if not report_day:
+        ss, shifts = sb("shifts", params={
+            "id": "eq." + str(takeover.get("shift_id") or ""),
+            "select": "start_time", "limit": "1"})
+        if ss >= 400 or not shifts:
+            return False
+        report_day = _local_date_from_iso(shifts[0].get("start_time"))
+    return _drive_enqueue_sale_key(report_day, takeover.get("id")) if report_day else False
+
+
+def _drive_enqueue_confirmed_shift_sales_for_day(report_day):
+    """Queue confirmed handover PDFs covered by a confirmed daily DSR."""
+    try:
+        start_utc = datetime(report_day.year, report_day.month, report_day.day,
+                             tzinfo=timezone.utc) - timedelta(hours=3)
+        end_utc = start_utc + timedelta(days=1)
+        ss, shifts = sb("shifts", params={
+            "and": "(start_time.gte.%s,start_time.lt.%s)" % (start_utc.isoformat(), end_utc.isoformat()),
+            "select": "id", "limit": "10000"})
+        if ss >= 400:
+            app.logger.warning("could not load shifts for sales Drive export on %s", report_day.isoformat())
+            return
+        shift_ids = [str(row.get("id")) for row in (shifts or []) if row.get("id")]
+        if not shift_ids:
+            return
+        ts, takeovers = sb("shift_takeovers", params={
+            "shift_id": "in.(" + ",".join(shift_ids) + ")",
+            "select": "id,shift_id,sales_status,sales_confirmed_at", "limit": "10000"})
+        if ts >= 400:
+            app.logger.warning("could not load handovers for sales Drive export on %s", report_day.isoformat())
+            return
+        for takeover in takeovers or []:
+            confirmed = (str(takeover.get("sales_status") or "").lower() == "confirmed"
+                         or bool(takeover.get("sales_confirmed_at")))
+            if confirmed and takeover.get("id"):
+                _drive_enqueue_sale_key(report_day, takeover["id"])
+    except Exception:
+        app.logger.exception("could not queue confirmed handover sales PDFs for %s", report_day.isoformat())
+
+
 def _msr_ready(month_start):
     """True only after the month has ended and all its shifts and required DSRs are complete."""
     first = month_start.replace(day=1)
@@ -7755,9 +7841,10 @@ def _msr_ready(month_start):
     return True
 
 def _drive_after_dsr_confirm(report_day):
-    """Queue the DSR and check this and the previous month for MSR eligibility."""
+    """Queue the DSR, its confirmed shift-sale PDFs, and eligible monthly reports."""
     try:
         _drive_enqueue("dsr", report_day.isoformat())
+        _drive_enqueue_confirmed_shift_sales_for_day(report_day)
 
         # Recheck the previous month when a DSR is confirmed in the new month,
         # because the prior month's MSR may only then become eligible.
@@ -7777,15 +7864,18 @@ def _drive_after_dsr_confirm(report_day):
         app.logger.exception("drive enqueue failed")
 
 def _drive_settings():
-    st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,purchase_folder_id,admin_audit_folder_id,admin_audit_sheet_id,contracted_trucks_folder_id,updated_at"})
+    # Support rolling deployments where one or more additive settings migrations
+    # have not been applied yet, without breaking the existing Drive exports.
+    st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,purchase_folder_id,sales_folder_id,admin_audit_folder_id,admin_audit_sheet_id,contracted_trucks_folder_id,updated_at"})
     if st >= 400:
-        # A code deployment can precede its additive migration. Keep existing Drive
-        # exports/settings operational until contracted_trucks_folder_id is applied.
+        st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,purchase_folder_id,sales_folder_id,admin_audit_folder_id,admin_audit_sheet_id,updated_at"})
+    if st >= 400:
         st, rows = sb("drive_settings", params={"id": "eq.1", "select": "dsr_folder_id,msr_folder_id,purchase_folder_id,admin_audit_folder_id,admin_audit_sheet_id,updated_at"})
         if st >= 400:
             return None
-        for item in rows or []:
-            item.setdefault("contracted_trucks_folder_id", None)
+    for item in rows or []:
+        item.setdefault("contracted_trucks_folder_id", None)
+        item.setdefault("sales_folder_id", None)
     return (rows or [{}])[0]
 
 def _drive_oauth_redirect_uri():
@@ -7903,7 +7993,8 @@ def drive_get_settings():
     if row is None:
         return jsonify({"error": "Drive settings unavailable"}), 500
     return jsonify({"dsr_folder_id": row.get("dsr_folder_id"), "msr_folder_id": row.get("msr_folder_id"),
-                    "purchase_folder_id": row.get("purchase_folder_id"), "admin_audit_folder_id": row.get("admin_audit_folder_id"),
+                    "purchase_folder_id": row.get("purchase_folder_id"), "sales_folder_id": row.get("sales_folder_id"),
+                    "admin_audit_folder_id": row.get("admin_audit_folder_id"),
                     "admin_audit_sheet_id": row.get("admin_audit_sheet_id"),
                     "contracted_trucks_folder_id": row.get("contracted_trucks_folder_id"), "updated_at": row.get("updated_at")}), 200
 
@@ -7914,7 +8005,7 @@ def drive_put_settings():
     data = request.get_json(silent=True) or {}
     current_settings = _drive_settings() or {}
     update = {"updated_at": datetime.now(timezone.utc).isoformat()}
-    for field, key in (("dsr_link", "dsr_folder_id"), ("msr_link", "msr_folder_id"), ("purchase_link", "purchase_folder_id"), ("admin_audit_link", "admin_audit_folder_id"), ("contracted_trucks_link", "contracted_trucks_folder_id")):
+    for field, key in (("dsr_link", "dsr_folder_id"), ("msr_link", "msr_folder_id"), ("purchase_link", "purchase_folder_id"), ("sales_link", "sales_folder_id"), ("admin_audit_link", "admin_audit_folder_id"), ("contracted_trucks_link", "contracted_trucks_folder_id")):
         if field in data:
             raw = str(data.get(field) or "").strip()
             if not raw:
@@ -7943,7 +8034,7 @@ def drive_test():
     auth = require_admin()
     if auth: return auth
     row = _drive_settings() or {}
-    folders = {"dsr": row.get("dsr_folder_id"), "msr": row.get("msr_folder_id"), "purchases": row.get("purchase_folder_id"), "admin_audit": row.get("admin_audit_folder_id")}
+    folders = {"dsr": row.get("dsr_folder_id"), "msr": row.get("msr_folder_id"), "purchases": row.get("purchase_folder_id"), "sales": row.get("sales_folder_id"), "admin_audit": row.get("admin_audit_folder_id")}
     try:
         result = drive.test_folders(env(), folders)
     except drive.DriveError as err:
@@ -8026,6 +8117,20 @@ def drive_queue():
     except Exception:
         app.logger.exception("could not sync ongoing MSR to Drive waiting queue")
 
+    try:
+        settings = _drive_settings() or {}
+        if settings.get("sales_folder_id"):
+            ws, waiting_sales = sb("drive_export_queue", params={
+                "kind": "eq.sale", "status": "eq.waiting", "select": "id", "limit": "500"})
+            if ws == 200:
+                for queued in waiting_sales or []:
+                    sb("drive_export_queue", method="PATCH", params={"id": "eq." + str(queued.get("id"))},
+                       body={"status": "pending", "attempts": 0, "last_error": None,
+                             "updated_at": datetime.now(timezone.utc).isoformat()},
+                       prefer="return=minimal")
+    except Exception:
+        app.logger.exception("could not activate waiting shift-sale Drive exports")
+
     st, rows = sb("drive_export_queue", params={
         "status": "neq.done", "select": "id,kind,report_key,status,attempts,last_error,updated_at",
         "order": "report_key.asc", "limit": "500"})
@@ -8100,26 +8205,68 @@ def drive_upload(item_id):
     if item.get("status") == "done":
         return jsonify({"ok": True, "already_uploaded": True}), 200
     settings = _drive_settings() or {}
-    kind, key = item["kind"], item["report_key"]
+    kind, key = item["kind"], str(item["report_key"] or "")
+    root, sub, name, nested_folders = None, None, None, None
     if kind == "dsr":
         root, sub, name = settings.get("dsr_folder_id"), key[:7], "DSR-" + key + ".pdf"
-    else:
+    elif kind == "msr":
         root, sub, name = settings.get("msr_folder_id"), key[:4], "MSR-" + key + ".pdf"
+    elif kind == "sale":
+        root = settings.get("sales_folder_id")
+    else:
+        return jsonify({"error": "Unsupported Drive export type"}), 400
     attempts = int(item.get("attempts") or 0) + 1
     try:
         if not root:
-            raise drive.DriveError("No Drive folder set for " + kind.upper() + " reports in Settings", 409)
-        file_id, link = drive.store_pdf(env(), root, sub, name, pdf)
+            raise drive.DriveError("Set the Sales folder link in Admin Settings before exporting confirmed shift sales." if kind == "sale" else "No Drive folder set for " + kind.upper() + " reports in Settings", 409)
+        if kind == "sale":
+            try:
+                raw_day, takeover_id = key.split("|", 1)
+                report_day = date.fromisoformat(raw_day)
+            except Exception:
+                raise drive.DriveError("Invalid confirmed shift-sale export key", 400)
+            if not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", takeover_id):
+                raise drive.DriveError("Invalid shift handover ID in Drive export queue", 400)
+            ts, takeovers = sb("shift_takeovers", params={
+                "id": "eq." + takeover_id,
+                "select": "id,shift_id,sales_status,sales_confirmed_at",
+                "limit": "1"})
+            if ts >= 400 or not takeovers:
+                raise drive.DriveError("The confirmed shift handover for this PDF could not be found", 404)
+            takeover = takeovers[0]
+            if str(takeover.get("sales_status") or "").lower() != "confirmed" and not takeover.get("sales_confirmed_at"):
+                raise drive.DriveError("This shift handover sale is not confirmed; refusing to upload it", 409)
+            ss, shift_rows = sb("shifts", params={
+                "id": "eq." + str(takeover.get("shift_id") or ""),
+                "select": "start_time", "limit": "1"})
+            if ss >= 400 or not shift_rows:
+                raise drive.DriveError("The shift date for this sales PDF could not be verified", 404)
+            actual_day = _local_date_from_iso(shift_rows[0].get("start_time"))
+            if not actual_day or actual_day.isoformat() != report_day.isoformat():
+                raise drive.DriveError("The sales PDF date does not match the confirmed shift handover", 409)
+            nested_folders = [report_day.strftime("%Y"), report_day.strftime("%B"), "DSR"]
+            safe_id = re.sub(r"[^A-Za-z0-9_-]+", "_", takeover_id)[:40]
+            name = "Sales-" + report_day.isoformat() + "-" + safe_id + ".pdf"
+        try:
+            if kind == "sale":
+                file_id, link = drive.store_pdf_path(env(), root, nested_folders, name, pdf)
+                drive_path = "SALES/" + "/".join(nested_folders + [name])
+            else:
+                file_id, link = drive.store_pdf(env(), root, sub, name, pdf)
+                drive_path = "%s/%s/%s" % (kind.upper(), sub, name)
+        except drive.DriveError:
+            raise
         sb("drive_export_queue", method="PATCH", params={"id": "eq." + item_id}, body={
             "status": "done", "attempts": attempts, "last_error": None,
             "drive_file_id": file_id, "drive_url": link,
             "updated_at": datetime.now(timezone.utc).isoformat()}, prefer="return=minimal")
-        return jsonify({"ok": True, "file_id": file_id, "url": link, "path": "%s/%s/%s" % (kind.upper(), sub, name)}), 200
+        return jsonify({"ok": True, "file_id": file_id, "url": link, "path": drive_path}), 200
     except drive.DriveError as err:
         status = "failed" if attempts >= DRIVE_MAX_ATTEMPTS or err.status in (403, 404, 409) else "pending"
         sb("drive_export_queue", method="PATCH", params={"id": "eq." + item_id}, body={
             "status": status, "attempts": attempts, "last_error": str(err)[:500],
             "updated_at": datetime.now(timezone.utc).isoformat()}, prefer="return=minimal")
         return jsonify({"ok": False, "error": str(err), "status": status}), err.status
+
 
 Default=wsgi.entrypoint(app)
