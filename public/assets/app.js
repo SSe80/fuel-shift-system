@@ -4156,7 +4156,9 @@ function createMsrReportPdf(r){
   return d.finish(r.footer,'MSR - '+r.title);
 }
 
-async function downloadAdminSaleHistoryDetails(id){
+async function downloadAdminSaleHistoryDetails(id, options){
+  options=options||{};
+  const uploadOnly=options.uploadOnly===true;
   // Generate the PDF from the same data and section order shown in the
   // Admin Sales History View Details card.
   let item=(adminSalesHistoryData.history||[]).find(x=>String(x.takeover?.id)===String(id))
@@ -4165,9 +4167,9 @@ async function downloadAdminSaleHistoryDetails(id){
     try{
       const data=await api('/api/shift-takeovers/'+encodeURIComponent(id)+'/sale-record');
       if(data?.takeover)item={takeover:data.takeover,sales:Array.isArray(data.sales)?data.sales:[]};
-    }catch(e){toast(e.message||'Unable to load the sales record for PDF.');return;}
+    }catch(e){if(!uploadOnly)toast(e.message||'Unable to load the sales record for PDF.');return null;}
   }
-  if(!item?.takeover){toast('Sales details are not available for this record.');return;}
+  if(!item?.takeover){if(!uploadOnly)toast('Sales details are not available for this record.');return null;}
 
   const t=item.takeover||{},initial=t,sales=Array.isArray(item.sales)?item.sales:[],saleMeta={};
   try{
@@ -4334,9 +4336,12 @@ async function downloadAdminSaleHistoryDetails(id){
       {label:'Confirmed',value:fmtDate(confirmedAt),size:11.5}
     ]
   });
+  const fileName='sales-'+String(t.shift_id||id).slice(0,8)+'-report.pdf';
+  // Drive exports use this exact PDF renderer, but must never trigger a local download.
+  if(uploadOnly)return {blob,fileName};
   const url=URL.createObjectURL(blob),link=document.createElement('a');
   link.href=url;
-  link.download='sales-'+String(t.shift_id||id).slice(0,8)+'-report.pdf';
+  link.download=fileName;
   document.body.appendChild(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
   showAttendantActionResult('success','PDF downloaded','The sales PDF has been downloaded successfully.');
