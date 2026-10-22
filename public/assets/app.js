@@ -2067,7 +2067,20 @@ async function adminDashboard(){
     const products=allProducts.filter(p=>p.active===true);
     const productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     const codeForProduct=product=>productCodes[String(product||'').toLowerCase()]||product;
-    const tanks=allTanks.filter(t=>t.active===true && products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase()));
+    const inventoryByTank=new Map((Array.isArray(inventory)?inventory:[]).map(row=>[String(row.tank_id||''),row]));
+    const tanks=allTanks.filter(t=>t.active===true && products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase())).map(t=>{
+      const reconciliation=inventoryByTank.get(String(t.id));
+      const expected=Number(reconciliation?.expected_liters);
+      // Keep Station Control aligned with Admin Inventory's opening-based stock calculation.
+      return reconciliation&&reconciliation.reconciliation_status!=='no_anchor'&&Number.isFinite(expected)
+        ? {...t,current_liters:expected,inventory_reconciliation:reconciliation}
+        : t;
+    });
+    const calculatedStockByTank=new Map(tanks.map(t=>[String(t.id),Number(t.current_liters)]));
+    (Array.isArray(movements)?movements:[]).forEach(m=>{
+      const calculated=calculatedStockByTank.get(String(m.tank_id||''));
+      if(Number.isFinite(calculated))m.current_liters=calculated;
+    });
     const dispensers=allDispensers.filter(d=>d.active===true && tanks.some(t=>t.id===d.tank_id) && products.some(p=>String(p.name).toLowerCase()===String(d.product||'').toLowerCase()));
     const activeEmployees=employees.filter(e=>e.active===true);
     const activeEmployeeIds=new Set(activeEmployees.map(e=>e.id));
