@@ -33,7 +33,7 @@
         dateLabel = monthNames[Number(bits[1]) - 1] + ' ' + String(Number(bits[2])) + ', ' + bits[0];
       }
       return {
-        title: item.sales_confirmed === false ? 'Sales awaiting confirmation' : 'Confirmed sales PDF',
+        title: item.sales_confirmed === false ? 'Sales' : 'Confirmed sales PDF',
         meta: (item.sales_attendant || 'Attendant') + ' · ' + dateLabel
       };
     }
@@ -46,9 +46,9 @@
     style.textContent = [
       '.drive-queue-list{display:grid;gap:10px}',
       '.drive-queue-row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid var(--border-color,#e5e7eb);border-radius:14px;background:var(--card-bg,#fff)}',
-      '.drive-queue-main{min-width:0;display:grid;gap:6px}',
-      '.drive-queue-title{font-size:14px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}',
-      '.drive-queue-meta{font-size:13px;line-height:1.45;color:var(--muted,#6b7280);overflow-wrap:anywhere}',
+      '.drive-queue-main{min-width:0;display:grid;gap:3px}',
+      '.drive-queue-title{font-size:14px;font-weight:700;line-height:1.2;overflow-wrap:anywhere;margin:0}',
+      '.drive-queue-meta{font-size:13px;line-height:1.25;color:var(--muted,#6b7280);overflow-wrap:anywhere;margin:0}',
       '.drive-queue-state{display:inline-flex;align-items:center;align-self:flex-start;max-width:100%;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;line-height:1.35;background:#f3f4f6;color:#4b5563}',
       '.drive-queue-state.is-ready{background:#dcfce7;color:#166534}',
       '.drive-queue-state.is-waiting{background:#fef3c7;color:#92400e}',
