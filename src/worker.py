@@ -3071,6 +3071,7 @@ def shifts():
     if auth:return auth
     params={"select":"*","order":"created_at.desc","limit":"100"}
     if session.get("role")!="admin":params["employee_id"]="eq."+session["employee_id"]
+    else:params["limit"]="5000"
     status,rows=sb("shifts",params=params)
     if status != 200:
         return jsonify(rows),status
