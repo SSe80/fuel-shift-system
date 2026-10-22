@@ -7732,7 +7732,7 @@ def _drive_enqueue_sale_key(report_day, takeover_id, confirmed=True):
         current = str(row.get("status") or "")
         if current == "done":
             return True
-        if desired == "pending" and current in ("waiting", "failed"):
+        if desired == "pending" and current == "waiting":
             us, _ = sb("drive_export_queue", method="PATCH", params={"id": "eq." + str(row["id"])},
                        body={"status": "pending", "attempts": 0, "last_error": None,
                              "updated_at": datetime.now(timezone.utc).isoformat()},
