@@ -461,6 +461,25 @@ def store_pdf(e, root_id, subfolder, file_name, pdf_bytes):
     Returns (drive_file_id, web_view_link)."""
     return run_sync(_store(e, root_id, subfolder, file_name, pdf_bytes))
 
+async def _store_pdf_path(e, root_id, subfolders, file_name, pdf_bytes):
+    """Ensure a nested folder path under a configured root, then upload or replace a PDF."""
+    token = await _drive_access_token(e)
+    await check_folder(token, root_id)
+    current_id = root_id
+    for raw_name in (subfolders or []):
+        name = str(raw_name or "").strip()
+        if not name or name in (".", "..") or "/" in name or "\\" in name:
+            raise DriveError("Invalid Drive subfolder path", 400)
+        current_id = await _ensure_folder(token, current_id, name)
+    return await _upload_pdf(token, current_id, file_name, pdf_bytes)
+
+
+def store_pdf_path(e, root_id, subfolders, file_name, pdf_bytes):
+    """Create each folder in a nested path under root_id, then upsert the PDF."""
+    if not isinstance(subfolders, (list, tuple)):
+        raise DriveError("Subfolders must be a list of folder names", 400)
+    return run_sync(_store_pdf_path(e, root_id, list(subfolders), file_name, pdf_bytes))
+
 
 
 def _truck_clean_name(value):
