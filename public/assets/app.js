@@ -4342,7 +4342,8 @@ async function downloadAdminSaleHistoryDetails(id){
   setTimeout(()=>URL.revokeObjectURL(url),1000);
   showAttendantActionResult('success','PDF downloaded','The sales PDF has been downloaded successfully.');
 }
-function downloadPurchaseDetailPdf(){
+async function downloadPurchaseDetailPdf(options){
+  options=options||{};
   const id=window.currentPurchaseDetailId;
   const p=window.currentPurchaseDetailData||((typeof purchaseDetailData!=='undefined'&&Array.isArray(purchaseDetailData)?purchaseDetailData:[]).find(x=>String(x.id)===String(id)));
   if(!p){toast('Purchase details are not available. Please reopen the detail card and try again.');return;}
@@ -4399,7 +4400,12 @@ function downloadPurchaseDetailPdf(){
         {label:'Recorded closing',value:recorded!=null?fmtL(recorded):'Not recorded',tone:isRecorded?undefined:C.AMBER},
         {label:'Stock difference',value:signedL(diff),tone:high?C.RED:undefined}
       ]};});
-  const remarkText=String(p.remark||p.purchase_remark||'').trim();
+  const purchaseRemark=String(p.purchase_remark||p.purchase_remark_note||p.remark||'').trim();
+  const tankStockRemarks=history.map(e=>String(e&&e.tank_stock_remark||'').trim()).filter(Boolean);
+  const remarkParts=[];
+  if(purchaseRemark)remarkParts.push('Purchase note: '+purchaseRemark);
+  tankStockRemarks.forEach((note,i)=>remarkParts.push((tankStockRemarks.length>1?'Discharge note '+(i+1)+': ':'Discharge note: ')+note));
+  const remarkText=remarkParts.join('\n');
   const summaryLine='Difference (delivered - ordered): '+signedL(difference)+'     ·     Fully discharged at: '+fullyAt+'     ·     Status: '+statusLabel;
   const blob=createPurchaseDetailPdfV2({
     title:'Invoice #'+invoice,
@@ -4430,12 +4436,54 @@ function downloadPurchaseDetailPdf(){
     remark:remarkText||'No purchase remark recorded.',remarkEmpty:!remarkText,
     footer:'Invoice '+invoice+'  ·  '+productName+'  ·  Purchase detail'
   });
+  const downloadName='purchase-'+invoice.replace(/[^A-Za-z0-9_-]/g,'_')+'-report.pdf';
+  const safeDriveId=String(invoice==='—'?p.id:invoice).replace(/[^a-z0-9_-]+/gi,'_').slice(0,50)||'purchase';
+  const driveName='purchase_'+safeDriveId+'.pdf';
+
+  // Match DSR/MSR: render once with the canonical PDF builder, then upload that
+  // exact Blob. Upload-only work must never trigger a browser download.
+  if(options.uploadOnly===true){
+    await uploadPurchasePdfBlobToDrive(blob,driveName,p);
+    return true;
+  }
+
   const url=URL.createObjectURL(blob),link=document.createElement('a');
-  link.href=url;link.download='purchase-'+invoice.replace(/[^A-Za-z0-9_-]/g,'_')+'-report.pdf';
+  link.href=url;link.download=downloadName;
   document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   toast('PDF downloaded');
+  // The explicit Download PDF button also stores the same rendered document in
+  // Drive, while history-page downloads remain download-only.
+  if(options.download===true){
+    try{await uploadPurchasePdfBlobToDrive(blob,driveName,p);}
+    catch(uploadError){toast('PDF downloaded, but Drive storage failed: '+(uploadError.message||'unknown error'));}
+  }
+  return true;
+}
+async function uploadPurchasePdfBlobToDrive(blob,fileName,p){
+  const bytes=new Uint8Array(await blob.arrayBuffer());
+  let binary='';
+  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));
+  const response=await fetch('/api/drive/purchases/upload',{
+    method:'POST',credentials:'same-origin',
+    headers:{'Content-Type':'application/json','X-Fuel-Role':'admin'},
+    body:JSON.stringify({
+      pdf_base64:btoa(binary),
+      file_name:fileName,
+      purchase_date:String(p.purchase_date||p.purchase_datetime||p.created_at||'').slice(0,10)
+    })
+  });
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.ok)throw new Error(result.error||('HTTP '+response.status));
+  if(typeof window.toast==='function')window.toast('Purchase PDF saved to Google Drive: '+(result.path||fileName));
+  return true;
 }
 window.downloadPurchaseDetailPdf=downloadPurchaseDetailPdf;
+window.uploadPurchaseDetailPdf=async function(purchase){
+  if(!purchase){toast('Purchase PDF could not be located for Drive storage.');return false;}
+  window.currentPurchaseDetailData=purchase;
+  window.currentPurchaseDetailId=purchase.id;
+  return await window.downloadPurchaseDetailPdf({uploadOnly:true});
+};
 
 async function getShiftPurchaseDischargeLiters(tankId,startAt,endAt,tankCode,shiftId){
   // Use the authenticated, shift-scoped endpoint. The general purchases endpoint
