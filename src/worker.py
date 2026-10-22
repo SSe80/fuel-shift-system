@@ -7738,6 +7738,12 @@ def _drive_enqueue_sale_key(report_day, takeover_id, confirmed=True):
                              "updated_at": datetime.now(timezone.utc).isoformat()},
                        prefer="return=minimal")
             return us < 400
+        if desired == "waiting" and current == "pending":
+            us, _ = sb("drive_export_queue", method="PATCH", params={"id": "eq." + str(row["id"])},
+                       body={"status": "waiting", "attempts": 0, "last_error": None,
+                             "updated_at": datetime.now(timezone.utc).isoformat()},
+                       prefer="return=minimal")
+            return us < 400
         return current == "pending"
     return _drive_enqueue("sale", key, status=desired)
 
