@@ -7714,13 +7714,13 @@ def _drive_enqueue(kind, report_key, status="pending"):
                  body=body, prefer="resolution=merge-duplicates,return=minimal")
     return st < 400
 
-def _drive_enqueue_sale_key(report_day, takeover_id):
+def _drive_enqueue_sale_key(report_day, takeover_id, confirmed=True):
     """Queue one confirmed handover PDF without resetting an existing export."""
     if not report_day or not takeover_id:
         return False
     key = report_day.isoformat() + "|" + str(takeover_id)
     settings = _drive_settings() or {}
-    desired = "pending" if settings.get("sales_folder_id") else "waiting"
+    desired = "pending" if confirmed and settings.get("sales_folder_id") else "waiting"
     st, rows = sb("drive_export_queue", params={
         "kind": "eq.sale", "report_key": "eq." + key,
         "select": "id,status", "limit": "1"})
@@ -8148,9 +8148,9 @@ def drive_queue():
                         "submitted", "pending", "pending_confirmation", "awaiting_confirmation",
                         "under_review")
                     if is_confirmed:
-                        _drive_enqueue_sale_key(shift_day, takeover_id)
+                        _drive_enqueue_sale_key(shift_day, takeover_id, confirmed=True)
                     elif is_submitted:
-                        _drive_enqueue_sale_key(shift_day, takeover_id)
+                        _drive_enqueue_sale_key(shift_day, takeover_id, confirmed=False)
     except Exception:
         app.logger.exception("could not sync shift-sale confirmation status to Drive queue")
 
