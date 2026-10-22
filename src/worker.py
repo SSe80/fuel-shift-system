@@ -8195,6 +8195,30 @@ def drive_queue():
             app.logger.exception("could not enrich Drive queue with sales confirmation status")
     return jsonify(queue_rows), 200
 
+@app.post("/api/drive/queue/<item_id>/fail")
+def drive_queue_fail(item_id):
+    auth = require_admin()
+    if auth: return auth
+    data = request.get_json(silent=True) or {}
+    message = str(data.get("error") or "PDF generation failed").strip()[:500]
+    st, rows = sb("drive_export_queue", params={
+        "id": "eq." + str(item_id),
+        "select": "id,status,attempts,kind", "limit": "1"})
+    if st >= 400 or not rows:
+        return jsonify({"error": "Queue item not found"}), 404
+    item = rows[0]
+    if item.get("status") == "done":
+        return jsonify({"ok": True, "already_uploaded": True}), 200
+    attempts = int(item.get("attempts") or 0) + 1
+    status = "failed" if attempts >= DRIVE_MAX_ATTEMPTS or item.get("kind") == "sale" else "pending"
+    us, _ = sb("drive_export_queue", method="PATCH", params={"id": "eq." + str(item_id)},
+               body={"status": status, "attempts": attempts, "last_error": message,
+                     "updated_at": datetime.now(timezone.utc).isoformat()}, prefer="return=minimal")
+    if us >= 400:
+        return jsonify({"error": "Could not save export failure"}), us
+    return jsonify({"ok": True, "status": status, "attempts": attempts}), 200
+
+
 @app.post("/api/drive/queue/<item_id>/retry")
 def drive_retry(item_id):
     auth = require_admin()
