@@ -7259,7 +7259,17 @@ async function openAdminDispenserDetails(id){
     const shift=shifts.filter(x=>x.status==='active').find(x=>String(x.nozzle_id)===String(d.id));
     const attendant=shift?employees.find(x=>String(x.id)===String(shift.employee_id)):null;
     const color=String(product?.color||'#1264d8').trim()||'#1264d8'; modal.querySelector('.admin-dispenser-details-card').style.setProperty('--product-color',color);
-    const count=Number(d.nozzle_count||1), reads=Array.isArray(shift?.activation_nozzles)?shift.activation_nozzles:[], nums=reads.map(x=>Number(x?.opening_reading)).filter(Number.isFinite), opening=nums.length?nums.reduce((a,b)=>a+b,0):null;
+    const count=Number(d.nozzle_count||1);
+    // Opening readings can be returned through the activation snapshot, normalized
+    // nozzle readings, or the shift's aggregate opening_reading depending on API age.
+    const reads=Array.isArray(shift?.activation_nozzles)?shift.activation_nozzles:
+      (Array.isArray(shift?.nozzle_readings)?shift.nozzle_readings:
+      (Array.isArray(shift?.opening_nozzle_readings)?shift.opening_nozzle_readings:[]));
+    const nums=reads.map(x=>x?.opening_reading??x?.openingReading??x?.reading)
+      .filter(v=>v!==null&&v!==undefined&&v!=='').map(Number).filter(Number.isFinite);
+    const shiftOpeningRaw=shift?.opening_reading??shift?.opening_meter_reading??shift?.opening_reading_liters;
+    const opening=nums.length?nums.reduce((a,b)=>a+b,0):
+      (shiftOpeningRaw!==null&&shiftOpeningRaw!==undefined&&shiftOpeningRaw!==''&&Number.isFinite(Number(shiftOpeningRaw))?Number(shiftOpeningRaw):null);
     const salesFor=performanceSales.filter(x=>String(x.nozzle_id||'')===String(d.id)), today=new Date().toISOString().slice(0,10), todaySales=salesFor.filter(x=>String(x.sale_time||x.created_at||'').slice(0,10)===today);
     const allL=salesFor.reduce((a,x)=>a+Number(x.quantity_liters||0),0), dayL=todaySales.reduce((a,x)=>a+Number(x.quantity_liters||0),0);
     const hero='<div class="admin-dispenser-details-hero"><div><span class="field-label">DISPENSER</span><h2>'+h(d.nozzle_code||'Dispenser')+'</h2><p>'+h(product?.code_name||d.product||tank?.product||'—')+' • '+h(tank?.tank_code||'No tank')+'</p></div><span class="admin-dispenser-details-status">ACTIVE</span></div>';
