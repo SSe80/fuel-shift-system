@@ -1736,6 +1736,14 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     if(purchaseDriveUploadRunning||!Array.isArray(purchases))return;
     purchaseDriveUploadRunning=true;
     try{
+      // Force one refresh of the newest fully completed purchase PDF so the existing
+      // Google Drive file is overwritten with the same style as Download PDF.
+      const eligible=purchases.filter(p=>{
+        const events=Array.isArray(p?.discharge_history)?p.discharge_history:[];
+        return String(p?.status||'').toLowerCase()==='discharged'&&events.length>0&&events.every(e=>e&&e.tank_stock_recorded===true)&&Boolean(p?.id);
+      });
+      const latest=eligible.slice().sort((a,b)=>String(b.purchase_datetime||b.purchase_date||b.created_at||'').localeCompare(String(a.purchase_datetime||a.purchase_date||a.created_at||'')))[0];
+      const latestId=latest?String(latest.id):'';
       for(const p of purchases){
         const history=Array.isArray(p?.discharge_history)?p.discharge_history:[];
         if(String(p?.status||'').toLowerCase()!=='discharged'||!history.length||!history.every(e=>e&&e.tank_stock_recorded===true))continue;
@@ -1743,7 +1751,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
         if(!id)continue;
         // Bump this version when the PDF layout changes so the latest saved
         // Drive copy is regenerated once using the same renderer as Download PDF.
-        const signature=JSON.stringify({pdf_style_version:2,invoice:p.invoice_number,status:p.status,history:history.map(e=>[e.tank_id,e.tank_stock_recorded_at,e.tank_stock_recorded_liters,e.tank_stock_difference_liters,e.tank_stock_remark])});
+        const signature=JSON.stringify({pdf_style_version:id===latestId?3:2,invoice:p.invoice_number,status:p.status,history:history.map(e=>[e.tank_id,e.tank_stock_recorded_at,e.tank_stock_recorded_liters,e.tank_stock_difference_liters,e.tank_stock_remark])});
         const key='fuel-shift-drive-purchase:'+id;
         const retryKey=key+':retry-after';
         try{if(localStorage.getItem(key)===signature)continue;}catch(_){}
