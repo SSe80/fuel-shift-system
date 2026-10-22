@@ -37,6 +37,7 @@ dialog{width:min(620px,calc(100% - 20px));max-height:90dvh;overflow:auto;padding
 'use strict';const $=id=>document.getElementById(id),H={Accept:'application/json','Content-Type':'application/json','X-Fuel-Role':'admin'},S={deliveries:[],trucks:[],products:[],tanks:[]};
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=v=>Number.isFinite(Number(v))?Number(v):0,fmt=v=>num(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),rate=v=>num(v).toLocaleString('en-US',{maximumFractionDigits:4}),lit=v=>num(v).toLocaleString('en-US',{maximumFractionDigits:3}),cash=v=>'ETB '+fmt(v),dt=v=>{const d=new Date(v);return v&&!Number.isNaN(d.getTime())?d.toLocaleString():'—'};
+const elig=d=>d.eligible_for_payment===true&&d.status==='completed'&&(d.transport_payment_status||'unpaid')==='unpaid';
 async function api(url,opts){const r=await fetch(url,{credentials:'same-origin',cache:'no-store',...opts,headers:{...H,...(opts&&opts.headers||{})}}),j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||'Request failed ('+r.status+')');return j}
 const visible=()=>{const q=$('search').value.trim().toLowerCase();return S.deliveries.filter(d=>!q||[d.delivery_reference,d.product_name,d.truck_code_snapshot,d.registration_snapshot,d.supplier_name,d.driver_name_snapshot].some(v=>String(v||'').toLowerCase().includes(q)))};
 function sum(){const c=S.deliveries.filter(d=>d.status==='completed'),u=c.filter(elig);$('s-unpaid').textContent=u.length;$('s-due').textContent=fmt(u.reduce((a,d)=>a+num(d.total_fee),0));$('s-liters').textContent=lit(c.reduce((a,d)=>a+num(d.delivered_liters),0));$('s-completed').textContent=c.length}
@@ -90,7 +91,7 @@ load();historyLoad();
 const $=id=>document.getElementById(id);
 const S={rows:[]};
 const n=v=>Number.isFinite(Number(v))?Number(v):0;
-const liters=v=>n(v).toLocaleString('en-US',{maximumFractionDigits:3});
+const liters=v=>n(v).toLocaleString('en-US',{maximumFractionDigits:3}),lit=liters;
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const date=v=>{if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString()};
 function plate(p){const base=String(p.plate_number||p.plate||p.truck_plate||'').trim();const trailer=String(p.trailer_plate||p.trailerPlate||'').trim();if(!base)return '—';return trailer&&!base.split('/').map(x=>x.trim()).includes(trailer)?base+' / '+trailer:base}
