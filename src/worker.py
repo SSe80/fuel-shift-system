@@ -3997,7 +3997,6 @@ def inventory_summary():
         ledger_purchases=0.0
         sales=0.0
         adjustments=0.0
-        ledger_purchase_refs=set()
 
         for movement in movements:
             if movement is anchor:
@@ -4010,8 +4009,6 @@ def inventory_summary():
             qty=float(movement.get("quantity_liters") or 0)
             if movement_type=="purchase":
                 ledger_purchases += qty
-                if movement.get("reference_id"):
-                    ledger_purchase_refs.add(str(movement.get("reference_id")))
             elif movement_type=="sale":
                 sales += abs(qty)
             elif movement_type=="adjustment":
