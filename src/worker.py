@@ -8325,7 +8325,7 @@ def drive_upload(item_id):
             actual_day = _local_date_from_iso(shift_rows[0].get("start_time"))
             if not actual_day or actual_day.isoformat() != report_day.isoformat():
                 raise drive.DriveError("The sales PDF date does not match the confirmed shift handover", 409)
-            nested_folders = [report_day.strftime("%Y"), report_day.strftime("%B"), "DSR"]
+            nested_folders = [report_day.strftime("%Y"), report_day.strftime("%B"), "DSR-" + report_day.isoformat()]
             safe_id = re.sub(r"[^A-Za-z0-9_-]+", "_", takeover_id)[:40]
             name = "Sales-" + report_day.isoformat() + "-" + safe_id + ".pdf"
         try:
