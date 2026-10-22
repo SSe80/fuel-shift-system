@@ -7753,14 +7753,13 @@ def _drive_enqueue_confirmed_shift_sale(takeover_id):
     takeover = rows[0]
     if str(takeover.get("sales_status") or "").lower() != "confirmed" and not takeover.get("sales_confirmed_at"):
         return False
-    report_day = _local_date_from_iso(takeover.get("shift_started_at"))
-    if not report_day:
-        ss, shifts = sb("shifts", params={
-            "id": "eq." + str(takeover.get("shift_id") or ""),
-            "select": "start_time", "limit": "1"})
-        if ss >= 400 or not shifts:
-            return False
-        report_day = _local_date_from_iso(shifts[0].get("start_time"))
+    # Use the canonical shifts table date, which is also checked again at upload time.
+    ss, shifts = sb("shifts", params={
+        "id": "eq." + str(takeover.get("shift_id") or ""),
+        "select": "start_time", "limit": "1"})
+    if ss >= 400 or not shifts:
+        return False
+    report_day = _local_date_from_iso(shifts[0].get("start_time"))
     return _drive_enqueue_sale_key(report_day, takeover.get("id")) if report_day else False
 
 
