@@ -8159,7 +8159,35 @@ def drive_queue():
         "order": "report_key.asc", "limit": "500"})
     if st >= 400:
         return jsonify({"error": rows}), st
-    return jsonify(rows or []), 200
+    queue_rows = rows or []
+    sale_ids = []
+    for queued in queue_rows:
+        if queued.get("kind") == "sale":
+            try:
+                _, takeover_id = str(queued.get("report_key") or "").split("|", 1)
+                if takeover_id:
+                    sale_ids.append(takeover_id)
+            except ValueError:
+                pass
+    if sale_ids:
+        try:
+            ts, takeovers = sb("shift_takeovers", params={
+                "id": "in.(" + ",".join(sorted(set(sale_ids))) + ")",
+                "select": "id,sales_status,sales_confirmed_at", "limit": "10000"})
+            if ts == 200:
+                sale_state = {str(t.get("id")):
+                    (str(t.get("sales_status") or "").lower() == "confirmed" or bool(t.get("sales_confirmed_at")))
+                    for t in (takeovers or [])}
+                for queued in queue_rows:
+                    if queued.get("kind") == "sale":
+                        try:
+                            _, takeover_id = str(queued.get("report_key") or "").split("|", 1)
+                            queued["sales_confirmed"] = sale_state.get(takeover_id, False)
+                        except ValueError:
+                            queued["sales_confirmed"] = False
+        except Exception:
+            app.logger.exception("could not enrich Drive queue with sales confirmation status")
+    return jsonify(queue_rows), 200
 
 @app.post("/api/drive/queue/<item_id>/retry")
 def drive_retry(item_id):
