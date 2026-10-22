@@ -1145,7 +1145,7 @@
   <div id="purchase-detail-content" class="purchase-detail-content"></div>
   <div class="purchase-detail-actions" id="purchase-detail-actions"><button type="button" class="purchase-detail-download" onclick="downloadPurchaseDetailPdf({download:true})">Download PDF</button><button type="button" onclick="closePurchaseDetail()">Close</button></div>
 </div>
-</div><div id="toast" class="toast"></div></main><script src="assets/app.js?v=purchase-upload-on-completion-only-20261022"></script><script>
+</div><div id="toast" class="toast"></div></main><script src="assets/app.js?v=purchase-shortage-payment-pdf-20261023"></script><script>
 (function(){
   const productSelect=document.getElementById('purchase-product');
   const orderedQuantityInput=document.getElementById('purchase-ordered-quantity');
@@ -1598,7 +1598,7 @@
         if(!id)continue;
         // Bump this version when the PDF layout changes so the latest saved
         // Drive copy is regenerated once using the same renderer as Download PDF.
-        const signature=JSON.stringify({pdf_style_version:id===latestId?4:3,invoice:p.invoice_number,status:p.status,purchase_date:p.purchase_date,purchase_datetime:p.purchase_datetime,created_at:p.created_at,product:p.product,product_code:p.product_code,quantity_liters:p.quantity_liters,ordered_quantity_liters:p.ordered_quantity_liters,discharged_quantity_liters:p.discharged_quantity_liters,driver_name:p.driver_name,driver_phone:p.driver_phone,plate_number:p.plate_number,truck_compartments:p.truck_compartments,purchase_remark:p.purchase_remark,purchase_remark_note:p.purchase_remark_note,remark:p.remark,shortage_payment_status:p.shortage_payment_status,compartment_liters:p.compartment_liters,history:history.map(e=>[e.tank_id,e.discharge_datetime,e.created_at,e.tank_liters_before,e.tank_liters_after,e.tank_stock_recorded,e.tank_stock_recorded_at,e.tank_stock_recorded_liters,e.tank_stock_recorded_mm,e.tank_stock_difference_liters,e.tank_stock_remark])});
+        const signature=JSON.stringify({pdf_style_version:id===latestId?5:4,invoice:p.invoice_number,status:p.status,purchase_date:p.purchase_date,purchase_datetime:p.purchase_datetime,created_at:p.created_at,product:p.product,product_code:p.product_code,quantity_liters:p.quantity_liters,ordered_quantity_liters:p.ordered_quantity_liters,discharged_quantity_liters:p.discharged_quantity_liters,driver_name:p.driver_name,driver_phone:p.driver_phone,plate_number:p.plate_number,truck_compartments:p.truck_compartments,purchase_remark:p.purchase_remark,purchase_remark_note:p.purchase_remark_note,remark:p.remark,shortage_payment_status:p.shortage_payment_status,compartment_liters:p.compartment_liters,history:history.map(e=>[e.tank_id,e.discharge_datetime,e.created_at,e.tank_liters_before,e.tank_liters_after,e.tank_stock_recorded,e.tank_stock_recorded_at,e.tank_stock_recorded_liters,e.tank_stock_recorded_mm,e.tank_stock_difference_liters,e.tank_stock_remark])});
         const key='fuel-shift-drive-purchase:'+id;
         const retryKey=key+':retry-after';
         // Never trust the browser's local signature for the newest completed purchase:
