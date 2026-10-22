@@ -80,7 +80,7 @@
   }
   var reportWorkers = {};
   function maintainReportWorkers(items) {
-    ['dsr', 'msr', 'sale'].forEach(function (kind) {
+    ['dsr', 'msr'].forEach(function (kind) {
       var waiting = items.some(function (item) {
         return item.kind === kind && item.status === 'pending' && (item.attempts || 0) < 3;
       });
@@ -139,6 +139,19 @@
       });
       window.DriveSettings.load();
       loadOAuthStatus();
+      // Build confirmed sales PDFs directly in the authenticated Settings page.
+      // This avoids relying on a hidden Sales-page iframe to start the sale worker.
+      if (window.DriveQueue && typeof window.downloadAdminSaleHistoryDetails === 'function') {
+        window.DriveQueue.start({
+          sale: async function (key) {
+            var parts = String(key || '').split('|');
+            if (parts.length < 2 || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(parts[0])) return null;
+            var takeoverId = parts.slice(1).join('|');
+            if (!takeoverId) return null;
+            return await window.downloadAdminSaleHistoryDetails(takeoverId, { uploadOnly: true, reportDate: parts[0] });
+          }
+        }, 10000);
+      }
       // Keep queue status fresh and wake the report-page PDF builders while admin settings is open.
       window.setInterval(loadQueue, 30000);
     }
