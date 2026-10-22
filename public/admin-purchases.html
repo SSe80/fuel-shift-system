@@ -1729,8 +1729,8 @@ window.uploadPurchaseDetailPdf=async function(purchase){
     }
     return '<article class="purchase-card purchase-history-full-card tank-stock-history-alert-card"><div class="purchase-history-full-head"><div><div class="purchase-product-title"><span class="purchase-product-color" style="background:'+purchaseH(productColor)+'"></span><strong>'+purchaseH(p.invoice_number?('Invoice #'+p.invoice_number):'Purchase — No Invoice')+'</strong></div><small>'+purchaseH(productCode)+' · '+purchaseH(datePurchase)+'</small></div><span class="purchase-history-full-badge">⚠️ DISCHARGED</span></div><div class="purchase-history-full-main"><div><span>Delivered quantity</span><strong>'+purchaseH(purchaseLiters(total))+' L</strong></div><div><span>Invoice</span><strong>'+purchaseH(p.invoice_number||'—')+'</strong></div><div><span>Truck / trailer plate</span><strong>'+purchaseH(plateDisplay)+'</strong></div><div><span>Fully discharged</span><strong>'+purchaseH(p.discharged_at?new Date(p.discharged_at).toLocaleString():'—')+'</strong></div></div><div class="purchase-history-card-actions"><button type="button" onclick="openPurchaseDetail(this.dataset.id)" data-id="'+purchaseH(p.id)+'">View Details</button><button type="button" class="primary tank-stock-alert" onclick="openTankStockCard(this.dataset.id)" data-id="'+purchaseH(p.id)+'">⚠ Tank Stock</button></div></article>';
   };
-  // Upload completed purchase PDFs exclusively through the server-side renderer.
-  // Never create a browser PDF or call doc.save() during page initialization.
+  // Upload completed purchase PDFs with the canonical browser jsPDF renderer used by Download PDF.
+  // The server-side renderer has a different layout and must never overwrite this Drive copy.
   let purchaseDriveUploadRunning=false;
   async function retryCompletedPurchasePdfUploads(purchases){
     if(purchaseDriveUploadRunning||!Array.isArray(purchases))return;
@@ -1751,7 +1751,7 @@ window.uploadPurchaseDetailPdf=async function(purchase){
         if(!id)continue;
         // Bump this version when the PDF layout changes so the latest saved
         // Drive copy is regenerated once using the same renderer as Download PDF.
-        const signature=JSON.stringify({pdf_style_version:id===latestId?3:2,invoice:p.invoice_number,status:p.status,history:history.map(e=>[e.tank_id,e.tank_stock_recorded_at,e.tank_stock_recorded_liters,e.tank_stock_difference_liters,e.tank_stock_remark])});
+        const signature=JSON.stringify({pdf_style_version:id===latestId?4:3,invoice:p.invoice_number,status:p.status,purchase_date:p.purchase_date,purchase_datetime:p.purchase_datetime,created_at:p.created_at,product:p.product,product_code:p.product_code,quantity_liters:p.quantity_liters,ordered_quantity_liters:p.ordered_quantity_liters,discharged_quantity_liters:p.discharged_quantity_liters,driver_name:p.driver_name,driver_phone:p.driver_phone,plate_number:p.plate_number,truck_compartments:p.truck_compartments,purchase_remark:p.purchase_remark,purchase_remark_note:p.purchase_remark_note,remark:p.remark,shortage_payment_status:p.shortage_payment_status,compartment_liters:p.compartment_liters,history:history.map(e=>[e.tank_id,e.discharge_datetime,e.created_at,e.tank_liters_before,e.tank_liters_after,e.tank_stock_recorded,e.tank_stock_recorded_at,e.tank_stock_recorded_liters,e.tank_stock_recorded_mm,e.tank_stock_difference_liters,e.tank_stock_remark])});
         const key='fuel-shift-drive-purchase:'+id;
         const retryKey=key+':retry-after';
         try{if(localStorage.getItem(key)===signature)continue;}catch(_){}
