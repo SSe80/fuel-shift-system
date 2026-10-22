@@ -1162,7 +1162,31 @@ async function loadAttendantShiftPage(){
           '</div>'
         };
       });
-      historyBox.innerHTML=records.sort((a,b)=>b.time-a.time).map(x=>x.html).join('')||'<div class="card"><p>No confirmed sales yet.</p></div>';
+      const sortedRecords=records.sort((a,b)=>b.time-a.time);
+      const monthGroups={};
+      sortedRecords.forEach(record=>{
+        const date=record.time instanceof Date&&!Number.isNaN(record.time.getTime())?record.time:new Date(0);
+        const monthKey=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');
+        (monthGroups[monthKey]||(monthGroups[monthKey]=[])).push(record);
+      });
+      historyBox.innerHTML=Object.keys(monthGroups).sort((a,b)=>b.localeCompare(a)).map(monthKey=>{
+        const monthDate=new Date(monthKey+'-01T00:00:00');
+        const monthLabel=monthDate.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+        const monthRecords=monthGroups[monthKey];
+        return '<section class="attendant-shift-history-month" style="margin-bottom:12px;border:1px solid var(--border-color,#e5e7eb);border-radius:14px;overflow:hidden;">'+
+          '<button type="button" class="attendant-shift-history-month-toggle" aria-expanded="false" data-month-key="'+h(monthKey)+'" style="display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:14px 16px;background:var(--card-bg,transparent);border:0;text-align:left;cursor:pointer;color:inherit;">'+
+          '<span><strong>'+h(monthLabel)+'</strong><small style="display:block;opacity:.72;margin-top:3px;">'+monthRecords.length+' confirmed shift'+(monthRecords.length===1?'':'s')+'</small></span><span aria-hidden="true">⌄</span></button>'+
+          '<div class="attendant-shift-history-month-body" hidden style="padding:0 12px 12px;">'+monthRecords.map(x=>x.html).join('')+'</div></section>';
+      }).join('')||'<div class="card"><p>No confirmed sales yet.</p></div>';
+      historyBox.querySelectorAll('.attendant-shift-history-month-toggle').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          const body=this.parentElement?.querySelector('.attendant-shift-history-month-body');
+          if(!body)return;
+          const expanded=this.getAttribute('aria-expanded')==='true';
+          this.setAttribute('aria-expanded',String(!expanded));
+          body.hidden=expanded;
+        });
+      });
       historyBox.querySelectorAll('.attendant-shift-details-button').forEach(function(btn){
         btn.addEventListener('click',function(event){
           event.preventDefault();
