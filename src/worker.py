@@ -8179,16 +8179,29 @@ def drive_queue():
         try:
             ts, takeovers = sb("shift_takeovers", params={
                 "id": "in.(" + ",".join(sorted(set(sale_ids))) + ")",
-                "select": "id,sales_status,sales_confirmed_at", "limit": "10000"})
+                "select": "id,shift_id,sales_status,sales_confirmed_at", "limit": "10000"})
             if ts == 200:
                 sale_state = {str(t.get("id")):
                     (str(t.get("sales_status") or "").lower() == "confirmed" or bool(t.get("sales_confirmed_at")))
                     for t in (takeovers or [])}
+                takeover_by_id = {str(t.get("id")): t for t in (takeovers or [])}
+                shift_ids = sorted({str(t.get("shift_id")) for t in (takeovers or []) if t.get("shift_id")})
+                shift_by_id = {}
+                if shift_ids:
+                    shs, sale_shifts = sb("shifts", params={
+                        "id": "in.(" + ",".join(shift_ids) + ")",
+                        "select": "id,start_time,employee_id", "limit": "10000"})
+                    if shs == 200:
+                        shift_by_id = {str(s.get("id")): s for s in (sale_shifts or [])}
                 for queued in queue_rows:
                     if queued.get("kind") == "sale":
                         try:
-                            _, takeover_id = str(queued.get("report_key") or "").split("|", 1)
+                            raw_day, takeover_id = str(queued.get("report_key") or "").split("|", 1)
                             queued["sales_confirmed"] = sale_state.get(takeover_id, False)
+                            takeover = takeover_by_id.get(takeover_id) or {}
+                            shift = shift_by_id.get(str(takeover.get("shift_id") or "")) or {}
+                            queued["sales_attendant"] = _notification_employee_name(shift.get("employee_id")) or "Attendant"
+                            queued["sales_date"] = raw_day
                         except ValueError:
                             queued["sales_confirmed"] = False
         except Exception:
