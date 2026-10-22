@@ -8151,7 +8151,7 @@ def drive_queue():
                     sales_status = str(takeover.get("sales_status") or "").strip().lower()
                     is_confirmed = sales_status == "confirmed" or bool(takeover.get("sales_confirmed_at"))
                     is_submitted = bool(takeover.get("sales_submitted_at")) or sales_status in (
-                        "submitted", "pending", "pending_confirmation", "awaiting_confirmation",
+                        "submitted", "pending", "pending_admin", "pending_confirmation", "awaiting_confirmation",
                         "under_review")
                     if is_confirmed:
                         _drive_enqueue_sale_key(shift_day, takeover_id, confirmed=True)
