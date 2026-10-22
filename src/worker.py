@@ -1764,17 +1764,30 @@ def logistics_create_delivery():
     if ordered is not None and (not math.isfinite(ordered) or ordered < 0):
         return jsonify({"error": "Ordered litres must be a valid non-negative number"}), 400
 
-    truck_id = str(data.get("truck_id") or "").strip()
-    if not truck_id:
-        return jsonify({"error": "Choose a registered truck for this delivery"}), 400
-    ts, trucks = sb("logistics_trucks", params={"id": "eq." + truck_id, "select": "id,truck_code,registration_number,driver_name,active", "limit": "1"})
-    if ts != 200:
-        return jsonify({"error": "Unable to verify selected truck", "details": trucks}), ts
-    if not trucks:
-        return jsonify({"error": "Selected truck was not found in the database"}), 404
-    truck = trucks[0]
-    if truck.get("active") is False:
-        return jsonify({"error": "The selected truck is inactive"}), 400
+    truck_category = str(data.get("truck_category") or "contracted").strip().lower()
+    if truck_category not in ("contracted", "uncontracted"):
+        return jsonify({"error": "Choose contracted or uncontracted truck"}), 400
+    truck = None
+    if truck_category == "contracted":
+        truck_id = str(data.get("truck_id") or "").strip()
+        if not truck_id:
+            return jsonify({"error": "Choose a registered contracted truck for this delivery"}), 400
+        ts, trucks = sb("logistics_trucks", params={"id": "eq." + truck_id, "select": "id,truck_code,registration_number,driver_name,active", "limit": "1"})
+        if ts != 200:
+            return jsonify({"error": "Unable to verify selected truck", "details": trucks}), ts
+        if not trucks:
+            return jsonify({"error": "Selected truck was not found in the database"}), 404
+        truck = trucks[0]
+        if truck.get("active") is False:
+            return jsonify({"error": "The selected truck is inactive"}), 400
+    else:
+        plate = str(data.get("uncontracted_truck_plate") or "").strip().upper()
+        driver_name = str(data.get("uncontracted_driver_name") or "").strip()
+        if not plate:
+            return jsonify({"error": "Enter the uncontracted truck plate number"}), 400
+        if not driver_name:
+            return jsonify({"error": "Enter the uncontracted truck driver's name"}), 400
+        truck = {"id": None, "truck_code": plate, "registration_number": plate, "driver_name": driver_name}
 
     date_value = str(data.get("delivery_date") or datetime.now(timezone.utc).isoformat()).strip()
     try:
@@ -1790,6 +1803,7 @@ def logistics_create_delivery():
     body = {
         "delivery_reference": str(data.get("delivery_reference") or "").strip() or None,
         "delivery_date": date_value,
+        "truck_category": truck_category,
         "truck_id": truck.get("id"),
         "truck_code_snapshot": truck.get("truck_code") or truck.get("registration_number"),
         "registration_snapshot": truck.get("registration_number"),
