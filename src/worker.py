@@ -8116,19 +8116,43 @@ def drive_queue():
     except Exception:
         app.logger.exception("could not sync ongoing MSR to Drive waiting queue")
 
+    # Keep submitted but unconfirmed handover sales visible as Waiting. These
+    # queue rows are deliberately not eligible for browser PDF generation.
+    # The same row is promoted to pending by _drive_enqueue_confirmed_shift_sale
+    # once an admin confirms the sales.
     try:
-        settings = _drive_settings() or {}
-        if settings.get("sales_folder_id"):
-            ws, waiting_sales = sb("drive_export_queue", params={
-                "kind": "eq.sale", "status": "eq.waiting", "select": "id", "limit": "500"})
-            if ws == 200:
-                for queued in waiting_sales or []:
-                    sb("drive_export_queue", method="PATCH", params={"id": "eq." + str(queued.get("id"))},
-                       body={"status": "pending", "attempts": 0, "last_error": None,
-                             "updated_at": datetime.now(timezone.utc).isoformat()},
-                       prefer="return=minimal")
+        today = _addis_today()
+        start = today - timedelta(days=3650)
+        ss, shifts = sb("shifts", params={
+            "start_time": "gte." + start.isoformat() + "T00:00:00+03:00",
+            "select": "id,start_time", "order": "start_time.asc", "limit": "10000"})
+        if ss == 200:
+            shift_days = {}
+            for shift in shifts or []:
+                shift_id = str(shift.get("id") or "")
+                report_day = _local_date_from_iso(shift.get("start_time"))
+                if shift_id and report_day and report_day.isoformat() <= today.isoformat():
+                    shift_days[shift_id] = report_day
+            ts, takeovers = sb("shift_takeovers", params={
+                "select": "id,shift_id,sales_status,sales_confirmed_at,sales_submitted_at",
+                "limit": "10000"})
+            if ts == 200:
+                for takeover in takeovers or []:
+                    takeover_id = takeover.get("id")
+                    shift_day = shift_days.get(str(takeover.get("shift_id") or ""))
+                    if not takeover_id or not shift_day:
+                        continue
+                    sales_status = str(takeover.get("sales_status") or "").strip().lower()
+                    is_confirmed = sales_status == "confirmed" or bool(takeover.get("sales_confirmed_at"))
+                    is_submitted = bool(takeover.get("sales_submitted_at")) or sales_status in (
+                        "submitted", "pending", "pending_confirmation", "awaiting_confirmation",
+                        "under_review")
+                    if is_confirmed:
+                        _drive_enqueue_sale_key(shift_day, takeover_id)
+                    elif is_submitted:
+                        _drive_enqueue_sale_key(shift_day, takeover_id)
     except Exception:
-        app.logger.exception("could not activate waiting shift-sale Drive exports")
+        app.logger.exception("could not sync shift-sale confirmation status to Drive queue")
 
     st, rows = sb("drive_export_queue", params={
         "status": "neq.done", "select": "id,kind,report_key,status,attempts,last_error,updated_at",
