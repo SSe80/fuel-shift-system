@@ -46,8 +46,13 @@
             body: JSON.stringify({ pdf_base64: b64(buf) })
           });
           var body = await up.json().catch(function () { return {}; });
-          if (body.ok) note('Saved to Google Drive: ' + (body.path || item.report_key));
-          else note('Drive upload failed: ' + (body.error || up.status));
+          if (body.ok) {
+            note('Saved to Google Drive: ' + (body.path || item.report_key));
+          } else {
+            var uploadError = body.error || ('HTTP ' + up.status);
+            await markBuildFailed(item, uploadError);
+            note('Drive upload failed: ' + uploadError);
+          }
         } catch (e) {
           if (item.kind === 'sale') {
             await markBuildFailed(item, e && e.message ? e.message : 'Sales PDF generation failed unexpectedly');
