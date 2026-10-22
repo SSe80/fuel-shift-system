@@ -1728,11 +1728,117 @@ def _logistics_tank_matches_delivery(tank_id, delivery):
     return bool(tank_product and tank_product in product_names)
 
 
+def _logistics_sync_completed_purchases():
+    """Create one transport-payment delivery per fully discharged purchase.
+
+    This is idempotent via logistics_deliveries.purchase_id. Physical tank-stock
+    recording is intentionally not part of transport payment eligibility.
+    """
+    ps, purchases = sb("purchases", params={
+        "status": "eq.discharged", "select": "*",
+        "order": "purchase_date.desc", "limit": "10000"
+    })
+    if ps != 200:
+        return ps, {"error": "Unable to load discharged purchases", "details": purchases}
+    fs, fees = sb("logistics_product_fees", params={
+        "select": "product_id,product_name,fee_per_liter,active", "limit": "1000"
+    })
+    if fs != 200:
+        return fs, {"error": "Unable to load logistics transport rates", "details": fees}
+    ts, trucks = sb("logistics_trucks", params={
+        "select": "id,truck_code,registration_number,driver_name,active", "limit": "5000"
+    })
+    if ts != 200:
+        return ts, {"error": "Unable to load contracted truck records", "details": trucks}
+    ds, existing = sb("logistics_deliveries", params={
+        "select": "id,purchase_id", "limit": "10000"
+    })
+    if ds != 200:
+        return ds, {"error": "Unable to check linked purchase deliveries", "details": existing}
+    linked = {str(row.get("purchase_id")) for row in (existing or []) if row.get("purchase_id")}
+    fee_by_product = {str(row.get("product_id")): row for row in (fees or []) if row.get("active") is not False}
+    truck_by_plate = {}
+    for truck in trucks or []:
+        for key in (truck.get("registration_number"), truck.get("truck_code")):
+            normalized = str(key or "").strip().upper()
+            if normalized:
+                truck_by_plate[normalized] = truck
+    now = datetime.now(timezone.utc).isoformat()
+    for purchase in purchases or []:
+        purchase_id = str(purchase.get("id") or "")
+        if not purchase_id or purchase_id in linked:
+            continue
+        # Only use the purchase's final discharged state; never create payment
+        # candidates from partially discharged or cancelled purchases.
+        delivered = purchase.get("total_quantity_liters")
+        if delivered in (None, ""):
+            compartments = purchase.get("compartment_liters")
+            delivered = sum(float(v or 0) for v in compartments) if isinstance(compartments, list) else 0
+        try:
+            delivered = float(delivered or 0)
+            dispatched = float(purchase.get("ordered_quantity_liters") or 0)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(delivered) or delivered <= 0 or not math.isfinite(dispatched) or dispatched < 0:
+            continue
+        product_id = str(purchase.get("product_id") or "")
+        fee = fee_by_product.get(product_id, {})
+        try:
+            rate = float(fee.get("fee_per_liter") or 0)
+        except (TypeError, ValueError):
+            rate = 0
+        if not math.isfinite(rate) or rate < 0:
+            rate = 0
+        plate = str(purchase.get("plate_number") or purchase.get("plate") or purchase.get("truck_plate") or "").strip().upper()
+        truck = truck_by_plate.get(plate)
+        category = "contracted" if truck else "uncontracted"
+        product_name = str(fee.get("product_name") or purchase.get("product_code") or purchase.get("product") or "Fuel").strip()
+        invoice = str(purchase.get("invoice_number") or purchase.get("invoice") or "").strip()
+        body = {
+            "purchase_id": purchase_id,
+            "delivery_reference": ("Purchase invoice #" + invoice) if invoice else ("Purchase " + purchase_id[:8]),
+            "delivery_date": purchase.get("purchase_date") or now,
+            "truck_category": category,
+            "truck_id": truck.get("id") if truck else None,
+            "truck_code_snapshot": (truck.get("truck_code") if truck else plate) or plate or "Truck not recorded",
+            "registration_snapshot": (truck.get("registration_number") if truck else plate) or plate or None,
+            "driver_name_snapshot": purchase.get("driver_name") or (truck.get("driver_name") if truck else None),
+            "supplier_name": purchase.get("supplier_name") or purchase.get("supplier"),
+            "product_id": product_id or None,
+            "product_name": product_name,
+            "ordered_liters": dispatched,
+            "delivered_liters": delivered,
+            "fee_per_liter": rate,
+            "total_fee": round(dispatched * rate, 2),
+            "status": "completed",
+            "transport_payment_status": "unpaid",
+            "eligible_at": purchase.get("discharged_at") or now,
+            "completed_at": purchase.get("discharged_at") or now,
+            "tank_id": None,
+            "tank_opening_liters": None,
+            "tank_closing_liters": None,
+            "tank_difference_liters": None,
+            "notes": "Linked automatically from fully discharged purchase " + purchase_id,
+            "created_by": None,
+            "updated_at": now
+        }
+        cs, created = sb("logistics_deliveries", method="POST", body=body, prefer="return=representation")
+        if cs >= 400:
+            # Continue other purchases, but fail the list request so the admin
+            # can see that synchronization was incomplete instead of an empty list.
+            return cs, {"error": "Unable to create transport payment record for purchase " + purchase_id, "details": created}
+        linked.add(purchase_id)
+    return 200, None
+
+
 @app.get("/api/logistics/deliveries")
 def logistics_list_deliveries():
     auth = _logistics_admin_auth()
     if auth:
         return auth
+    sync_status, sync_error = _logistics_sync_completed_purchases()
+    if sync_status >= 400:
+        return jsonify(sync_error), sync_status
     status, rows = sb("logistics_deliveries", params={"select": "*", "order": "delivery_date.desc", "limit": "1000"})
     if status != 200:
         return jsonify({"error": "Unable to load logistics deliveries", "details": rows}), status
