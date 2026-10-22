@@ -1157,8 +1157,7 @@ async function loadAttendantShiftPage(){
           html:'<article class="card shift-takeover-history-card compact-confirmed-sale-card attendant-shift-history-item" data-takeover-id="'+h(t.id)+'" tabindex="0" aria-expanded="false">'+
             '<div class="attendant-shift-history-collapsed">'+
               '<div class="attendant-shift-history-collapsed-main">'+
-                '<div class="attendant-shift-history-date">'+h((t.sales_confirmed_at||t.shift_ended_at)?new Date(t.sales_confirmed_at||t.shift_ended_at).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"}):"Date unavailable")+'</div>'+
-                '<span class="section-kicker">SALES CONFIRMED</span>'+
+                '<div class="attendant-shift-history-date">'+h((t.sales_confirmed_at||t.shift_ended_at)?new Date(t.sales_confirmed_at||t.shift_ended_at).toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}):"Date unavailable")+'</div>'+
                 '<h3>'+h(n?.nozzle_code||t.dispenser_code||'Dispenser')+'</h3>'+
               '</div>'+
               '<span class="badge attendant-shift-history-confirmed">Confirmed</span>'+
@@ -1173,21 +1172,21 @@ async function loadAttendantShiftPage(){
       });
       historyBox.innerHTML=records.sort((a,b)=>b.time-a.time).map(x=>x.html).join('')||'<div class="card"><p>No confirmed sales yet.</p></div>';
       historyBox.querySelectorAll('.attendant-shift-history-item').forEach(function(card){
-        function expandCard(){
-          if(card.getAttribute('aria-expanded')==='true')return;
-          card.setAttribute('aria-expanded','true');
-          card.classList.add('is-expanded');
+        function toggleCard(){
+          const isExpanded=card.getAttribute('aria-expanded')==='true';
+          card.setAttribute('aria-expanded',isExpanded?'false':'true');
+          card.classList.toggle('is-expanded',!isExpanded);
           const details=card.querySelector('.attendant-shift-history-details');
-          if(details)details.hidden=false;
+          if(details)details.hidden=isExpanded;
         }
         card.addEventListener('click',function(event){
           if(event.target.closest('.attendant-shift-details-button'))return;
-          expandCard();
+          toggleCard();
         });
         card.addEventListener('keydown',function(event){
           if((event.key==='Enter'||event.key===' ')&&event.target===card){
             event.preventDefault();
-            expandCard();
+            toggleCard();
           }
         });
         const detailsButton=card.querySelector('.attendant-shift-details-button');
