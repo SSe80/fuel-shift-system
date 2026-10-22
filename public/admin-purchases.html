@@ -1749,16 +1749,13 @@ window.uploadPurchaseDetailPdf=async function(purchase){
         let lastError=null,uploaded=false;
         for(let attempt=0;attempt<3&&!uploaded;attempt++){
           try{
-            const response=await fetch('/api/drive/purchases/retry',{
-              method:'POST',credentials:'same-origin',
-              headers:{'Content-Type':'application/json','X-Fuel-Role':'admin'},
-              body:JSON.stringify({purchase_id:id})
-            });
-            const result=await response.json().catch(()=>({}));
-            const item=(result.results||[]).find(x=>String(x.invoice_number||'')===String(p.invoice_number||id));
-            if(!response.ok||!result.ok||Number(result.uploaded)<1){
-              throw new Error((item&&item.error)||result.error||(result.failed||[]).map(x=>x.error).filter(Boolean).join('; ')||('Server PDF upload failed (HTTP '+response.status+')'));
-            }
+            // Use the exact same jsPDF renderer as the user's Download PDF action.
+            // The server-side retry renderer has a different layout and must not
+            // create a visually inconsistent copy in Google Drive.
+            window.currentPurchaseDetailData=p;
+            window.currentPurchaseDetailTanks=Array.isArray(purchaseDetailTanks)?purchaseDetailTanks:[];
+            const generated=await window.downloadPurchaseDetailPdf({uploadOnly:true});
+            if(generated!==true)throw new Error('Purchase PDF generation or Drive upload did not complete.');
             uploaded=true;
           }catch(err){
             lastError=err;
