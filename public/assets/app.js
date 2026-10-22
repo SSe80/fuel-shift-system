@@ -2669,9 +2669,11 @@ async function openAdminAttendantDetails(id){
     const rawSales=salesItems.flatMap(x=>Array.isArray(x.sales)?x.sales:(Array.isArray(x.sale_items)?x.sale_items:[]));
     const employeeShiftIds=new Set(employeeShifts.map(s=>String(s.id)));
     const takeovers=Array.isArray(takeoverResult.data)?takeoverResult.data:[];
-    const employeeTakeovers=takeovers.filter(t=>employeeShiftIds.has(String(t.shift_id||''))&&!['cancelled','canceled','void','voided','rejected','deleted'].includes(String(t.sales_status||'').toLowerCase()));
+    const validTakeover=t=>!['cancelled','canceled','void','voided','rejected','deleted'].includes(String(t?.sales_status||t?.status||'').toLowerCase());
+    const volumeSourceRows=[...salesItems.map(x=>({...((x&&typeof x==='object')?x:{}),...((x?.takeover&&typeof x.takeover==='object')?x.takeover:{}),shift_id:x?.shift_id||x?.takeover?.shift_id||x?.shift?.id})),...takeovers.filter(validTakeover)];
+    const employeeTakeovers=volumeSourceRows.filter(t=>validTakeover(t)&&(employeeShiftIds.has(String(t.shift_id||''))||[t.from_employee_id,t.to_employee_id,t.employee_id,t.attendant_id,t.user_id,t.operator_user_id].some(v=>v!=null&&String(v)===String(employee.id))));
     const shiftsWithRecordedVolume=new Set(rawSales.filter(s=>Number(s.quantity_liters||s.liters)>0).map(s=>String(s.shift_id||'')));
-    const handoverVolumeRows=employeeTakeovers.filter(t=>!shiftsWithRecordedVolume.has(String(t.shift_id||''))).map(t=>({id:'handover-'+String(t.id||''),shift_id:t.shift_id,quantity_liters:Number(t.total_sales_liters)||0,total_amount:0,amount:0,sale_time:t.shift_ended_at||t.shift_started_at||t.sales_submitted_at||t.created_at,created_at:t.created_at,status:t.sales_status||'confirmed'})).filter(s=>s.quantity_liters>0);
+    const handoverVolumeRows=employeeTakeovers.filter(t=>!shiftsWithRecordedVolume.has(String(t.shift_id||''))).map(t=>({id:'handover-'+String(t.id||t.takeover_id||t.shift_id||''),shift_id:t.shift_id,quantity_liters:Number(t.total_sales_liters??t.net_sales_liters??t.volume_sold_liters??t.liters_sold??0)||0,total_amount:0,amount:0,sale_time:t.shift_ended_at||t.shift_started_at||t.sales_submitted_at||t.confirmed_at||t.created_at,status:t.sales_status||t.status||'confirmed'})).filter(s=>s.quantity_liters>0);
     const sales=rawSales.concat(handoverVolumeRows);
     const totalLiters=sales.reduce((n,s)=>n+(Number(s.quantity_liters||s.liters)||0),0);
     const totalAmount=sales.reduce((n,s)=>n+(Number(s.total_amount||s.amount)||0),0);
