@@ -1547,7 +1547,7 @@ body.attendant-dashboard-page .fuel-game-footnote{margin:0;padding:10px 14px;bor
  function overlayShow(title,copy,button,icon){$("fuel-run-overlay-title").textContent=title;$("fuel-run-overlay-copy").textContent=copy;startBtn.textContent=button;$("fuel-run-overlay-icon").textContent=icon;overlay.hidden=false;}
  function jump(){
   if(state!=="running")return;
-  if(!jumping){jumping=true;player.classList.remove("jumping");void player.offsetWidth;player.classList.add("jumping");velocity=-510;}
+  if(!jumping){jumping=true;velocity=-510;}
  }
  function makeItem(){
   const roll=Math.random();let kind=roll<.57?"hazard":roll<.78?"fuel":roll<.87?"fact":"life";
