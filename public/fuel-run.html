@@ -1443,53 +1443,51 @@ body.attendant-dashboard-page .service-dispense-button:disabled{background:#aab4
 body.attendant-dashboard-page .service-game-hint{margin-top:10px;color:#7b8494;font-size:11px;line-height:1.5;text-align:center}
 @media(max-width:560px){body.attendant-dashboard-page .fuel-service-scene{height:270px}body.attendant-dashboard-page .service-station-sign{left:4%;top:16px;transform:scale(.85);transform-origin:top left}body.attendant-dashboard-page .service-car{left:8%;transform:scale(.82);transform-origin:bottom left}body.attendant-dashboard-page .service-pump{right:9%;transform:scale(.88);transform-origin:bottom right}body.attendant-dashboard-page .service-canopy{left:17%;right:8%}body.attendant-dashboard-page .service-game-panel{padding:12px}body.attendant-dashboard-page .service-meter-label{font-size:10px}}
 
-/* Fuel Rush: vertical three-lane highway racer */
-body.attendant-dashboard-page .fuel-service-game{overflow:hidden;background:#fff;border:1px solid #e1e7ef;border-radius:20px}
-body.attendant-dashboard-page .fuel-game-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;flex-wrap:wrap}
-body.attendant-dashboard-page .fuel-game-stats{display:flex;gap:7px}
-body.attendant-dashboard-page .fuel-game-stats>div{min-width:53px;padding:8px 10px;border:1px solid #e5eaf0;border-radius:11px;background:#f8fafc;text-align:center}
+/* Fuel Run — classic side-scrolling jump runner */
+body.attendant-dashboard-page .fuel-brain-break{overflow:hidden;border:1px solid #dce5ee;border-radius:20px;background:#fff;box-shadow:0 12px 34px rgba(16,24,40,.08)}
+body.attendant-dashboard-page .fuel-game-top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;border-bottom:1px solid #edf1f5}
+body.attendant-dashboard-page .fuel-game-brand{display:flex;align-items:center;gap:12px;min-width:0}
+body.attendant-dashboard-page .fuel-game-icon{display:grid;place-items:center;width:48px;height:48px;flex:0 0 48px;border-radius:15px;background:#e5f9ee;font-size:25px}
+body.attendant-dashboard-page .fuel-game-kicker{font-size:9px;font-weight:950;letter-spacing:.12em;color:#168653}
+body.attendant-dashboard-page .fuel-game-brand h2{margin:3px 0 0;font-size:20px;letter-spacing:-.025em;color:#17202a}
+body.attendant-dashboard-page .fuel-game-brand p{margin:4px 0 0;font-size:11px;color:#667085}
+body.attendant-dashboard-page .fuel-game-stats{display:flex;gap:7px;flex-wrap:wrap}
+body.attendant-dashboard-page .fuel-game-stats>div{min-width:58px;padding:8px 10px;border:1px solid #e5eaf0;border-radius:11px;background:#f8fafc;text-align:center}
 body.attendant-dashboard-page .fuel-game-stats span{display:block;font-size:8px;letter-spacing:.08em;color:#667085;font-weight:900}
 body.attendant-dashboard-page .fuel-game-stats strong{display:block;margin-top:3px;font-size:15px;color:#17202a}
-body.attendant-dashboard-page .rush-game{position:relative;overflow:hidden;margin:0 12px;border:2px solid #263445;border-radius:16px;background:#152333}
-body.attendant-dashboard-page .rush-skyline{position:absolute;z-index:3;left:0;right:0;top:0;display:flex;align-items:center;gap:7px;padding:8px 10px;background:linear-gradient(90deg,#14283b,#25445a);color:#dceaf5;font-size:9px;font-weight:900;letter-spacing:.09em}
-body.attendant-dashboard-page .rush-skyline span{margin-right:auto}
-body.attendant-dashboard-page .rush-skyline b{font-size:16px;color:#83f7b5}
-body.attendant-dashboard-page .rush-skyline small{font-size:8px;color:#a7bac9}
-body.attendant-dashboard-page .rush-road{height:clamp(390px,66vh,610px);min-height:390px;position:relative;overflow:hidden;background:linear-gradient(90deg,#334456 0%,#273645 7%,#374858 7%,#374858 93%,#273645 93%,#334456 100%);touch-action:pan-y;isolation:isolate}
-body.attendant-dashboard-page .rush-road:before{content:"";position:absolute;inset:0 7%;background:repeating-linear-gradient(180deg,#ffffff06 0 28px,#00000008 28px 56px);pointer-events:none}
-body.attendant-dashboard-page .rush-lane-line{position:absolute;z-index:1;top:-100px;bottom:-100px;width:4px;left:35.66%;background:repeating-linear-gradient(180deg,#e9f1f7 0 32px,transparent 32px 62px);opacity:.85}
-body.attendant-dashboard-page .rush-line-two{left:64.33%}
-body.attendant-dashboard-page .rush-road-edge{position:absolute;top:0;bottom:0;width:5px;background:repeating-linear-gradient(180deg,#e2b95c 0 20px,#fff 20px 40px)}
-body.attendant-dashboard-page .rush-edge-left{left:7%}.rush-edge-right{right:7%}
-body.attendant-dashboard-page .rush-car{position:absolute;z-index:4;bottom:8%;left:50%;width:48px;height:82px;transform:translateX(-50%);border-radius:15px 15px 9px 9px;background:linear-gradient(90deg,#b51e32,#fa4a58 45%,#d52a40);border:2px solid #ffb2b7;box-shadow:0 0 0 3px #101b28,0 8px 18px #0008;transition:left .12s ease,filter .2s}
-body.attendant-dashboard-page .rush-car:before{content:"";position:absolute;left:7px;right:7px;top:10px;height:23px;border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,#b9eaff,#47758d);border:2px solid #d9f6ff}
-body.attendant-dashboard-page .rush-car-glass{position:absolute;left:8px;right:8px;top:40px;height:14px;border-radius:3px;background:#87202f}
-body.attendant-dashboard-page .rush-car-light{position:absolute;left:5px;right:5px;bottom:4px;height:5px;border-radius:3px;background:#ffdf9c;box-shadow:0 0 8px #ffb84a}
-body.attendant-dashboard-page .rush-car-wheel{position:absolute;top:16px;bottom:13px;width:5px;border-radius:3px;background:#111923}
-body.attendant-dashboard-page .rush-wheel-left{left:-5px}.rush-wheel-right{right:-5px}
-body.attendant-dashboard-page .rush-object{position:absolute;z-index:3;display:flex;align-items:center;justify-content:center;width:43px;height:43px;border-radius:12px;font-size:24px;filter:drop-shadow(0 5px 4px #0006);will-change:top}
-body.attendant-dashboard-page .rush-hazard{background:#fce5c6;border:2px solid #f59e0b}.rush-fuel{background:#d5fbe7;border:2px solid #34d399;box-shadow:0 0 18px #34d39966}.rush-life{background:#ffe0e5;border:2px solid #fb7185;animation:rush-heartbeat .8s infinite alternate}.rush-fact{background:#dbeafe;border:2px solid #60a5fa}.rush-turbo{background:#fef3c7;border:2px solid #facc15;box-shadow:0 0 18px #facc1566}
-body.attendant-dashboard-page .rush-hit-flash{position:absolute;z-index:6;inset:0;pointer-events:none;background:#ff253333;opacity:0}
-body.attendant-dashboard-page .rush-hit-flash.on{animation:rush-flash .35s ease}
-body.attendant-dashboard-page .rush-overlay{position:absolute;z-index:8;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;text-align:center;background:#0d1c2beF;color:#fff}
-body.attendant-dashboard-page .rush-overlay[hidden]{display:none!important}
-body.attendant-dashboard-page .rush-overlay-icon{font-size:38px}
-body.attendant-dashboard-page .rush-overlay h3{margin:8px 0 5px;color:#fff;font-size:23px}
-body.attendant-dashboard-page .rush-overlay p{max-width:340px;margin:0;color:#d0deeb;font-size:12px;line-height:1.6}
-body.attendant-dashboard-page .rush-overlay .fuel-game-primary{margin-top:14px;min-height:45px;padding:0 20px;border:0;border-radius:12px;background:#23bd74;color:#072d1c;font-weight:950}
-body.attendant-dashboard-page .rush-hud{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:10px 8px;background:#101e2c;color:#b7c8d8;font-size:9px;text-align:center}
-body.attendant-dashboard-page .rush-hud span{white-space:nowrap}body.attendant-dashboard-page .rush-hud b{color:#fff}
-body.attendant-dashboard-page .rush-controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px}
-body.attendant-dashboard-page .rush-controls button{min-height:48px;border:1px solid #d6e0e9;border-radius:12px;background:#f8fafc;color:#263445;font-size:11px;font-weight:950;touch-action:manipulation}
-body.attendant-dashboard-page .rush-controls #fuel-run-boost-btn{background:#fff1b8;border-color:#f4c84c;color:#80520a}
-body.attendant-dashboard-page .rush-controls button:active{transform:translateY(2px)}
-body.attendant-dashboard-page .rush-tip{display:flex;gap:10px;margin:0 12px 12px;padding:12px;border:1px solid #d9e8fb;border-radius:13px;background:#f2f7ff}
-body.attendant-dashboard-page .rush-tip>span{flex:0 0 auto;color:#1759a8;font-size:10px;font-weight:950}
-body.attendant-dashboard-page .rush-tip p{margin:0;color:#43566c;font-size:11px;line-height:1.5}
-body.attendant-dashboard-page .fuel-run-controls{padding:0 12px 12px}
-@keyframes rush-flash{0%{opacity:1}100%{opacity:0}}@keyframes rush-heartbeat{from{transform:scale(.94)}to{transform:scale(1.08)}}
-@media(max-width:560px){body.attendant-dashboard-page .fuel-game-top{align-items:flex-start;padding:12px}body.attendant-dashboard-page .fuel-game-stats{width:100%;justify-content:space-between}body.attendant-dashboard-page .fuel-game-stats>div{flex:1}body.attendant-dashboard-page .rush-road{height:clamp(390px,62vh,560px);min-height:390px}body.attendant-dashboard-page .rush-object{width:39px;height:39px;font-size:22px}body.attendant-dashboard-page .rush-car{width:43px;height:75px}body.attendant-dashboard-page .rush-hud{font-size:8px;padding:9px 3px}body.attendant-dashboard-page .rush-controls{padding:9px;gap:5px}body.attendant-dashboard-page .rush-controls button{font-size:10px;min-height:47px}body.attendant-dashboard-page .rush-tip{flex-direction:column;gap:5px}}
-
+body.attendant-dashboard-page .fuel-runner{position:relative;margin:12px;overflow:hidden;border:2px solid #c8d9d0;border-radius:15px;background:linear-gradient(#dff5ff 0%,#f5fbff 67%,#f4f7e9 67%,#f4f7e9 100%);height:clamp(250px,40vh,350px);min-height:250px;touch-action:manipulation;user-select:none}
+body.attendant-dashboard-page .runner-sun{position:absolute;right:9%;top:18%;width:34px;height:34px;border-radius:50%;background:#ffd66b;box-shadow:0 0 0 9px #ffd66b33}
+body.attendant-dashboard-page .runner-cloud{position:absolute;top:17%;font-size:26px;opacity:.6;filter:grayscale(.25)}
+body.attendant-dashboard-page .runner-cloud.one{left:15%}.runner-cloud.two{left:57%;top:10%;font-size:20px}
+body.attendant-dashboard-page .runner-station{position:absolute;right:4%;bottom:33%;font-size:clamp(30px,5vw,50px);filter:drop-shadow(0 3px 1px #0001)}
+body.attendant-dashboard-page .runner-ground{position:absolute;left:0;right:0;bottom:0;height:31%;border-top:5px solid #67b77c;background:repeating-linear-gradient(90deg,#c9a878 0 38px,#b99465 38px 76px);background-position:0 0}
+body.attendant-dashboard-page .runner-ground:after{content:"";position:absolute;left:0;right:0;top:14px;height:6px;background:repeating-linear-gradient(90deg,#f9e8b5 0 28px,transparent 28px 66px);opacity:.9}
+body.attendant-dashboard-page .runner-player{position:absolute;z-index:4;left:9%;bottom:29%;width:48px;height:58px;display:grid;place-items:center;font-size:42px;line-height:1;transform-origin:center bottom;filter:drop-shadow(0 4px 2px #0002)}
+body.attendant-dashboard-page .runner-player.jumping{animation:runner-jump .58s cubic-bezier(.2,.7,.3,1)}
+body.attendant-dashboard-page .runner-player.hit{filter:grayscale(1) opacity(.55)}
+body.attendant-dashboard-page .runner-obstacle{position:absolute;z-index:3;bottom:29%;width:33px;height:38px;display:grid;place-items:center;font-size:31px;line-height:1;will-change:left}
+body.attendant-dashboard-page .runner-pickup{position:absolute;z-index:3;bottom:40%;width:32px;height:34px;display:grid;place-items:center;font-size:27px;filter:drop-shadow(0 3px 2px #0002);will-change:left}
+body.attendant-dashboard-page .runner-scoreline{position:absolute;left:12px;top:12px;z-index:5;display:flex;gap:7px;flex-wrap:wrap}
+body.attendant-dashboard-page .runner-scoreline span{padding:6px 9px;border:1px solid #d8e7ec;border-radius:9px;background:#ffffffd9;color:#344054;font-size:10px;font-weight:850}
+body.attendant-dashboard-page .runner-overlay{position:absolute;z-index:8;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;background:#132d35d9;color:#fff}
+body.attendant-dashboard-page .runner-overlay[hidden]{display:none!important}
+body.attendant-dashboard-page .runner-overlay-icon{font-size:38px}
+body.attendant-dashboard-page .runner-overlay h3{margin:7px 0 5px;color:#fff;font-size:23px}
+body.attendant-dashboard-page .runner-overlay p{max-width:390px;margin:0;color:#e1f0f0;font-size:12px;line-height:1.55}
+body.attendant-dashboard-page .runner-overlay .fuel-game-primary{margin-top:13px;min-height:44px;padding:0 20px;border:0;border-radius:12px;background:#27c477;color:#07351f;font-weight:950}
+body.attendant-dashboard-page .runner-controls{display:flex;gap:8px;padding:0 12px 12px}
+body.attendant-dashboard-page .runner-controls button{flex:1;min-height:46px;border:1px solid #d6e0e9;border-radius:12px;background:#f8fafc;color:#263445;font-size:12px;font-weight:950;touch-action:manipulation}
+body.attendant-dashboard-page .runner-controls #fuel-run-jump{background:#e2f9eb;border-color:#9ee4b9;color:#126b40}
+body.attendant-dashboard-page .runner-controls button:active{transform:translateY(2px)}
+body.attendant-dashboard-page .runner-tip{display:flex;gap:10px;margin:0 12px 12px;padding:12px;border:1px solid #d9e8fb;border-radius:13px;background:#f2f7ff}
+body.attendant-dashboard-page .runner-tip>span{flex:0 0 auto;color:#1759a8;font-size:10px;font-weight:950}
+body.attendant-dashboard-page .runner-tip p{margin:0;color:#43566c;font-size:11px;line-height:1.5}
+body.attendant-dashboard-page .fuel-run-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 12px 12px}
+body.attendant-dashboard-page .fuel-run-controls>span{color:#667085;font-size:11px;line-height:1.5}
+body.attendant-dashboard-page .fuel-run-controls .fuel-run-restart{flex:0 0 auto;min-height:38px;padding:0 12px;border:1px solid #d6e0e9;border-radius:10px;background:#fff;color:#344054;font-size:11px;font-weight:850}
+body.attendant-dashboard-page .fuel-game-footnote{margin:0;padding:10px 14px;border-top:1px solid #edf1f5;color:#98a2b3;font-size:10px}
+@keyframes runner-jump{0%{transform:translateY(0) rotate(0)}38%{transform:translateY(-112px) rotate(-7deg)}72%{transform:translateY(-112px) rotate(5deg)}100%{transform:translateY(0) rotate(0)}}
+@media(max-width:560px){body.attendant-dashboard-page .fuel-game-top{align-items:flex-start;flex-direction:column;padding:13px}body.attendant-dashboard-page .fuel-game-brand h2{font-size:18px}body.attendant-dashboard-page .fuel-game-stats{width:100%}body.attendant-dashboard-page .fuel-game-stats>div{flex:1}body.attendant-dashboard-page .fuel-runner{margin:9px;height:270px;min-height:250px}body.attendant-dashboard-page .runner-player{left:7%;font-size:38px}body.attendant-dashboard-page .runner-station{right:2%}body.attendant-dashboard-page .runner-controls{padding:0 9px 10px}body.attendant-dashboard-page .runner-controls button{min-height:49px}body.attendant-dashboard-page .runner-tip{margin:0 9px 10px;flex-direction:column;gap:4px}body.attendant-dashboard-page .fuel-run-controls{align-items:flex-start;flex-direction:column}body.attendant-dashboard-page .fuel-run-controls .fuel-run-restart{width:100%}}
 </style></head>
 <body class="attendant-page attendant-dashboard-page admin-shell admin-control-ui" data-app-page="fuelRun">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
@@ -1506,64 +1504,99 @@ body.attendant-dashboard-page .fuel-run-controls{padding:0 12px 12px}
   <header class="settings-header"><div><span class="eyebrow">TAKE A QUICK BREAK</span><h1>Fuel Run</h1><p class="muted">Race the clock, nail the fill, catch bonus cars, and build a streak.</p></div></header>
   <section class="page-heading"><div><span class="section-kicker">MINI GAME</span><h2>Ready to roll?</h2><p>Precision matters: hit the target, avoid spills, and watch for golden bonus customers.</p></div></section>
   <section id="fuel-brain-break" class="fuel-brain-break fuel-service-game" aria-labelledby="fuel-game-title">
-    <div class="fuel-game-top"><div class="fuel-game-brand"><span class="fuel-game-icon" aria-hidden="true">🏎️</span><div><span class="fuel-game-kicker">FUEL SHIFT ARCADE</span><h2 id="fuel-game-title">Fuel Rush: Highway Hero</h2><p>Dodge road hazards • collect fuel power-ups • learn as you race</p></div></div><div class="fuel-game-stats"><div><span>SCORE</span><strong id="fuel-run-score">0</strong></div><div><span>BEST</span><strong id="fuel-run-best">0</strong></div><div><span>LIVES</span><strong id="fuel-run-lives">❤️❤️❤️</strong></div></div></div>
-    <div class="rush-game" id="fuel-run-game" aria-label="Three-lane top-down racing game">
-      <div class="rush-skyline"><span>FUEL SHIFT EXPRESSWAY</span><b id="fuel-run-speed">80</b><small>KM/H</small></div>
-      <div class="rush-road" id="fuel-run-road">
-        <div class="rush-lane-line rush-line-one"></div><div class="rush-lane-line rush-line-two"></div>
-        <div class="rush-road-edge rush-edge-left"></div><div class="rush-road-edge rush-edge-right"></div>
-        <div class="rush-objects" id="fuel-run-objects"></div>
-        <div class="rush-car" id="fuel-run-player" aria-label="Your racing car"><span class="rush-car-glass"></span><span class="rush-car-light"></span><span class="rush-car-wheel rush-wheel-left"></span><span class="rush-car-wheel rush-wheel-right"></span></div>
-        <div class="rush-hit-flash" id="fuel-run-hit-flash"></div>
-        <div class="rush-overlay" id="fuel-run-overlay"><div class="rush-overlay-icon" id="fuel-run-overlay-icon">🏁</div><h3 id="fuel-run-overlay-title">Ready for the Fuel Rush?</h3><p id="fuel-run-overlay-copy">Race down three lanes. Swipe or use the lane buttons to dodge hazards, collect fuel cans for turbo speed, hearts for extra lives, and fuel facts to learn as you go.</p><button type="button" class="fuel-game-primary" id="fuel-run-start">Start your engine →</button></div>
-      </div>
-      <div class="rush-hud"><span>⚡ <b id="fuel-run-boost">BOOST READY</b></span><span>⛽ CANS <b id="fuel-run-cans">0</b></span><span>🧠 FACTS <b id="fuel-run-facts">0</b></span><span>⏱ <b id="fuel-run-time">0</b>s</span></div>
+    <div class="fuel-game-top"><div class="fuel-game-brand"><span class="fuel-game-icon" aria-hidden="true">⛽</span><div><span class="fuel-game-kicker">FUEL SHIFT ARCADE</span><h2 id="fuel-game-title">Fuel Station Dash</h2><p>Jump over station hazards • collect fuel cans • learn fuel-smart facts</p></div></div><div class="fuel-game-stats"><div><span>SCORE</span><strong id="fuel-run-score">0</strong></div><div><span>BEST</span><strong id="fuel-run-best">0</strong></div><div><span>LIVES</span><strong id="fuel-run-lives">❤️❤️❤️</strong></div></div></div>
+    <div class="runner-game" id="fuel-run-game" aria-label="Side-scrolling fuel station jumping game">
+      <div class="runner-scoreline"><span>⛽ CANS <b id="fuel-run-cans">0</b></span><span>📘 FACTS <b id="fuel-run-facts">0</b></span><span>⚡ SPEED <b id="fuel-run-speed">1x</b></span></div>
+      <div class="runner-sun"></div><div class="runner-cloud one">☁️</div><div class="runner-cloud two">☁️</div>
+      <div class="runner-station" aria-hidden="true">🏪</div>
+      <div class="runner-ground" id="fuel-run-ground"></div>
+      <div class="runner-player" id="fuel-run-player" aria-label="Fuel station attendant character">🧑‍🔧</div>
+      <div id="fuel-run-objects"></div>
+      <div class="runner-overlay" id="fuel-run-overlay"><div class="runner-overlay-icon" id="fuel-run-overlay-icon">⛽</div><h3 id="fuel-run-overlay-title">Ready for Fuel Station Dash?</h3><p id="fuel-run-overlay-copy">Run along the station lane like the classic jumping dinosaur game. Jump over cones, oil spills and barriers; collect fuel cans, hearts and fuel-safety facts. Tap Jump or press Space.</p><button type="button" class="fuel-game-primary" id="fuel-run-start">Start running →</button></div>
     </div>
-    <div class="rush-controls"><button type="button" id="fuel-run-left" aria-label="Move to left lane">◀ LEFT</button><button type="button" id="fuel-run-boost-btn">⚡ TURBO</button><button type="button" id="fuel-run-right" aria-label="Move to right lane">RIGHT ▶</button></div>
-    <div class="rush-tip" id="fuel-run-tip"><span>🧠 FUEL SMART</span><p id="fuel-run-tip-text">Collect the glowing book icons for quick fuel facts. Fuel cans charge turbo; hearts restore a life.</p></div>
-    <div class="fuel-run-controls"><span><b>HOW TO PLAY</b> Swipe left/right or tap lane controls. Avoid cones and oil slicks. Collect ⛽ fuel cans, ⚡ turbo, ❤️ extra lives, and 🧠 fuel facts.</span><button type="button" id="fuel-run-restart" class="fuel-run-restart">↻ Restart</button></div>
+    <div class="runner-controls"><button type="button" id="fuel-run-jump">⬆ JUMP</button><button type="button" id="fuel-run-pause">Ⅱ PAUSE</button></div>
+    <div class="runner-tip" id="fuel-run-tip"><span>🧠 FUEL SMART</span><p id="fuel-run-tip-text">Jump over hazards and collect fuel cans. Knowledge pickups share quick facts about fuel quality and safe station operations.</p></div>
+    <div class="fuel-run-controls"><span><b>HOW TO PLAY</b> Tap the game or JUMP, or press Space / ↑. Avoid cones, oil spills and barriers. Collect ⛽ cans, ❤️ extra lives and 📘 fuel facts.</span><button type="button" id="fuel-run-restart" class="fuel-run-restart">↻ Restart</button></div>
     <p class="fuel-game-footnote">Arcade only — no real fuel, vehicle, or station data is used.</p>
   </section>
-</main>
-<script src="assets/app.js?v=attendant-history-cache-20261022-1"></script>
-<script src="assets/app-boot.js?v=20261017-session-diagnostic1"></script>
-<script src="assets/admin-control-ui.js?v=20261010-02"></script>
-<script src="assets/popup-portal.js?v=20261014-details-modal-card-scroll-fix"></script>
 <script id="attendant-fuel-brain-break-script">
 (function(){
- if(window.__fuelRushReady)return;window.__fuelRushReady=true;
+ if(window.__fuelStationDashReady)return;window.__fuelStationDashReady=true;
  const $=id=>document.getElementById(id);
- const road=$("fuel-run-road"),objects=$("fuel-run-objects"),overlay=$("fuel-run-overlay"),startBtn=$("fuel-run-start"),player=$("fuel-run-player");
- if(!road||!objects||!overlay||!startBtn||!player)return;
+ const game=$("fuel-run-game"),player=$("fuel-run-player"),objects=$("fuel-run-objects"),overlay=$("fuel-run-overlay"),startBtn=$("fuel-run-start"),ground=$("fuel-run-ground");
+ if(!game||!player||!objects||!overlay||!startBtn||!ground)return;
  const facts=[
-  ["Octane rating measures petrol's resistance to engine knock; it is not a direct measure of energy content.","⛽ FUEL FACT"],
-  ["Diesel fuel is designed for compression-ignition engines; always use the fuel specified by the vehicle maker.","🚚 DIESEL FACT"],
-  ["Water contamination can damage fuel systems. Proper tank care and clean storage matter.","💧 QUALITY FACT"],
-  ["Fuel density changes with temperature, so volume and mass are not the same measurement.","🌡️ FUEL FACT"],
-  ["Never refuel a vehicle while its engine is running; follow station safety rules.","🦺 SAFETY FACT"],
-  ["Fuel economy means how far a vehicle travels per unit of fuel, such as kilometres per litre.","📘 ECONOMY FACT"],
-  ["A clean air filter and correct tyre pressure can help a vehicle use fuel more efficiently.","🚗 EFFICIENCY FACT"],
-  ["Petrol vapour is flammable. Keep sparks, flames, and smoking away from refuelling areas.","⚠️ SAFETY FACT"]
+  ["Petrol vapour ignites easily. Keep flames, smoking and sparks away from refuelling areas.","🔥 STATION SAFETY"],
+  ["Never dispense fuel into an unsuitable container. Use approved containers and follow station rules.","🦺 SAFE REFUELLING"],
+  ["Water contamination can damage fuel equipment. Clean storage and proper tank checks matter.","💧 FUEL QUALITY"],
+  ["Octane rating describes petrol's resistance to engine knock; it is not simply a measure of fuel power.","⛽ PETROL FACT"],
+  ["Diesel is designed for compression-ignition engines. Always supply the fuel specified by the vehicle maker.","🚚 DIESEL FACT"],
+  ["A litre measures volume, while kilograms measure mass. Fuel density connects the two.","📏 MEASUREMENT FACT"],
+  ["Spills should be handled promptly using station procedures and suitable spill-control materials.","🧯 SPILL RESPONSE"],
+  ["Good fuel records help track stock movement, deliveries and possible losses.","📋 STOCK CONTROL"]
  ];
- let state="ready",lane=1,score=0,best=0,lives=3,cans=0,factCount=0,elapsed=0,speed=190,boost=0,last=0,spawn=0,raf=0,items=[],touchX=null,invulnerable=0,usedFacts=[];
- const laneX=[21,50,79];
- const rand=a=>a[Math.floor(Math.random()*a.length)];
- function render(){ $("fuel-run-score").textContent=score;$("fuel-run-best").textContent=best;$("fuel-run-lives").textContent="❤️".repeat(Math.max(0,lives))+"🖤".repeat(3-Math.max(0,lives));$("fuel-run-cans").textContent=cans;$("fuel-run-facts").textContent=factCount;$("fuel-run-time").textContent=Math.floor(elapsed);$("fuel-run-speed").textContent=Math.round(80+speed*.12+(boost?35:0));$("fuel-run-boost").textContent=boost>0?"TURBO "+boost.toFixed(1)+"s":(cans>0?"READY — TAP TURBO":"COLLECT CANS");player.style.left=laneX[lane]+"%";player.style.filter=invulnerable>0?"drop-shadow(0 0 12px #fff)":"none";}
- function showOverlay(title,copy,button,icon){$("fuel-run-overlay-title").textContent=title;$("fuel-run-overlay-copy").textContent=copy;startBtn.textContent=button; $("fuel-run-overlay-icon").textContent=icon;overlay.hidden=false;}
- function setTip(title,copy){$("fuel-run-tip").querySelector("span").textContent=title;$("fuel-run-tip-text").textContent=copy;}
- function move(d){if(state!=="running")return;lane=Math.max(0,Math.min(2,lane+d));render();}
- function spawnItem(){let kind;const roll=Math.random();if(roll<.31)kind="hazard";else if(roll<.53)kind="fuel";else if(roll<.64)kind="life";else if(roll<.80)kind="fact";else kind="turbo";const el=document.createElement("div");el.className="rush-object rush-"+kind;el.textContent=({hazard:rand(["🚧","🔺","🛢️"]),fuel:"⛽",life:"❤️",fact:"🧠",turbo:"⚡"})[kind];el.setAttribute("aria-label",kind);const item={el,kind,lane:Math.floor(Math.random()*3),y:-55,done:false};el.style.left=laneX[item.lane]+"%";el.style.transform="translateX(-50%)";el.style.top="-55px";objects.appendChild(el);items.push(item);}
- function collect(item){item.done=true;item.el.remove();if(item.kind==="hazard"){if(invulnerable>0||boost>0){score+=5;setTip("⚡ TURBO SHIELD","Your boost protected you from a road hazard. Keep collecting fuel cans to recharge it.");return;}lives--;invulnerable=1.25;$("fuel-run-hit-flash").classList.remove("on");void $("fuel-run-hit-flash").offsetWidth;$("fuel-run-hit-flash").classList.add("on");setTip("🚧 ROAD HAZARD","Avoid cones, barrels, and oil spills. You lost one life; collect a heart to recover.");if(lives<=0){endGame();}}else if(item.kind==="fuel"){cans++;score+=10;setTip("⛽ FUEL CAN +10","Collected fuel! Tap TURBO to spend one can for a short speed burst and temporary hazard protection.");}else if(item.kind==="life"){lives=Math.min(3,lives+1);score+=5;setTip("❤️ EXTRA LIFE +5","A heart restored one life (maximum three). Keep an eye out for rare hearts.");}else if(item.kind==="fact"){factCount++;score+=15;const available=facts.filter((_,i)=>!usedFacts.includes(i));const f=available.length?rand(available):rand(facts);usedFacts.push(facts.indexOf(f));setTip(f[0],f[1]);}else if(item.kind==="turbo"){boost=Math.max(boost,3.5);score+=8;setTip("⚡ TURBO PICKUP","Instant boost activated! Speed rises and hazards are temporarily safer to pass.");}best=Math.max(best,score);render();}
- function tick(now){if(state!=="running")return;const dt=last?Math.min((now-last)/1000,.04):0;last=now;elapsed+=dt;speed=Math.min(430,190+elapsed*2.5);if(boost>0)boost=Math.max(0,boost-dt);if(invulnerable>0)invulnerable=Math.max(0,invulnerable-dt);spawn+=dt;if(spawn>(Math.max(.42,1.05-elapsed*.008))){spawn=0;spawnItem();}
-  const carRect=player.getBoundingClientRect();for(const item of items){if(item.done)continue;item.y+=(speed+(boost>0?130:0))*dt;item.el.style.top=item.y+"px";if(item.y>road.clientHeight){item.done=true;item.el.remove();continue;}const r=item.el.getBoundingClientRect();if(item.lane===lane&&r.bottom>carRect.top+18&&r.top<carRect.bottom-8){collect(item);}}
-  items=items.filter(i=>!i.done);render();if(state==="running")raf=requestAnimationFrame(tick);}
- function start(){cancelAnimationFrame(raf);items.forEach(i=>i.el.remove());items=[];state="running";lane=1;score=0;lives=3;cans=0;factCount=0;elapsed=0;speed=190;boost=0;last=0;spawn=0;invulnerable=0;usedFacts=[];overlay.hidden=true;setTip("🧠 FUEL SMART","Collect the glowing book icons for quick fuel facts. Fuel cans charge turbo; hearts restore a life.");render();raf=requestAnimationFrame(tick);}
- function endGame(){if(state!=="running")return;state="over";cancelAnimationFrame(raf);best=Math.max(best,score);render();showOverlay("Race over!","Score: "+score+" points • Fuel cans: "+cans+" • Facts learned: "+factCount+". Try again and beat your record!","Race again","🏁");}
- function boostNow(){if(state!=="running")return;if(cans>0){cans--;boost=Math.max(boost,4.5);score+=3;setTip("⚡ TURBO BOOST!","Turbo increases speed and gives temporary protection. Save it for crowded stretches.");render();}else if(boost<=0)setTip("⛽ NEED FUEL","Collect green fuel cans to charge your turbo boost.");}
- $("fuel-run-left").addEventListener("click",()=>move(-1));$("fuel-run-right").addEventListener("click",()=>move(1));$("fuel-run-boost-btn").addEventListener("click",boostNow);startBtn.addEventListener("click",()=>{if(state==="paused")resume();else start();});$("fuel-run-restart").addEventListener("click",start);
- document.addEventListener("keydown",e=>{if(state!=="running")return;if(["ArrowLeft","a","A"].includes(e.key)){e.preventDefault();move(-1);}if(["ArrowRight","d","D"].includes(e.key)){e.preventDefault();move(1);}if(e.key===" "||e.key==="ArrowUp"){e.preventDefault();boostNow();}});
- road.addEventListener("touchstart",e=>{touchX=e.changedTouches[0].clientX;},{passive:true});road.addEventListener("touchend",e=>{if(touchX===null)return;const dx=e.changedTouches[0].clientX-touchX;if(Math.abs(dx)>24)move(dx>0?1:-1);touchX=null;},{passive:true});
- document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="running"){state="paused";cancelAnimationFrame(raf);showOverlay("Pit stop","Race paused while you left the game. Ready to continue?","Resume race","⏸️");}});function resume(){if(state!=="paused")return;state="running";overlay.hidden=true;last=0;raf=requestAnimationFrame(tick);}
+ let state="ready",score=0,best=0,lives=3,cans=0,factCount=0,elapsed=0,velocity=0,worldSpeed=230,spawnTimer=0,last=0,raf=0,jumping=false,items=[],usedFacts=[],groundOffset=0,hitCooldown=0;
+ const floorBottom=29;
+ function render(){
+  $("fuel-run-score").textContent=score;$("fuel-run-best").textContent=best;
+  $("fuel-run-lives").textContent="❤️".repeat(Math.max(0,lives))+"🖤".repeat(3-Math.max(0,lives));
+  $("fuel-run-cans").textContent=cans;$("fuel-run-facts").textContent=factCount;
+  $("fuel-run-speed").textContent=(worldSpeed/230).toFixed(1)+"x";
+ }
+ function tip(label,message){$("fuel-run-tip").querySelector("span").textContent=label;$("fuel-run-tip-text").textContent=message;}
+ function overlayShow(title,copy,button,icon){$("fuel-run-overlay-title").textContent=title;$("fuel-run-overlay-copy").textContent=copy;startBtn.textContent=button;$("fuel-run-overlay-icon").textContent=icon;overlay.hidden=false;}
+ function jump(){
+  if(state!=="running")return;
+  if(!jumping){jumping=true;player.classList.remove("jumping");void player.offsetWidth;player.classList.add("jumping");velocity=-510;}
+ }
+ function makeItem(){
+  const roll=Math.random();let kind=roll<.57?"hazard":roll<.78?"fuel":roll<.87?"fact":"life";
+  const el=document.createElement("div");el.className=kind==="hazard"?"runner-obstacle":"runner-pickup";
+  el.textContent=kind==="hazard"?(["🚧","🔺","🛢️","🛑"][Math.floor(Math.random()*4)]):kind==="fuel"?"⛽":kind==="fact"?"📘":"❤️";
+  el.setAttribute("aria-label",kind);const item={el,kind,x:game.clientWidth+30,done:false};
+  el.style.left=item.x+"px";objects.appendChild(el);items.push(item);
+ }
+ function removeItem(item){item.done=true;item.el.remove();}
+ function endGame(){
+  if(state!=="running")return;state="over";cancelAnimationFrame(raf);best=Math.max(best,score);render();
+  overlayShow("Shift complete!", "Score: "+score+" • Fuel cans: "+cans+" • Fuel facts learned: "+factCount+". Ready for another run?", "Run again","🏁");
+ }
+ function hit(item){
+  if(item.kind==="hazard"){
+   if(hitCooldown>0)return;
+   lives--;hitCooldown=1.1;player.classList.add("hit");setTimeout(()=>player.classList.remove("hit"),350);
+   tip("⚠️ WATCH YOUR STEP","You hit a station hazard and lost a life. Jump a little earlier to clear cones, spills and barriers.");
+   if(lives<=0)endGame();
+  }else if(item.kind==="fuel"){
+   cans++;score+=10;tip("⛽ FUEL CAN +10","Nice pickup! Fuel cans add bonus points. Keep clear of hazards around the forecourt.");
+  }else if(item.kind==="life"){
+   lives=Math.min(3,lives+1);score+=5;tip("❤️ EXTRA LIFE +5","A heart adds one life, up to three. Keep running!");
+  }else{
+   factCount++;score+=15;let choices=facts.filter((_,i)=>!usedFacts.includes(i));if(!choices.length){usedFacts=[];choices=facts;}const fact=choices[Math.floor(Math.random()*choices.length)];usedFacts.push(facts.indexOf(fact));tip(fact[1],fact[0]);
+  }
+  best=Math.max(best,score);render();removeItem(item);
+ }
+ function tick(now){
+  if(state!=="running")return;const dt=last?Math.min((now-last)/1000,.04):0;last=now;elapsed+=dt;worldSpeed=Math.min(470,230+elapsed*4);if(hitCooldown>0)hitCooldown=Math.max(0,hitCooldown-dt);
+  spawnTimer+=dt;if(spawnTimer>Math.max(.68,1.45-elapsed*.009)){spawnTimer=0;makeItem();}
+  groundOffset=(groundOffset+worldSpeed*dt)%76;ground.style.backgroundPosition=(-groundOffset)+"px 0";
+  if(jumping){velocity+=1350*dt;const bottom=parseFloat(player.dataset.jumpY||"0")+velocity*dt;const y=Math.min(0,bottom);player.dataset.jumpY=String(y);player.style.transform="translateY("+y+"px)";if(y===0){jumping=false;velocity=0;player.dataset.jumpY="0";player.style.transform="translateY(0)";player.classList.remove("jumping");}}
+  const p=player.getBoundingClientRect();
+  for(const item of items){if(item.done)continue;item.x-=worldSpeed*dt;item.el.style.left=item.x+"px";if(item.x<-45){removeItem(item);continue;}
+   const r=item.el.getBoundingClientRect();const overlap=r.right>p.left+7&&r.left<p.right-7&&r.bottom>p.top+8&&r.top<p.bottom-5;
+   if(overlap){if(item.kind==="hazard"){if(!jumping)hit(item);else {score+=2;removeItem(item);}}else hit(item);}
+  }
+  items=items.filter(i=>!i.done);render();if(state==="running")raf=requestAnimationFrame(tick);
+ }
+ function clearItems(){items.forEach(i=>i.el.remove());items=[];}
+ function start(){cancelAnimationFrame(raf);clearItems();state="running";score=0;lives=3;cans=0;factCount=0;elapsed=0;worldSpeed=230;spawnTimer=0;last=0;jumping=false;velocity=0;hitCooldown=0;groundOffset=0;usedFacts=[];player.dataset.jumpY="0";player.style.transform="translateY(0)";player.classList.remove("jumping","hit");overlay.hidden=true;tip("🧠 FUEL SMART","Jump over station hazards and collect the 📘 pickups for fuel-safety and stock-control facts.");render();raf=requestAnimationFrame(tick);}
+ function pause(){if(state!=="running")return;state="paused";cancelAnimationFrame(raf);overlayShow("Quick break","Your run is paused. Continue your shift run when you’re ready.","Resume run","⏸️");}
+ function resume(){if(state!=="paused")return;state="running";overlay.hidden=true;last=0;raf=requestAnimationFrame(tick);}
+ startBtn.addEventListener("click",()=>{if(state==="paused")resume();else start();});
+ $("fuel-run-jump").addEventListener("click",jump);$("fuel-run-pause").addEventListener("click",pause);$("fuel-run-restart").addEventListener("click",start);
+ game.addEventListener("pointerdown",e=>{if(state==="running"&&e.target.closest("button")===null)jump();});
+ document.addEventListener("keydown",e=>{if([" ","ArrowUp","w","W"].includes(e.key)){if(state==="running"){e.preventDefault();jump();}else if(state==="ready"||state==="over"){e.preventDefault();start();}}if(e.key==="Escape"&&state==="running")pause();});
+ document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="running")pause();});
  render();
 })();
 </script>
