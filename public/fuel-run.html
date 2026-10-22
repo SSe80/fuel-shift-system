@@ -1443,6 +1443,80 @@ body.attendant-dashboard-page .service-dispense-button:disabled{background:#aab4
 body.attendant-dashboard-page .service-game-hint{margin-top:10px;color:#7b8494;font-size:11px;line-height:1.5;text-align:center}
 @media(max-width:560px){body.attendant-dashboard-page .fuel-service-scene{height:270px}body.attendant-dashboard-page .service-station-sign{left:4%;top:16px;transform:scale(.85);transform-origin:top left}body.attendant-dashboard-page .service-car{left:8%;transform:scale(.82);transform-origin:bottom left}body.attendant-dashboard-page .service-pump{right:9%;transform:scale(.88);transform-origin:bottom right}body.attendant-dashboard-page .service-canopy{left:17%;right:8%}body.attendant-dashboard-page .service-game-panel{padding:12px}body.attendant-dashboard-page .service-meter-label{font-size:10px}}
 
+
+/* Layout containment: keep the game inside its content card, never over navigation. */
+body.attendant-dashboard-page>main.wrap{
+  position:relative!important;
+  z-index:1!important;
+  display:block!important;
+  width:calc(100% - 40px)!important;
+  max-width:1040px!important;
+  min-width:0!important;
+  margin:0 auto!important;
+  padding:18px 0 36px!important;
+  box-sizing:border-box!important;
+}
+body.attendant-dashboard-page .fuel-brain-break{
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  isolation:isolate!important;
+  box-sizing:border-box!important;
+}
+body.attendant-dashboard-page .runner-game{
+  position:relative!important;
+  display:block!important;
+  width:auto!important;
+  max-width:100%!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  isolation:isolate!important;
+  contain:layout paint!important;
+  box-sizing:border-box!important;
+}
+body.attendant-dashboard-page .runner-overlay{
+  position:absolute!important;
+  inset:0!important;
+  z-index:8!important;
+  width:auto!important;
+  height:auto!important;
+  box-sizing:border-box!important;
+}
+body.attendant-dashboard-page #fuel-run-objects{
+  position:absolute!important;
+  inset:0!important;
+  z-index:3!important;
+  overflow:hidden!important;
+  pointer-events:none!important;
+}
+body.attendant-dashboard-page .runner-ground,
+body.attendant-dashboard-page .runner-player,
+body.attendant-dashboard-page .runner-station,
+body.attendant-dashboard-page .runner-sun,
+body.attendant-dashboard-page .runner-cloud,
+body.attendant-dashboard-page .runner-scoreline{
+  max-width:100%!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:800px){
+  body.attendant-dashboard-page>main.wrap{
+    width:calc(100% - 24px)!important;
+    padding:12px 0 28px!important;
+  }
+}
+@media(max-width:560px){
+  body.attendant-dashboard-page>main.wrap{
+    width:calc(100% - 20px)!important;
+    padding:10px 0 24px!important;
+  }
+  body.attendant-dashboard-page .runner-game{
+    margin:8px!important;
+    width:calc(100% - 16px)!important;
+  }
+}
 /* Fuel Run — classic side-scrolling jump runner */
 body.attendant-dashboard-page .fuel-brain-break{overflow:hidden;border:1px solid #dce5ee;border-radius:20px;background:#fff;box-shadow:0 12px 34px rgba(16,24,40,.08)}
 body.attendant-dashboard-page .fuel-game-top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;border-bottom:1px solid #edf1f5}
