@@ -2651,8 +2651,8 @@ async function openAdminAttendantDetails(id){
   const box=document.getElementById('admin-attendant-details-content');
   if(box)box.innerHTML='<p class="muted">Loading attendant data…</p>';
   try{
-    const [employees,shifts,nozzles,products,salesResult]=await Promise.all([
-      api('/api/users'),api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/sales/history').then(data=>({ok:true,data})).catch(()=>({ok:false,data:[]}))
+    const [employees,shifts,nozzles,products,salesResult,takeoverResult]=await Promise.all([
+      api('/api/users'),api('/api/shifts'),api('/api/nozzles'),api('/api/products'),api('/api/sales/history').then(data=>({ok:true,data})).catch(()=>({ok:false,data:[]})),api('/api/shift-takeovers').then(data=>({ok:true,data})).catch(()=>({ok:false,data:[]}))
     ]);
     const employee=(Array.isArray(employees)?employees:[]).find(e=>String(e.id)===String(id));
     if(!employee){if(box)box.innerHTML='<p class="muted">Attendant not found.</p>';return;}
@@ -2666,7 +2666,13 @@ async function openAdminAttendantDetails(id){
       const ids=[t.from_employee_id,t.to_employee_id,t.employee_id,t.attendant_id,t.user_id,t.operator_user_id,x?.employee_id,x?.attendant_id];
       return ids.some(v=>v!=null&&String(v)===String(employee.id));
     });
-    const sales=salesItems.flatMap(x=>Array.isArray(x.sales)?x.sales:(Array.isArray(x.sale_items)?x.sale_items:[]));
+    const rawSales=salesItems.flatMap(x=>Array.isArray(x.sales)?x.sales:(Array.isArray(x.sale_items)?x.sale_items:[]));
+    const employeeShiftIds=new Set(employeeShifts.map(s=>String(s.id)));
+    const takeovers=Array.isArray(takeoverResult.data)?takeoverResult.data:[];
+    const employeeTakeovers=takeovers.filter(t=>employeeShiftIds.has(String(t.shift_id||''))&&!['cancelled','canceled','void','voided','rejected','deleted'].includes(String(t.sales_status||'').toLowerCase()));
+    const shiftsWithRecordedVolume=new Set(rawSales.filter(s=>Number(s.quantity_liters||s.liters)>0).map(s=>String(s.shift_id||'')));
+    const handoverVolumeRows=employeeTakeovers.filter(t=>!shiftsWithRecordedVolume.has(String(t.shift_id||''))).map(t=>({id:'handover-'+String(t.id||''),shift_id:t.shift_id,quantity_liters:Number(t.total_sales_liters)||0,total_amount:0,amount:0,sale_time:t.shift_ended_at||t.shift_started_at||t.sales_submitted_at||t.created_at,created_at:t.created_at,status:t.sales_status||'confirmed'})).filter(s=>s.quantity_liters>0);
+    const sales=rawSales.concat(handoverVolumeRows);
     const totalLiters=sales.reduce((n,s)=>n+(Number(s.quantity_liters||s.liters)||0),0);
     const totalAmount=sales.reduce((n,s)=>n+(Number(s.total_amount||s.amount)||0),0);
     const avg=employeeShifts.length?totalLiters/employeeShifts.length:0;
