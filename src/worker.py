@@ -8319,12 +8319,14 @@ def drive_upload(item_id):
                 raise drive.DriveError("This shift handover sale is not confirmed; refusing to upload it", 409)
             ss, shift_rows = sb("shifts", params={
                 "id": "eq." + str(takeover.get("shift_id") or ""),
-                "select": "start_time", "limit": "1"})
+                "select": "start_time,employee_id", "limit": "1"})
             if ss >= 400 or not shift_rows:
                 raise drive.DriveError("The shift date for this sales PDF could not be verified", 404)
             actual_day = _local_date_from_iso(shift_rows[0].get("start_time"))
             if not actual_day or actual_day.isoformat() != report_day.isoformat():
                 raise drive.DriveError("The sales PDF date does not match the confirmed shift handover", 409)
+            attendant_name = _notification_employee_name(shift_rows[0].get("employee_id")) or "Attendant"
+            safe_attendant = re.sub(r"[^A-Za-z0-9_-]+", "-", attendant_name).strip("-_")[:60] or "Attendant"
             # Group all sales PDFs for a reporting date under the actual DSR record.
             ds, dsr_rows = sb("daily_reports", params={
                 "report_date": "eq." + report_day.isoformat(),
@@ -8337,8 +8339,7 @@ def drive_upload(item_id):
             # The lookup above still requires the actual daily_reports row for this date to exist.
             dsr_folder = report_day.strftime("%b %d, %Y DSR").replace(" 0", " ")
             nested_folders = [report_day.strftime("%B %Y"), dsr_folder]
-            safe_id = re.sub(r"[^A-Za-z0-9_-]+", "_", takeover_id)[:40]
-            name = "Sales-" + report_day.isoformat() + "-" + safe_id + ".pdf"
+            name = "Sales-" + safe_attendant + "-" + report_day.strftime("%b %d, %Y").replace(" 0", " ") + ".pdf"
         try:
             if kind == "sale":
                 file_id, link = drive.store_pdf_path(env(), root, nested_folders, name, pdf)
