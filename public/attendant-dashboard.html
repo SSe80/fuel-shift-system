@@ -1322,6 +1322,46 @@ body.attendant-dashboard-page .attendant-dsr-group-title strong{font-size:14px;f
 body.attendant-dashboard-page .attendant-dsr-group-divider{height:1px;width:100%;background:#dce3ea;margin:0 0 10px}
 body.attendant-dashboard-page .attendant-dsr-group-cards{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0}
 body.attendant-dashboard-page .attendant-dsr-group-cards>.card{min-width:0}
+
+/* Attendant Fuel Brain Break mini-game */
+body.attendant-dashboard-page .fuel-brain-break{margin:18px 0 28px;padding:20px;border:1px solid #e4e9f0;border-radius:22px;background:linear-gradient(135deg,#fff 0%,#fffafa 100%);box-shadow:0 10px 28px rgba(30,41,59,.06);color:#182230}
+body.attendant-dashboard-page .fuel-game-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
+body.attendant-dashboard-page .fuel-game-brand{display:flex;gap:13px;align-items:flex-start;min-width:0}
+body.attendant-dashboard-page .fuel-game-icon{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;border-radius:15px;background:#fff0f1;color:#b4232f;font-size:23px}
+body.attendant-dashboard-page .fuel-game-kicker{display:block;color:#b4232f;font-size:10px;font-weight:900;letter-spacing:.12em;line-height:1.4}
+body.attendant-dashboard-page .fuel-game-brand h2{margin:3px 0 5px;font-size:23px;letter-spacing:-.03em}
+body.attendant-dashboard-page .fuel-game-brand p{margin:0;color:#667085;font-size:13px;line-height:1.5;max-width:410px}
+body.attendant-dashboard-page .fuel-game-stats{display:flex;gap:8px}
+body.attendant-dashboard-page .fuel-game-stats>div{min-width:66px;padding:9px 11px;border:1px solid #edf0f4;border-radius:12px;background:#fff;text-align:center}
+body.attendant-dashboard-page .fuel-game-stats span{display:block;color:#7b8494;font-size:9px;font-weight:900;letter-spacing:.08em}
+body.attendant-dashboard-page .fuel-game-stats strong{display:block;margin-top:3px;font-size:17px;font-weight:900}
+body.attendant-dashboard-page .fuel-game-stage{margin-top:18px;padding:22px;border:1px solid #edf0f4;border-radius:17px;background:#fff;text-align:center}
+body.attendant-dashboard-page .fuel-game-stage[hidden]{display:none!important}
+body.attendant-dashboard-page .fuel-game-emoji{font-size:32px;line-height:1.3}
+body.attendant-dashboard-page .fuel-game-stage h3{margin:8px 0;font-size:19px;line-height:1.35}
+body.attendant-dashboard-page .fuel-game-stage>p:not(.fuel-game-kicker):not(.fuel-game-question-count):not(.fuel-game-feedback){color:#667085;font-size:13px;line-height:1.55}
+body.attendant-dashboard-page .fuel-game-primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;margin-top:12px;padding:11px 17px;border:1px solid #b4232f;border-radius:12px;background:#b4232f;color:#fff;font-size:14px;font-weight:850;cursor:pointer;box-shadow:0 5px 12px rgba(180,35,47,.17)}
+body.attendant-dashboard-page .fuel-game-primary:focus-visible,body.attendant-dashboard-page .fuel-game-option:focus-visible{outline:3px solid #f6b6bc;outline-offset:3px}
+body.attendant-dashboard-page .fuel-game-primary:disabled{opacity:.55;cursor:default}
+body.attendant-dashboard-page .fuel-game-progress{height:6px;margin:0 0 17px;overflow:hidden;border-radius:99px;background:#f1f3f6}
+body.attendant-dashboard-page .fuel-game-progress span{display:block;width:0;height:100%;border-radius:99px;background:#b4232f;transition:width .2s ease}
+body.attendant-dashboard-page .fuel-game-question-count{margin:0 0 7px;color:#b4232f;font-size:10px;font-weight:900;letter-spacing:.12em}
+body.attendant-dashboard-page #fuel-game-question{max-width:620px;margin:0 auto 17px}
+body.attendant-dashboard-page .fuel-game-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:620px;margin:0 auto}
+body.attendant-dashboard-page .fuel-game-option{min-height:48px;padding:11px 13px;border:1px solid #e1e7ef;border-radius:12px;background:#fff;color:#273444;font-size:14px;font-weight:750;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+body.attendant-dashboard-page .fuel-game-option:hover:not(:disabled){border-color:#e4a0a6;background:#fff8f8}
+body.attendant-dashboard-page .fuel-game-option:disabled{cursor:default}
+body.attendant-dashboard-page .fuel-game-option.is-correct{border-color:#82c9a4;background:#effaf3;color:#166534}
+body.attendant-dashboard-page .fuel-game-option.is-wrong{border-color:#efb0b5;background:#fff1f2;color:#9f1239}
+body.attendant-dashboard-page .fuel-game-feedback{min-height:22px;margin:12px 0 0;font-size:13px;font-weight:750}
+body.attendant-dashboard-page .fuel-game-feedback.is-correct{color:#15803d}
+body.attendant-dashboard-page .fuel-game-feedback.is-wrong{color:#b4232f}
+body.attendant-dashboard-page .fuel-game-result-score{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:14px auto;padding:13px;border-radius:14px;background:#fff5f5;color:#b4232f}
+body.attendant-dashboard-page .fuel-game-result-score strong{font-size:30px;font-weight:950}
+body.attendant-dashboard-page .fuel-game-result-score span{font-size:12px;font-weight:750}
+body.attendant-dashboard-page .fuel-game-footnote{display:flex;justify-content:center;gap:6px;margin:14px 0 0;color:#8a93a1;font-size:11px;line-height:1.45;text-align:center}
+@media(max-width:560px){body.attendant-dashboard-page .fuel-brain-break{padding:15px;border-radius:18px}body.attendant-dashboard-page .fuel-game-top{gap:13px}body.attendant-dashboard-page .fuel-game-brand h2{font-size:21px}body.attendant-dashboard-page .fuel-game-stats{width:100%}body.attendant-dashboard-page .fuel-game-stats>div{flex:1;min-width:0}body.attendant-dashboard-page .fuel-game-stage{padding:16px 12px}body.attendant-dashboard-page .fuel-game-options{grid-template-columns:1fr}body.attendant-dashboard-page .fuel-game-option{text-align:center}}
+
 </style><style>
 .attendant-dashboard-page .takeover-details-modal{max-width:760px;border-radius:18px;overflow:hidden}
 .attendant-dashboard-page .takeover-details-modal>.top{padding:16px 18px;border-bottom:1px solid #e8edf2;background:#fff}
@@ -2122,7 +2162,18 @@ body.attendant-dashboard-page .attendant-shift-history-item.is-expanded{
 }
 body.attendant-dashboard-page .attendant-shift-history-details:not([hidden]){display:block!important;margin-top:12px!important}
 </style>
-</head><body class="attendant-page attendant-dashboard-page admin-shell admin-control-ui" data-app-page="userDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div><div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing stock (liters)<input id="handover-closing-liters-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Enter closing stock in liters" required oninput="updateHandoverClosingLiters(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter stock in liters.</div><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="batch-record-sales-modal" class="modal" aria-hidden="true">
+</head><body class="attendant-page attendant-dashboard-page admin-shell admin-control-ui" data-app-page="userDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a><a href="#fuel-brain-break"><span>⚡</span><b>Fuel Brain Break</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div>
+<section id="fuel-brain-break" class="fuel-brain-break" aria-labelledby="fuel-game-title">
+  <div class="fuel-game-top">
+    <div class="fuel-game-brand"><span class="fuel-game-icon" aria-hidden="true">⚡</span><div><span class="fuel-game-kicker">YOUR SPARE-TIME CHALLENGE</span><h2 id="fuel-game-title">Fuel Brain Break</h2><p>Five quick questions. Sharpen your fuel maths and beat your streak.</p></div></div>
+    <div class="fuel-game-stats" aria-label="Game score"><div><span>ROUND</span><strong id="fuel-game-round">—/5</strong></div><div><span>SCORE</span><strong id="fuel-game-score">0</strong></div><div><span>STREAK</span><strong id="fuel-game-streak">0 🔥</strong></div></div>
+  </div>
+  <div id="fuel-game-intro" class="fuel-game-stage"><div class="fuel-game-emoji" aria-hidden="true">⛽</div><h3>Ready for a quick challenge?</h3><p>Practice with made-up examples only. This game never changes station records.</p><button type="button" class="fuel-game-primary" id="fuel-game-start">Start playing <span aria-hidden="true">→</span></button></div>
+  <div id="fuel-game-question-stage" class="fuel-game-stage" hidden><div class="fuel-game-progress" aria-hidden="true"><span id="fuel-game-progress-bar"></span></div><p class="fuel-game-question-count" id="fuel-game-question-count">QUESTION 1 OF 5</p><h3 id="fuel-game-question">Loading question…</h3><div id="fuel-game-options" class="fuel-game-options"></div><p id="fuel-game-feedback" class="fuel-game-feedback" role="status" aria-live="polite"></p><button type="button" id="fuel-game-next" class="fuel-game-primary" hidden>Next question <span aria-hidden="true">→</span></button></div>
+  <div id="fuel-game-results" class="fuel-game-stage" hidden><div class="fuel-game-emoji" aria-hidden="true">🏆</div><p class="fuel-game-kicker">CHALLENGE COMPLETE</p><h3 id="fuel-game-result-title">Nice work!</h3><p id="fuel-game-result-copy"></p><div class="fuel-game-result-score"><strong id="fuel-game-final-score">0</strong><span>points earned</span></div><button type="button" class="fuel-game-primary" id="fuel-game-replay">Play again <span aria-hidden="true">↻</span></button></div>
+  <p class="fuel-game-footnote"><span aria-hidden="true">ⓘ</span> Just for fun and practice — use official station procedures for real work.</p>
+</section>
+<div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing stock (liters)<input id="handover-closing-liters-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Enter closing stock in liters" required oninput="updateHandoverClosingLiters(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter stock in liters.</div><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="batch-record-sales-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closeBatchRecordSalesModal()"></div>
 <div class="modal-card takeover-action-modal batch-record-sales-modal-card">
 <div class="top"><div><span class="section-kicker">PRODUCT SALES</span><h3>Record Product Sales</h3><p class="muted">Enter the product’s total payment breakdown once. The system allocates it automatically across the dispensers.</p></div><button type="button" class="modal-close" onclick="closeBatchRecordSalesModal()" aria-label="Close">×</button></div>
@@ -2391,6 +2442,56 @@ body.attendant-dashboard-page section.attendant-dsr-card-category.card > h2,body
 body.attendant-dashboard-page section.attendant-dsr-card-category.card > .card{margin-top:0!important}
 body.attendant-dashboard-page .card button.primary{width:100%!important}
 </style>
+
+<script id="attendant-fuel-brain-break-script">
+(function(){
+  if(window.__fuelBrainBreakReady)return;
+  window.__fuelBrainBreakReady=true;
+  const questions=[
+    {q:"A dispenser records 125 liters, then another 85 liters. What is the total?",options:["200 L","210 L","215 L","220 L"],correct:1,explain:"125 + 85 = 210 liters."},
+    {q:"Opening reading is 5,210.3 L and closing reading is 5,432.8 L. What is the difference?",options:["212.5 L","220.5 L","222.5 L","223.5 L"],correct:2,explain:"5,432.8 − 5,210.3 = 222.5 liters."},
+    {q:"Four practice containers hold 20 liters each. How many liters altogether?",options:["60 L","70 L","80 L","100 L"],correct:2,explain:"4 × 20 = 80 liters."},
+    {q:"A practice tank has 1,000 L. If 350 L are used, how much remains?",options:["550 L","600 L","650 L","750 L"],correct:2,explain:"1,000 − 350 = 650 liters."},
+    {q:"What is 12.5 L + 7.5 L?",options:["19 L","20 L","20.5 L","21 L"],correct:1,explain:"12.5 + 7.5 = 20 liters."},
+    {q:"A training example uses 15 L per minute for 4 minutes. How much is used?",options:["45 L","50 L","60 L","75 L"],correct:2,explain:"15 × 4 = 60 liters."},
+    {q:"Split 480 practice liters equally between 3 tanks. How much goes into each?",options:["120 L","150 L","160 L","180 L"],correct:2,explain:"480 ÷ 3 = 160 liters per tank."},
+    {q:"A reading changes from 129.2 L to 138.6 L. What is the difference?",options:["8.4 L","9.2 L","9.4 L","10.4 L"],correct:2,explain:"138.6 − 129.2 = 9.4 liters."},
+    {q:"A practice delivery contains 275 L in the first compartment and 225 L in the second. Total?",options:["450 L","475 L","500 L","525 L"],correct:2,explain:"275 + 225 = 500 liters."},
+    {q:"Which unit is best for recording the volume of fuel in a tank?",options:["Kilograms only","Liters","Kilometers","Degrees"],correct:1,explain:"Liters are a standard unit for measuring fuel volume."},
+    {q:"You need 3 equal practice portions from  ninety liters. How much per portion?",options:["20 L","25 L","30 L","35 L"],correct:2,explain:"90 ÷ 3 = 30 liters each."},
+    {q:"A practice total is 750 L. After 285 L are used, what remains?",options:["455 L","465 L","475 L","485 L"],correct:1,explain:"750 − 285 = 465 liters."}
+  ];
+  const $=id=>document.getElementById(id);
+  const intro=$("fuel-game-intro"),stage=$("fuel-game-question-stage"),results=$("fuel-game-results");
+  if(!intro||!stage||!results)return;
+  let deck=[],index=0,score=0,streak=0,bestStreak=0,answered=false;
+  function shuffle(items){const a=items.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+  function showOnly(which){[intro,stage,results].forEach(el=>el.hidden=el!==which);}
+  function updateStats(){$("fuel-game-round").textContent=(deck.length?Math.min(index+1,5):"—")+"/5";$("fuel-game-score").textContent=String(score);$("fuel-game-streak").textContent=String(streak)+" 🔥";}
+  function start(){deck=shuffle(questions).slice(0,5);index=0;score=0;streak=0;bestStreak=0;showOnly(stage);renderQuestion();}
+  function renderQuestion(){
+    answered=false;const item=deck[index];$("fuel-game-question-count").textContent="QUESTION "+(index+1)+" OF "+deck.length;$("fuel-game-question").textContent=item.q;
+    $("fuel-game-progress-bar").style.width=(index/deck.length*100)+"%";$("fuel-game-feedback").textContent="";$("fuel-game-feedback").className="fuel-game-feedback";$("fuel-game-next").hidden=true;
+    const options=$("fuel-game-options");options.replaceChildren();
+    item.options.forEach((label,i)=>{const b=document.createElement("button");b.type="button";b.className="fuel-game-option";b.textContent=label;b.dataset.answer=String(i);b.addEventListener("click",()=>choose(i,b));options.appendChild(b);});
+    updateStats();
+  }
+  function choose(choice,button){
+    if(answered)return;answered=true;const item=deck[index];const correct=choice===item.correct;
+    document.querySelectorAll("#fuel-game-options .fuel-game-option").forEach(b=>{b.disabled=true;if(Number(b.dataset.answer)===item.correct)b.classList.add("is-correct");});
+    const feedback=$("fuel-game-feedback");
+    if(correct){score+=10;streak++;bestStreak=Math.max(bestStreak,streak);feedback.textContent="Correct! +10 points. "+item.explain;feedback.classList.add("is-correct");}
+    else{streak=0;button.classList.add("is-wrong");feedback.textContent="Not quite. "+item.explain;feedback.classList.add("is-wrong");}
+    $("fuel-game-progress-bar").style.width=((index+1)/deck.length*100)+"%";updateStats();
+    $("fuel-game-next").textContent=index===deck.length-1?"See my result →":"Next question →";$("fuel-game-next").hidden=false;
+  }
+  function next(){if(!answered)return;if(index<deck.length-1){index++;renderQuestion();}else finish();}
+  function finish(){showOnly(results);$("fuel-game-final-score").textContent=String(score);$("fuel-game-result-title").textContent=score===50?"Fuel genius! ⛽":score>=30?"Great work!":"Good practice!";
+    $("fuel-game-result-copy").textContent="You answered "+(score/10)+" out of 5 correctly and your best streak was "+bestStreak+". Ready for another round?";$("fuel-game-round").textContent="5/5";updateStats();}
+  $("fuel-game-start").addEventListener("click",start);$("fuel-game-replay").addEventListener("click",start);$("fuel-game-next").addEventListener("click",next);
+})();
+</script>
+
 </body></html>
 <style id="record-sale-error-layer-fix">
 body.attendant-dashboard-page #takeover-sale-confirm-modal .record-sale-submit-error{
