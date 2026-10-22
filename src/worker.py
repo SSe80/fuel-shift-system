@@ -3937,11 +3937,21 @@ def inventory_summary():
     if ts!=200:return jsonify(tanks),ts
 
     ms,movement_rows=sb("tank_movements",params={
-        "select":"tank_id,movement_type,quantity_liters,created_at",
+        "select":"tank_id,movement_type,quantity_liters,reference_id,created_at",
         "limit":"10000",
         "order":"created_at.asc"
     })
     if ms!=200:return jsonify(movement_rows),ms
+
+    # Some older purchase-discharge records have a discharge_history entry but
+    # no corresponding tank_movements row. Use that history as a fallback,
+    # without counting a discharge twice when its ledger movement exists.
+    ps,purchase_rows=sb("purchases",params={
+        "select":"id,product,status,discharged_quantity_liters,discharged_at,created_at,discharge_history",
+        "limit":"10000",
+        "order":"created_at.asc"
+    })
+    if ps!=200:return jsonify(purchase_rows),ps
 
     result=[]
     movements_by_tank={}
@@ -3984,26 +3994,61 @@ def inventory_summary():
 
         anchor_at=anchor.get("created_at")
         anchor_liters=float(anchor.get("quantity_liters") or 0)
-        purchases=0
-        sales=0
-        adjustments=0
+        ledger_purchases=0.0
+        sales=0.0
+        adjustments=0.0
+        ledger_purchase_refs=set()
 
         for movement in movements:
             if movement is anchor:
                 continue
             # The ledger is chronological; only movements after the latest
-            # anchor belong to the current stock period.
+            # opening/dip anchor belong to the current stock period.
             if anchor_at and str(movement.get("created_at") or "") <= str(anchor_at):
                 continue
             movement_type=str(movement.get("movement_type") or "").lower()
             qty=float(movement.get("quantity_liters") or 0)
             if movement_type=="purchase":
-                purchases += qty
+                ledger_purchases += qty
+                if movement.get("reference_id"):
+                    ledger_purchase_refs.add(str(movement.get("reference_id")))
             elif movement_type=="sale":
                 sales += abs(qty)
             elif movement_type=="adjustment":
                 adjustments += qty
 
+        # Recover purchases from per-tank discharge history when the matching
+        # purchase ledger movement is absent. A purchase row may include several
+        # compartment/discharge events, so compare totals per tank and only add
+        # the missing positive difference rather than duplicating ledger rows.
+        history_purchases=0.0
+        tank_product=str(tank.get("product") or "").strip().casefold()
+        for purchase in purchase_rows:
+            purchase_product=str(purchase.get("product") or "").strip().casefold()
+            if purchase_product and tank_product and purchase_product != tank_product:
+                continue
+            history=purchase.get("discharge_history") or []
+            if isinstance(history,str):
+                try:
+                    history=json.loads(history)
+                except Exception:
+                    history=[]
+            if not isinstance(history,list):
+                continue
+            for event in history:
+                if not isinstance(event,dict) or str(event.get("tank_id") or "") != tid:
+                    continue
+                event_at=event.get("discharge_datetime") or purchase.get("discharged_at") or purchase.get("created_at")
+                if anchor_at and event_at and str(event_at) <= str(anchor_at):
+                    continue
+                try:
+                    qty=float(event.get("discharged_quantity_liters") or 0)
+                except (TypeError,ValueError):
+                    qty=0.0
+                if qty > 0:
+                    history_purchases += qty
+
+        purchases=ledger_purchases + max(0.0, history_purchases-ledger_purchases)
         expected=anchor_liters+purchases+adjustments-sales
         result.append({
             "tank_id":tank.get("id"),
