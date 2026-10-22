@@ -1444,13 +1444,13 @@ body.attendant-dashboard-page .service-game-hint{margin-top:10px;color:#7b8494;f
 @media(max-width:560px){body.attendant-dashboard-page .fuel-service-scene{height:270px}body.attendant-dashboard-page .service-station-sign{left:4%;top:16px;transform:scale(.85);transform-origin:top left}body.attendant-dashboard-page .service-car{left:8%;transform:scale(.82);transform-origin:bottom left}body.attendant-dashboard-page .service-pump{right:9%;transform:scale(.88);transform-origin:bottom right}body.attendant-dashboard-page .service-canopy{left:17%;right:8%}body.attendant-dashboard-page .service-game-panel{padding:12px}body.attendant-dashboard-page .service-meter-label{font-size:10px}}
 
 
-/* Layout containment: keep the game inside its content card, never over navigation. */
+/* Layout containment: let the game use the available page width without covering navigation. */
 body.attendant-dashboard-page>main.wrap{
   position:relative!important;
   z-index:1!important;
   display:block!important;
-  width:calc(100% - 40px)!important;
-  max-width:1040px!important;
+  width:calc(100% - 32px)!important;
+  max-width:none!important;
   min-width:0!important;
   margin:0 auto!important;
   padding:18px 0 36px!important;
@@ -1469,9 +1469,12 @@ body.attendant-dashboard-page .fuel-brain-break{
 body.attendant-dashboard-page .runner-game{
   position:relative!important;
   display:block!important;
-  width:auto!important;
+  width:100%!important;
   max-width:100%!important;
   min-width:0!important;
+  height:clamp(300px,46vh,390px)!important;
+  min-height:300px!important;
+  margin:12px 0!important;
   overflow:hidden!important;
   isolation:isolate!important;
   contain:layout paint!important;
@@ -1503,18 +1506,22 @@ body.attendant-dashboard-page .runner-scoreline{
 }
 @media(max-width:800px){
   body.attendant-dashboard-page>main.wrap{
-    width:calc(100% - 24px)!important;
+    width:calc(100% - 20px)!important;
     padding:12px 0 28px!important;
+  }
+  body.attendant-dashboard-page .runner-game{
+    height:clamp(300px,48vh,390px)!important;
   }
 }
 @media(max-width:560px){
   body.attendant-dashboard-page>main.wrap{
-    width:calc(100% - 20px)!important;
+    width:calc(100% - 12px)!important;
     padding:10px 0 24px!important;
   }
   body.attendant-dashboard-page .runner-game{
-    margin:8px!important;
-    width:calc(100% - 16px)!important;
+    margin:10px 0!important;
+    width:100%!important;
+    height:clamp(300px,45vh,370px)!important;
   }
 }
 /* Fuel Run — classic side-scrolling jump runner */
