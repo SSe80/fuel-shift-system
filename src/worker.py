@@ -8333,8 +8333,10 @@ def drive_upload(item_id):
                 raise drive.DriveError("Could not look up the DSR for " + report_day.isoformat(), 502)
             if not dsr_rows or not dsr_rows[0].get("id"):
                 raise drive.DriveError("The DSR for " + report_day.isoformat() + " has not been created yet. Create/confirm that day's DSR, then retry this sales PDF.", 409)
-            dsr_id = re.sub(r"[^A-Za-z0-9_-]+", "_", str(dsr_rows[0]["id"]))[:80]
-            nested_folders = [report_day.strftime("%B %Y"), "DSR-" + dsr_id]
+            # Use the DSR's reporting date as its human-readable Drive folder name.
+            # The lookup above still requires the actual daily_reports row for this date to exist.
+            dsr_folder = report_day.strftime("%b %d, %Y DSR").replace(" 0", " ")
+            nested_folders = [report_day.strftime("%B %Y"), dsr_folder]
             safe_id = re.sub(r"[^A-Za-z0-9_-]+", "_", takeover_id)[:40]
             name = "Sales-" + report_day.isoformat() + "-" + safe_id + ".pdf"
         try:
