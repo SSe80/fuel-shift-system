@@ -2363,6 +2363,11 @@ async function adminInventory(){
         : t;
     });
     const dispensers=allDispensers.filter(d=>d.active===true&&tanks.some(t=>t.id===d.tank_id));
+    const calculatedStockByTank=new Map(tanks.map(t=>[String(t.id),Number(t.current_liters)]));
+    (Array.isArray(movements)?movements:[]).forEach(m=>{
+      const calculated=calculatedStockByTank.get(String(m.tank_id||''));
+      if(Number.isFinite(calculated))m.current_liters=calculated;
+    });
     window.__adminInventoryState={tanks,products,inventory,movements,purchases};
     const codeForProduct=p=>{const x=products.find(x=>String(x.name).toLowerCase()===String(p||'').toLowerCase());return x?.code_name||p||'—';}, el=id=>document.getElementById(id);
     const productForTank=t=>products.find(p=>String(p.name||'').toLowerCase()===String(t.product||'').toLowerCase())||{};
