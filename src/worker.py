@@ -803,7 +803,7 @@ def get_tank_difference_alerts():
     })
     if hs!=200:return jsonify({"error":"Unable to check shift tank differences","details":handovers}),hs
     ps,purchases=sb("purchases",params={
-        "select":"id,invoice_number,product,discharge_history,purchase_date",
+        "select":"*",
         "order":"purchase_date.desc","limit":"5000"
     })
     if ps!=200:return jsonify({"error":"Unable to check purchase discharge tank differences","details":purchases}),ps
@@ -864,15 +864,38 @@ def get_tank_difference_alerts():
             except (TypeError,ValueError):continue
             if abs(difference)<=purchase_tolerance:continue
             record_id=str(purchase.get("id") or "")
-            invoice=str(purchase.get("invoice_number") or "")
+            invoice=str(purchase.get("invoice_number") or purchase.get("invoice") or "")
             label=("Invoice "+invoice) if invoice else ("Purchase "+record_id[:8])
+            # Prefer the immutable truck/driver snapshot captured when the large
+            # variance was recorded; fall back to current purchase details for
+            # older records that predate variance snapshots.
+            snapshot=event.get("tank_stock_variance_alert") or {}
+            truck_plate=str(snapshot.get("truck_plate") or purchase.get("plate_number") or purchase.get("plate") or purchase.get("truck_plate") or "Not recorded")
+            trailer_plate=str(snapshot.get("trailer_plate") or purchase.get("trailer_plate") or "")
+            driver=str(snapshot.get("driver_name") or purchase.get("driver_name") or "Not recorded")
+            driver_phone=str(snapshot.get("driver_phone") or purchase.get("driver_phone") or "Not recorded")
+            supplier=str(snapshot.get("supplier_name") or purchase.get("supplier_name") or purchase.get("supplier") or "Not recorded")
+            plate_display=truck_plate+(" / "+trailer_plate if trailer_plate else "")
             alerts.append({
                 "key":"purchase-tank-difference:"+record_id+":"+str(index),
                 "level":"warning",
-                "title":"Purchase discharge tank difference exceeds tolerance",
-                "detail":label+" physical tank reading differs from the expected post-discharge stock by "+str(round(abs(difference),2))+" L; configured tolerance is "+str(round(purchase_tolerance,2))+" L. Review the dip reading and discharge record.",
+                "title":"Truck tank-stock variance recorded",
+                "detail":label+" · Truck "+plate_display+" · Driver "+driver+" · Phone "+driver_phone+" · Supplier "+supplier+". Physical tank reading differs from expected post-discharge stock by "+str(round(abs(difference),2))+" L. Configured tolerance: "+str(round(purchase_tolerance,2))+" L. Review the saved truck and discharge details.",
                 "href":"admin-purchases.html"+("#purchase-"+record_id if record_id else ""),
-                "meta":"Difference "+("+" if difference>0 else "")+str(round(difference,2))+" L · Allowed "+str(round(purchase_tolerance,2))+" L",
+                "meta":plate_display+" · "+driver+" · Difference "+("+" if difference>0 else "")+str(round(difference,2))+" L · Allowed "+str(round(purchase_tolerance,2))+" L",
+                "truck_plate":truck_plate,
+                "trailer_plate":trailer_plate,
+                "driver_name":driver,
+                "driver_phone":driver_phone,
+                "supplier_name":supplier,
+                "purchase_id":record_id,
+                "invoice_number":invoice,
+                "product":purchase.get("product"),
+                "tank_id":event.get("tank_id"),
+                "expected_stock_liters":event.get("tank_liters_after"),
+                "recorded_stock_liters":event.get("tank_stock_recorded_liters"),
+                "difference_liters":difference,
+                "allowed_difference_liters":purchase_tolerance,
                 "date":event.get("tank_stock_recorded_at") or event.get("discharge_datetime") or purchase.get("purchase_date")
             })
     alerts.sort(key=lambda x:str(x.get("date") or ""),reverse=True)
@@ -2529,10 +2552,11 @@ def update_tank_stock(tank_id):
     purchase_id=str(data.get("purchase_id") or "").strip()
     try:event_index=int(data.get("event_index"))
     except (TypeError,ValueError):return jsonify({"error":"Discharge operation is required"}),400
-    ps,purchases=sb("purchases",params={"id":"eq."+purchase_id,"select":"id,product,discharge_history","limit":"1"})
+    ps,purchases=sb("purchases",params={"id":"eq."+purchase_id,"select":"*","limit":"1"})
     if ps!=200:return jsonify(purchases),ps
     if not purchases:return jsonify({"error":"Purchase not found"}),404
-    history=purchases[0].get("discharge_history") or []
+    purchase=purchases[0]
+    history=purchase.get("discharge_history") or []
     if not isinstance(history,list) or event_index<0 or event_index>=len(history):return jsonify({"error":"Discharge operation not found"}),404
     event=dict(history[event_index] or {})
     if str(event.get("tank_id") or "")!=str(tank_id):return jsonify({"error":"Selected tank does not match this discharge operation"}),400
@@ -2561,6 +2585,38 @@ def update_tank_stock(tank_id):
     event["tank_stock_difference_liters"]=difference
     event["tank_stock_adjustment_liters"]=difference  # legacy read-only field; never posted to tank_movements
     event["tank_stock_remark"]=remark
+    # Capture truck/driver details when a material tank-stock variance is found.
+    # The snapshot preserves who delivered the fuel even if purchase details change.
+    settings_status,settings_rows=sb("station_settings",params={
+        "id":"eq.true",
+        "select":"purchase_discharge_tank_difference_tolerance",
+        "limit":"1"
+    })
+    try:
+        tolerance_value=(settings_rows or [{}])[0].get("purchase_discharge_tank_difference_tolerance") if settings_status==200 else None
+        variance_tolerance=float(10 if tolerance_value is None else tolerance_value)
+    except (TypeError,ValueError):
+        variance_tolerance=10.0
+    if abs(difference)>variance_tolerance:
+        truck_plate=str(purchase.get("plate_number") or purchase.get("plate") or purchase.get("truck_plate") or "").strip()
+        trailer_plate=str(purchase.get("trailer_plate") or purchase.get("trailerPlate") or "").strip()
+        event["tank_stock_variance_alert"]={
+            "recorded_at":now,
+            "threshold_liters":variance_tolerance,
+            "difference_liters":difference,
+            "expected_stock_liters":expected_after,
+            "recorded_stock_liters":stock,
+            "truck_plate":truck_plate or "Not recorded",
+            "trailer_plate":trailer_plate,
+            "driver_name":str(purchase.get("driver_name") or "Not recorded"),
+            "driver_phone":str(purchase.get("driver_phone") or "Not recorded"),
+            "supplier_name":str(purchase.get("supplier_name") or purchase.get("supplier") or "Not recorded"),
+            "purchase_id":purchase_id,
+            "invoice_number":str(purchase.get("invoice_number") or purchase.get("invoice") or ""),
+            "product":str(purchase.get("product") or ""),
+            "tank_id":str(tank_id),
+            "tank_name":str(event.get("tank_code") or event.get("tank_name") or "")
+        }
     history[event_index]=event
     ms,mr=sb("purchases",method="PATCH",params={"id":"eq."+purchase_id},body={"discharge_history":history},prefer="return=representation")
     if ms>=400:return jsonify({"error":"Physical tank reading could not be recorded.","details":mr}),500
