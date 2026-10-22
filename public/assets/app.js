@@ -2351,7 +2351,23 @@ async function adminInventory(){
   try{
     await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return showSessionRecovery('admin');
     const [allTanks,allProducts,allDispensers,inventory,movements,purchases]=await Promise.all([api('/api/tanks'),api('/api/products'),api('/api/nozzles'),api('/api/inventory-summary'),api('/api/tank-movements'),api('/api/purchases')]);
-    const products=allProducts.filter(p=>p.active===true), tanks=allTanks.filter(t=>t.active===true&&products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase())), dispensers=allDispensers.filter(d=>d.active===true&&tanks.some(t=>t.id===d.tank_id));
+    const products=allProducts.filter(p=>p.active===true);
+    const inventoryByTank=new Map((Array.isArray(inventory)?inventory:[]).map(row=>[String(row.tank_id||''),row]));
+    const tanks=allTanks.filter(t=>t.active===true&&products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase())).map(t=>{
+      const reconciliation=inventoryByTank.get(String(t.id));
+      const expected=Number(reconciliation?.expected_liters);
+      // Display the opening + discharged purchases - sales + valid adjustments
+      // calculation when an opening anchor exists, instead of stale cached stock.
+      return reconciliation&&reconciliation.reconciliation_status!=='no_anchor'&&Number.isFinite(expected)
+        ? {...t,current_liters:expected,inventory_reconciliation:reconciliation}
+        : t;
+    });
+    const dispensers=allDispensers.filter(d=>d.active===true&&tanks.some(t=>t.id===d.tank_id));
+    const calculatedStockByTank=new Map(tanks.map(t=>[String(t.id),Number(t.current_liters)]));
+    (Array.isArray(movements)?movements:[]).forEach(m=>{
+      const calculated=calculatedStockByTank.get(String(m.tank_id||''));
+      if(Number.isFinite(calculated))m.current_liters=calculated;
+    });
     window.__adminInventoryState={tanks,products,inventory,movements,purchases};
     const codeForProduct=p=>{const x=products.find(x=>String(x.name).toLowerCase()===String(p||'').toLowerCase());return x?.code_name||p||'—';}, el=id=>document.getElementById(id);
     const productForTank=t=>products.find(p=>String(p.name||'').toLowerCase()===String(t.product||'').toLowerCase())||{};
