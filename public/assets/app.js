@@ -2161,7 +2161,7 @@ async function adminDashboard(){
     el('dashboard-status').textContent=low.length?low.length+' tank(s) are at or below 10% capacity.':'Dashboard shows only activated Settings records.';
   }catch(e){const s=document.getElementById('dashboard-status');if(s)s.textContent=e.message;if(e.message==='Unauthorized')showSessionRecovery('admin');}
 }
-function renderActivatedProductsGraph(products,sales){
+function renderActivatedProductsGraph(products,sales,dispensers=[],tanks=[]){
   const host=document.getElementById('activated-products-graph');
   if(!host)return;
   if(!products.length){host.innerHTML='<div class="empty-content">No activated products to compare.</div>';return;}
@@ -2178,10 +2178,18 @@ function renderActivatedProductsGraph(products,sales){
   const keyForOffset=offset=>{const d=dateFromKey(todayKey);d.setUTCDate(d.getUTCDate()+offset);return d.toISOString().slice(0,10);};
   const dayKeys=Array.from({length:7},(_,i)=>keyForOffset(i-6));
   const validSales=(Array.isArray(sales)?sales:[]).filter(s=>!['cancelled','canceled','void','voided','rejected','deleted'].includes(norm(s.status||s.sales_status)));
+  const nozzleProduct=new Map();
+  (dispensers||[]).forEach(d=>{
+    const tank=(tanks||[]).find(t=>String(t.id)===String(d.tank_id));
+    const value=norm(d.product||tank?.product);
+    const product=products.find(p=>value===norm(p.name)||value===norm(p.code_name));
+    if(product)nozzleProduct.set(String(d.id),norm(product.name));
+  });
   const productMatches=(p,s)=>{
     const productName=norm(p.name),productCode=norm(p.code_name);
     const saleProduct=norm(s.product),saleCode=norm(s.product_code||s.product_code_name);
-    return saleProduct===productName||saleProduct===productCode||saleCode===productCode||String(s.product_id||'')===String(p.id);
+    const mappedProduct=nozzleProduct.get(String(s.nozzle_id||''));
+    return saleProduct===productName||saleProduct===productCode||saleCode===productCode||String(s.product_id||'')===String(p.id)||mappedProduct===productName;
   };
   const totals=products.map(p=>({code:String(p.code_name||p.name||'—'),volume:validSales.reduce((sum,s)=>{
     if(!productMatches(p,s)||!dayKeys.includes(localDayKey(s.sale_time||s.created_at)))return sum;
@@ -2208,7 +2216,7 @@ async function adminFuelConfiguration(){
     const activeEmployees=employees.filter(e=>e.active===true), activeShifts=allShifts.filter(s=>s.status==='active');
     const el=id=>document.getElementById(id), productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     el('products').innerHTML=products.length?products.map(p=>{const pc=String(p.color||'#1264d8').trim()||'#1264d8';return '<article class="stat activated-product-card" data-product-id="'+h(p.id)+'" role="button" tabindex="0" aria-label="View '+h(p.code_name)+' details" style="--product-color:'+h(pc)+'"><div class="activated-product-main"><span class="activated-product-color" aria-hidden="true"></span><div class="activated-product-copy"><span class="field-label">PRODUCT</span><div class="activated-product-code">'+h(p.code_name)+'</div><div class="activated-product-name">'+h(p.name)+'</div></div></div><div class="activated-product-meta"><div><span>STATUS</span><strong>Active</strong></div><div><span>SELLING PRICE</span><strong>'+money(p.selling_price)+'</strong></div></div></article>';}).join(''):'<div class="empty-content">No activated products.</div>';
-    renderActivatedProductsGraph(products,sales);
+    renderActivatedProductsGraph(products,sales,dispensers,tanks);
     const dispenserGroups=products.map(p=>({
       product:p,
       items:dispensers.filter(d=>{
