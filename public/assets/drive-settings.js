@@ -20,9 +20,15 @@
   function label(item) {
     var kind = item.kind, key = item.report_key;
     if (kind === 'sale') {
-      var parts = String(key || '').split('|');
+      var day = String(item.sales_date || String(key || '').split('|')[0] || '');
+      var dateLabel = day;
+      if (/^\\d{4}-\\d{2}-\\d{2}$/.test(day)) {
+        var bits = day.split('-');
+        var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        dateLabel = monthNames[Number(bits[1]) - 1] + ' ' + String(Number(bits[2])) + ', ' + bits[0];
+      }
       return (item.sales_confirmed === false ? 'Sales awaiting confirmation' : 'Confirmed sales PDF') +
-        ' · ' + (parts[0] || '') + (parts[1] ? ' · ' + parts[1].slice(0, 8) : '');
+        ' · ' + (item.sales_attendant || 'Attendant') + ' · ' + dateLabel;
     }
     return (kind === 'dsr' ? 'DSR ' : 'MSR ') + key;
   }
