@@ -2223,13 +2223,33 @@ function renderActivatedProductsGraph(products,sales,dispensers=[],tanks=[]){
 async function adminFuelConfiguration(){
   try{
     await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return showSessionRecovery('admin');
-    const [allProducts,allTanks,allDispensers,allShifts,employees,sales]=await Promise.all([api('/api/products'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/users'),api('/api/sales')]);
+    const [allProducts,allTanks,allDispensers,allShifts,employees,sales,shiftTakeovers]=await Promise.all([api('/api/products'),api('/api/tanks'),api('/api/nozzles'),api('/api/shifts'),api('/api/users'),api('/api/sales'),api('/api/shift-takeovers')]);
     const products=allProducts.filter(p=>p.active===true), tanks=allTanks.filter(t=>t.active===true&&products.some(p=>String(p.name).toLowerCase()===String(t.product||'').toLowerCase()));
     const dispensers=allDispensers.filter(d=>d.active===true&&tanks.some(t=>t.id===d.tank_id));
     const activeEmployees=employees.filter(e=>e.active===true), activeShifts=allShifts.filter(s=>s.status==='active');
     const el=id=>document.getElementById(id), productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     el('products').innerHTML=products.length?products.map(p=>{const pc=String(p.color||'#1264d8').trim()||'#1264d8';return '<article class="stat activated-product-card" data-product-id="'+h(p.id)+'" role="button" tabindex="0" aria-label="View '+h(p.code_name)+' details" style="--product-color:'+h(pc)+'"><div class="activated-product-main"><span class="activated-product-color" aria-hidden="true"></span><div class="activated-product-copy"><span class="field-label">PRODUCT</span><div class="activated-product-code">'+h(p.code_name)+'</div><div class="activated-product-name">'+h(p.name)+'</div></div></div><div class="activated-product-meta"><div><span>STATUS</span><strong>Active</strong></div><div><span>SELLING PRICE</span><strong>'+money(p.selling_price)+'</strong></div></div></article>';}).join(''):'<div class="empty-content">No activated products.</div>';
-    renderActivatedProductsGraph(products,sales,dispensers,tanks);
+    // Current fuel liters are stored on shift_takeovers; confirmed sales rows may be
+    // payment-method entries with quantity_liters=0. Build chart rows from the
+    // authoritative handover totals and keep legacy fuel rows only for shifts
+    // that do not have a takeover record.
+    const shiftById=new Map((Array.isArray(allShifts)?allShifts:[]).map(s=>[String(s.id),s]));
+    const dispenserById=new Map((Array.isArray(allDispensers)?allDispensers:[]).map(d=>[String(d.id),d]));
+    const tankById=new Map((Array.isArray(allTanks)?allTanks:[]).map(t=>[String(t.id),t]));
+    const takeoverRows=(Array.isArray(shiftTakeovers)?shiftTakeovers:[]).filter(t=>!['cancelled','canceled','void','voided','rejected','deleted'].includes(String(t.sales_status||'').toLowerCase()));
+    const takeoverShiftIds=new Set(takeoverRows.map(t=>String(t.shift_id||'')).filter(Boolean));
+    const handoverVolumeRows=takeoverRows.map(t=>{
+      const shift=shiftById.get(String(t.shift_id||''))||{};
+      const dispenser=dispenserById.get(String(shift.nozzle_id||''));
+      const tank=dispenser? tankById.get(String(dispenser.tank_id||'')):null;
+      const productValue=String(dispenser?.product||tank?.product||'');
+      const product=products.find(p=>[p.name,p.code_name,p.id].some(v=>String(v??'').trim().toLowerCase()===productValue.trim().toLowerCase())||String(p.id)===String(t.product_id||''));
+      const volume=Number(t.total_sales_liters);
+      return {id:'handover-'+String(t.id||''),shift_id:t.shift_id,nozzle_id:shift.nozzle_id||null,product:product?.name||productValue,product_id:product?.id||t.product_id||null,quantity_liters:Number.isFinite(volume)&&volume>0?volume:0,sale_time:t.shift_ended_at||t.shift_started_at||shift.end_time||shift.start_time||t.sales_submitted_at||t.created_at,status:t.sales_status||'pending_admin'};
+    }).filter(s=>s.sale_time&&s.quantity_liters>0);
+    const legacyFuelRows=(Array.isArray(sales)?sales:[]).filter(s=>Number(s.quantity_liters)>0&&!takeoverShiftIds.has(String(s.shift_id||'')));
+    const performanceSales=handoverVolumeRows.concat(legacyFuelRows);
+    renderActivatedProductsGraph(products,performanceSales,dispensers,tanks);
     const dispenserGroups=products.map(p=>({
       product:p,
       items:dispensers.filter(d=>{
