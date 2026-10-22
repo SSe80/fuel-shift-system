@@ -17,8 +17,13 @@
     var r = await fetch(url, opts), j = await r.json().catch(function () { return {}; });
     return { status: r.status, body: j };
   }
-  function label(kind, key) {
-    if (kind === 'sale') { var parts = String(key || '').split('|'); return 'Sales ' + (parts[0] || '') + (parts[1] ? ' · ' + parts[1].slice(0, 8) : ''); }
+  function label(item) {
+    var kind = item.kind, key = item.report_key;
+    if (kind === 'sale') {
+      var parts = String(key || '').split('|');
+      return (item.sales_confirmed === false ? 'Sales awaiting confirmation' : 'Confirmed sales PDF') +
+        ' · ' + (parts[0] || '') + (parts[1] ? ' · ' + parts[1].slice(0, 8) : '');
+    }
     return (kind === 'dsr' ? 'DSR ' : 'MSR ') + key;
   }
   async function loadSettings() {
@@ -102,10 +107,12 @@
     maintainReportWorkers(q.body);
     if (!q.body.length) { box.innerHTML = '<p class="muted">Nothing waiting. Confirmed reports and handover sales are saved to Drive.</p>'; return; }
     box.innerHTML = q.body.map(function (i) {
-      var state = i.status === 'failed' ? 'Failed' : 'Waiting';
+      var state = i.status === 'failed' ? 'Failed' :
+        (i.kind === 'sale' && i.sales_confirmed === false ? 'Awaiting confirmation' :
+        (i.status === 'waiting' ? 'Waiting for export readiness' : 'Ready to upload'));
       var err = i.last_error ? '<small class="muted"> · ' + String(i.last_error).replace(/[<>&]/g, '') + '</small>' : '';
       var retry = i.status === 'failed' ? ' <button type="button" class="secondary" data-retry="' + i.id + '">Retry</button>' : '';
-      return '<div class="drive-queue-row"><span><b>' + label(i.kind, i.report_key) + '</b> · ' + state + err + '</span>' + retry + '</div>';
+      return '<div class="drive-queue-row"><span><b>' + label(i) + '</b> · ' + state + err + '</span>' + retry + '</div>';
     }).join('');
     box.querySelectorAll('[data-retry]').forEach(function (b) {
       b.addEventListener('click', async function () {
