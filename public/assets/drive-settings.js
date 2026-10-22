@@ -18,6 +18,7 @@
     return { status: r.status, body: j };
   }
   function label(kind, key) {
+    if (kind === 'sale') { var parts = String(key || '').split('|'); return 'Sales ' + (parts[0] || '') + (parts[1] ? ' · ' + parts[1].slice(0, 8) : ''); }
     return (kind === 'dsr' ? 'DSR ' : 'MSR ') + key;
   }
   async function loadSettings() {
@@ -26,6 +27,7 @@
     if ($('drive-dsr-link')) $('drive-dsr-link').value = s.body.dsr_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.dsr_folder_id : '';
     if ($('drive-msr-link')) $('drive-msr-link').value = s.body.msr_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.msr_folder_id : '';
     if ($('drive-purchase-link')) $('drive-purchase-link').value = s.body.purchase_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.purchase_folder_id : '';
+    if ($('drive-sales-link')) $('drive-sales-link').value = s.body.sales_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.sales_folder_id : '';
     if ($('drive-audit-link')) $('drive-audit-link').value = s.body.admin_audit_folder_id ? 'https://drive.google.com/drive/folders/' + s.body.admin_audit_folder_id : '';
     if ($('drive-audit-sheet-link')) $('drive-audit-sheet-link').value = s.body.admin_audit_sheet_id ? 'https://docs.google.com/spreadsheets/d/' + s.body.admin_audit_sheet_id + '/edit' : '';
     say('Drive links loaded.');
@@ -51,13 +53,13 @@
       say(messages[result] || 'Google Drive connection updated.', result !== 'connected');
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (s.body.connected) {
-      say('Personal Google Drive is connected. DSR, MSR, Purchases, and audit uploads will use this account.');
+      say('Personal Google Drive is connected. DSR, MSR, confirmed shift sales, Purchases, and audit uploads will use this account.');
     } else {
       say('Connect your personal Google account before testing Drive folders.');
     }
   }
   async function saveSettings() {
-    var s = await api('/api/drive/settings', 'PUT', { dsr_link: $('drive-dsr-link').value, msr_link: $('drive-msr-link').value, purchase_link: $('drive-purchase-link').value, admin_audit_link: $('drive-audit-link').value, admin_audit_sheet_link: $('drive-audit-sheet-link').value });
+    var s = await api('/api/drive/settings', 'PUT', { dsr_link: $('drive-dsr-link').value, msr_link: $('drive-msr-link').value, purchase_link: $('drive-purchase-link').value, sales_link: $('drive-sales-link').value, admin_audit_link: $('drive-audit-link').value, admin_audit_sheet_link: $('drive-audit-sheet-link').value });
     if (s.status !== 200) return say('Save failed: ' + errText(s.body.error, s.status), true);
     say('Saved. The audit log will append to the selected spreadsheet. Use "Test connection" to check folder access.');
   }
@@ -66,14 +68,14 @@
     var t = await api('/api/drive/test', 'POST', {});
     if (t.body && t.body.ok) {
       if (!t.body.admin_audit_sheet_configured) return say('Folders connected. Paste and save the Admin Actions Audit spreadsheet link to enable audit logging.', true);
-      return say('Connected. DSR, MSR, Purchases, and Admin Audit folders are reachable; the audit spreadsheet is configured.');
+      return say('Connected. DSR, MSR, Sales, Purchases, and Admin Audit folders are reachable; the audit spreadsheet is configured.');
     }
     if (t.body && t.body.missing && t.body.missing.length) return say('Missing folder link for: ' + t.body.missing.join(', ').toUpperCase() + '.', true);
     say('Connection failed: ' + errText(t.body && t.body.error, t.status), true);
   }
   var reportWorkers = {};
   function maintainReportWorkers(items) {
-    ['dsr', 'msr'].forEach(function (kind) {
+    ['dsr', 'msr', 'sale'].forEach(function (kind) {
       var waiting = items.some(function (item) {
         return item.kind === kind && item.status === 'pending' && (item.attempts || 0) < 3;
       });
@@ -83,7 +85,7 @@
         frame.setAttribute('aria-hidden', 'true');
         frame.tabIndex = -1;
         frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;';
-        frame.src = kind === 'dsr' ? 'admin-daily-report.html?drive-export-worker=1' : 'admin-monthly-report.html?drive-export-worker=1';
+        frame.src = kind === 'dsr' ? 'admin-daily-report.html?drive-export-worker=1' : (kind === 'msr' ? 'admin-monthly-report.html?drive-export-worker=1' : 'admin-sales.html?drive-export-worker=1');
         document.body.appendChild(frame);
         reportWorkers[kind] = frame;
       } else if (!waiting && reportWorkers[kind]) {
@@ -98,7 +100,7 @@
     if (!box) return;
     if (q.status !== 200 || !Array.isArray(q.body)) { box.textContent = 'Queue unavailable.'; return; }
     maintainReportWorkers(q.body);
-    if (!q.body.length) { box.innerHTML = '<p class="muted">Nothing waiting. Every confirmed report is saved to Drive.</p>'; return; }
+    if (!q.body.length) { box.innerHTML = '<p class="muted">Nothing waiting. Confirmed reports and handover sales are saved to Drive.</p>'; return; }
     box.innerHTML = q.body.map(function (i) {
       var state = i.status === 'failed' ? 'Failed' : 'Waiting';
       var err = i.last_error ? '<small class="muted"> · ' + String(i.last_error).replace(/[<>&]/g, '') + '</small>' : '';
