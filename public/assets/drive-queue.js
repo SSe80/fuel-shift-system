@@ -11,6 +11,16 @@
     return btoa(s);
   }
   function note(msg) { if (typeof window.toast === 'function') window.toast(msg); }
+  async function markBuildFailed(item, error) {
+    try {
+      var response = await fetch('/api/drive/queue/' + encodeURIComponent(item.id) + '/fail', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-Fuel-Role': 'admin' },
+        body: JSON.stringify({ error: String(error || 'PDF generation failed').slice(0, 450) })
+      });
+      return response.ok;
+    } catch (_) { return false; }
+  }
   async function run(builders) {
     if (running) return; running = true;
     try {
@@ -21,19 +31,32 @@
       for (var k = 0; k < todo.length; k++) {
         var item = todo[k], build = builders[item.kind];
         if (!build) continue;
-        var out = await build(item.report_key);           // null when this page does not have that report open
-        if (!out || !out.blob) continue;
-        var buf = await out.blob.arrayBuffer();
-        var up = await fetch('/api/drive/queue/' + encodeURIComponent(item.id) + '/upload', {
-          method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Fuel-Role': 'admin' },
-          body: JSON.stringify({ pdf_base64: b64(buf) })
-        });
-        var body = await up.json().catch(function () { return {}; });
-        if (body.ok) note('Saved to Google Drive: ' + (body.path || item.report_key));
-        else note('Drive upload failed: ' + (body.error || up.status));
+        try {
+          var out = await build(item.report_key);
+          if (!out || !out.blob) {
+            if (item.kind === 'sale') {
+              await markBuildFailed(item, 'Sales PDF could not be generated from the handover record. Open Sales History and verify that the record is available, then retry.');
+              note('Sales PDF export failed: ' + item.report_key);
+            }
+            continue;
+          }
+          var buf = await out.blob.arrayBuffer();
+          var up = await fetch('/api/drive/queue/' + encodeURIComponent(item.id) + '/upload', {
+            method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Fuel-Role': 'admin' },
+            body: JSON.stringify({ pdf_base64: b64(buf) })
+          });
+          var body = await up.json().catch(function () { return {}; });
+          if (body.ok) note('Saved to Google Drive: ' + (body.path || item.report_key));
+          else note('Drive upload failed: ' + (body.error || up.status));
+        } catch (e) {
+          if (item.kind === 'sale') {
+            await markBuildFailed(item, e && e.message ? e.message : 'Sales PDF generation failed unexpectedly');
+            note('Sales PDF export failed: ' + (e && e.message ? e.message : item.report_key));
+          }
+        }
       }
     } catch (e) {
-      /* offline or not signed in: the queue is kept and retried on the next run */
+      /* network/session errors leave the queue intact for the next run */
     } finally { running = false; }
   }
   window.DriveQueue = {
