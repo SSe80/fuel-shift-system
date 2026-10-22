@@ -2220,6 +2220,24 @@ function renderActivatedProductsGraph(products,sales,dispensers=[],tanks=[]){
   const legend=totals.map(x=>{const share=total>0?x.volume/total:0;return '<div class="activated-products-pie-item"><span class="activated-products-pie-dot" style="background:'+h(x.color)+'"></span><span class="activated-products-pie-code">'+h(x.code)+'</span><strong>'+h(liters(x.volume))+' L</strong><small>'+(share*100).toFixed(1)+'%</small></div>';}).join('');
   host.innerHTML='<div class="activated-products-graph-head"><div><span class="section-kicker">PRODUCT PERFORMANCE</span><h3>Sales volume by product · Last 7 days</h3></div><span class="activated-products-graph-unit">LITERS SOLD</span></div><div class="activated-products-pie-layout"><div class="activated-products-pie-chart"><svg viewBox="0 0 '+size+' '+size+'" role="img" aria-label="Sales volume distribution among activated products during the last 7 days">'+paths+'<circle cx="'+cx+'" cy="'+cy+'" r="51" fill="#fff"></circle><text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" class="activated-products-pie-total">'+h(liters(total))+'</text><text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" class="activated-products-pie-total-label">LITERS</text></svg></div><div class="activated-products-pie-legend">'+legend+'</div></div>'+(total<=0?'<p class="muted activated-products-graph-empty">No recorded sales volume for the last 7 days.</p>':'');
 }
+function adminFuelConfigurationPerformanceRows(sales,shiftTakeovers,allShifts,allDispensers,allTanks,products){
+  const shiftById=new Map((Array.isArray(allShifts)?allShifts:[]).map(s=>[String(s.id),s]));
+  const dispenserById=new Map((Array.isArray(allDispensers)?allDispensers:[]).map(d=>[String(d.id),d]));
+  const tankById=new Map((Array.isArray(allTanks)?allTanks:[]).map(t=>[String(t.id),t]));
+  const takeoverRows=(Array.isArray(shiftTakeovers)?shiftTakeovers:[]).filter(t=>!['cancelled','canceled','void','voided','rejected','deleted'].includes(String(t.sales_status||'').toLowerCase()));
+  const takeoverShiftIds=new Set(takeoverRows.map(t=>String(t.shift_id||'')).filter(Boolean));
+  const handoverVolumeRows=takeoverRows.map(t=>{
+    const shift=shiftById.get(String(t.shift_id||''))||{};
+    const dispenser=dispenserById.get(String(shift.nozzle_id||''));
+    const tank=dispenser?tankById.get(String(dispenser.tank_id||'')):null;
+    const productValue=String(dispenser?.product||tank?.product||'');
+    const product=products.find(p=>[p.name,p.code_name,p.id].some(v=>String(v??'').trim().toLowerCase()===productValue.trim().toLowerCase())||String(p.id)===String(t.product_id||''));
+    const volume=Number(t.total_sales_liters);
+    return {id:'handover-'+String(t.id||''),shift_id:t.shift_id,nozzle_id:shift.nozzle_id||null,product:product?.name||productValue,product_code:product?.code_name||'',product_id:product?.id||t.product_id||null,quantity_liters:Number.isFinite(volume)&&volume>0?volume:0,amount:Number(t.total_sales_amount||0),sale_time:t.shift_ended_at||t.shift_started_at||shift.end_time||shift.start_time||t.sales_submitted_at||t.created_at,status:t.sales_status||'pending_admin'};
+  }).filter(s=>s.sale_time&&s.quantity_liters>0);
+  const legacyFuelRows=(Array.isArray(sales)?sales:[]).filter(s=>Number(s.quantity_liters)>0&&!takeoverShiftIds.has(String(s.shift_id||'')));
+  return handoverVolumeRows.concat(legacyFuelRows);
+}
 async function adminFuelConfiguration(){
   try{
     await window.stationCurrencyReady; const me=await currentUser(); if(me.role!=='admin')return showSessionRecovery('admin');
@@ -2229,26 +2247,7 @@ async function adminFuelConfiguration(){
     const activeEmployees=employees.filter(e=>e.active===true), activeShifts=allShifts.filter(s=>s.status==='active');
     const el=id=>document.getElementById(id), productCodes=Object.fromEntries(products.map(p=>[String(p.name).toLowerCase(),p.code_name]));
     el('products').innerHTML=products.length?products.map(p=>{const pc=String(p.color||'#1264d8').trim()||'#1264d8';return '<article class="stat activated-product-card" data-product-id="'+h(p.id)+'" role="button" tabindex="0" aria-label="View '+h(p.code_name)+' details" style="--product-color:'+h(pc)+'"><div class="activated-product-main"><span class="activated-product-color" aria-hidden="true"></span><div class="activated-product-copy"><span class="field-label">PRODUCT</span><div class="activated-product-code">'+h(p.code_name)+'</div><div class="activated-product-name">'+h(p.name)+'</div></div></div><div class="activated-product-meta"><div><span>STATUS</span><strong>Active</strong></div><div><span>SELLING PRICE</span><strong>'+money(p.selling_price)+'</strong></div></div></article>';}).join(''):'<div class="empty-content">No activated products.</div>';
-    // Current fuel liters are stored on shift_takeovers; confirmed sales rows may be
-    // payment-method entries with quantity_liters=0. Build chart rows from the
-    // authoritative handover totals and keep legacy fuel rows only for shifts
-    // that do not have a takeover record.
-    const shiftById=new Map((Array.isArray(allShifts)?allShifts:[]).map(s=>[String(s.id),s]));
-    const dispenserById=new Map((Array.isArray(allDispensers)?allDispensers:[]).map(d=>[String(d.id),d]));
-    const tankById=new Map((Array.isArray(allTanks)?allTanks:[]).map(t=>[String(t.id),t]));
-    const takeoverRows=(Array.isArray(shiftTakeovers)?shiftTakeovers:[]).filter(t=>!['cancelled','canceled','void','voided','rejected','deleted'].includes(String(t.sales_status||'').toLowerCase()));
-    const takeoverShiftIds=new Set(takeoverRows.map(t=>String(t.shift_id||'')).filter(Boolean));
-    const handoverVolumeRows=takeoverRows.map(t=>{
-      const shift=shiftById.get(String(t.shift_id||''))||{};
-      const dispenser=dispenserById.get(String(shift.nozzle_id||''));
-      const tank=dispenser? tankById.get(String(dispenser.tank_id||'')):null;
-      const productValue=String(dispenser?.product||tank?.product||'');
-      const product=products.find(p=>[p.name,p.code_name,p.id].some(v=>String(v??'').trim().toLowerCase()===productValue.trim().toLowerCase())||String(p.id)===String(t.product_id||''));
-      const volume=Number(t.total_sales_liters);
-      return {id:'handover-'+String(t.id||''),shift_id:t.shift_id,nozzle_id:shift.nozzle_id||null,product:product?.name||productValue,product_id:product?.id||t.product_id||null,quantity_liters:Number.isFinite(volume)&&volume>0?volume:0,sale_time:t.shift_ended_at||t.shift_started_at||shift.end_time||shift.start_time||t.sales_submitted_at||t.created_at,status:t.sales_status||'pending_admin'};
-    }).filter(s=>s.sale_time&&s.quantity_liters>0);
-    const legacyFuelRows=(Array.isArray(sales)?sales:[]).filter(s=>Number(s.quantity_liters)>0&&!takeoverShiftIds.has(String(s.shift_id||'')));
-    const performanceSales=handoverVolumeRows.concat(legacyFuelRows);
+    const performanceSales=adminFuelConfigurationPerformanceRows(sales,shiftTakeovers,allShifts,allDispensers,allTanks,products);
     renderActivatedProductsGraph(products,performanceSales,dispensers,tanks);
     const dispenserGroups=products.map(p=>({
       product:p,
@@ -2283,7 +2282,7 @@ async function adminFuelConfiguration(){
       const dateFromKey=key=>new Date(key+'T12:00:00+03:00');
       const dayKeys=Array.from({length:7},(_,i)=>{const d=dateFromKey(todayKey);d.setUTCDate(d.getUTCDate()-(6-i));return d.toISOString().slice(0,10);});
       const days=dayKeys.map(key=>dateFromKey(key));
-      const graphSales=(Array.isArray(sales)?sales:[]).filter(s=>!['cancelled','canceled','void','voided','rejected','deleted'].includes(String(s.status||s.sales_status||'').toLowerCase()));
+      const graphSales=(Array.isArray(performanceSales)?performanceSales:[]).filter(s=>!['cancelled','canceled','void','voided','rejected','deleted'].includes(String(s.status||s.sales_status||'').toLowerCase()));
       const rows=g.items.map(d=>({d,values:days.map((day,i)=>graphSales.filter(s=>String(s.nozzle_id||'')===String(d.id)&&localDayKey(s.sale_time||s.created_at)===dayKeys[i]).reduce((sum,s)=>{const q=Number(s.quantity_liters);return sum+(Number.isFinite(q)&&q>0?q:0);},0))}));
       const max=Math.max(1,...rows.flatMap(r=>r.values));
       const w=520,hg=150,padL=34,padR=10,padT=12,padB=25,iw=w-padL-padR,ih=hg-padT-padB;
@@ -7252,7 +7251,8 @@ async function openAdminDispenserDetails(id){
   const modal=ensureAdminDispenserDetailsModal(),content=modal.querySelector('#admin-dispenser-details-content');
   modal.classList.add('open');modal.setAttribute('aria-hidden','false');content.innerHTML='<div class="admin-dispenser-details-loading">Loading dispenser details…</div>';
   try{
-    const [dispensers,tanks,products,shifts,employees,sales]=await Promise.all([api('/api/nozzles'),api('/api/tanks'),api('/api/products'),api('/api/shifts'),api('/api/users'),api('/api/sales')]);
+    const [dispensers,tanks,products,shifts,employees,sales,shiftTakeovers]=await Promise.all([api('/api/nozzles'),api('/api/tanks'),api('/api/products'),api('/api/shifts'),api('/api/users'),api('/api/sales'),api('/api/shift-takeovers')]);
+    const performanceSales=adminFuelConfigurationPerformanceRows(sales,shiftTakeovers,shifts,dispensers,tanks,products);
     const d=dispensers.find(x=>String(x.id)===String(id)); if(!d)throw new Error('Dispenser details could not be found.');
     const tank=tanks.find(x=>String(x.id)===String(d.tank_id));
     const product=products.find(p=>String(p.name||'').toLowerCase()===String(d.product||tank?.product||'').toLowerCase()||String(p.code_name||'').toLowerCase()===String(d.product||'').toLowerCase());
@@ -7260,7 +7260,7 @@ async function openAdminDispenserDetails(id){
     const attendant=shift?employees.find(x=>String(x.id)===String(shift.employee_id)):null;
     const color=String(product?.color||'#1264d8').trim()||'#1264d8'; modal.querySelector('.admin-dispenser-details-card').style.setProperty('--product-color',color);
     const count=Number(d.nozzle_count||1), reads=Array.isArray(shift?.activation_nozzles)?shift.activation_nozzles:[], nums=reads.map(x=>Number(x?.opening_reading)).filter(Number.isFinite), opening=nums.length?nums.reduce((a,b)=>a+b,0):null;
-    const salesFor=(sales||[]).filter(x=>String(x.nozzle_id||'')===String(d.id)), today=new Date().toISOString().slice(0,10), todaySales=salesFor.filter(x=>String(x.sale_time||x.created_at||'').slice(0,10)===today);
+    const salesFor=performanceSales.filter(x=>String(x.nozzle_id||'')===String(d.id)), today=new Date().toISOString().slice(0,10), todaySales=salesFor.filter(x=>String(x.sale_time||x.created_at||'').slice(0,10)===today);
     const allL=salesFor.reduce((a,x)=>a+Number(x.quantity_liters||0),0), dayL=todaySales.reduce((a,x)=>a+Number(x.quantity_liters||0),0);
     const hero='<div class="admin-dispenser-details-hero"><div><span class="field-label">DISPENSER</span><h2>'+h(d.nozzle_code||'Dispenser')+'</h2><p>'+h(product?.code_name||d.product||tank?.product||'—')+' • '+h(tank?.tank_code||'No tank')+'</p></div><span class="admin-dispenser-details-status">ACTIVE</span></div>';
     const overview='<section class="admin-dispenser-details-section"><div class="admin-dispenser-details-section-head"><span>OVERVIEW</span><small>Current dispenser status</small></div><div class="admin-dispenser-metrics">'+adminDispenserMetric('Product',product?.code_name||d.product||tank?.product||'—','product code')+adminDispenserMetric('Connected tank',tank?.tank_code||'—','assigned tank')+adminDispenserMetric('Nozzles',String(count),'configured')+adminDispenserMetric('Shift attendant',attendant?.name||'No active shift',shift?'current shift':'')+'</div></section>';
@@ -7302,12 +7302,15 @@ async function openAdminProductDetails(productId){
   modal.setAttribute('aria-hidden','false');
   if(content)content.innerHTML='<div class="admin-product-details-loading">Loading product details…</div>';
   try{
-    const [products,tanks,dispensers,sales]=await Promise.all([
+    const [products,tanks,dispensers,sales,shifts,shiftTakeovers]=await Promise.all([
       api('/api/products'),
       api('/api/tanks'),
       api('/api/nozzles'),
-      api('/api/sales')
+      api('/api/sales'),
+      api('/api/shifts'),
+      api('/api/shift-takeovers')
     ]);
+    const performanceSales=adminFuelConfigurationPerformanceRows(sales,shiftTakeovers,shifts,dispensers,tanks,products);
     const product=(products||[]).find(p=>String(p.id)===String(productId));
     if(!product)throw new Error('Product details could not be found.');
     const name=String(product.name||'');
@@ -7319,7 +7322,7 @@ async function openAdminProductDetails(productId){
     const tankIds=new Set(productTanks.map(t=>String(t.id)));
     const productDispensers=(dispensers||[]).filter(d=>d.active===true&&tankIds.has(String(d.tank_id)));
     const todayDate=new Date().toISOString().slice(0,10);
-    const productSales=(sales||[]).filter(s=>String(s.product||'').toLowerCase()===name.toLowerCase());
+    const productSales=performanceSales.filter(s=>String(s.product||'').toLowerCase()===name.toLowerCase()||String(s.product_code||'').toLowerCase()===code.toLowerCase()||String(s.product_id||'')===String(product.id));
     const todaySales=productSales.filter(s=>String(s.sale_time||'').slice(0,10)===todayDate);
     const totalLiters=productSales.reduce((sum,s)=>sum+Number(s.quantity_liters||0),0);
     const totalRevenue=productSales.reduce((sum,s)=>sum+Number(s.amount||0),0);
