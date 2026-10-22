@@ -1688,14 +1688,13 @@ def logistics_save_product_fees():
     return jsonify({"ok":True,"saved":saved}),200
 
 def _logistics_delivery_is_eligible(row):
+    # Transport payment eligibility depends on the delivery being fully
+    # discharged and its delivered quantity being known. Recording physical
+    # tank stock is a separate reconciliation task and must not block payment.
     return bool(
         row
         and row.get("status") == "completed"
         and row.get("eligible_at")
-        and row.get("tank_id")
-        and row.get("tank_opening_liters") is not None
-        and row.get("tank_closing_liters") is not None
-        and row.get("tank_difference_liters") is not None
         and float(row.get("delivered_liters") or 0) > 0
     )
 
