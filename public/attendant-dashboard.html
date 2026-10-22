@@ -1362,6 +1362,44 @@ body.attendant-dashboard-page .fuel-game-result-score span{font-size:12px;font-w
 body.attendant-dashboard-page .fuel-game-footnote{display:flex;justify-content:center;gap:6px;margin:14px 0 0;color:#8a93a1;font-size:11px;line-height:1.45;text-align:center}
 @media(max-width:560px){body.attendant-dashboard-page .fuel-brain-break{padding:15px;border-radius:18px}body.attendant-dashboard-page .fuel-game-top{gap:13px}body.attendant-dashboard-page .fuel-game-brand h2{font-size:21px}body.attendant-dashboard-page .fuel-game-stats{width:100%}body.attendant-dashboard-page .fuel-game-stats>div{flex:1;min-width:0}body.attendant-dashboard-page .fuel-game-stage{padding:16px 12px}body.attendant-dashboard-page .fuel-game-options{grid-template-columns:1fr}body.attendant-dashboard-page .fuel-game-option{text-align:center}}
 
+
+/* Side-scrolling Fuel Run endless runner */
+body.attendant-dashboard-page .fuel-brain-break{background:#fff;border:1px solid #e6eaf0}
+body.attendant-dashboard-page .fuel-run-game{height:260px;position:relative;overflow:hidden;margin-top:18px;border:1px solid #e5e7eb;border-radius:17px;background:linear-gradient(180deg,#eaf7ff 0%,#f9fcff 70%,#f7f2e8 70%,#f7f2e8 100%);outline:none;touch-action:manipulation;user-select:none}
+body.attendant-dashboard-page .fuel-run-game:focus-visible{box-shadow:0 0 0 3px #f5b8bd}
+body.attendant-dashboard-page .fuel-run-hud{position:absolute;z-index:4;top:12px;left:14px;right:14px;display:flex;justify-content:space-between;gap:8px;color:#64748b;font-size:10px;font-weight:900;letter-spacing:.1em}
+body.attendant-dashboard-page .fuel-run-sky{position:absolute;inset:0 0 30%;overflow:hidden}
+body.attendant-dashboard-page .fuel-run-sun{position:absolute;top:47px;right:16%;width:37px;height:37px;border-radius:50%;background:#ffd58a;box-shadow:0 0 0 9px #ffe8bd80}
+body.attendant-dashboard-page .fuel-run-cloud{position:absolute;width:66px;height:17px;border-radius:20px;background:#fff;opacity:.8}
+body.attendant-dashboard-page .fuel-run-cloud:before,body.attendant-dashboard-page .fuel-run-cloud:after{content:"";position:absolute;bottom:4px;border-radius:50%;background:inherit}
+body.attendant-dashboard-page .fuel-run-cloud:before{left:12px;width:24px;height:24px}body.attendant-dashboard-page .fuel-run-cloud:after{left:31px;width:18px;height:18px}
+body.attendant-dashboard-page .cloud-one{top:73px;left:42%}body.attendant-dashboard-page .cloud-two{top:112px;left:72%;transform:scale(.75)}
+body.attendant-dashboard-page .fuel-run-ground{position:absolute;bottom:0;left:0;right:0;height:30%;border-top:4px solid #91aa83;background:repeating-linear-gradient(105deg,#d7e2c6 0 26px,#cbd9b9 26px 51px)}
+body.attendant-dashboard-page .fuel-run-ground span{position:absolute;top:21px;left:0;right:0;height:4px;background:repeating-linear-gradient(90deg,#9aa98b 0 17px,transparent 17px 35px)}
+body.attendant-dashboard-page .fuel-run-player{position:absolute;z-index:3;left:12%;bottom:18px;width:54px;height:25px;border-radius:12px 16px 5px 5px;background:#c92f3c;box-shadow:inset 0 -5px #a61d2b;transition:bottom .03s linear}
+body.attendant-dashboard-page .fuel-run-player:before{content:"";position:absolute;right:4px;top:-13px;width:26px;height:17px;border-radius:10px 12px 0 0;background:#df4b55}
+body.attendant-dashboard-page .fuel-run-car-window{position:absolute;z-index:1;right:8px;top:-10px;width:13px;height:9px;border-radius:5px 7px 0 0;background:#c6efff}
+body.attendant-dashboard-page .fuel-run-wheel{position:absolute;bottom:-5px;width:13px;height:13px;border:3px solid #334155;border-radius:50%;background:#f8fafc}
+body.attendant-dashboard-page .wheel-one{left:7px}body.attendant-dashboard-page .wheel-two{right:7px}
+body.attendant-dashboard-page .fuel-run-exhaust{position:absolute;left:-8px;bottom:2px;width:6px;height:4px;border-radius:4px;background:#f59e0b;opacity:0}
+body.attendant-dashboard-page .fuel-run-game.is-running .fuel-run-exhaust{opacity:1;animation:fuel-run-puff .22s infinite alternate}
+body.attendant-dashboard-page .fuel-run-obstacle{position:absolute;z-index:2;left:105%;bottom:18px;width:26px;height:33px;border-radius:5px 5px 3px 3px;background:repeating-linear-gradient(0deg,#d97706 0 8px,#fbbf24 8px 12px);border:2px solid #b45309;box-shadow:inset -4px 0 #b45309}
+body.attendant-dashboard-page .fuel-run-obstacle:before{content:"";position:absolute;top:-5px;left:5px;width:12px;height:5px;border-radius:3px 3px 0 0;background:#64748b}
+body.attendant-dashboard-page .fuel-run-obstacle span{position:absolute;left:7px;top:9px;width:7px;height:7px;border-radius:50%;background:#fff7d6}
+body.attendant-dashboard-page .fuel-run-overlay{position:absolute;z-index:5;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 14px;text-align:center;background:#ffffffd9;backdrop-filter:blur(3px)}
+body.attendant-dashboard-page .fuel-run-overlay[hidden]{display:none!important}
+body.attendant-dashboard-page .fuel-run-overlay-icon{font-size:29px}
+body.attendant-dashboard-page .fuel-run-overlay h3{margin:5px 0;font-size:21px;color:#182230}
+body.attendant-dashboard-page .fuel-run-overlay p{max-width:310px;margin:0;color:#667085;font-size:12px;line-height:1.45}
+body.attendant-dashboard-page .fuel-run-overlay .fuel-game-primary{margin-top:8px}
+body.attendant-dashboard-page .fuel-run-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+body.attendant-dashboard-page .fuel-run-controls>span{color:#667085;font-size:11px;line-height:1.5}
+body.attendant-dashboard-page .fuel-run-controls b{display:block;color:#344054;font-size:9px;letter-spacing:.1em}
+body.attendant-dashboard-page .fuel-run-restart{flex:0 0 auto;padding:8px 11px;border:1px solid #e2e7ee;border-radius:10px;background:#fff;color:#475467;font-size:12px;font-weight:800;cursor:pointer}
+@keyframes fuel-run-puff{from{transform:scale(.7);opacity:.5}to{transform:scale(1.1);opacity:1}}
+@media(max-width:560px){body.attendant-dashboard-page .fuel-run-game{height:245px}body.attendant-dashboard-page .fuel-run-player{left:10%;transform:scale(.93);transform-origin:bottom left}body.attendant-dashboard-page .fuel-run-hud{font-size:9px}body.attendant-dashboard-page .fuel-run-controls{align-items:flex-start}body.attendant-dashboard-page .fuel-run-controls>span{max-width:72%}}
+@media(prefers-reduced-motion:reduce){body.attendant-dashboard-page .fuel-run-game.is-running .fuel-run-exhaust{animation:none}}
+
 </style><style>
 .attendant-dashboard-page .takeover-details-modal{max-width:760px;border-radius:18px;overflow:hidden}
 .attendant-dashboard-page .takeover-details-modal>.top{padding:16px 18px;border-bottom:1px solid #e8edf2;background:#fff}
@@ -2164,14 +2202,17 @@ body.attendant-dashboard-page .attendant-shift-history-details:not([hidden]){dis
 </style>
 </head><body class="attendant-page attendant-dashboard-page admin-shell admin-control-ui" data-app-page="userDashboard"><button type="button" class="admin-sidebar-toggle" aria-label="Toggle attendant navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button><aside class="admin-sidebar" aria-label="Attendant navigation"><div class="admin-sidebar-brand"><span class="admin-sidebar-mark">FS</span><div><strong>Fuel Shift</strong><small>Attendant Panel</small></div></div><nav class="admin-sidebar-nav"><a href="attendant-dashboard.html" class="active"><span>⌂</span><b>Dashboard</b></a><a href="shift.html"><span>▤</span><b>Shift</b></a><a href="#fuel-brain-break"><span>⚡</span><b>Fuel Brain Break</b></a></nav><button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button></aside><main class="wrap"><header class="settings-header"><div><span class="eyebrow">STATION OPERATIONS</span><h1>Attendant Dashboard</h1><p class="muted">Welcome back, <b id="name"></b></p></div></header><section class="page-heading"><div><span class="section-kicker">TODAY</span><h2>Shift Overview</h2><p>Review your assigned dispensers, confirmations and active shift.</p></div></section><div id="shift"></div>
 <section id="fuel-brain-break" class="fuel-brain-break" aria-labelledby="fuel-game-title">
-  <div class="fuel-game-top">
-    <div class="fuel-game-brand"><span class="fuel-game-icon" aria-hidden="true">⚡</span><div><span class="fuel-game-kicker">YOUR SPARE-TIME CHALLENGE</span><h2 id="fuel-game-title">Fuel Brain Break</h2><p>Five quick questions. Sharpen your fuel maths and beat your streak.</p></div></div>
-    <div class="fuel-game-stats" aria-label="Game score"><div><span>ROUND</span><strong id="fuel-game-round">—/5</strong></div><div><span>SCORE</span><strong id="fuel-game-score">0</strong></div><div><span>STREAK</span><strong id="fuel-game-streak">0 🔥</strong></div></div>
+  <div class="fuel-game-top"><div class="fuel-game-brand"><span class="fuel-game-icon" aria-hidden="true">⛽</span><div><span class="fuel-game-kicker">A QUICK BREAK</span><h2 id="fuel-game-title">Fuel Run</h2><p>Jump over the obstacles. How far can you drive?</p></div></div><div class="fuel-game-stats"><div><span>SCORE</span><strong id="fuel-run-score">0</strong></div><div><span>BEST</span><strong id="fuel-run-best">0</strong></div></div></div>
+  <div class="fuel-run-game" id="fuel-run-game" tabindex="0" role="button" aria-label="Fuel Run game. Tap or press Space to jump.">
+    <div class="fuel-run-hud"><span id="fuel-run-status">TAP TO START</span><span>SPACE / TAP = JUMP</span></div>
+    <div class="fuel-run-sky" aria-hidden="true"><span class="fuel-run-cloud cloud-one"></span><span class="fuel-run-cloud cloud-two"></span><span class="fuel-run-sun"></span></div>
+    <div class="fuel-run-ground" aria-hidden="true"><span></span></div>
+    <div class="fuel-run-player" id="fuel-run-player" aria-hidden="true"><span class="fuel-run-car-window"></span><span class="fuel-run-wheel wheel-one"></span><span class="fuel-run-wheel wheel-two"></span><span class="fuel-run-exhaust"></span></div>
+    <div class="fuel-run-obstacle" id="fuel-run-obstacle" aria-hidden="true"><span></span></div>
+    <div class="fuel-run-overlay" id="fuel-run-overlay"><div class="fuel-run-overlay-icon" id="fuel-run-overlay-icon">⛽</div><h3 id="fuel-run-overlay-title">Ready to roll?</h3><p id="fuel-run-overlay-copy">Jump over the fuel drums and keep the tanker moving.</p><button type="button" class="fuel-game-primary" id="fuel-run-start">Start game <span aria-hidden="true">→</span></button></div>
   </div>
-  <div id="fuel-game-intro" class="fuel-game-stage"><div class="fuel-game-emoji" aria-hidden="true">⛽</div><h3>Ready for a quick challenge?</h3><p>Practice with made-up examples only. This game never changes station records.</p><button type="button" class="fuel-game-primary" id="fuel-game-start">Start playing <span aria-hidden="true">→</span></button></div>
-  <div id="fuel-game-question-stage" class="fuel-game-stage" hidden><div class="fuel-game-progress" aria-hidden="true"><span id="fuel-game-progress-bar"></span></div><p class="fuel-game-question-count" id="fuel-game-question-count">QUESTION 1 OF 5</p><h3 id="fuel-game-question">Loading question…</h3><div id="fuel-game-options" class="fuel-game-options"></div><p id="fuel-game-feedback" class="fuel-game-feedback" role="status" aria-live="polite"></p><button type="button" id="fuel-game-next" class="fuel-game-primary" hidden>Next question <span aria-hidden="true">→</span></button></div>
-  <div id="fuel-game-results" class="fuel-game-stage" hidden><div class="fuel-game-emoji" aria-hidden="true">🏆</div><p class="fuel-game-kicker">CHALLENGE COMPLETE</p><h3 id="fuel-game-result-title">Nice work!</h3><p id="fuel-game-result-copy"></p><div class="fuel-game-result-score"><strong id="fuel-game-final-score">0</strong><span>points earned</span></div><button type="button" class="fuel-game-primary" id="fuel-game-replay">Play again <span aria-hidden="true">↻</span></button></div>
-  <p class="fuel-game-footnote"><span aria-hidden="true">ⓘ</span> Just for fun and practice — use official station procedures for real work.</p>
+  <div class="fuel-run-controls"><span><b>HOW TO PLAY</b> Jump over every drum. The longer you survive, the faster it gets.</span><button type="button" id="fuel-run-restart" class="fuel-run-restart">↻ Restart</button></div>
+  <p class="fuel-game-footnote">Just for fun — no internet connection or station data needed.</p>
 </section>
 <div id="handover-input-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverForm()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">HANDOVER</span><h3 id="handover-dispenser-title">Dispenser</h3></div><button type="button" class="modal-close" onclick="cancelHandoverForm()" aria-label="Close">×</button></div><form class="form" onsubmit="continueHandover(event)"><label>Receiving attendant<select id="handover-to-employee" required><option value="">Select receiving attendant</option></select></label><div class="handover-nozzle-section"><div class="handover-field-heading">Closing readings for dispenser nozzles</div><div id="handover-nozzle-readings"></div></div><label id="handover-closing-dip-label">Tank closing stock (liters)<input id="handover-closing-liters-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Enter closing stock in liters" required oninput="updateHandoverClosingLiters(this.value)"></label><div id="handover-closing-equivalent" class="muted">Enter stock in liters.</div><div class="row"><button type="button" class="btn" onclick="cancelHandoverForm()">Cancel</button><button class="primary">Continue</button></div></form></div></div><div id="handover-review-modal" class="modal" aria-hidden="true"><div class="modal-backdrop" onclick="cancelHandoverReview()"></div><div class="modal-card handover-modal-card"><div class="top"><div><span class="section-kicker">REVIEW</span><h3>Confirm Handover</h3></div><button type="button" class="modal-close" onclick="cancelHandoverReview()" aria-label="Close">×</button></div><div id="handover-review-details" class="handover-review-details"></div><div class="row"><button type="button" class="btn" onclick="cancelHandoverReview()">Cancel</button><button type="button" class="primary" onclick="confirmHandoverSubmission()">Send for Confirmation</button></div></div></div><div id="batch-record-sales-modal" class="modal" aria-hidden="true">
 <div class="modal-backdrop" onclick="closeBatchRecordSalesModal()"></div>
@@ -2445,50 +2486,33 @@ body.attendant-dashboard-page .card button.primary{width:100%!important}
 
 <script id="attendant-fuel-brain-break-script">
 (function(){
-  if(window.__fuelBrainBreakReady)return;
-  window.__fuelBrainBreakReady=true;
-  const questions=[
-    {q:"A dispenser records 125 liters, then another 85 liters. What is the total?",options:["200 L","210 L","215 L","220 L"],correct:1,explain:"125 + 85 = 210 liters."},
-    {q:"Opening reading is 5,210.3 L and closing reading is 5,432.8 L. What is the difference?",options:["212.5 L","220.5 L","222.5 L","223.5 L"],correct:2,explain:"5,432.8 − 5,210.3 = 222.5 liters."},
-    {q:"Four practice containers hold 20 liters each. How many liters altogether?",options:["60 L","70 L","80 L","100 L"],correct:2,explain:"4 × 20 = 80 liters."},
-    {q:"A practice tank has 1,000 L. If 350 L are used, how much remains?",options:["550 L","600 L","650 L","750 L"],correct:2,explain:"1,000 − 350 = 650 liters."},
-    {q:"What is 12.5 L + 7.5 L?",options:["19 L","20 L","20.5 L","21 L"],correct:1,explain:"12.5 + 7.5 = 20 liters."},
-    {q:"A training example uses 15 L per minute for 4 minutes. How much is used?",options:["45 L","50 L","60 L","75 L"],correct:2,explain:"15 × 4 = 60 liters."},
-    {q:"Split 480 practice liters equally between 3 tanks. How much goes into each?",options:["120 L","150 L","160 L","180 L"],correct:2,explain:"480 ÷ 3 = 160 liters per tank."},
-    {q:"A reading changes from 129.2 L to 138.6 L. What is the difference?",options:["8.4 L","9.2 L","9.4 L","10.4 L"],correct:2,explain:"138.6 − 129.2 = 9.4 liters."},
-    {q:"A practice delivery contains 275 L in the first compartment and 225 L in the second. Total?",options:["450 L","475 L","500 L","525 L"],correct:2,explain:"275 + 225 = 500 liters."},
-    {q:"Which unit is best for recording the volume of fuel in a tank?",options:["Kilograms only","Liters","Kilometers","Degrees"],correct:1,explain:"Liters are a standard unit for measuring fuel volume."},
-    {q:"You need 3 equal practice portions from  ninety liters. How much per portion?",options:["20 L","25 L","30 L","35 L"],correct:2,explain:"90 ÷ 3 = 30 liters each."},
-    {q:"A practice total is 750 L. After 285 L are used, what remains?",options:["455 L","465 L","475 L","485 L"],correct:1,explain:"750 − 285 = 465 liters."}
-  ];
+  if(window.__fuelRunGameReady)return;window.__fuelRunGameReady=true;
   const $=id=>document.getElementById(id);
-  const intro=$("fuel-game-intro"),stage=$("fuel-game-question-stage"),results=$("fuel-game-results");
-  if(!intro||!stage||!results)return;
-  let deck=[],index=0,score=0,streak=0,bestStreak=0,answered=false;
-  function shuffle(items){const a=items.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-  function showOnly(which){[intro,stage,results].forEach(el=>el.hidden=el!==which);}
-  function updateStats(){$("fuel-game-round").textContent=(deck.length?Math.min(index+1,5):"—")+"/5";$("fuel-game-score").textContent=String(score);$("fuel-game-streak").textContent=String(streak)+" 🔥";}
-  function start(){deck=shuffle(questions).slice(0,5);index=0;score=0;streak=0;bestStreak=0;showOnly(stage);renderQuestion();}
-  function renderQuestion(){
-    answered=false;const item=deck[index];$("fuel-game-question-count").textContent="QUESTION "+(index+1)+" OF "+deck.length;$("fuel-game-question").textContent=item.q;
-    $("fuel-game-progress-bar").style.width=(index/deck.length*100)+"%";$("fuel-game-feedback").textContent="";$("fuel-game-feedback").className="fuel-game-feedback";$("fuel-game-next").hidden=true;
-    const options=$("fuel-game-options");options.replaceChildren();
-    item.options.forEach((label,i)=>{const b=document.createElement("button");b.type="button";b.className="fuel-game-option";b.textContent=label;b.dataset.answer=String(i);b.addEventListener("click",()=>choose(i,b));options.appendChild(b);});
-    updateStats();
+  const game=$("fuel-run-game"),player=$("fuel-run-player"),obstacle=$("fuel-run-obstacle"),overlay=$("fuel-run-overlay");
+  if(!game||!player||!obstacle||!overlay)return;
+  let state="ready",score=0,best=0,playerY=0,velocity=0,obstacleX=0,speed=5,lastTime=0,frame=0,raf=0,previousScore=0;
+  const ground=18,gravity=0.72,jumpPower=12.8;
+  function setStatus(s){$("fuel-run-status").textContent=s;}
+  function updateScore(){const shown=Math.floor(score);$("fuel-run-score").textContent=shown;$("fuel-run-best").textContent=best;}
+  function showOverlay(title,copy,button,icon){$("fuel-run-overlay-title").textContent=title;$("fuel-run-overlay-copy").textContent=copy;$("fuel-run-start").innerHTML=button+' <span aria-hidden="true">→</span>';$("fuel-run-overlay-icon").textContent=icon;overlay.hidden=false;}
+  function place(){player.style.bottom=(ground+playerY)+"px";obstacle.style.left=obstacleX+"%";}
+  function reset(){cancelAnimationFrame(raf);state="ready";score=0;playerY=0;velocity=0;speed=5;frame=0;obstacleX=105;player.classList.remove("is-jumping");obstacle.classList.remove("is-hit");game.classList.remove("is-running","is-over");place();updateScore();setStatus("TAP TO START");showOverlay("Ready to roll?","Jump over the fuel drums and keep the tanker moving.","Start game","⛽");}
+  function jump(){if(state==="ready"){start();return;}if(state!=="running")return;if(playerY<=0){velocity=jumpPower;player.classList.add("is-jumping");}}
+  function start(){cancelAnimationFrame(raf);state="running";score=0;playerY=0;velocity=0;speed=5;frame=0;obstacleX=105;lastTime=0;overlay.hidden=true;game.classList.add("is-running");game.classList.remove("is-over");player.classList.remove("is-jumping");obstacle.classList.remove("is-hit");setStatus("RUNNING");place();updateScore();raf=requestAnimationFrame(tick);}
+  function endGame(){state="over";game.classList.remove("is-running");game.classList.add("is-over");obstacle.classList.add("is-hit");best=Math.max(best,Math.floor(score));updateScore();setStatus("RUN OVER");showOverlay("Fuel run over!","You scored "+Math.floor(score)+". Try again and beat your best run.","Play again","🏁");}
+  function tick(now){if(state!=="running")return;const dt=lastTime?Math.min((now-lastTime)/16.67,2):1;lastTime=now;frame+=dt;score+=0.12*dt;speed=Math.min(10.5,5+score/90);obstacleX-=speed*dt*0.23;
+    if(playerY>0||velocity>0){playerY+=velocity*dt;velocity-=gravity*dt;if(playerY<=0){playerY=0;velocity=0;player.classList.remove("is-jumping");}}
+    if(obstacleX< -8){obstacleX=105+Math.random()*28;}
+    // Collision checks use the obstacle and car positions inside the game field.
+    if(obstacleX<23&&obstacleX>9&&playerY<24){place();endGame();return;}
+    place();updateScore();raf=requestAnimationFrame(tick);
   }
-  function choose(choice,button){
-    if(answered)return;answered=true;const item=deck[index];const correct=choice===item.correct;
-    document.querySelectorAll("#fuel-game-options .fuel-game-option").forEach(b=>{b.disabled=true;if(Number(b.dataset.answer)===item.correct)b.classList.add("is-correct");});
-    const feedback=$("fuel-game-feedback");
-    if(correct){score+=10;streak++;bestStreak=Math.max(bestStreak,streak);feedback.textContent="Correct! +10 points. "+item.explain;feedback.classList.add("is-correct");}
-    else{streak=0;button.classList.add("is-wrong");feedback.textContent="Not quite. "+item.explain;feedback.classList.add("is-wrong");}
-    $("fuel-game-progress-bar").style.width=((index+1)/deck.length*100)+"%";updateStats();
-    $("fuel-game-next").textContent=index===deck.length-1?"See my result →":"Next question →";$("fuel-game-next").hidden=false;
-  }
-  function next(){if(!answered)return;if(index<deck.length-1){index++;renderQuestion();}else finish();}
-  function finish(){showOnly(results);$("fuel-game-final-score").textContent=String(score);$("fuel-game-result-title").textContent=score===50?"Fuel genius! ⛽":score>=30?"Great work!":"Good practice!";
-    $("fuel-game-result-copy").textContent="You answered "+(score/10)+" out of 5 correctly and your best streak was "+bestStreak+". Ready for another round?";$("fuel-game-round").textContent="5/5";updateStats();}
-  $("fuel-game-start").addEventListener("click",start);$("fuel-game-replay").addEventListener("click",start);$("fuel-game-next").addEventListener("click",next);
+  $("fuel-run-start").addEventListener("click",e=>{e.stopPropagation();start();game.focus({preventScroll:true});});
+  $("fuel-run-restart").addEventListener("click",()=>{start();game.focus({preventScroll:true});});
+  game.addEventListener("pointerdown",e=>{if(e.target.closest("button"))return;e.preventDefault();jump();});
+  game.addEventListener("keydown",e=>{if(["Space","ArrowUp"].includes(e.code)){e.preventDefault();if(e.repeat)return;jump();}else if(e.key==="Enter"&&state!=="running"){e.preventDefault();start();}});
+  document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="running"){state="ready";cancelAnimationFrame(raf);game.classList.remove("is-running");setStatus("PAUSED");showOverlay("Take a breather","Your run paused when you left the game.","Resume run","⏸");$("fuel-run-start").onclick=null;$("fuel-run-start").addEventListener("click",()=>start(),{once:true});}});
+  reset();
 })();
 </script>
 
