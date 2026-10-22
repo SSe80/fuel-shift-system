@@ -7746,7 +7746,7 @@ def _drive_enqueue_confirmed_shift_sale(takeover_id):
     """Queue a sales PDF only after the individual shift handover sale is confirmed."""
     ts, rows = sb("shift_takeovers", params={
         "id": "eq." + str(takeover_id),
-        "select": "id,shift_id,sales_status,sales_confirmed_at,shift_started_at",
+        "select": "id,shift_id,sales_status,sales_confirmed_at",
         "limit": "1"})
     if ts >= 400 or not rows:
         return False
