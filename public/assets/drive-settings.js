@@ -17,20 +17,47 @@
     var r = await fetch(url, opts), j = await r.json().catch(function () { return {}; });
     return { status: r.status, body: j };
   }
-  function label(item) {
-    var kind = item.kind, key = item.report_key;
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"]/g, function (ch) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch];
+    });
+  }
+  function queueDetails(item) {
+    var kind = item.kind, key = String(item.report_key || '');
     if (kind === 'sale') {
-      var day = String(item.sales_date || String(key || '').split('|')[0] || '');
+      var day = String(item.sales_date || key.split('|')[0] || '');
       var dateLabel = day;
-      if (/^\\d{4}-\\d{2}-\\d{2}$/.test(day)) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(day)) {
         var bits = day.split('-');
         var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         dateLabel = monthNames[Number(bits[1]) - 1] + ' ' + String(Number(bits[2])) + ', ' + bits[0];
       }
-      return (item.sales_confirmed === false ? 'Sales awaiting confirmation' : 'Confirmed sales PDF') +
-        ' · ' + (item.sales_attendant || 'Attendant') + ' · ' + dateLabel;
+      return {
+        title: item.sales_confirmed === false ? 'Sales awaiting confirmation' : 'Confirmed sales PDF',
+        meta: (item.sales_attendant || 'Attendant') + ' · ' + dateLabel
+      };
     }
-    return (kind === 'dsr' ? 'DSR ' : 'MSR ') + key;
+    return { title: kind === 'dsr' ? 'Daily Sales Report (DSR)' : 'Monthly Sales Report (MSR)', meta: key };
+  }
+  function addQueueStyles() {
+    if ($('drive-queue-styles')) return;
+    var style = document.createElement('style');
+    style.id = 'drive-queue-styles';
+    style.textContent = [
+      '.drive-queue-list{display:grid;gap:10px}',
+      '.drive-queue-row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid var(--border-color,#e5e7eb);border-radius:14px;background:var(--card-bg,#fff)}',
+      '.drive-queue-main{min-width:0;display:grid;gap:6px}',
+      '.drive-queue-title{font-size:14px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}',
+      '.drive-queue-meta{font-size:13px;line-height:1.45;color:var(--muted,#6b7280);overflow-wrap:anywhere}',
+      '.drive-queue-state{display:inline-flex;align-items:center;align-self:flex-start;max-width:100%;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;line-height:1.35;background:#f3f4f6;color:#4b5563}',
+      '.drive-queue-state.is-ready{background:#dcfce7;color:#166534}',
+      '.drive-queue-state.is-waiting{background:#fef3c7;color:#92400e}',
+      '.drive-queue-state.is-failed{background:#fee2e2;color:#991b1b}',
+      '.drive-queue-error{font-size:12px;line-height:1.45;color:#b91c1c;overflow-wrap:anywhere}',
+      '.drive-queue-action{flex:0 0 auto}',
+      '@media(max-width:520px){.drive-queue-row{gap:9px;padding:12px}.drive-queue-action{font-size:12px;padding:7px 10px}}'
+    ].join('');
+    document.head.appendChild(style);
   }
   async function loadSettings() {
     var s = await api('/api/drive/settings');
@@ -115,14 +142,23 @@
       return;
     }
     maintainReportWorkers(q.body);
+    addQueueStyles();
+    box.classList.add('drive-queue-list');
     if (!q.body.length) { box.innerHTML = '<p class="muted">Nothing waiting. Confirmed reports and handover sales are saved to Drive.</p>'; return; }
     box.innerHTML = q.body.map(function (i) {
+      var details = queueDetails(i);
       var state = i.status === 'failed' ? 'Failed' :
         (i.kind === 'sale' && i.sales_confirmed === false ? 'Awaiting confirmation' :
         (i.status === 'waiting' ? 'Waiting for export readiness' : 'Ready to upload'));
-      var err = i.last_error ? '<small class="muted"> · ' + String(i.last_error).replace(/[<>&]/g, '') + '</small>' : '';
-      var retry = i.status === 'failed' ? ' <button type="button" class="secondary" data-retry="' + i.id + '">Retry</button>' : '';
-      return '<div class="drive-queue-row"><span><b>' + label(i) + '</b> · ' + state + err + '</span>' + retry + '</div>';
+      var stateClass = i.status === 'failed' ? 'is-failed' :
+        (i.status === 'waiting' || (i.kind === 'sale' && i.sales_confirmed === false) ? 'is-waiting' : 'is-ready');
+      var err = i.last_error ? '<div class="drive-queue-error">' + esc(i.last_error) + '</div>' : '';
+      var retry = i.status === 'failed' ? '<button type="button" class="secondary drive-queue-action" data-retry="' + esc(i.id) + '">Retry</button>' : '';
+      return '<div class="drive-queue-row"><div class="drive-queue-main">' +
+        '<div class="drive-queue-title">' + esc(details.title) + '</div>' +
+        '<div class="drive-queue-meta">' + esc(details.meta) + '</div>' +
+        '<span class="drive-queue-state ' + stateClass + '">' + esc(state) + '</span>' + err +
+        '</div>' + retry + '</div>';
     }).join('');
     box.querySelectorAll('[data-retry]').forEach(function (b) {
       b.addEventListener('click', async function () {
