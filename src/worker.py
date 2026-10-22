@@ -3995,6 +3995,7 @@ def inventory_summary():
         anchor_at=anchor.get("created_at")
         anchor_liters=float(anchor.get("quantity_liters") or 0)
         ledger_purchases=0.0
+        ledger_purchases_by_reference={}
         sales=0.0
         adjustments=0.0
 
@@ -4009,16 +4010,18 @@ def inventory_summary():
             qty=float(movement.get("quantity_liters") or 0)
             if movement_type=="purchase":
                 ledger_purchases += qty
+                reference_id=str(movement.get("reference_id") or "")
+                if reference_id:
+                    ledger_purchases_by_reference[reference_id]=ledger_purchases_by_reference.get(reference_id,0.0)+qty
             elif movement_type=="sale":
                 sales += abs(qty)
             elif movement_type=="adjustment":
                 adjustments += qty
 
-        # Recover purchases from per-tank discharge history when the matching
-        # purchase ledger movement is absent. A purchase row may include several
-        # compartment/discharge events, so compare totals per tank and only add
-        # the missing positive difference rather than duplicating ledger rows.
-        history_purchases=0.0
+        # Recover purchases from per-tank discharge history when matching
+        # purchase ledger movements are missing. Reconcile per purchase ID so
+        # unrelated purchase movements cannot hide a missing discharge.
+        missing_history_purchases=0.0
         tank_product=str(tank.get("product") or "").strip().casefold()
         for purchase in purchase_rows:
             purchase_product=str(purchase.get("product") or "").strip().casefold()
@@ -4032,6 +4035,7 @@ def inventory_summary():
                     history=[]
             if not isinstance(history,list):
                 continue
+            history_for_tank=0.0
             for event in history:
                 if not isinstance(event,dict) or str(event.get("tank_id") or "") != tid:
                     continue
@@ -4043,9 +4047,12 @@ def inventory_summary():
                 except (TypeError,ValueError):
                     qty=0.0
                 if qty > 0:
-                    history_purchases += qty
+                    history_for_tank += qty
+            purchase_id=str(purchase.get("id") or "")
+            ledger_for_purchase=ledger_purchases_by_reference.get(purchase_id,0.0)
+            missing_history_purchases += max(0.0,history_for_tank-ledger_for_purchase)
 
-        purchases=ledger_purchases + max(0.0, history_purchases-ledger_purchases)
+        purchases=ledger_purchases+missing_history_purchases
         expected=anchor_liters+purchases+adjustments-sales
         result.append({
             "tank_id":tank.get("id"),
