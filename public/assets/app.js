@@ -1157,7 +1157,7 @@ async function loadAttendantShiftPage(){
           html:'<article class="card shift-takeover-history-card compact-confirmed-sale-card attendant-shift-history-item" data-takeover-id="'+h(t.id)+'" tabindex="0" aria-expanded="false">'+
             '<div class="attendant-shift-history-collapsed">'+
               '<div class="attendant-shift-history-collapsed-main">'+
-                '<div class="attendant-shift-history-date">'+h((t.sales_confirmed_at||t.shift_ended_at)?new Date(t.sales_confirmed_at||t.shift_ended_at).toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}):"Date unavailable")+'</div>'+
+                '<div class="attendant-shift-history-date"><strong>'+h((t.sales_confirmed_at||t.shift_ended_at)?new Date(t.sales_confirmed_at||t.shift_ended_at).toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}):"Date unavailable")+'</strong></div>'+
                 '<h3>'+h(n?.nozzle_code||t.dispenser_code||'Dispenser')+'</h3>'+
               '</div>'+
               '<span class="badge attendant-shift-history-confirmed">Confirmed</span>'+
