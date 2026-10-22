@@ -1455,10 +1455,10 @@ body.attendant-dashboard-page .service-game-hint{margin-top:10px;color:#7b8494;f
   <button type="button" class="admin-sidebar-logout" onclick="logout()"><span>↪</span><b>Logout</b></button>
 </aside>
 <main class="wrap">
-  <header class="settings-header"><div><span class="eyebrow">TAKE A QUICK BREAK</span><h1>Fuel Run</h1><p class="muted">A little jumping game between shifts. Beat your best score.</p></div></header>
-  <section class="page-heading"><div><span class="section-kicker">MINI GAME</span><h2>Ready to roll?</h2><p>Jump over the fuel drums and keep the truck moving.</p></div></section>
+  <header class="settings-header"><div><span class="eyebrow">TAKE A QUICK BREAK</span><h1>Fuel Run</h1><p class="muted">Race the clock, nail the fill, catch bonus cars, and build a streak.</p></div></header>
+  <section class="page-heading"><div><span class="section-kicker">MINI GAME</span><h2>Ready to roll?</h2><p>Precision matters: hit the target, avoid spills, and watch for golden bonus customers.</p></div></section>
   <section id="fuel-brain-break" class="fuel-brain-break fuel-service-game" aria-labelledby="fuel-game-title">
-  <div class="fuel-game-top"><div class="fuel-game-brand"><span class="fuel-game-icon" aria-hidden="true">⛽</span><div><span class="fuel-game-kicker">STATION CHALLENGE</span><h2 id="fuel-game-title">Fuel Up!</h2><p>Serve each car with the right amount of fuel before time runs out.</p></div></div><div class="fuel-game-stats"><div><span>SCORE</span><strong id="fuel-run-score">0</strong></div><div><span>BEST</span><strong id="fuel-run-best">0</strong></div></div></div>
+  <div class="fuel-game-top"><div class="fuel-game-brand"><span class="fuel-game-icon" aria-hidden="true">⛽</span><div><span class="fuel-game-kicker">STATION CHALLENGE</span><h2 id="fuel-game-title">Fuel Up!</h2><p>Precision fuel challenge • bonus customers • streak points</p></div></div><div class="fuel-game-stats"><div><span>SCORE</span><strong id="fuel-run-score">0</strong></div><div><span>BEST</span><strong id="fuel-run-best">0</strong></div><div><span>STREAK</span><strong id="fuel-run-streak">0×</strong></div></div></div>
   <div class="fuel-service-scene" id="fuel-run-game" aria-label="Fuel dispensing game">
     <div class="fuel-service-sky"><span class="service-cloud service-cloud-one"></span><span class="service-cloud service-cloud-two"></span><span class="service-sun"></span></div>
     <div class="service-station-sign"><span>FUEL SHIFT</span><b>WELCOME</b></div>
@@ -1466,16 +1466,16 @@ body.attendant-dashboard-page .service-game-hint{margin-top:10px;color:#7b8494;f
     <div class="service-car" id="fuel-run-player" aria-label="Customer car"><span class="service-car-window"></span><span class="service-car-window service-car-window-back"></span><span class="service-wheel service-wheel-one"></span><span class="service-wheel service-wheel-two"></span><span class="service-car-light"></span></div>
     <div class="service-pump" id="fuel-run-obstacle"><div class="service-pump-top">FUEL</div><div class="service-pump-screen"><small>ETB/L</small><b id="fuel-run-pump-display">00.0</b></div><div class="service-pump-buttons"><i></i><i></i><i></i></div><div class="service-hose"></div><div class="service-nozzle"></div></div>
     <div class="service-ground"></div>
-    <div class="service-game-overlay" id="fuel-run-overlay"><div class="service-overlay-icon" id="fuel-run-overlay-icon">⛽</div><h3 id="fuel-run-overlay-title">Ready to fuel up?</h3><p id="fuel-run-overlay-copy">Hold the green dispense button to fill the customer's tank to the target. Release when you reach it!</p><button type="button" class="fuel-game-primary" id="fuel-run-start">Start serving <span aria-hidden="true">→</span></button></div>
+    <div class="service-game-overlay" id="fuel-run-overlay"><div class="service-overlay-icon" id="fuel-run-overlay-icon">⛽</div><h3 id="fuel-run-overlay-title">Ready to fuel up?</h3><p id="fuel-run-overlay-copy">Hold to dispense and release close to the target (within ±0.7 L). Golden cars earn bonus points. Overfill and lose points!</p><button type="button" class="fuel-game-primary" id="fuel-run-start">Start serving <span aria-hidden="true">→</span></button></div>
   </div>
   <div class="service-game-panel">
     <div class="service-meter-label"><span id="fuel-run-status">WAITING FOR CUSTOMER</span><b><span id="fuel-run-current">0.0</span> / <span id="fuel-run-target">12.0</span> L</b></div>
     <div class="service-meter"><span id="fuel-run-meter"></span><i id="fuel-run-target-mark"></i></div>
     <div class="service-game-meta"><span>TIME LEFT <b id="fuel-run-time">30</b>s</span><span id="fuel-run-customer">CUSTOMER 1</span></div>
     <button type="button" id="fuel-run-dispense" class="service-dispense-button" disabled>⛽ &nbsp; HOLD TO DISPENSE</button>
-    <div class="service-game-hint">Release to stop dispensing. Hit the requested litres without overfilling to earn points.</div>
+    <div class="service-game-hint">Release within ±0.7 L of the target to score. Golden cars are worth double! Overfill by too much and lose 5 points.</div>
   </div>
-  <div class="fuel-run-controls"><span><b>HOW TO PLAY</b> Start the game, then hold the dispense button. Release at the target litres to serve the next car.</span><button type="button" id="fuel-run-restart" class="fuel-run-restart">↻ Restart</button></div>
+  <div class="fuel-run-controls"><span><b>HOW TO PLAY</b> Build a streak with accurate fills. Golden cars give double points; spills break your streak.</span><button type="button" id="fuel-run-restart" class="fuel-run-restart">↻ Restart</button></div>
   <p class="fuel-game-footnote">Just for fun — no real fuel, money, or station data is used.</p>
 </section>
 </main>
@@ -1489,11 +1489,11 @@ body.attendant-dashboard-page .service-game-hint{margin-top:10px;color:#7b8494;f
   const $=id=>document.getElementById(id);
   const startBtn=$("fuel-run-start"),dispenseBtn=$("fuel-run-dispense"),overlay=$("fuel-run-overlay");
   if(!startBtn||!dispenseBtn||!overlay)return;
-  let state="ready",score=0,best=0,litres=0,target=12,timeLeft=30,last=0,raf=0,holding=false,customer=1,feedbackTimer=0;
+  let state="ready",score=0,best=0,litres=0,target=12,timeLeft=30,last=0,raf=0,holding=false,customer=1,feedbackTimer=0,streak=0,golden=false;
   const cars=["#d83b45","#2677b8","#26966b","#e5a12a","#7257b7"];
   function fmt(n){return n.toFixed(1);}
   function update(){
-    $("fuel-run-score").textContent=score;$("fuel-run-best").textContent=best;
+    $("fuel-run-score").textContent=score;$("fuel-run-best").textContent=best;$("fuel-run-streak").textContent=streak+"×";
     $("fuel-run-current").textContent=fmt(litres);$("fuel-run-target").textContent=fmt(target);
     $("fuel-run-meter").style.width=Math.min(100,litres/target*100)+"%";
     $("fuel-run-target-mark").style.left="100%";$("fuel-run-time").textContent=Math.max(0,Math.ceil(timeLeft));
@@ -1503,27 +1503,27 @@ body.attendant-dashboard-page .service-game-hint{margin-top:10px;color:#7b8494;f
   function overlayShow(title,copy,button,icon){$("fuel-run-overlay-title").textContent=title;$("fuel-run-overlay-copy").textContent=copy;$("fuel-run-start").innerHTML=button+' <span aria-hidden="true">→</span>'; $("fuel-run-overlay-icon").textContent=icon;overlay.hidden=false;}
   function setStatus(t){$("fuel-run-status").textContent=t;}
   function nextCustomer(){
-    customer++;litres=0;target=Math.round((7+Math.random()*13)*10)/10;
-    $("fuel-run-player").style.backgroundColor=cars[(customer-1)%cars.length];
-    setStatus("CUSTOMER READY");update();
+    customer++;litres=0;target=Math.round((7+Math.random()*13)*10)/10;golden=Math.random()<.24;
+    const car=$("fuel-run-player");car.style.backgroundColor=golden?"#f4c542":cars[(customer-1)%cars.length];car.style.filter=golden?"drop-shadow(0 0 10px #f4c542)":"none";
+    setStatus(golden?"✨ GOLDEN BONUS CUSTOMER!":"CUSTOMER READY");update();
   }
   function reset(){
-    cancelAnimationFrame(raf);clearTimeout(feedbackTimer);state="ready";score=0;best=0;litres=0;target=12;timeLeft=30;holding=false;customer=1;
-    dispenseBtn.disabled=true;dispenseBtn.classList.remove("is-dispensing");$("fuel-run-player").style.backgroundColor=cars[0];
+    cancelAnimationFrame(raf);clearTimeout(feedbackTimer);state="ready";score=0;best=0;litres=0;target=12;timeLeft=30;holding=false;customer=1;streak=0;golden=false;
+    dispenseBtn.disabled=true;dispenseBtn.classList.remove("is-dispensing");$("fuel-run-player").style.backgroundColor=cars[0];$("fuel-run-player").style.filter="none";
     setStatus("WAITING FOR CUSTOMER");update();overlayShow("Ready to fuel up?","Hold the green dispense button to fill the customer's tank to the target. Release when you reach it!","Start serving","⛽");
   }
   function start(){
-    cancelAnimationFrame(raf);state="running";score=0;litres=0;target=Math.round((8+Math.random()*10)*10)/10;timeLeft=30;customer=1;holding=false;
+    cancelAnimationFrame(raf);state="running";score=0;streak=0;litres=0;target=Math.round((8+Math.random()*10)*10)/10;timeLeft=30;customer=1;golden=Math.random()<.24;holding=false;$("fuel-run-player").style.backgroundColor=golden?"#f4c542":cars[0];$("fuel-run-player").style.filter=golden?"drop-shadow(0 0 10px #f4c542)":"none";
     dispenseBtn.disabled=false;dispenseBtn.classList.remove("is-dispensing");overlay.hidden=true;setStatus("SERVE THE CUSTOMER");update();last=0;raf=requestAnimationFrame(tick);
   }
   function tick(now){
     if(state!=="running")return;const dt=last?Math.min((now-last)/1000,.05):0;last=now;timeLeft-=dt;
-    if(holding){litres+=dt*7.2;if(litres>=target){litres=target;holding=false;dispenseBtn.classList.remove("is-dispensing");score+=10;best=Math.max(best,score);setStatus("TANK FULL — +10 POINTS");update();nextCustomer();}}
+    if(holding){litres+=dt*8.5;if(litres>target+1.1){litres=target+1.1;holding=false;dispenseBtn.classList.remove("is-dispensing");score=Math.max(0,score-5);streak=0;setStatus("💦 OVERFILL! −5 POINTS");update();nextCustomer();}}
     if(timeLeft<=0){timeLeft=0;state="over";holding=false;dispenseBtn.disabled=true;dispenseBtn.classList.remove("is-dispensing");best=Math.max(best,score);update();setStatus("SHIFT OVER");overlayShow("Shift complete!","You served "+(customer-1)+" customer(s) and scored "+score+" points. Try again to beat your best.","Play again","🏁");return;}
     update();raf=requestAnimationFrame(tick);
   }
   function beginDispense(e){if(e)e.preventDefault();if(state!=="running"||dispenseBtn.disabled)return;holding=true;dispenseBtn.classList.add("is-dispensing");setStatus("DISPENSING FUEL");}
-  function stopDispense(){if(!holding)return;holding=false;dispenseBtn.classList.remove("is-dispensing");if(state!=="running")return;if(litres>=target){score+=10;best=Math.max(best,score);nextCustomer();}else setStatus("PAUSED — KEEP FILLING");}
+  function stopDispense(){if(!holding)return;holding=false;dispenseBtn.classList.remove("is-dispensing");if(state!=="running")return;const diff=Math.abs(litres-target);if(diff<=.7){streak++;const points=(golden?20:10)+Math.min(10,Math.max(0,streak-1)*2);score+=points;best=Math.max(best,score);setStatus((golden?"🌟 GOLDEN HIT! ":"PERFECT FILL! ")+"+"+points+" POINTS");update();nextCustomer();}else if(litres>target+.7){score=Math.max(0,score-5);streak=0;setStatus("💦 OVERFILL! −5 POINTS");update();nextCustomer();}else setStatus("NOT FULL YET — HOLD TO CONTINUE");}
   startBtn.addEventListener("click",e=>{e.stopPropagation();start();});
   $("fuel-run-restart").addEventListener("click",start);
   dispenseBtn.addEventListener("pointerdown",beginDispense);
