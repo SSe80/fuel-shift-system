@@ -2937,6 +2937,9 @@ body.attendant-dashboard-page .attendant-shift-history-date strong{
 </style>
 
 <style id="attendant-shift-history-confirmed-top-right">
-body.attendant-dashboard-page .attendant-shift-history-collapsed{align-items:flex-start!important;}
-body.attendant-dashboard-page .attendant-shift-history-confirmed{align-self:flex-start!important;margin-left:auto!important;}
+/* Anchor the Confirmed badge to the card corner, independent of flex alignment. */
+body.attendant-dashboard-page .attendant-shift-history-item{position:relative!important;}
+body.attendant-dashboard-page .attendant-shift-history-collapsed{position:static!important;display:block!important;}
+body.attendant-dashboard-page .attendant-shift-history-collapsed-main{padding-right:92px!important;}
+body.attendant-dashboard-page .attendant-shift-history-confirmed{position:absolute!important;top:14px!important;right:16px!important;left:auto!important;align-self:auto!important;margin:0!important;z-index:2!important;}
 </style>
