@@ -8300,91 +8300,10 @@ def drive_queue():
     auth = require_admin()
     if auth: return auth
 
-    # Show DSR dates that have started but are not yet confirmed as Waiting in
-    # the queue. These rows must not trigger PDF generation/upload until the DSR
-    # is confirmed; the report confirmation hook will change them to pending.
-    try:
-        today = _addis_today()
-        start = today - timedelta(days=365)
-        ss, shifts = sb("shifts", params={
-            "start_time": "gte." + start.isoformat() + "T00:00:00+03:00",
-            "select": "start_time", "order": "start_time.asc", "limit": "10000"})
-        cs, confirmed_rows = sb("daily_report_confirmations", params={
-            "report_date": "gte." + start.isoformat(),
-            "status": "eq.confirmed", "select": "report_date", "limit": "10000"})
-        if ss == 200 and cs == 200:
-            confirmed_dates = {str(row.get("report_date") or "")[:10] for row in (confirmed_rows or [])}
-            started_dates = set()
-            for shift in shifts or []:
-                report_day = _local_date_from_iso(shift.get("start_time"))
-                if report_day and report_day.isoformat() <= today.isoformat():
-                    started_dates.add(report_day.isoformat())
-            for report_day in sorted(started_dates - confirmed_dates):
-                _drive_enqueue("dsr", report_day, status="waiting")
-    except Exception:
-        app.logger.exception("could not sync incomplete DSRs to Drive waiting queue")
-
-    # Keep the ongoing month's MSR visible in the queue as Waiting, matching
-    # incomplete DSRs. It must not be uploaded while the month is in progress.
-    # Never overwrite a completed export; once the month closes, the existing
-    # readiness check promotes this row to pending after all required DSRs are confirmed.
-    try:
-        current_month_key = _addis_today().strftime("%Y-%m")
-        ms, current_msr_rows = sb("drive_export_queue", params={
-            "kind": "eq.msr", "report_key": "eq." + current_month_key,
-            "select": "id,status", "limit": "1"})
-        if ms < 400:
-            if not current_msr_rows:
-                _drive_enqueue("msr", current_month_key, status="waiting")
-            else:
-                current_msr = current_msr_rows[0]
-                if current_msr.get("status") != "done" and current_msr.get("status") != "waiting":
-                    sb("drive_export_queue", method="PATCH",
-                       params={"id": "eq." + str(current_msr.get("id"))},
-                       body={"status": "waiting", "attempts": 0, "last_error": None,
-                             "updated_at": datetime.now(timezone.utc).isoformat()},
-                       prefer="return=minimal")
-    except Exception:
-        app.logger.exception("could not sync ongoing MSR to Drive waiting queue")
-
-    # Keep submitted but unconfirmed handover sales visible as Waiting. These
-    # queue rows are deliberately not eligible for browser PDF generation.
-    # The same row is promoted to pending by _drive_enqueue_confirmed_shift_sale
-    # once an admin confirms the sales.
-    try:
-        today = _addis_today()
-        start = today - timedelta(days=365)
-        ss, shifts = sb("shifts", params={
-            "start_time": "gte." + start.isoformat() + "T00:00:00+03:00",
-            "select": "id,start_time", "order": "start_time.asc", "limit": "10000"})
-        if ss == 200:
-            shift_days = {}
-            for shift in shifts or []:
-                shift_id = str(shift.get("id") or "")
-                report_day = _local_date_from_iso(shift.get("start_time"))
-                if shift_id and report_day and report_day.isoformat() <= today.isoformat():
-                    shift_days[shift_id] = report_day
-            ts, takeovers = sb("shift_takeovers", params={
-                "select": "id,shift_id,sales_status,sales_confirmed_at,sales_submitted_at",
-                "limit": "10000"})
-            if ts == 200:
-                for takeover in takeovers or []:
-                    takeover_id = takeover.get("id")
-                    shift_day = shift_days.get(str(takeover.get("shift_id") or ""))
-                    if not takeover_id or not shift_day:
-                        continue
-                    sales_status = str(takeover.get("sales_status") or "").strip().lower()
-                    is_confirmed = sales_status == "confirmed" or bool(takeover.get("sales_confirmed_at"))
-                    is_submitted = bool(takeover.get("sales_submitted_at")) or sales_status in (
-                        "submitted", "pending", "pending_admin", "pending_confirmation", "awaiting_confirmation",
-                        "under_review")
-                    if is_confirmed:
-                        _drive_enqueue_sale_key(shift_day, takeover_id, confirmed=True)
-                    elif is_submitted:
-                        _drive_enqueue_sale_key(shift_day, takeover_id, confirmed=False)
-    except Exception:
-        app.logger.exception("could not sync shift-sale confirmation status to Drive queue")
-
+    # Keep this endpoint read-only and fast. Historical synchronization here caused
+    # hundreds of sequential Supabase REST calls on each page load, leading to
+    # PostgREST timeout-manager failures. Queue rows are maintained by event hooks
+    # and explicit enqueue actions instead.
     try:
         st, rows = sb("drive_export_queue", params={
             "status": "neq.done", "select": "id,kind,report_key,status,attempts,last_error,updated_at",
