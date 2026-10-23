@@ -3990,6 +3990,8 @@ function createMsrReportPdfV2(r){
   // MSR follows the DSR PDF visual language: inset navy header, rounded cards,
   // clear section headings and compact tables. No charts or attendant section.
   const d=createPdfDoc(),M=24,CW=595.28-48,W=595.28,H=841.89,R=M+CW;
+  const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0;};
+  const fmt=v=>num(v).toLocaleString('en-US',{maximumFractionDigits:2});
   d.keepA4Width=true;
   const WHITE=[255,255,255],PAGE=[255,255,255],INK=[15,23,42],GREY=[100,116,139],
     NAVY=[0,0,0],BLUE=[37,99,235],BORDER=[226,232,240],SOFT=[241,245,249],
