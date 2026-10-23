@@ -3786,7 +3786,7 @@ function createDsrReportPdf(r){
   const fmtL=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:2});
   const prodColor=p=>/mgr/i.test(String(p||''))?MGRC:/ago/i.test(String(p||''))?AGOC:[148,163,184];
   const prodTint=p=>/mgr/i.test(String(p||''))?[254,226,226]:/ago/i.test(String(p||''))?[254,249,195]:[241,245,249];
-  const varTone=p=>p<=1?{fg:GREEN,bg:LGREEN}:p<=3?{fg:AMBER,bg:LAMBER}:{fg:RED,bg:LRED};
+  const varTone=p=>p>0?{fg:GREEN,bg:LGREEN}:p<0?{fg:RED,bg:LRED}:{fg:GREY,bg:SOFT};
   const attMap=new Map();
   (r.shifts||[]).forEach(s=>{const disp=String(s.sub||'').split(' / ')[0].trim();const nm=String(s.title||'').split(' - ').slice(1).join(' - ').trim()||String(s.title||'');if(!attMap.has(disp))attMap.set(disp,[]);if(!attMap.get(disp).includes(nm))attMap.get(disp).push(nm);});
   const card=(x,y,w,h)=>{d.box(x,y,w,h,WHITE,10);d.outline(x,y,w,h,10);};
@@ -3873,7 +3873,7 @@ function createDsrReportPdf(r){
   const tanks=r.tanks||[];const TK=72;const tkH=14+26+tanks.length*TK+4;
   const tkTop=d.y;card(M,tkTop,CW,tkH);section(M+14,tkTop+8,'Tank reconciliation');
   let ty=tkTop+30;
-  tanks.forEach(tk=>{const col=prodColor(tk.product);const cards=tk.cards||[];const v=cards.find(c=>/variance/i.test(c.label));const vp=v?signedNum(v.value):0;const tone=varTone(Math.abs(vp));
+  tanks.forEach(tk=>{const col=prodColor(tk.product);const cards=tk.cards||[];const v=cards.find(c=>/variance/i.test(c.label));const vp=v?signedNum(v.value):0;const tone=varTone(vp);
     const diff=cards.find(c=>/difference/i.test(c.label));
     const diffValue=diff?signedNum(diff.value):0;
     const diffFg=diffValue>0?GREEN:diffValue<0?RED:GREY;
@@ -3883,8 +3883,8 @@ function createDsrReportPdf(r){
     d.text(d.fit(tk.name,9,true,150),M+62,ty+15,9,true,INK);
     const adj=cards.find(c=>/adjust/i.test(c.label)),con=cards.find(c=>/continu|gap/i.test(c.label));
     let cx=M+62+d.tw(tk.name,9,true)+12;
-    [[adj,'Adjustment',false],[con,'Gap (not applied)',false],[diff,'Difference',true]].forEach(([c,lab,hi])=>{if(!c)return;const tx=lab+' '+c.value,w=d.tw(tx,8,hi);d.box(cx,ty+7,w,12,hi?diffBg:SOFT,3);d.text(tx,cx,ty+15.5,8,hi,hi?diffFg:GREY);cx+=w+6;});
-    const vt='Variance '+(v?v.value:'0.0%'),vw=d.tw(vt,8.5,true),tx=R-14-vw,up=vp>=0,vc=Math.abs(vp)<=1?GREEN:Math.abs(vp)<=3?AMBER:RED;
+    [[adj,'Adjustment',false],[con,'Gap (not applied)',false],[diff,'Difference',true]].forEach(([c,lab,hi])=>{if(!c)return;const value=signedNum(c.value),valueFg=value>0?GREEN:value<0?RED:GREY,valueBg=value>0?LGREEN:value<0?LRED:SOFT,tx=lab+' '+c.value,w=d.tw(tx,8,hi||value!==0);d.box(cx,ty+7,w,12,hi?valueBg:SOFT,3);d.text(tx,cx,ty+15.5,8,hi||value!==0,valueFg);cx+=w+6;});
+    const vt='Variance '+(v?v.value:'0.0%'),vw=d.tw(vt,8.5,true),tx=R-14-vw,up=vp>=0,vc=vp>0?GREEN:vp<0?RED:GREY;
     d.text(vt,tx,ty+16,8.5,true,vc);
     const x0=tx-11,th=6.1;
     d.poly(up?[[x0,ty+16],[x0+7,ty+16],[x0+3.5,ty+16-th]]:[[x0,ty+16-th],[x0+7,ty+16-th],[x0+3.5,ty+16]],vc);
@@ -6249,9 +6249,11 @@ function renderDsrHistoryCard(item){
   const date=String(item?.date||'');
   const confirmedAt=item?.confirmed_at ? new Date(item.confirmed_at).toLocaleString() : 'Confirmed';
   const dateLabel=dailyReportIdLabel(date);
+  const financialDifference=item?.financial_difference==null?null:Number(item.financial_difference);
+  const financialDifferenceClass=financialDifference==null?'':financialDifference>0?'positive':financialDifference<0?'negative':'';
   return '<article class="dsr-history-card" data-dsr-date="'+h(date)+'">'+
     '<button type="button" class="dsr-history-card-head" onclick="toggleDsrCardFromShared(this)" aria-expanded="false"><span class="dsr-history-card-title"><strong>'+h(dateLabel)+'</strong><small>Confirmed '+h(confirmedAt)+'</small></span><span class="dsr-history-card-right"><span class="dsr-history-badge">✓ CONFIRMED</span><span class="dsr-history-toggle">⌄</span></span></button>'+
-    '<div class="dsr-history-card-body" hidden><div class="dsr-history-stats"><div class="dsr-history-stat"><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div class="dsr-history-stat"><span>Calculated sales</span><strong>'+money(item.calculated_sales_amount ?? item.total_sales_amount ?? 0)+'</strong></div><div class="dsr-history-stat"><span>Entered payments</span><strong>'+((item.entered_payment_amount!=null)?money(item.entered_payment_amount):'—')+'</strong></div><div class="dsr-history-stat"><span>Financial difference</span><strong>'+((item.financial_difference!=null)?money(item.financial_difference):'—')+'</strong></div><div class="dsr-history-stat"><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div class="dsr-history-stat"><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div><div class="dsr-history-actions" style="display:flex;justify-content:flex-end;margin-top:10px"><a class="primary dsr-history-report-button" style="width:50%;min-height:38px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 12px;border:1px solid #4b83bd;border-radius:9px;background:#4b83bd;color:#fff;box-shadow:0 3px 9px rgba(75,131,189,.16);font:inherit;font-size:12px;font-weight:800;text-decoration:none;cursor:pointer" href="admin-dsr-detail.html?date='+encodeURIComponent(date)+'" onclick="if(typeof window.openDsrDetailPopup===\'function\'){window.openDsrDetailPopup('+JSON.stringify(date)+');return false;}">View Full Report</a></div></div></article>';
+    '<div class="dsr-history-card-body" hidden><div class="dsr-history-stats"><div class="dsr-history-stat"><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div class="dsr-history-stat"><span>Calculated sales</span><strong>'+money(item.calculated_sales_amount ?? item.total_sales_amount ?? 0)+'</strong></div><div class="dsr-history-stat"><span>Entered payments</span><strong>'+((item.entered_payment_amount!=null)?money(item.entered_payment_amount):'—')+'</strong></div><div class="dsr-history-stat"><span>Financial difference</span><strong class="'+financialDifferenceClass+'">'+((item.financial_difference!=null)?money(item.financial_difference):'—')+'</strong></div><div class="dsr-history-stat"><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div class="dsr-history-stat"><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div><div class="dsr-history-actions" style="display:flex;justify-content:flex-end;margin-top:10px"><a class="primary dsr-history-report-button" style="width:50%;min-height:38px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 12px;border:1px solid #4b83bd;border-radius:9px;background:#4b83bd;color:#fff;box-shadow:0 3px 9px rgba(75,131,189,.16);font:inherit;font-size:12px;font-weight:800;text-decoration:none;cursor:pointer" href="admin-dsr-detail.html?date='+encodeURIComponent(date)+'" onclick="if(typeof window.openDsrDetailPopup===\'function\'){window.openDsrDetailPopup('+JSON.stringify(date)+');return false;}">View Full Report</a></div></div></article>';
 }
 function openDsrDetailPopup(date){
   if(!date)return;
@@ -6548,6 +6550,42 @@ function downloadDailyReportPdf(){
   }
 }
 
+function applyDsrNumericValueColors(root){
+  const scope=root&&typeof root.querySelectorAll==='function'?root:document;
+  const selector=[
+    '.daily-stat b',
+    '.dsr-dispenser-total b',
+    '.dsr-dispenser-meta b',
+    '.dsr-reading-grid b',
+    '.dsr-nozzle-performance strong',
+    '.dsr-attendant-shift strong',
+    '.dsr-tank-grid b',
+    '.dsr-tank-performance strong',
+    '.dsr-tank-discharge-row > span:nth-of-type(-n+4) > strong',
+    '.dsr-sales-row small',
+    '.dsr-sales-row strong',
+    '.dsr-sales-row span',
+    '.dsr-sales-total-row strong',
+    '.dsr-shift-grid b',
+    '.dsr-performance-metric b',
+    '.dsr-discharge-audit-liters b',
+    '.daily-revision-grid strong',
+    '.dsr-history-stat strong'
+  ].join(',');
+  scope.querySelectorAll(selector).forEach(el=>{
+    const raw=String(el.textContent||'').trim();
+    el.classList.remove('dsr-value-positive','dsr-value-negative');
+    if(!raw||/\\b\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\b/.test(raw)||/\\b\\d{1,2}:\\d{2}\\b/.test(raw))return;
+    const match=raw.replace(/\\b(?:ETB|USD|EUR|GBP)\\b/ig,' ').match(/[+\\-−–]?\\s*\\d[\\d,]*(?:\\.\\d+)?/);
+    if(!match)return;
+    const token=match[0].replace(/\\s/g,'').replace(/[−–]/g,'-');
+    const value=Number(token.replace(/,/g,''));
+    if(!Number.isFinite(value)||Math.abs(value)<0.0000001)return;
+    el.classList.remove('positive','negative');
+    el.classList.add(value>0?'dsr-value-positive':'dsr-value-negative');
+  });
+}
+
 async function loadDailyReport(showDetails=false){
   const details=document.getElementById('daily-report-details');
   // Normal report refreshes keep the detail card hidden. Full-report navigation
@@ -6763,6 +6801,7 @@ async function loadDailyReport(showDetails=false){
       '<div class="dsr-performance-block"><div class="dsr-subhead">Sales method performance</div>'+(methodPerf||'<div class="daily-empty">No sales method data.</div>')+'</div>'+
       '<div class="dsr-performance-block"><div class="dsr-subhead">Tank reconciliation</div>'+(tankPerf||'<div class="daily-empty">No tank reconciliation data.</div>')+'</div>'+auditBlock;
 
+    applyDsrNumericValueColors(details||document);
     if(status)status.textContent='';
   }catch(e){
     if(status)status.textContent=e.message||'Unable to load the daily report.';
