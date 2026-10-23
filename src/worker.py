@@ -6496,11 +6496,13 @@ def daily_report(report_date_override=None):
                 and str(op.get("tank_id") or "")==tid
             )
             interval=shift_interval_by_id.get(sid)
-            stock_reconciliation_applicable=bool(interval) and sid not in overlapping_shift_ids
+            stock_reconciliation_applicable=bool(interval) and sid not in overlapping_shift_ids and invalid_shift_interval_count==0
             if not interval:
                 stock_reconciliation_status="invalid_shift_interval"
             elif sid in overlapping_shift_ids:
                 stock_reconciliation_status="overlapping_shift_windows"
+            elif invalid_shift_interval_count:
+                stock_reconciliation_status="another_shift_has_invalid_interval"
             else:
                 stock_reconciliation_status="valid"
             # Shared physical tank readings from overlapping dispenser shifts are
