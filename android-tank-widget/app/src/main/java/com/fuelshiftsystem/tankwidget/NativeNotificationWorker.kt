@@ -36,7 +36,10 @@ class NativeNotificationWorker(context: Context, params: WorkerParameters) : Cor
         }
         val base = prefs.getString(TankWidgetWorker.KEY_BASE_URL, TankWidgetWorker.DEFAULT_BASE_URL)?.trimEnd('/')
         val cookie = prefs.getString(TankWidgetWorker.KEY_ADMIN_COOKIE, null)
-        if (base.isNullOrBlank() || cookie.isNullOrBlank()) return Result.success()
+        if (base.isNullOrBlank() || cookie.isNullOrBlank()) {
+            renderNotificationWidget(emptyList(), "Sign in to load station notifications")
+            return Result.success()
+        }
         return try {
             val items = loadInbox(base, cookie)
             renderNotificationWidget(items)
@@ -96,7 +99,8 @@ class NativeNotificationWorker(context: Context, params: WorkerParameters) : Cor
             val purchases = fetchRows(base, cookie, "/api/purchases")
             val tanks = fetchRows(base, cookie, "/api/tanks")
             if (sales.isNotEmpty()) {
-                items.add(InboxItem("native-live-pending-sales-" + sales.size, "Sales pending confirmation",
+                val salesKey = sales.map { it.optString("id", it.optString("shift_id", it.optString("dispenser_code"))) }.sorted().joinToString("-")
+                items.add(InboxItem("native-live-pending-sales-" + salesKey, "Sales pending confirmation",
                     sales.size.toString() + " shift sale record(s) are waiting for administrator review and confirmation.",
                     "/admin-sales.html", "warning", false))
             }
@@ -109,7 +113,8 @@ class NativeNotificationWorker(context: Context, params: WorkerParameters) : Cor
             }
             if (readyReports.isNotEmpty()) {
                 val latestDate = readyReports.map { it.optString("date") }.filter { it.isNotBlank() }.sorted().lastOrNull().orEmpty()
-                items.add(InboxItem("native-live-pending-dsr-" + latestDate + "-" + readyReports.size, "DSR ready for confirmation",
+                val reportKey = readyReports.map { it.optString("id", it.optString("date")) }.sorted().joinToString("-")
+                items.add(InboxItem("native-live-pending-dsr-" + reportKey, "DSR ready for confirmation",
                     readyReports.size.toString() + " daily report(s) are ready for admin review and confirmation.",
                     "/admin-daily-report.html", "warning", false))
             }
