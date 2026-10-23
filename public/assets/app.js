@@ -3873,7 +3873,7 @@ function createDsrReportPdf(r){
   const tanks=r.tanks||[];const TK=72;const tkH=14+26+tanks.length*TK+4;
   const tkTop=d.y;card(M,tkTop,CW,tkH);section(M+14,tkTop+8,'Tank reconciliation');
   let ty=tkTop+30;
-  tanks.forEach(tk=>{const col=prodColor(tk.product);const cards=tk.cards||[];const v=cards.find(c=>/variance/i.test(c.label));const vp=v?num(v.value):0;const tone=varTone(vp);
+  tanks.forEach(tk=>{const col=prodColor(tk.product);const cards=tk.cards||[];const v=cards.find(c=>/variance/i.test(c.label));const vp=v?signedNum(v.value):0;const tone=varTone(vp);
     const diff=cards.find(c=>/difference/i.test(c.label));
     const diffValue=diff?signedNum(diff.value):0;
     const diffFg=diffValue>0?GREEN:diffValue<0?RED:GREY;
