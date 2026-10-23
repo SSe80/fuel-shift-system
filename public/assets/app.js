@@ -3763,11 +3763,15 @@ async function buildMonthlySalesReportPdfBlob(data){
 }
 async function downloadMonthlySalesReportPdf(data){
   const out=await buildMonthlySalesReportPdfBlob(data);
-  if(!out){toast('Monthly report data is still loading. Please try again.');return;}
-  const url=URL.createObjectURL(out.blob),link=document.createElement('a');
-  link.href=url;link.download=out.name;
-  document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
-  toast('MSR PDF downloaded');
+  if(!out||!out.blob)throw new Error('The PDF generator returned no report file. Reload the MSR page and try again.');
+  const blob=out.blob;
+  if(!(blob instanceof Blob)||blob.size===0)throw new Error('The generated PDF file is empty. Please retry the export.');
+  const url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download=out.name||'MSR-report.pdf';link.style.display='none';
+  document.body.appendChild(link);
+  try{link.click();}finally{link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);}
+  toast('MSR PDF download started');
+  return true;
 }
 
 function createDsrReportPdf(r){
