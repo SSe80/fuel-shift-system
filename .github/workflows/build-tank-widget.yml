@@ -39,16 +39,38 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
+      - name: Generate Android launcher icons from the browser Admin app icon
+        run: |
+          python -m pip install --disable-pip-version-check cairosvg
+          python - <<'PY'
+          import os
+          import cairosvg
+
+          source = "public/icons/admin-icon.svg"
+          sizes = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
+          for density, size in sizes.items():
+              output_dir = f"android-tank-widget/app/src/main/res/mipmap-{density}"
+              os.makedirs(output_dir, exist_ok=True)
+              cairosvg.svg2png(url=source, write_to=f"{output_dir}/admin_icon.png",
+                               output_width=size, output_height=size)
+          PY
       - name: Build debug APK
         working-directory: android-tank-widget
         run: gradle --no-daemon assembleDebug
+      - name: Prepare named APK
+        run: cp android-tank-widget/app/build/outputs/apk/debug/app-debug.apk Fuel-Shift-System-Admin.apk
       - name: Upload integrated Admin APK
         uses: actions/upload-artifact@v4
         with:
-          name: fuel-shift-admin-with-tank-widget-debug
-          path: android-tank-widget/app/build/outputs/apk/debug/app-debug.apk
+          name: Fuel-Shift-System-Admin
+          path: Fuel-Shift-System-Admin.apk
           if-no-files-found: error
 
+      - name: Remove old generic APK asset name
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release delete-asset admin-apk-latest app-debug.apk --yes || true
       - name: Publish APK download for Admin login page
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
@@ -57,8 +79,8 @@ jobs:
           name: Fuel Shift System Admin for Android
           body: |
             Native Android Admin app with the Tank Inventory home-screen widget.
-            Download app-debug.apk and install it on your Android phone.
+            Download Fuel-Shift-System-Admin.apk and install it on your Android phone.
             This app is separate from the Chrome-installed PWA shortcut.
-          files: android-tank-widget/app/build/outputs/apk/debug/app-debug.apk
+          files: Fuel-Shift-System-Admin.apk
           overwrite_files: true
           make_latest: false
