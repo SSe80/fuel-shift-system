@@ -3783,6 +3783,15 @@ function createDsrReportPdf(r){
   const SOFT=[241,245,249],LBLUE=[239,246,255],TRACK=[226,232,240],LGREEN=[220,252,231],LRED=[254,226,226],LAMBER=[254,243,199];
   const num=v=>{const n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};
   const signedNum=v=>{const n=parseFloat(String(v==null?'':v).replace(/[−–—]/g,'-').replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};
+  const numericTone=(value,neutral=INK)=>{
+    const raw=String(value==null?'':value).trim();
+    if(!raw||/\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/.test(raw)||/\b\d{1,2}:\d{2}\b/.test(raw))return neutral;
+    const normalized=raw.replace(/\b(?:ETB|USD|EUR|GBP)\b/ig,'').replace(/[−–]/g,'-').trim();
+    const match=normalized.match(/^([+\-]?\s*\d[\d,]*(?:\.\d+)?)(?:\b|\s|$)/);
+    if(!match)return neutral;
+    const n=Number(match[1].replace(/[,\s]/g,''));
+    return n>0?GREEN:n<0?RED:neutral;
+  };
   const fmtL=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:2});
   const prodColor=p=>/mgr/i.test(String(p||''))?MGRC:/ago/i.test(String(p||''))?AGOC:[148,163,184];
   const prodTint=p=>/mgr/i.test(String(p||''))?[254,226,226]:/ago/i.test(String(p||''))?[254,249,195]:[241,245,249];
@@ -3860,7 +3869,7 @@ function createDsrReportPdf(r){
       if(key==='vol'){const bw2=Math.min(c.w-14,58),frac=num(c.n.sold)/maxSold,col=(/mgr/i.test(String(c.n.product||''))||c.col==='mgr')?MGRC:AGOC;
         d.box(cx-bw2/2,y+8,bw2,5,TRACK,2.5);d.box(cx-bw2/2,y+8,Math.max(4,bw2*frac),5,c.col==='mgr'?MGRC:AGOC,2.5);}
       else if(key==='recon'){const pw=Math.min(c.w-16,44);d.box(cx-pw/2,y+4,pw,15,LGREEN,0);d.text(String(c.n.recon),cx,y+15.5,8.5,true,GREEN,'c');}
-      else {const soldRow=key==='sold',fontSize=soldRow?12:9;d.text(d.fit(String(c.n[key]),fontSize,soldRow,c.w-6),cx,y+16,fontSize,soldRow,INK,'c');}});
+      else {const soldRow=key==='sold',fontSize=soldRow?12:9;d.text(d.fit(String(c.n[key]),fontSize,soldRow,c.w-6),cx,y+16,fontSize,soldRow,numericTone(c.n[key]),'c');}});
     d.hline(tableX,tableR,y+26,CARDB,0.9);
     d.line(tableX,y,tableX,y+26,CARDB,0.9);
     d.line(tableR,y,tableR,y+26,CARDB,0.9);
@@ -3890,9 +3899,9 @@ function createDsrReportPdf(r){
     d.poly(up?[[x0,ty+16],[x0+7,ty+16],[x0+3.5,ty+16-th]]:[[x0,ty+16-th],[x0+7,ty+16-th],[x0+3.5,ty+16]],vc);
     const cells=tk.cells||[];const labs=['OPENING','PURCHASES','SOLD','EXPECTED'];const ops=['+','-','=','vs'];
     const tankCellW=(CW-38)/5;const fx=[0,1,2,3,4].map(i=>M+24+i*tankCellW);
-    cells.slice(0,4).forEach((vl,i)=>{d.text(labs[i],fx[i],ty+37,8,false,GREY);d.text(d.fit(String(vl),10,true,92),fx[i],ty+50,10,true,INK);if(i<3)d.text(ops[i],fx[i]+tankCellW-14,ty+50,10,false,GREY,'c');});
+    cells.slice(0,4).forEach((vl,i)=>{d.text(labs[i],fx[i],ty+37,8,false,GREY);d.text(d.fit(String(vl),10,true,92),fx[i],ty+50,10,true,numericTone(vl));if(i<3)d.text(ops[i],fx[i]+tankCellW-14,ty+50,10,false,GREY,'c');});
     d.box(fx[4]-4,ty+27,R-14-fx[4]+4,28,SOFT,5);d.text('RECORDED',fx[4]+2,ty+37,8,false,BLUE);
-    d.text(d.fit(String(cells[4]||'\u2014'),10,true,R-14-fx[4]-8),fx[4]+2,ty+50,10,true,BLUE);
+    d.text(d.fit(String(cells[4]||'\u2014'),10,true,R-14-fx[4]-8),fx[4]+2,ty+50,10,true,numericTone(cells[4],BLUE));
     const exp=num(cells[3]),rec=num(cells[4]),frac=exp>0?Math.min(1,rec/exp):0;
     d.box(M+24,ty+58,CW-38,3,TRACK,1.5);d.box(M+24,ty+58,(CW-38)*frac,3,col,1.5);
     ty+=TK;});
@@ -3907,17 +3916,17 @@ function createDsrReportPdf(r){
   d.text('BY PRODUCT',LX,shTop+40,8.5,true,GREY);d.text('BY METHOD',RX,shTop+40,8.5,true,GREY);
   let yy=shTop+52;
   prodRows.forEach(rw=>{const nm=String(rw.label).replace(/^by product\s*[\u00b7-]\s*/i,'');const pc=pctOf(rw.value)||0;const col=prodColor(nm);
-    d.text(d.fit(nm,10.5,true,half*.6),LX,yy+12,10.5,true,INK);d.text(pc.toFixed(1)+'%',LX+half,yy+12,10.5,true,INK,'r');
-    d.text(d.fit(detailOf(rw.value),12,false,half),LX,yy+28,12,false,GREY);
+    d.text(d.fit(nm,10.5,true,half*.6),LX,yy+12,10.5,true,INK);d.text(pc.toFixed(1)+'%',LX+half,yy+12,10.5,true,numericTone(pc.toFixed(1)+'%'),'r');
+    d.text(d.fit(detailOf(rw.value),12,false,half),LX,yy+28,12,false,numericTone(detailOf(rw.value),GREY));
     d.box(LX,yy+34,half,5,TRACK,2.5);d.box(LX,yy+34,Math.max(3,half*pc/100),5,col,2.5);yy+=43;});
   let yr=shTop+52;
   methRows.forEach(rw=>{const nm=String(rw.label).replace(/^by method\s*[\u00b7-]\s*/i,'');const pc=pctOf(rw.value);const amt=detailOf(rw.value);
-    d.text(d.fit(nm,10,true,half*.45),RX,yr+12,10,true,INK);d.text(d.fit(amt,11.5,false,half*.55),RX+half-44,yr+12,11.5,false,GREY,'r');
-    d.text(pc==null?'':(pc===0?'<0.1%':pc.toFixed(1)+'%'),RX+half,yr+12,9.5,true,INK,'r');
+    d.text(d.fit(nm,10,true,half*.45),RX,yr+12,10,true,INK);d.text(d.fit(amt,11.5,false,half*.55),RX+half-44,yr+12,11.5,false,numericTone(amt,GREY),'r');
+    d.text(pc==null?'':(pc===0?'<0.1%':pc.toFixed(1)+'%'),RX+half,yr+12,9.5,true,numericTone(pc==null?'':pc.toFixed(1)+'%'),'r');
     d.box(RX,yr+19,half,5,TRACK,2.5);if(pc!=null)d.box(RX,yr+19,Math.max(3,half*pc/100),5,BLUE,2.5);yr+=29;});
   const sy=shTop+shH-50;
   if(totals.length){d.box(M+14,sy,CW-28,44,SOFT,7);const th=(CW-28)/totals.length;
-    totals.forEach((t,i)=>{const x=M+14+i*th+12;d.text(t.label.toUpperCase(),x,sy+15,8.5,true,BLUE);d.text(d.fit(t.value,16,true,th-24),x,sy+36,16,true,BLUE);});}
+    totals.forEach((t,i)=>{const x=M+14+i*th+12;d.text(t.label.toUpperCase(),x,sy+15,8.5,true,BLUE);d.text(d.fit(t.value,16,true,th-24),x,sy+36,16,true,numericTone(t.value,BLUE));});}
   d.y=shTop+shH+10;
   // reconciliation strip
   const ov=r.overview||[];const pick=re=>{const o=ov.find(x=>re.test(String(x.label)));return o?o.value:null;};
