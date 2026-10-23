@@ -4071,7 +4071,7 @@ def inventory_summary():
     # Use the latest physical closing as the current baseline when available.
     # Historical handover corrections before that reading must not inflate stock.
     ms,movement_rows=sb("tank_movements",params={
-        "select":"tank_id,movement_type,quantity_liters,reference_id,created_at",
+        "select":"id,tank_id,movement_type,quantity_liters,reference_id,notes,created_at",
         "limit":"10000",
         "order":"created_at.desc"
     })
@@ -4220,9 +4220,21 @@ def inventory_summary():
         if use_physical:
             old_anchor_rank=timestamp_rank(ledger_anchor.get("created_at")) if ledger_anchor else float("-inf")
             physical_rank=timestamp_rank(physical.get("measured_at"))
+            # Reversal movements link to the original movement id in reference_id.
+            # Exclude both sides of an audited reversal pair from anomaly counting;
+            # the original remains visible in movement history for traceability.
+            reversed_movement_ids={
+                str(movement.get("reference_id") or "")
+                for movement in movements
+                if str(movement.get("notes") or "").startswith("Reversal of tank movement:")
+            }
             for movement in movements:
+                movement_id=str(movement.get("id") or "")
+                movement_notes=str(movement.get("notes") or "")
                 movement_rank=timestamp_rank(movement.get("created_at"))
                 if movement_rank<=old_anchor_rank or movement_rank>physical_rank:continue
+                if movement_id in reversed_movement_ids or movement_notes.startswith("Reversal of tank movement:"):
+                    continue
                 try:qty=abs(float(movement.get("quantity_liters") or 0))
                 except (TypeError,ValueError):qty=0.0
                 kind=str(movement.get("movement_type") or "").lower()
