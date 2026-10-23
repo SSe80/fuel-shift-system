@@ -77,7 +77,7 @@ class NativeNotificationWorker(context: Context, params: WorkerParameters) : Cor
             if (status !in 200..299) throw IllegalStateException("Inbox API returned HTTP $status")
             val body = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
             val rows = body.optJSONArray("items") ?: JSONArray()
-            return (0 until rows.length()).mapNotNull { index ->
+            val items = (0 until rows.length()).mapNotNull { index ->
                 val row = rows.optJSONObject(index) ?: return@mapNotNull null
                 InboxItem(
                     key = row.optString("key", row.optString("id", "")),
@@ -87,10 +87,76 @@ class NativeNotificationWorker(context: Context, params: WorkerParameters) : Cor
                     level = row.optString("level", "info"),
                     read = row.optBoolean("is_read", false)
                 )
-            }.sortedBy { it.read }.take(30)
+            }.toMutableList()
+
+            // Recheck live operational endpoints so native alerts work while the
+            // dashboard is closed, not only after the web inbox sync has run.
+            val sales = fetchRows(base, cookie, "/api/sales/confirmations")
+            val reports = fetchRows(base, cookie, "/api/reports/daily/confirmations")
+            val purchases = fetchRows(base, cookie, "/api/purchases")
+            val tanks = fetchRows(base, cookie, "/api/tanks")
+            if (sales.isNotEmpty()) {
+                items.add(InboxItem("native-live-pending-sales-" + sales.size, "Sales pending confirmation",
+                    sales.size.toString() + " shift sale record(s) are waiting for administrator review and confirmation.",
+                    "/admin-sales.html", "warning", false))
+            }
+            val readyReports = reports.filter { report ->
+                report.optString("status") == "pending" &&
+                    report.optBoolean("report_day_closed", true) &&
+                    report.optBoolean("all_shifts_complete", false) &&
+                    report.optBoolean("all_handover_recorded", false) &&
+                    report.optBoolean("all_sales_recorded", false)
+            }
+            if (readyReports.isNotEmpty()) {
+                val latestDate = readyReports.map { it.optString("date") }.filter { it.isNotBlank() }.sorted().lastOrNull().orEmpty()
+                items.add(InboxItem("native-live-pending-dsr-" + latestDate + "-" + readyReports.size, "DSR ready for confirmation",
+                    readyReports.size.toString() + " daily report(s) are ready for admin review and confirmation.",
+                    "/admin-daily-report.html", "warning", false))
+            }
+            val pendingPurchases = purchases.filter {
+                val status = it.optString("discharge_status", it.optString("status")).lowercase()
+                status !in listOf("discharged", "cancelled", "canceled", "void")
+            }
+            if (pendingPurchases.isNotEmpty()) {
+                val ids = pendingPurchases.map { it.optString("id", it.optString("invoice_number")) }.sorted()
+                val labels = pendingPurchases.take(4).joinToString(" · ") { it.optString("invoice_number", it.optString("product", "Purchase")) }
+                items.add(InboxItem("native-live-purchases-" + ids.joinToString("-"), "Purchase awaiting discharge",
+                    pendingPurchases.size.toString() + " purchase(s) are still awaiting discharge" + if (labels.isBlank()) "." else ": " + labels,
+                    "/admin-purchases.html", "warning", false))
+            }
+            val lowTanks = tanks.filter { tank ->
+                val cap = tank.optDouble("capacity_liters", 0.0)
+                tank.optBoolean("active", true) && cap > 0 && tank.optDouble("current_liters", 0.0) / cap <= 0.10
+            }
+            if (lowTanks.isNotEmpty()) {
+                val key = lowTanks.map { it.optString("id", it.optString("tank_code")) }.sorted().joinToString("-")
+                val labels = lowTanks.take(4).joinToString(" · ") { it.optString("tank_code", "Tank") + " " + it.optDouble("current_liters", 0.0).toInt() + " L" }
+                items.add(InboxItem("native-live-low-tanks-" + key, "Low tank stock",
+                    lowTanks.size.toString() + " tank(s) are at or below 10% capacity: " + labels,
+                    "/admin-inventory.html", "warning", false))
+            }
+            return items.distinctBy { it.key }.sortedBy { it.read }.take(30)
         } finally {
             connection.disconnect()
         }
+    }
+
+    private fun fetchRows(base: String, cookie: String, path: String): List<JSONObject> {
+        return try {
+            val connection = URL(base + path).openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 9000
+            connection.readTimeout = 9000
+            connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("X-Fuel-Role", "admin")
+            connection.setRequestProperty("Cookie", TankWidgetWorker.ADMIN_COOKIE_NAME + "=" + cookie)
+            try {
+                if (connection.responseCode !in 200..299) return emptyList()
+                val body = connection.inputStream.bufferedReader().use { it.readText() }
+                val array = JSONArray(body)
+                (0 until array.length()).mapNotNull { array.optJSONObject(it) }
+            } finally { connection.disconnect() }
+        } catch (_: Exception) { emptyList() }
     }
 
     private fun showNotification(item: InboxItem) {
