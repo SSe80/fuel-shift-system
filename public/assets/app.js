@@ -2450,7 +2450,7 @@ function openAdminInventoryTankDetails(id){
       }
     });
   });
-  const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasInventoryBaseline?null:(hasDischargeMovement?dischargeFromMovements:(hasDischargeSinceBaseline?historyDischarge:(hasTankDischargeHistory?0:null))));
+  const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasDischargeMovement?dischargeFromMovements:(hasDischargeSinceBaseline?historyDischarge:(hasTankDischargeHistory?0:null)));
   const expected=finiteOrNull(inv.expected_liters);
   // Derive variance from the displayed stock and calculated expectation when
   // the API omitted its precomputed difference. Never report 0 L without a
