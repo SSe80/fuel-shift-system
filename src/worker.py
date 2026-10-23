@@ -4253,6 +4253,7 @@ def inventory_summary():
         # Preserve legacy ledger entries for audit, but surface impossible quantities
         # and sale rows tied to canceled handovers that predate the latest physical anchor.
         historical_anomalies=0
+        anomaly_scan_records=0
         if use_physical:
             old_anchor_rank=timestamp_rank(ledger_anchor.get("created_at")) if ledger_anchor else float("-inf")
             physical_rank=timestamp_rank(physical.get("measured_at"))
@@ -4271,11 +4272,16 @@ def inventory_summary():
                 if movement_rank<=old_anchor_rank or movement_rank>physical_rank:continue
                 if movement_id in reversed_movement_ids or movement_notes.startswith("Reversal of tank movement:"):
                     continue
+                anomaly_scan_records+=1
                 try:qty=abs(float(movement.get("quantity_liters") or 0))
                 except (TypeError,ValueError):qty=0.0
                 kind=str(movement.get("movement_type") or "").lower()
                 canceled_sale=kind=="sale" and str(movement.get("reference_id") or "") in canceled_handover_ids
                 if (capacity>0 and qty>capacity+0.05) or canceled_sale:historical_anomalies+=1
+            # An empty scan is not evidence that historical records are clean.
+            if anomaly_scan_records==0:historical_anomalies=None
+        else:
+            historical_anomalies=None
 
         over_capacity=capacity>0 and expected>capacity+0.05
         result.append({
