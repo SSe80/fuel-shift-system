@@ -4,6 +4,10 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.app.DownloadManager
 import android.appwidget.AppWidgetManager
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.Settings
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -20,6 +24,9 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.JavascriptInterface
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.security.crypto.EncryptedSharedPreferences
@@ -33,6 +40,7 @@ class AdminActivity : Activity() {
     private val appUrl = "https://fuel-shift-system.servicestation50.workers.dev/admin-login.html"
     private val allowedHost = "fuel-shift-system.servicestation50.workers.dev"
     private var widgetPromptShownThisLaunch = false
+    private val notificationPermissionRequest = 4103
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +57,7 @@ class AdminActivity : Activity() {
         ))
         setContentView(root)
         configureWebView()
+        NativeNotificationWorker.schedule(this)
         if (savedInstanceState == null) webView.loadUrl(appUrl)
         else webView.restoreState(savedInstanceState)
     }
@@ -128,6 +137,7 @@ class AdminActivity : Activity() {
         webView.settings.allowFileAccess = false
         webView.settings.allowContentAccess = true
         webView.settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        webView.addJavascriptInterface(NativeNotificationBridge(this), "FuelNativeNotifications")
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
@@ -139,6 +149,12 @@ class AdminActivity : Activity() {
                     )
                 }
                 captureAdminSessionAndOfferWidget(url)
+                val requested = intent.getStringExtra(NativeNotificationWorker.EXTRA_NOTIFICATION_URL)
+                if (!requested.isNullOrBlank() && Uri.parse(url).path?.endsWith("/admin-dashboard.html") == true) {
+                    val safePath = if (requested.startsWith("/") && !requested.startsWith("//")) requested else "/admin-inbox.html"
+                    view.evaluateJavascript("location.href=" + org.json.JSONObject.quote("https://$allowedHost$safePath"), null)
+                    intent.removeExtra(NativeNotificationWorker.EXTRA_NOTIFICATION_URL)
+                }
             }
 
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -183,6 +199,56 @@ class AdminActivity : Activity() {
                 Toast.makeText(this, "Unable to download this file", Toast.LENGTH_LONG).show()
             }
         })
+    }
+
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            val prefs = getSharedPreferences("fuel_native_notifications", MODE_PRIVATE)
+            if (!prefs.getBoolean("permission_prompted", false)) {
+                prefs.edit().putBoolean("permission_prompted", true).apply()
+                AlertDialog.Builder(this)
+                    .setTitle("Enable phone notifications?")
+                    .setMessage("Allow Fuel Shift System to show important station inbox alerts, pending confirmations, and inventory updates even when the app is closed.")
+                    .setPositiveButton("Enable") { _, _ ->
+                        requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), notificationPermissionRequest)
+                    }
+                    .setNegativeButton("Not now", null)
+                    .show()
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == notificationPermissionRequest && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+            NativeNotificationWorker.refresh(this)
+            Toast.makeText(this, "Phone notifications enabled.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    inner class NativeNotificationBridge(private val activity: AdminActivity) {
+        @JavascriptInterface fun isNativeApp(): Boolean = true
+        @JavascriptInterface fun isEnabled(): Boolean =
+            NotificationManagerCompat.from(activity).areNotificationsEnabled() &&
+                (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
+        @JavascriptInterface fun openSettings() {
+            runOnUiThread {
+                val intent = if (Build.VERSION.SDK_INT >= 26) {
+                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                } else {
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))
+                }
+                try { startActivity(intent) } catch (_: Exception) {
+                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+                }
+            }
+        }
+        @JavascriptInterface fun refresh() {
+            NativeNotificationWorker.schedule(activity)
+            NativeNotificationWorker.refresh(activity)
+        }
     }
 
     private fun securePrefs() = EncryptedSharedPreferences.create(
