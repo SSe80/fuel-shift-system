@@ -1410,7 +1410,7 @@ body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-nozzles{
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
-<script src="assets/xlsx-export.js?v=20261018-dsr-pdf-match-x2"></script><script src="assets/app.js?v=dsr-payment-totals-20261023"></script>
+<script src="assets/xlsx-export.js?v=20261018-dsr-pdf-match-x2"></script><script src="assets/app.js?v=dsr-tank-reconciliation-fix-20261023"></script>
 <script>
 function downloadDailyReportExcel(){
   const report=window.currentDailyReportData;
@@ -1592,7 +1592,7 @@ function downloadDailyReportExcel(){
   section('TANK RECONCILIATION');
   addRow('head',[
     'TANK','PRODUCT','OPENING STOCK (L)','PURCHASES (+L)','RETURNED FUEL (+L)','NOZZLE SOLD (L)',
-    'EXPECTED CLOSING (L)','RECORDED CLOSING (L)','ADJUSTMENT (L)','CONTINUITY (L)',
+    'EXPECTED CLOSING (L)','RECORDED CLOSING (L)','ADJUSTMENT (L)','CONTINUITY GAP (NOT APPLIED)',
     'DIFFERENCE (L)','VARIANCE (%)'
   ],28);
   if(!tanks.length){
@@ -1615,7 +1615,7 @@ function downloadDailyReportExcel(){
       set(6,num(t.expected_closing_liters),{fmt:litersFmt,align:'right'});
       set(7,num(t.closing_stock_liters),{fmt:litersFmt,align:'right',bold:true,color:'2563EB'});
       set(8,num(t.documented_stock_adjustment_liters),{fmt:signedLitersFmt,align:'right'});
-      set(9,num(t.opening_adjustment_liters),{fmt:signedLitersFmt,align:'right'});
+      set(9,num(t.continuity_gap_liters),{fmt:signedLitersFmt,align:'right'});
       set(10,num(t.difference_liters),{fmt:signedLitersFmt,align:'right',fill:'FEF3C7',color:'C2410C',bold:true});
       set(11,variance,{fmt:percentFmt,align:'right',fill:varFill,color:varColor,bold:true});
       addRow('data',cells,25);
