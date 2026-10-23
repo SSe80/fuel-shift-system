@@ -4190,10 +4190,11 @@ def inventory_summary():
         # Recover only discharge-history quantities after the active stock anchor
         # when a purchase movement is missing; never count the same discharge twice.
         missing_history_purchases=0.0
-        tank_product=str(tank.get("product") or "").strip().casefold()
         for purchase in purchase_rows or []:
-            purchase_product=str(purchase.get("product") or "").strip().casefold()
-            if purchase_product and tank_product and purchase_product!=tank_product:continue
+            # Tank ID in discharge_history is authoritative. Purchase product
+            # labels may use invoice names (e.g. Gasoline) while the station
+            # tank is coded MGR/AGO, so product-label matching can silently
+            # discard valid discharge records for that tank.
             history=purchase.get("discharge_history") or []
             if isinstance(history,str):
                 try:history=json.loads(history)
