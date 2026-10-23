@@ -5450,6 +5450,10 @@ def daily_report(report_date_override=None):
     report_start_utc=_parse_aware_dt_for_report(day_start)
     report_end_utc=_parse_aware_dt_for_report(day_end)
 
+    def _timestamp_in_report_day(value):
+        dt=_parse_aware_dt_for_report(value)
+        return bool(dt and report_start_utc <= dt < report_end_utc)
+
     def _discharge_belongs_to_dsr_shift(value):
         dt=_parse_aware_dt_for_report(value)
         if not dt:
@@ -5506,12 +5510,23 @@ def daily_report(report_date_override=None):
     purchase_rows=[]
     for p in purchase_source_rows:
         purchase_date_local=_local_date_from_iso(p.get("purchase_date"))
+        history=_json_list(p.get("discharge_history"))
         has_dsr_discharge=any(
             _discharge_belongs_to_dsr_shift(op.get("discharge_datetime"))
-            for op in _json_list(p.get("discharge_history"))
+            for op in history
         )
-        has_legacy_dsr_discharge=_discharge_belongs_to_dsr_shift(p.get("discharged_at"))
-        if purchase_date_local==report_day or has_dsr_discharge or has_legacy_dsr_discharge:
+        # A valid operation on the report's local calendar date affects physical
+        # tank stock even if no active shift can be assigned to it. Shift matching
+        # is an attendant-attribution rule, not a prerequisite for tank accounting.
+        has_report_day_discharge=any(
+            _timestamp_in_report_day(op.get("discharge_datetime"))
+            for op in history
+        )
+        has_legacy_dsr_discharge=(
+            _discharge_belongs_to_dsr_shift(p.get("discharged_at"))
+            or _timestamp_in_report_day(p.get("discharged_at"))
+        )
+        if purchase_date_local==report_day or has_dsr_discharge or has_report_day_discharge or has_legacy_dsr_discharge:
             purchase_rows.append(p)
     if handover_status!=200:return jsonify({"error":handover_rows}),handover_status
     if nozzle_reading_status!=200:return jsonify({"error":nozzle_reading_rows}),nozzle_reading_status
@@ -6204,10 +6219,10 @@ def daily_report(report_date_override=None):
         used_history=False
         for op_index,op in enumerate(history):
             # Attribute every recorded operation for purchases visible in
-            # this DSR. Only an operation attributed inside exactly one shift
-            # contributes to the physical purchase ledger. Outside/ambiguous/
-            # invalid operations remain visible in the audit and never alter
-            # station totals.
+            # this DSR. Valid physical operations inside the local report day
+            # contribute to the tank ledger even without a matching shift.
+            # Attribution is used only to connect the movement to one attendant;
+            # invalid timestamps are never guessed from purchase_date.
             tid=str(op.get("tank_id") or "")
             if not tid:
                 continue
@@ -6249,10 +6264,13 @@ def daily_report(report_date_override=None):
             pre_discharge_adjustment=float(op.get("system_before_adjustment_liters") or 0)
 
             attribution_status=discharge_attribution.get("shift_attribution_status")
-            # A discharge overlapping multiple shifts on the same tank still
-            # belongs in the physical tank ledger, but must not be credited to
-            # one attendant until the overlap is resolved.
-            if attribution_status in ("inside_shift","ambiguous_overlap"):
+            operation_in_scope=(
+                attribution_status in ("inside_shift","ambiguous_overlap")
+                or (attribution_status=="outside_shift" and _timestamp_in_report_day(op.get("discharge_datetime")))
+            )
+            # Ambiguous and out-of-shift operations affect the physical tank if
+            # their timestamp is in scope, but must not be assigned to an attendant.
+            if operation_in_scope:
                 purchase_by_tank[tid]=purchase_by_tank.get(tid,0.0)+discharged
                 if attribution_status=="inside_shift":
                     attributed_shift_id=str(discharge_attribution.get("shift_id") or "")
@@ -6285,7 +6303,7 @@ def daily_report(report_date_override=None):
         # positive discharged quantity can be used. Never infer a discharge
         # from purchase_date alone.
         if not used_history and p.get("discharged_at") and float(p.get("discharged_quantity_liters") or 0)>0:
-            if _discharge_belongs_to_dsr_shift(p.get("discharged_at")):
+            if _discharge_belongs_to_dsr_shift(p.get("discharged_at")) or _timestamp_in_report_day(p.get("discharged_at")):
                 tid=str(p.get("tank_id") or "")
                 if tid:
                     discharged=float(p.get("discharged_quantity_liters") or 0)
