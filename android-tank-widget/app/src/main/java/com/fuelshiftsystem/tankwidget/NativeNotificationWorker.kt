@@ -29,6 +29,11 @@ import java.util.concurrent.TimeUnit
 class NativeNotificationWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val prefs = securePrefs()
+        val notificationPrefs = applicationContext.getSharedPreferences("fuel_native_notifications", Context.MODE_PRIVATE)
+        if (!notificationPrefs.getBoolean("enabled", false)) {
+            renderNotificationWidget(emptyList(), "Phone notifications are paused")
+            return Result.success()
+        }
         val base = prefs.getString(TankWidgetWorker.KEY_BASE_URL, TankWidgetWorker.DEFAULT_BASE_URL)?.trimEnd('/')
         val cookie = prefs.getString(TankWidgetWorker.KEY_ADMIN_COOKIE, null)
         if (base.isNullOrBlank() || cookie.isNullOrBlank()) return Result.success()
@@ -168,10 +173,15 @@ class NativeNotificationWorker(context: Context, params: WorkerParameters) : Cor
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<NativeNotificationWorker>(15, TimeUnit.MINUTES).build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(PERIODIC_WORK, ExistingPeriodicWorkPolicy.UPDATE, request)
-            WorkManager.getInstance(context).enqueue(androidx.work.OneTimeWorkRequestBuilder<NativeNotificationWorker>().build())
+            refresh(context)
         }
         fun refresh(context: Context) {
             WorkManager.getInstance(context).enqueue(androidx.work.OneTimeWorkRequestBuilder<NativeNotificationWorker>().build())
+        }
+        fun disable(context: Context) {
+            context.getSharedPreferences("fuel_native_notifications", Context.MODE_PRIVATE).edit().putBoolean("enabled", false).apply()
+            WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_WORK)
+            refresh(context)
         }
     }
 }
