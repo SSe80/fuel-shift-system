@@ -6,7 +6,6 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.widget.RemoteViews
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -20,10 +19,7 @@ class TankInventoryWidgetProvider : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.tank_inventory_widget)
             val refresh = Intent(context, TankInventoryWidgetProvider::class.java).apply { action = ACTION_REFRESH }
             views.setOnClickPendingIntent(R.id.widget_refresh, PendingIntent.getBroadcast(context, id, refresh, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-            val base = context.getSharedPreferences(TankWidgetWorker.PREFS_NAME, Context.MODE_PRIVATE)
-                .getString(TankWidgetWorker.KEY_BASE_URL, TankWidgetWorker.DEFAULT_BASE_URL) ?: TankWidgetWorker.DEFAULT_BASE_URL
-            val inventory = Intent(Intent.ACTION_VIEW, Uri.parse(base.trimEnd('/') + "/admin-tanks.html"))
-            views.setOnClickPendingIntent(R.id.widget_root, PendingIntent.getActivity(context, id, inventory, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+            views.setOnClickPendingIntent(R.id.widget_root, openAdminIntent(context, id))
             manager.updateAppWidget(id, views)
         }
         schedulePeriodicRefresh(context)
@@ -38,6 +34,12 @@ class TankInventoryWidgetProvider : AppWidgetProvider() {
     companion object {
         const val ACTION_REFRESH = "com.fuelshiftsystem.tankwidget.REFRESH_TANKS"
         private const val PERIODIC_WORK = "fuel-tank-widget-periodic-refresh"
+        fun openAdminIntent(context: Context, id: Int): PendingIntent {
+            val intent = Intent(context, AdminActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            return PendingIntent.getActivity(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        }
         fun enqueueRefresh(context: Context) {
             WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<TankWidgetWorker>().build())
         }

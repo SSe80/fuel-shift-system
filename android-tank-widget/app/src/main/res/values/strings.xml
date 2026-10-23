@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Fuel Shift Tank Widget</string>
+    <string name="app_name">Fuel Shift System Admin</string>
     <string name="widget_description">Live fuel tank stock, capacity, level and available space.</string>
 </resources>
