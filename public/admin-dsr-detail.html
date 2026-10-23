@@ -1305,14 +1305,8 @@ body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-nozzles{
 }
 </style><style>
 /* Sign-based numeric colors for DSR Detail. */
-body.dsr-detail-page .dsr-detail-view .dsr-value-positive,
-body.dsr-detail-page .dsr-detail-view b.positive,
-body.dsr-detail-page .dsr-detail-view strong.positive {color:#15803d!important}
-body.dsr-detail-page .dsr-detail-view .dsr-value-negative,
-body.dsr-detail-page .dsr-detail-view b.negative,
-body.dsr-detail-page .dsr-detail-view strong.negative {color:#b42318!important}
-body.dsr-detail-page .dsr-tank-status.positive {background:#dcfce7!important;color:#15803d!important}
-body.dsr-detail-page .dsr-tank-status.negative {background:#fee2e2!important;color:#b42318!important}
+body.dsr-detail-page .dsr-detail-view .dsr-value-positive {color:#15803d!important}
+body.dsr-detail-page .dsr-detail-view .dsr-value-negative {color:#b42318!important}
 </style></head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone admin-control-ui">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
@@ -1420,7 +1414,7 @@ body.dsr-detail-page .dsr-tank-status.negative {background:#fee2e2!important;col
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
-<script src="assets/xlsx-export.js?v=20261018-dsr-pdf-match-x2"></script><script src="assets/app.js?v=dsr-positive-values-final-20261023"></script>
+<script src="assets/xlsx-export.js?v=20261018-dsr-pdf-match-x2"></script><script src="assets/app.js?v=signed-calculations-only-20261023"></script>
 <script>
 function downloadDailyReportExcel(){
   const report=window.currentDailyReportData;
