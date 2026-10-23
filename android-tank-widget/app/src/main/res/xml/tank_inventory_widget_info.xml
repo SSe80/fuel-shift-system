@@ -5,6 +5,7 @@
     android:minResizeHeight="160dp"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/tank_inventory_widget"
+    android:configure="com.fuelshiftsystem.tankwidget.WidgetSetupActivity"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:description="@string/widget_description" />
