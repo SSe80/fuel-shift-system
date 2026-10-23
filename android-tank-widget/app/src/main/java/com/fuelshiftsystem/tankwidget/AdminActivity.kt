@@ -125,6 +125,17 @@ class AdminActivity : Activity() {
         webView.settings.allowContentAccess = true
         webView.settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
         webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                val uri = Uri.parse(url)
+                if (uri.host == allowedHost && uri.path?.endsWith("/admin-login.html") == true) {
+                    view.evaluateJavascript(
+                        "(function(){var a=document.querySelector('a[href*="Fuel-Shift-System-Admin.apk"]');if(a)a.remove();})();",
+                        null
+                    )
+                }
+            }
+
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val uri = request.url
                 if (uri.scheme == "https" && uri.host == allowedHost) return false
