@@ -144,6 +144,54 @@
 
     .install-button { display: none; margin-top: 12px; background: #172033; box-shadow: none; }
 
+    .native-download {
+      display: block;
+      margin-top: 14px;
+      padding: 15px 16px;
+      border: 1px solid #b7d6f4;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #eff7ff, #ffffff);
+      text-align: left;
+      text-decoration: none;
+      color: #172033;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .native-download:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 22px rgba(49,130,206,.15);
+    }
+    .native-download-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #1d5f9e;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .native-download-title .download-icon {
+      display: inline-grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      flex: 0 0 30px;
+      border-radius: 9px;
+      background: #dceeff;
+      font-size: 17px;
+    }
+    .native-download-description {
+      margin: 8px 0 0;
+      color: #667085;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .native-download-cta {
+      display: inline-block;
+      margin-top: 10px;
+      color: #1d5f9e;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
     .hint {
       margin: 22px 0 0;
       color: var(--muted);
@@ -187,6 +235,12 @@
       </form>
 
       <button type="button" id="install-app" class="install-button">Install Admin App</button>
+
+      <a class="native-download" href="https://github.com/SSe80/fuel-shift-system/releases/download/admin-apk-latest/app-debug.apk">
+        <span class="native-download-title"><span class="download-icon" aria-hidden="true">↓</span> Download Android Admin App</span>
+        <p class="native-download-description">Install the native Admin app with the Tank Inventory home-screen widget. This is a separate Android app from the Chrome-installed website shortcut.</p>
+        <span class="native-download-cta">Download APK · Android</span>
+      </a>
       <p class="hint">Administrator access</p>
       <div id="toast" class="toast"></div>
     </section>
