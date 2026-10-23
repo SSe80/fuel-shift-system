@@ -1303,6 +1303,16 @@ body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-nozzles{
     padding:12px 13px!important;
   }
 }
+</style><style>
+/* Sign-based numeric colors for DSR Detail. */
+body.dsr-detail-page .dsr-detail-view .dsr-value-positive,
+body.dsr-detail-page .dsr-detail-view b.positive,
+body.dsr-detail-page .dsr-detail-view strong.positive {color:#15803d!important}
+body.dsr-detail-page .dsr-detail-view .dsr-value-negative,
+body.dsr-detail-page .dsr-detail-view b.negative,
+body.dsr-detail-page .dsr-detail-view strong.negative {color:#b42318!important}
+body.dsr-detail-page .dsr-tank-status.positive {background:#dcfce7!important;color:#15803d!important}
+body.dsr-detail-page .dsr-tank-status.negative {background:#fee2e2!important;color:#b42318!important}
 </style></head>
 <body class="admin-shell daily-report-page dsr-detail-page dsr-detail-standalone admin-control-ui">
 <button type="button" class="admin-sidebar-toggle" aria-label="Toggle admin navigation" aria-expanded="true" onclick="toggleAdminSidebar()">☰</button>
@@ -1410,7 +1420,7 @@ body.dsr-detail-page .dsr-product-group>.dsr-dispenser-card .dsr-nozzles{
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
-<script src="assets/xlsx-export.js?v=20261018-dsr-pdf-match-x2"></script><script src="assets/app.js?v=dsr-tank-reconciliation-fix-20261023"></script>
+<script src="assets/xlsx-export.js?v=20261018-dsr-pdf-match-x2"></script><script src="assets/app.js?v=dsr-positive-sign-colors-20261023"></script>
 <script>
 function downloadDailyReportExcel(){
   const report=window.currentDailyReportData;
@@ -1602,21 +1612,23 @@ function downloadDailyReportExcel(){
       const product=productCode(t.product);
       const variance=t.variance_pct==null?'-':numberOrDash(t.variance_pct);
       const varianceNum=num(t.variance_pct);
-      const varianceMagnitude=Math.abs(varianceNum);\n      const varFill=varianceMagnitude<=1?'DCFCE7':varianceMagnitude<=3?'FEF3C7':'FEE2E2';
-      const varColor=varianceMagnitude<=1?'166534':varianceMagnitude<=3?'C2410C':'B91C1C';
+      const valueColor=v=>num(v)>0?'166534':num(v)<0?'B91C1C':'475569';
+      const valueFill=v=>num(v)>0?'DCFCE7':num(v)<0?'FEE2E2':'F1F5F9';
+      const varFill=valueFill(varianceNum);
+      const varColor=valueColor(varianceNum);
       const cells=styledEmptyCells();
       const set=(i,v,extra)=>cells[i]=Object.assign({v:v,border:'light'},extra||{});
       set(0,t.tank||'Tank',{bold:true,color:'0F172A'});
       set(1,product,{bold:true,fill:productTint(product),color:'0F172A'});
-      set(2,num(t.opening_stock_liters),{fmt:litersFmt,align:'right'});
-      set(3,num(t.purchase_discharged_liters),{fmt:signedLitersPlusFmt,align:'right'});
-      set(4,num(t.returned_liters),{fmt:signedLitersPlusFmt,align:'right',fill:'EFF6FF',color:'1D4ED8'});
-      set(5,num(t.nozzle_sales_liters),{fmt:litersFmt,align:'right'});
-      set(6,num(t.expected_closing_liters),{fmt:litersFmt,align:'right'});
-      set(7,num(t.closing_stock_liters),{fmt:litersFmt,align:'right',bold:true,color:'2563EB'});
-      set(8,num(t.documented_stock_adjustment_liters),{fmt:signedLitersFmt,align:'right'});
-      set(9,num(t.continuity_gap_liters),{fmt:signedLitersFmt,align:'right'});
-      set(10,num(t.difference_liters),{fmt:signedLitersFmt,align:'right',fill:'FEF3C7',color:'C2410C',bold:true});
+      set(2,num(t.opening_stock_liters),{fmt:litersFmt,align:'right',color:valueColor(t.opening_stock_liters)});
+      set(3,num(t.purchase_discharged_liters),{fmt:signedLitersPlusFmt,align:'right',color:valueColor(t.purchase_discharged_liters),fill:valueFill(t.purchase_discharged_liters)});
+      set(4,num(t.returned_liters),{fmt:signedLitersPlusFmt,align:'right',fill:valueFill(t.returned_liters),color:valueColor(t.returned_liters)});
+      set(5,num(t.nozzle_sales_liters),{fmt:litersFmt,align:'right',color:valueColor(t.nozzle_sales_liters)});
+      set(6,num(t.expected_closing_liters),{fmt:litersFmt,align:'right',color:valueColor(t.expected_closing_liters)});
+      set(7,num(t.closing_stock_liters),{fmt:litersFmt,align:'right',bold:true,color:valueColor(t.closing_stock_liters)});
+      set(8,num(t.documented_stock_adjustment_liters),{fmt:signedLitersFmt,align:'right',fill:valueFill(t.documented_stock_adjustment_liters),color:valueColor(t.documented_stock_adjustment_liters)});
+      set(9,num(t.continuity_gap_liters),{fmt:signedLitersFmt,align:'right',fill:valueFill(t.continuity_gap_liters),color:valueColor(t.continuity_gap_liters)});
+      set(10,num(t.difference_liters),{fmt:signedLitersFmt,align:'right',fill:valueFill(t.difference_liters),color:valueColor(t.difference_liters),bold:true});
       set(11,variance,{fmt:percentFmt,align:'right',fill:varFill,color:varColor,bold:true});
       addRow('data',cells,25);
     });
