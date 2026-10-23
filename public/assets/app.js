@@ -6249,11 +6249,12 @@ function renderDsrHistoryCard(item){
   const date=String(item?.date||'');
   const confirmedAt=item?.confirmed_at ? new Date(item.confirmed_at).toLocaleString() : 'Confirmed';
   const dateLabel=dailyReportIdLabel(date);
+  const numericSignClass=value=>Number(value)>0?'positive':Number(value)<0?'negative':'';
   const financialDifference=item?.financial_difference==null?null:Number(item.financial_difference);
   const financialDifferenceClass=financialDifference==null?'':financialDifference>0?'positive':financialDifference<0?'negative':'';
   return '<article class="dsr-history-card" data-dsr-date="'+h(date)+'">'+
     '<button type="button" class="dsr-history-card-head" onclick="toggleDsrCardFromShared(this)" aria-expanded="false"><span class="dsr-history-card-title"><strong>'+h(dateLabel)+'</strong><small>Confirmed '+h(confirmedAt)+'</small></span><span class="dsr-history-card-right"><span class="dsr-history-badge">✓ CONFIRMED</span><span class="dsr-history-toggle">⌄</span></span></button>'+
-    '<div class="dsr-history-card-body" hidden><div class="dsr-history-stats"><div class="dsr-history-stat"><span>Fuel sold</span><strong>'+liters(item.total_sales_liters)+' L</strong></div><div class="dsr-history-stat"><span>Calculated sales</span><strong>'+money(item.calculated_sales_amount ?? item.total_sales_amount ?? 0)+'</strong></div><div class="dsr-history-stat"><span>Entered payments</span><strong>'+((item.entered_payment_amount!=null)?money(item.entered_payment_amount):'—')+'</strong></div><div class="dsr-history-stat"><span>Financial difference</span><strong class="'+financialDifferenceClass+'">'+((item.financial_difference!=null)?money(item.financial_difference):'—')+'</strong></div><div class="dsr-history-stat"><span>Shifts</span><strong>'+Number(item.shift_count||0)+'</strong></div><div class="dsr-history-stat"><span>Dispensers</span><strong>'+Number(item.dispenser_count||0)+'</strong></div></div><div class="dsr-history-actions" style="display:flex;justify-content:flex-end;margin-top:10px"><a class="primary dsr-history-report-button" style="width:50%;min-height:38px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 12px;border:1px solid #4b83bd;border-radius:9px;background:#4b83bd;color:#fff;box-shadow:0 3px 9px rgba(75,131,189,.16);font:inherit;font-size:12px;font-weight:800;text-decoration:none;cursor:pointer" href="admin-dsr-detail.html?date='+encodeURIComponent(date)+'" onclick="if(typeof window.openDsrDetailPopup===\'function\'){window.openDsrDetailPopup('+JSON.stringify(date)+');return false;}">View Full Report</a></div></div></article>';
+    '<div class="dsr-history-card-body" hidden><div class="dsr-history-stats"><div class="dsr-history-stat"><span>Fuel sold</span><strong class="'+numericSignClass(item.total_sales_liters)+'">'+liters(item.total_sales_liters)+' L</strong></div><div class="dsr-history-stat"><span>Calculated sales</span><strong class="'+numericSignClass(item.calculated_sales_amount ?? item.total_sales_amount ?? 0)+'">'+money(item.calculated_sales_amount ?? item.total_sales_amount ?? 0)+'</strong></div><div class="dsr-history-stat"><span>Entered payments</span><strong class="'+numericSignClass(item.entered_payment_amount)+'">'+((item.entered_payment_amount!=null)?money(item.entered_payment_amount):'—')+'</strong></div><div class="dsr-history-stat"><span>Financial difference</span><strong class="'+financialDifferenceClass+'">'+((item.financial_difference!=null)?money(item.financial_difference):'—')+'</strong></div><div class="dsr-history-stat"><span>Shifts</span><strong class="'+numericSignClass(item.shift_count)+'">'+Number(item.shift_count||0)+'</strong></div><div class="dsr-history-stat"><span>Dispensers</span><strong class="'+numericSignClass(item.dispenser_count)+'">'+Number(item.dispenser_count||0)+'</strong></div></div><div class="dsr-history-actions" style="display:flex;justify-content:flex-end;margin-top:10px"><a class="primary dsr-history-report-button" style="width:50%;min-height:38px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 12px;border:1px solid #4b83bd;border-radius:9px;background:#4b83bd;color:#fff;box-shadow:0 3px 9px rgba(75,131,189,.16);font:inherit;font-size:12px;font-weight:800;text-decoration:none;cursor:pointer" href="admin-dsr-detail.html?date='+encodeURIComponent(date)+'" onclick="if(typeof window.openDsrDetailPopup===\'function\'){window.openDsrDetailPopup('+JSON.stringify(date)+');return false;}">View Full Report</a></div></div></article>';
 }
 function openDsrDetailPopup(date){
   if(!date)return;
@@ -6554,6 +6555,7 @@ function applyDsrNumericValueColors(root){
   const scope=root&&typeof root.querySelectorAll==='function'?root:document;
   const selector=[
     '.daily-stat b',
+    '.dsr-percent',
     '.dsr-dispenser-total b',
     '.dsr-dispenser-meta b',
     '.dsr-reading-grid b',
@@ -6568,17 +6570,18 @@ function applyDsrNumericValueColors(root){
     '.dsr-sales-total-row strong',
     '.dsr-shift-grid b',
     '.dsr-performance-metric b',
+    '.dsr-discharge-audit-grid b',
     '.dsr-discharge-audit-liters b',
-    '.daily-revision-grid strong',
-    '.dsr-history-stat strong'
+    '.daily-revision-grid strong'
   ].join(',');
   scope.querySelectorAll(selector).forEach(el=>{
     const raw=String(el.textContent||'').trim();
     el.classList.remove('dsr-value-positive','dsr-value-negative');
-    if(!raw||/\\b\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\b/.test(raw)||/\\b\\d{1,2}:\\d{2}\\b/.test(raw))return;
-    const match=raw.replace(/\\b(?:ETB|USD|EUR|GBP)\\b/ig,' ').match(/[+\\-−–]?\\s*\\d[\\d,]*(?:\\.\\d+)?/);
+    if(!raw||/\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/.test(raw)||/\b\d{1,2}:\d{2}\b/.test(raw))return;
+    const normalized=raw.replace(/\b(?:ETB|USD|EUR|GBP)\b/ig,' ');
+    const match=normalized.match(/[+\-−–]?\s*\d[\d,]*(?:\.\d+)?/);
     if(!match)return;
-    const token=match[0].replace(/\\s/g,'').replace(/[−–]/g,'-');
+    const token=match[0].replace(/\s/g,'').replace(/[−–]/g,'-');
     const value=Number(token.replace(/,/g,''));
     if(!Number.isFinite(value)||Math.abs(value)<0.0000001)return;
     el.classList.remove('positive','negative');
