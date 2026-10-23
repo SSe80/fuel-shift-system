@@ -1,4 +1,4 @@
-name: Build native tank widget APK
+name: Build native Admin app with Tank Inventory widget
 
 on:
   workflow_dispatch:
@@ -10,6 +10,7 @@ on:
     branches:
       - main
       - feature/native-tank-inventory-widget
+      - feature/native-admin-with-tank-widget
     paths:
       - "android-tank-widget/**"
       - ".github/workflows/build-tank-widget.yml"
@@ -38,9 +39,9 @@ jobs:
       - name: Build debug APK
         working-directory: android-tank-widget
         run: gradle --no-daemon assembleDebug
-      - name: Upload debug APK
+      - name: Upload integrated Admin APK
         uses: actions/upload-artifact@v4
         with:
-          name: fuel-shift-tank-widget-debug
+          name: fuel-shift-admin-with-tank-widget-debug
           path: android-tank-widget/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
