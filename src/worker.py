@@ -8296,7 +8296,7 @@ def drive_queue():
     # is confirmed; the report confirmation hook will change them to pending.
     try:
         today = _addis_today()
-        start = today - timedelta(days=3650)
+        start = today - timedelta(days=365)
         ss, shifts = sb("shifts", params={
             "start_time": "gte." + start.isoformat() + "T00:00:00+03:00",
             "select": "start_time", "order": "start_time.asc", "limit": "10000"})
@@ -8344,7 +8344,7 @@ def drive_queue():
     # once an admin confirms the sales.
     try:
         today = _addis_today()
-        start = today - timedelta(days=3650)
+        start = today - timedelta(days=365)
         ss, shifts = sb("shifts", params={
             "start_time": "gte." + start.isoformat() + "T00:00:00+03:00",
             "select": "id,start_time", "order": "start_time.asc", "limit": "10000"})
@@ -8376,11 +8376,16 @@ def drive_queue():
     except Exception:
         app.logger.exception("could not sync shift-sale confirmation status to Drive queue")
 
-    st, rows = sb("drive_export_queue", params={
-        "status": "neq.done", "select": "id,kind,report_key,status,attempts,last_error,updated_at",
-        "order": "report_key.asc", "limit": "500"})
+    try:
+        st, rows = sb("drive_export_queue", params={
+            "status": "neq.done", "select": "id,kind,report_key,status,attempts,last_error,updated_at",
+            "order": "report_key.asc", "limit": "500"})
+    except Exception:
+        app.logger.exception("Drive upload queue read failed")
+        return jsonify({"error": "Could not read the Drive upload queue. Check database connectivity and queue schema."}), 503
     if st >= 400:
-        return jsonify({"error": rows}), st
+        app.logger.error("Drive upload queue read returned HTTP %s: %s", st, str(rows)[:500])
+        return jsonify({"error": "Could not read the Drive upload queue.", "detail": rows}), (st if st < 500 else 503)
     queue_rows = rows or []
     sale_ids = []
     for queued in queue_rows:
