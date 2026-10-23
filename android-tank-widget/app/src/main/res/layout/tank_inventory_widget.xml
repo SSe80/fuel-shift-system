@@ -19,7 +19,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="TANK INVENTORY"
-                android:textColor="#9DB2C8"
+                android:textColor="#64748B"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.08" />
@@ -27,7 +27,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Live stock levels"
-                android:textColor="#FFFFFF"
+                android:textColor="#0F172A"
                 android:textSize="17sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -38,7 +38,7 @@
             android:background="@android:color/transparent"
             android:contentDescription="Refresh tank stock"
             android:src="@android:drawable/ic_popup_sync"
-            android:tint="#35C98A" />
+            android:tint="#16834A" />
     </LinearLayout>
     <TextView
         android:id="@+id/widget_status"
@@ -59,6 +59,6 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Tap to open Fuel Shift System"
-        android:textColor="#7F96AD"
+        android:textColor="#64748B"
         android:textSize="10sp" />
 </LinearLayout>
