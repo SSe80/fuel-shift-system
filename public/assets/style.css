@@ -5726,3 +5726,8 @@ body[data-app-page="adminDashboard"] .station-control-metrics > .station-metric-
     left:11px!important;
   }
 }
+
+
+/* Sign-aware numeric colors shared by DSR detail, inventory, and other admin pages. */
+.positive,.positive-value,.dsr-value-positive{color:#15803d!important}
+.negative,.negative-value,.dsr-value-negative{color:#b42318!important}
