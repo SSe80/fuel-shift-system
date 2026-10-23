@@ -10,7 +10,7 @@
         android:layout_width="18dp"
         android:layout_height="wrap_content"
         android:text="●"
-        android:textColor="#35C98A"
+        android:textColor="#16834A"
         android:textSize="11sp" />
     <LinearLayout
         android:layout_width="0dp"
@@ -22,7 +22,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Pending confirmation"
-            android:textColor="#FFFFFF"
+            android:textColor="#0F172A"
             android:textSize="12sp"
             android:textStyle="bold"
             android:maxLines="1"
@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:text="A station update needs your attention."
-            android:textColor="#9DB2C8"
+            android:textColor="#64748B"
             android:textSize="10sp"
             android:maxLines="2"
             android:ellipsize="end" />
