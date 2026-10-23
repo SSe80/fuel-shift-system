@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.graphics.BitmapFactory
+import android.media.RingtoneManager
 import android.graphics.Color
 import android.content.res.ColorStateList
 import android.content.ComponentName
@@ -232,6 +233,11 @@ class NativeNotificationWorker(context: Context, params: WorkerParameters) : Cor
                 description = "Heads-up alerts for station inbox, shifts, sales and inventory"
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 350, 180, 350)
+                setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+                enableLights(true)
+                lightColor = Color.rgb(22, 131, 74)
                 setShowBadge(true)
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             })
@@ -249,7 +255,7 @@ class NativeNotificationWorker(context: Context, params: WorkerParameters) : Cor
     class UnauthorizedException : Exception()
 
     companion object {
-        const val CHANNEL_ID = "fuel_station_alerts"
+        const val CHANNEL_ID = "fuel_station_alerts_v2"
         const val EXTRA_NOTIFICATION_URL = "fuel_notification_url"
         private const val PERIODIC_WORK = "fuel-native-notifications-refresh"
         private const val SEEN_PREFS = "fuel_native_notification_seen"
