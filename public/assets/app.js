@@ -2408,7 +2408,29 @@ function openAdminInventoryTankDetails(id){
   const purchases=finiteOrNull(inv.purchases_liters??inv.received_liters);
   const dischargeFromMovements=movements.filter(m=>String(m.movement_type||'').toLowerCase()==='discharge').reduce((sum,m)=>sum+Math.abs(Number(m.quantity_liters||0)),0);
   const hasDischargeMovement=movements.some(m=>String(m.movement_type||'').toLowerCase()==='discharge');
-  const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasDischargeMovement?dischargeFromMovements:null);
+  // Discharge is stored on purchase discharge_history, not as a dedicated
+  // tank_movements type. Reconstruct the tank-specific total after the
+  // active physical/ledger baseline and avoid counting earlier history.
+  const baselineAt=inv.physical_anchor_at||inv.ledger_anchor_at||inv.physical_closing_at||null;
+  const baselineTime=baselineAt?new Date(baselineAt).getTime():null;
+  const purchaseRows=Array.isArray(window.__adminInventoryState?.purchases)?window.__adminInventoryState.purchases:[];
+  let historyDischarge=0,hasTankDischargeHistory=false;
+  purchaseRows.forEach(p=>{
+    if(String(p.product||'').trim().toLowerCase()!==String(t.product||'').trim().toLowerCase())return;
+    let history=p.discharge_history;
+    if(typeof history==='string'){try{history=JSON.parse(history);}catch(_){history=[];}}
+    if(!Array.isArray(history))return;
+    history.forEach(event=>{
+      if(!event||String(event.tank_id||'')!==String(t.id))return;
+      const eventAt=event.discharge_datetime||p.discharged_at||p.created_at||null;
+      const eventTime=eventAt?new Date(eventAt).getTime():null;
+      if(baselineTime!==null&&Number.isFinite(eventTime)&&eventTime<=baselineTime)return;
+      const quantity=finiteOrNull(event.discharged_quantity_liters);
+      if(quantity===null||quantity<0)return;
+      hasTankDischargeHistory=true;historyDischarge+=quantity;
+    });
+  });
+  const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasDischargeMovement?dischargeFromMovements:(hasTankDischargeHistory?historyDischarge:null));
   const expected=finiteOrNull(inv.expected_liters);
   const difference=finiteOrNull(inv.stock_difference_liters);
   const performance=capacity>0&&sold!==null?sold/capacity*100:null;
