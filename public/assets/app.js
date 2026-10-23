@@ -2445,7 +2445,14 @@ function openAdminInventoryTankDetails(id){
   });
   const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasDischargeMovement?dischargeFromMovements:(hasDischargeSinceBaseline?historyDischarge:(hasTankDischargeHistory?0:null)));
   const expected=finiteOrNull(inv.expected_liters);
-  const difference=finiteOrNull(inv.stock_difference_liters);
+  // Derive variance from the displayed stock and calculated expectation when
+  // the API omitted its precomputed difference. Never report 0 L without a
+  // valid expected-stock calculation.
+  const apiDifference=finiteOrNull(inv.stock_difference_liters);
+  const difference=apiDifference!==null?apiDifference:(expected!==null&&Number.isFinite(current)?current-expected:null);
+  const hasBaseline=expected!==null&&(inv.physical_anchor_at||inv.ledger_anchor_at||inv.stock_basis==='physical_closing'||inv.stock_basis==='opening_or_dip_movement');
+  const anomalyCount=finiteOrNull(inv.historical_anomaly_count);
+  const anomaliesAssessed=hasBaseline&&anomalyCount!==null;
   const performance=capacity>0&&sold!==null?sold/capacity*100:null;
   const displayLiters=value=>value===null?'Not available':liters(value)+' L';
   const body=modal.querySelector('#admin-inventory-tank-details-body');
@@ -2467,10 +2474,10 @@ function openAdminInventoryTankDetails(id){
     metric('PURCHASES',displayLiters(purchases),'received volume since stock baseline')+
     metric('PERFORMANCE',performance===null?'Not available':performance.toFixed(1)+'%','sales vs capacity')+
     metric('EXPECTED',expected===null?'Not available':liters(expected)+' L','calculated stock')+
-    metric('STOCK DIFFERENCE',difference===null?'Not available':liters(difference)+' L','cached stock vs calculated')+
-    metric('STOCK BASIS',inv.stock_basis==='physical_closing'?'Physical closing':'Ledger baseline',inv.physical_anchor_at?'Measured '+new Date(inv.physical_anchor_at).toLocaleString():'No recent physical closing')+
-    metric('HISTORICAL ANOMALIES',String(Number(inv.historical_anomaly_count||0)),Number(inv.historical_anomaly_count||0)>0?'Legacy movement records require review':'No flagged legacy movements')+
-    '</div>'+(Number(inv.historical_anomaly_count||0)>0?'<p style="color:#b45309;font-weight:650;margin:10px 0 0">Historical ledger anomalies were found before the latest physical reading. These records are retained for audit; they are not used to override the latest physical stock baseline.</p>':'')+'</section>';
+    metric('STOCK DIFFERENCE',difference===null?'Not available':liters(difference)+' L','current stock − expected stock')+
+    metric('STOCK BASIS',inv.stock_basis==='physical_closing'?'Physical closing':inv.stock_basis==='opening_or_dip_movement'?'Ledger baseline':'Not established',inv.physical_anchor_at?'Measured '+new Date(inv.physical_anchor_at).toLocaleString():inv.ledger_anchor_at?'Baseline '+new Date(inv.ledger_anchor_at).toLocaleString():'No valid stock baseline')+
+    metric('HISTORICAL ANOMALIES',anomaliesAssessed?String(Math.max(0,Number(anomalyCount))):'Not assessed',!anomaliesAssessed?'A valid stock baseline is required':Number(anomalyCount)>0?'Legacy movement records require review':'No anomalies detected in scanned records')+
+    '</div>'+(anomaliesAssessed&&Number(anomalyCount)>0?'<p style="color:#b45309;font-weight:650;margin:10px 0 0">Historical ledger anomalies were found before the latest physical reading. These records are retained for audit; they are not used to override the latest physical stock baseline.</p>':'')+'</section>';
   const performanceSection='<section class="admin-inventory-tank-detail-section"><div class="admin-inventory-tank-detail-section-head">STOCK PERFORMANCE</div><div class="admin-inventory-tank-detail-metrics">'+
     metric('FILL LEVEL',pct.toFixed(1)+'%','current / capacity')+
     metric('AVAILABLE',liters(current)+' L','usable stock')+
