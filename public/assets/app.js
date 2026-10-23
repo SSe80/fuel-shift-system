@@ -2414,23 +2414,27 @@ function openAdminInventoryTankDetails(id){
   const baselineAt=inv.physical_anchor_at||inv.ledger_anchor_at||inv.physical_closing_at||null;
   const baselineTime=baselineAt?new Date(baselineAt).getTime():null;
   const purchaseRows=Array.isArray(window.__adminInventoryState?.purchases)?window.__adminInventoryState.purchases:[];
-  let historyDischarge=0,hasTankDischargeHistory=false;
+  let historyDischarge=0,hasTankDischargeHistory=false,hasDischargeSinceBaseline=false;
   purchaseRows.forEach(p=>{
-    if(String(p.product||'').trim().toLowerCase()!==String(t.product||'').trim().toLowerCase())return;
     let history=p.discharge_history;
     if(typeof history==='string'){try{history=JSON.parse(history);}catch(_){history=[];}}
     if(!Array.isArray(history))return;
     history.forEach(event=>{
+      // Tank ID is the reliable association; product labels can differ between
+      // product names and station codes (for example AGO/AGO-DISPENSER).
       if(!event||String(event.tank_id||'')!==String(t.id))return;
-      const eventAt=event.discharge_datetime||p.discharged_at||p.created_at||null;
-      const eventTime=eventAt?new Date(eventAt).getTime():null;
-      if(baselineTime!==null&&Number.isFinite(eventTime)&&eventTime<=baselineTime)return;
-      const quantity=finiteOrNull(event.discharged_quantity_liters);
+      const quantity=finiteOrNull(event.discharged_quantity_liters??event.quantity_liters??event.discharged_liters);
       if(quantity===null||quantity<0)return;
-      hasTankDischargeHistory=true;historyDischarge+=quantity;
+      hasTankDischargeHistory=true;
+      const eventAt=event.discharge_datetime||event.created_at||p.discharged_at||p.created_at||null;
+      const eventTime=eventAt?new Date(eventAt).getTime():null;
+      if(baselineTime===null||!Number.isFinite(eventTime)||eventTime>baselineTime){
+        historyDischarge+=quantity;
+        hasDischargeSinceBaseline=true;
+      }
     });
   });
-  const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasDischargeMovement?dischargeFromMovements:(hasTankDischargeHistory?historyDischarge:null));
+  const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasDischargeMovement?dischargeFromMovements:(hasDischargeSinceBaseline?historyDischarge:(hasTankDischargeHistory?0:null)));
   const expected=finiteOrNull(inv.expected_liters);
   const difference=finiteOrNull(inv.stock_difference_liters);
   const performance=capacity>0&&sold!==null?sold/capacity*100:null;
