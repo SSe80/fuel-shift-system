@@ -22,7 +22,7 @@ Open this folder in Android Studio with JDK 17 and Android SDK 35, allow Gradle 
 5. Use the widget refresh icon for an immediate update. Background updates are controlled by Android.
 
 ## Important notes
-- The website-installed PWA is a different Android app type and cannot be upgraded in place into a native APK. Install this APK to use the unified native app; the old PWA shortcut can be removed after verifying the new app.
+- The website-installed PWA is a different Android app type and cannot be upgraded in place into a native APK. Install this APK to use the unified native app; the old PWA shortcut can be removed only after verifying the new app.
 - The native shell loads the existing Worker-hosted Admin dashboard. Keep the Worker and Admin routes available.
-- This is a first native wrapper iteration. Verify login, reports, uploads/downloads, and the tank API on the target device before replacing the PWA shortcut.
-- The app does not contain Supabase service-role keys or server secrets.
+- This is a first native wrapper iteration. Before replacing the PWA shortcut, test login, reports, uploads/downloads, Google Drive OAuth, and phone push notifications. WebView-based apps do not automatically inherit every Chrome PWA capability; push and OAuth behavior may need additional native integration.
+- The app does not contain Supabase service-role keys or any server secrets.
