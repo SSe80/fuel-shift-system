@@ -1,6 +1,7 @@
 package com.fuelshiftsystem.tankwidget
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.app.DownloadManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
@@ -9,7 +10,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
@@ -20,98 +20,102 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Button
 import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 
-/** Hosts the existing Admin website and ships in the same APK as the native tank widget. */
+/** Hosts the Admin login first and connects the bundled tank widget after successful sign-in. */
 class AdminActivity : Activity() {
     private lateinit var webView: WebView
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
     private val fileChooserRequest = 4102
-    private val appUrl = "https://fuel-shift-system.servicestation50.workers.dev/admin-dashboard.html"
+    private val appUrl = "https://fuel-shift-system.servicestation50.workers.dev/admin-login.html"
     private val allowedHost = "fuel-shift-system.servicestation50.workers.dev"
+    private var widgetPromptShownThisLaunch = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         CookieManager.getInstance().setAcceptCookie(true)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xFF071A33.toInt())
+            setBackgroundColor(0xFFFFFFFF.toInt())
         }
-        val toolbar = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(6, 4, 6, 4)
-        }
-        toolbar.addView(TextView(this).apply {
-            text = "FUEL SHIFT"
-            textSize = 12f
-            setTextColor(0xFFFFFFFF.toInt())
-            setPadding(8, 0, 4, 0)
-        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        toolbar.addView(toolbarButton("Admin") { webView.loadUrl(appUrl) })
-        toolbar.addView(toolbarButton("Tank Widget") { startActivity(Intent(this, WidgetSetupActivity::class.java)) })
-        toolbar.addView(toolbarButton("Reload") { webView.reload() })
-        root.addView(toolbar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        // Keep the web experience full-screen: no app-specific toolbar above the website.
         webView = WebView(this)
-        root.addView(webView, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        root.addView(webView, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ))
         setContentView(root)
         configureWebView()
-        requestWidgetPinOnFirstLaunch(root)
-        if (savedInstanceState == null) webView.loadUrl(intent?.dataString ?: appUrl)
+        if (savedInstanceState == null) webView.loadUrl(appUrl)
         else webView.restoreState(savedInstanceState)
     }
 
     /**
-     * The widget is bundled in this APK. Android does not permit apps to place a
-     * home-screen widget silently, so request the system's pin confirmation once
-     * on first launch; the user can approve or decline it.
+     * The website login sets the authoritative HttpOnly admin session cookie.
+     * Copy that cookie into encrypted app storage so the widget uses the same
+     * signed-in admin session without asking for the Operator ID and PIN again.
      */
-    private fun requestWidgetPinOnFirstLaunch(anchor: View) {
-        val prefs = getSharedPreferences("fuel_admin_widget_setup", MODE_PRIVATE)
-        if (prefs.getBoolean("pin_prompt_attempted", false)) return
+    private fun captureAdminSessionAndOfferWidget(url: String) {
+        val uri = Uri.parse(url)
+        if (uri.host != allowedHost || uri.path?.endsWith("/admin-dashboard.html") != true) return
 
-        val manager = AppWidgetManager.getInstance(this)
-        if (!manager.isRequestPinAppWidgetSupported) {
-            prefs.edit().putBoolean("pin_prompt_attempted", true).apply()
-            Toast.makeText(
-                this,
-                "Tank widget is included. Add it from your Home screen's Widgets menu.",
-                Toast.LENGTH_LONG
-            ).show()
+        val allCookies = CookieManager.getInstance().getCookie("https://$allowedHost") ?: return
+        val cookie = allCookies.split(";")
+            .map { it.trim() }
+            .firstOrNull { it.startsWith(TankWidgetWorker.ADMIN_COOKIE_NAME + "=") }
+            ?.substringAfter("=")
+            ?.takeIf { it.isNotBlank() } ?: return
+
+        try {
+            securePrefs().edit()
+                .putString(TankWidgetWorker.KEY_BASE_URL, "https://$allowedHost")
+                .putString(TankWidgetWorker.KEY_ADMIN_COOKIE, cookie)
+                .apply()
+            TankInventoryWidgetProvider.updateAll(this)
+        } catch (_: Exception) {
+            Toast.makeText(this, "Could not securely connect the tank widget.", Toast.LENGTH_LONG).show()
             return
         }
 
-        anchor.postDelayed({
-            if (isFinishing || isDestroyed) return@postDelayed
-            val requested = try {
-                manager.requestPinAppWidget(
-                    ComponentName(this, TankInventoryWidgetProvider::class.java),
-                    null,
-                    null
-                )
-            } catch (_: Exception) {
-                false
-            }
-            prefs.edit().putBoolean("pin_prompt_attempted", true).apply()
-            if (!requested) {
-                Toast.makeText(
-                    this,
-                    "Tank widget is included. Add it from your Home screen's Widgets menu.",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }, 1200L)
-    }
+        if (widgetPromptShownThisLaunch) return
+        val prefs = getSharedPreferences("fuel_admin_widget_setup", MODE_PRIVATE)
+        if (prefs.getBoolean("widget_enable_prompted", false)) return
+        widgetPromptShownThisLaunch = true
 
-    private fun toolbarButton(label: String, action: () -> Unit) = Button(this).apply {
-        text = label
-        textSize = 10f
-        isAllCaps = false
-        setPadding(4, 0, 4, 0)
-        setOnClickListener { action() }
+        AlertDialog.Builder(this)
+            .setTitle("Enable Tank Inventory widget?")
+            .setMessage("Your admin account is now connected. Add the Tank Inventory widget to your Home screen to see live tank stock. Android will ask you to confirm adding it.")
+            .setPositiveButton("Enable widget") { _, _ ->
+                prefs.edit().putBoolean("widget_enable_prompted", true).apply()
+                val manager = AppWidgetManager.getInstance(this)
+                val component = ComponentName(this, TankInventoryWidgetProvider::class.java)
+                val existing = manager.getAppWidgetIds(component)
+                if (existing.isNotEmpty()) {
+                    TankInventoryWidgetProvider.updateAll(this)
+                    Toast.makeText(this, "Tank widget connected to your admin account.", Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+                if (!manager.isRequestPinAppWidgetSupported) {
+                    Toast.makeText(this, "Your launcher does not support automatic widget adding. Add Tank Inventory from the Home screen Widgets menu.", Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+                val requested = try {
+                    manager.requestPinAppWidget(component, null, null)
+                } catch (_: Exception) {
+                    false
+                }
+                if (!requested) {
+                    Toast.makeText(this, "Add Tank Inventory from your Home screen Widgets menu.", Toast.LENGTH_LONG).show()
+                }
+            }
+            .setNegativeButton("Not now") { _, _ ->
+                prefs.edit().putBoolean("widget_enable_prompted", true).apply()
+            }
+            .setCancelable(true)
+            .show()
     }
 
     @Suppress("SetJavaScriptEnabled")
@@ -134,6 +138,7 @@ class AdminActivity : Activity() {
                         null
                     )
                 }
+                captureAdminSessionAndOfferWidget(url)
             }
 
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -179,6 +184,14 @@ class AdminActivity : Activity() {
             }
         })
     }
+
+    private fun securePrefs() = EncryptedSharedPreferences.create(
+        this,
+        TankWidgetWorker.PREFS_NAME,
+        MasterKey.Builder(this).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
 
     @Deprecated("Deprecated Android API retained for WebView file chooser compatibility")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
