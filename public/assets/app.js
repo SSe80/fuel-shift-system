@@ -3873,7 +3873,7 @@ function createDsrReportPdf(r){
   const tanks=r.tanks||[];const TK=72;const tkH=14+26+tanks.length*TK+4;
   const tkTop=d.y;card(M,tkTop,CW,tkH);section(M+14,tkTop+8,'Tank reconciliation');
   let ty=tkTop+30;
-  tanks.forEach(tk=>{const col=prodColor(tk.product);const cards=tk.cards||[];const v=cards.find(c=>/variance/i.test(c.label));const vp=v?signedNum(v.value):0;const tone=varTone(vp);
+  tanks.forEach(tk=>{const col=prodColor(tk.product);const cards=tk.cards||[];const v=cards.find(c=>/variance/i.test(c.label));const vp=v?signedNum(v.value):0;const tone=varTone(Math.abs(vp));
     const diff=cards.find(c=>/difference/i.test(c.label));
     const diffValue=diff?signedNum(diff.value):0;
     const diffFg=diffValue>0?GREEN:diffValue<0?RED:GREY;
@@ -3884,7 +3884,7 @@ function createDsrReportPdf(r){
     const adj=cards.find(c=>/adjust/i.test(c.label)),con=cards.find(c=>/continu|gap/i.test(c.label));
     let cx=M+62+d.tw(tk.name,9,true)+12;
     [[adj,'Adjustment',false],[con,'Gap (not applied)',false],[diff,'Difference',true]].forEach(([c,lab,hi])=>{if(!c)return;const tx=lab+' '+c.value,w=d.tw(tx,8,hi);d.box(cx,ty+7,w,12,hi?diffBg:SOFT,3);d.text(tx,cx,ty+15.5,8,hi,hi?diffFg:GREY);cx+=w+6;});
-    const vt='Variance '+(v?v.value:'0.0%'),vw=d.tw(vt,8.5,true),tx=R-14-vw,up=vp>=0,vc=vp<0?RED:GREEN;
+    const vt='Variance '+(v?v.value:'0.0%'),vw=d.tw(vt,8.5,true),tx=R-14-vw,up=vp>=0,vc=Math.abs(vp)<=1?GREEN:Math.abs(vp)<=3?AMBER:RED;
     d.text(vt,tx,ty+16,8.5,true,vc);
     const x0=tx-11,th=6.1;
     d.poly(up?[[x0,ty+16],[x0+7,ty+16],[x0+3.5,ty+16-th]]:[[x0,ty+16-th],[x0+7,ty+16-th],[x0+3.5,ty+16]],vc);
