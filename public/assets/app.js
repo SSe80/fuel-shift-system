@@ -4116,7 +4116,7 @@ function createMsrReportPdfV2(r){
   d.text('RECONCILIATION NOTE',M+10,noteY+14,6.5,true,GREY);
   d.text('Returned-fuel values are separate from net fuel sold and calculated sales.',M+10,noteY+29,7.5,false,INK);
   d.text('Based on confirmed daily reports. Current-month totals remain provisional until all expected DSRs are confirmed.',M,H-22,6.5,false,GREY);
-  // PAGE 3 — purchase statistics use purchase date, separate from sales.
+  // PAGE 2 — purchase statistics follow the daily reconciliation on the second page.
   d.newPage();
   header('Product purchases and comparison');
   d.markContent(72);
