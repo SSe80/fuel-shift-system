@@ -1,0 +1,59 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="9dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/tank_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="AGO • TANK 1"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/tank_stock"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="21,305 L of 50,000 L"
+                android:textColor="#C6D4E2"
+                android:textSize="11sp" />
+        </LinearLayout>
+        <TextView
+            android:id="@+id/tank_percent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="42.6%"
+            android:textColor="#35C98A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+    <ProgressBar
+        android:id="@+id/tank_level"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:layout_marginTop="6dp"
+        android:indeterminate="false"
+        android:max="1000"
+        android:progress="426"
+        android:progressDrawable="@drawable/tank_progress" />
+    <TextView
+        android:id="@+id/tank_space"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:text="28,695 L space"
+        android:textColor="#91A8BD"
+        android:textSize="10sp" />
+</LinearLayout>
