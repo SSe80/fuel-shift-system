@@ -3782,6 +3782,7 @@ function createDsrReportPdf(r){
   const AGOC=[250,204,21],MGRC=[220,38,38],GREEN=[22,163,74],AMBER=[194,65,12],RED=[185,28,28];
   const SOFT=[241,245,249],LBLUE=[239,246,255],TRACK=[226,232,240],LGREEN=[220,252,231],LRED=[254,226,226],LAMBER=[254,243,199];
   const num=v=>{const n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};
+  const signedNum=v=>{const n=parseFloat(String(v==null?'':v).replace(/[−–—]/g,'-').replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};
   const fmtL=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:2});
   const prodColor=p=>/mgr/i.test(String(p||''))?MGRC:/ago/i.test(String(p||''))?AGOC:[148,163,184];
   const prodTint=p=>/mgr/i.test(String(p||''))?[254,226,226]:/ago/i.test(String(p||''))?[254,249,195]:[241,245,249];
@@ -3874,13 +3875,16 @@ function createDsrReportPdf(r){
   let ty=tkTop+30;
   tanks.forEach(tk=>{const col=prodColor(tk.product);const cards=tk.cards||[];const v=cards.find(c=>/variance/i.test(c.label));const vp=v?num(v.value):0;const tone=varTone(vp);
     const diff=cards.find(c=>/difference/i.test(c.label));
+    const diffValue=diff?signedNum(diff.value):0;
+    const diffFg=diffValue>0?GREEN:diffValue<0?RED:GREY;
+    const diffBg=diffValue>0?LGREEN:diffValue<0?LRED:SOFT;
     d.box(M+14,ty+3,3,46,col,1.5);
     d.box(M+24,ty+5,30,13,col,6.5);d.text(String(tk.product).slice(0,4).toUpperCase(),M+39,ty+14,7,true,INK,'c');
     d.text(d.fit(tk.name,9,true,150),M+62,ty+15,9,true,INK);
     const adj=cards.find(c=>/adjust/i.test(c.label)),con=cards.find(c=>/continu/i.test(c.label));
     let cx=M+62+d.tw(tk.name,9,true)+12;
-    [[adj,'Adjustment',false],[con,'Continuity',false],[diff,'Difference',true]].forEach(([c,lab,hi])=>{if(!c)return;const tx=lab+' '+c.value,w=d.tw(tx,8,hi);d.box(cx,ty+7,w,12,hi?LAMBER:SOFT,3);d.text(tx,cx,ty+15.5,8,hi,hi?AMBER:GREY);cx+=w+6;});
-    const vt='Variance '+(v?v.value:'0.0%'),vw=d.tw(vt,8.5,true),tx=R-14-vw,up=vp<=3,vc=up?GREEN:RED;
+    [[adj,'Adjustment',false],[con,'Continuity',false],[diff,'Difference',true]].forEach(([c,lab,hi])=>{if(!c)return;const tx=lab+' '+c.value,w=d.tw(tx,8,hi);d.box(cx,ty+7,w,12,hi?diffBg:SOFT,3);d.text(tx,cx,ty+15.5,8,hi,hi?diffFg:GREY);cx+=w+6;});
+    const vt='Variance '+(v?v.value:'0.0%'),vw=d.tw(vt,8.5,true),tx=R-14-vw,up=vp>=0,vc=vp<0?RED:GREEN;
     d.text(vt,tx,ty+16,8.5,true,vc);
     const x0=tx-11,th=6.1;
     d.poly(up?[[x0,ty+16],[x0+7,ty+16],[x0+3.5,ty+16-th]]:[[x0,ty+16-th],[x0+7,ty+16-th],[x0+3.5,ty+16]],vc);
