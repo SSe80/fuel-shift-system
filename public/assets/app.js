@@ -2477,7 +2477,7 @@ function openAdminInventoryTankDetails(id){
     metric('CAPACITY',liters(capacity)+' L','tank capacity')+
     metric('CURRENT STOCK',liters(current)+' L',pct.toFixed(1)+'% full')+
     metric('DISCHARGE',displayLiters(discharge),'recorded discharge')+
-    metric('FUEL SOLD',displayLiters(sold),'recorded sales since stock baseline')+
+    metric('FUEL SOLD',displayLiters(sold),sold===null&&inv.sales_source==='no_sales_records_after_baseline'?'No sales records after the physical reading':'recorded sales since stock baseline')+
     metric('PURCHASES',displayLiters(purchases),'received volume since stock baseline')+
     metric('PERFORMANCE',performance===null?'Not available':performance.toFixed(1)+'%','sales vs capacity')+
     metric('EXPECTED',expected===null?'Not available':liters(expected)+' L','calculated stock')+
