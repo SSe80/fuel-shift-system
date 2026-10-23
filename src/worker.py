@@ -8072,6 +8072,136 @@ def ai_analyst_ask():
             "review_flags": flags
         })
 
+    def _stock_volume_from_tank_curve(tank_id, height_mm):
+        if tank_id is None or height_mm is None:
+            return {"status": "missing_tank_or_height", "liters": None}
+        tank = stock_tank_by_id.get(str(tank_id), {})
+        raw_points = _stock_calibration_rows(tank.get("calibration_points"))
+        curve = []
+        for point in raw_points:
+            if not isinstance(point, dict):
+                continue
+            mm = _stock_optional_number(point, ("mm", "height_mm", "heightMm", "height", "dip_mm"))
+            liters = _stock_optional_number(point, ("litres", "liters", "volume_liters", "volume", "capacity_liters"))
+            if mm is not None and liters is not None:
+                curve.append((mm, liters))
+        curve.sort(key=lambda point: point[0])
+        if len(curve) < 2:
+            return {"status": "tank_calibration_unavailable", "liters": None}
+        if any(curve[i][0] <= curve[i - 1][0] for i in range(1, len(curve))):
+            return {"status": "invalid_tank_calibration_height_curve", "liters": None}
+        if any(curve[i][1] < curve[i - 1][1] for i in range(1, len(curve))):
+            return {"status": "invalid_tank_calibration_volume_curve", "liters": None}
+        height = float(height_mm)
+        if height < curve[0][0] or height > curve[-1][0]:
+            return {"status": "height_outside_tank_calibration_range", "liters": None}
+        for point_mm, point_liters in curve:
+            if abs(height - point_mm) <= 1e-9:
+                return {"status": "calculated_from_saved_tank_calibration", "liters": point_liters}
+        for index in range(1, len(curve)):
+            low_mm, low_liters = curve[index - 1]
+            high_mm, high_liters = curve[index]
+            if low_mm < height < high_mm:
+                fraction = (height - low_mm) / (high_mm - low_mm)
+                return {
+                    "status": "calculated_from_saved_tank_calibration",
+                    "liters": low_liters + fraction * (high_liters - low_liters)
+                }
+        return {"status": "unable_to_interpolate_tank_calibration", "liters": None}
+
+    stock_nozzle_by_id = {
+        str(row.get("id")): row for row in (datasets.get("nozzles") or []) if row.get("id") is not None
+    }
+    opening_stock_input_checks = []
+    shift_rows_for_opening_stock = datasets.get("shifts") or []
+    for shift in shift_rows_for_opening_stock:
+        opening_liters = _stock_optional_number(shift, ("opening_tank_liters",))
+        dip_mm = _stock_optional_number(shift, ("opening_tank_dip_mm",))
+        if opening_liters is None and dip_mm is None:
+            continue
+        nozzle = stock_nozzle_by_id.get(str(shift.get("nozzle_id") or ""), {})
+        tank_id = nozzle.get("tank_id")
+        tank_info = _stock_tank_label(tank_id)
+        curve_check = _stock_volume_from_tank_curve(tank_id, dip_mm) if dip_mm is not None else {
+            "status": "no_opening_dip_mm_saved_for_curve_comparison", "liters": None
+        }
+        curve_liters = curve_check.get("liters")
+        curve_difference = (opening_liters - curve_liters) if opening_liters is not None and curve_liters is not None else None
+        capacity = tank_info.get("capacity_liters")
+        flags = []
+        if tank_id is None:
+            flags.append("assigned_nozzle_tank_mapping_unavailable")
+        if opening_liters is not None and capacity is not None and opening_liters > capacity + max(0.05, capacity * 0.001):
+            flags.append("opening_stock_input_exceeds_tank_capacity")
+        if curve_difference is not None and abs(curve_difference) > 0.5:
+            flags.append("opening_liters_input_differs_from_calibration_curve_at_saved_dip")
+        opening_stock_input_checks.append({
+            "shift_id": str(shift.get("id") or ""),
+            "date": _ai_date(shift.get("start_time") or shift.get("created_at")) or None,
+            "shift_status": str(shift.get("status") or ("open" if not shift.get("end_time") else "completed")),
+            "nozzle": str(nozzle.get("nozzle_code") or nozzle.get("code") or "") or None,
+            "tank_id": str(tank_id) if tank_id is not None else None,
+            "tank": tank_info.get("tank"),
+            "product": tank_info.get("product"),
+            "tank_capacity_liters": capacity,
+            "opening_tank_liters": round(opening_liters, 3) if opening_liters is not None else None,
+            "opening_tank_dip_mm": round(dip_mm, 3) if dip_mm is not None else None,
+            "tank_calibration_estimated_liters_at_saved_dip": round(curve_liters, 3) if curve_liters is not None else None,
+            "opening_liters_minus_curve_liters": round(curve_difference, 3) if curve_difference is not None else None,
+            "curve_check_status": curve_check.get("status"),
+            "review_flags": flags
+        })
+    opening_stock_input_checks.sort(key=lambda item: str(item.get("date") or ""), reverse=True)
+
+    opening_snapshot_calibration_checks = []
+    for opening in datasets.get("tank_opening_snapshots") or []:
+        tank_id = opening.get("tank_id")
+        physical_liters = _stock_optional_number(opening, ("physical_liters",))
+        height_mm = _stock_optional_number(opening, ("physical_height_mm",))
+        curve_check = _stock_volume_from_tank_curve(tank_id, height_mm) if height_mm is not None else {
+            "status": "no_physical_height_saved_for_curve_comparison", "liters": None
+        }
+        curve_liters = curve_check.get("liters")
+        curve_difference = physical_liters - curve_liters if physical_liters is not None and curve_liters is not None else None
+        opening_snapshot_calibration_checks.append({
+            "tank_id": str(tank_id or ""),
+            "tank": _stock_tank_label(tank_id).get("tank"),
+            "measured_at": opening.get("measured_at") or opening.get("created_at"),
+            "physical_height_mm": round(height_mm, 3) if height_mm is not None else None,
+            "recorded_physical_liters": round(physical_liters, 3) if physical_liters is not None else None,
+            "calibration_curve_liters_at_height": round(curve_liters, 3) if curve_liters is not None else None,
+            "physical_liters_minus_curve_liters": round(curve_difference, 3) if curve_difference is not None else None,
+            "calibration_version_saved": opening.get("calibration_version"),
+            "curve_check_status": curve_check.get("status"),
+            "review_flag": "Recorded litres differ from the saved tank calibration curve by more than 0.5 L; verify measured height, curve and calibration version." if curve_difference is not None and abs(curve_difference) > 0.5 else None
+        })
+    opening_snapshot_calibration_checks.sort(key=lambda item: str(item.get("measured_at") or ""), reverse=True)
+
+    tank_curve_measurement_checks = []
+    for event in stock_variance_events:
+        height_mm = event.get("physical_reading_mm")
+        tank_id = event.get("tank_id")
+        physical_liters = event.get("physical_stock_liters")
+        if height_mm is None or physical_liters is None:
+            continue
+        curve_check = _stock_volume_from_tank_curve(tank_id, height_mm)
+        curve_liters = curve_check.get("liters")
+        delta = float(physical_liters) - curve_liters if curve_liters is not None else None
+        tank_curve_measurement_checks.append({
+            "source": event.get("source"),
+            "record_reference": event.get("record_reference"),
+            "date": event.get("date"),
+            "tank": event.get("tank"),
+            "product": event.get("product"),
+            "physical_reading_mm": height_mm,
+            "recorded_physical_liters": physical_liters,
+            "calibration_curve_liters_at_height": round(curve_liters, 3) if curve_liters is not None else None,
+            "physical_liters_minus_curve_liters": round(delta, 3) if delta is not None else None,
+            "curve_check_status": curve_check.get("status"),
+            "review_flag": "Recorded physical litres differ from saved tank calibration at this height by more than 0.5 L; verify before deciding cause." if delta is not None and abs(delta) > 0.5 else None
+        })
+    tank_curve_measurement_checks.sort(key=lambda item: str(item.get("date") or ""), reverse=True)
+
     truck_calibration_profiles = []
     for compartment in datasets.get("truck_compartments") or []:
         truck = next((item for item in stock_trucks if str(item.get("id") or "") == str(compartment.get("truck_id") or "")), {})
@@ -8152,17 +8282,21 @@ def ai_analyst_ask():
         "fill_level_comparison_by_source": fill_level_comparison,
         "opening_dip_input_coverage": {
             "shift_records_examined": len(shift_rows_for_opening_dips),
+            "shifts_with_recorded_opening_tank_liters": sum(1 for row in shift_rows_for_opening_dips if _stock_optional_number(row, ("opening_tank_liters",)) is not None),
             "shifts_with_recorded_opening_tank_dip_mm": len(opening_dip_records),
-            "shifts_without_recorded_opening_tank_dip_mm": max(0, len(shift_rows_for_opening_dips) - len(opening_dip_records)),
-            "note": "opening_tank_dip_mm is optional metadata in this schema; a blank field alone does not prove a defective shift.",
-            "recent_recorded_inputs": opening_dip_records[:30]
+            "shifts_without_recorded_opening_tank_liters": sum(1 for row in shift_rows_for_opening_dips if _stock_optional_number(row, ("opening_tank_liters",)) is None),
+            "note": "Opening tank litres are the active recorded input. opening_tank_dip_mm is optional legacy metadata; a missing millimeter value alone does not prove a defective shift.",
+            "opening_stock_liters_vs_tank_curve_checks": len(opening_stock_input_checks),
+            "recent_recorded_inputs": opening_stock_input_checks[:50]
         },
         "accounting_opening_snapshot_coverage": {
             "snapshot_count": len(opening_snapshot_rows),
             "with_physical_liters": sum(1 for row in opening_snapshot_rows if _stock_optional_number(row, ("physical_liters",)) is not None),
             "with_physical_height_mm": sum(1 for row in opening_snapshot_rows if _stock_optional_number(row, ("physical_height_mm",)) is not None),
-            "without_calibration_version": sum(1 for row in opening_snapshot_rows if not row.get("calibration_version"))
+            "without_calibration_version": sum(1 for row in opening_snapshot_rows if not row.get("calibration_version")),
+            "curve_comparison_checks": opening_snapshot_calibration_checks[:50]
         },
+        "tank_curve_measurement_checks": tank_curve_measurement_checks[:60],
         "post_discharge_reading_coverage": {
             "purchase_discharge_operations_examined": purchase_discharge_operation_count,
             "operations_missing_physical_post_discharge_reading": missing_post_discharge_reading_count,
