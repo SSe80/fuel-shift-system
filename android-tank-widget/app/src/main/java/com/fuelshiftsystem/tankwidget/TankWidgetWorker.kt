@@ -5,6 +5,9 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.content.res.ColorStateList
+import android.os.Build
 import android.widget.RemoteViews
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -31,7 +34,14 @@ class TankWidgetWorker(context: Context, params: WorkerParameters) : CoroutineWo
             return Result.success()
         }
         return try {
-            val tanks = loadTanks(base, cookie)
+            val productColors = loadProductColors(base, cookie)
+            val tanks = loadTanks(base, cookie).map { tank ->
+                val color = productColors[tank.productId.lowercase()]
+                    ?: productColors[tank.product.lowercase()]
+                    ?: productColors[tank.code.lowercase()]
+                    ?: fallbackProductColor(tank.product.ifBlank { tank.code })
+                tank.copy(color = color)
+            }
             val updated = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
             ids.forEach { renderTanks(manager, it, tanks, updated) }
             Result.success()
@@ -64,7 +74,14 @@ class TankWidgetWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 if (item.has("active") && !item.optBoolean("active", true)) continue
                 val capacity = item.optDouble("capacity_liters", 0.0).coerceAtLeast(0.0)
                 val stock = item.optDouble("current_liters", 0.0).coerceAtLeast(0.0)
-                if (capacity > 0.0) result.add(Tank(item.optString("tank_code", "Tank"), item.optString("product", ""), stock, capacity))
+                if (capacity > 0.0) result.add(Tank(
+                    item.optString("tank_code", "Tank"),
+                    item.optString("product", ""),
+                    stock,
+                    capacity,
+                    item.optString("product_id", ""),
+                    "#1769D2"
+                ))
             }
             return result
         } finally { connection.disconnect() }
@@ -84,12 +101,55 @@ class TankWidgetWorker(context: Context, params: WorkerParameters) : CoroutineWo
             row.setTextViewText(R.id.tank_stock, number.format(tank.stock) + " L of " + number.format(tank.capacity) + " L")
             row.setTextViewText(R.id.tank_percent, DecimalFormat("0.0").format(percent) + "%")
             row.setProgressBar(R.id.tank_level, 1000, (percent * 10).toInt(), false)
+            if (Build.VERSION.SDK_INT >= 31) {
+                try { row.setColorStateList(R.id.tank_level, "setProgressTintList", ColorStateList.valueOf(Color.parseColor(tank.color))) } catch (_: Exception) { }
+                try { row.setTextColor(R.id.tank_percent, Color.parseColor(tank.color)) } catch (_: Exception) { }
+            }
             row.setTextViewText(R.id.tank_space, number.format(space) + " L space")
             views.addView(R.id.widget_tanks, row)
         }
         views.setTextViewText(R.id.widget_updated, "Updated " + updated + " · Tap to open Admin")
         setActions(views, id)
         manager.updateAppWidget(id, views)
+    }
+
+    private fun loadProductColors(base: String, cookie: String): Map<String, String> {
+        return try {
+            val connection = URL(base + "/api/products").openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 9000
+            connection.readTimeout = 9000
+            connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("X-Fuel-Role", "admin")
+            connection.setRequestProperty("Cookie", ADMIN_COOKIE_NAME + "=" + cookie)
+            try {
+                if (connection.responseCode !in 200..299) return emptyMap()
+                val body = connection.inputStream.bufferedReader().use { it.readText() }
+                val array = JSONArray(body)
+                val colors = mutableMapOf<String, String>()
+                for (i in 0 until array.length()) {
+                    val product = array.optJSONObject(i) ?: continue
+                    val color = product.optString("color", "").trim()
+                    if (!color.matches(Regex("^#[0-9a-fA-F]{6}$"))) continue
+                    listOf("id", "code_name", "name").forEach { key ->
+                        val value = product.optString(key, "").trim().lowercase()
+                        if (value.isNotBlank()) colors[value] = color
+                    }
+                }
+                colors
+            } finally { connection.disconnect() }
+        } catch (_: Exception) { emptyMap() }
+    }
+
+    private fun fallbackProductColor(product: String): String {
+        val code = product.trim().uppercase()
+        return when {
+            code.contains("MGR") || code.contains("GASOLINE") || code.contains("PETROL") -> "#E4572E"
+            code.contains("AGO") || code.contains("DIESEL") -> "#2563EB"
+            code.contains("KEROSENE") || code.contains("KERO") -> "#D97706"
+            code.contains("LPG") -> "#7C3AED"
+            else -> "#1769D2"
+        }
     }
 
     private fun renderMessage(manager: AppWidgetManager, id: Int, message: String, detail: String) {
@@ -113,7 +173,7 @@ class TankWidgetWorker(context: Context, params: WorkerParameters) : CoroutineWo
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
-    data class Tank(val code: String, val product: String, val stock: Double, val capacity: Double)
+    data class Tank(val code: String, val product: String, val stock: Double, val capacity: Double, val productId: String, val color: String)
     class UnauthorizedException : Exception()
     companion object {
         const val PREFS_NAME = "fuel_tank_widget_secure"
