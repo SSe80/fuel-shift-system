@@ -130,7 +130,7 @@ class AdminActivity : Activity() {
                 val uri = Uri.parse(url)
                 if (uri.host == allowedHost && uri.path?.endsWith("/admin-login.html") == true) {
                     view.evaluateJavascript(
-                        "(function(){var a=document.querySelector('a[href*="Fuel-Shift-System-Admin.apk"]');if(a)a.remove();})();",
+                        """(function(){var a=document.querySelector('a[href*="Fuel-Shift-System-Admin.apk"]');if(a)a.remove();})();""",
                         null
                     )
                 }
