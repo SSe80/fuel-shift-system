@@ -6337,18 +6337,60 @@ def daily_report(report_date_override=None):
     for tid,tank in tank_all_by_id.items():
         if str(tid) not in relevant_tank_ids:
             continue
-        rows=sorted(tank_shift_rows.get(tid,[]),key=lambda z:str(z[0].get("start_time") or ""))
-        # Shared-tank dispensers can have overlapping shifts. Use the earliest
-        # shift opening and the latest actual shift ending for the DSR boundary;
-        # the last item by start time is not necessarily the last shift to end.
-        first_h=rows[0][1] if rows else {}
+        def _tank_shift_interval(shift):
+            start=_parse_aware_dt(shift.get("start_time"))
+            end=_parse_aware_dt(shift.get("end_time"))
+            # A zero-length or backwards interval is not a valid stock-reading
+            # boundary and must not participate in continuity or per-shift stock math.
+            if not start or not end or start>=end:
+                return None
+            return start,end
+
+        rows=sorted(
+            tank_shift_rows.get(tid,[]),
+            key=lambda pair:_parse_aware_dt(pair[0].get("start_time")) or datetime.max.replace(tzinfo=timezone.utc)
+        )
+        shift_interval_by_id={
+            str(pair[0].get("id") or ""):_tank_shift_interval(pair[0])
+            for pair in rows
+        }
+        overlapping_shift_ids=set()
+        for row_index,pair in enumerate(rows):
+            sid=str(pair[0].get("id") or "")
+            interval=shift_interval_by_id.get(sid)
+            if not interval:
+                continue
+            start,end=interval
+            for other in rows[row_index+1:]:
+                other_id=str(other[0].get("id") or "")
+                other_interval=shift_interval_by_id.get(other_id)
+                if not other_interval:
+                    continue
+                other_start,other_end=other_interval
+                if other_start>=end:
+                    break
+                if start<other_end and other_start<end:
+                    overlapping_shift_ids.add(sid)
+                    overlapping_shift_ids.add(other_id)
+
+        valid_rows=[pair for pair in rows if shift_interval_by_id.get(str(pair[0].get("id") or ""))]
+        # DSR opening/closing readings are the valid first/last physical snapshots,
+        # not whichever row happens to sort last. Invalid time intervals are excluded
+        # from boundary selection but remain visible in the report diagnostics.
+        first_pair=min(
+            valid_rows,
+            key=lambda pair:shift_interval_by_id[str(pair[0].get("id") or "")][0]
+        ) if valid_rows else (rows[0] if rows else None)
         closing_pair=max(
-            rows,
-            key=lambda z:str(z[0].get("end_time") or z[0].get("start_time") or "")
-        ) if rows else None
+            valid_rows,
+            key=lambda pair:shift_interval_by_id[str(pair[0].get("id") or "")][1]
+        ) if valid_rows else (max(rows,key=lambda pair:str(pair[0].get("end_time") or pair[0].get("start_time") or "")) if rows else None)
+        first_h=first_pair[1] if first_pair else {}
         last_h=closing_pair[1] if closing_pair else {}
         opening=float(first_h.get("tank_opening_liters") or 0) if rows else float(tank.get("opening_stock_liters") or 0)
         closing=float(last_h.get("tank_closing_liters") or 0) if rows else float(tank.get("current_liters") or 0)
+        invalid_shift_interval_count=sum(1 for pair in rows if not shift_interval_by_id.get(str(pair[0].get("id") or "")))
+        overlapping_shift_count=len(overlapping_shift_ids)
         sales_l=float(sum(float(z[1].get("total_sales_liters") or 0) for z in rows))
         nozzle_sales_l=float(sum(float((tank_nozzle_sales_by_shift.get(tid) or {}).get(str(z[0].get("id") or "")) or 0) for z in rows))
         nozzle_sales_difference_l=sales_l-nozzle_sales_l
@@ -6387,46 +6429,38 @@ def daily_report(report_date_override=None):
             1 for x in discharge_operations
             if x.get("shift_attribution_status")=="ambiguous_overlap"
         )
-        # For multiple shifts on the same tank, the next shift should normally
-        # open at the previous shift's closing stock. Any difference is an
-        # explicit stock adjustment/gap; do not silently hide it in the DSR.
+        # Continuity gaps are diagnostics, never automatic stock adjustments.
+        # Applying a gap to expected stock would hide an unexplained physical
+        # stock movement. Only adjacent, valid, non-overlapping shift windows
+        # are eligible for a continuity comparison.
         opening_adjustment_l=0.0
+        continuity_gap_liters=0.0
         continuity_gap_count=0
-        def shifts_are_sequential(prev_shift,next_shift):
-            # Shared tanks often have parallel dispenser shifts. Their tank
-            # readings are snapshots of the same stock, not consecutive
-            # readings; only calculate a continuity gap when the earlier
-            # shift has ended before the next shift begins.
-            try:
-                prev_start=datetime.fromisoformat(str(prev_shift.get("start_time") or "").replace("Z","+00:00"))
-                prev_end=datetime.fromisoformat(str(prev_shift.get("end_time") or "").replace("Z","+00:00"))
-                next_start=datetime.fromisoformat(str(next_shift.get("start_time") or "").replace("Z","+00:00"))
-                next_end=datetime.fromisoformat(str(next_shift.get("end_time") or "").replace("Z","+00:00"))
-                values=[prev_start,prev_end,next_start,next_end]
-                values=[v.replace(tzinfo=timezone.utc) if v.tzinfo is None else v for v in values]
-                prev_start,prev_end,next_start,next_end=values
-                return prev_start <= prev_end and next_start <= next_end and prev_end <= next_start
-            except (TypeError,ValueError):
-                return False
         for prev_pair,next_pair in zip(rows,rows[1:]):
-            if not shifts_are_sequential(prev_pair[0],next_pair[0]):
+            prev_id=str(prev_pair[0].get("id") or "")
+            next_id=str(next_pair[0].get("id") or "")
+            prev_interval=shift_interval_by_id.get(prev_id)
+            next_interval=shift_interval_by_id.get(next_id)
+            if not prev_interval or not next_interval:
+                continue
+            if prev_id in overlapping_shift_ids or next_id in overlapping_shift_ids:
+                continue
+            if prev_interval[1]>next_interval[0]:
                 continue
             prev_close=float(prev_pair[1].get("tank_closing_liters") or 0)
             next_open=float(next_pair[1].get("tank_opening_liters") or 0)
             gap=next_open-prev_close
             if abs(gap)>0.0001:
                 continuity_gap_count+=1
-                opening_adjustment_l+=gap
-        # Authoritative tank equation:
-        # opening + discharged purchase + returned fuel + documented adjustments
-        # - gross nozzle sales = closing. Meter sales stay gross; returns are
-        # added back as physical stock, not subtracted from meter readings.
-        # Each return is attributed once through the tank's shift rows.
-        expected=opening+opening_adjustment_l+purchased_l+returned_liters+stock_adjustment_l-nozzle_sales_l
+                continuity_gap_liters+=gap
+        # Authoritative physical tank equation:
+        # opening + discharged purchase + returned fuel + documented physical
+        # adjustments - gross nozzle sales = closing. Continuity gaps are shown
+        # separately and are deliberately not folded into expected stock.
+        expected=opening+purchased_l+returned_liters+stock_adjustment_l-nozzle_sales_l
         diff=expected-closing
-        basis=opening+opening_adjustment_l+purchased_l+returned_liters+stock_adjustment_l
+        basis=opening+purchased_l+returned_liters+stock_adjustment_l
         shift_reconciliation=[]
-        running_adjustment=0.0
         for idx,(sh,h) in enumerate(rows):
             sid=str(sh.get("id") or "")
             shift_open=float(h.get("tank_opening_liters") or 0)
@@ -6461,17 +6495,20 @@ def daily_report(report_date_override=None):
                 and str(op.get("shift_id") or "")==sid
                 and str(op.get("tank_id") or "")==tid
             )
-            continuity_adjustment=0.0
-            if idx>0 and shifts_are_sequential(rows[idx-1][0],sh):
-                prev_close=float(rows[idx-1][1].get("tank_closing_liters") or 0)
-                continuity_adjustment=shift_open-prev_close
-                running_adjustment+=continuity_adjustment
-            # Use authoritative nozzle sales in the stock equation.
-            # Tank-reported sales remain visible separately as a reconciliation
-            # check and must not replace the physical nozzle-sales ledger.
-            shift_expected=shift_open+continuity_adjustment+shift_purchase+shift_returned_liters+shift_adjustment-shift_nozzle_sales
-            shift_diff=shift_expected-shift_close
-            shift_basis=shift_open+continuity_adjustment+shift_purchase+shift_returned_liters+shift_adjustment
+            interval=shift_interval_by_id.get(sid)
+            stock_reconciliation_applicable=bool(interval) and sid not in overlapping_shift_ids
+            if not interval:
+                stock_reconciliation_status="invalid_shift_interval"
+            elif sid in overlapping_shift_ids:
+                stock_reconciliation_status="overlapping_shift_windows"
+            else:
+                stock_reconciliation_status="valid"
+            # Shared physical tank readings from overlapping dispenser shifts are
+            # snapshots of one tank, not independent per-shift stock boundaries.
+            # Keep nozzle and discharge checks, but suppress invalid stock equations.
+            shift_expected=(shift_open+shift_purchase+shift_returned_liters+shift_adjustment-shift_nozzle_sales) if stock_reconciliation_applicable else None
+            shift_diff=(shift_expected-shift_close) if stock_reconciliation_applicable else None
+            shift_basis=(shift_open+shift_purchase+shift_returned_liters+shift_adjustment) if stock_reconciliation_applicable else None
             shift_reconciliation.append({
                 "shift_id":sh.get("id"),
                 "started_at":sh.get("start_time"),
@@ -6485,11 +6522,13 @@ def daily_report(report_date_override=None):
                 "purchase_liters":shift_purchase,
                 "returned_liters":shift_returned_liters,
                 "documented_stock_adjustment_liters":shift_adjustment,
-                "continuity_adjustment_liters":continuity_adjustment,
+                "continuity_adjustment_liters":0.0,
+                "stock_reconciliation_applicable":stock_reconciliation_applicable,
+                "stock_reconciliation_status":stock_reconciliation_status,
                 "expected_closing_liters":shift_expected,
                 "difference_liters":shift_diff,
-                "variance_pct":(shift_diff/shift_basis*100.0) if shift_basis else 0,
-                "reconciliation_pct":max(0.0,100.0-(abs(shift_diff)/shift_basis*100.0)) if shift_basis else 100.0
+                "variance_pct":(shift_diff/shift_basis*100.0) if shift_basis else (100.0 if stock_reconciliation_applicable else None),
+                "reconciliation_pct":max(0.0,100.0-(abs(shift_diff)/shift_basis*100.0)) if shift_basis else (100.0 if stock_reconciliation_applicable else None)
             })
         tank_details.append({
             "tank_id":tid,
@@ -6504,8 +6543,8 @@ def daily_report(report_date_override=None):
             "purchase_operation_count":purchase_operation_count,
             "purchase_ids":purchase_ids,
             "documented_stock_adjustment_liters":stock_adjustment_l,
-            "pre_discharge_stock_adjustment_liters":sum(float(x.get("pre_discharge_stock_adjustment_liters") or 0) for x in discharge_operations if x.get("shift_attribution_status")=="inside_shift"),
-            "post_discharge_stock_adjustment_liters":sum(float(x.get("post_discharge_stock_adjustment_liters") or 0) for x in discharge_operations if x.get("shift_attribution_status")=="inside_shift"),
+            "pre_discharge_stock_adjustment_liters":sum(float(x.get("pre_discharge_stock_adjustment_liters") or 0) for x in discharge_operations if x.get("shift_attribution_status") in ("inside_shift","ambiguous_overlap")),
+            "post_discharge_stock_adjustment_liters":sum(float(x.get("post_discharge_stock_adjustment_liters") or 0) for x in discharge_operations if x.get("shift_attribution_status") in ("inside_shift","ambiguous_overlap")),
             "nozzle_sales_liters":nozzle_sales_l,
             "discharge_operation_count":len(discharge_operations),
             "discharge_operations":discharge_operations,
@@ -6515,9 +6554,13 @@ def daily_report(report_date_override=None):
             "discharge_outside_shift_count":discharge_outside_shift_count,
             "discharge_ambiguous_shift_count":discharge_ambiguous_shift_count,
             "discharge_invalid_timestamp_count":sum(1 for x in discharge_operations if x.get("shift_attribution_status")=="invalid_timestamp"),
-            "opening_adjustment_liters":opening_adjustment_l,
-            "continuity_adjustment_liters":opening_adjustment_l,
+            "opening_adjustment_liters":0.0,
+            "continuity_adjustment_liters":0.0,
+            "continuity_gap_liters":continuity_gap_liters,
             "continuity_gap_count":continuity_gap_count,
+            "invalid_shift_interval_count":invalid_shift_interval_count,
+            "overlapping_shift_count":overlapping_shift_count,
+            "stock_reconciliation_status":"valid" if valid_rows else "no_valid_shift_intervals",
             "sales_liters":sales_l,
             "nozzle_sales_liters":nozzle_sales_l,
             "nozzle_sales_difference_liters":nozzle_sales_difference_l,
