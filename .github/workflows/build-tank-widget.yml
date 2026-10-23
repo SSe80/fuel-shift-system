@@ -1,5 +1,8 @@
 name: Build native Admin app with Tank Inventory widget
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   pull_request:
@@ -45,3 +48,17 @@ jobs:
           name: fuel-shift-admin-with-tank-widget-debug
           path: android-tank-widget/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publish APK download for Admin login page
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: admin-apk-latest
+          name: Fuel Shift System Admin for Android
+          body: |
+            Native Android Admin app with the Tank Inventory home-screen widget.
+            Download app-debug.apk and install it on your Android phone.
+            This app is separate from the Chrome-installed PWA shortcut.
+          files: android-tank-widget/app/build/outputs/apk/debug/app-debug.apk
+          overwrite_files: true
+          make_latest: false
