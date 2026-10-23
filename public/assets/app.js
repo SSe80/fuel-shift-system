@@ -2508,7 +2508,7 @@ function openAdminInventoryTankDetails(id){
     metric('STOCK DIFFERENCE',difference===null?'Not available':liters(difference)+' L','current stock − expected stock')+
     metric('STOCK BASIS',inv.stock_basis==='physical_closing'?'Physical closing':inv.stock_basis==='opening_or_dip_movement'?'Ledger baseline':'Not established',inv.physical_anchor_at?'Measured '+new Date(inv.physical_anchor_at).toLocaleString():inv.ledger_anchor_at?'Baseline '+new Date(inv.ledger_anchor_at).toLocaleString():'No valid stock baseline')+
     metric('HISTORICAL ANOMALIES',anomaliesAssessed?String(Math.max(0,Number(anomalyCount))):'Not assessed',!anomaliesAssessed?'A valid stock baseline is required':Number(anomalyCount)>0?'Legacy movement records require review':'No anomalies detected in scanned records')+
-    '</div>'++'</section>';
+    '</div>'+'</section>';
   const performanceSection='<section class="admin-inventory-tank-detail-section"><div class="admin-inventory-tank-detail-section-head">STOCK PERFORMANCE</div><div class="admin-inventory-tank-detail-metrics">'+
     metric('FILL LEVEL',pct.toFixed(1)+'%','current / capacity')+
     metric('AVAILABLE',liters(current)+' L','usable stock')+
