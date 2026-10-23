@@ -4270,7 +4270,11 @@ def inventory_summary():
                 movement_notes=str(movement.get("notes") or "")
                 movement_rank=timestamp_rank(movement.get("created_at"))
                 if movement_rank<=old_anchor_rank or movement_rank>physical_rank:continue
-                if movement_id in reversed_movement_ids or movement_notes.startswith("Reversal of tank movement:"):
+                # Keep the original movement in the historical anomaly scan even
+                # when a reversal exists. A reversal repairs the ledger balance, but
+                # must not erase evidence that an impossible quantity was recorded.
+                # Skip the reversal row itself to avoid counting the same incident twice.
+                if movement_notes.startswith("Reversal of tank movement:"):
                     continue
                 anomaly_scan_records+=1
                 try:qty=abs(float(movement.get("quantity_liters") or 0))
