@@ -57,7 +57,6 @@ class AdminActivity : Activity() {
         ))
         setContentView(root)
         configureWebView()
-        NativeNotificationWorker.schedule(this)
         if (savedInstanceState == null) webView.loadUrl(appUrl)
         else webView.restoreState(savedInstanceState)
     }
@@ -84,6 +83,9 @@ class AdminActivity : Activity() {
                 .putString(TankWidgetWorker.KEY_ADMIN_COOKIE, cookie)
                 .apply()
             TankInventoryWidgetProvider.updateAll(this)
+            getSharedPreferences("fuel_native_notifications", MODE_PRIVATE).edit().putBoolean("enabled", true).apply()
+            NativeNotificationWorker.schedule(this)
+            requestNotificationPermissionIfNeeded()
         } catch (_: Exception) {
             Toast.makeText(this, "Could not securely connect the tank widget.", Toast.LENGTH_LONG).show()
             return
