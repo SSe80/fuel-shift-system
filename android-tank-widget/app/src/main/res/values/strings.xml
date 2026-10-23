@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Fuel Admin</string>
     <string name="widget_description">Live fuel tank stock, capacity, level and available space.</string>
+    <string name="notification_widget_description">Recent station inbox alerts with unread status and a quick link to the inbox.</string>
 </resources>
