@@ -6398,11 +6398,14 @@ def daily_report(report_date_override=None):
             # readings; only calculate a continuity gap when the earlier
             # shift has ended before the next shift begins.
             try:
+                prev_start=datetime.fromisoformat(str(prev_shift.get("start_time") or "").replace("Z","+00:00"))
                 prev_end=datetime.fromisoformat(str(prev_shift.get("end_time") or "").replace("Z","+00:00"))
                 next_start=datetime.fromisoformat(str(next_shift.get("start_time") or "").replace("Z","+00:00"))
-                if prev_end.tzinfo is None: prev_end=prev_end.replace(tzinfo=timezone.utc)
-                if next_start.tzinfo is None: next_start=next_start.replace(tzinfo=timezone.utc)
-                return prev_end <= next_start
+                next_end=datetime.fromisoformat(str(next_shift.get("end_time") or "").replace("Z","+00:00"))
+                values=[prev_start,prev_end,next_start,next_end]
+                values=[v.replace(tzinfo=timezone.utc) if v.tzinfo is None else v for v in values]
+                prev_start,prev_end,next_start,next_end=values
+                return prev_start <= prev_end and next_start <= next_end and prev_end <= next_start
             except (TypeError,ValueError):
                 return False
         for prev_pair,next_pair in zip(rows,rows[1:]):
