@@ -4062,147 +4062,188 @@ def inventory_summary():
     auth=require_admin()
     if auth:return auth
 
-    # Inventory reconciliation is based on the tank-movement ledger.
-    # Opening/dip movements are snapshot anchors, not additive movements.
     ts,tanks=sb("tanks",params={
         "select":"id,tank_code,product,capacity_liters,current_liters,opening_stock_liters,active",
         "order":"tank_code.asc"
     })
     if ts!=200:return jsonify(tanks),ts
 
+    # Use the latest physical closing as the current baseline when available.
+    # Historical handover corrections before that reading must not inflate stock.
     ms,movement_rows=sb("tank_movements",params={
         "select":"tank_id,movement_type,quantity_liters,reference_id,created_at",
         "limit":"10000",
-        "order":"created_at.asc"
+        "order":"created_at.desc"
     })
     if ms!=200:return jsonify(movement_rows),ms
 
-    # Some older purchase-discharge records have a discharge_history entry but
-    # no corresponding tank_movements row. Use that history as a fallback,
-    # without counting a discharge twice when its ledger movement exists.
+    cs,closing_rows=sb("shift_takeovers",params={
+        "select":"id,tank_id,tank_closing_liters,shift_ended_at,created_at",
+        "limit":"10000",
+        "order":"shift_ended_at.desc"
+    })
+    if cs!=200:return jsonify(closing_rows),cs
+
     ps,purchase_rows=sb("purchases",params={
         "select":"id,product,status,discharged_quantity_liters,discharged_at,created_at,discharge_history",
         "limit":"10000",
-        "order":"created_at.asc"
+        "order":"created_at.desc"
     })
     if ps!=200:return jsonify(purchase_rows),ps
 
-    result=[]
+    hs,canceled_handovers=sb("handovers",params={
+        "select":"id,status","status":"eq.cancelled","limit":"10000"
+    })
+    canceled_handover_ids={
+        str(row.get("id")) for row in (canceled_handovers or []) if row.get("id")
+    } if hs==200 else set()
+
+    def timestamp_rank(value):
+        if not value:return float("-inf")
+        try:
+            parsed=datetime.fromisoformat(str(value).strip().replace("Z","+00:00"))
+            if parsed.tzinfo is None:parsed=parsed.replace(tzinfo=timezone.utc)
+            return parsed.timestamp()
+        except Exception:
+            return float("-inf")
+
     movements_by_tank={}
     for movement in movement_rows:
         tid=str(movement.get("tank_id") or "")
-        if tid:
-            movements_by_tank.setdefault(tid,[]).append(movement)
+        if tid:movements_by_tank.setdefault(tid,[]).append(movement)
 
+    physical_by_tank={}
+    for closing in closing_rows or []:
+        tid=str(closing.get("tank_id") or "")
+        measured_at=closing.get("shift_ended_at") or closing.get("created_at")
+        try:liters_value=float(closing.get("tank_closing_liters"))
+        except (TypeError,ValueError):continue
+        if not tid or not measured_at or not math.isfinite(liters_value) or liters_value<0:continue
+        previous=physical_by_tank.get(tid)
+        if previous is None or timestamp_rank(measured_at)>timestamp_rank(previous.get("measured_at")):
+            physical_by_tank[tid]={"liters":liters_value,"measured_at":measured_at,"takeover_id":closing.get("id")}
+
+    result=[]
     for tank in tanks:
         if not tank.get("active"):continue
         tid=str(tank.get("id"))
         movements=movements_by_tank.get(tid,[])
-
-        # Find the latest physical stock anchor. Everything before it belongs
-        # to an older reconciliation period and must not affect current stock.
-        anchor=None
-        for movement in movements:
-            if str(movement.get("movement_type") or "").lower() in ("opening","dip"):
-                anchor=movement
-
         current=float(tank.get("current_liters") or 0)
-        if anchor is None:
+        try:capacity=float(tank.get("capacity_liters") or 0)
+        except (TypeError,ValueError):capacity=0.0
+
+        ledger_anchor=None
+        for movement in movements:
+            if str(movement.get("movement_type") or "").lower() not in ("opening","dip"):continue
+            measured_at=movement.get("created_at")
+            if measured_at and (ledger_anchor is None or timestamp_rank(measured_at)>timestamp_rank(ledger_anchor.get("created_at"))):
+                ledger_anchor=movement
+
+        physical=physical_by_tank.get(tid)
+        use_physical=bool(physical and (ledger_anchor is None or timestamp_rank(physical.get("measured_at"))>=timestamp_rank(ledger_anchor.get("created_at"))))
+        if use_physical:
+            anchor_at=physical.get("measured_at")
+            anchor_liters=float(physical.get("liters") or 0)
+            anchor_source="physical_closing"
+        elif ledger_anchor is not None:
+            anchor_at=ledger_anchor.get("created_at")
+            anchor_liters=float(ledger_anchor.get("quantity_liters") or 0)
+            anchor_source="opening_or_dip_movement"
+        else:
             result.append({
-                "tank_id":tank.get("id"),
-                "tank_code":tank.get("tank_code"),
-                "product":str(tank.get("product") or ""),
-                "capacity_liters":tank.get("capacity_liters"),
+                "tank_id":tank.get("id"),"tank_code":tank.get("tank_code"),
+                "product":str(tank.get("product") or ""),"capacity_liters":tank.get("capacity_liters"),
                 "opening_stock_liters":tank.get("opening_stock_liters"),
-                "ledger_anchor_liters":None,
-                "ledger_anchor_at":None,
-                "purchases_liters":0,
-                "sales_liters":0,
-                "adjustments_liters":0,
-                "current_liters":current,
-                "expected_liters":None,
-                "stock_difference_liters":None,
-                "reconciliation_status":"no_anchor"
+                "ledger_anchor_liters":None,"ledger_anchor_at":None,
+                "physical_anchor_liters":None,"physical_anchor_at":None,
+                "stock_basis":"cached_tank_balance","purchases_liters":0,"sales_liters":0,
+                "transfer_in_liters":0,"transfer_out_liters":0,"adjustments_liters":0,"corrections_liters":0,
+                "current_liters":current,"expected_liters":None,"stock_difference_liters":None,
+                "historical_anomaly_count":0,"reconciliation_status":"no_anchor"
             })
             continue
 
-        anchor_at=anchor.get("created_at")
-        anchor_liters=float(anchor.get("quantity_liters") or 0)
         ledger_purchases=0.0
         ledger_purchases_by_reference={}
         sales=0.0
+        transfer_in=0.0
+        transfer_out=0.0
         adjustments=0.0
+        corrections=0.0
+        anchor_rank=timestamp_rank(anchor_at)
 
         for movement in movements:
-            if movement is anchor:
-                continue
-            # The ledger is chronological; only movements after the latest
-            # opening/dip anchor belong to the current stock period.
-            if anchor_at and str(movement.get("created_at") or "") <= str(anchor_at):
-                continue
+            if timestamp_rank(movement.get("created_at"))<=anchor_rank:continue
             movement_type=str(movement.get("movement_type") or "").lower()
-            qty=float(movement.get("quantity_liters") or 0)
+            try:qty=float(movement.get("quantity_liters") or 0)
+            except (TypeError,ValueError):continue
             if movement_type=="purchase":
-                ledger_purchases += qty
+                ledger_purchases+=qty
                 reference_id=str(movement.get("reference_id") or "")
-                if reference_id:
-                    ledger_purchases_by_reference[reference_id]=ledger_purchases_by_reference.get(reference_id,0.0)+qty
-            elif movement_type=="sale":
-                sales += abs(qty)
-            elif movement_type=="adjustment":
-                adjustments += qty
+                if reference_id:ledger_purchases_by_reference[reference_id]=ledger_purchases_by_reference.get(reference_id,0.0)+qty
+            elif movement_type=="sale":sales+=abs(qty)
+            elif movement_type=="transfer_in":transfer_in+=abs(qty)
+            elif movement_type=="transfer_out":transfer_out+=abs(qty)
+            elif movement_type=="adjustment":adjustments+=qty
+            elif movement_type=="correction":corrections+=qty
 
-        # Recover purchases from per-tank discharge history when matching
-        # purchase ledger movements are missing. Reconcile per purchase ID so
-        # unrelated purchase movements cannot hide a missing discharge.
+        # Recover only discharge-history quantities after the active stock anchor
+        # when a purchase movement is missing; never count the same discharge twice.
         missing_history_purchases=0.0
         tank_product=str(tank.get("product") or "").strip().casefold()
-        for purchase in purchase_rows:
+        for purchase in purchase_rows or []:
             purchase_product=str(purchase.get("product") or "").strip().casefold()
-            if purchase_product and tank_product and purchase_product != tank_product:
-                continue
+            if purchase_product and tank_product and purchase_product!=tank_product:continue
             history=purchase.get("discharge_history") or []
             if isinstance(history,str):
-                try:
-                    history=json.loads(history)
-                except Exception:
-                    history=[]
-            if not isinstance(history,list):
-                continue
+                try:history=json.loads(history)
+                except Exception:history=[]
+            if not isinstance(history,list):continue
             history_for_tank=0.0
             for event in history:
-                if not isinstance(event,dict) or str(event.get("tank_id") or "") != tid:
-                    continue
+                if not isinstance(event,dict) or str(event.get("tank_id") or "")!=tid:continue
                 event_at=event.get("discharge_datetime") or purchase.get("discharged_at") or purchase.get("created_at")
-                if anchor_at and event_at and str(event_at) <= str(anchor_at):
-                    continue
-                try:
-                    qty=float(event.get("discharged_quantity_liters") or 0)
-                except (TypeError,ValueError):
-                    qty=0.0
-                if qty > 0:
-                    history_for_tank += qty
+                if timestamp_rank(event_at)<=anchor_rank:continue
+                try:qty=float(event.get("discharged_quantity_liters") or 0)
+                except (TypeError,ValueError):qty=0.0
+                if qty>0:history_for_tank+=qty
             purchase_id=str(purchase.get("id") or "")
             ledger_for_purchase=ledger_purchases_by_reference.get(purchase_id,0.0)
-            missing_history_purchases += max(0.0,history_for_tank-ledger_for_purchase)
+            missing_history_purchases+=max(0.0,history_for_tank-ledger_for_purchase)
 
         purchases=ledger_purchases+missing_history_purchases
-        expected=anchor_liters+purchases+adjustments-sales
+        expected=anchor_liters+purchases+transfer_in-sales-transfer_out+adjustments+corrections
+
+        # Preserve legacy ledger entries for audit, but surface impossible quantities
+        # and sale rows tied to canceled handovers that predate the latest physical anchor.
+        historical_anomalies=0
+        if use_physical:
+            old_anchor_rank=timestamp_rank(ledger_anchor.get("created_at")) if ledger_anchor else float("-inf")
+            physical_rank=timestamp_rank(physical.get("measured_at"))
+            for movement in movements:
+                movement_rank=timestamp_rank(movement.get("created_at"))
+                if movement_rank<=old_anchor_rank or movement_rank>physical_rank:continue
+                try:qty=abs(float(movement.get("quantity_liters") or 0))
+                except (TypeError,ValueError):qty=0.0
+                kind=str(movement.get("movement_type") or "").lower()
+                canceled_sale=kind=="sale" and str(movement.get("reference_id") or "") in canceled_handover_ids
+                if (capacity>0 and qty>capacity+0.05) or canceled_sale:historical_anomalies+=1
+
+        over_capacity=capacity>0 and expected>capacity+0.05
         result.append({
-            "tank_id":tank.get("id"),
-            "tank_code":tank.get("tank_code"),
-            "product":str(tank.get("product") or ""),
-            "capacity_liters":tank.get("capacity_liters"),
+            "tank_id":tank.get("id"),"tank_code":tank.get("tank_code"),
+            "product":str(tank.get("product") or ""),"capacity_liters":tank.get("capacity_liters"),
             "opening_stock_liters":tank.get("opening_stock_liters"),
-            "ledger_anchor_liters":anchor_liters,
-            "ledger_anchor_at":anchor_at,
-            "purchases_liters":purchases,
-            "sales_liters":sales,
-            "adjustments_liters":adjustments,
-            "current_liters":current,
-            "expected_liters":expected,
-            "stock_difference_liters":current-expected,
-            "reconciliation_status":"reconciled" if abs(current-expected)<0.01 else "difference"
+            "ledger_anchor_liters":anchor_liters,"ledger_anchor_at":anchor_at,
+            "physical_anchor_liters":physical.get("liters") if use_physical else None,
+            "physical_anchor_at":physical.get("measured_at") if use_physical else None,
+            "physical_anchor_takeover_id":physical.get("takeover_id") if use_physical else None,
+            "stock_basis":anchor_source,"purchases_liters":purchases,"sales_liters":sales,
+            "transfer_in_liters":transfer_in,"transfer_out_liters":transfer_out,
+            "adjustments_liters":adjustments,"corrections_liters":corrections,
+            "current_liters":current,"expected_liters":expected,"stock_difference_liters":current-expected,
+            "historical_anomaly_count":historical_anomalies,
+            "reconciliation_status":"over_capacity" if over_capacity else ("physical_anchor" if use_physical else ("reconciled" if abs(current-expected)<0.01 else "difference"))
         })
 
     return jsonify(result),200

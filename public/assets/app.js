@@ -2162,11 +2162,17 @@ async function adminDashboard(){
       el('tanks').innerHTML=shownTanks.length?shownTanks.map(t=>{
         const capacity=Number(t.capacity_liters)||0;
         const current=Number(t.current_liters)||0;
-        const pct=capacity>0?Math.max(0,Math.min(100,current/capacity*100)):0;
+        const actualPct=capacity>0?current/capacity*100:0;
+        const pct=Math.max(0,Math.min(100,actualPct));
+        const overCapacity=capacity>0&&current>capacity+0.05;
+        const pctLabel=actualPct.toFixed(1)+(overCapacity?'% — OVER CAPACITY':'% full');
+        const spaceLabel=overCapacity?liters(current-capacity)+' L over capacity':liters(Math.max(0,capacity-current))+' L space';
+        const reconciliation=t.inventory_reconciliation||{};
+        const anomalyWarning=Number(reconciliation.historical_anomaly_count||0)>0?'<small style="display:block;margin-top:7px;color:#b45309;font-weight:650">Historical ledger anomaly — review movements</small>':'';
         const product=products.find(p=>String(p.name||'').toLowerCase()===String(t.product||'').toLowerCase())||{};
         const color=product.color||'#1769d2';
         const code=product.code_name||codeForProduct(t.product)||'—';
-        return '<article class="station-tank-glimpse" style="--tank-accent:'+h(color)+'"><div class="station-tank-glimpse-top"><div><strong>'+h(t.tank_code||'Tank')+'</strong><small><span class="station-tank-product-dot"></span>'+h(code)+'</small></div><div class="station-tank-stock"><strong>'+liters(current)+' L</strong><small>of '+liters(capacity)+' L</small></div></div><div class="station-tank-progress" role="progressbar" aria-label="'+h(t.tank_code||'Tank')+' fill level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct.toFixed(1)+'"><span style="width:'+pct.toFixed(1)+'%"></span></div><div class="station-tank-glimpse-bottom"><span>'+pct.toFixed(1)+'% full</span><span>'+liters(Math.max(0,capacity-current))+' L space</span></div></article>';
+        return '<article class="station-tank-glimpse" style="--tank-accent:'+h(color)+'"><div class="station-tank-glimpse-top"><div><strong>'+h(t.tank_code||'Tank')+'</strong><small><span class="station-tank-product-dot"></span>'+h(code)+'</small></div><div class="station-tank-stock"><strong>'+liters(current)+' L</strong><small>of '+liters(capacity)+' L</small></div></div><div class="station-tank-progress" role="progressbar" aria-label="'+h(t.tank_code||'Tank')+' fill level'+(overCapacity?' — over capacity':'')+'" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct.toFixed(1)+'"><span style="width:'+pct.toFixed(1)+'%"></span></div><div class="station-tank-glimpse-bottom"><span style="'+(overCapacity?'color:#b91c1c;font-weight:750':'')+'">'+pctLabel+'</span><span style="'+(overCapacity?'color:#b91c1c;font-weight:750':'')+'">'+spaceLabel+'</span></div>'+anomalyWarning+'</article>';
       }).join(''):'<div class="empty-content">No activated tanks.</div>';
       if(tanks.length>4)el('tanks').insertAdjacentHTML('beforeend','<div class="station-glimpse-foot">Showing 4 of '+tanks.length+' active tanks</div>');
     }
@@ -2186,9 +2192,10 @@ async function adminDashboard(){
       });
       const orderedGroups=[...groups.entries()].sort((a,b)=>String(a[1][0]?.tank_code||'').localeCompare(String(b[1][0]?.tank_code||'')));
       movementBox.innerHTML=orderedGroups.length?orderedGroups.map(([key,rows])=>{
-        const first=rows[0]||{},code=first.product_code||first.tank_product||'—',name=first.product_name||first.tank_product||'Unknown product',dot=productColors[String(name).toLowerCase()]||first.product_color||'',current=Number(first.current_liters||0),capacity=Number(first.capacity_liters||0),pct=capacity>0?Math.max(0,Math.min(100,current/capacity*100)):0;
+        const first=rows[0]||{},code=first.product_code||first.tank_product||'—',name=first.product_name||first.tank_product||'Unknown product',dot=productColors[String(name).toLowerCase()]||first.product_color||'',current=Number(first.current_liters||0),capacity=Number(first.capacity_liters||0),pct=capacity>0?current/capacity*100:0,overCapacity=capacity>0&&current>capacity+0.05;
+        const pctLabel=pct.toFixed(1)+(overCapacity?'% — OVER CAPACITY':'% full');
         const noHistory=first.no_movement_history===true;
-        return '<section class="tank-movement-group" style="--product-color:'+(dot?h(dot):'#1264d8')+'"><div class="tank-movement-group-head"><div><span class="tank-movement-product"><i style="'+(dot?'background:'+h(dot)+';':'')+'"></i><strong class="product-code" style="color:'+(dot?h(dot):'#1264d8')+'">'+h(code)+'</strong></span><h4>'+h(first.tank_code||'Tank')+'</h4><small class="product-name" style="color:'+(dot?h(dot):'#1264d8')+'">'+h(name)+'</small></div><div class="tank-movement-current"><strong>'+liters(current)+' L</strong><span>'+pct.toFixed(1)+'% full</span></div></div><div class="tank-movement-list">'+rows.map(m=>{
+        return '<section class="tank-movement-group" style="--product-color:'+(dot?h(dot):'#1264d8')+'"><div class="tank-movement-group-head"><div><span class="tank-movement-product"><i style="'+(dot?'background:'+h(dot)+';':'')+'"></i><strong class="product-code" style="color:'+(dot?h(dot):'#1264d8')+'">'+h(code)+'</strong></span><h4>'+h(first.tank_code||'Tank')+'</h4><small class="product-name" style="color:'+(dot?h(dot):'#1264d8')+'">'+h(name)+'</small></div><div class="tank-movement-current"><strong>'+liters(current)+' L</strong><span style="'+(overCapacity?'color:#b91c1c;font-weight:750':'')+'">'+pctLabel+'</span></div></div><div class="tank-movement-list">'+rows.map(m=>{
           const type=String(m.movement_type||'').toLowerCase(),qty=Number(m.quantity_liters||0),signed=type==='sale'?-Math.abs(qty):qty,sign=signed>0?'+':signed<0?'−':'';
           return '<div class="tank-movement-row"><div class="tank-movement-icon">'+(type==='purchase'?'↓':type==='sale'?'↑':type==='adjustment'?'±':type==='opening'?'◷':'•')+'</div><div class="tank-movement-main"><strong>'+h(movementLabels[type]||m.movement_type||'Movement')+'</strong><small>'+new Date(m.created_at).toLocaleString()+(m.notes?' • '+h(m.notes):'')+'</small></div><div class="tank-movement-qty '+(signed<0?'negative':'positive')+'">'+sign+liters(Math.abs(signed))+' L</div><div class="tank-movement-balance"><small>Balance</small><strong>'+liters(m.balance_after)+' L</strong></div></div>';
         }).join('')+'</div>'+(noHistory?'<div class="tank-movement-no-history"><strong>No movement history</strong><span>Current stock is '+liters(current)+' L, but an opening/anchor movement has not been recorded yet.</span></div>':'')+'</section>';
@@ -2416,8 +2423,10 @@ function openAdminInventoryTankDetails(id){
     metric('PURCHASES',liters(purchases)+' L','received volume')+
     metric('PERFORMANCE',performance.toFixed(1)+'%','sales vs capacity')+
     metric('EXPECTED',expected==null?'—':liters(expected)+' L','calculated stock')+
-    metric('STOCK DIFFERENCE',difference==null?'—':liters(difference)+' L','actual vs expected')+
-    '</div></section>';
+    metric('STOCK DIFFERENCE',difference==null?'—':liters(difference)+' L','cached stock vs calculated')+
+    metric('STOCK BASIS',inv.stock_basis==='physical_closing'?'Physical closing':'Ledger baseline',inv.physical_anchor_at?'Measured '+new Date(inv.physical_anchor_at).toLocaleString():'No recent physical closing')+
+    metric('HISTORICAL ANOMALIES',String(Number(inv.historical_anomaly_count||0)),Number(inv.historical_anomaly_count||0)>0?'Legacy movement records require review':'No flagged legacy movements')+
+    '</div>'+(Number(inv.historical_anomaly_count||0)>0?'<p style="color:#b45309;font-weight:650;margin:10px 0 0">Historical ledger anomalies were found before the latest physical reading. These records are retained for audit; they are not used to override the latest physical stock baseline.</p>':'')+'</section>';
   const performanceSection='<section class="admin-inventory-tank-detail-section"><div class="admin-inventory-tank-detail-section-head">STOCK PERFORMANCE</div><div class="admin-inventory-tank-detail-metrics">'+
     metric('FILL LEVEL',pct.toFixed(1)+'%','current / capacity')+
     metric('AVAILABLE',liters(current)+' L','usable stock')+
@@ -2459,19 +2468,23 @@ async function adminInventory(){
     const groupedTankIds=new Set(tankGroups.flatMap(g=>g.items.map(t=>String(t.id))));
     const unmatchedTanks=tanks.filter(t=>!groupedTankIds.has(String(t.id)));
     const renderInventoryTankCard=(t,product)=>{
-      const pct=Number(t.capacity_liters)>0?Math.max(0,Math.min(100,Number(t.current_liters)/Number(t.capacity_liters)*100)):0;
+      const capacity=Number(t.capacity_liters||0),current=Number(t.current_liters||0);
+      const pct=capacity>0?current/capacity*100:0,overCapacity=capacity>0&&current>capacity+0.05;
+      const reconciliation=t.inventory_reconciliation||{};
+      const warning=Number(reconciliation.historical_anomaly_count||0)>0?'<small style="display:block;margin-top:7px;color:#b45309;font-weight:650">Historical ledger anomaly — review movements</small>':'';
       const pc=String(product?.color||'#1264d8').trim()||'#1264d8';
-      return '<article class="stat inventory-tank-card" id="inventory-tank-'+h(t.id)+'" data-tank-id="'+h(t.id)+'" role="button" tabindex="0" aria-label="View '+h(t.tank_code||'tank')+' details" style="--product-color:'+h(pc)+'"><div class="inventory-tank-card-top"><div><span class="field-label">TANK</span><b>'+h(t.tank_code)+'</b></div><span class="inventory-tank-status">ACTIVE</span></div><div class="inventory-tank-card-product"><span>PRODUCT</span><strong>'+h(product?.code_name||codeForProduct(t.product))+'</strong></div><div class="inventory-tank-card-stock"><strong>'+liters(t.current_liters)+' L</strong><span>'+pct.toFixed(1)+'% full</span></div></article>';
+      return '<article class="stat inventory-tank-card" id="inventory-tank-'+h(t.id)+'" data-tank-id="'+h(t.id)+'" role="button" tabindex="0" aria-label="View '+h(t.tank_code||'tank')+' details" style="--product-color:'+h(pc)+'"><div class="inventory-tank-card-top"><div><span class="field-label">TANK</span><b>'+h(t.tank_code)+'</b></div><span class="inventory-tank-status" style="'+(overCapacity?'color:#b91c1c;background:#fee2e2':'')+'">'+(overCapacity?'OVER CAPACITY':'ACTIVE')+'</span></div><div class="inventory-tank-card-product"><span>PRODUCT</span><strong>'+h(product?.code_name||codeForProduct(t.product))+'</strong></div><div class="inventory-tank-card-stock"><strong>'+liters(current)+' L</strong><span style="'+(overCapacity?'color:#b91c1c;font-weight:750':'')+'">'+pct.toFixed(1)+(overCapacity?'% — OVER CAPACITY':'% full')+'</span></div>'+warning+'</article>';
     };
     const renderInventoryTankPerformanceGraph=(g,pc)=>{
       const rows=g.items.map(t=>{
         const cap=Number(t.capacity_liters||0), stock=Number(t.current_liters||0);
-        return {id:String(t.id),code:String(t.tank_code||'Tank'),stock,capacity:cap,pct:cap>0?Math.max(0,Math.min(100,stock/cap*100)):0};
+        return {id:String(t.id),code:String(t.tank_code||'Tank'),stock,capacity:cap,pct:cap>0?stock/cap*100:0};
       }).sort((a,b)=>b.pct-a.pct);
       const max=100;
       const bars=rows.map(r=>{
         const width=Math.max(0,Math.min(max,r.pct));
-        return '<div class="inventory-tank-performance-row"><div class="inventory-tank-performance-label"><strong>'+h(r.code)+'</strong><span>'+r.pct.toFixed(1)+'%</span></div><div class="inventory-tank-performance-track"><span style="width:'+width.toFixed(2)+'%;background:'+h(pc)+'"></span></div><div class="inventory-tank-performance-stock">'+liters(r.stock)+' / '+liters(r.capacity)+' L</div></div>';
+        const overCapacity=r.capacity>0&&r.stock>r.capacity+0.05;
+        return '<div class="inventory-tank-performance-row"><div class="inventory-tank-performance-label"><strong>'+h(r.code)+'</strong><span style="'+(overCapacity?'color:#b91c1c;font-weight:750':'')+'">'+r.pct.toFixed(1)+(overCapacity?'% — OVER CAPACITY':'%')+'</span></div><div class="inventory-tank-performance-track"><span style="width:'+width.toFixed(2)+'%;background:'+h(pc)+'"></span></div><div class="inventory-tank-performance-stock">'+liters(r.stock)+' / '+liters(r.capacity)+' L</div></div>';
       }).join('');
       const avg=rows.length?rows.reduce((s,r)=>s+r.pct,0)/rows.length:0;
       const highest=rows[0]?.code||'—';
