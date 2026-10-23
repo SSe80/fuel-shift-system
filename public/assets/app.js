@@ -2414,10 +2414,14 @@ function openAdminInventoryTankDetails(id){
   const ledgerPurchases=movementTotal('purchase');
   const summarySales=finiteOrNull(inv.sales_liters??inv.fuel_sold_liters);
   const summaryPurchases=finiteOrNull(inv.purchases_liters??inv.received_liters);
-  const sold=inv.sales_source==='no_sales_records_after_baseline'&&ledgerSales===0
+  // Never replace valid baseline-relative zeroes with lifetime movement totals.
+  // Legacy meter-reconciliation rows can contain millions of liters and would
+  // otherwise make the tank's sales/performance appear physically impossible.
+  const hasInventoryBaseline=Boolean(inv.physical_anchor_at||inv.ledger_anchor_at||inv.stock_basis==='physical_closing'||inv.stock_basis==='opening_or_dip_movement');
+  const sold=inv.sales_source==='no_sales_records_after_baseline'
     ?null
-    :(summarySales!==null&&(summarySales!==0||ledgerSales===0)?summarySales:ledgerSales);
-  const purchases=summaryPurchases!==null&&(summaryPurchases!==0||ledgerPurchases===0)?summaryPurchases:ledgerPurchases;
+    :(summarySales!==null?summarySales:(hasInventoryBaseline?null:ledgerSales));
+  const purchases=summaryPurchases!==null?summaryPurchases:(hasInventoryBaseline?null:ledgerPurchases);
   const dischargeFromMovements=movements.filter(m=>String(m.movement_type||'').toLowerCase()==='discharge').reduce((sum,m)=>sum+Math.abs(Number(m.quantity_liters||0)),0);
   const hasDischargeMovement=movements.some(m=>String(m.movement_type||'').toLowerCase()==='discharge');
   // Discharge is stored on purchase discharge_history, not as a dedicated
@@ -2446,7 +2450,7 @@ function openAdminInventoryTankDetails(id){
       }
     });
   });
-  const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasDischargeMovement?dischargeFromMovements:(hasDischargeSinceBaseline?historyDischarge:(hasTankDischargeHistory?0:null)));
+  const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasInventoryBaseline?null:(hasDischargeMovement?dischargeFromMovements:(hasDischargeSinceBaseline?historyDischarge:(hasTankDischargeHistory?0:null))));
   const expected=finiteOrNull(inv.expected_liters);
   // Derive variance from the displayed stock and calculated expectation when
   // the API omitted its precomputed difference. Never report 0 L without a
