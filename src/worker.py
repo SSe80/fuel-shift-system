@@ -4084,6 +4084,16 @@ def inventory_summary():
     })
     if cs!=200:return jsonify(closing_rows),cs
 
+    # Shift takeovers also persist reconciled fuel volume by tank. Older
+    # deployments/data may have takeovers but no corresponding sale movement,
+    # so use these records as a fallback source for sales totals.
+    ss,takeover_sales_rows=sb("shift_takeovers",params={
+        "select":"id,tank_id,total_sales_liters,shift_ended_at,created_at,sales_status",
+        "limit":"10000",
+        "order":"shift_ended_at.desc"
+    })
+    if ss!=200:return jsonify(takeover_sales_rows),ss
+
     ps,purchase_rows=sb("purchases",params={
         "select":"id,product,status,discharged_quantity_liters,discharged_at,created_at,discharge_history",
         "limit":"10000",
@@ -4213,6 +4223,31 @@ def inventory_summary():
             missing_history_purchases+=max(0.0,history_for_tank-ledger_for_purchase)
 
         purchases=ledger_purchases+missing_history_purchases
+
+        # A physical closing is a stock baseline, not a sales ledger. If no
+        # sale movements exist after it, recover sales from tank-linked shift
+        # takeovers recorded after that baseline. Do not add this fallback to
+        # movement totals, which would double-count installations with a ledger.
+        sale_movement_count=sum(
+            1 for movement in movements
+            if timestamp_rank(movement.get("created_at"))>anchor_rank
+            and str(movement.get("movement_type") or "").lower()=="sale"
+        )
+        sales_source="tank_movements"
+        if sale_movement_count==0:
+            takeover_sales=0.0
+            for takeover in takeover_sales_rows or []:
+                if str(takeover.get("tank_id") or "")!=tid:continue
+                takeover_at=takeover.get("shift_ended_at") or takeover.get("created_at")
+                if timestamp_rank(takeover_at)<=anchor_rank:continue
+                try:qty=float(takeover.get("total_sales_liters") or 0)
+                except (TypeError,ValueError):continue
+                if math.isfinite(qty) and qty>0:takeover_sales+=qty
+            if takeover_sales>0:
+                sales=takeover_sales
+                sales_source="shift_takeovers_fallback"
+            else:
+                sales_source="no_sales_records_after_baseline"
         expected=anchor_liters+purchases+transfer_in-sales-transfer_out+adjustments+corrections
 
         # Preserve legacy ledger entries for audit, but surface impossible quantities
@@ -4251,7 +4286,7 @@ def inventory_summary():
             "physical_anchor_liters":physical.get("liters") if use_physical else None,
             "physical_anchor_at":physical.get("measured_at") if use_physical else None,
             "physical_anchor_takeover_id":physical.get("takeover_id") if use_physical else None,
-            "stock_basis":anchor_source,"purchases_liters":purchases,"sales_liters":sales,
+            "stock_basis":anchor_source,"purchases_liters":purchases,"sales_liters":sales,"sales_source":sales_source,
             "transfer_in_liters":transfer_in,"transfer_out_liters":transfer_out,
             "adjustments_liters":adjustments,"corrections_liters":corrections,
             "current_liters":current,"expected_liters":expected,"stock_difference_liters":current-expected,
