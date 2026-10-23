@@ -6568,7 +6568,6 @@ function applyDsrNumericValueColors(root){
   const scope=root&&typeof root.querySelectorAll==='function'?root:document;
   const selector=[
     '.daily-stat b',
-    '.dsr-percent',
     '.dsr-dispenser-total b',
     '.dsr-dispenser-meta b',
     '.dsr-reading-grid b',
@@ -6588,16 +6587,16 @@ function applyDsrNumericValueColors(root){
     '.daily-revision-grid strong'
   ].join(',');
   scope.querySelectorAll(selector).forEach(el=>{
-    const raw=String(el.textContent||'').trim();
     el.classList.remove('dsr-value-positive','dsr-value-negative');
+    const raw=String(el.textContent||'').trim();
     if(!raw||/\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/.test(raw)||/\b\d{1,2}:\d{2}\b/.test(raw))return;
+    // Only explicitly signed calculation values are color-coded.
     const normalized=raw.replace(/\b(?:ETB|USD|EUR|GBP)\b/ig,' ');
-    const match=normalized.match(/[+\-−–]?\s*\d[\d,]*(?:\.\d+)?/);
+    const match=normalized.match(/[+\-−–]\s*\d[\d,]*(?:\.\d+)?/);
     if(!match)return;
     const token=match[0].replace(/\s/g,'').replace(/[−–]/g,'-');
     const value=Number(token.replace(/,/g,''));
     if(!Number.isFinite(value)||Math.abs(value)<0.0000001)return;
-    el.classList.remove('positive','negative');
     el.classList.add(value>0?'dsr-value-positive':'dsr-value-negative');
   });
 }
