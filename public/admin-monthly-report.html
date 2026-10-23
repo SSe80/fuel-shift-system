@@ -219,7 +219,36 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
  const number=v=>{const n=Number(v);return Number.isFinite(n)?n:0;};
  function amount(r){const p=r.dsr_performance||{},s=r.summary||{},ss=r.dsr_sales_summary||r.sales_summary||{};return number(p.calculated_sales_amount??p.total_sales_amount??s.sales_amount??ss.total_amount??r.total_sales_amount??0);}
  function litersTotal(r){const p=r.dsr_performance||{},s=r.summary||{},ss=r.dsr_sales_summary||r.sales_summary||{};return number(p.total_sales_liters??s.sales_liters??ss.total_liters??r.total_sales_liters??0);}
- function payments(r){const p=r.dsr_performance||{};if(p.entered_payment_amount==null)return null;const n=Number(p.entered_payment_amount);return Number.isFinite(n)?n:null;}
+ function payments(r){
+  const sources=[r.dsr_performance,r.summary,r.dsr_sales_summary,r.sales_summary,r.dsr_payment_summary,r.payment_summary,r].filter(x=>x&&typeof x==='object'&&!Array.isArray(x));
+  const keys=['entered_payment_amount','entered_payment_total','entered_payments_total','total_entered_payments','entered_payments','payment_total','payments_total','total_payment_amount','total_payments','payment_amount','payments_amount','total_payment','payment_totals_amount'];
+  for(const source of sources){
+    for(const key of keys){
+      const value=source[key];
+      if(value==null||typeof value==='object'||String(value).trim()==='')continue;
+      const n=Number(value);
+      if(Number.isFinite(n))return n;
+    }
+  }
+  const listKeys=['entered_payment_totals','payment_totals','payment_summary','payments'];
+  for(const source of sources){
+    for(const key of listKeys){
+      const list=source[key];
+      if(!Array.isArray(list)||!list.length)continue;
+      const values=list.map(item=>{
+        if(item==null||typeof item!=='object')return null;
+        for(const field of ['amount','payment_amount','total_amount','entered_amount','value']){
+          if(item[field]!=null&&String(item[field]).trim()!==''){
+            const n=Number(item[field]);if(Number.isFinite(n))return n;
+          }
+        }
+        return null;
+      });
+      if(values.length&&values.every(v=>v!==null))return values.reduce((sum,v)=>sum+v,0);
+    }
+  }
+  return null;
+}
  function shifts(r){return number((r.dsr_performance||{}).shift_count??arr(r.shift_summary).length??0);}
  function renderMonthlyRanking(stats,failed,totalDates){
   const eligible=stats.filter(s=>s.days>0).sort((a,b)=>b.avgAmount-a.avgAmount||b.amount-a.amount||b.liters-a.liters);
