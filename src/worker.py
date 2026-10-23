@@ -6392,7 +6392,22 @@ def daily_report(report_date_override=None):
         # explicit stock adjustment/gap; do not silently hide it in the DSR.
         opening_adjustment_l=0.0
         continuity_gap_count=0
+        def shifts_are_sequential(prev_shift,next_shift):
+            # Shared tanks often have parallel dispenser shifts. Their tank
+            # readings are snapshots of the same stock, not consecutive
+            # readings; only calculate a continuity gap when the earlier
+            # shift has ended before the next shift begins.
+            try:
+                prev_end=datetime.fromisoformat(str(prev_shift.get("end_time") or "").replace("Z","+00:00"))
+                next_start=datetime.fromisoformat(str(next_shift.get("start_time") or "").replace("Z","+00:00"))
+                if prev_end.tzinfo is None: prev_end=prev_end.replace(tzinfo=timezone.utc)
+                if next_start.tzinfo is None: next_start=next_start.replace(tzinfo=timezone.utc)
+                return prev_end <= next_start
+            except (TypeError,ValueError):
+                return False
         for prev_pair,next_pair in zip(rows,rows[1:]):
+            if not shifts_are_sequential(prev_pair[0],next_pair[0]):
+                continue
             prev_close=float(prev_pair[1].get("tank_closing_liters") or 0)
             next_open=float(next_pair[1].get("tank_opening_liters") or 0)
             gap=next_open-prev_close
@@ -6444,7 +6459,7 @@ def daily_report(report_date_override=None):
                 and str(op.get("tank_id") or "")==tid
             )
             continuity_adjustment=0.0
-            if idx>0:
+            if idx>0 and shifts_are_sequential(rows[idx-1][0],sh):
                 prev_close=float(rows[idx-1][1].get("tank_closing_liters") or 0)
                 continuity_adjustment=shift_open-prev_close
                 running_adjustment+=continuity_adjustment
