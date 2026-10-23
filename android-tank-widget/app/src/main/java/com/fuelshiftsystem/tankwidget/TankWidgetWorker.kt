@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.widget.RemoteViews
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -27,7 +28,7 @@ class TankWidgetWorker(context: Context, params: WorkerParameters) : CoroutineWo
         val base = prefs.getString(KEY_BASE_URL, DEFAULT_BASE_URL)?.trimEnd('/')
         val cookie = prefs.getString(KEY_ADMIN_COOKIE, null)
         if (base.isNullOrBlank() || cookie.isNullOrBlank()) {
-            ids.forEach { renderMessage(manager, it, "Open widget to sign in", "Tap here to connect securely") }
+            ids.forEach { renderMessage(manager, it, "Open widget app to sign in", "Tap to open Fuel Shift System") }
             return Result.success()
         }
         return try {
@@ -37,7 +38,7 @@ class TankWidgetWorker(context: Context, params: WorkerParameters) : CoroutineWo
             Result.success()
         } catch (e: UnauthorizedException) {
             prefs.edit().remove(KEY_ADMIN_COOKIE).apply()
-            ids.forEach { renderMessage(manager, it, "Session expired", "Tap to sign in again") }
+            ids.forEach { renderMessage(manager, it, "Session expired", "Open widget app to sign in again") }
             Result.success()
         } catch (e: Exception) {
             ids.forEach { renderMessage(manager, it, "Stock temporarily unavailable", "Tap refresh to try again") }
@@ -104,8 +105,8 @@ class TankWidgetWorker(context: Context, params: WorkerParameters) : CoroutineWo
     private fun setActions(views: RemoteViews, id: Int) {
         val refresh = Intent(applicationContext, TankInventoryWidgetProvider::class.java).apply { action = TankInventoryWidgetProvider.ACTION_REFRESH }
         views.setOnClickPendingIntent(R.id.widget_refresh, PendingIntent.getBroadcast(applicationContext, id, refresh, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-        val setup = Intent(applicationContext, WidgetSetupActivity::class.java)
-        views.setOnClickPendingIntent(R.id.widget_root, PendingIntent.getActivity(applicationContext, id, setup, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+        val inventory = Intent(Intent.ACTION_VIEW, Uri.parse(DEFAULT_BASE_URL + "/admin-tanks.html"))
+        views.setOnClickPendingIntent(R.id.widget_root, PendingIntent.getActivity(applicationContext, id, inventory, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
     }
 
     private fun securePrefs() = EncryptedSharedPreferences.create(
