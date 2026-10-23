@@ -2450,7 +2450,23 @@ function openAdminInventoryTankDetails(id){
       }
     });
   });
-  const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasDischargeMovement?dischargeFromMovements:(hasDischargeSinceBaseline?historyDischarge:(hasTankDischargeHistory?0:null)));
+  // Current-stock reconciliation is baseline-relative, but keep historical
+  // delivery activity visible even when a newer physical reading supersedes it.
+  let lifetimeHistoryDischarge=0,hasLifetimeDischarge=false;
+  purchaseRows.forEach(p=>{
+    let history=p.discharge_history;
+    if(typeof history==='string'){try{history=JSON.parse(history);}catch(_){history=[];}}
+    if(!Array.isArray(history))return;
+    history.forEach(event=>{
+      if(!event||String(event.tank_id||'')!==String(t.id))return;
+      const quantity=finiteOrNull(event.discharged_quantity_liters??event.quantity_liters??event.discharged_liters);
+      if(quantity===null||quantity<=0)return;
+      lifetimeHistoryDischarge+=quantity;hasLifetimeDischarge=true;
+    });
+  });
+  const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasDischargeMovement?dischargeFromMovements:(hasDischargeSinceBaseline?historyDischarge:(hasLifetimeDischarge?lifetimeHistoryDischarge:(hasTankDischargeHistory?0:null))));
+  const recordedPurchaseActivity=hasLifetimeDischarge?lifetimeHistoryDischarge:ledgerPurchases;
+  const purchaseActivityAvailable=hasLifetimeDischarge||movements.some(m=>movementKind(m)==='purchase');
   const expected=finiteOrNull(inv.expected_liters);
   // Derive variance from the displayed stock and calculated expectation when
   // the API omitted its precomputed difference. Never report 0 L without a
@@ -2476,9 +2492,9 @@ function openAdminInventoryTankDetails(id){
   const statistics='<section class="admin-inventory-tank-detail-section"><div class="admin-inventory-tank-detail-section-head">INVENTORY STATISTICS</div><div class="admin-inventory-tank-detail-metrics">'+
     metric('CAPACITY',liters(capacity)+' L','tank capacity')+
     metric('CURRENT STOCK',liters(current)+' L',pct.toFixed(1)+'% full')+
-    metric('DISCHARGE',displayLiters(discharge),'recorded discharge')+
+    metric('DISCHARGE',displayLiters(discharge),hasDischargeSinceBaseline?'since stock baseline':hasLifetimeDischarge?'recorded delivery history before stock baseline':'recorded discharge')+
     metric('FUEL SOLD',displayLiters(sold),sold===null&&inv.sales_source==='no_sales_records_after_baseline'?'No sales records after the physical reading':'recorded sales since stock baseline')+
-    metric('PURCHASES',displayLiters(purchases),'received volume since stock baseline')+
+    metric('PURCHASES',purchaseActivityAvailable?displayLiters(recordedPurchaseActivity):displayLiters(purchases),hasLifetimeDischarge?'recorded delivery history (not added to current baseline)':'received volume since stock baseline')+
     metric('PERFORMANCE',performance===null?'Not available':performance.toFixed(1)+'%','sales vs capacity')+
     metric('EXPECTED',expected===null?'Not available':liters(expected)+' L','calculated stock')+
     metric('STOCK DIFFERENCE',difference===null?'Not available':liters(difference)+' L','current stock − expected stock')+
@@ -2489,7 +2505,7 @@ function openAdminInventoryTankDetails(id){
     metric('FILL LEVEL',pct.toFixed(1)+'%','current / capacity')+
     metric('AVAILABLE',liters(current)+' L','usable stock')+
     metric('OUTFLOW',sold!==null&&discharge!==null?liters(sold+discharge)+' L':'Not available','sales + discharge')+
-    metric('NET RECEIPTS',displayLiters(purchases),'purchases since stock baseline')+
+    metric('NET RECEIPTS',purchaseActivityAvailable?displayLiters(recordedPurchaseActivity):displayLiters(purchases),hasLifetimeDischarge?'historical receipts; current stock baseline is newer':'purchases since stock baseline')+
     '</div></section>';
   const slideOne='<article class="admin-inventory-tank-slide active">'+hero+statistics+performanceSection+'</article>';
   const slideTwo='<article class="admin-inventory-tank-slide">'+
