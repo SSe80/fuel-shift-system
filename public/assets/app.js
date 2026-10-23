@@ -3787,7 +3787,7 @@ function createDsrReportPdf(r){
     const raw=String(value==null?'':value).trim();
     if(!raw||/\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/.test(raw)||/\b\d{1,2}:\d{2}\b/.test(raw))return neutral;
     const normalized=raw.replace(/\b(?:ETB|USD|EUR|GBP)\b/ig,'').replace(/[−–]/g,'-').trim();
-    const match=normalized.match(/^([+\-]?\s*\d[\d,]*(?:\.\d+)?)(?:\b|\s|$)/);
+    const match=normalized.match(/^([+\-]\s*\d[\d,]*(?:\.\d+)?)(?:\b|\s|$)/);
     if(!match)return neutral;
     const n=Number(match[1].replace(/[,\s]/g,''));
     return n>0?GREEN:n<0?RED:neutral;
