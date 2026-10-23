@@ -2404,8 +2404,17 @@ function openAdminInventoryTankDetails(id){
   };
   // Inventory summary totals are movements after the active stock baseline.
   // Keep genuine zeroes, but never turn absent/null API fields into zero.
-  const sold=finiteOrNull(inv.sales_liters??inv.fuel_sold_liters);
-  const purchases=finiteOrNull(inv.purchases_liters??inv.received_liters);
+  const movementKind=m=>String(m.movement_type||'').trim().toLowerCase();
+  const movementTotal=kind=>movements.filter(m=>movementKind(m)===kind).reduce((sum,m)=>sum+Math.abs(Number(m.quantity_liters||0)),0);
+  // Prefer baseline-relative reconciliation totals. If those totals are absent
+  // or zero while ledger entries exist, show the tank's available ledger totals
+  // rather than falsely presenting an empty history.
+  const ledgerSales=movementTotal('sale');
+  const ledgerPurchases=movementTotal('purchase');
+  const summarySales=finiteOrNull(inv.sales_liters??inv.fuel_sold_liters);
+  const summaryPurchases=finiteOrNull(inv.purchases_liters??inv.received_liters);
+  const sold=summarySales!==null&&(summarySales!==0||ledgerSales===0)?summarySales:ledgerSales;
+  const purchases=summaryPurchases!==null&&(summaryPurchases!==0||ledgerPurchases===0)?summaryPurchases:ledgerPurchases;
   const dischargeFromMovements=movements.filter(m=>String(m.movement_type||'').toLowerCase()==='discharge').reduce((sum,m)=>sum+Math.abs(Number(m.quantity_liters||0)),0);
   const hasDischargeMovement=movements.some(m=>String(m.movement_type||'').toLowerCase()==='discharge');
   // Discharge is stored on purchase discharge_history, not as a dedicated
