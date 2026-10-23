@@ -1,6 +1,6 @@
 {
-  "name": "Fuel Shift System",
-  "short_name": "Fuel Shift",
+  "name": "Fuel Shift System Attendant",
+  "short_name": "Fuel Attendant",
   "description": "Fuel station shift and sales management",
   "id": "/attendant-login.html",
   "start_url": "/attendant-dashboard.html",
