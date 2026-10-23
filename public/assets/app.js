@@ -2396,14 +2396,23 @@ function openAdminInventoryTankDetails(id){
   const inv=(state.inventory||[]).find(x=>String(x.tank_id)===String(t.id))||{};
   const movements=(state.movements||[]).filter(x=>String(x.tank_id)===String(t.id)).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   const pc=String(product.color||'#1264d8').trim()||'#1264d8';
-  const current=Number(t.current_liters||0), capacity=Number(t.capacity_liters||0);
+  const current=Number(t.current_liters??inv.current_liters??0), capacity=Number(t.capacity_liters??inv.capacity_liters??0);
   const pct=capacity>0?Math.max(0,Math.min(100,current/capacity*100)):0;
-  const sold=Number(inv.sales_liters||0), purchases=Number(inv.purchases_liters||0);
+  const finiteOrNull=value=>{
+    if(value===null||value===undefined||value==='')return null;
+    const n=Number(value);return Number.isFinite(n)?n:null;
+  };
+  // Inventory summary totals are movements after the active stock baseline.
+  // Keep genuine zeroes, but never turn absent/null API fields into zero.
+  const sold=finiteOrNull(inv.sales_liters??inv.fuel_sold_liters);
+  const purchases=finiteOrNull(inv.purchases_liters??inv.received_liters);
   const dischargeFromMovements=movements.filter(m=>String(m.movement_type||'').toLowerCase()==='discharge').reduce((sum,m)=>sum+Math.abs(Number(m.quantity_liters||0)),0);
-  const discharge=Number(inv.discharge_liters ?? inv.discharges_liters ?? dischargeFromMovements);
-  const expected=inv.expected_liters==null?null:Number(inv.expected_liters);
-  const difference=inv.stock_difference_liters==null?null:Number(inv.stock_difference_liters);
-  const performance=capacity>0?sold/capacity*100:0;
+  const hasDischargeMovement=movements.some(m=>String(m.movement_type||'').toLowerCase()==='discharge');
+  const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasDischargeMovement?dischargeFromMovements:null);
+  const expected=finiteOrNull(inv.expected_liters);
+  const difference=finiteOrNull(inv.stock_difference_liters);
+  const performance=capacity>0&&sold!==null?sold/capacity*100:null;
+  const displayLiters=value=>value===null?'Not available':liters(value)+' L';
   const body=modal.querySelector('#admin-inventory-tank-details-body');
   modal.querySelector('#admin-inventory-tank-details-title').textContent=t.tank_code||'Tank';
   modal.querySelector('.admin-inventory-tank-details-card').style.setProperty('--product-color',pc);
@@ -2418,20 +2427,20 @@ function openAdminInventoryTankDetails(id){
   const statistics='<section class="admin-inventory-tank-detail-section"><div class="admin-inventory-tank-detail-section-head">INVENTORY STATISTICS</div><div class="admin-inventory-tank-detail-metrics">'+
     metric('CAPACITY',liters(capacity)+' L','tank capacity')+
     metric('CURRENT STOCK',liters(current)+' L',pct.toFixed(1)+'% full')+
-    metric('DISCHARGE',liters(discharge)+' L','recorded discharge')+
-    metric('FUEL SOLD',liters(sold)+' L','recorded sales')+
-    metric('PURCHASES',liters(purchases)+' L','received volume')+
-    metric('PERFORMANCE',performance.toFixed(1)+'%','sales vs capacity')+
-    metric('EXPECTED',expected==null?'—':liters(expected)+' L','calculated stock')+
-    metric('STOCK DIFFERENCE',difference==null?'—':liters(difference)+' L','cached stock vs calculated')+
+    metric('DISCHARGE',displayLiters(discharge),'recorded discharge')+
+    metric('FUEL SOLD',displayLiters(sold),'recorded sales since stock baseline')+
+    metric('PURCHASES',displayLiters(purchases),'received volume since stock baseline')+
+    metric('PERFORMANCE',performance===null?'Not available':performance.toFixed(1)+'%','sales vs capacity')+
+    metric('EXPECTED',expected===null?'Not available':liters(expected)+' L','calculated stock')+
+    metric('STOCK DIFFERENCE',difference===null?'Not available':liters(difference)+' L','cached stock vs calculated')+
     metric('STOCK BASIS',inv.stock_basis==='physical_closing'?'Physical closing':'Ledger baseline',inv.physical_anchor_at?'Measured '+new Date(inv.physical_anchor_at).toLocaleString():'No recent physical closing')+
     metric('HISTORICAL ANOMALIES',String(Number(inv.historical_anomaly_count||0)),Number(inv.historical_anomaly_count||0)>0?'Legacy movement records require review':'No flagged legacy movements')+
     '</div>'+(Number(inv.historical_anomaly_count||0)>0?'<p style="color:#b45309;font-weight:650;margin:10px 0 0">Historical ledger anomalies were found before the latest physical reading. These records are retained for audit; they are not used to override the latest physical stock baseline.</p>':'')+'</section>';
   const performanceSection='<section class="admin-inventory-tank-detail-section"><div class="admin-inventory-tank-detail-section-head">STOCK PERFORMANCE</div><div class="admin-inventory-tank-detail-metrics">'+
     metric('FILL LEVEL',pct.toFixed(1)+'%','current / capacity')+
     metric('AVAILABLE',liters(current)+' L','usable stock')+
-    metric('OUTFLOW',liters(sold+discharge)+' L','sales + discharge')+
-    metric('NET RECEIPTS',liters(purchases)+' L','purchases recorded')+
+    metric('OUTFLOW',sold!==null&&discharge!==null?liters(sold+discharge)+' L':'Not available','sales + discharge')+
+    metric('NET RECEIPTS',displayLiters(purchases),'purchases since stock baseline')+
     '</div></section>';
   const slideOne='<article class="admin-inventory-tank-slide active">'+hero+statistics+performanceSection+'</article>';
   const slideTwo='<article class="admin-inventory-tank-slide">'+
