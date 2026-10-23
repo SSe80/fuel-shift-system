@@ -2,12 +2,15 @@ package com.fuelshiftsystem.tankwidget
 
 import android.app.Activity
 import android.app.DownloadManager
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
@@ -56,8 +59,51 @@ class AdminActivity : Activity() {
         root.addView(webView, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         setContentView(root)
         configureWebView()
+        requestWidgetPinOnFirstLaunch(root)
         if (savedInstanceState == null) webView.loadUrl(intent?.dataString ?: appUrl)
         else webView.restoreState(savedInstanceState)
+    }
+
+    /**
+     * The widget is bundled in this APK. Android does not permit apps to place a
+     * home-screen widget silently, so request the system's pin confirmation once
+     * on first launch; the user can approve or decline it.
+     */
+    private fun requestWidgetPinOnFirstLaunch(anchor: View) {
+        val prefs = getSharedPreferences("fuel_admin_widget_setup", MODE_PRIVATE)
+        if (prefs.getBoolean("pin_prompt_attempted", false)) return
+
+        val manager = AppWidgetManager.getInstance(this)
+        if (!manager.isRequestPinAppWidgetSupported) {
+            prefs.edit().putBoolean("pin_prompt_attempted", true).apply()
+            Toast.makeText(
+                this,
+                "Tank widget is included. Add it from your Home screen's Widgets menu.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
+        anchor.postDelayed({
+            if (isFinishing || isDestroyed) return@postDelayed
+            val requested = try {
+                manager.requestPinAppWidget(
+                    ComponentName(this, TankInventoryWidgetProvider::class.java),
+                    null,
+                    null
+                )
+            } catch (_: Exception) {
+                false
+            }
+            prefs.edit().putBoolean("pin_prompt_attempted", true).apply()
+            if (!requested) {
+                Toast.makeText(
+                    this,
+                    "Tank widget is included. Add it from your Home screen's Widgets menu.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }, 1200L)
     }
 
     private fun toolbarButton(label: String, action: () -> Unit) = Button(this).apply {
