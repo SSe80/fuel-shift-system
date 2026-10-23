@@ -4101,7 +4101,7 @@ function createMsrReportPdfV2(r){
   d.newPage();
   d.box(0,0,W,H,PAGE,0);
   d.markContent(0);
-  let py=34;
+  let py=84;
   section(M,py,'Product purchases and comparison');py+=24;
   section(M,py,'Purchase statistics');py+=19;
   const ps=r.purchaseSummary||{},pKpis=[
@@ -4139,7 +4139,7 @@ function createMsrReportPdfV2(r){
     {label:'Returned fuel',value:String((r.key||[]).find(x=>/returned fuel/i.test(x.label||''))?.value||'—')},
     {label:'Calculated sales',value:String((r.key||[]).find(x=>/calculated sales/i.test(x.label||''))?.value||'—')}
   ];
-  const mg=8,mw=(CW-mg*3)/4,my=36,mh=49;
+  const mg=8,mw=(CW-mg*3)/4,my=84,mh=49;
   metrics.forEach((it,i)=>{
     const x=M+i*(mw+mg);card(x,my,mw,mh,WHITE);
     d.box(x+1,my+8,3,mh-16,i===3?GREEN:BLUE,1.5);
@@ -4147,9 +4147,9 @@ function createMsrReportPdfV2(r){
     let fs=10;while(fs>7&&d.tw(it.value,fs,true)>mw-18)fs-=.5;
     d.text(d.fit(it.value,fs,true,mw-18),x+10,my+35,fs,true,INK);
   });
-  section(M,105,'DAILY SALES AND RETURNED FUEL');
-  d.text('Net liters, returned-fuel volume and value, calculated sales, entered payments and confirmed shifts',M,124,7.1,false,GREY);
-  const ledgerTop=139;
+  section(M,153,'DAILY SALES AND RETURNED FUEL');
+  d.text('Net liters, returned-fuel volume and value, calculated sales, entered payments and confirmed shifts',M,172,7.1,false,GREY);
+  const ledgerTop=187;
   const dailyRowH=Math.min(20,Math.max(14,Math.floor((H-ledgerTop-82)/Math.max(1,dailyRows.length))));
   table(M,ledgerTop,CW,
     [{h:'Date',x:8,max:70},{h:'Net liters',x:100,a:'r'},{h:'Returns (L)',x:180,a:'r'},{h:'Return value',x:267,a:'r'},{h:'Sales',x:350,a:'r'},{h:'Payments',x:430,a:'r'},{h:'Shifts',x:CW-8,a:'r'}],
