@@ -3,7 +3,7 @@
   "short_name": "Fuel Admin",
   "description": "Administrator access for Fuel Shift System",
   "id": "/fuel-shift-admin-app",
-  "start_url": "/admin-login.html?app=admin",
+  "start_url": "/admin-dashboard.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
