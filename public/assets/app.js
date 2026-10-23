@@ -2414,7 +2414,9 @@ function openAdminInventoryTankDetails(id){
   const ledgerPurchases=movementTotal('purchase');
   const summarySales=finiteOrNull(inv.sales_liters??inv.fuel_sold_liters);
   const summaryPurchases=finiteOrNull(inv.purchases_liters??inv.received_liters);
-  const sold=summarySales!==null&&(summarySales!==0||ledgerSales===0)?summarySales:ledgerSales;
+  const sold=inv.sales_source==='no_sales_records_after_baseline'&&ledgerSales===0
+    ?null
+    :(summarySales!==null&&(summarySales!==0||ledgerSales===0)?summarySales:ledgerSales);
   const purchases=summaryPurchases!==null&&(summaryPurchases!==0||ledgerPurchases===0)?summaryPurchases:ledgerPurchases;
   const dischargeFromMovements=movements.filter(m=>String(m.movement_type||'').toLowerCase()==='discharge').reduce((sum,m)=>sum+Math.abs(Number(m.quantity_liters||0)),0);
   const hasDischargeMovement=movements.some(m=>String(m.movement_type||'').toLowerCase()==='discharge');
