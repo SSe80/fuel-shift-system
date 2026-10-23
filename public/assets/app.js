@@ -2464,7 +2464,13 @@ function openAdminInventoryTankDetails(id){
       lifetimeHistoryDischarge+=quantity;hasLifetimeDischarge=true;
     });
   });
-  const discharge=finiteOrNull(inv.discharge_liters??inv.discharges_liters) ?? (hasDischargeMovement?dischargeFromMovements:(hasDischargeSinceBaseline?historyDischarge:(hasLifetimeDischarge?lifetimeHistoryDischarge:(hasTankDischargeHistory?0:null))));
+  const summaryDischarge=finiteOrNull(inv.discharge_liters??inv.discharges_liters);
+  // The API's baseline-relative 0 L must not hide a known historical discharge
+  // from purchase history; use the API total when nonzero, otherwise fall back
+  // to the tank-linked history for the activity display.
+  const discharge=summaryDischarge!==null&&summaryDischarge>0
+    ?summaryDischarge
+    :(hasDischargeMovement?dischargeFromMovements:(hasDischargeSinceBaseline?historyDischarge:(hasLifetimeDischarge?lifetimeHistoryDischarge:(summaryDischarge!==null?summaryDischarge:(hasTankDischargeHistory?0:null)))));
   const recordedPurchaseActivity=hasLifetimeDischarge?lifetimeHistoryDischarge:ledgerPurchases;
   const purchaseActivityAvailable=hasLifetimeDischarge||movements.some(m=>movementKind(m)==='purchase');
   const expected=finiteOrNull(inv.expected_liters);
