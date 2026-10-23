@@ -1468,6 +1468,15 @@ async function loadStationReconciliationAlerts(){
 
 /* Keep push subscriptions synchronized for installed Admin and Attendant PWAs. The OS permission itself must be granted by the user. */
 async function syncFuelAppPushSubscription(requestPermission=false){
+ if(window.FuelNativeNotifications&&window.FuelNativeNotifications.isNativeApp&&window.FuelNativeNotifications.isNativeApp()){
+  if(requestPermission){
+   const enabled=window.FuelNativeNotifications.enable();
+   return {enabled:!!enabled,permission:enabled?'granted':'default'};
+  }
+  const enabled=!!window.FuelNativeNotifications.isEnabled();
+  if(enabled)window.FuelNativeNotifications.refresh();
+  return {enabled,permission:enabled?'granted':'default'};
+ }
  if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))throw new Error('This device does not support app push notifications.');
  if(!window.isSecureContext)throw new Error('App notifications require HTTPS.');
  let permission=Notification.permission;
@@ -1524,6 +1533,10 @@ async function ensureFuelPushRegisteredOnLogin(role){
  }
 }
 async function getFuelPushSubscription(){
+ if(window.FuelNativeNotifications&&window.FuelNativeNotifications.isNativeApp&&window.FuelNativeNotifications.isNativeApp()){
+  const enabled=!!window.FuelNativeNotifications.isEnabled();
+  return {supported:true,permission:enabled?'granted':'default',subscription:enabled?{native:true}:null};
+ }
  if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))return {supported:false,permission:'unsupported',subscription:null};
  const registration=await navigator.serviceWorker.getRegistration('/')||await navigator.serviceWorker.register('/service-worker.js',{updateViaCache:'none'});
  try{await registration.update();}catch(updateError){console.warn('Could not check for a service-worker update',updateError);}
@@ -1556,7 +1569,9 @@ async function refreshFuelPushControl(button,role){
   button.style.fontWeight='800';
   button.style.cursor='pointer';
   button.style.transition='background .15s ease,border-color .15s ease,color .15s ease';
-  button.title=state.permission==='denied'?'Notifications are blocked in Android/browser settings. Allow them there before enabling.':'';
+  button.title=window.FuelNativeNotifications&&window.FuelNativeNotifications.isNativeApp&&window.FuelNativeNotifications.isNativeApp()
+   ?'Native Android notifications are managed by the Fuel Admin app.':'';
+  if(state.permission==='denied')button.title='Notifications are blocked in Android/browser settings. Allow them there before enabling.';
  }catch(e){
   button.disabled=false;button.textContent='Retry notification status';button.dataset.pushEnabled='false';
   console.warn('Could not read phone notification state',e);
@@ -1696,6 +1711,31 @@ function setupFuelPushControl(button,role){
    const wasEnabled=button.dataset.pushEnabled==='true';
    const action=wasEnabled?'disable':'enable';
    if(!await showFuelPushConfirm(action,role))return;
+   if(window.FuelNativeNotifications&&window.FuelNativeNotifications.isNativeApp&&window.FuelNativeNotifications.isNativeApp()){
+    button.disabled=true;
+    try{
+     if(wasEnabled){
+      window.FuelNativeNotifications.disable();
+      setFuelPushManuallyDisabled(role,true);
+      await refreshFuelPushControl(button,role);
+      showFuelPushResult(false,'Phone notifications are paused on this device. The station inbox remains available in the app.');
+     }else{
+      const enabled=!!window.FuelNativeNotifications.enable();
+      if(!enabled){
+       if(typeof toast==='function')toast('Allow Fuel Admin notifications in the Android permission prompt or app notification settings, then enable again.');
+       await refreshFuelPushControl(button,role);
+       return;
+      }
+      setFuelPushManuallyDisabled(role,false);
+      await refreshFuelPushControl(button,role);
+      showFuelPushResult(true,'Native Android alerts are enabled and will be checked in the background.');
+     }
+    }catch(nativeError){
+     if(typeof toast==='function')toast(nativeError.message||'Could not update Android notification settings.');
+     await refreshFuelPushControl(button,role);
+    }finally{button.disabled=false;}
+    return;
+   }
    button.disabled=true;
    button.textContent=wasEnabled?'Disabling…':'Enabling…';
    try{
