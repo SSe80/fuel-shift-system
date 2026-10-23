@@ -2396,7 +2396,8 @@ function openAdminInventoryTankDetails(id){
   const inv=(state.inventory||[]).find(x=>String(x.tank_id)===String(t.id))||{};
   const movements=(state.movements||[]).filter(x=>String(x.tank_id)===String(t.id)).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   const pc=String(product.color||'#1264d8').trim()||'#1264d8';
-  const current=Number(t.current_liters??inv.current_liters??0), capacity=Number(t.capacity_liters??inv.capacity_liters??0);
+  // Prefer the API's persisted tank balance for reconciliation details. The inventory card may replace t.current_liters with expected_liters for its calculated-stock display; using that derived value here would force STOCK DIFFERENCE to zero.
+  const current=Number(inv.current_liters??t.current_liters??0), capacity=Number(t.capacity_liters??inv.capacity_liters??0);
   const pct=capacity>0?Math.max(0,Math.min(100,current/capacity*100)):0;
   const finiteOrNull=value=>{
     if(value===null||value===undefined||value==='')return null;
