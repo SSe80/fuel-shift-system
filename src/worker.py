@@ -5864,7 +5864,16 @@ def daily_report(report_date_override=None):
     station_a=0
     calculated_station_a=sum(float(z.get("calculated_sales_amount") or 0) for z in shift_summary)
     payment_shift_ids={str(x.get("shift_id")) for x in payment_rows if x.get("shift_id")}
-    all_payment_recorded=bool(day_shifts) and all(str(x.get("id")) in payment_shift_ids for x in day_shifts if x.get("id"))
+    # Reconcile against shifts actually included in this DSR summary, not every
+    # shift that happened to start on the calendar date. Unconfirmed/other
+    # shifts can exist on the same date and must not hide valid entered totals
+    # for a confirmed DSR. A report is complete only when each summarized shift
+    # is confirmed and has an authoritative payment-ledger record.
+    dsr_payment_shifts=[x for x in shift_summary if x.get("shift_id")]
+    all_payment_recorded=bool(dsr_payment_shifts) and all(
+        str(x.get("shift_id")) in payment_shift_ids and str(x.get("sales_status") or "").lower()=="confirmed"
+        for x in dsr_payment_shifts
+    )
     for dispenser in dispenser_summary:
         station_l += float(dispenser.get("sales_liters") or 0)
         station_a += float(dispenser.get("sales_amount") or 0)
