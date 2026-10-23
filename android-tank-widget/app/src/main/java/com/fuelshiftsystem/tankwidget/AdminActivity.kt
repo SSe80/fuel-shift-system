@@ -231,8 +231,24 @@ class AdminActivity : Activity() {
     inner class NativeNotificationBridge(private val activity: AdminActivity) {
         @JavascriptInterface fun isNativeApp(): Boolean = true
         @JavascriptInterface fun isEnabled(): Boolean =
-            NotificationManagerCompat.from(activity).areNotificationsEnabled() &&
+            activity.getSharedPreferences("fuel_native_notifications", MODE_PRIVATE).getBoolean("enabled", false) &&
+                NotificationManagerCompat.from(activity).areNotificationsEnabled() &&
                 (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
+        @JavascriptInterface fun enable(): Boolean {
+            activity.getSharedPreferences("fuel_native_notifications", MODE_PRIVATE).edit().putBoolean("enabled", true).apply()
+            if (Build.VERSION.SDK_INT >= 33 &&
+                ContextCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                activity.runOnUiThread { activity.requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), notificationPermissionRequest) }
+                return false
+            }
+            if (!NotificationManagerCompat.from(activity).areNotificationsEnabled()) {
+                openSettings()
+                return false
+            }
+            NativeNotificationWorker.schedule(activity)
+            return true
+        }
+        @JavascriptInterface fun disable() { NativeNotificationWorker.disable(activity) }
         @JavascriptInterface fun openSettings() {
             runOnUiThread {
                 val intent = if (Build.VERSION.SDK_INT >= 26) {
