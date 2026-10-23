@@ -2462,7 +2462,10 @@ function openAdminInventoryTankDetails(id){
   // The source label is explanatory metadata and must not override a usable total.
   const sold=summarySales!==null
     ?summarySales
-    :(inv.sales_source==='no_sales_records_after_baseline'?0:(hasInventoryBaseline?null:ledgerSales));
+    // A valid stock baseline with no numeric sales total means no reliable
+    // post-baseline sales are available; display 0 rather than a misleading
+    // "Not available", and never substitute anomalous lifetime ledger rows.
+    :(hasInventoryBaseline||inv.sales_source==='no_sales_records_after_baseline'?0:ledgerSales);
   const purchases=summaryPurchases!==null?summaryPurchases:(hasInventoryBaseline?null:ledgerPurchases);
   const dischargeFromMovements=movements.filter(m=>String(m.movement_type||'').toLowerCase()==='discharge').reduce((sum,m)=>sum+Math.abs(Number(m.quantity_liters||0)),0);
   const hasDischargeMovement=movements.some(m=>String(m.movement_type||'').toLowerCase()==='discharge');
