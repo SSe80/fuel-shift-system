@@ -1602,8 +1602,8 @@ function downloadDailyReportExcel(){
       const product=productCode(t.product);
       const variance=t.variance_pct==null?'-':numberOrDash(t.variance_pct);
       const varianceNum=num(t.variance_pct);
-      const varFill=varianceNum<=1?'DCFCE7':varianceNum<=3?'FEF3C7':'FEE2E2';
-      const varColor=varianceNum<=1?'166534':varianceNum<=3?'C2410C':'B91C1C';
+      const varianceMagnitude=Math.abs(varianceNum);\n      const varFill=varianceMagnitude<=1?'DCFCE7':varianceMagnitude<=3?'FEF3C7':'FEE2E2';
+      const varColor=varianceMagnitude<=1?'166534':varianceMagnitude<=3?'C2410C':'B91C1C';
       const cells=styledEmptyCells();
       const set=(i,v,extra)=>cells[i]=Object.assign({v:v,border:'light'},extra||{});
       set(0,t.tank||'Tank',{bold:true,color:'0F172A'});
