@@ -54,11 +54,43 @@ jobs:
               cairosvg.svg2png(url=source, write_to=f"{output_dir}/admin_icon.png",
                                output_width=size, output_height=size)
           PY
-      - name: Build debug APK
+
+      # A release build must use the same private signing key on every run.
+      # Never publish a fresh ephemeral debug signature as an update.
+      - name: Configure persistent APK signing
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64" || { echo "::error::Configure ANDROID_KEYSTORE_BASE64 in repository Actions secrets before publishing an update."; exit 1; }
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || { echo "::error::Configure ANDROID_KEYSTORE_PASSWORD in repository Actions secrets."; exit 1; }
+          test -n "$ANDROID_KEY_ALIAS" || { echo "::error::Configure ANDROID_KEY_ALIAS in repository Actions secrets."; exit 1; }
+          test -n "$ANDROID_KEY_PASSWORD" || { echo "::error::Configure ANDROID_KEY_PASSWORD in repository Actions secrets."; exit 1; }
+          KEYSTORE_PATH="$RUNNER_TEMP/fuel-admin-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Build debug APK for pull request validation
+        if: github.event_name == 'pull_request'
         working-directory: android-tank-widget
         run: gradle --no-daemon assembleDebug
-      - name: Prepare named APK
+      - name: Prepare validation APK
+        if: github.event_name == 'pull_request'
         run: cp android-tank-widget/app/build/outputs/apk/debug/app-debug.apk Fuel-Shift-System-Admin.apk
+      - name: Build signed release APK
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        working-directory: android-tank-widget
+        run: gradle --no-daemon assembleRelease
+      - name: Prepare signed release APK
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: cp android-tank-widget/app/build/outputs/apk/release/app-release.apk Fuel-Shift-System-Admin.apk
+
       - name: Upload integrated Admin APK
         uses: actions/upload-artifact@v4
         with:
@@ -71,7 +103,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release delete-asset admin-apk-latest app-debug.apk --yes || true
-      - name: Publish APK download for Admin login page
+      - name: Publish signed APK download for Admin login page
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
@@ -80,6 +112,7 @@ jobs:
           body: |
             Native Android Admin app with the Tank Inventory home-screen widget.
             Download Fuel-Shift-System-Admin.apk and install it on your Android phone.
+            Future versions use the same signing key to support in-place updates.
             This app is separate from the Chrome-installed PWA shortcut.
           files: Fuel-Shift-System-Admin.apk
           overwrite_files: true
