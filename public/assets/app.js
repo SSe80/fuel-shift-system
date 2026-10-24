@@ -4145,8 +4145,9 @@ function createMsrReportPdfV2(r){
   const hl=(x,y,label)=>{d.box(x,y+2,3,12,BLUE,1.5);d.text(String(label).toUpperCase(),x+10,y+12,9.5,true,INK);};
   const tbl=(y,x,w,cols,rows,rowH)=>{
     const hh=20;
-    d.box(x,y,w,hh,NAVYH,5);
-    cols.forEach(c=>d.text(d.clean(c.h).toUpperCase(),x+c.x,y+13,6.8,true,WHITE,c.a==='r'?'r':'l'));
+    d.box(x,y,w,hh,[235,238,242],0);
+    cols.forEach(c=>d.text(d.clean(c.h).toUpperCase(),x+c.x,y+13,6.8,true,[15,15,15],c.a==='r'?'r':'l'));
+    d.hline(x,x+w,y+hh,[15,15,15],.8);
     y+=hh;
     rows.forEach((row,i)=>{
       if(row.bold)d.box(x,y,w,rowH,SOFT,0);else if(i%2===0)d.box(x,y,w,rowH,ZEBRA,0);
@@ -4164,15 +4165,15 @@ function createMsrReportPdfV2(r){
   };
   const table=(y,cols,rows,rowH)=>tbl(y,M,CW,cols,rows,rowH);
   const header=(label)=>{
-    d.box(M,22,CW,58,NAVYH,9);
-    d.text('MONTHLY SALES REPORT  \u00b7  STATION RECONCILIATION',M+14,37,7.8,true,LBLUE);
+    d.text('MONTHLY SALES REPORT  \u00b7  STATION RECONCILIATION',M,34,7.8,true,[90,90,90]);
     const status=String(r.statusLabel||'Generated').toUpperCase();
     const warn=/pending|draft|open|partial|provisional/i.test(status);
     const sw=Math.max(84,d.tw(status,7.6,true)+22);
-    d.text(d.fit(String(r.title||''),19,true,CW-sw-44),M+14,62,19,true,WHITE);
-    d.box(R-sw-12,34,sw,20,warn?LAMBER:LGREEN,10);
-    d.text(status,R-12-sw/2,47,7.6,true,warn?AMBER:GREEN,'c');
-    if(label)d.text(label.toUpperCase(),M,96,7.2,true,GREY);
+    d.text(d.fit(String(r.title||''),19,true,CW-sw-44),M,62,19,true,[15,15,15]);
+    d.outline(R-sw,34,sw,20,10);
+    d.text(status,R-sw/2,47,7.6,true,[15,15,15],'c');
+    d.hline(M,R,74,[15,15,15],1);
+    if(label)d.text(label.toUpperCase(),M,96,7.2,true,[90,90,90]);
   };
   const footnote=(y,text)=>{d.text(d.fit(text,6.8,false,CW),M,Math.min(BOTTOM-8,y),6.8,false,GREY);};
   const kg=8;
