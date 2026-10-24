@@ -4125,162 +4125,153 @@ function msrNiceAxis(max){
   return {step:2*mag,axis:10*mag};
 }
 function createMsrReportPdfV2(r){
-  // MSR follows the DSR PDF visual language: inset navy header, rounded cards,
-  // clear section headings and compact tables. No charts or attendant section.
-  const d=createPdfDoc(),M=24,CW=595.28-48,W=595.28,H=841.89,R=M+CW;
+  // MSR layout v5. Page 1: summary, products, purchases, sales by type and dispensers (side by side),
+  // reconciliation and note. Page 2: daily sales and returned fuel ledger.
+  const d=createPdfDoc(),M=28,W=595.28,H=841.89,CW=W-2*M,R=M+CW;
+  d.keepA4Width=true;
+  const NAVYH=[20,33,61],WHITE=[255,255,255],INK=[15,23,42],GREY=[100,116,139],LINE=[226,232,240],
+    ZEBRA=[248,250,252],SOFT=[241,245,249],BLUE=[37,99,235],GREEN=[21,128,61],LGREEN=[220,252,231],
+    AMBER=[180,83,9],LAMBER=[254,243,199],LBLUE=[147,197,253],BOTTOM=H-60;
   const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0;};
   const fmt=v=>num(v).toLocaleString('en-US',{maximumFractionDigits:2});
-  d.keepA4Width=true;
-  const WHITE=[255,255,255],PAGE=[255,255,255],INK=[15,23,42],GREY=[100,116,139],
-    NAVY=[0,0,0],BLUE=[37,99,235],BORDER=[226,232,240],SOFT=[241,245,249],
-    LBLUE=[239,246,255],GREEN=[21,128,61],LGREEN=[220,252,231],AMBER=[180,83,9],LAMBER=[254,243,199];
-  const card=(x,y,w,h,fill=WHITE)=>{d.box(x,y,w,h,fill,9);d.outline(x,y,w,h,9);};
-  const section=(x,y,label)=>{d.box(x,y+1,3,15,BLUE,1.8);d.text(String(label).toUpperCase(),x+12,y+13.5,11.5,true,INK);};
-  const line=(x,y,w)=>d.hline(x,x+w,y,BORDER,.55);
-  const fitText=(value,size,bold,width)=>d.fit(String(value==null?'—':value),size,bold,width);
-  const table=(x,y,w,cols,rows,rowH=22)=>{
-    const headerH=23;
-    d.box(x,y,w,headerH,NAVY,5);
-    cols.forEach(c=>d.text(d.clean(c.h).toUpperCase(),x+c.x,y+14,6.9,true,WHITE,c.a==='r'?'r':'l'));
-    y+=headerH;
+  const cellText=v=>v==null||v===''?'\u2014':String(v);
+  const card=(x,y,w,h,fill)=>{d.box(x,y,w,h,fill||WHITE,8);d.outline(x,y,w,h,8);};
+  const heading=(y,label,sub)=>{
+    d.box(M,y+2,3,12,BLUE,1.5);
+    d.text(String(label).toUpperCase(),M+10,y+12,9.5,true,INK);
+    if(sub)d.text(d.fit(String(sub),7,false,CW-10),M+10,y+24,7,false,GREY);
+    return y+(sub?34:22);
+  };
+  const hl=(x,y,label)=>{d.box(x,y+2,3,12,BLUE,1.5);d.text(String(label).toUpperCase(),x+10,y+12,9.5,true,INK);};
+  const tbl=(y,x,w,cols,rows,rowH)=>{
+    const hh=20;
+    d.box(x,y,w,hh,NAVYH,5);
+    cols.forEach(c=>d.text(d.clean(c.h).toUpperCase(),x+c.x,y+13,6.8,true,WHITE,c.a==='r'?'r':'l'));
+    y+=hh;
     rows.forEach((row,i)=>{
-      if(row.bold)d.box(x,y,w,rowH,SOFT,0);else if(i%2===0)d.box(x,y,w,rowH,[250,251,253],0);
+      if(row.bold)d.box(x,y,w,rowH,SOFT,0);else if(i%2===0)d.box(x,y,w,rowH,ZEBRA,0);
       cols.forEach((c,j)=>{
-        const value=row.cells&&row.cells[j];
-        if(value==null||value==='')return;
+        const v=row.cells&&row.cells[j];
+        if(v==null||v==='')return;
+        const bold=!!row.bold||!!c.b;
         const tone=(row.tones&&row.tones[j])||(j===0&&row.dot?row.dot:INK);
-        d.text(fitText(value,7.8,!!row.bold||!!c.b,(c.max||180)),x+c.x,y+rowH/2+2.8,7.8,!!row.bold||!!c.b,tone,c.a==='r'?'r':'l');
+        d.text(d.fit(cellText(v),7.6,bold,c.max||(w*0.4)),x+c.x,y+rowH/2+2.7,7.6,bold,tone,c.a==='r'?'r':'l');
       });
-      line(x,y+rowH,w);y+=rowH;
+      d.hline(x,x+w,y+rowH,LINE,.5);
+      y+=rowH;
     });
-    return y+9;
+    return y+14;
   };
-  const header=(pageLabel)=>{
-    d.box(0,0,W,H,PAGE,0);
-    const hx=M,hy=10,hh=58;
-    d.box(hx,hy,CW,hh,NAVY,9);
-    d.text('MONTHLY SALES REPORT  ·  STATION RECONCILIATION',hx+14,hy+15,8.2,true,[147,197,253]);
+  const table=(y,cols,rows,rowH)=>tbl(y,M,CW,cols,rows,rowH);
+  const header=(label)=>{
+    d.box(M,22,CW,58,NAVYH,9);
+    d.text('MONTHLY SALES REPORT  \u00b7  STATION RECONCILIATION',M+14,37,7.8,true,LBLUE);
     const status=String(r.statusLabel||'Generated').toUpperCase();
-    const statusW=Math.max(78,d.tw(status,7.8,true)+18);
-    d.text(d.fit(r.title,19,true,CW-statusW-54),hx+14,hy+39,19,true,WHITE);
     const warn=/pending|draft|open|partial|provisional/i.test(status);
-    d.box(hx+CW-statusW-12,hy+20,statusW,21,warn?LAMBER:LGREEN,11);
-    d.text(status,hx+CW-statusW/2-12,hy+33.5,7.8,true,warn?AMBER:GREEN,'c');
-    if(pageLabel)d.text(pageLabel.toUpperCase(),M,82,7.3,true,GREY);
+    const sw=Math.max(84,d.tw(status,7.6,true)+22);
+    d.text(d.fit(String(r.title||''),19,true,CW-sw-44),M+14,62,19,true,WHITE);
+    d.box(R-sw-12,34,sw,20,warn?LAMBER:LGREEN,10);
+    d.text(status,R-12-sw/2,47,7.6,true,warn?AMBER:GREEN,'c');
+    if(label)d.text(label.toUpperCase(),M,96,7.2,true,GREY);
   };
-  const keyItems=(r.key||[]).slice(0,4);
-  const highlights=(r.highlights||[]);
-  // PAGE 1 — key figures and compact, graph-free performance tables.
-  header('Monthly summary');
-  d.markContent(72);
-  let y=84;
-  const gap=8,cardW=(CW-gap*3)/4,cardH=57;
+  const footnote=(y,text)=>{d.text(d.fit(text,6.8,false,CW),M,Math.min(BOTTOM-8,y),6.8,false,GREY);};
+  const kg=8;
+  // ---------- PAGE 1 ----------
+  header('Page 1 of 3');
+  let y=112;
+  const keyItems=(r.key||[]).slice(0,4),kw=(CW-kg*3)/4,kh=54;
   keyItems.forEach((it,i)=>{
-    const x=M+i*(cardW+gap),tone=it.tone==='good'?GREEN:BLUE;
-    card(x,y,cardW,cardH,WHITE);d.box(x+1,y+9,3,cardH-18,tone,1.5);
-    d.text(d.fit(String(it.label||'').toUpperCase(),6.5,true,cardW-18),x+10,y+17,6.5,true,GREY);
-    let size=it.size||13;while(size>8.5&&d.tw(String(it.value||'—'),size,true)>cardW-18)size-=.5;
-    d.text(d.fit(String(it.value||'—'),size,true,cardW-18),x+10,y+40,size,true,tone===GREEN?GREEN:INK);
+    const x=M+i*(kw+kg),tone=it.tone==='good'?GREEN:BLUE;
+    card(x,y,kw,kh);d.box(x+1,y+10,3,kh-20,tone,1.5);
+    d.text(d.fit(String(it.label||'').toUpperCase(),6.5,true,kw-20),x+11,y+17,6.5,true,GREY);
+    let size=it.size||13;while(size>8.5&&d.tw(String(it.value||'\u2014'),size,true)>kw-20)size-=.5;
+    d.text(d.fit(String(it.value||'\u2014'),size,true,kw-20),x+11,y+40,size,true,tone===GREEN?GREEN:INK);
   });
-  y+=cardH+12;
+  y+=kh+12;
+  const highlights=(r.highlights||[]);
   if(highlights.length){
-    const hw=(CW-gap*(highlights.length-1))/highlights.length,hh=43;
+    const hw=(CW-kg*(highlights.length-1))/highlights.length,hh=44;
     highlights.forEach((it,i)=>{
-      const x=M+i*(hw+gap);card(x,y,hw,hh,WHITE);
-      d.text(d.fit(String(it.label||'').toUpperCase(),6.3,true,hw-18),x+9,y+13,6.3,true,GREY);
-      d.text(d.fit(String(it.value||'—'),9.2,true,hw-18),x+9,y+27,9.2,true,INK);
-      if(it.sub)d.text(d.fit(String(it.sub),6.5,false,hw-18),x+9,y+37,6.5,false,GREY);
+      const x=M+i*(hw+kg);card(x,y,hw,hh);
+      d.text(d.fit(String(it.label||'').toUpperCase(),6.3,true,hw-20),x+10,y+14,6.3,true,GREY);
+      d.text(d.fit(String(it.value||'\u2014'),9.5,true,hw-20),x+10,y+29,9.5,true,INK);
+      if(it.sub)d.text(d.fit(String(it.sub),6.6,false,hw-20),x+10,y+39,6.6,false,GREY);
     });
-    y+=hh+14;
+    y+=hh+16;
   }
-  section(M,y,'Product performance');y+=21;
-  y=table(M,y,CW,
-    [{h:'Product',x:9,max:120},{h:'Fuel sold',x:195,a:'r'},{h:'Sales',x:282,a:'r'},{h:'Share',x:360,a:'r'},{h:'Sales / L',x:435,a:'r'},{h:'Rank',x:CW-9,a:'r'}],
-    (r.productRowsV2||[]).length?r.productRowsV2:[{cells:['No product totals','—','—','—','—','—']}],22);
-  section(M,y,'Sales by type');y+=21;
-  const saleRows=(r.saleTypeRowsV2||[]).length?r.saleTypeRowsV2:[{cells:['No eligible sale-type totals','—','—']}];
-  y=table(M,y,CW,
-    [{h:'Sale type',x:9,max:240},{h:'Monthly total ('+(window.stationCurrency||'ETB')+')',x:CW-150,a:'r'},{h:'Share',x:CW-9,a:'r'}],
-    saleRows.slice(0,Math.max(1,Math.min(8,Math.floor((H-y-120)/22)))),21);
-  // Dispenser details stay as a table; graphs are intentionally removed.
-  if(y<H-100){
-    section(M,y,'Dispenser setup');y+=21;
-    const available=Math.max(1,Math.min((r.dispenserRowsV2||[]).length||1,Math.floor((H-y-80)/22)));
-    y=table(M,y,CW,
-      [{h:'Dispenser',x:9,max:170},{h:'Product',x:240,max:150},{h:'Nozzles',x:CW-9,a:'r'}],
-      (r.dispenserRowsV2||[]).length?r.dispenserRowsV2.slice(0,available):[{cells:['No dispensers configured','—','—']}],21);
-  }
-  if(r.notesStrip&&r.notesStrip.length&&y<H-55){
-    section(M,y,'Reconciliation');y+=20;
-    const nh=42,nw=(CW-gap*(r.notesStrip.length-1))/r.notesStrip.length;
-    r.notesStrip.forEach((n,i)=>{
-      const x=M+i*(nw+gap);card(x,y,nw,nh,SOFT);
-      d.text(d.fit(String(n.label||'').toUpperCase(),6.2,true,nw-14),x+8,y+13,6.2,true,GREY);
-      d.text(d.fit(String(n.value||'—'),9.2,true,nw-14),x+8,y+29,9.2,true,n.tone==='warn'?AMBER:INK);
+  y=heading(y,'Product performance');
+  y=table(y,[{h:'Product',x:9,max:120},{h:'Fuel sold',x:CW*0.42,a:'r'},{h:'Sales',x:CW*0.64,a:'r'},{h:'Share',x:CW*0.75,a:'r'},{h:'Sales / L',x:CW*0.88,a:'r'},{h:'Rank',x:CW-9,a:'r'}],
+    (r.productRowsV2||[]).length?r.productRowsV2:[{cells:['No product totals','\u2014','\u2014','\u2014','\u2014','\u2014']}],20);
+  // Sales by type and dispensers, side by side
+  const half=(CW-16)/2,LX=M,RX=M+half+16;
+  hl(LX,y,'Sales by type');hl(RX,y,'Dispenser setup');
+  const yt=y+22;
+  const saleRows=(r.saleTypeRowsV2||[]).length?r.saleTypeRowsV2.slice(0,5):[{cells:['No eligible sale-type totals','\u2014','\u2014']}];
+  const dispRows=(r.dispenserRowsV2||[]).length?r.dispenserRowsV2.slice(0,5):[{cells:['No dispensers configured','\u2014','\u2014']}];
+  const yl=tbl(yt,LX,half,[{h:'Sale type',x:8,max:110},{h:'Monthly total',x:half*0.66,a:'r'},{h:'Share',x:half-8,a:'r'}],saleRows,18);
+  const yr=tbl(yt,RX,half,[{h:'Dispenser',x:8,max:90},{h:'Product',x:half*0.55,max:70},{h:'Nozzles',x:half-8,a:'r'}],dispRows,18);
+  y=Math.max(yl,yr);
+  // Reconciliation
+  const notes=(r.notesStrip||[]);
+  if(notes.length){
+    y=heading(y,'Reconciliation');
+    const nh=46,nw=(CW-kg*(notes.length-1))/notes.length;
+    notes.forEach((n,i)=>{
+      const x=M+i*(nw+kg);card(x,y,nw,nh,SOFT);
+      d.text(d.fit(String(n.label||'').toUpperCase(),6.3,true,nw-18),x+9,y+15,6.3,true,GREY);
+      d.text(d.fit(String(n.value||'\u2014'),9.5,true,nw-18),x+9,y+34,9.5,true,n.tone==='warn'?AMBER:INK);
     });
-    y+=nh+8;
+    y+=nh+14;
   }
-  d.text('Based on confirmed daily reports. The current month remains provisional until all daily reports are confirmed.',M,Math.min(H-18,y+6),6.8,false,GREY);
-  // PAGE 2 — purchase statistics. Continuation pages intentionally omit the
-  // repeated report banner so the available page height is used for content.
+  footnote(y,'Based on confirmed daily reports. The current month remains provisional until all daily reports are confirmed.');
+  // ---------- PAGE 2 ----------
   d.newPage();
-  d.box(0,0,W,H,PAGE,0);
+  d.box(0,0,W,H,WHITE,0);
   d.markContent(0);
-  let py=84;
-  section(M,py,'Product purchases and comparison');py+=24;
-  section(M,py,'Purchase statistics');py+=19;
-  const ps=r.purchaseSummary||{},pKpis=[
-    {label:'Purchase records',value:String(num(ps.count))},
-    {label:'Dispatched quantity',value:fmt(ps.dispatched)+' L'},
-    {label:'Delivered quantity',value:fmt(ps.delivered)+' L'},
-    {label:'Discharged quantity',value:fmt(ps.discharged)+' L'}
-  ];
-  const pGap=8,pW=(CW-pGap*3)/4,pY=py,pH=45;
-  pKpis.forEach((it,i)=>{const x=M+i*(pW+pGap);card(x,pY,pW,pH,WHITE);d.text(d.fit(it.label.toUpperCase(),5.8,true,pW-14),x+7,pY+14,5.8,true,GREY);let fs=9.5;while(fs>7&&d.tw(it.value,fs,true)>pW-14)fs-=.5;d.text(d.fit(it.value,fs,true,pW-14),x+7,pY+32,fs,true,INK);});
-  py=pY+pH+12;
-  d.text('Purchases are assigned to the month of the purchase date. These quantities are not sales.',M,py+5,7,false,GREY);
-  py+=22;section(M,py,'Product purchase breakdown');py+=20;
-  const purchaseRows=(r.purchaseRowsV2||[]).length?r.purchaseRowsV2:[{cells:['No purchase records','—','—','—','—','—']}];
-  const purchaseRowH=Math.min(20,Math.max(15,Math.floor((H-py-160)/Math.max(1,purchaseRows.length))));
-  py=table(M,py,CW,[{h:'Product',x:8,max:115},{h:'Records',x:165,a:'r'},{h:'Dispatched',x:245,a:'r'},{h:'Delivered',x:320,a:'r'},{h:'Discharged',x:395,a:'r'},{h:'Remaining',x:CW-8,a:'r'}],purchaseRows,purchaseRowH);
-  if(py<H-125){
-    section(M,py,'Purchase month comparison');py+=21;
-    const cmp=(r.purchaseComparisonRowsV2||[]).slice(-Math.max(1,Math.min(7,Math.floor((H-py-80)/17))));
-    table(M,py,CW,[{h:'Product',x:8,max:76},{h:'Month',x:90,max:80},{h:'Records',x:174,a:'r'},{h:'Dispatched',x:232,a:'r'},{h:'Delivered',x:292,a:'r'},{h:'Discharged',x:352,a:'r'},{h:'Remaining',x:412,a:'r'},{h:'Change',x:CW-8,a:'r'}],cmp.length?cmp:[{cells:['No comparison data','—','—','—','—','—','—','—']}],16);
-  }
-  d.text('Purchase statistics are grouped by purchase date; discharge quantities show recorded physical discharge.',M,H-22,6.5,false,GREY);
-
-  // PAGE 3 — dedicated daily sales and returned-fuel ledger.
+  header('Page 2 of 3');
+  y=112;
+  y=heading(y,'Purchases and purchase comparison');
+  const ps=r.purchaseSummary||{};
+  const pKpis=[{label:'Purchase records',value:String(num(ps.count))},{label:'Dispatched quantity',value:fmt(ps.dispatched)+' L'},{label:'Delivered quantity',value:fmt(ps.delivered)+' L'},{label:'Discharged quantity',value:fmt(ps.discharged)+' L'}];
+  const pH=46,pw=(CW-kg*3)/4;
+  pKpis.forEach((it,i)=>{
+    const x=M+i*(pw+kg);card(x,y,pw,pH,SOFT);
+    d.text(d.fit(it.label.toUpperCase(),6.2,true,pw-18),x+9,y+15,6.2,true,GREY);
+    let fs=9.5;while(fs>7&&d.tw(it.value,fs,true)>pw-18)fs-=.5;
+    d.text(d.fit(it.value,fs,true,pw-18),x+9,y+34,fs,true,INK);
+  });
+  y+=pH+12;
+  y=heading(y,'Product purchase breakdown');
+  const purchaseRows=(r.purchaseRowsV2||[]).length?r.purchaseRowsV2:[{cells:['No purchase records','\u2014','\u2014','\u2014','\u2014','\u2014']}];
+  y=table(y,[{h:'Product',x:9,max:115},{h:'Records',x:CW*0.4,a:'r'},{h:'Dispatched',x:CW*0.56,a:'r'},{h:'Delivered',x:CW*0.71,a:'r'},{h:'Discharged',x:CW*0.85,a:'r'},{h:'Remaining',x:CW-9,a:'r'}],purchaseRows.slice(0,4),18);
+  y=heading(y,'Purchase month comparison');
+  const cmpRows=(r.purchaseComparisonRowsV2||[]).length?r.purchaseComparisonRowsV2.slice(-4):[{cells:['No comparison data','\u2014','\u2014','\u2014','\u2014','\u2014','\u2014','\u2014']}];
+  y=table(y,[{h:'Product',x:9,max:76},{h:'Month',x:CW*0.2,max:84},{h:'Records',x:CW*0.4,a:'r'},{h:'Dispatched',x:CW*0.54,a:'r'},{h:'Delivered',x:CW*0.67,a:'r'},{h:'Discharged',x:CW*0.8,a:'r'},{h:'Remaining',x:CW*0.91,a:'r'},{h:'Change',x:CW-9,a:'r'}],cmpRows,18);
+  footnote(BOTTOM-6,'Purchase statistics are grouped by purchase date; discharge quantities show recorded physical discharge.');
+  // ---------- PAGE 3 ----------
   d.newPage();
-  d.box(0,0,W,H,PAGE,0);
+  d.box(0,0,W,H,WHITE,0);
   d.markContent(0);
-  const dailyRows=(r.dailyRowsV2||[]).length?r.dailyRowsV2:[{cells:['No confirmed DSR days','—','—','—','—','—','—']}];
-  const sumRows=dailyRows.filter(row=>row&&row.bold);
+  header('Page 3 of 3');
+  y=112;
+  y=heading(y,'Daily sales and returned fuel','Net liters, returned fuel volume and value, calculated sales, entered payments and confirmed shifts');
+  const dailyRows=(r.dailyRowsV2||[]).length?r.dailyRowsV2:[{cells:['No confirmed DSR days','\u2014','\u2014','\u2014','\u2014','\u2014','\u2014']}];
   const rawRows=dailyRows.filter(row=>row&&!row.bold);
   const dailyCount=rawRows.filter(row=>row.cells&&row.cells[0]&&row.cells[0]!=='No confirmed DSR days').length;
-  const metrics=[
-    {label:'Confirmed days',value:String(dailyCount)},
-    {label:'Net fuel sold',value:String((r.key||[]).find(x=>/net fuel sold/i.test(x.label||''))?.value||'—')},
-    {label:'Returned fuel',value:String((r.key||[]).find(x=>/returned fuel/i.test(x.label||''))?.value||'—')},
-    {label:'Calculated sales',value:String((r.key||[]).find(x=>/calculated sales/i.test(x.label||''))?.value||'—')}
-  ];
-  const mg=8,mw=(CW-mg*3)/4,my=84,mh=49;
+  const kv=re=>String((r.key||[]).find(x=>re.test(x.label||''))?.value||'\u2014');
+  const metrics=[{label:'Confirmed days',value:String(dailyCount)},{label:'Net fuel sold',value:kv(/net fuel sold/i)},{label:'Returned fuel',value:kv(/returned fuel/i)},{label:'Calculated sales',value:kv(/calculated sales/i)}];
+  const mw=(CW-kg*3)/4,mh=50;
   metrics.forEach((it,i)=>{
-    const x=M+i*(mw+mg);card(x,my,mw,mh,WHITE);
-    d.box(x+1,my+8,3,mh-16,i===3?GREEN:BLUE,1.5);
-    d.text(d.fit(it.label.toUpperCase(),6.2,true,mw-17),x+10,my+16,6.2,true,GREY);
-    let fs=10;while(fs>7&&d.tw(it.value,fs,true)>mw-18)fs-=.5;
-    d.text(d.fit(it.value,fs,true,mw-18),x+10,my+35,fs,true,INK);
+    const x=M+i*(mw+kg);card(x,y,mw,mh);
+    d.box(x+1,y+10,3,mh-20,i===3?GREEN:BLUE,1.5);
+    d.text(d.fit(it.label.toUpperCase(),6.3,true,mw-20),x+11,y+17,6.3,true,GREY);
+    let fs=10;while(fs>7&&d.tw(it.value,fs,true)>mw-20)fs-=.5;
+    d.text(d.fit(it.value,fs,true,mw-20),x+11,y+38,fs,true,INK);
   });
-  section(M,153,'DAILY SALES AND RETURNED FUEL');
-  d.text('Net liters, returned-fuel volume and value, calculated sales, entered payments and confirmed shifts',M,172,7.1,false,GREY);
-  const ledgerTop=187;
-  const dailyRowH=Math.min(20,Math.max(14,Math.floor((H-ledgerTop-82)/Math.max(1,dailyRows.length))));
-  table(M,ledgerTop,CW,
-    [{h:'Date',x:8,max:70},{h:'Net liters',x:100,a:'r'},{h:'Returns (L)',x:180,a:'r'},{h:'Return value',x:267,a:'r'},{h:'Sales',x:350,a:'r'},{h:'Payments',x:430,a:'r'},{h:'Shifts',x:CW-8,a:'r'}],
-    dailyRows,dailyRowH);
-  d.text('Returned-fuel values are shown separately from net fuel sold and calculated sales.',M,H-35,6.5,false,GREY);
-  d.text('Based on confirmed daily reports. Current-month totals remain provisional until all expected DSRs are confirmed.',M,H-22,6.5,false,GREY);
+  y+=mh+14;
+  const rowH=Math.min(20,Math.max(13,Math.floor((BOTTOM-y-60)/Math.max(1,dailyRows.length))));
+  y=table(y,[{h:'Date',x:9,max:70},{h:'Net liters',x:CW*0.25,a:'r'},{h:'Returns (L)',x:CW*0.38,a:'r'},{h:'Return value',x:CW*0.56,a:'r'},{h:'Sales',x:CW*0.73,a:'r'},{h:'Payments',x:CW*0.88,a:'r'},{h:'Shifts',x:CW-9,a:'r'}],dailyRows,rowH);
+  footnote(BOTTOM-6,'Returned-fuel values are shown separately from net fuel sold and calculated sales. Purchase quantities are assigned to the month of the purchase date.');
   return d.finish(r.footer,'MSR - '+r.title);
 }
 function createMsrReportPdf(r){
