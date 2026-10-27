@@ -93,12 +93,16 @@ async function confirmSettingsAction(){
   }catch(e){toast(e.message);}
 }
 function getFuelRole() {
-  // The page determines the API role. A single localStorage key is shared by
-  // every tab on this origin, so another role logging in must not change the
-  // role header sent by an already-open admin/attendant page.
+  // Resolve the role from the page itself before consulting shared browser
+  // storage. The attendant shift-history route is named shift.html (not
+  // attendant-*.html), so it must be identified by its page marker; otherwise
+  // an Admin tab's shared fuelRole value can make attendant requests use the
+  // Admin cookie and return {"authenticated":false}.
   const path = location.pathname.toLowerCase();
-  if (path.includes('admin-')) return 'admin';
-  if (path.includes('attendant-')) return 'attendant';
+  if (path.includes('admin-') || document.body?.classList.contains('admin-page')) return 'admin';
+  if (path.includes('attendant-') || document.body?.classList.contains('attendant-page') ||
+      document.body?.classList.contains('attendant-shift-page') ||
+      document.body?.dataset?.appPage === 'loadAttendantShiftPage') return 'attendant';
   const savedRole = localStorage.getItem('fuelRole') || sessionStorage.getItem('fuelRole') || '';
   if (savedRole === 'admin' || savedRole === 'attendant') return savedRole;
   return '';
