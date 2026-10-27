@@ -5291,7 +5291,10 @@ def _daily_confirmation_snapshot(report_date):
 def daily_report_confirmations():
     auth=require_admin()
     if auth:return auth
-    today=(datetime.now(timezone.utc)+timedelta(hours=3)).date(); start=today-timedelta(days=3650)
+    today=(datetime.now(timezone.utc)+timedelta(hours=3)).date()
+    # Limit shift lookup volume; very large ID lists can exceed PostgREST URL/request limits.
+    start=today-timedelta(days=365)
+    history_start=today-timedelta(days=3650)
     ss,shifts=sb("shifts",params={"start_time":"gte."+start.isoformat()+"T00:00:00+03:00","select":"id,start_time,end_time,employee_id,nozzle_id","order":"start_time.asc","limit":"10000"})
     if ss!=200:return jsonify({"error":shifts}),ss
     shifts=[x for x in shifts if _local_date_from_iso(x.get("start_time")) and _local_date_from_iso(x.get("start_time"))<=today]
@@ -5308,7 +5311,7 @@ def daily_report_confirmations():
         nss,nozzles=sb("nozzles",params={"id":"in.("+",".join(nozzle_ids)+")","select":"id,nozzle_code","limit":"10000"})
         if nss==200:nozzle_map={str(x.get("id")):str(x.get("nozzle_code") or "").strip() for x in nozzles}
     shift_lookup={str(x.get("id")):x for x in shifts if x.get("id")}
-    es,existing=sb("daily_report_confirmations",params={"report_date":"gte."+start.isoformat(),"select":"id,report_date,status,confirmed_at,confirmed_by","order":"report_date.desc","limit":"5000"})
+    es,existing=sb("daily_report_confirmations",params={"report_date":"gte."+history_start.isoformat(),"select":"id,report_date,status,confirmed_at,confirmed_by","order":"report_date.desc","limit":"5000"})
     if es!=200:return jsonify({"error":existing}),es
     existing=[x for x in existing if str(x.get("report_date") or "")[:10]<=today.isoformat()]
     existing={str(x["report_date"]):x for x in existing}; grouped={}
@@ -5319,7 +5322,9 @@ def daily_report_confirmations():
     # Detailed readiness snapshots require several database queries per date.
     # Keep recent operational dates detailed and preserve older confirmed dates
     # as lightweight history cards instead of a 10-year N+1 query burst.
-    detailed_cutoff=today-timedelta(days=365)
+    detailed_cutoff=today-timedelta(days=30)
+    # Keep detailed readiness calculations bounded to the latest 30 days.
+    # Older confirmed dates remain visible from stored confirmation metadata.
     for d,day_shifts in sorted(grouped.items(),reverse=True):
         row=existing.get(d.isoformat())
         if d < detailed_cutoff:
