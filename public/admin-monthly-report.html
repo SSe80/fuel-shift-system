@@ -283,7 +283,7 @@ body.msr-page{background:#f4f7fb;color:#17202a}.msr-page .wrap{max-width:1100px;
    for(const row of rows){
     if(!row||row.status!=='confirmed')continue;
     const d=safeDate(row.date);
-    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(d))continue;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d))continue;
     const month=d.slice(0,7);
     if(!grouped.has(month))grouped.set(month,{month,days:0,amount:0,liters:0});
     const item=grouped.get(month);
@@ -400,7 +400,7 @@ lastExportData={month,summary:{confirmedDays:days.length,expectedDays:inMonth.le
    const message=String(e&&e.message||'');
    const safeMessage=/<html|<!doctype|<title|<body/i.test(message)
     ?'The report service returned an internal server error. Please retry in a moment; if it continues, check the Worker and database logs.'
-    :message.replace(/<[^>]*>/g,' ').replace(/\\s+/g,' ').trim();
+    :message.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
    $('msr-error').textContent='Unable to load the MSR: '+(safeMessage||'Unknown error');
    $('msr-attendants').innerHTML='<div class="msr-empty">Attendant performance could not be loaded. Retry after the report service recovers.</div>';
    $('msr-shift-ranking').innerHTML='<div class="msr-empty">Shift performance could not be loaded. Retry after the report service recovers.</div>';
