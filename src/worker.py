@@ -5345,6 +5345,23 @@ def daily_report_confirmations():
             snap["status"]="pending"
         snap["id"]=(row or {}).get("id")
         cards.append(snap)
+    # Preserve stored records older than the detailed snapshot window, including
+    # pending/waiting cards, without running expensive per-day readiness queries.
+    visible_dates={str(card.get("date") or "") for card in cards}
+    for date_key,row in sorted(existing.items(),reverse=True):
+        if date_key in visible_dates or date_key>=detailed_cutoff.isoformat():
+            continue
+        if row.get("status") not in ("confirmed","pending","waiting"):
+            continue
+        cards.append({
+            "date":date_key,
+            "id":row.get("id"),
+            "status":row.get("status"),
+            "confirmed_at":row.get("confirmed_at"),
+            "confirmed_by":row.get("confirmed_by"),
+            "historical_summary":True,
+        })
+    cards.sort(key=lambda card:str(card.get("date") or ""),reverse=True)
     # Keep the existing ID arrays for DSR readiness UI compatibility, and add
     # parallel detail arrays for inbox notifications that need attendant names.
     for card in cards:
