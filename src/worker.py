@@ -5316,10 +5316,18 @@ def daily_report_confirmations():
         d=_local_date_from_iso(x.get("start_time"))
         if d:grouped.setdefault(d,[]).append(x)
     cards=[]
+    # Detailed readiness snapshots require several database queries per date.
+    # Keep recent operational dates detailed and preserve older confirmed dates
+    # as lightweight history cards instead of a 10-year N+1 query burst.
+    detailed_cutoff=today-timedelta(days=365)
     for d,day_shifts in sorted(grouped.items(),reverse=True):
+        row=existing.get(d.isoformat())
+        if d < detailed_cutoff:
+            if row and row.get("status")=="confirmed":
+                cards.append({"date":d.isoformat(),"id":row.get("id"),"status":"confirmed","confirmed_at":row.get("confirmed_at"),"confirmed_by":row.get("confirmed_by"),"historical_summary":True})
+            continue
         snap,err,status=_daily_confirmation_snapshot(d)
         if err:return jsonify(err),status
-        row=existing.get(d.isoformat())
         if not snap.get("report_day_closed") or not snap["all_shifts_complete"] or not snap.get("all_handover_recorded") or not snap.get("all_sales_recorded"):
             # Keep the date waiting until the report day has ended and every shift has ended,
             # completed handover, and submitted its sale.
