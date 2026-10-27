@@ -146,7 +146,15 @@ async function login(role) {
   } catch(e) { toast(e.message); }
 }
 async function performLogout(){
-  const role=getFuelRole();
+  // The Shift History page is named shift.html, so never infer its logout
+  // destination from shared storage alone. Use the rendered page's role marker.
+  const isAttendantPage=!!(document.body?.classList.contains('attendant-page') ||
+    document.body?.classList.contains('attendant-shift-page') ||
+    document.body?.dataset?.appPage==='loadAttendantShiftPage' ||
+    location.pathname.toLowerCase().includes('attendant-'));
+  const isAdminPage=!isAttendantPage && !!(document.body?.classList.contains('admin-page') ||
+    location.pathname.toLowerCase().includes('admin-'));
+  const role=isAttendantPage?'attendant':(isAdminPage?'admin':getFuelRole());
   const button=document.querySelector('#logout-confirm-modal .logout-confirm-button');
   if(button){button.disabled=true;button.textContent='Logging out…';}
   try{
