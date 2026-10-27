@@ -5319,12 +5319,10 @@ def daily_report_confirmations():
         d=_local_date_from_iso(x.get("start_time"))
         if d:grouped.setdefault(d,[]).append(x)
     cards=[]
-    # Detailed readiness snapshots require several database queries per date.
-    # Keep recent operational dates detailed and preserve older confirmed dates
-    # as lightweight history cards instead of a 10-year N+1 query burst.
-    detailed_cutoff=today-timedelta(days=30)
-    # Keep detailed readiness calculations bounded to the latest 30 days.
-    # Older confirmed dates remain visible from stored confirmation metadata.
+    # Each detailed readiness snapshot makes multiple sequential database calls.
+    # Restrict full calculations to the latest 7 days to avoid request timeouts;
+    # older dates are served from stored confirmation metadata as lightweight cards.
+    detailed_cutoff=today-timedelta(days=7)
     for d,day_shifts in sorted(grouped.items(),reverse=True):
         row=existing.get(d.isoformat())
         if d < detailed_cutoff:
@@ -5347,6 +5345,23 @@ def daily_report_confirmations():
             snap["status"]="pending"
         snap["id"]=(row or {}).get("id")
         cards.append(snap)
+    # Preserve stored records older than the detailed snapshot window, including
+    # pending/waiting cards, without running expensive per-day readiness queries.
+    visible_dates={str(card.get("date") or "") for card in cards}
+    for date_key,row in sorted(existing.items(),reverse=True):
+        if date_key in visible_dates or date_key>=detailed_cutoff.isoformat():
+            continue
+        if row.get("status") not in ("confirmed","pending","waiting"):
+            continue
+        cards.append({
+            "date":date_key,
+            "id":row.get("id"),
+            "status":row.get("status"),
+            "confirmed_at":row.get("confirmed_at"),
+            "confirmed_by":row.get("confirmed_by"),
+            "historical_summary":True,
+        })
+    cards.sort(key=lambda card:str(card.get("date") or ""),reverse=True)
     # Keep the existing ID arrays for DSR readiness UI compatibility, and add
     # parallel detail arrays for inbox notifications that need attendant names.
     for card in cards:
