@@ -5319,12 +5319,10 @@ def daily_report_confirmations():
         d=_local_date_from_iso(x.get("start_time"))
         if d:grouped.setdefault(d,[]).append(x)
     cards=[]
-    # Detailed readiness snapshots require several database queries per date.
-    # Keep recent operational dates detailed and preserve older confirmed dates
-    # as lightweight history cards instead of a 10-year N+1 query burst.
-    detailed_cutoff=today-timedelta(days=30)
-    # Keep detailed readiness calculations bounded to the latest 30 days.
-    # Older confirmed dates remain visible from stored confirmation metadata.
+    # Each detailed readiness snapshot makes multiple sequential database calls.
+    # Restrict full calculations to the latest 7 days to avoid request timeouts;
+    # older dates are served from stored confirmation metadata as lightweight cards.
+    detailed_cutoff=today-timedelta(days=7)
     for d,day_shifts in sorted(grouped.items(),reverse=True):
         row=existing.get(d.isoformat())
         if d < detailed_cutoff:
